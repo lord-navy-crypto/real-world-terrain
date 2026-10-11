@@ -54,7 +54,14 @@ def _cave_section_index(chunk):
         sections[sy]=(names,states.get("data",[]),max(4,(len(names)-1).bit_length()))
     return sections
 
-def scan(root):
+def scan(root,preset="realism_max"):
+    # Each preset has its own Y range and packed WORLD_SURFACE bit width.
+    settings_path=(Path(__file__).resolve().parents[2]/
+        "neoforge/src/main/resources/data/realscale/worldgen/noise_settings"/
+        (preset+".json"))
+    noise=json.loads(settings_path.read_text())["noise"]
+    min_y=noise["min_y"]
+    world_height=noise["height"]
     regions=[x for x in root.glob("run/**/region/r.*.*.mca") if "DIM" not in str(x)]
     assert regions, "No actual saved overworld Anvil region found"
     H={}
@@ -75,7 +82,7 @@ def scan(root):
             section_index=_cave_section_index(chunk)
             for dz in range(16):
                 for dx in range(16):
-                    h=surface_height(chunk,dx,dz,-64,2096)
+                    h=surface_height(chunk,dx,dz,min_y,world_height)
                     if h is None:continue
                     x=cx*16+dx;z=cz*16+dz
                     H[(x,z)]=h
@@ -137,6 +144,9 @@ def scan(root):
         a=sorted(values)
         return a[int((len(a)-1)*q)] if a else None
     report={
+      "preset":preset,
+      "worldgen_min_y":min_y,
+      "worldgen_height":world_height,
       "region_files":len(regions),
       "decoded_chunks":chunks,
       "actual_surface_columns":len(H),
@@ -164,4 +174,4 @@ def scan(root):
     (root/"realism_continuity_qa.json").write_text(json.dumps(report,indent=2)+"\n")
     print(json.dumps(report,indent=2))
     assert chunks>=30 and len(H)>=500 and len(delta)>=300,"Insufficient actual saved-world sample"
-if __name__=="__main__":scan(Path(sys.argv[1]))
+if __name__=="__main__":scan(Path(sys.argv[1]),sys.argv[2] if len(sys.argv)>2 else "realism_max")
