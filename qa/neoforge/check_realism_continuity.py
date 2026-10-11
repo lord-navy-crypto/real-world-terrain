@@ -6,6 +6,20 @@ from pathlib import Path
 import json,sys,statistics
 from realscale_headless_qa import iter_region_chunks,surface_height,get_block,unpack_palette_index
 
+def saved_surface_biome(chunk,dx,y,dz):
+    """Decode the actual 4x4x4 section-biome palette, not biome guesses."""
+    section=next((x for x in chunk.get("sections",[]) if x.get("Y")==y//16),None)
+    if not section:return None
+    biomes=section.get("biomes",{})
+    palette=biomes.get("palette",[])
+    if not palette:return None
+    if len(palette)==1:return palette[0]
+    index=((y%16)//4)*16+(dz//4)*4+(dx//4)
+    bits=max(1,(len(palette)-1).bit_length())
+    idx=unpack_palette_index(biomes.get("data",[]),index,bits)
+    return palette[idx] if idx<len(palette) else None
+
+
 def cave_components(void_voxels):
     """6-face 3D connectivity; a component touching two chunk positions crosses a boundary."""
     remaining=set(void_voxels)
@@ -118,6 +132,10 @@ def scan(root,preset="realism_max"):
     surface_fluid_lava=0
     surface_under_sea=0
     surface_block_missing=0
+    surface_biome_counts={}
+    river_biome_columns=0
+    river_water_columns=0
+    high_elevation_river_water_columns=0
     for region in regions:
         if region.stat().st_size<8192:continue
         for chunk in iter_region_chunks(region):
@@ -136,6 +154,14 @@ def scan(root,preset="realism_max"):
                     surface_fluid_water+=upper_block=="minecraft:water"
                     surface_fluid_lava+=upper_block=="minecraft:lava"
                     surface_block_missing+=upper_block=="INVALID_PALETTE_INDEX"
+                    biome=saved_surface_biome(chunk,dx,h,dz)
+                    if biome:
+                        surface_biome_counts[biome]=surface_biome_counts.get(biome,0)+1
+                    if biome in ("minecraft:river","minecraft:frozen_river"):
+                        river_biome_columns+=1
+                        wet=upper_block in ("minecraft:water","minecraft:ice")
+                        river_water_columns+=wet
+                        high_elevation_river_water_columns+=(wet and h>70)
                     if dx%8==0 and dz%8==0 and h>64:
                         for depth in (32,64,96,144):
                             y=h-depth
@@ -212,6 +238,12 @@ def scan(root,preset="realism_max"):
       "height_p50":pct(list(H.values()),.5),
       "height_p95":pct(list(H.values()),.95),
       "configured_sea_level":json.loads(settings_path.read_text())["sea_level"],
+      "surface_biome_counts":surface_biome_counts,
+      "river_biome_columns":river_biome_columns,
+      "river_water_or_ice_columns":river_water_columns,
+      "river_water_or_ice_above_y70":high_elevation_river_water_columns,
+      "river_wet_fraction":round(river_water_columns/river_biome_columns,6) if river_biome_columns else None,
+      "river_biome_dry_warning":river_biome_columns>100 and river_water_columns==0,
       "surface_water_columns":surface_fluid_water,
       "surface_water_fraction":round(surface_fluid_water/len(H),6) if H else None,
       "surface_lava_columns":surface_fluid_lava,
