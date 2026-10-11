@@ -3,10 +3,10 @@ loaderVersion="[4,)"
 license="Source research implementation; retains Minecraft's own vanilla assets/data references"
 [[mods]]
 modId="realscale"
-version="1.1.0-final-candidate"
-displayName="RealScale Terrain - Real Data Pilot"
+version="1.2.0-continuity-experimental"
+displayName="RealScale Terrain - Smooth Realism and Mountain Caves"
 authors="RealScale Research"
-description="Vanilla blocks only; USGS Big Sur DEM overlay plus 7 unchanged fallback world presets."
+description="Vanilla blocks only; Experimental continuous Realism MAX terrain, smooth summits, mountain caves and USGS Big Sur DEM; use new worlds."
 [[dependencies.realscale]]
 modId="neoforge"
 type="required"
