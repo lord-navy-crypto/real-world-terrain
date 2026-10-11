@@ -38,7 +38,7 @@ class CaveWalkabilityTests(unittest.TestCase):
         self.assertEqual(r["two_high_grounded_floor_cells"],0)
 
     def test_genuine_3d_six_neighbor_link(self):
-        voxels={(15,4,0),(16,4,0),(16,5,0),(17,5,0)}
+        voxels={(x,4,0) for x in range(12,30)}|{(16,5,0)}
         r=cave_components(voxels)
         self.assertEqual(r["component_count"],1)
         self.assertEqual(r["components_crossing_chunk_boundary"],1)
