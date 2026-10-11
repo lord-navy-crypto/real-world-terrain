@@ -4,7 +4,54 @@ This is observational; no claim that natural cliffs never exceed a threshold.
 """
 from pathlib import Path
 import json,sys,statistics
-from realscale_headless_qa import iter_region_chunks,surface_height,get_block,unpack_palette_index
+from realscale_headless_qa import iter_region_chunks,surface_height,get_block,unpack_palette_index,read_nbt
+import gzip
+
+def spawn_water_audit(spawn, heights, surface_blocks, surface_biomes, sea_level=63, radius=96):
+    """Inspect ACTUAL spawn and nearby persisted surface columns; no guesswork.
+
+    A watery spawn is not rescued by the generator merely booting.
+    Unloaded spawn coordinates are explicitly UNKNOWN, never assumed safe.
+    """
+    if spawn is None:
+        return {"spawn_known":False, "spawn_sampled":False, "spawn_unverified":True}
+    sx,sy,sz=spawn
+    center=(sx,sz)
+    candidates=[pos for pos in heights
+                if (pos[0]-sx)**2+(pos[1]-sz)**2<=radius**2]
+    watery={"minecraft:water","minecraft:bubble_column","minecraft:kelp",
+            "minecraft:kelp_plant","minecraft:seagrass","minecraft:tall_seagrass"}
+    def ocean(biome):
+        return isinstance(biome,str) and "ocean" in biome
+    n=len(candidates)
+    liquid=sum(surface_blocks.get(pos) in watery for pos in candidates)
+    ocean_n=sum(ocean(surface_biomes.get(pos)) for pos in candidates)
+    sampled=center in heights
+    center_block=surface_blocks.get(center)
+    center_biome=surface_biomes.get(center)
+    center_liquid=center_block in watery
+    center_ocean=ocean(center_biome)
+    frac=liquid/n if n else None
+    # A tiny island surrounded by water is not a desirable start either.
+    majority_water=(n>=100 and frac>0.60)
+    return {
+      "spawn_known":True,"spawn_sampled":sampled,"spawn_unverified":not sampled,
+      "spawn_x":sx,"spawn_y":sy,"spawn_z":sz,
+      "spawn_surface_y":heights.get(center),
+      "spawn_surface_block":center_block,
+      "spawn_surface_biome":center_biome,
+      "spawn_in_ocean_biome":center_ocean,
+      "spawn_in_liquid":center_liquid,
+      "nearby_radius_blocks":radius,
+      "nearby_sampled_columns":n,
+      "nearby_surface_liquid_fraction":round(frac,6) if frac is not None else None,
+      "nearby_ocean_biome_fraction":round(ocean_n/n,6) if n else None,
+      "nearby_majority_water":majority_water,
+      "unsafe_ocean_spawn":bool(sampled and
+            (center_liquid or center_ocean or majority_water)),
+      "note":"Saved world spawn coordinate and saved overworld blocks only; not a client respawn, no claim about unexplored chunks."
+    }
+
 
 def saved_surface_biome(chunk,dx,y,dz):
     """Decode the actual 4x4x4 section-biome palette, not biome guesses."""
@@ -117,6 +164,8 @@ def scan(root,preset="realism_max"):
     regions=[x for x in root.glob("run/**/region/r.*.*.mca") if "DIM" not in str(x)]
     assert regions, "No actual saved overworld Anvil region found"
     H={}
+    surface_blocks={}
+    surface_biomes={}
     chunks=0
     probes=0
     voids=0
@@ -153,10 +202,12 @@ def scan(root,preset="realism_max"):
                     H[(x,z)]=h
                     surface_under_sea+=h<=62
                     upper_block=get_block(chunk,dx,h,dz)
+                    surface_blocks[(x,z)]=upper_block
                     surface_fluid_water+=upper_block=="minecraft:water"
                     surface_fluid_lava+=upper_block=="minecraft:lava"
                     surface_block_missing+=upper_block=="INVALID_PALETTE_INDEX"
                     biome=saved_surface_biome(chunk,dx,h,dz)
+                    surface_biomes[(x,z)]=biome
                     if biome:
                         surface_biome_counts[biome]=surface_biome_counts.get(biome,0)+1
                     if biome in ("minecraft:river","minecraft:frozen_river"):
@@ -225,6 +276,24 @@ def scan(root,preset="realism_max"):
         if all(n is not None for n in neighbors):
             if all(h-n>8 for n in neighbors) or all(n-h>8 for n in neighbors):
                 isolated_spikes+=1
+    world_spawn=None
+    spawn_file=None
+    for level_file in root.glob("run/**/level.dat"):
+        if "DIM" in str(level_file):continue
+        try:
+            root_nbt=read_nbt(gzip.decompress(level_file.read_bytes()))
+            data=root_nbt.get("Data",root_nbt)
+            gen=(data.get("WorldGenSettings",{}).get("dimensions",{})
+                 .get("minecraft:overworld",{}).get("generator",{}))
+            if gen.get("settings")!=f"realscale:{preset}":
+                continue
+            if all(isinstance(data.get(k),int) for k in ("SpawnX","SpawnY","SpawnZ")):
+                world_spawn=(data["SpawnX"],data["SpawnY"],data["SpawnZ"])
+                spawn_file=str(level_file)
+                break
+        except Exception as ex:
+            print("Could not read world spawn from",level_file,ex)
+    spawn_report=spawn_water_audit(world_spawn,H,surface_blocks,surface_biomes)
     topology=cave_components(cave_voxels)
     walkability=dry_walkable_components(cave_voxels,dry_voxels,lava_voxels,sampled_min_y)
     def pct(values,q):
@@ -232,6 +301,10 @@ def scan(root,preset="realism_max"):
         return a[int((len(a)-1)*q)] if a else None
     report={
       "preset":preset,
+      "spawn_level_dat":spawn_file,
+      "spawn_surface_audit":spawn_report,
+      "ocean_biome_surface_columns":sum(
+        isinstance(b,str) and "ocean" in b for b in surface_biomes.values()),
       "worldgen_min_y":min_y,
       "worldgen_height":world_height,
       "region_files":len(regions),
@@ -281,6 +354,11 @@ def scan(root,preset="realism_max"):
     print(json.dumps(report,indent=2))
     assert chunks>=30 and len(H)>=500 and len(delta)>=300,"Insufficient actual saved-world sample"
     assert surface_block_missing==0,"Invalid Anvil block palette indices"
+    assert spawn_report["spawn_known"],"Missing saved overworld spawn coordinates (cannot verify spawn)"
+    assert spawn_report["spawn_sampled"],"Saved spawn chunk absent from inspected world (cannot verify spawn)"
+    assert not spawn_report["unsafe_ocean_spawn"], (
+        f"Unsafe water/ocean world spawn for {preset}: {spawn_report}"
+    )
     # Flag the confirmed hollow mountain failure instead of labeling it a PASS.
     # 20% is an experimental QA guard, not a universal geological porosity target.
     assert examined_rock_voxels>0 and len(cave_voxels)/examined_rock_voxels<0.20, (
