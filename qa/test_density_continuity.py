@@ -109,6 +109,12 @@ class WorldgenRegression(unittest.TestCase):
                 and n["argument1"].get("noise")=="minecraft:cave_cheese"]
         self.assertEqual(len(cheese),1)
         self.assertEqual(cheese[0]["argument2"],0.62)
+        spaghetti=[n for n in all_nodes(core)
+                   if n.get("type")=="minecraft:add"
+                   and isinstance(n.get("argument1"),dict)
+                   and n["argument1"].get("type")=="minecraft:abs"]
+        self.assertEqual(len(spaghetti),2)
+        self.assertTrue(all(n["argument2"]==-0.085 for n in spaghetti))
         c=load("density_function/continental/cave_density.json")
         self.assertIn("realscale:continental/cave_core",json.dumps(c))
 
