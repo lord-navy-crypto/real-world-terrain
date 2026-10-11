@@ -80,6 +80,25 @@ class WorldgenRegression(unittest.TestCase):
                 self.assertEqual(router["initial_density_without_jaggedness"],
                     f"realscale:{p}/preliminary_density")
 
+    def test_cave_network_is_deliberately_wider_but_still_shielded(self):
+        core=load("density_function/realism_max/cave_core.json")
+        tunnel=[n for n in all_nodes(core)
+                if n.get("type")=="minecraft:add"
+                and isinstance(n.get("argument1"),dict)
+                and n["argument1"].get("type")=="minecraft:abs"]
+        self.assertEqual(len(tunnel),2)
+        self.assertTrue(all(n["argument2"]==-0.19 for n in tunnel))
+        cheese=[n for n in all_nodes(core)
+                if n.get("type")=="minecraft:add"
+                and isinstance(n.get("argument1"),dict)
+                and n["argument1"].get("noise")=="minecraft:cave_cheese"]
+        self.assertEqual(len(cheese),1)
+        self.assertAlmostEqual(cheese[0]["argument2"],0.37)
+        # The cave router's solid-depth gate is intentionally unchanged.
+        for p in MODES:
+            f=load(f"noise_settings/{p}.json")["noise_router"]["final_density"]
+            self.assertEqual((f["min_inclusive"],f["max_exclusive"]),(0.25,4))
+
     def test_no_broken_density_references(self):
         base=ROOT/"density_function"
         for f in base.rglob("*.json"):

@@ -4,7 +4,55 @@ This is observational; no claim that natural cliffs never exceed a threshold.
 """
 from pathlib import Path
 import json,sys,statistics
-from realscale_headless_qa import iter_region_chunks,surface_height,get_block
+from realscale_headless_qa import iter_region_chunks,surface_height,get_block,unpack_palette_index
+
+def cave_components(void_voxels):
+    """6-face 3D connectivity; a component touching two chunk positions crosses a boundary."""
+    remaining=set(void_voxels)
+    component_count=0
+    big_count=0
+    cross_chunk_count=0
+    largest=0
+    largest_chunk_span=0
+    while remaining:
+        frontier=[remaining.pop()]
+        size=0
+        touched_chunks=set()
+        while frontier:
+            x,y,z=frontier.pop()
+            size+=1
+            touched_chunks.add((x//16,z//16))
+            for neighbor in ((x-1,y,z),(x+1,y,z),(x,y-1,z),
+                             (x,y+1,z),(x,y,z-1),(x,y,z+1)):
+                if neighbor in remaining:
+                    remaining.remove(neighbor)
+                    frontier.append(neighbor)
+        component_count+=1
+        big_count+=(size>=64)
+        cross_chunk_count+=(size>=16 and len(touched_chunks)>1)
+        if size>largest:
+            largest=size
+            largest_chunk_span=len(touched_chunks)
+    return {
+        "component_count":component_count,
+        "components_at_least_64_voxels":big_count,
+        "components_crossing_chunk_boundary":cross_chunk_count,
+        "largest_component_voxels":largest,
+        "largest_component_chunk_span":largest_chunk_span
+    }
+
+def _cave_section_index(chunk):
+    """Skip omitted sections: missing data is NOT proof of air underground."""
+    sections={}
+    for section in chunk.get("sections",[]):
+        sy=section.get("Y")
+        states=section.get("block_states",{})
+        palette=states.get("palette",[])
+        if not isinstance(sy,int) or not palette:
+            continue
+        names=[item.get("Name","?") for item in palette]
+        sections[sy]=(names,states.get("data",[]),max(4,(len(names)-1).bit_length()))
+    return sections
 
 def scan(root):
     regions=[x for x in root.glob("run/**/region/r.*.*.mca") if "DIM" not in str(x)]
@@ -13,12 +61,18 @@ def scan(root):
     chunks=0
     probes=0
     voids=0
+    cave_voxels=set()
+    examined_rock_voxels=0
+    underground_missing_section_voxels=0
+    cave_air_voxels=0
+    cave_water_voxels=0
     for region in regions:
         if region.stat().st_size<8192:continue
         for chunk in iter_region_chunks(region):
             chunks+=1
             cx=chunk.get("xPos");cz=chunk.get("zPos")
             if not isinstance(cx,int) or not isinstance(cz,int):continue
+            section_index=_cave_section_index(chunk)
             for dz in range(16):
                 for dx in range(16):
                     h=surface_height(chunk,dx,dz,-64,2096)
@@ -32,16 +86,53 @@ def scan(root):
                                 probes+=1
                                 block=get_block(chunk,dx,y,dz)
                                 if block in ("minecraft:air","minecraft:cave_air","minecraft:water"):voids+=1
+
+                    # Full-resolution subsurface cube sampling, not sparse 32m probes.
+                    # Stay 20–160 blocks below this column's highest non-air block.
+                    # These are real persisted block states, with no extrapolation.
+                    for y in range(max(-48,h-160),h-20):
+                        section=section_index.get(y//16)
+                        if section is None:
+                            underground_missing_section_voxels+=1
+                            continue
+                        names,data,bits=section
+                        if len(names)==1:
+                            block=names[0]
+                        else:
+                            packed=(y%16)*256+dz*16+dx
+                            entry=unpack_palette_index(data,packed,bits)
+                            if entry>=len(names):
+                                continue
+                            block=names[entry]
+                        examined_rock_voxels+=1
+                        if block in ("minecraft:air","minecraft:cave_air","minecraft:water"):
+                            cave_voxels.add((x,y,z))
+                            cave_air_voxels+=block in ("minecraft:air","minecraft:cave_air")
+                            cave_water_voxels+=block=="minecraft:water"
     delta=[]
     four_boundary=[];inner=[]
+    chunk_border=[];within_chunk=[]
+    isolated_spikes=0
     for (x,z),h in H.items():
         for nx,nz in ((x+1,z),(x,z+1)):
             if (nx,nz) not in H:continue
             d=abs(h-H[(nx,nz)])
             delta.append(d)
+            if (nx%16==0 and nz==z) or (nz%16==0 and nx==x):
+                chunk_border.append(d)
+            else:
+                within_chunk.append(d)
             if (nx%4==0 and nz==z) or (nz%4==0 and nx==x):
                 four_boundary.append(d)
             else:inner.append(d)
+    # A single-block impulse surrounded on four sides is unlike an extended ridge.
+    for (x,z),h in H.items():
+        neighbors=[H.get((x-1,z)),H.get((x+1,z)),
+                   H.get((x,z-1)),H.get((x,z+1))]
+        if all(n is not None for n in neighbors):
+            if all(h-n>8 for n in neighbors) or all(n-h>8 for n in neighbors):
+                isolated_spikes+=1
+    topology=cave_components(cave_voxels)
     def pct(values,q):
         a=sorted(values)
         return a[int((len(a)-1)*q)] if a else None
@@ -53,11 +144,22 @@ def scan(root):
       "height_range":[min(H.values()),max(H.values())] if H else None,
       "adjacent_p50":pct(delta,.5),"adjacent_p95":pct(delta,.95),"adjacent_p99":pct(delta,.99),
       "adjacent_over_8m":sum(d>8 for d in delta),
+      "isolated_4_neighbor_spikes_over_8m":isolated_spikes,
+      "chunk_border_p95":pct(chunk_border,.95),
+      "within_chunk_p95":pct(within_chunk,.95),
+      "chunk_border_mean":round(statistics.mean(chunk_border),3) if chunk_border else None,
+      "within_chunk_mean":round(statistics.mean(within_chunk),3) if within_chunk else None,
       "four_grid_boundary_mean":round(statistics.mean(four_boundary),3) if four_boundary else None,
       "within_grid_mean":round(statistics.mean(inner),3) if inner else None,
       "subsurface_probes":probes,
       "air_water_cave_probe_count":voids,
-      "note":"Measured block surfaces, not continuous field derivatives. No cave morphology proof without visual/3D connected-component analysis."
+      "subsurface_evaluated_voxels":examined_rock_voxels,
+      "subsurface_missing_section_voxels":underground_missing_section_voxels,
+      "subsurface_air_voxels":cave_air_voxels,
+      "subsurface_water_voxels":cave_water_voxels,
+      "subsurface_void_fraction":round(len(cave_voxels)/examined_rock_voxels,6) if examined_rock_voxels else None,
+      "cave_connectivity":topology,
+      "note":"Measured block states; 6-connected void components clipped to local depths 20-160m, not complete full-world caves or proof of natural geology."
     }
     (root/"realism_continuity_qa.json").write_text(json.dumps(report,indent=2)+"\n")
     print(json.dumps(report,indent=2))
