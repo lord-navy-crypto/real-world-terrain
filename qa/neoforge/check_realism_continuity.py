@@ -7,6 +7,23 @@ import json,sys,statistics
 from realscale_headless_qa import iter_region_chunks,surface_height,get_block,unpack_palette_index,read_nbt
 import gzip
 
+def classify_river_surface(upper, beneath, deep):
+    """Only claim a wet river if liquid water actually exists.
+
+    Snow may hide a frozen river: WORLD_SURFACE contains a snow layer at
+    the highest Y, an ice lid one block down, and liquid water two down.
+    """
+    direct_water=(upper=="minecraft:water")
+    exposed_ice_water=(upper=="minecraft:ice" and beneath=="minecraft:water")
+    snow_covered_ice_water=(upper=="minecraft:snow" and
+                            beneath=="minecraft:ice" and deep=="minecraft:water")
+    return {
+        "wet":direct_water or exposed_ice_water or snow_covered_ice_water,
+        "exposed_ice_with_liquid":exposed_ice_water,
+        "snow_over_ice_with_liquid":snow_covered_ice_water,
+    }
+
+
 def surface_water_components(wet_columns):
     """Four-face connectivity of persisted surface river water/ice, not just count.
 
@@ -261,6 +278,9 @@ def scan(root,preset="realism_max"):
     river_dry_surface_block_counts={}
     river_ice_surface_columns=0
     river_water_below_ice_columns=0
+    river_snow_over_ice_with_water_columns=0
+    river_snow_beneath_block_counts={}
+    river_snow_deep_block_counts={}
     high_elevation_river_water_columns=0
     high_elevation_nonriver_water_columns=0
     for region in regions:
@@ -293,7 +313,13 @@ def scan(root,preset="realism_max"):
                     if biome in ("minecraft:river","minecraft:frozen_river"):
                         river_biome_columns+=1
                         river_surface_block_counts[upper_block]=river_surface_block_counts.get(upper_block,0)+1
-                        wet=upper_block in ("minecraft:water","minecraft:ice")
+                        beneath=get_block(chunk,dx,h-1,dz)
+                        deep=get_block(chunk,dx,h-2,dz)
+                        wet_state=classify_river_surface(upper_block,beneath,deep)
+                        wet=wet_state["wet"]
+                        if upper_block=="minecraft:snow":
+                            river_snow_beneath_block_counts[beneath]=river_snow_beneath_block_counts.get(beneath,0)+1
+                            river_snow_deep_block_counts[deep]=river_snow_deep_block_counts.get(deep,0)+1
                         if not wet:
                             river_dry_surface_block_counts[upper_block]=river_dry_surface_block_counts.get(upper_block,0)+1
                         river_water_columns+=wet
@@ -301,7 +327,8 @@ def scan(root,preset="realism_max"):
                             river_wet_surface_positions.add((x,z))
                         ice=(upper_block=="minecraft:ice")
                         river_ice_surface_columns+=ice
-                        river_water_below_ice_columns+=(ice and get_block(chunk,dx,h-1,dz)=="minecraft:water")
+                        river_water_below_ice_columns+=wet_state["exposed_ice_with_liquid"]
+                        river_snow_over_ice_with_water_columns+=wet_state["snow_over_ice_with_liquid"]
                         high_elevation_river_water_columns+=(wet and h>70)
                     if dx%8==0 and dz%8==0 and h>64:
                         for depth in (32,64,96,144):
@@ -413,6 +440,9 @@ def scan(root,preset="realism_max"):
       "river_surface_connected_water":river_topology,
       "river_surface_ice_columns":river_ice_surface_columns,
       "river_ice_with_water_beneath_columns":river_water_below_ice_columns,
+      "river_snow_over_ice_with_water_columns":river_snow_over_ice_with_water_columns,
+      "river_snow_beneath_block_counts":river_snow_beneath_block_counts,
+      "river_snow_deep_block_counts":river_snow_deep_block_counts,
       "river_water_or_ice_above_y70":high_elevation_river_water_columns,
       "river_wet_fraction":round(river_water_columns/river_biome_columns,6) if river_biome_columns else None,
       "river_biome_dry_warning":river_biome_columns>100 and river_water_columns==0,
