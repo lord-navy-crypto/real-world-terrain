@@ -114,6 +114,10 @@ def scan(root,preset="realism_max"):
     underground_missing_section_voxels=0
     cave_air_voxels=0
     cave_water_voxels=0
+    surface_fluid_water=0
+    surface_fluid_lava=0
+    surface_under_sea=0
+    surface_block_missing=0
     for region in regions:
         if region.stat().st_size<8192:continue
         for chunk in iter_region_chunks(region):
@@ -127,6 +131,11 @@ def scan(root,preset="realism_max"):
                     if h is None:continue
                     x=cx*16+dx;z=cz*16+dz
                     H[(x,z)]=h
+                    surface_under_sea+=h<=62
+                    upper_block=get_block(chunk,dx,h,dz)
+                    surface_fluid_water+=upper_block=="minecraft:water"
+                    surface_fluid_lava+=upper_block=="minecraft:lava"
+                    surface_block_missing+=upper_block=="INVALID_PALETTE_INDEX"
                     if dx%8==0 and dz%8==0 and h>64:
                         for depth in (32,64,96,144):
                             y=h-depth
@@ -199,6 +208,15 @@ def scan(root,preset="realism_max"):
       "actual_surface_columns":len(H),
       "adjacent_column_pairs":len(delta),
       "height_range":[min(H.values()),max(H.values())] if H else None,
+      "height_p05":pct(list(H.values()),.05),
+      "height_p50":pct(list(H.values()),.5),
+      "height_p95":pct(list(H.values()),.95),
+      "configured_sea_level":json.loads(settings_path.read_text())["sea_level"],
+      "surface_water_columns":surface_fluid_water,
+      "surface_water_fraction":round(surface_fluid_water/len(H),6) if H else None,
+      "surface_lava_columns":surface_fluid_lava,
+      "surface_below_sea_level_columns":surface_under_sea,
+      "bad_surface_palette_indices":surface_block_missing,
       "adjacent_p50":pct(delta,.5),"adjacent_p95":pct(delta,.95),"adjacent_p99":pct(delta,.99),
       "adjacent_over_8m":sum(d>8 for d in delta),
       "isolated_4_neighbor_spikes_over_8m":isolated_spikes,
@@ -223,4 +241,10 @@ def scan(root,preset="realism_max"):
     (root/"realism_continuity_qa.json").write_text(json.dumps(report,indent=2)+"\n")
     print(json.dumps(report,indent=2))
     assert chunks>=30 and len(H)>=500 and len(delta)>=300,"Insufficient actual saved-world sample"
+    assert surface_block_missing==0,"Invalid Anvil block palette indices"
+    # Flag the confirmed hollow mountain failure instead of labeling it a PASS.
+    # 20% is an experimental QA guard, not a universal geological porosity target.
+    assert examined_rock_voxels>0 and len(cave_voxels)/examined_rock_voxels<0.20, (
+        f"Excessive sampled subsurface voids: {len(cave_voxels)}/{examined_rock_voxels}"
+    )
 if __name__=="__main__":scan(Path(sys.argv[1]),sys.argv[2] if len(sys.argv)>2 else "realism_max")
