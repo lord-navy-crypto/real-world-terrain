@@ -7,6 +7,42 @@ import json,sys,statistics
 from realscale_headless_qa import iter_region_chunks,surface_height,get_block,unpack_palette_index,read_nbt
 import gzip
 
+def surface_water_components(wet_columns):
+    """Four-face connectivity of persisted surface river water/ice, not just count.
+
+    No interpolation between separated cells; tiles at chunk edges are
+    connected only if both saved columns really exist and are wet.
+    """
+    remaining=set(wet_columns)
+    sizes=[]
+    cross_chunk=0
+    while remaining:
+        stack=[remaining.pop()]
+        count=0
+        chunks=set()
+        while stack:
+            x,z=stack.pop()
+            count+=1
+            chunks.add((x//16,z//16))
+            for pos in ((x-1,z),(x+1,z),(x,z-1),(x,z+1)):
+                if pos in remaining:
+                    remaining.remove(pos)
+                    stack.append(pos)
+        sizes.append(count)
+        if len(chunks)>1:
+            cross_chunk+=1
+    sizes.sort(reverse=True)
+    return {
+        "wet_components":len(sizes),
+        "largest_wet_component_columns":sizes[0] if sizes else 0,
+        "largest_wet_component_fraction":round((sizes[0]/len(wet_columns)),6) if sizes else 0,
+        "isolated_one_column_puddles":sum(a==1 for a in sizes),
+        "wet_components_crossing_chunk_boundaries":cross_chunk,
+        "size_distribution_largest_first":sizes[:20],
+        "note":"Surface water and ice connected orthogonally in saved Anvil chunks; does not prove downhill flow."
+    }
+
+
 def terrain_quality_gates(chunk_border_deltas, within_chunk_deltas,
                           grid_boundary_deltas, inner_grid_deltas,
                           isolated_spikes, sample_columns, high_nonriver_water):
@@ -220,6 +256,7 @@ def scan(root,preset="realism_max"):
     surface_biome_counts={}
     river_biome_columns=0
     river_water_columns=0
+    river_wet_surface_positions=set()
     river_surface_block_counts={}
     river_dry_surface_block_counts={}
     river_ice_surface_columns=0
@@ -260,6 +297,8 @@ def scan(root,preset="realism_max"):
                         if not wet:
                             river_dry_surface_block_counts[upper_block]=river_dry_surface_block_counts.get(upper_block,0)+1
                         river_water_columns+=wet
+                        if wet:
+                            river_wet_surface_positions.add((x,z))
                         ice=(upper_block=="minecraft:ice")
                         river_ice_surface_columns+=ice
                         river_water_below_ice_columns+=(ice and get_block(chunk,dx,h-1,dz)=="minecraft:water")
@@ -340,6 +379,7 @@ def scan(root,preset="realism_max"):
         except Exception as ex:
             print("Could not read world spawn from",level_file,ex)
     spawn_report=spawn_water_audit(world_spawn,H,surface_blocks,surface_biomes)
+    river_topology=surface_water_components(river_wet_surface_positions)
     topology=cave_components(cave_voxels)
     walkability=dry_walkable_components(cave_voxels,dry_voxels,lava_voxels,sampled_min_y)
     quality=terrain_quality_gates(chunk_border,within_chunk,four_boundary,inner,
@@ -370,6 +410,7 @@ def scan(root,preset="realism_max"):
       "river_surface_block_counts":river_surface_block_counts,
       "river_dry_surface_block_counts":river_dry_surface_block_counts,
       "river_water_or_ice_columns":river_water_columns,
+      "river_surface_connected_water":river_topology,
       "river_surface_ice_columns":river_ice_surface_columns,
       "river_ice_with_water_beneath_columns":river_water_below_ice_columns,
       "river_water_or_ice_above_y70":high_elevation_river_water_columns,
