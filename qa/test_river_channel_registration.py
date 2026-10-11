@@ -38,5 +38,5 @@ class RiverRegression(unittest.TestCase):
         self.assertIn('enclosedByBanks(level,top)',java)
         self.assertIn('Direction.Plane.HORIZONTAL',java)
         self.assertIn('neighbor.below(2)',java)
-        self.assertIn('nextTop != top.getY()',java)
+        self.assertIn('Math.abs(nextTop - top.getY()) > 3',java)
 if __name__=="__main__":unittest.main()

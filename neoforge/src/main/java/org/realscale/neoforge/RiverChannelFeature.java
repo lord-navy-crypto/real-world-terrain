@@ -70,12 +70,16 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 int nextTop = level.getHeight(
                     Heightmap.Types.WORLD_SURFACE_WG,
                     neighbor.getX(), neighbor.getZ()) - 1;
-                // Original equal-height river neighbors can become connected
-                // water; one-block drops may turn into open spillways.
+                // Riverbeds naturally descend. Requiring EXACTLY equal
+                // neighboring surface heights eliminated every river in the
+                // mountain-spawn QA (180 river columns, 0 water).
+                // A gentle, enclosed drop allows small stream cascades;
+                // a cliff-like step still cannot become a source.
+                // Non-river banks remain solid at both water levels.
                 boolean alreadyFilled = (atWaterSurface.is(Blocks.WATER)
                     || atWaterSurface.is(Blocks.ICE))
                     && atWaterBase.is(Blocks.WATER);
-                if (nextTop != top.getY() && !alreadyFilled)
+                if (Math.abs(nextTop - top.getY()) > 3 && !alreadyFilled)
                     return false;
             }
         }

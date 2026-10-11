@@ -359,6 +359,14 @@ def scan(root,preset="realism_max"):
     assert not spawn_report["unsafe_ocean_spawn"], (
         f"Unsafe water/ocean world spawn for {preset}: {spawn_report}"
     )
+    # Streams must not silently disappear again when the biome itself is
+    # present in a substantial sample. This catches the regression where
+    # the bank guard produced 180 river columns and zero visible water.
+    if river_biome_columns >= 100:
+        assert river_water_columns >= 5, (
+            f"Dry river regression: {river_water_columns} wet of "
+            f"{river_biome_columns} river-biome surface columns"
+        )
     # Flag the confirmed hollow mountain failure instead of labeling it a PASS.
     # 20% is an experimental QA guard, not a universal geological porosity target.
     assert examined_rock_voxels>0 and len(cave_voxels)/examined_rock_voxels<0.20, (
