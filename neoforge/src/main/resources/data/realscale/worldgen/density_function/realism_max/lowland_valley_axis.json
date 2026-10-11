@@ -5,7 +5,7 @@
     "shift_y": 0,
     "shift_z": "minecraft:shift_z",
     "type": "minecraft:shifted_noise",
-    "xz_scale": 0.07,
+    "xz_scale": 0.0245,
     "y_scale": 0
   },
   "type": "minecraft:flat_cache"

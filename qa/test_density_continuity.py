@@ -109,6 +109,31 @@ class WorldgenRegression(unittest.TestCase):
                 self.assertTrue(s["aquifers_enabled"])
                 self.assertLessEqual(s["noise"]["min_y"]+s["noise"]["height"],2032)
 
+    def test_horizontal_noise_scale_matches_research_retarget(self):
+        """39 original planar sources are widened 1/0.35 in XZ; Y amplitudes stay unchanged."""
+        archived=Path(__file__).resolve().parents[1]/"archive/v0.6/datapack/data/realscale/worldgen/density_function"
+        revised=ROOT/"density_function"
+        count=0
+        def planar(x):
+            return [(n["type"],n["noise"],n["xz_scale"],n.get("y_scale",0))
+                    for n in all_nodes(x)
+                    if n.get("type") in ("minecraft:noise","minecraft:shifted_noise")
+                    and n.get("y_scale")==0 and isinstance(n.get("xz_scale"),(int,float))]
+        for preset in PROCEDURAL:
+            for old in (archived/preset).glob("*.json"):
+                new=revised/preset/old.name
+                if not new.exists():continue
+                aa=planar(json.loads(old.read_text()))
+                bb=planar(json.loads(new.read_text()))
+                self.assertEqual(len(aa),len(bb),(preset,old.name))
+                for a,b in zip(aa,bb):
+                    self.assertEqual(a[:2],b[:2])
+                    self.assertAlmostEqual(a[2]*0.35,b[2],places=7,
+                                           msg=f"{preset}/{old.name}")
+                    self.assertEqual(a[3],b[3])
+                    count+=1
+        self.assertEqual(count,39)
+
     def test_interpolation_is_not_piecewise_constant_at_quart_boundaries(self):
         # Mathematical property of bilinear interpolation, not actual in-game measurement.
         corners={(0,0):100,(4,0):104,(0,4):108,(4,4):112,

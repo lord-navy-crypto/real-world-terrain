@@ -3,7 +3,7 @@
   "argument": {
     "type": "minecraft:noise",
     "noise": "minecraft:continentalness",
-    "xz_scale": 0.01,
-    "y_scale": 0.0
+    "xz_scale": 0.0035,
+    "y_scale": 0
   }
 }
