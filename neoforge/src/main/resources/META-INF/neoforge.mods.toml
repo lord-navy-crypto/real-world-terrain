@@ -3,10 +3,10 @@ loaderVersion="[4,)"
 license="Source research implementation; retains Minecraft's own vanilla assets/data references"
 [[mods]]
 modId="realscale"
-version="1.3.1-all-presets-experimental"
+version="1.3.2-all-presets-experimental"
 displayName="RealScale Terrain - All Presets Continuous Terrain and Caves"
 authors="RealScale Research"
-description="Vanilla blocks only; All eight presets: interpolated terrain, wider horizontal landforms without vertical compression, bounded 3D caves and USGS Big Sur DEM; experimental NEW worlds only."
+description="Vanilla blocks only; All eight presets: interpolated terrain, 16m density-cell interpolation while preserving original horizontal/vertical noise amplitudes, bounded 3D caves and USGS Big Sur DEM; experimental NEW worlds only."
 [[dependencies.realscale]]
 modId="neoforge"
 type="required"

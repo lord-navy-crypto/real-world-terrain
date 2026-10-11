@@ -3,7 +3,7 @@
   "argument": {
     "type": "minecraft:noise",
     "noise": "minecraft:surface",
-    "xz_scale": 0.0945,
-    "y_scale": 0
+    "xz_scale": 0.27,
+    "y_scale": 0.0
   }
 }

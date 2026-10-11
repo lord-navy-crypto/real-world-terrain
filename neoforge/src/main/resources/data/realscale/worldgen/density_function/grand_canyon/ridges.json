@@ -3,7 +3,7 @@
   "argument": {
     "type": "minecraft:noise",
     "noise": "minecraft:ridge",
-    "xz_scale": 0.0315,
-    "y_scale": 0
+    "xz_scale": 0.09,
+    "y_scale": 0.0
   }
 }

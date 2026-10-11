@@ -36,7 +36,7 @@ class WorldgenRegression(unittest.TestCase):
                 else:
                     self.assertTrue(any(n.get("type")=="minecraft:flat_cache" for n in all_nodes(height)))
                 settings=load(f"noise_settings/{p}.json")
-                self.assertEqual(settings["noise"]["size_horizontal"],1)
+                self.assertEqual(settings["noise"]["size_horizontal"],4)
                 self.assertEqual(settings["noise"]["size_vertical"],1)
 
     def test_realism_smooth_monotone_summit(self):
@@ -109,8 +109,8 @@ class WorldgenRegression(unittest.TestCase):
                 self.assertTrue(s["aquifers_enabled"])
                 self.assertLessEqual(s["noise"]["min_y"]+s["noise"]["height"],2032)
 
-    def test_horizontal_noise_scale_matches_research_retarget(self):
-        """39 original planar sources are widened 1/0.35 in XZ; Y amplitudes stay unchanged."""
+    def test_original_planar_noise_source_preserved(self):
+        """39 original planar source frequencies are preserved; spatial smoothing occurs at interpolation cells."""
         archived=Path(__file__).resolve().parents[1]/"archive/v0.6/datapack/data/realscale/worldgen/density_function"
         revised=ROOT/"density_function"
         count=0
@@ -128,7 +128,7 @@ class WorldgenRegression(unittest.TestCase):
                 self.assertEqual(len(aa),len(bb),(preset,old.name))
                 for a,b in zip(aa,bb):
                     self.assertEqual(a[:2],b[:2])
-                    self.assertAlmostEqual(a[2]*0.35,b[2],places=7,
+                    self.assertAlmostEqual(a[2],b[2],places=7,
                                            msg=f"{preset}/{old.name}")
                     self.assertEqual(a[3],b[3])
                     count+=1
