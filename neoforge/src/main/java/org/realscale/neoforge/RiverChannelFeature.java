@@ -55,11 +55,11 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
      * Avoid carving into uncontained slopes and downhill river steps.
      * Only READ adjacent blocks and keep all writes in the current chunk.
      */
-    private static boolean enclosedByBanks(WorldGenLevel level, BlockPos top) {
+    private static boolean enclosedByBanks(WorldGenLevel level, BlockPos top, int inset) {
         for (Direction side : Direction.Plane.HORIZONTAL) {
             BlockPos neighbor = top.relative(side);
-            BlockState atWaterSurface = level.getBlockState(neighbor.below());
-            BlockState atWaterBase = level.getBlockState(neighbor.below(2));
+            BlockState atWaterSurface = level.getBlockState(neighbor.below(inset));
+            BlockState atWaterBase = level.getBlockState(neighbor.below(inset + 1));
             if (atWaterSurface.isAir() || atWaterBase.isAir())
                 return false;
             if (atWaterSurface.is(Blocks.LAVA) || atWaterBase.is(Blocks.LAVA))
@@ -79,7 +79,7 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 boolean alreadyFilled = (atWaterSurface.is(Blocks.WATER)
                     || atWaterSurface.is(Blocks.ICE))
                     && atWaterBase.is(Blocks.WATER);
-                if (Math.abs(nextTop - top.getY()) > 3 && !alreadyFilled)
+                if (Math.abs(nextTop - top.getY()) > 6 && !alreadyFilled)
                     return false;
             }
         }
@@ -120,21 +120,31 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 BlockState deepFoundation = level.getBlockState(top.below(4));
                 if (!natural(surface) || !natural(below) || !natural(bed)
                     || !natural(foundation) || !deepFoundation.blocksMotion()
-                    || !level.getBlockState(top.above()).isAir()
-                    || !enclosedByBanks(level,top))
+                    || !level.getBlockState(top.above()).isAir())
                     continue;
 
-                // Surface y: atmosphere; y-1: water/ice surface; y-2: liquid
-                // water even after vanilla's cold-biome top-layer freezing;
-                // y-3: stable gravel riverbed. Ground lies beneath that.
-                // Shallow, bounded water with no cross-chunk writes.
-                // All writes stay inside the current 16x16 chunk.
-                level.setBlock(top.below(3), Blocks.GRAVEL.defaultBlockState(), 2);
-                level.setBlock(top.below(2), Blocks.WATER.defaultBlockState(), 2);
-                level.setBlock(top.below(), frozen
+                // A shallow one-block inset works on gentle valley floors.
+                // On slopes with a lower neighboring bank, lower the water
+                // line another block INSTEAD of exposing the source above it.
+                // Never lower farther than two blocks: avoid artificial wells.
+                int inset = enclosedByBanks(level, top, 1) ? 1 : 0;
+                if (inset == 0 && natural(deepFoundation)
+                    && level.getBlockState(top.below(5)).blocksMotion()
+                    && enclosedByBanks(level, top, 2))
+                    inset = 2;
+                if (inset == 0) continue;
+
+                // Two water layers and a gravel riverbed. Four-side bank
+                // checks precede both depth choices. Never alter a column
+                // outside the 16x16 chunk being populated.
+                level.setBlock(top.below(inset + 2), Blocks.GRAVEL.defaultBlockState(), 2);
+                level.setBlock(top.below(inset + 1), Blocks.WATER.defaultBlockState(), 2);
+                level.setBlock(top.below(inset), frozen
                     ? Blocks.ICE.defaultBlockState()
                     : Blocks.WATER.defaultBlockState(), 2);
-                level.setBlock(top, Blocks.AIR.defaultBlockState(), 2);
+                for (int airDepth = 0; airDepth < inset; airDepth++) {
+                    level.setBlock(top.below(airDepth), Blocks.AIR.defaultBlockState(), 2);
+                }
                 made = true;
             }
         }
