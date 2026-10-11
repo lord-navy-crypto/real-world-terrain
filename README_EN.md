@@ -16,3 +16,9 @@ The full original server ZIP is available as a separate local deliverable, not s
 
 
 > **v1.3 all-presets repair is an experimental branch, not an installable final release.** Seven procedural height functions now interpolate the original cached coarse field to eliminate 4×4 sampling terraces; all eight receive bounded 3D cave density. The previous v1.2 per-block cache strategy caused spawn-time performance concerns. **Current v1.1 remains the verified public build.** See [v1.3 design and QA](docs/V1.3_ALL_PRESETS_REPAIR.md).
+
+## v1.3.5 curated world types (experimental branch only)
+
+The normal Create World selector now offers **five** distinctive modes: Realism MAX, GeoReal Multi-scale, Himalayan, Grand Canyon and measured USGS Big Sur. **Continental, Realistic Mountains and Ultimate** are hidden from the normal menu but remain registered, with unchanged terrain density/noise JSON and world preset IDs. Hold **Alt** for the extended menu showing all eight, or use the old `level-type=realscale:<id>` on a dedicated server.
+
+This intentionally consolidates only the **player-facing choices**; no historical terrain algorithm is silently remapped and no previously saved worlds are migrated. Back up existing saves and create fresh test worlds. Also fixes the 16-voxel cross-chunk cave unit-test fixture; all rapid QA tests run before the expensive NeoForge server checks. Client screenshots, cave entrances, structure foundations and multi-seed usability remain incomplete.

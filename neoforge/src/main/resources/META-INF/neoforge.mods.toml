@@ -3,10 +3,10 @@ loaderVersion="[4,)"
 license="Source research implementation; retains Minecraft's own vanilla assets/data references"
 [[mods]]
 modId="realscale"
-version="1.3.2-all-presets-experimental"
-displayName="RealScale Terrain - All Presets Continuous Terrain and Caves"
+version="1.3.5-curated-presets-experimental"
+displayName="RealScale Terrain - Curated World Types and Continuous Caves"
 authors="RealScale Research"
-description="Vanilla blocks only; All eight presets: interpolated terrain, 16m density-cell interpolation while preserving original horizontal/vertical noise amplitudes, bounded 3D caves and USGS Big Sur DEM; experimental NEW worlds only."
+description="Vanilla blocks only; five curated world types with all eight legacy generator IDs preserved, smoother density terrain, bounded caves and Big Sur DEM; experimental NEW worlds only."
 [[dependencies.realscale]]
 modId="neoforge"
 type="required"
