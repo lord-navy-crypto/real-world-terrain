@@ -2,7 +2,6 @@ package org.realscale.neoforge;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biomes;
@@ -50,6 +49,24 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
     }
 
     /**
+     * Surface-heightmaps include thin snow and low vegetation. Treating their
+     * blocks as the rock surface made snow-covered highland streams dry.
+     * Only one non-structural cover block is removable; logs, leaves and
+     * player-made surfaces must not be stripped.
+     */
+    private static boolean removableCover(BlockState state) {
+        return state.is(Blocks.SNOW)
+            || state.is(Blocks.SHORT_GRASS)
+            || state.is(Blocks.FERN)
+            || state.is(Blocks.DEAD_BUSH);
+    }
+
+    private static boolean solidBank(BlockState state) {
+        return state.blocksMotion() && !state.is(Blocks.LAVA)
+            && !state.is(Blocks.WATER);
+    }
+
+    /**
      * A high-altitude source is unsafe without banks: water may flow into
      * lower neighboring terrain and spread well beyond the river biome.
      * Avoid carving into uncontained slopes and downhill river steps.
@@ -60,9 +77,11 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
             BlockPos neighbor = top.relative(side);
             BlockState atWaterSurface = level.getBlockState(neighbor.below(inset));
             BlockState atWaterBase = level.getBlockState(neighbor.below(inset + 1));
-            if (atWaterSurface.isAir() || atWaterBase.isAir())
-                return false;
-            if (atWaterSurface.is(Blocks.LAVA) || atWaterBase.is(Blocks.LAVA))
+            boolean existingRiverWater =
+                (atWaterSurface.is(Blocks.WATER) || atWaterSurface.is(Blocks.ICE))
+                && atWaterBase.is(Blocks.WATER);
+            if (!existingRiverWater
+                && (!solidBank(atWaterSurface) || !solidBank(atWaterBase)))
                 return false;
             boolean adjacentRiver = level.getBiome(neighbor).is(Biomes.RIVER)
                 || level.getBiome(neighbor).is(Biomes.FROZEN_RIVER);
@@ -76,9 +95,7 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 // A gentle, enclosed drop allows small stream cascades;
                 // a cliff-like step still cannot become a source.
                 // Non-river banks remain solid at both water levels.
-                boolean alreadyFilled = (atWaterSurface.is(Blocks.WATER)
-                    || atWaterSurface.is(Blocks.ICE))
-                    && atWaterBase.is(Blocks.WATER);
+                boolean alreadyFilled = existingRiverWater;
                 if (Math.abs(nextTop - top.getY()) > 6 && !alreadyFilled)
                     return false;
             }
@@ -105,8 +122,11 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
 
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
             for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
-                int y = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) - 1;
-                if (y <= floor || y > level.getMaxBuildHeight() - 5) continue;
+                int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) - 1;
+                BlockPos coverPos = new BlockPos(x, surfaceY, z);
+                boolean covered = removableCover(level.getBlockState(coverPos));
+                int y = covered ? surfaceY - 1 : surfaceY;
+                if (y <= floor || y > level.getMaxBuildHeight() - 6) continue;
                 BlockPos top = new BlockPos(x, y, z);
                 boolean frozen = level.getBiome(top).is(Biomes.FROZEN_RIVER);
                 if (!frozen && !level.getBiome(top).is(Biomes.RIVER)) continue;
@@ -120,7 +140,8 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 BlockState deepFoundation = level.getBlockState(top.below(4));
                 if (!natural(surface) || !natural(below) || !natural(bed)
                     || !natural(foundation) || !deepFoundation.blocksMotion()
-                    || !level.getBlockState(top.above()).isAir())
+                    || (!level.getBlockState(top.above()).isAir()
+                        && !(covered && removableCover(level.getBlockState(top.above())))))
                     continue;
 
                 // A shallow one-block inset works on gentle valley floors.
@@ -134,6 +155,11 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                     inset = 2;
                 if (inset == 0) continue;
 
+                // Do not leave the one-block snow/fern cap floating above
+                // the stream. All bank and deep-foundation checks have passed.
+                if (covered) {
+                    level.setBlock(coverPos, Blocks.AIR.defaultBlockState(), 2);
+                }
                 // Two water layers and a gravel riverbed. Four-side bank
                 // checks precede both depth choices. Never alter a column
                 // outside the 16x16 chunk being populated.

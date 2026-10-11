@@ -220,6 +220,8 @@ def scan(root,preset="realism_max"):
     surface_biome_counts={}
     river_biome_columns=0
     river_water_columns=0
+    river_surface_block_counts={}
+    river_dry_surface_block_counts={}
     river_ice_surface_columns=0
     river_water_below_ice_columns=0
     high_elevation_river_water_columns=0
@@ -253,7 +255,10 @@ def scan(root,preset="realism_max"):
                         )
                     if biome in ("minecraft:river","minecraft:frozen_river"):
                         river_biome_columns+=1
+                        river_surface_block_counts[upper_block]=river_surface_block_counts.get(upper_block,0)+1
                         wet=upper_block in ("minecraft:water","minecraft:ice")
+                        if not wet:
+                            river_dry_surface_block_counts[upper_block]=river_dry_surface_block_counts.get(upper_block,0)+1
                         river_water_columns+=wet
                         ice=(upper_block=="minecraft:ice")
                         river_ice_surface_columns+=ice
@@ -362,6 +367,8 @@ def scan(root,preset="realism_max"):
       "configured_sea_level":json.loads(settings_path.read_text())["sea_level"],
       "surface_biome_counts":surface_biome_counts,
       "river_biome_columns":river_biome_columns,
+      "river_surface_block_counts":river_surface_block_counts,
+      "river_dry_surface_block_counts":river_dry_surface_block_counts,
       "river_water_or_ice_columns":river_water_columns,
       "river_surface_ice_columns":river_ice_surface_columns,
       "river_ice_with_water_beneath_columns":river_water_below_ice_columns,
