@@ -31,7 +31,10 @@ class WorldgenRegression(unittest.TestCase):
                 self.assertEqual(height["type"],"minecraft:interpolated")
                 # Do not directly export flat_cache's four-block stair-step as the terrain height.
                 self.assertNotEqual(height["argument"].get("type"),"minecraft:cache_2d")
-                self.assertTrue(any(n.get("type")=="minecraft:flat_cache" for n in all_nodes(height)))
+                if p=="realism_max":
+                    self.assertEqual(load("density_function/realism_max/height_signal_raw.json")["type"],"minecraft:flat_cache")
+                else:
+                    self.assertTrue(any(n.get("type")=="minecraft:flat_cache" for n in all_nodes(height)))
                 settings=load(f"noise_settings/{p}.json")
                 self.assertEqual(settings["noise"]["size_horizontal"],1)
                 self.assertEqual(settings["noise"]["size_vertical"],1)
