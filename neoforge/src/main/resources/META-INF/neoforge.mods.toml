@@ -3,10 +3,10 @@ loaderVersion="[4,)"
 license="Source research implementation; retains Minecraft's own vanilla assets/data references"
 [[mods]]
 modId="realscale"
-version="1.3.5-curated-presets-experimental"
-displayName="RealScale Terrain - Curated World Types and Continuous Caves"
+version="1.3.6-hydrology-experimental"
+displayName="RealScale Terrain - 5 Presets, Surface Rivers and Gated Caves"
 authors="RealScale Research"
-description="Vanilla blocks only; five curated world types with all eight legacy generator IDs preserved, smoother density terrain, bounded caves and Big Sur DEM; experimental NEW worlds only."
+description="Experimental NEW worlds only; five curated presets and eight legacy IDs, sea-level Y63, locally grounded river-biome water, cautious 3D cave topology and preserved Big Sur DEM."
 [[dependencies.realscale]]
 modId="neoforge"
 type="required"

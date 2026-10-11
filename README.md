@@ -50,3 +50,9 @@ CI 自动运行离线核验、Java DEM 测试和 NeoForge 构建，并保留新�
 新建世界的常规列表从八种压缩为五种：**Realism MAX（综合）、GeoReal Multi-scale（多尺度）、Himalayan（高山）、Grand Canyon（峡谷）和 USGS Big Sur（实测高程）**。另外三个功能定位重叠的老模式（Continental、Realistic Mountains、Ultimate）不再占用常规菜单位置，但保留所有旧的生成器 ID、噪声和密度公式；按住 **Alt** 切换扩展世界类型列表可访问八种模式，服务器可通过原有 `level-type=realscale:continental` 等名称选择旧模式。
 
 这个改动是**无损菜单合并**，不是修改既有世界的生成算法。建议先备份并只在新创建的实验世界中测试，不要直接用实验 JAR 覆盖 v1.1 旧存档。修复了跨区块洞穴单元测试（测试样本数量不足）并将所有快速 `qa/test_*.py` 纳入标准 CI。此版本还未完成客户端可视化验证。
+
+## v1.3.6 地表水与洞穴修复（实验）
+
+海平面继续保持 **Y=63**，不通过抬高海水高度淹没山脉。加入限定在 RealScale 程序化世界的高海拔河道生成，在 River/Frozen River 生物群系的自然地表挖浅水道，水下面使用砾石河床；寒冷区域表层可能结冰，但冰下保留水。实测种子 785312 中，177 个 River 地表样本有 126 个生成了可见水或冰（第一版单层水道）；新加入的两层水道还需进一步复测。
+
+跨种子地下空腔检查已经发现旧洞穴可能极端挖空山体，新洞穴核心把 Cheese 噪声由独立挖空源改为对 Spaghetti 通道的门控，防止巨大空心层。**这不是已经验证的完整天然河流/地下水系统**，请以 [GitHub Actions](https://github.com/lord-navy-crypto/real-world-terrain/actions) 的最终结果和客户端检查为准；旧的 v1.1 安装包和保存世界均不覆盖。

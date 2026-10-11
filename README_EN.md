@@ -22,3 +22,9 @@ The full original server ZIP is available as a separate local deliverable, not s
 The normal Create World selector now offers **five** distinctive modes: Realism MAX, GeoReal Multi-scale, Himalayan, Grand Canyon and measured USGS Big Sur. **Continental, Realistic Mountains and Ultimate** are hidden from the normal menu but remain registered, with unchanged terrain density/noise JSON and world preset IDs. Hold **Alt** for the extended menu showing all eight, or use the old `level-type=realscale:<id>` on a dedicated server.
 
 This intentionally consolidates only the **player-facing choices**; no historical terrain algorithm is silently remapped and no previously saved worlds are migrated. Back up existing saves and create fresh test worlds. Also fixes the 16-voxel cross-chunk cave unit-test fixture; all rapid QA tests run before the expensive NeoForge server checks. Client screenshots, cave entrances, structure foundations and multi-seed usability remain incomplete.
+
+## v1.3.6 high-altitude water & cave fixes (experimental)
+
+The ocean **sea level stays at Y=63** in all eight presets. A guarded NeoForge feature adds shallow river-biome channels at local terrain elevations in procedural RealScale worlds, but never in regular vanilla worlds or the measured Big Sur DEM. High-altitude rivers may freeze at the top; the latest revision retains water underneath the ice. The first real save sample at seed 785312 observed 126 wet/icy river columns out of 177, but the two-water-layer revision still needs new-world verification.
+
+A cross-seed QA gate exposed extreme hollow mountains, so the revised cave field requires the spaghetti tube and the cheese gate to agree rather than allowing cheese noise to independently hollow entire mountains. A complete basin-scale watershed, continuous lakes, realistic karst and navigable cave survey are **not** implemented or proven; this draft branch must not replace the stable v1.1 release.
