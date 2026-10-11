@@ -56,3 +56,20 @@ CI 自动运行离线核验、Java DEM 测试和 NeoForge 构建，并保留新�
 海平面继续保持 **Y=63**，不通过抬高海水高度淹没山脉。加入限定在 RealScale 程序化世界的高海拔河道生成，在 River/Frozen River 生物群系的自然地表挖浅水道，水下面使用砾石河床；寒冷区域表层可能结冰，但冰下保留水。实测种子 785312 中，177 个 River 地表样本有 126 个生成了可见水或冰（第一版单层水道）；新加入的两层水道还需进一步复测。
 
 跨种子地下空腔检查已经发现旧洞穴可能极端挖空山体，新洞穴核心把 Cheese 噪声由独立挖空源改为对 Spaghetti 通道的门控，防止巨大空心层。**这不是已经验证的完整天然河流/地下水系统**，请以 [GitHub Actions](https://github.com/lord-navy-crypto/real-world-terrain/actions) 的最终结果和客户端检查为准；旧的 v1.1 安装包和保存世界均不覆盖。
+
+## macOS Gradle 9.x test-discovery fix (v1.3.6 experiment)
+
+Gradle 9.x reports `Task :test FAILED` when the test source set only
+contains `RealDemTileSmoke.main()` and no framework-discoverable tests.
+The mod now has a JUnit Jupiter bridge in `RealDemTileJUnitTest.java`,
+the platform launcher dependency and `useJUnitPlatform()` in
+`neoforge/build.gradle`. Unlike setting
+`failOnNoDiscoveredTests=false`, this actually executes the original
+14,641-point DEM integrity smoke test as part of `gradle build`.
+
+The original `RealDemTileSmoke.java` is deliberately unmodified
+because it is SHA-256-pinned to the v1.1 preservation manifest and used
+by independent no-dependency javac smoke verification. NeoForge client
+runs can be launched via `gradle runClient` in a local development
+copy with its `client { client() }` run configuration added. The JUnit
+test fix is not proof that water, cliffs and new-world caves have no bugs.

@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.146'
 }
-version='1.3.2-all-presets-experimental'
+version='1.3.6-hydrology-experimental'
 group='org.realscale'
 base { archivesName = 'RealScaleTerrain-NeoForge-1.21.1-ALL-PRESETS-SMOOTH-CAVES' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -21,5 +21,23 @@ neoForge {
         realscale {
             sourceSet(sourceSets.main)
         }
+    }
+}
+
+ 
+// The legacy RealDemTileSmoke.main() is also compiled standalone by
+// qa/verify_repository.py. Keep that original SHA-pinned test source intact.
+// This additional JUnit wrapper makes Gradle 9.x run REAL tests instead of
+// treating the presence of unannotated test classes as an error.
+dependencies {
+    testImplementation(platform('org.junit:junit-bom:5.14.1'))
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
     }
 }
