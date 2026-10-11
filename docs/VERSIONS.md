@@ -1,16 +1,16 @@
-# 版本恢复清单（2026-10-11）
+# RealScale Terrain 版本恢复清单（2026-10-11）
 
-| 版本 | 实际恢复内容 | 状态 |
+| 版本 | 已上传到本仓库的源文件 | 实际集成状态 |
 | --- | --- | --- |
-| v0.4 AUDIT | 可读 datapack、历史解析/服务器 QA、本机旧 lowcode JAR | 历史实验版本；不是 Java GeoCore |
-| v0.5 GEOREAL | 可读 datapack、历史服务器 QA | 历史实验版本 |
-| v0.6 REALISM MAX | 可读 datapack、历史服务器 QA；七个预设也存在于 v1.1 | 历史实验版本 |
-| v0.7 GeoCore | 未找到原始附件或源码 | 缺失，不能验证 |
-| v0.8 Geology | 未找到 Research_And_Java_Kernels 压缩包 | 缺失；对话描述为独立研究原型 |
-| v0.9 GeoEngine | 未找到 Source_And_Tests 压缩包 | 缺失；对话描述为独立引擎，未集成 Minecraft |
-| v1.0 Real Data | 恢复 USGS 官方输入、v1.1 使用的派生栅格；未恢复独立 Java/Python 引擎包 | 部分恢复 |
-| v1.1 Final Battle | 完整 NeoForge 快照、独立 DEM 测试、已构建 JAR、真实服务器存档/日志/报告 | 测试候选版 |
+| v0.4 AUDIT | `archive/v0.4/` 数据包与旧 JAR | 历史实验版 |
+| v0.5 GEOREAL | `archive/v0.5/` 数据包 | 历史实验版 |
+| v0.6 REALISM MAX | `archive/v0.6/` 数据包；七种预设也保留在 v1.1 | 历史实验版 |
+| v0.7 GeoCore | `research/v0.7/`：原始 Java 源码、独立测试与使用说明 | 仅研究原型，未完全集成 |
+| v0.8 Geology | `research/v0.8/`：地质隆起、侵蚀、沉积 Java 数值内核和测试 | 仅研究原型，未完全集成 |
+| v0.9 GeoEngine | `research/v0.9/`：区域流域、水文、缓存、Java 测试 | 仅研究原型，未完全集成 |
+| v1.0 Real Data | `research/v1.0/`：实测高程导入 Java + Python GIS 脚本 + 测试；`data/usgs-big-sur/` 存官方采样记录 | 实测导入原型，与 v1.1 密度函数不是同一套完整管线 |
+| **v1.1 Final Battle** | **`neoforge/` 完整 NeoForge 源码；`dist/v1.1/` JAR；`qa/` 与 `evidence/` 验收资料** | **最新可安装的测试候选版** |
 
-需补充原附件：v0.7 开发包、`RealScale_Geology_v0.8_Research_And_Java_Kernels.zip`、`RealScale_GeoEngine_v0.9_Source_And_Tests.zip`、`RealScale_GeoEngine_v1.0_USGS_REAL_DATA_Source_And_Java.zip`。v1.1 对话中的完整源码附加包和 Mac 安装脚本也未恢复；当前源码来自经过 SHA-256 检查的 GitHub 构建快照。
+v1.1 用户下载的原始交付 JAR 已额外上传到 `dist/v1.1/RealScaleTerrain_NeoForge_1.21.1_FinalBattle_v1.1.jar`。其 SHA-256：`638ef85e4b3978e6344ec8b52d37e0c463c21bfd2a7cf7e8564d5b7eab5ada43`。
 
-未来补回时应保留原文件校验值，解压为可读源码，并重新运行各自测试；不得把缺失版本的对话测试数字标记为本仓库通过。
+**重要限制：** 研究代码的恢复不表示其模型已在 NeoForge 客户端运行。v1.1 主要实现 USGS DEM 高程密度函数和预设注册，现实河网/侵蚀/岩性/雨影的完整算法仍需未来集成和实际 GameTest。原始来源和测试细节详见 [RESEARCH_PROVENANCE.md](RESEARCH_PROVENANCE.md)。

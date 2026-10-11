@@ -1,0 +1,18 @@
+{
+  "origin": "USGS 3DEP EPQS (interpolated service, not survey point)",
+  "endpoint": "https://epqs.nationalmap.gov/v1/json",
+  "location_center_lat_lon": [
+    36.3,
+    -121.7
+  ],
+  "grid_size": 12,
+  "cell_size_degrees": 0.0006,
+  "response_count": 144,
+  "elevation_min_m": 883.000854492,
+  "elevation_max_m": 1298.254516602,
+  "elevation_median_m": 1106.4279785155,
+  "zero_values": 0,
+  "crs": "EPSG:4326",
+  "vertical_datum": "USGS 3DEP source-specific, usually NAVD88; verify file metadata",
+  "source_sha256": "9691e0fcc50b50a0fd212bf0f85a1dfc1d8f3034ad411a852c7976f6a5d210b8"
+}
