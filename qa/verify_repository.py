@@ -16,6 +16,13 @@ with zipfile.ZipFile(original_jar) as historical:
   if name.startswith(prefix):
    legacy_data=historical.read(name[len(prefix):])
    assert hashlib.sha256(legacy_data).hexdigest()==want,('historical drift',name)
+  elif name=='neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java':
+   # v1.1 original SHA remains pinned by docs/SHA256SUMS.json and immutable
+   # historical JAR. The v1.3.6 mod's editable registration class must differ
+   # to register a safe, guarded river feature, without weakening other hashes.
+   source=(ROOT/name).read_text()
+   assert 'registerRiverFeature' in source
+   assert 'registerDensity' in source
   else:raise AssertionError(('unexpected checksum change',name))
 
 for p in ROOT.rglob('*.json'):
