@@ -13,3 +13,6 @@ The DEM covers approximately 480×480m. Its 32m grid is derived from EPQS servic
 No open-source license was present in the recovered project. See `LICENSE` and `THIRD_PARTY_NOTICES.md`; this migration does not invent a permission grant. Source commit and artifact provenance is preserved in `docs/PROVENANCE.json`.
 
 The full original server ZIP is available as a separate local deliverable, not stored in GitHub because its upload exceeded automatic approval review capacity. To replay it, run `python3 qa/verify_repository.py /path/to/RealScale-v1.1-original-server-qa.zip`. Without this argument CI explicitly skips historical-world replay; the new server workflow generates and checks its own world.
+
+
+> **v1.3 all-presets repair is an experimental branch, not an installable final release.** Seven procedural height functions now interpolate the original cached coarse field to eliminate 4×4 sampling terraces; all eight receive bounded 3D cave density. The previous v1.2 per-block cache strategy caused spawn-time performance concerns. **Current v1.1 remains the verified public build.** See [v1.3 design and QA](docs/V1.3_ALL_PRESETS_REPAIR.md).

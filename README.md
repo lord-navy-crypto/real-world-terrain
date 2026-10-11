@@ -41,3 +41,6 @@ CI 自动运行离线核验、Java DEM 测试和 NeoForge 构建，并保留新�
 [来源清单](docs/PROVENANCE.json)记录原始提交、压缩快照校验值、Actions run 和附件 ID。只迁移 RealScale 相关路径；没有导入 SWARM-MOBS 的怪物 AI、资源或提交历史。旧版本以 archive 保存。
 
 原始源码没有明确的开源许可授权，本次没有擅自补成 MIT。请阅读 [LICENSE](LICENSE) 和 [第三方来源声明](THIRD_PARTY_NOTICES.md)。
+
+
+> **v1.3 全模式修复仍处于实验分支，不能替代已交付的 v1.1。** 七种程序化模式已改成保留四格缓存但逐方块插值，以解决规则的 4×4 地表台阶；全部八种模式加入按岩层深度限定的三维洞穴。上一轮 v1.2 的逐方块复杂公式导致出生区生成性能问题，因此本版改为连续插值并保留低频缓存。详见 [v1.3 研发与测试说明](docs/V1.3_ALL_PRESETS_REPAIR.md)。

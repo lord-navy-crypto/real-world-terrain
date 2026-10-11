@@ -2,20 +2,37 @@
   "type": "minecraft:add",
   "argument1": {
     "type": "minecraft:add",
-    "argument1": "realscale:realism_max/cave_core",
+    "argument1": {
+      "type": "minecraft:add",
+      "argument1": "realscale:realism_max/cave_core",
+      "argument2": {
+        "type": "minecraft:mul",
+        "argument1": 2.8,
+        "argument2": {
+          "type": "minecraft:clamp",
+          "input": {
+            "type": "minecraft:add",
+            "argument1": 0.4,
+            "argument2": {
+              "type": "minecraft:mul",
+              "argument1": -1,
+              "argument2": "realscale:usgs_big_sur/terrain_density"
+            }
+          },
+          "min": 0,
+          "max": 1
+        }
+      }
+    },
     "argument2": {
       "type": "minecraft:mul",
-      "argument1": 2.3,
+      "argument1": 4,
       "argument2": {
         "type": "minecraft:clamp",
         "input": {
           "type": "minecraft:add",
-          "argument1": 0.34,
-          "argument2": {
-            "type": "minecraft:mul",
-            "argument1": -1,
-            "argument2": "realscale:usgs_big_sur/terrain_density"
-          }
+          "argument1": "realscale:usgs_big_sur/terrain_density",
+          "argument2": -3.6
         },
         "min": 0,
         "max": 1

@@ -3,10 +3,10 @@ loaderVersion="[4,)"
 license="Source research implementation; retains Minecraft's own vanilla assets/data references"
 [[mods]]
 modId="realscale"
-version="1.2.0-continuity-experimental"
-displayName="RealScale Terrain - Smooth Realism and Mountain Caves"
+version="1.3.0-all-presets-experimental"
+displayName="RealScale Terrain - All Presets Continuous Terrain and Caves"
 authors="RealScale Research"
-description="Vanilla blocks only; Experimental continuous Realism MAX terrain, smooth summits, mountain caves and USGS Big Sur DEM; use new worlds."
+description="Vanilla blocks only; All eight presets: interpolated 1m terrain, optimized caches, 3D cave regions and USGS Big Sur DEM; experimental NEW worlds only."
 [[dependencies.realscale]]
 modId="neoforge"
 type="required"
