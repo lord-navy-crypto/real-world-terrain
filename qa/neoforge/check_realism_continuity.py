@@ -7,6 +7,42 @@ import json,sys,statistics
 from realscale_headless_qa import iter_region_chunks,surface_height,get_block,unpack_palette_index,read_nbt
 import gzip
 
+def terrain_quality_gates(chunk_border_deltas, within_chunk_deltas,
+                          grid_boundary_deltas, inner_grid_deltas,
+                          isolated_spikes, sample_columns, high_nonriver_water):
+    """Detect artificial chunk seams, grid seams, solitary block towers and floods.
+
+    Wide thresholds recognize natural cliffs and rainfall-fed inland lakes.
+    They are NOT a guarantee of pretty or geologically accurate terrain.
+    """
+    def ratio(a,b):
+        if not a or not b:return None
+        return round(statistics.mean(a)/max(0.01,statistics.mean(b)),6)
+    chunk_ratio=ratio(chunk_border_deltas,within_chunk_deltas)
+    grid_ratio=ratio(grid_boundary_deltas,inner_grid_deltas)
+    inland_wet=high_nonriver_water/max(1,sample_columns)
+    issues=[]
+    if chunk_ratio is not None and len(chunk_border_deltas)>500 and len(within_chunk_deltas)>500:
+        if statistics.mean(chunk_border_deltas)>statistics.mean(within_chunk_deltas)*1.6+0.5:
+            issues.append("Systematic 16-block chunk-border height seam")
+    if grid_ratio is not None and len(grid_boundary_deltas)>500 and len(inner_grid_deltas)>500:
+        if statistics.mean(grid_boundary_deltas)>statistics.mean(inner_grid_deltas)*1.6+0.5:
+            issues.append("Systematic 4-block interpolation-grid height seam")
+    if sample_columns>=500 and isolated_spikes>max(4,sample_columns//2500):
+        issues.append("Excess isolated 4-neighbor spikes or one-block pits")
+    if sample_columns>=500 and inland_wet>0.08:
+        issues.append("Unexpected widespread high-altitude water outside River biomes")
+    return {
+      "chunk_border_mean_ratio":chunk_ratio,
+      "four_grid_boundary_mean_ratio":grid_ratio,
+      "isolated_spikes":isolated_spikes,
+      "high_nonriver_water_columns":high_nonriver_water,
+      "high_nonriver_water_fraction":round(inland_wet,6),
+      "issues":issues,
+      "pass":not issues
+    }
+
+
 def spawn_water_audit(spawn, heights, surface_blocks, surface_biomes, sea_level=63, radius=96):
     """Inspect ACTUAL spawn and nearby persisted surface columns; no guesswork.
 
@@ -187,6 +223,7 @@ def scan(root,preset="realism_max"):
     river_ice_surface_columns=0
     river_water_below_ice_columns=0
     high_elevation_river_water_columns=0
+    high_elevation_nonriver_water_columns=0
     for region in regions:
         if region.stat().st_size<8192:continue
         for chunk in iter_region_chunks(region):
@@ -210,6 +247,10 @@ def scan(root,preset="realism_max"):
                     surface_biomes[(x,z)]=biome
                     if biome:
                         surface_biome_counts[biome]=surface_biome_counts.get(biome,0)+1
+                    if biome not in ("minecraft:river","minecraft:frozen_river"):
+                        high_elevation_nonriver_water_columns += (
+                            h > 90 and upper_block in ("minecraft:water","minecraft:ice")
+                        )
                     if biome in ("minecraft:river","minecraft:frozen_river"):
                         river_biome_columns+=1
                         wet=upper_block in ("minecraft:water","minecraft:ice")
@@ -296,11 +337,14 @@ def scan(root,preset="realism_max"):
     spawn_report=spawn_water_audit(world_spawn,H,surface_blocks,surface_biomes)
     topology=cave_components(cave_voxels)
     walkability=dry_walkable_components(cave_voxels,dry_voxels,lava_voxels,sampled_min_y)
+    quality=terrain_quality_gates(chunk_border,within_chunk,four_boundary,inner,
+                                  isolated_spikes,len(H),high_elevation_nonriver_water_columns)
     def pct(values,q):
         a=sorted(values)
         return a[int((len(a)-1)*q)] if a else None
     report={
       "preset":preset,
+      "surface_quality_gates":quality,
       "spawn_level_dat":spawn_file,
       "spawn_surface_audit":spawn_report,
       "ocean_biome_surface_columns":sum(
@@ -354,6 +398,7 @@ def scan(root,preset="realism_max"):
     print(json.dumps(report,indent=2))
     assert chunks>=30 and len(H)>=500 and len(delta)>=300,"Insufficient actual saved-world sample"
     assert surface_block_missing==0,"Invalid Anvil block palette indices"
+    assert quality["pass"],"Terrain grid/flood regression: "+str(quality["issues"])
     assert spawn_report["spawn_known"],"Missing saved overworld spawn coordinates (cannot verify spawn)"
     assert spawn_report["spawn_sampled"],"Saved spawn chunk absent from inspected world (cannot verify spawn)"
     assert not spawn_report["unsafe_ocean_spawn"], (
