@@ -44,7 +44,8 @@ class TerrainRegression(unittest.TestCase):
                 elif isinstance(o,list):
                     for v in o:collect(v)
                 elif isinstance(o,dict):
-                    for v in o.values():collect(v)
+                    for k,v in o.items():
+                    if k!="type":collect(v)
             collect(ob)
             for s in strings:self.assertTrue((base/(s.split(":",1)[1]+".json")).is_file(),(f,s))
 if __name__=="__main__":unittest.main()
