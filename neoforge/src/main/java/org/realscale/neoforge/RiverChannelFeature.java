@@ -1,6 +1,7 @@
 package org.realscale.neoforge;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.WorldGenLevel;
@@ -48,6 +49,39 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
             || state.is(Blocks.SNOW_BLOCK);
     }
 
+    /**
+     * A high-altitude source is unsafe without banks: water may flow into
+     * lower neighboring terrain and spread well beyond the river biome.
+     * Avoid carving into uncontained slopes and downhill river steps.
+     * Only READ adjacent blocks and keep all writes in the current chunk.
+     */
+    private static boolean enclosedByBanks(WorldGenLevel level, BlockPos top) {
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            BlockPos neighbor = top.relative(side);
+            BlockState atWaterSurface = level.getBlockState(neighbor.below());
+            BlockState atWaterBase = level.getBlockState(neighbor.below(2));
+            if (atWaterSurface.isAir() || atWaterBase.isAir())
+                return false;
+            if (atWaterSurface.is(Blocks.LAVA) || atWaterBase.is(Blocks.LAVA))
+                return false;
+            boolean adjacentRiver = level.getBiome(neighbor).is(Biomes.RIVER)
+                || level.getBiome(neighbor).is(Biomes.FROZEN_RIVER);
+            if (adjacentRiver) {
+                int nextTop = level.getHeight(
+                    Heightmap.Types.WORLD_SURFACE_WG,
+                    neighbor.getX(), neighbor.getZ()) - 1;
+                // Original equal-height river neighbors can become connected
+                // water; one-block drops may turn into open spillways.
+                boolean alreadyFilled = (atWaterSurface.is(Blocks.WATER)
+                    || atWaterSurface.is(Blocks.ICE))
+                    && atWaterBase.is(Blocks.WATER);
+                if (nextTop != top.getY() && !alreadyFilled)
+                    return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         ChunkGenerator base = context.chunkGenerator();
@@ -82,7 +116,8 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 BlockState deepFoundation = level.getBlockState(top.below(4));
                 if (!natural(surface) || !natural(below) || !natural(bed)
                     || !natural(foundation) || !deepFoundation.blocksMotion()
-                    || !level.getBlockState(top.above()).isAir())
+                    || !level.getBlockState(top.above()).isAir()
+                    || !enclosedByBanks(level,top))
                     continue;
 
                 // Surface y: atmosphere; y-1: water/ice surface; y-2: liquid
