@@ -4,7 +4,7 @@
     "type": "minecraft:add",
     "argument1": {
       "type": "minecraft:add",
-      "argument1": "realscale:realism_max/cave_core",
+      "argument1": "realscale:continental/cave_core",
       "argument2": {
         "type": "minecraft:mul",
         "argument1": 2.8,

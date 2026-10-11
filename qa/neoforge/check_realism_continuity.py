@@ -168,6 +168,7 @@ def scan(root,preset="realism_max"):
       "subsurface_air_voxels":cave_air_voxels,
       "subsurface_water_voxels":cave_water_voxels,
       "subsurface_void_fraction":round(len(cave_voxels)/examined_rock_voxels,6) if examined_rock_voxels else None,
+      "unusually_high_subsurface_void_fraction":(len(cave_voxels)/examined_rock_voxels>0.15) if examined_rock_voxels else None,
       "cave_connectivity":topology,
       "note":"Measured block states; 6-connected void components clipped to local depths 20-160m, not complete full-world caves or proof of natural geology."
     }

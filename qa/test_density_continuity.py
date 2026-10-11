@@ -99,6 +99,19 @@ class WorldgenRegression(unittest.TestCase):
             f=load(f"noise_settings/{p}.json")["noise_router"]["final_density"]
             self.assertEqual((f["min_inclusive"],f["max_exclusive"]),(0.25,4))
 
+    def test_continental_cave_overcarving_is_locally_limited(self):
+        # Continental exposed >26% underground voids in real saved chunks:
+        # preserve widened spaghetti tunnels but suppress oversized cheese chambers.
+        core=load("density_function/continental/cave_core.json")
+        cheese=[n for n in all_nodes(core)
+                if n.get("type")=="minecraft:add"
+                and isinstance(n.get("argument1"),dict)
+                and n["argument1"].get("noise")=="minecraft:cave_cheese"]
+        self.assertEqual(len(cheese),1)
+        self.assertEqual(cheese[0]["argument2"],0.62)
+        c=load("density_function/continental/cave_density.json")
+        self.assertIn("realscale:continental/cave_core",json.dumps(c))
+
     def test_no_broken_density_references(self):
         base=ROOT/"density_function"
         for f in base.rglob("*.json"):
