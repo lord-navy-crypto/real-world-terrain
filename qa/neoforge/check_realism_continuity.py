@@ -41,6 +41,44 @@ def cave_components(void_voxels):
         "largest_component_chunk_span":largest_chunk_span
     }
 
+def dry_walkable_components(void_voxels, dry_voxels, invalid_floor_voxels=(), sampled_min_y=None):
+    """Candidate two-block-high foot cells over supported, non-fluid ground."""
+    dry=set(dry_voxels)
+    invalid=set(invalid_floor_voxels)
+    floor=set()
+    for x,y,z in dry:
+        if (x,y+1,z) not in dry or (x,y-1,z) in void_voxels or (x,y-1,z) in invalid:
+            continue
+        if sampled_min_y is not None and y-1<sampled_min_y.get((x,z),y):
+            continue
+        floor.add((x,y,z))
+    remaining=set(floor)
+    components=cross=largest=span=0
+    while remaining:
+        stack=[remaining.pop()]
+        size=0
+        chunks=set()
+        while stack:
+            x,y,z=stack.pop()
+            size+=1
+            chunks.add((x//16,z//16))
+            for xx,zz in ((x-1,z),(x+1,z),(x,z-1),(x,z+1)):
+                for yy in (y-1,y,y+1):
+                    candidate=(xx,yy,zz)
+                    if candidate in remaining:
+                        remaining.remove(candidate)
+                        stack.append(candidate)
+        components+=1
+        if size>=4 and len(chunks)>1:cross+=1
+        if size>largest:
+            largest=size
+            span=len(chunks)
+    return {'two_high_grounded_floor_cells':len(floor),
+            'walkable_components':components,
+            'walkable_components_crossing_chunk_boundaries':cross,
+            'largest_walkable_component_floor_cells':largest,
+            'largest_walkable_component_chunk_span':span}
+
 def _cave_section_index(chunk):
     """Skip omitted sections: missing data is NOT proof of air underground."""
     sections={}
@@ -69,6 +107,9 @@ def scan(root,preset="realism_max"):
     probes=0
     voids=0
     cave_voxels=set()
+    dry_voxels=set()
+    lava_voxels=set()
+    sampled_min_y={}
     examined_rock_voxels=0
     underground_missing_section_voxels=0
     cave_air_voxels=0
@@ -94,6 +135,7 @@ def scan(root,preset="realism_max"):
                                 block=get_block(chunk,dx,y,dz)
                                 if block in ("minecraft:air","minecraft:cave_air","minecraft:water"):voids+=1
 
+                    sampled_min_y[(x,z)]=max(-48,h-160)
                     # Full-resolution subsurface cube sampling, not sparse 32m probes.
                     # Stay 20–160 blocks below this column's highest non-air block.
                     # These are real persisted block states, with no extrapolation.
@@ -112,6 +154,10 @@ def scan(root,preset="realism_max"):
                                 continue
                             block=names[entry]
                         examined_rock_voxels+=1
+                        if block in ("minecraft:lava","minecraft:magma_block"):
+                            lava_voxels.add((x,y,z))
+                        if block in ("minecraft:air","minecraft:cave_air"):
+                            dry_voxels.add((x,y,z))
                         if block in ("minecraft:air","minecraft:cave_air","minecraft:water"):
                             cave_voxels.add((x,y,z))
                             cave_air_voxels+=block in ("minecraft:air","minecraft:cave_air")
@@ -140,6 +186,7 @@ def scan(root,preset="realism_max"):
             if all(h-n>8 for n in neighbors) or all(n-h>8 for n in neighbors):
                 isolated_spikes+=1
     topology=cave_components(cave_voxels)
+    walkability=dry_walkable_components(cave_voxels,dry_voxels,lava_voxels,sampled_min_y)
     def pct(values,q):
         a=sorted(values)
         return a[int((len(a)-1)*q)] if a else None
@@ -170,7 +217,8 @@ def scan(root,preset="realism_max"):
       "subsurface_void_fraction":round(len(cave_voxels)/examined_rock_voxels,6) if examined_rock_voxels else None,
       "unusually_high_subsurface_void_fraction":(len(cave_voxels)/examined_rock_voxels>0.15) if examined_rock_voxels else None,
       "cave_connectivity":topology,
-      "note":"Measured block states; 6-connected void components clipped to local depths 20-160m, not complete full-world caves or proof of natural geology."
+      "dry_cave_walkability_candidates":walkability,
+      "note":"Measured 20–160m-deep persisted voxels; two-block dry headroom and supported floor measure candidate paths, not proven entrances, daylight access or navigable gameplay."
     }
     (root/"realism_continuity_qa.json").write_text(json.dumps(report,indent=2)+"\n")
     print(json.dumps(report,indent=2))
