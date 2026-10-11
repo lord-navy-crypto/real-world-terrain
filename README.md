@@ -11,13 +11,12 @@ Minecraft 1.21.1 / NeoForge / Java 21 的真实尺度地形实验项目。当前
 - `dist/v1.1/`：从 GitHub Actions 恢复的可安装 NeoForge JAR。
 - `evidence/`：带 SHA-256 校验的原始构建附件、构建附件及服务器报告。
 - `docs/`：来源清单、版本恢复状态、许可说明和验证范围。
-- `research/v0.7`～`research/v1.0`：原始 Java 数值地质、水文与 USGS 测量数据导入算法及其独立测试；尚未完整接入可玩版。
 
-**v0.7–v1.0 的原始独立 GeoCore／地质／水文／实测数据导入源码已补充恢复到 [`research/`](research/)。** 这些是独立测试原型，**没有全部集成到 v1.1 可安装模组**。v1.1 的三个 Java 类主要负责 DEM 加载、密度函数和注册，并非完整自定义 `ChunkGenerator`。详见 [版本清单](docs/VERSIONS.md) 与 [原型来源校验](docs/RESEARCH_PROVENANCE.md)。
+**v0.7–v1.0 独立 GeoCore/地质/水文引擎源码尚未恢复。** 原对话中的附件不在本机或原仓库可读文件中；不能据对话重写一份原型并称为原始成果。详见 [版本清单](docs/VERSIONS.md)。v1.1 的三个 Java 类负责 DEM 加载、密度函数和注册，未集成 v0.9 流域引擎，也不是完整的自定义 ChunkGenerator。
 
 ## 安装测试候选版
 
-优先下载 [与原始交付字节一致的 v1.1 JAR](dist/v1.1/RealScaleTerrain_NeoForge_1.21.1_FinalBattle_v1.1.jar)（SHA-256: `638ef85e4b3978e6344ec8b52d37e0c463c21bfd2a7cf7e8564d5b7eab5ada43`），或从 [dist/v1.1](dist/v1.1/) 浏览其他构建产物；将 JAR，放入 Minecraft 1.21.1、NeoForge 21.1.249、Java 21 实例的 `mods` 文件夹。关闭游戏后操作，先备份实例。只装一份 RealScale，创建新的实验世界，选择 USGS Big Sur 预设，建议种子 `785312`，观察世界原点附近。
+从 [dist/v1.1](dist/v1.1/) 下载 JAR，放入 Minecraft 1.21.1、NeoForge 21.1.249、Java 21 实例的 `mods` 文件夹。关闭游戏后操作，先备份实例。只装一份 RealScale，创建新的实验世界，选择 USGS Big Sur 预设，建议种子 `785312`，观察世界原点附近。
 
 DEM 覆盖约 480×480 米，32 米网格由约 54–67 米间距的 USGS 服务值重采样而来；内侧 96 米过渡带混合回 Realism MAX。真实降水、岩性、侵蚀与完整河网不在这个 JAR 中。客户端画面、村庄落地、长距离河流和性能仍待测试。
 

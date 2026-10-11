@@ -21,7 +21,7 @@ jobs:
           python-version: '3.12'
       - name: Verify recovered source, artifacts and actual saved world
         run: python3 qa/verify_repository.py
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Check continuous terrain and mountain cave data\n        run: python3 -m unittest discover -s qa -p 'test_density_continuity.py' -v\n      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
       - name: Build readable NeoForge project
