@@ -32,4 +32,7 @@ class RiverRegression(unittest.TestCase):
         self.assertIn('id.getNamespace().equals("realscale")',java)
         self.assertIn('new ChunkPos(context.origin())',java)
         self.assertIn('noise.getSeaLevel() + 6',java)
+        self.assertIn('top.below(3), Blocks.GRAVEL',java)
+        self.assertIn('top.below(2), Blocks.WATER',java)
+        self.assertIn('top.below(4)',java)
 if __name__=="__main__":unittest.main()

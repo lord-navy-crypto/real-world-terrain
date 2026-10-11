@@ -135,6 +135,8 @@ def scan(root,preset="realism_max"):
     surface_biome_counts={}
     river_biome_columns=0
     river_water_columns=0
+    river_ice_surface_columns=0
+    river_water_below_ice_columns=0
     high_elevation_river_water_columns=0
     for region in regions:
         if region.stat().st_size<8192:continue
@@ -161,6 +163,9 @@ def scan(root,preset="realism_max"):
                         river_biome_columns+=1
                         wet=upper_block in ("minecraft:water","minecraft:ice")
                         river_water_columns+=wet
+                        ice=(upper_block=="minecraft:ice")
+                        river_ice_surface_columns+=ice
+                        river_water_below_ice_columns+=(ice and get_block(chunk,dx,h-1,dz)=="minecraft:water")
                         high_elevation_river_water_columns+=(wet and h>70)
                     if dx%8==0 and dz%8==0 and h>64:
                         for depth in (32,64,96,144):
@@ -241,6 +246,8 @@ def scan(root,preset="realism_max"):
       "surface_biome_counts":surface_biome_counts,
       "river_biome_columns":river_biome_columns,
       "river_water_or_ice_columns":river_water_columns,
+      "river_surface_ice_columns":river_ice_surface_columns,
+      "river_ice_with_water_beneath_columns":river_water_below_ice_columns,
       "river_water_or_ice_above_y70":high_elevation_river_water_columns,
       "river_wet_fraction":round(river_water_columns/river_biome_columns,6) if river_biome_columns else None,
       "river_biome_dry_warning":river_biome_columns>100 and river_water_columns==0,

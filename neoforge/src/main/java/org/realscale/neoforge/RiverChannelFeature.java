@@ -79,16 +79,19 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 BlockState below = level.getBlockState(top.below());
                 BlockState bed = level.getBlockState(top.below(2));
                 BlockState foundation = level.getBlockState(top.below(3));
+                BlockState deepFoundation = level.getBlockState(top.below(4));
                 if (!natural(surface) || !natural(below) || !natural(bed)
-                    || !foundation.blocksMotion()
+                    || !natural(foundation) || !deepFoundation.blocksMotion()
                     || !level.getBlockState(top.above()).isAir())
                     continue;
 
-                // Surface y: atmosphere; y-1: source water; y-2: stable gravel
-                // foundation. One-block-deep water is bounded by higher banks
-                // wherever the river biome meets adjacent natural ground.
+                // Surface y: atmosphere; y-1: water/ice surface; y-2: liquid
+                // water even after vanilla's cold-biome top-layer freezing;
+                // y-3: stable gravel riverbed. Ground lies beneath that.
+                // Shallow, bounded water with no cross-chunk writes.
                 // All writes stay inside the current 16x16 chunk.
-                level.setBlock(top.below(2), Blocks.GRAVEL.defaultBlockState(), 2);
+                level.setBlock(top.below(3), Blocks.GRAVEL.defaultBlockState(), 2);
+                level.setBlock(top.below(2), Blocks.WATER.defaultBlockState(), 2);
                 level.setBlock(top.below(), frozen
                     ? Blocks.ICE.defaultBlockState()
                     : Blocks.WATER.defaultBlockState(), 2);
