@@ -87,13 +87,14 @@ class WorldgenRegression(unittest.TestCase):
                 and isinstance(n.get("argument1"),dict)
                 and n["argument1"].get("type")=="minecraft:abs"]
         self.assertEqual(len(tunnel),2)
-        self.assertTrue(all(n["argument2"]==-0.045 for n in tunnel))
+        self.assertTrue(all(n["argument2"]==-0.13 for n in tunnel))
         cheese=[n for n in all_nodes(core)
                 if n.get("type")=="minecraft:add"
                 and isinstance(n.get("argument1"),dict)
                 and n["argument1"].get("noise")=="minecraft:cave_cheese"]
         self.assertEqual(len(cheese),1)
-        self.assertAlmostEqual(cheese[0]["argument2"],0.75)
+        self.assertAlmostEqual(cheese[0]["argument2"],0.05)
+        self.assertEqual(core["argument"]["type"],"minecraft:max")
         # The cave router's solid-depth gate is intentionally unchanged.
         for p in MODES:
             f=load(f"noise_settings/{p}.json")["noise_router"]["final_density"]

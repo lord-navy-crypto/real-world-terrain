@@ -1,7 +1,7 @@
 {
   "type": "minecraft:interpolated",
   "argument": {
-    "type": "minecraft:min",
+    "type": "minecraft:max",
     "argument1": {
       "type": "minecraft:max",
       "argument1": {
@@ -15,7 +15,7 @@
             "y_scale": 0.35
           }
         },
-        "argument2": -0.045
+        "argument2": -0.13
       },
       "argument2": {
         "type": "minecraft:add",
@@ -28,7 +28,7 @@
             "y_scale": 0.35
           }
         },
-        "argument2": -0.045
+        "argument2": -0.13
       }
     },
     "argument2": {
@@ -39,7 +39,7 @@
         "xz_scale": 0.42,
         "y_scale": 0.27
       },
-      "argument2": 0.75
+      "argument2": 0.05
     }
   }
 }
