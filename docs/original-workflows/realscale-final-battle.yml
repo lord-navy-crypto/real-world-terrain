@@ -1,0 +1,82 @@
+name: RealScale Final Battle NeoForge 1.21.1 Java build
+on:
+  push:
+    branches: [qa/realscale-final-battle-20261011]
+    paths: ['qa/realscale-final/**', '.github/workflows/realscale-final-battle.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Reconstruct exact final source project
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,hashlib,lzma,io,tarfile
+          root=Path('qa/realscale-final')
+          buf=base64.b64decode((root/'project.tar.xz.b64').read_text().strip())
+          sha=hashlib.sha256(buf).hexdigest()
+          expected='c025c04397a54aecc17eb0ae89682bd2afe225acad7518a1ded2483d0a4e34f9'
+          assert sha==expected,(sha,expected)
+          out=Path('qa/realscale-final/build-project');out.mkdir(parents=True,exist_ok=True)
+          with tarfile.open(fileobj=io.BytesIO(buf),mode='r:xz') as tar:
+            for m in tar.getmembers():
+              p=Path(m.name)
+              assert not p.is_absolute() and '..' not in p.parts
+            tar.extractall(out,filter='data')
+          print('Verified source snapshot SHA256:',sha)
+          print('Project file count:',len(list(out.rglob('*'))))
+          PY
+      - name: Direct Java DEM source-integrity and 1m sampling smoke
+        working-directory: qa/realscale-final/build-project
+        run: |
+          mkdir -p build/standalone-smoke
+          javac -d build/standalone-smoke src/main/java/org/realscale/neoforge/RealDemTile.java src/test/java/org/realscale/neoforge/RealDemTileSmoke.java
+          java -cp build/standalone-smoke:src/main/resources org.realscale.neoforge.RealDemTileSmoke
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Compile actual NeoForge 1.21.1 game-integrated mod
+        working-directory: qa/realscale-final/build-project
+        run: gradle --no-daemon --stacktrace build
+      - name: Inspect compiled mod JAR assets and class bytecode
+        working-directory: qa/realscale-final/build-project
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          jars=list(Path('build/libs').glob('*.jar'))
+          assert len(jars)==1,jars
+          with zipfile.ZipFile(jars[0]) as z:
+            p=set(z.namelist())
+            for name in [
+              'org/realscale/neoforge/RealScaleMod.class',
+              'org/realscale/neoforge/RealDemDensity.class',
+              'org/realscale/neoforge/RealDemTile.class',
+              'data/realscale/worldgen/world_preset/usgs_big_sur.json',
+              'data/realscale/worldgen/density_function/usgs_big_sur/terrain_density.json',
+              'data/realscale/dem/USGS_BigSur_Real_16x16_32m.rgt.gz',
+              'META-INF/neoforge.mods.toml'
+            ]:assert name in p,'MISSING: '+name
+            old=[x for x in p if x.startswith('data/realscale/worldgen/world_preset/') and x.endswith('.json')]
+            assert len(old)==8,(len(old),old)
+            print('Compiled mod:',jars[0],'bytes:',jars[0].stat().st_size)
+            print('Eight world presets including original seven:',old)
+          PY
+      - name: Upload compiled NeoForge JAR and validation logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RealScale-FinalBattle-NeoForge-1.21.1-JAR
+          path: |
+            qa/realscale-final/build-project/build/libs/*.jar
+            qa/realscale-final/build-project/README_CN.md
+          if-no-files-found: warn

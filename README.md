@@ -9,7 +9,7 @@ Minecraft 1.21.1 / NeoForge / Java 21 的真实尺度地形实验项目。当前
 - `data/usgs-big-sur/`：144 条 USGS EPQS 请求记录、12×12 高程网格与来源信息。
 - `qa/`：历史 Minecraft NBT/Anvil 解析测试、真实服务器区块高程核验，以及迁移完整性检查。
 - `dist/v1.1/`：从 GitHub Actions 恢复的可安装 NeoForge JAR。
-- `evidence/`：带 SHA-256 校验的原始构建附件、真实服务器日志、存档区块及报告。
+- `evidence/`：带 SHA-256 校验的原始构建附件、构建附件及服务器报告。
 - `docs/`：来源清单、版本恢复状态、许可说明和验证范围。
 
 **v0.7–v1.0 独立 GeoCore/地质/水文引擎源码尚未恢复。** 原对话中的附件不在本机或原仓库可读文件中；不能据对话重写一份原型并称为原始成果。详见 [版本清单](docs/VERSIONS.md)。v1.1 的三个 Java 类负责 DEM 加载、密度函数和注册，未集成 v0.9 流域引擎，也不是完整的自定义 ChunkGenerator。
@@ -33,7 +33,7 @@ gradle --no-daemon runServer
 
 启动服务器前需自行阅读并接受 Minecraft EULA；测试应使用一次性新世界。原始 `neoforge/README_CN.md` 保留为历史文件，其中旧 SWARM-MOBS 本机启动路径不适用于此独立仓库，以上命令取代该路径。
 
-CI 自动运行离线核验、Java DEM 测试和 NeoForge 构建，并保留新构建 JAR。服务器 CI 在一次性世界中启动真正的 NeoForge 并检查保存区块；历史服务器附件也可离线重验。历史来源与新 CI 结果分别记录，详见 [验证说明](docs/VALIDATION.md)。
+CI 自动运行离线核验、Java DEM 测试和 NeoForge 构建，并保留新构建 JAR。服务器 CI 在一次性世界中启动真正的 NeoForge 并检查保存区块；完整服务器存档 ZIP 因上传审核容量限制未进入 GitHub；提供该文件路径作为 `qa/verify_repository.py` 的第一个参数可离线重验。历史来源与新 CI 结果分别记录，详见 [验证说明](docs/VALIDATION.md)。
 
 ## 来源与许可
 

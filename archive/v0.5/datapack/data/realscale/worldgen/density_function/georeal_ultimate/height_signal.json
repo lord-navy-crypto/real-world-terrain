@@ -1,0 +1,769 @@
+{
+  "type": "minecraft:flat_cache",
+  "argument": {
+    "type": "minecraft:add",
+    "argument1": {
+      "type": "minecraft:add",
+      "argument1": {
+        "type": "minecraft:add",
+        "argument1": {
+          "type": "minecraft:add",
+          "argument1": {
+            "type": "minecraft:add",
+            "argument1": {
+              "type": "minecraft:add",
+              "argument1": {
+                "type": "minecraft:spline",
+                "spline": {
+                  "coordinate": "realscale:georeal_ultimate/continents",
+                  "points": [
+                    {
+                      "location": -1,
+                      "value": -0.703125,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": -0.65,
+                      "value": -0.6328125,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": -0.42,
+                      "value": -0.53125,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": -0.22,
+                      "value": -0.375,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": -0.1,
+                      "value": -0.09375,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": 0,
+                      "value": 0.078125,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": 0.18,
+                      "value": 0.3671875,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": 0.35,
+                      "value": 0.640625,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": 0.7,
+                      "value": 0.9765625,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": 1,
+                      "value": 1.171875,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              "argument2": {
+                "type": "minecraft:mul",
+                "argument1": 8.984375,
+                "argument2": {
+                  "type": "minecraft:mul",
+                  "argument1": {
+                    "type": "minecraft:mul",
+                    "argument1": {
+                      "type": "minecraft:spline",
+                      "spline": {
+                        "coordinate": "realscale:georeal_ultimate/continents",
+                        "points": [
+                          {
+                            "location": -1,
+                            "value": 0,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": -0.27,
+                            "value": 0,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": -0.13,
+                            "value": 0.015,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0,
+                            "value": 0.08,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0.12,
+                            "value": 0.42,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0.22,
+                            "value": 0.8,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0.35,
+                            "value": 1,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 1,
+                            "value": 1,
+                            "derivative": 0.0
+                          }
+                        ]
+                      }
+                    },
+                    "argument2": {
+                      "type": "minecraft:spline",
+                      "spline": {
+                        "coordinate": "realscale:georeal_ultimate/erosion",
+                        "points": [
+                          {
+                            "location": -1,
+                            "value": 1,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": -0.65,
+                            "value": 1,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": -0.35,
+                            "value": 0.9,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": -0.12,
+                            "value": 0.72,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0.12,
+                            "value": 0.45,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0.3,
+                            "value": 0.12,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0.55,
+                            "value": 0,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 1,
+                            "value": 0,
+                            "derivative": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "argument2": {
+                    "type": "minecraft:spline",
+                    "spline": {
+                      "coordinate": "realscale:georeal_ultimate/ridges",
+                      "points": [
+                        {
+                          "location": -1,
+                          "value": 0.04,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": -0.72,
+                          "value": 0.08,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": -0.48,
+                          "value": 0.2,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": -0.25,
+                          "value": 0.4,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0,
+                          "value": 0.64,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0.28,
+                          "value": 0.92,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0.65,
+                          "value": 1,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 1,
+                          "value": 1,
+                          "derivative": 0.0
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "argument2": {
+              "type": "minecraft:mul",
+              "argument1": 1.5625,
+              "argument2": {
+                "type": "minecraft:mul",
+                "argument1": {
+                  "type": "minecraft:mul",
+                  "argument1": {
+                    "type": "minecraft:mul",
+                    "argument1": {
+                      "type": "minecraft:spline",
+                      "spline": {
+                        "coordinate": "realscale:georeal_ultimate/continents",
+                        "points": [
+                          {
+                            "location": -1,
+                            "value": 0,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": -0.27,
+                            "value": 0,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": -0.13,
+                            "value": 0.015,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0,
+                            "value": 0.08,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0.12,
+                            "value": 0.42,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0.22,
+                            "value": 0.8,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0.35,
+                            "value": 1,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 1,
+                            "value": 1,
+                            "derivative": 0.0
+                          }
+                        ]
+                      }
+                    },
+                    "argument2": {
+                      "type": "minecraft:spline",
+                      "spline": {
+                        "coordinate": "realscale:georeal_ultimate/erosion",
+                        "points": [
+                          {
+                            "location": -1,
+                            "value": 1,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": -0.65,
+                            "value": 1,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": -0.35,
+                            "value": 0.9,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": -0.12,
+                            "value": 0.72,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0.12,
+                            "value": 0.45,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0.3,
+                            "value": 0.12,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 0.55,
+                            "value": 0,
+                            "derivative": 0.0
+                          },
+                          {
+                            "location": 1,
+                            "value": 0,
+                            "derivative": 0.0
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "argument2": {
+                    "type": "minecraft:spline",
+                    "spline": {
+                      "coordinate": "realscale:georeal_ultimate/ridges",
+                      "points": [
+                        {
+                          "location": -1,
+                          "value": 0.04,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": -0.72,
+                          "value": 0.08,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": -0.48,
+                          "value": 0.2,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": -0.25,
+                          "value": 0.4,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0,
+                          "value": 0.64,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0.28,
+                          "value": 0.92,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0.65,
+                          "value": 1,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 1,
+                          "value": 1,
+                          "derivative": 0.0
+                        }
+                      ]
+                    }
+                  }
+                },
+                "argument2": {
+                  "type": "minecraft:spline",
+                  "spline": {
+                    "coordinate": "realscale:georeal_ultimate/secondary_ridges",
+                    "points": [
+                      {
+                        "location": -1,
+                        "value": 0,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": -0.8,
+                        "value": 0.05,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": -0.5,
+                        "value": 0.2,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": -0.15,
+                        "value": 0.46,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": 0.2,
+                        "value": 0.75,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": 0.55,
+                        "value": 1,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": 1,
+                        "value": 1,
+                        "derivative": 0.0
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": -0.9765625,
+            "argument2": {
+              "type": "minecraft:mul",
+              "argument1": {
+                "type": "minecraft:mul",
+                "argument1": {
+                  "type": "minecraft:mul",
+                  "argument1": {
+                    "type": "minecraft:spline",
+                    "spline": {
+                      "coordinate": "realscale:georeal_ultimate/continents",
+                      "points": [
+                        {
+                          "location": -1,
+                          "value": 0,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": -0.27,
+                          "value": 0,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": -0.13,
+                          "value": 0.015,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0,
+                          "value": 0.08,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0.12,
+                          "value": 0.42,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0.22,
+                          "value": 0.8,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0.35,
+                          "value": 1,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 1,
+                          "value": 1,
+                          "derivative": 0.0
+                        }
+                      ]
+                    }
+                  },
+                  "argument2": {
+                    "type": "minecraft:spline",
+                    "spline": {
+                      "coordinate": "realscale:georeal_ultimate/erosion",
+                      "points": [
+                        {
+                          "location": -1,
+                          "value": 1,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": -0.65,
+                          "value": 1,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": -0.35,
+                          "value": 0.9,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": -0.12,
+                          "value": 0.72,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0.12,
+                          "value": 0.45,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0.3,
+                          "value": 0.12,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 0.55,
+                          "value": 0,
+                          "derivative": 0.0
+                        },
+                        {
+                          "location": 1,
+                          "value": 0,
+                          "derivative": 0.0
+                        }
+                      ]
+                    }
+                  }
+                },
+                "argument2": {
+                  "type": "minecraft:spline",
+                  "spline": {
+                    "coordinate": "realscale:georeal_ultimate/ridges",
+                    "points": [
+                      {
+                        "location": -1,
+                        "value": 0.04,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": -0.72,
+                        "value": 0.08,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": -0.48,
+                        "value": 0.2,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": -0.25,
+                        "value": 0.4,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": 0,
+                        "value": 0.64,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": 0.28,
+                        "value": 0.92,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": 0.65,
+                        "value": 1,
+                        "derivative": 0.0
+                      },
+                      {
+                        "location": 1,
+                        "value": 1,
+                        "derivative": 0.0
+                      }
+                    ]
+                  }
+                }
+              },
+              "argument2": {
+                "type": "minecraft:spline",
+                "spline": {
+                  "coordinate": {
+                    "type": "minecraft:abs",
+                    "argument": "realscale:georeal_ultimate/valley_lines"
+                  },
+                  "points": [
+                    {
+                      "location": 0,
+                      "value": 1,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": 0.07,
+                      "value": 0.95,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": 0.18,
+                      "value": 0.58,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": 0.3,
+                      "value": 0.2,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": 0.45,
+                      "value": 0,
+                      "derivative": 0.0
+                    },
+                    {
+                      "location": 1,
+                      "value": 0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "argument2": {
+          "type": "minecraft:mul",
+          "argument1": 0.296875,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": {
+              "type": "minecraft:spline",
+              "spline": {
+                "coordinate": "realscale:georeal_ultimate/continents",
+                "points": [
+                  {
+                    "location": -1,
+                    "value": 0,
+                    "derivative": 0.0
+                  },
+                  {
+                    "location": -0.24,
+                    "value": 0.06,
+                    "derivative": 0.0
+                  },
+                  {
+                    "location": -0.06,
+                    "value": 0.5,
+                    "derivative": 0.0
+                  },
+                  {
+                    "location": 0.1,
+                    "value": 1,
+                    "derivative": 0.0
+                  },
+                  {
+                    "location": 0.4,
+                    "value": 0.85,
+                    "derivative": 0.0
+                  },
+                  {
+                    "location": 1,
+                    "value": 0.75,
+                    "derivative": 0.0
+                  }
+                ]
+              }
+            },
+            "argument2": "realscale:georeal_ultimate/broad_hills"
+          }
+        }
+      },
+      "argument2": {
+        "type": "minecraft:mul",
+        "argument1": 0.09375,
+        "argument2": {
+          "type": "minecraft:mul",
+          "argument1": {
+            "type": "minecraft:spline",
+            "spline": {
+              "coordinate": "realscale:georeal_ultimate/continents",
+              "points": [
+                {
+                  "location": -1,
+                  "value": 0,
+                  "derivative": 0.0
+                },
+                {
+                  "location": -0.24,
+                  "value": 0.06,
+                  "derivative": 0.0
+                },
+                {
+                  "location": -0.06,
+                  "value": 0.5,
+                  "derivative": 0.0
+                },
+                {
+                  "location": 0.1,
+                  "value": 1,
+                  "derivative": 0.0
+                },
+                {
+                  "location": 0.4,
+                  "value": 0.85,
+                  "derivative": 0.0
+                },
+                {
+                  "location": 1,
+                  "value": 0.75,
+                  "derivative": 0.0
+                }
+              ]
+            }
+          },
+          "argument2": "realscale:georeal_ultimate/mid_detail"
+        }
+      }
+    },
+    "argument2": {
+      "type": "minecraft:mul",
+      "argument1": 0.0234375,
+      "argument2": {
+        "type": "minecraft:mul",
+        "argument1": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": "realscale:georeal_ultimate/continents",
+            "points": [
+              {
+                "location": -1,
+                "value": 0,
+                "derivative": 0.0
+              },
+              {
+                "location": -0.24,
+                "value": 0.06,
+                "derivative": 0.0
+              },
+              {
+                "location": -0.06,
+                "value": 0.5,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.1,
+                "value": 1,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.4,
+                "value": 0.85,
+                "derivative": 0.0
+              },
+              {
+                "location": 1,
+                "value": 0.75,
+                "derivative": 0.0
+              }
+            ]
+          }
+        },
+        "argument2": "realscale:georeal_ultimate/micro_detail"
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+# Sources and third-party notices
+
+- Recovered RealScale sources: selected paths and encoded snapshots from `lord-navy-crypto/SWARM-MOBS`, owned by the same GitHub account as this repository. Exact source commits and artifact digests are in `docs/PROVENANCE.json`. No SWARM-MOBS mob implementation is included.
+- USGS 3DEP EPQS: <https://epqs.nationalmap.gov/v1/json> and <https://www.usgs.gov/3d-elevation-program>. Raw records preserve request coordinates, response objects and original response SHA-256 values. These are interpolated elevation-service values, not individual survey measurements. The source-specific vertical datum needs confirmation; the original provenance states usually NAVD88, not a verified datum for every sample.
+- USGS copyright guidance: <https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits>. USGS-produced information is generally public domain; third-party material may have additional restrictions. Attribution is retained. USGS does not endorse this project.
+- Minecraft: Mojang/Microsoft. Vanilla resource identifiers and worldgen configuration references remain subject to applicable Minecraft terms. No official Minecraft client or dedicated-server JAR is redistributed. Test tools download the official server and validate its SHA-1. Minecraft EULA: <https://www.minecraft.net/eula>.
+- NeoForge and ModDevGradle are external build dependencies with their own licenses; this repository does not relicense them. <https://github.com/neoforged/NeoForge>, <https://github.com/neoforged/ModDevGradle>.
+- No NASADEM, HydroSHEDS or WorldClim datasets were recovered or bundled. Prior discussion of these products is not evidence of an implemented integration.

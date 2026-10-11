@@ -1,0 +1,21 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="Source research implementation; retains Minecraft's own vanilla assets/data references"
+[[mods]]
+modId="realscale"
+version="1.1.0-final-candidate"
+displayName="RealScale Terrain - Real Data Pilot"
+authors="RealScale Research"
+description="Vanilla blocks only; USGS Big Sur DEM overlay plus 7 unchanged fallback world presets."
+[[dependencies.realscale]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.0,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.realscale]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.21.2)"
+ordering="NONE"
+side="BOTH"

@@ -1,0 +1,37 @@
+name: Source integrity, tests and NeoForge build
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify recovered source, artifacts and actual saved world
+        run: python3 qa/verify_repository.py
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Build readable NeoForge project
+        working-directory: neoforge
+        run: gradle --no-daemon --stacktrace build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RealScale-NeoForge-build-and-replay
+          path: |
+            neoforge/build/libs/*.jar
+            build/saved-world-replay.json
+          if-no-files-found: error

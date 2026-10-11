@@ -1,0 +1,26 @@
+modLoader="lowcodefml"
+loaderVersion="[1,)"
+license="All Rights Reserved"
+showAsResourcePack=false
+showAsDataPack=false
+
+[[mods]]
+modId="realscale"
+version="0.4.0"
+displayName="RealScale Terrain (Audit Rebuild)"
+authors="RealScale Terrain Prototype"
+description="Audit revision of five terrain presets. Ocean level 63 and density alignment. Requires fresh world and live-game validation."
+
+[[dependencies.realscale]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.realscale]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.21.2)"
+ordering="NONE"
+side="BOTH"

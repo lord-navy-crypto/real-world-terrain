@@ -1,0 +1,19 @@
+package org.realscale.neoforge;
+
+import net.neoforged.fml.common.Mod;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.RegisterEvent;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+
+@Mod("realscale")
+public final class RealScaleMod {
+    public RealScaleMod(IEventBus bus) {
+        bus.addListener(this::registerDensity);
+    }
+    private void registerDensity(RegisterEvent event) {
+        event.register(Registries.DENSITY_FUNCTION_TYPE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_density"), RealDemDensity.MAP_CODEC)
+        );
+    }
+}

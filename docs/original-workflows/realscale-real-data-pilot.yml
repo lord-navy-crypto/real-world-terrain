@@ -1,0 +1,57 @@
+name: RealScale authoritative terrain data acquisition
+on:
+  push:
+    branches: [qa/realscale-real-data-pilot-20261011]
+    paths: ['.github/workflows/realscale-real-data-pilot.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fetch-authoritative-elevations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query NOAA ETOPO 2022 and USGS EPQS with provenance
+        run: |
+          python3 - <<'PY'
+          import urllib.request, urllib.parse, hashlib, json, pathlib, csv, io
+          root=pathlib.Path('official_elevation');root.mkdir(exist_ok=True)
+          urls=[
+            ('USGS_3DEP_EPQS_Point',
+             'https://epqs.nationalmap.gov/v1/json?x=-121.8000&y=36.2000&units=Meters&wkid=4326&includeDate=false'),
+            ('NOAA_ETOPO2022_15arcsec_Grid',
+             'https://coastwatch.pfeg.noaa.gov/erddap/griddap/ETOPO_2022_v1_15s.csv?z[(36.1479166667):1:(36.1895833333)][(-121.8520833333):1:(-121.8104166667)]')
+          ]
+          results=[]
+          for name,url in urls:
+            try:
+              q=urllib.request.Request(url,headers={'User-Agent':'RealScaleTerrainResearch/1.0 (scientific educational evaluation)'})
+              with urllib.request.urlopen(q,timeout=35) as r:
+                data=r.read(300000)
+                code=r.status
+              (root/(name+'.raw')).write_bytes(data)
+              print('REAL_SOURCE:',name,'HTTP:',code,'bytes:',len(data),'sha256:',hashlib.sha256(data).hexdigest())
+              print('FIRST_LINES:',data[:650].decode('utf-8','replace'))
+              if code!=200 or len(data)<25:raise RuntimeError('Missing or empty response')
+              if name.startswith('USGS'):
+                x=json.loads(data); print('USGS JSON keys:',list(x)[:12])
+              else:
+                records=list(csv.reader(io.StringIO(data.decode('utf-8-sig'))))
+                print('NOAA grid records:',len(records),'header:',records[:3])
+              results.append({'name':name,'url':url,'bytes':len(data),
+                'sha256':hashlib.sha256(data).hexdigest(),'status':'downloaded_unmodified'})
+            except Exception as e:
+              print('SOURCE_UNAVAILABLE:',name,repr(e))
+              results.append({'name':name,'url':url,'status':'unavailable','error':str(e)})
+          (root/'provenance.json').write_text(json.dumps(results,indent=2)+'\n')
+          if not any(x['status']=='downloaded_unmodified' for x in results):
+            raise RuntimeError('No official data acquired; do not claim actual downloaded elevation')
+          PY
+      - name: Upload immutable official data sample
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RealScale-official-Earth-elevation-sample
+          path: official_elevation/
+          if-no-files-found: warn
