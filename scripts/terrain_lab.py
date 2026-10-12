@@ -140,7 +140,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         if ridge or erosion or strata:
             options.update(ridge=int(ridge),erosion=int(erosion),strata=int(strata))
         if caves >= 60:
-            options["mountain_caves_revision"]=4
+            options["mountain_caves_revision"]=5
         if climate:
             options["climate"]=climate
         if valley:
@@ -261,7 +261,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                  "argument1":{"type":"minecraft:noise",
                               "noise":"minecraft:cave_cheese",
                               "xz_scale":0.16,"y_scale":0.12},
-                 "argument2":0.72}
+                 "argument2":0.84}
         chamber_roof={"type":"minecraft:mul","argument1":0.05,
                       "argument2":positive_part(subtract(96.0,depth),96.0)}
         chamber_deep={"type":"minecraft:mul","argument1":0.004,
@@ -270,8 +270,19 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
             "argument1":{"type":"minecraft:add",
                          "argument1":chamber,"argument2":chamber_roof},
             "argument2":chamber_deep}
+        # Chamber pockets are sparse; a second broad noise mask prevents
+        # a single cheese field from hollowing an entire mountain.
+        # A chamber only opens when BOTH fields permit carving.
+        chamber_mask={"type":"minecraft:add",
+            "argument1":{"type":"minecraft:abs",
+                "argument":{"type":"minecraft:noise",
+                    "noise":"minecraft:spaghetti_3d_2",
+                    "xz_scale":0.12,"y_scale":0.10}},
+            "argument2":-0.27}
+        bounded_chamber={"type":"minecraft:max",
+            "argument1":chamber_guard,"argument2":chamber_mask}
         connector={"type":"minecraft:min",
-                   "argument1":corridor,"argument2":chamber_guard}
+                   "argument1":corridor,"argument2":bounded_chamber}
         guarded={"type":"minecraft:add",
                  "argument1":{"type":"minecraft:add",
                               "argument1":connector,"argument2":roof_penalty},
