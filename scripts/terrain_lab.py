@@ -56,7 +56,7 @@ CHINESE = {
     "alpine":"高山地貌（喜马拉雅 + 真实山脉）",
     "canyon":"峡谷台地（大峡谷 + 大陆地形）",
 }
-NORMAL = ("realism_max","himalayan","grand_canyon","usgs_big_sur")
+NORMAL = ("realism_max","himalayan","grand_canyon","usgs_big_sur_v2")
 GEO_ROOT = Path("data/realscale/worldgen")
 LABEL_ROOT = Path("assets/minecraft/lang")
 TAG_ROOT = Path("data/minecraft/tags/worldgen/world_preset")
