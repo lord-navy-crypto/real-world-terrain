@@ -79,7 +79,7 @@ def replace_refs(node, replacements):
         return {key:replace_refs(value,replacements) for key,value in node.items()}
     return node
 
-def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60):
+def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False):
     if preset not in PRESETS and preset not in FAMILIES:
         raise ValueError("Unknown terrain preset")
     if preset == "usgs_big_sur":
@@ -125,8 +125,10 @@ def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ri
     if river_grade not in (0,3,6,9):
         raise ValueError("River slope must be Off (0), Conservative (3), Standard (6) or Flexible (9)")
 
-def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60):
+def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False):
     validate(preset,relief,elevation,caves,river_grade,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit)
+    if type(fantasy_dimensions) is not bool or (fantasy_dimensions and preset not in FAMILIES):
+        raise ValueError("Fantasy dimensions require a merged Lab family and a boolean setting")
     source=FAMILIES[preset][0] if preset in FAMILIES else preset
     secondary=FAMILIES[preset][1] if preset in FAMILIES else None
     options=dict(preset=preset,relief=round(float(relief),3),
@@ -135,6 +137,8 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     # Do not mutate the hash and files of any previously generated legacy preset.
     if preset in FAMILIES:
         options["blend_percent"]=int(blend_percent)
+        if fantasy_dimensions:
+            options["fantasy_dimensions"]="v1"
         # Backward compatibility: an all-zero geology draft emits exactly the
         # old v1.5 hash AND byte-identical profile. Never alter saved IDs.
         if ridge or erosion or strata:
@@ -317,6 +321,13 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     original_preset=jread(root,GEO_ROOT/"world_preset"/(source+".json"))
     world_preset=copy.deepcopy(original_preset)
     world_preset["dimensions"]["minecraft:overworld"]["generator"]["settings"]="realscale:"+name
+    if fantasy_dimensions:
+        nether=world_preset["dimensions"]["minecraft:the_nether"]
+        nether["type"]="realscale:fantasy_nether_v1"
+        nether["generator"]["settings"]="realscale:fantasy_nether_v1"
+        end=world_preset["dimensions"]["minecraft:the_end"]
+        # Preserve the vanilla End dimension type and dragon fight arena.
+        end["generator"]["settings"]="realscale:fantasy_end_v1"
     output={
         GEO_ROOT/"density_function"/density_folder/"height_signal.json":height,
         GEO_ROOT/"density_function"/density_folder/"terrain_density.json":terrain,
@@ -397,8 +408,8 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         output[GEO_ROOT/"density_function"/density_folder/"biome_temperature.json"]=temp_value
     return name,options,output
 
-def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60):
-    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit)
+def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False):
+    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions)
     paths={path:serialized(obj) for path,obj in output.items()}
     preset_id="realscale:"+name
     for tag in ("normal","extended"):
@@ -428,6 +439,8 @@ def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_
                     label+=f" | center ({center_x},{equator_z}), cold limit {cold_limit}%"
             if basin:
                 label+=f" | basin warmth {basin}%"
+            if fantasy_dimensions:
+                label+= " | Fantasy Nether + End expansion (EXPERIMENTAL)"
         labels["generator.realscale."+name]=label
         paths[path]=serialized(labels)
     # Never silently modify a previously generated worldgen codec: if a
@@ -476,6 +489,7 @@ def gui(root, launch):
     cold_limit=tk.IntVar(value=60)
     basin=tk.IntVar(value=0)
     inland=tk.BooleanVar(value=True)
+    fantasy=tk.BooleanVar(value=False)
     def chooser(label,variable,values):
         ttk.Label(main,text=label).pack(anchor="w",pady=(9,0))
         box=ttk.Combobox(main,textvariable=variable,values=values,state="readonly")
@@ -507,6 +521,7 @@ def gui(root, launch):
     chooser("Safe river grade: Off=0, Steep-safe=3, Normal=6, Flexible=9",
             grade,(0,3,6,9))
     ttk.Checkbutton(main,text="Prefer inland spawn climate",variable=inland).pack(anchor="w",pady=(7,0))
+    ttk.Checkbutton(main,text="Experimental: enlarge Nether and End for NEW worlds",variable=fantasy).pack(anchor="w",pady=(7,0))
     def change_profile(*_):
         relief.set(PROFILES[profile.get()][0])
         elevation.set(PROFILES[profile.get()][1])
@@ -518,7 +533,7 @@ def gui(root, launch):
         try:
             name,_,_=apply(root,preset.get(),round(relief.get(),2),elevation.get(),caves.get(),grade.get(),inland.get(),blend_percent=blend.get(),ridge=ridge.get(),erosion=erosion.get(),strata=strata.get(),climate=climate.get(),valley=valley.get(),latitude=latitude.get(),
                     latitude_strength=latitude_strength.get(),equator_z=equator_z.get(),basin=basin.get(),
-                    center_x=center_x.get(),cold_limit=cold_limit.get())
+                    center_x=center_x.get(),cold_limit=cold_limit.get(),fantasy_dimensions=fantasy.get())
         except Exception as ex:
             messagebox.showerror("Terrain Lab",str(ex))
             return
@@ -564,6 +579,7 @@ def main(argv=None):
     parser.add_argument("--caves",type=int,default=None)
     parser.add_argument("--river-grade",type=int,choices=(0,3,6,9),default=None)
     parser.add_argument("--coastal-spawn",action="store_true",help="Do not prefer inland world spawn")
+    parser.add_argument("--fantasy-dimensions",action="store_true",help="Experimental 256-block Nether and multi-tier End (new Lab worlds only)")
     parser.add_argument("--dry-run",action="store_true")
     parser.add_argument("--launch",action="store_true",help="Launch runClient after generating a preset")
     parser.add_argument("--root",type=Path,default=None,help=argparse.SUPPRESS)
@@ -596,7 +612,8 @@ def main(argv=None):
             raw.get("ridgePercent",0),raw.get("erosionPercent",0),raw.get("strataPercent",0),
             raw.get("climatePercent",0),raw.get("valleyPercent",0),
             raw.get("latitudeMode","off"),raw.get("latitudeStrength",70),raw.get("equatorZ",0),
-            raw.get("basinPercent",0),raw.get("radialCenterX",0),raw.get("coldLimitPercent",60))
+            raw.get("basinPercent",0),raw.get("radialCenterX",0),raw.get("coldLimitPercent",60),
+            raw.get("fantasyDimensions",False))
         print("YACL draft compiled to new world preset: realscale:"+name)
         print("Worldgen resource files:",len(files))
         return 0
@@ -611,7 +628,7 @@ def main(argv=None):
         name,opts,files=apply(root,args.preset,relief,elevation,caves,grade,
                               not args.coastal_spawn,args.dry_run,args.blend,args.ridge,args.erosion,args.strata,args.biome_cooling,args.valley_warming,
                               args.latitude_mode,args.latitude_strength,args.equator_z,args.basin_warming,
-                              args.radial_center_x,args.cold_limit)
+                              args.radial_center_x,args.cold_limit,args.fantasy_dimensions)
         print("Prepared world type: realscale:"+name)
         print("Settings:",json.dumps(opts,sort_keys=True))
         print("World preset files:",len(files))
