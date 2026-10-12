@@ -50,6 +50,21 @@ final class GeoMath {
         double phase=(radius/poleDistance)%2.0;
         return 90.0*(phase<=1.0?phase:2.0-phase);
     }
+    static double balancedRadialLatitudeDeg(int x,int z,int cx,int cz,int poleDistance){
+        double radius=Math.hypot((double)x-cx,(double)z-cz);
+        double phase=(radius/poleDistance)%2.0;
+        double outward=phase<=1.0?phase:2.0-phase;
+        return 90.0*Math.pow(outward,1.15);
+    }
+    static double balancedRadialTemperature(double original,double latitude,double strength,
+                                            double altitudeCooling,int y){
+        double baseline=latitudeTemperature(original,latitude,strength);
+        double lowLatitude=1.0-smoothstep(20.0,65.0,latitude);
+        double altitude=smoothstep(96.0,320.0,y);
+        // Refund a bounded fraction of the pre-applied altitude cooling only
+        // in warm latitudes. Real isolated summits can still become cold.
+        return baseline+altitudeCooling*altitude*0.75*lowLatitude;
+    }
     static double climateBudget(double original,double adjusted,double maxCooling,double maxWarming){
         double d=adjusted-original;
         return original+clamp(d,-maxCooling,maxWarming);
