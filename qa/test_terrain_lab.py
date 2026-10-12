@@ -100,11 +100,14 @@ class TerrainLabTests(unittest.TestCase):
         draft.write_text(json.dumps({
             "preset":"realism_max","reliefPercent":112,
             "elevation":12,"caves":55,"riverGrade":3,"inland":True}))
+        folder=self.root/lab.GEO_ROOT/"noise_settings"
+        baseline=set(folder.glob("lab_realism_max_*.json"))
         self.assertEqual(lab.main(["--root",str(self.root),"--from-yacl",str(draft)]),0)
-        settings=list((self.root/lab.GEO_ROOT/"noise_settings").glob("lab_realism_max_*.json"))
-        self.assertEqual(len(settings),1)
-        self.assertIn("_g3",settings[0].name)
-        self.assertEqual(json.loads(settings[0].read_text())["sea_level"],63)
+        new_files=set(folder.glob("lab_realism_max_*.json"))-baseline
+        self.assertEqual(len(new_files),1)
+        saved=new_files.pop()
+        self.assertIn("_g3",saved.name)
+        self.assertEqual(json.loads(saved.read_text())["sea_level"],63)
         self.assertIn("generator.realscale.lab_realism_max_",(
             self.root/lab.LABEL_ROOT/"en_us.json").read_text())
 
@@ -113,9 +116,11 @@ class TerrainLabTests(unittest.TestCase):
         draft.write_text(json.dumps({
             "preset":"usgs_big_sur","reliefPercent":112,
             "elevation":12,"caves":55,"riverGrade":9,"inland":True}))
+        folder=self.root/lab.GEO_ROOT/"noise_settings"
+        baseline=set(folder.glob("lab_*.json"))
         with self.assertRaises(ValueError):
             lab.main(["--root",str(self.root),"--from-yacl",str(draft)])
-        self.assertFalse(list((self.root/lab.GEO_ROOT/"noise_settings").glob("lab_*.json")))
+        self.assertEqual(set(folder.glob("lab_*.json")),baseline)
 
     def test_yacl_integration_does_not_require_client_mod_on_server(self):
         main=ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java"
