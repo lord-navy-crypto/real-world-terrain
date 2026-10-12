@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise structure NBT evidence classification without pretending it is live worldgen."""
 import importlib.util
+import rcon_worldgen_smoke as worldgen
 import json
 import sys
 import tempfile
@@ -24,6 +25,14 @@ def chunk(with_start):
             "structures":{"starts":starts,"References":{}}}
 
 class StructureAnvilAuditorTests(unittest.TestCase):
+    def test_high_altitude_structure_probe_preserves_other_targets(self):
+        self.assertEqual(worldgen.structure_targets("realscale:realism_max"),(
+            "minecraft:trial_chambers","minecraft:ruined_portal"))
+        self.assertIn("minecraft:village_taiga",
+                      worldgen.structure_targets("realscale:himalayan"))
+        self.assertIn("minecraft:village_taiga",
+                      worldgen.structure_targets("minecraft:overworld"))
+
     def fixture(self,root):
         p=root/"run/world/region"
         p.mkdir(parents=True)
