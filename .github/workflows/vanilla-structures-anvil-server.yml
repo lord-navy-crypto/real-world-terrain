@@ -4,6 +4,7 @@ on:
     paths:
       - 'neoforge/**'
       - 'qa/neoforge/audit_vanilla_structures.py'
+      - 'qa/test_structure_anvil_audit.py'
       - 'qa/neoforge/rcon_worldgen_smoke.py'
       - '.github/workflows/vanilla-structures-anvil-server.yml'
   workflow_dispatch:
@@ -28,6 +29,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
+      - name: Validate positive and inconclusive structure-NBT auditor fixtures
+        run: python3 -m unittest discover -s qa -p 'test_structure_anvil_audit.py' -v
       - name: Configure disposable NeoForge world
         working-directory: neoforge
         run: |
