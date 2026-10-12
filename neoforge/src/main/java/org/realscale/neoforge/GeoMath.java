@@ -25,6 +25,42 @@ final class GeoMath {
         double lowerLand=1.0-smoothstep(112,256,y);
         return base+strength*valley*inland*lowerLand;
     }
+
+    /**
+     * Continuous polar triangle wave from signed world Z, in degrees.
+     * Equator (phase 0), north pole (1), equator (2), south pole (3),
+     * equator (4), then repeats; works both for north (-Z) and south (+Z).
+     * Uses doubles before modulo to avoid integer overflow at large coords.
+     */
+    static double latitudeDeg(int z,int equatorZ,int poleDistance){
+        double phase=((double)equatorZ-(double)z)/poleDistance;
+        phase=phase%4.0;
+        if(phase<0)phase+=4;
+        if(phase<=1.0)return 90*phase;
+        if(phase<=3.0)return 90*(2-phase);
+        return 90*(phase-4);
+    }
+    static double latitudeTemperature(double original,double latDeg,double strength){
+        // Equator modestly warmer; poles markedly colder, with a smooth
+        // derivative at both the equator and poles.
+        double polar=Math.sin(Math.toRadians(Math.abs(latDeg)));
+        double adjustment=.22-.90*Math.pow(Math.max(0,polar),1.35);
+        return original+strength*adjustment;
+    }
+    static double basinTemperature(double original,double center,double[] neighbors,
+                                   double continent,int y,double strength){
+        if(neighbors.length==0 || strength==0)return original;
+        double nearestRim=Double.POSITIVE_INFINITY;
+        for(double neighbor:neighbors)nearestRim=Math.min(nearestRim,neighbor-center);
+        // All sampled surrounding directions must stand above the basin:
+        // this rejects open valleys and isolated low ridgeline shoulders.
+        double enclosure=smoothstep(.04,.28,nearestRim);
+        double inland=smoothstep(-.03,.25,continent);
+        // Excludes deep underground biome placement, without assuming that
+        // RealScale surface valleys are below Y=256 (many are above Y=500).
+        double nearSurface=smoothstep(48,80,y);
+        return original+strength*enclosure*inland*nearSurface;
+    }
     static double strata(double base,double warp,int y,double strength,int period){
         double warpOffset=clamp(warp,-1,1)*(period/6.0);
         return base+Math.sin(2.0*Math.PI*(y+warpOffset)/period)*strength;

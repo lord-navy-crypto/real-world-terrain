@@ -39,6 +39,43 @@ public class GeomorphologyMathTest {
         double off=GeoMath.valleyTemperature(baseline,-.2,.4,.8,90,0);
         assertEquals(baseline,off,1e-10);
     }
+
+    @Test
+    public void latitudeCyclesThroughBothHemispheresAtEarthScale(){
+        int q=10_001_966;
+        assertEquals(0,GeoMath.latitudeDeg(0,0,q),1e-9);
+        assertEquals(90,GeoMath.latitudeDeg(-q,0,q),1e-9);
+        assertEquals(0,GeoMath.latitudeDeg(-2*q,0,q),1e-9);
+        assertEquals(-90,GeoMath.latitudeDeg(-3*q,0,q),1e-9);
+        assertEquals(0,GeoMath.latitudeDeg(-4*q,0,q),1e-9);
+        assertEquals(-90,GeoMath.latitudeDeg(q,0,q),1e-9);
+        assertEquals(90,GeoMath.latitudeDeg(3*q,0,q),1e-9);
+        assertEquals(0,GeoMath.latitudeDeg(0,1000,1000),1e-9);
+        for(int offset=-3_000_000;offset<3_000_000;offset+=145_621){
+            double lat=GeoMath.latitudeDeg(offset,0,1000);
+            assertTrue(lat<=90 && lat>=-90);
+        }
+    }
+    @Test
+    public void latitudeTemperatureWarmsEquatorAndCoolsPole(){
+        double equator=GeoMath.latitudeTemperature(.0,0,.7);
+        double pole=GeoMath.latitudeTemperature(.0,90,.7);
+        assertTrue(equator>0);
+        assertTrue(pole<0);
+        assertEquals(0,GeoMath.latitudeTemperature(0,90,0),1e-9);
+        assertEquals(GeoMath.latitudeTemperature(0,35,.7),
+                     GeoMath.latitudeTemperature(0,-35,.7),1e-9);
+    }
+    @Test
+    public void basinWarmingRequiresClosedInlandRim(){
+        double[] allHigh={.6,.7,.5,.65,.7,.8,.7,.6};
+        double[] open={.6,.7,-.2,.65,.7,.8,.7,.6};
+        assertTrue(GeoMath.basinTemperature(.1,.1,allHigh,.6,590,.28)>.1);
+        assertEquals(.1,GeoMath.basinTemperature(.1,.1,open,.6,590,.28),1e-9);
+        assertEquals(.1,GeoMath.basinTemperature(.1,.1,allHigh,-.6,590,.28),1e-9);
+        assertEquals(.1,GeoMath.basinTemperature(.1,.1,allHigh,.6,-20,.28),1e-9);
+        assertEquals(.1,GeoMath.basinTemperature(.1,.1,allHigh,.6,590,0),1e-9);
+    }
     @Test
     public void strataHasNoBiasAtZeroStrengthAndBoundedAtPositiveStrength() {
         for (int y=-60;y<=960;y+=11) {
