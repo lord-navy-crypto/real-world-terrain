@@ -23,9 +23,9 @@ PASSWORD="realscale_ci_probe_only"
 HEADER=struct.Struct("<iii")
 
 class Rcon:
-    def __init__(self, host="127.0.0.1", port=PORT, password=PASSWORD):
+    def __init__(self, host="127.0.0.1", port=PORT, password=PASSWORD, timeout=25):
         self.sock=socket.create_connection((host,port),timeout=12)
-        self.sock.settimeout(25)
+        self.sock.settimeout(timeout)
         self.sequence=12400
         self._command(3,password,authenticate=True)
 
@@ -67,8 +67,12 @@ class Rcon:
         raise RuntimeError("Missing RCON response to "+body[:64])
 
     def send(self,command):
-        reply=self._command(2,command)
-        print("RCON:",command,"=>",reply[:260],flush=True)
+        start=time.monotonic()
+        try:
+            reply=self._command(2,command)
+        except TimeoutError as exc:
+            raise TimeoutError(f"RCON timed out after {time.monotonic()-start:.1f}s while executing {command}") from exc
+        print("RCON:",command,"=>",reply[:260],f"elapsed={time.monotonic()-start:.1f}s",flush=True)
         if any(t in reply.lower() for t in ("unknown command","incorrect argument","no chunks were marked","commands.generic.exception","not a valid")):
             raise RuntimeError("RCON command rejected: "+command+": "+reply)
         return reply
@@ -102,7 +106,7 @@ def main(root,expected_preset,profile):
         rcon=None
         for attempt in range(12):
             try:
-                rcon=Rcon()
+                rcon=Rcon(timeout=180 if profile in ("usgs","distant","structures") else 75)
                 break
             except (ConnectionError,OSError,TimeoutError):
                 time.sleep(1)
