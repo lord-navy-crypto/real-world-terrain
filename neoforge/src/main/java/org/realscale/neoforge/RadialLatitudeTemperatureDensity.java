@@ -44,6 +44,6 @@ public record RadialLatitudeTemperatureDensity(DensityFunction base,int centerX,
             centerX,centerZ,poleDistance,strength,balanced,altitudeCooling));
     }
     @Override public double minValue(){return base.minValue()-.68*strength;}
-    @Override public double maxValue(){return base.maxValue()+.22*strength+altitudeCooling*.75;}
+    @Override public double maxValue(){return base.maxValue()+.35*strength+altitudeCooling*.75;}
     @Override public KeyDispatchDataCodec<? extends DensityFunction> codec(){return DISPATCH;}
 }
