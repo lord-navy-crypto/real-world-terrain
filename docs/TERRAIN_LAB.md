@@ -477,3 +477,80 @@ requires inspecting several actually generated worlds at different seeds
 and measuring warm/cold biome distribution along north–south travel.
 One-block-per-metre real-scale travel to a pole would require about
 10 million blocks, well outside typical render-distance QA.
+
+## v2.0 experimental — user's concentric radial latitude and bounded climate budget
+
+**Two newly available concentric modes**: `radial_earth` and
+`radial_preview`, alongside the historical north–south
+`earth`/`preview` and `off`. A radius
+`r = hypot(x - centerX, z - centerZ)` determines repeating unsigned latitude:
+equator (`r=0`), circular north/south-neutral polar ring (`r=D`),
+equator (`r=2D`), pole (`r=3D`), equator (`r=4D`), etc. The triangle wave
+has no discontinuous jump at a pole. This is **not conventional spherical
+Earth geography**: its "poles" are circles; there is no true meridian
+longitude or signed hemisphere in the concentric model.
+
+- `radial_earth` sets `D = 10_001_966` Minecraft blocks (approximately
+  10,001.966 km at 1 block/meter).
+- `radial_preview` sets `D = 16_384` blocks to inspect several belts
+  without traveling millions of blocks.
+- `--radial-center-x` and `--equator-z` set the center. (The latter
+  field is also used by the old meridional Earth mode.)
+- The initial center defaults to **world (0,0)**. The actual spawn is
+  selected by the engine after generation begins and cannot be guaranteed
+  to coincide with this fixed coordinate. We do not claim spawn anchoring.
+- The radial codec is `realscale:radial_latitude_temperature`, with
+  an explicit `center_x`, `center_z`, `pole_distance`, `strength`
+  and `base`, registered in `RealScaleMod`.
+
+**Protection against excessive ice/snow biome coverage:** The optional
+`realscale:climate_budget` DensityFunction caps the **combined**
+altitude/lattitude/valley/basin climate adjustments relative to the world's
+ORIGINAL temperature field. The radial-only YACL slider
+**Radial Cold Climate Limit** is 0..100 with default **60**:
+`0` disables the cap, otherwise `max_cooling = coldLimitPercent/100`
+noise units, with an upper warming limit of `+0.45` noise units.
+Its default -0.60 cap stops the default max -0.585 altitude modifier
+and polar modifier -0.476 from accumulating to -1.061 climate units.
+Neither these numbers nor the +0.45 cap are degrees Celsius;
+these are Minecraft biome-placement parameters, not actual air temperature.
+
+The clamp limits **magnitudes, not biome area fractions**. There is no
+claim of conserving physical energy, a 50/50 cold-hot split or universally
+preserving all tropical biomes. Terrain elevation distribution and humidity
+still matter; the saved-world Anvil audits must be used to tune the
+parameters on representative seeds, across polar rings and warm belts.
+
+Example:
+```bash
+python3 scripts/terrain_lab.py --preset landscape \
+  --latitude-mode radial_preview --latitude-strength 70 \
+  --radial-center-x 0 --equator-z 0 --cold-limit 60 \
+  --biome-cooling 65 --valley-warming 25 --basin-warming 20 \
+  --ridge 10 --erosion 8 --strata 4
+```
+
+All five latitude modes are an **option on new hashed Lab profiles**.
+Legacy eight original worldgen IDs, measured Big Sur DEM, previously
+generated meridional profiles and all existing saves stay unchanged. The
+`climate_budget` density codec is only introduced when an active radial
+mode is selected with a nonzero cold limit. The CI real-world job tests
+the radial preview, cap and combined mountain/valley/basin options.
+
+### Scientific interpretation
+
+NOAA's global mean atmospheric environmental lapse rate is approximately
+6.5 °C per km. However, the world's biome-temperature density noise is
+**not** measured in °C, and Minecraft's height-gradient strength must be
+calibrated empirically rather than using a 1:1 °C conversion. Mountain
+valleys can be warmer than surrounding peaks; inversions and cold-air
+pooling can make basin floors colder on some nights. Therefore, neither
+uniform heating of all low-altitude blocks nor universal positive basin
+warming would be a faithful physical law. The present optional valley
+and basin proxies are bounded simplifications.
+
+NOAA atmospheric rates:
+https://www.noaa.gov/jetstream/appendix/weather-glossary-l
+
+NOAA basin inversion and persistent cold-air pools:
+https://repository.library.noaa.gov/view/noaa/25478
