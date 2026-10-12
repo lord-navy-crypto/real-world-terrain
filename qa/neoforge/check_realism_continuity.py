@@ -25,7 +25,8 @@ def radial_profile_from_noise(settings_path):
     def find(o):
         if isinstance(o,dict):
             if o.get("type")=="realscale:radial_latitude_temperature":
-                return {k:o[k] for k in ("center_x","center_z","pole_distance","strength")}
+                return {**{k:o[k] for k in ("center_x","center_z","pole_distance","strength")},
+                        "balanced":o.get("balanced",False)}
             for sub in o.values():
                 found=find(sub)
                 if found is not None:return found
@@ -48,12 +49,18 @@ def radial_biome_audit(heights,surface_biomes,radial):
     distance=radial["pole_distance"]
     bands={"equatorial_0_30":[],"middle_30_60":[],"polar_60_90":[]}
     radii=[]
+    tropical_high=[]
+    tropical_all=[]
     for (x,z),y in heights.items():
         b=surface_biomes.get((x,z))
         if not isinstance(b,str):continue
         r=math.hypot(x-cx,z-cz)
         t=(r/distance)%2.0
-        lat=90.0*(t if t<=1 else 2-t)
+        fraction=t if t<=1 else 2-t
+        lat=90.0*(fraction**1.15 if radial.get("balanced",False) else fraction)
+        if lat<23.5:
+            tropical_all.append(b)
+            if y>=240:tropical_high.append(b)
         if lat<30:label="equatorial_0_30"
         elif lat<60:label="middle_30_60"
         else:label="polar_60_90"
@@ -70,6 +77,21 @@ def radial_biome_audit(heights,surface_biomes,radial):
             "sample_fraction":round(len(biomes)/n,6) if n else None,
             "cold_biome_fraction":round(cold/len(biomes),6) if biomes else None,
             "warm_biome_fraction":round(warm/len(biomes),6) if biomes else None}
+    def cold_fraction(items):
+        return round(sum(any(s in b for s in ("snowy","frozen","ice_spikes","grove"))
+                         for b in items)/len(items),6) if items else None
+    tropical_cold=cold_fraction(tropical_all)
+    plateau_cold=cold_fraction(tropical_high)
+    result["equatorial_plateau_check"]={
+        "tropical_columns":len(tropical_all),
+        "high_plateau_columns_y240_plus":len(tropical_high),
+        "tropical_cold_fraction":tropical_cold,
+        "high_plateau_cold_fraction":plateau_cold,
+        "warning":("High tropical snow-biome share in observed plateau columns"
+                   if len(tropical_high)>=64 and plateau_cold>0.25 else None),
+        "note":"Y>=240 is a diagnostic height band, not proof of a plateau. Sampled chunks only."
+    }
+    result["mode"]="radial_balanced" if radial.get("balanced",False) else "radial_legacy"
     result["range_blocks"]=[round(min(radii)),round(max(radii))] if radii else None
     result["pole_distance_blocks"]=distance
     result["center_world_xz"]=[cx,cz]
