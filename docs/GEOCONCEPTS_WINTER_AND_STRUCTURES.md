@@ -95,3 +95,34 @@ before any promotion to default presets.
 Reference:
 https://docs.neoforged.net/docs/1.21.1/worldgen/biomemodifier/
 https://mcasset.cloud/1.21.1/data/minecraft/worldgen/structure_set/
+
+## 2026-10-12: ACTUAL saved-world structure proof and repaired audit
+
+An earlier GitHub Actions test falsely reported zero natural structure starts
+in both Realism MAX and Himalayan. The archived REAL Anvil artifacts were
+subsequently downloaded and decoded at block/chunk-NBT level (not a simulation).
+
+- GitHub test run: https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/38246190613
+- Seed: 785312, without 2x/3x structure pack.
+- **Realism MAX**: 3,724 saved chunks; 14 naturally persisted start entries:
+  five `minecraft:full` chunks, the remainder in earlier chunk-generation
+  stages. Found ruined portals, a taiga village, a trial chamber, ancient
+  cities and mineshafts.
+- **Himalayan**: 3,724 saved chunks; 18 naturally persisted start entries:
+  five `minecraft:full` chunks, the remainder in earlier generation stages.
+  In addition to those categories, a trail ruin start was present.
+- Minecraft 1.21.1 NBT persisted `structures.starts.*.Children[].BB` with
+  NO root `structures.starts.*.BB` in these real examples. The old audit
+  required a root BB for each start; this was the exact false-negative bug.
+- The repaired audit derives bounding boxes from valid child components,
+  reports `natural_structure_starts` separately from
+  `fully_generated_structure_starts`, and avoids floor-support tests on
+  partial proto-chunks. New unit fixtures enforce this behavior.
+- This PROVES vanilla structures are not wholly disabled by the mod. It does
+  NOT prove every structure has proper foundations, that the 2x/3x packs
+  produce exactly two/three times as many built structures, or that every
+  structure is correctly accessible on high terrain.
+
+The experimental 2x/3x Overworld packs also explicitly exclude the shared
+`minecraft:ruined_portals` set; otherwise Overworld density changes would
+have altered Nether ruined-portal placement unexpectedly.
