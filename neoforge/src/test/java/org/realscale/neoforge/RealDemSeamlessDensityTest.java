@@ -80,4 +80,26 @@ public final class RealDemSeamlessDensityTest {
                 assertTrue(w>=0 && w<=1);
             }
     }
+    @Test void boundedThreadLocalDEMCacheIsBitExactAcrossEdgesAndNegativeCoords() {
+        for(int z=-2400;z<=2400;z+=137)
+            for(int x=-2400;x<=2400;x+=109) {
+                double a=RealDemSeamlessMath.extendedHeight(x,z);
+                double b=RealDemSeamlessMath.cachedExtendedHeight(x,z);
+                double c=RealDemSeamlessMath.cachedExtendedHeight(x,z);
+                assertEquals(a,b,0.0,"Cache changed source height at "+x+","+z);
+                assertEquals(b,c,0.0,"Repeated X/Z queries must be stable");
+            }
+        java.util.stream.IntStream.range(0,8).parallel().forEach(thread -> {
+            int x=thread*257-512;
+            int z=thread*313-2048;
+            for(int j=0;j<1000;j++) {
+                int px=x+j%31;
+                int pz=z+j%23;
+                assertEquals(RealDemSeamlessMath.extendedHeight(px,pz),
+                             RealDemSeamlessMath.cachedExtendedHeight(px,pz),0.0,
+                             "Parallel worldgen must share no mutable DEM cache state");
+            }
+        });
+    }
+
 }
