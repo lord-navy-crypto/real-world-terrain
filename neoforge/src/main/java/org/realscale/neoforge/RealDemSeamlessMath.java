@@ -122,6 +122,7 @@ final class RealDemSeamlessMath {
         double cx=limit(x,DEM.originX(),DEM.maxX());
         double cz=limit(z,DEM.originZ(),DEM.maxZ());
         double center=measuredHeight(cx,cz);
+        double originalCenter=center;
         double dx=x-cx,dz=z-cz;
         if(dx!=0.0) {
             double neighbor=measuredHeight(cx+(dx<0?CELL:-CELL),cz);
@@ -130,7 +131,8 @@ final class RealDemSeamlessMath {
         }
         if(dz!=0.0) {
             double neighbor=measuredHeight(cx,cz+(dz<0?CELL:-CELL));
-            double slope=(neighbor-center)/(dz<0?CELL:-CELL);
+            // Keep Z gradient independent of the X-axis extrapolation.
+            double slope=(neighbor-originalCenter)/(dz<0?CELL:-CELL);
             center+=limit(slope,-1.25,1.25)*taperedOutsideDisplacement(dz);
         }
         return limit(center,-64.0,2031.0);
