@@ -111,4 +111,31 @@ public final class RealDemSeamlessDensityTest {
         });
     }
 
+    @Test void wideExteriorTransitionCannotCreateWorldFloorWallFromDemHighlands() {
+        // The pilot tile is >1km above procedural land. Blending it
+        // to a lowland profile in 96/768m made pathological walls.
+        // Evaluate each axis independently with an intentionally low
+        // hypothetical baseline and ensure gentle outward gradients.
+        for(double baselineY : new double[]{-32,63,400}) {
+            for(int axis=0;axis<2;axis++)
+                for(int direction : new int[]{-1,1}) {
+                    double previous=Double.NaN;
+                    for(int d=0;d<=2080;d++) {
+                        double x=axis==0 ? direction*(240+d) : 0;
+                        double z=axis==1 ? direction*(240+d) : 0;
+                        double weight=RealDemSeamlessMath.weightOutside(x,z,2048);
+                        double blended=weight*RealDemSeamlessMath.extendedHeight(x,z)
+                                        +(1-weight)*baselineY;
+                        if(!Double.isNaN(previous)) {
+                            assertTrue(Math.abs(blended-previous)<5.0,
+                                       "Steep constructed DEM exterior wall at "
+                                       +x+","+z+" delta="+(blended-previous));
+                        }
+                        previous=blended;
+                    }
+                    assertEquals(baselineY,previous,1.0e-6);
+                }
+        }
+    }
+
 }
