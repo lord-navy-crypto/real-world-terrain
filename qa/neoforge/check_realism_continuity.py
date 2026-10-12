@@ -3,9 +3,79 @@
 This is observational; no claim that natural cliffs never exceed a threshold.
 """
 from pathlib import Path
-import json,sys,statistics
+import json,sys,statistics,math
 from realscale_headless_qa import iter_region_chunks,surface_height,get_block,unpack_palette_index,read_nbt
 import gzip
+
+def radial_profile_from_noise(settings_path):
+    """Discover the currently selected concentric latitude only.
+
+    This inspects the *new world's* actual registered noise settings and
+    follows the generated density function reference, not default menu state.
+    """
+    setting=json.loads(settings_path.read_text(encoding="utf-8"))
+    temperature=setting.get("noise_router",{}).get("temperature")
+    if not isinstance(temperature,str) or not temperature.startswith("realscale:"):
+        return None
+    resource=temperature.split(":",1)[1]
+    density_file=settings_path.parent.parent/"density_function"/(resource+".json")
+    if not density_file.is_file():
+        return None
+    node=json.loads(density_file.read_text(encoding="utf-8"))
+    def find(o):
+        if isinstance(o,dict):
+            if o.get("type")=="realscale:radial_latitude_temperature":
+                return {k:o[k] for k in ("center_x","center_z","pole_distance","strength")}
+            for sub in o.values():
+                found=find(sub)
+                if found is not None:return found
+        elif isinstance(o,list):
+            for sub in o:
+                found=find(sub)
+                if found is not None:return found
+        return None
+    return find(node)
+
+
+def radial_biome_audit(heights,surface_biomes,radial):
+    """Observed area and biome fractions in concentric belts only.
+
+    Never infer a global biome ratio from a few generated spawn chunks.
+    """
+    if not radial:return {"mode":"not_radial"}
+    cx=radial["center_x"]
+    cz=radial["center_z"]
+    distance=radial["pole_distance"]
+    bands={"equatorial_0_30":[],"middle_30_60":[],"polar_60_90":[]}
+    radii=[]
+    for (x,z),y in heights.items():
+        b=surface_biomes.get((x,z))
+        if not isinstance(b,str):continue
+        r=math.hypot(x-cx,z-cz)
+        t=(r/distance)%2.0
+        lat=90.0*(t if t<=1 else 2-t)
+        if lat<30:label="equatorial_0_30"
+        elif lat<60:label="middle_30_60"
+        else:label="polar_60_90"
+        bands[label].append(b)
+        radii.append(r)
+    result={}
+    n=sum(len(v) for v in bands.values())
+    for name,biomes in bands.items():
+        cold=sum("snowy" in b or "frozen" in b or "ice_spikes" in b or "grove" in b
+                 for b in biomes)
+        warm=sum("jungle" in b or "savanna" in b or "desert" in b or "badlands" in b
+                 for b in biomes)
+        result[name]={"sample_columns":len(biomes),
+            "sample_fraction":round(len(biomes)/n,6) if n else None,
+            "cold_biome_fraction":round(cold/len(biomes),6) if biomes else None,
+            "warm_biome_fraction":round(warm/len(biomes),6) if biomes else None}
+    result["range_blocks"]=[round(min(radii)),round(max(radii))] if radii else None
+    result["pole_distance_blocks"]=distance
+    result["center_world_xz"]=[cx,cz]
+    result["note"]="Observed region chunks only. No global or thermodynamic cold/warm balance claim."
+    return result
+
 
 def altitude_biome_audit(heights, surface_biomes):
     """Observed saved-block biome distribution by actual surface elevation.
@@ -463,6 +533,7 @@ def scan(root,preset="realism_max"):
       "configured_sea_level":json.loads(settings_path.read_text())["sea_level"],
       "surface_biome_counts":surface_biome_counts,
       "altitude_biome_audit":altitude_biome_audit(H,surface_biomes),
+      "radial_biome_audit":radial_biome_audit(H,surface_biomes,radial_profile_from_noise(settings_path)),
       "river_biome_columns":river_biome_columns,
       "river_surface_block_counts":river_surface_block_counts,
       "river_dry_surface_block_counts":river_dry_surface_block_counts,
