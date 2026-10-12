@@ -101,12 +101,12 @@ public record RealDemSeamlessDensity(DensityFunction base, int blendMeters)
         double dx=x-cx,dz=z-cz;
         if(dx!=0.0) {
             double neighbor=measuredHeight(cx+(dx<0?CELL:-CELL),cz);
-            double slope=(center-neighbor)/(dx<0?CELL:-CELL);
+            double slope=(neighbor-center)/(dx<0?CELL:-CELL);
             center+=limit(slope,-1.25,1.25)*limit(dx,-128,128);
         }
         if(dz!=0.0) {
             double neighbor=measuredHeight(cx,cz+(dz<0?CELL:-CELL));
-            double slope=(center-neighbor)/(dz<0?CELL:-CELL);
+            double slope=(neighbor-center)/(dz<0?CELL:-CELL);
             center+=limit(slope,-1.25,1.25)*limit(dz,-128,128);
         }
         return limit(center,-64.0,2031.0);
