@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+"""RealScale Terrain Lab profiles must create new worldgen IDs, never edit old IDs."""
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import shutil
+import tempfile
+import unittest
+
+ROOT=Path(__file__).resolve().parents[1]
+SCRIPT=ROOT/"scripts/terrain_lab.py"
+spec=importlib.util.spec_from_file_location("terrain_lab",SCRIPT)
+lab=importlib.util.module_from_spec(spec)
+spec.loader.exec_module(lab)
+
+class TerrainLabTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name)
+        src=ROOT/"neoforge/src/main/resources"
+        for folder in ("data/realscale/worldgen","data/minecraft/tags/worldgen/world_preset","assets/minecraft/lang"):
+            shutil.copytree(src/folder,self.root/folder)
+        self.originals={
+            name:hashlib.sha256((self.root/name).read_bytes()).hexdigest()
+            for name in (
+                "data/realscale/worldgen/noise_settings/realism_max.json",
+                "data/realscale/worldgen/density_function/realism_max/terrain_density.json",
+                "data/realscale/worldgen/world_preset/realism_max.json",
+                "data/realscale/worldgen/noise_settings/usgs_big_sur.json"
+            )
+        }
+
+    def test_all_seven_procedural_profiles_build_independently(self):
+        for preset in lab.EDITABLE:
+            with self.subTest(mode=preset):
+                name,_,paths=lab.apply(self.root,preset,1.12,16,60,9)
+                settings=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
+                prefix="realscale:terrain_lab/"+name
+                self.assertEqual(settings["sea_level"],63)
+                self.assertTrue(settings["aquifers_enabled"])
+                self.assertEqual(settings["noise_router"]["depth"],prefix+"/terrain_density")
+                self.assertEqual(settings["noise_router"]["initial_density_without_jaggedness"],prefix+"/preliminary_density")
+                final=settings["noise_router"]["final_density"]
+                self.assertEqual(final["input"],prefix+"/terrain_density")
+                self.assertEqual(final["when_in_range"]["argument2"],prefix+"/cave_density")
+                height=lab.jread(self.root,lab.GEO_ROOT/"density_function/terrain_lab"/name/"height_signal.json")
+                self.assertEqual(height["argument1"]["argument2"],"realscale:"+preset+"/height_signal")
+                self.assertEqual(height["argument2"],16/128)
+                caves=lab.jread(self.root,lab.GEO_ROOT/"density_function/terrain_lab"/name/"cave_density.json")
+                self.assertEqual(caves["argument2"],-0.04)
+                self.assertIn(prefix+"/terrain_density",json.dumps(caves))
+                world=lab.jread(self.root,lab.GEO_ROOT/"world_preset"/(name+".json"))
+                self.assertEqual(world["dimensions"]["minecraft:overworld"]["generator"]["settings"],"realscale:"+name)
+                self.assertTrue(name.endswith("_g9"))
+                self.assertTrue((self.root/"assets/minecraft/lang/zh_cn.json").exists())
+                self.assertEqual(len(paths),10)
+
+    def test_new_profile_cannot_change_historical_modes(self):
+        lab.apply(self.root,"realism_max",1.2,30,70,6)
+        for name,digest in self.originals.items():
+            self.assertEqual(hashlib.sha256((self.root/name).read_bytes()).hexdigest(),digest)
+
+    def test_more_than_one_lab_mode_without_overwriting(self):
+        a,*_=lab.apply(self.root,"realism_max",1.0,0,50,6)
+        b,*_=lab.apply(self.root,"realism_max",1.1,0,50,6)
+        self.assertNotEqual(a,b)
+        normal=lab.jread(self.root,lab.TAG_ROOT/"normal.json")
+        expected=["realscale:"+x for x in lab.NORMAL]
+        self.assertEqual(normal["values"][:5],expected)
+        self.assertIn("realscale:"+a,normal["values"])
+        self.assertIn("realscale:"+b,normal["values"])
+        self.assertEqual(len(normal["values"]),len(set(normal["values"])))
+
+    def test_same_profile_is_idempotent(self):
+        name,*_=lab.apply(self.root,"grand_canyon",0.9,-12,35,3)
+        path=self.root/lab.GEO_ROOT/"noise_settings"/(name+".json")
+        old=path.read_bytes()
+        name2,*_=lab.apply(self.root,"grand_canyon",0.9,-12,35,3)
+        self.assertEqual(name,name2)
+        self.assertEqual(path.read_bytes(),old)
+
+    def test_optional_river_off_is_immutable_world_id(self):
+        name,_,_=lab.apply(self.root,"himalayan",1.0,0,50,0)
+        self.assertTrue(name.endswith("_g0"))
+
+    def test_dem_pilot_rejects_modification(self):
+        with self.assertRaisesRegex(ValueError,"measured DEM"):
+            lab.apply(self.root,"usgs_big_sur",1.1,8,60,3)
+
+    def test_rejects_out_of_bound_values(self):
+        for vals in ((1.5,0,50,6),(1.0,90,50,6),(1.0,0,100,6),(1.0,0,50,5)):
+            with self.subTest(values=vals), self.assertRaises(ValueError):
+                lab.apply(self.root,"realism_max",*vals)
+
+    def test_dry_run_does_not_create_new_preset(self):
+        name,_,_=lab.apply(self.root,"realism_max",0.85,0,20,3,dry_run=True)
+        self.assertFalse((self.root/lab.GEO_ROOT/"noise_settings"/(name+".json")).exists())
+
+    def test_spawn_selector_has_explicit_inland_control(self):
+        name,_,_=lab.apply(self.root,"realism_max",1.0,0,50,6,inland=True)
+        result=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
+        self.assertTrue(all(s["continentalness"][0]==0.12 for s in result["spawn_target"]))
+        name2,_,_=lab.apply(self.root,"realism_max",1.0,0,50,6,inland=False)
+        result2=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name2+".json"))
+        self.assertEqual(result2["spawn_target"][0]["continentalness"][0],-0.11)
+
+if __name__=="__main__":unittest.main()
