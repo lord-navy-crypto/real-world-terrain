@@ -115,7 +115,9 @@ def main(root,expected_preset,profile):
                     "execute in minecraft:overworld run forceload add -16 224 16 256",
                     "execute in minecraft:overworld run forceload add -16 -256 16 -224",
                     "execute in minecraft:overworld run forceload add 384 -16 416 16",
-                    "execute in minecraft:overworld run forceload add -416 -16 -384 16"
+                    "execute in minecraft:overworld run forceload add -416 -16 -384 16",
+                    "execute in minecraft:overworld run forceload add 1016 0",
+                    "execute in minecraft:overworld run forceload add -1016 0"
                 ]
             elif profile=="distant":
                 commands=[
