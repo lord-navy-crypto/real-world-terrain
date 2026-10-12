@@ -387,6 +387,10 @@ def scan(root,preset="realism_max"):
     underground_missing_section_voxels=0
     cave_air_voxels=0
     cave_water_voxels=0
+    mountain_columns=0
+    mountain_voxels=0
+    mountain_air_voxels=0
+    mountain_water_voxels=0
     surface_fluid_water=0
     surface_fluid_lava=0
     surface_under_sea=0
@@ -417,6 +421,7 @@ def scan(root,preset="realism_max"):
                     if h is None:continue
                     x=cx*16+dx;z=cz*16+dz
                     H[(x,z)]=h
+                    if h>=384:mountain_columns+=1
                     surface_under_sea+=h<=62
                     upper_block=get_block(chunk,dx,h,dz)
                     surface_blocks[(x,z)]=upper_block
@@ -478,6 +483,10 @@ def scan(root,preset="realism_max"):
                                 continue
                             block=names[entry]
                         examined_rock_voxels+=1
+                        if h>=384:
+                            mountain_voxels+=1
+                            mountain_air_voxels+=block in ("minecraft:air","minecraft:cave_air")
+                            mountain_water_voxels+=block=="minecraft:water"
                         if block in ("minecraft:lava","minecraft:magma_block"):
                             lava_voxels.add((x,y,z))
                         if block in ("minecraft:air","minecraft:cave_air"):
@@ -584,6 +593,15 @@ def scan(root,preset="realism_max"):
       "four_grid_boundary_mean":round(statistics.mean(four_boundary),3) if four_boundary else None,
       "within_grid_mean":round(statistics.mean(inner),3) if inner else None,
       "subsurface_probes":probes,
+      "high_mountain_subsurface":{
+        "minimum_surface_y":384,
+        "measured_columns":mountain_columns,
+        "measured_subsurface_voxels":mountain_voxels,
+        "measured_air_voxels":mountain_air_voxels,
+        "measured_water_voxels":mountain_water_voxels,
+        "measured_air_fraction":round(mountain_air_voxels/mountain_voxels,6) if mountain_voxels else None,
+        "note":"Evidence from saved blocks only; low void fraction is a diagnostic, not automatically a cave-density bug."
+      },
       "air_water_cave_probe_count":voids,
       "subsurface_evaluated_voxels":examined_rock_voxels,
       "subsurface_missing_section_voxels":underground_missing_section_voxels,
