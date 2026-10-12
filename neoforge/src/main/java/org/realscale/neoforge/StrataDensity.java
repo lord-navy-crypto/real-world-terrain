@@ -21,19 +21,14 @@ public record StrataDensity(DensityFunction base,DensityFunction warp,
     ).apply(i,StrataDensity::new));
     private static final KeyDispatchDataCodec<StrataDensity> DISPATCH=KeyDispatchDataCodec.of(MAP_CODEC);
 
-    static double band(double base,double warp,int y,double strength,int period) {
-        double warpOffset=Math.max(-1,Math.min(1,warp))*(period/6.0);
-        double phase=2.0*Math.PI*(y+warpOffset)/period;
-        return base+Math.sin(phase)*strength;
-    }
     @Override public double compute(DensityFunction.FunctionContext ctx) {
-        return band(base.compute(ctx),warp.compute(ctx),ctx.blockY(),strength,period);
+        return GeoMath.strata(base.compute(ctx),warp.compute(ctx),ctx.blockY(),strength,period);
     }
     @Override public void fillArray(double[] samples,DensityFunction.ContextProvider contexts) {
         base.fillArray(samples,contexts);
         for(int i=0;i<samples.length;i++) {
             DensityFunction.FunctionContext ctx=contexts.forIndex(i);
-            samples[i]=band(samples[i],warp.compute(ctx),ctx.blockY(),strength,period);
+            samples[i]=GeoMath.strata(samples[i],warp.compute(ctx),ctx.blockY(),strength,period);
         }
     }
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {

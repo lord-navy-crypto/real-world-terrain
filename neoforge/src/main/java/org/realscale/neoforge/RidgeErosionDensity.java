@@ -28,23 +28,8 @@ public record RidgeErosionDensity(DensityFunction base, DensityFunction ridgeSig
     private static final KeyDispatchDataCodec<RidgeErosionDensity> DISPATCH =
         KeyDispatchDataCodec.of(MAP_CODEC);
 
-    private static double clamp(double value, double min, double max) {
-        return Math.max(min,Math.min(max,value));
-    }
-
-    // Deterministic pure math, continuous for continuous incoming noise.
-    static double morphology(double base,double ridge,double erosion,double ridgeGain,double erosionGain) {
-        double crest=1.0-clamp(Math.abs(ridge),0,1);
-        double erosivity=clamp((erosion+1.0)*0.5,0,1);
-        // Sharpen coherent crests, damp by high-erosion climate; soft erosion
-        // subtracts a limited amount of density from the receiving landscape.
-        double uplift=ridgeGain*crest*crest*(1.0-erosivity*0.5);
-        double incision=erosionGain*erosivity*erosivity;
-        return base+uplift-incision;
-    }
-
     @Override public double compute(DensityFunction.FunctionContext ctx) {
-        return morphology(base.compute(ctx),ridgeSignal.compute(ctx),
+        return GeoMath.ridgeErosion(base.compute(ctx),ridgeSignal.compute(ctx),
             erosionSignal.compute(ctx),ridgeGain,erosionGain);
     }
     @Override public void fillArray(double[] samples,DensityFunction.ContextProvider contexts) {
@@ -52,7 +37,7 @@ public record RidgeErosionDensity(DensityFunction base, DensityFunction ridgeSig
         // Respect Minecraft's context provider and seed-resolved visitors.
         for(int i=0;i<samples.length;i++) {
             DensityFunction.FunctionContext ctx=contexts.forIndex(i);
-            samples[i]=morphology(samples[i],ridgeSignal.compute(ctx),
+            samples[i]=GeoMath.ridgeErosion(samples[i],ridgeSignal.compute(ctx),
                 erosionSignal.compute(ctx),ridgeGain,erosionGain);
         }
     }
