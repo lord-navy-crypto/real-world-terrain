@@ -1,7 +1,7 @@
 name: RealScale experimental Nether and End expansion smoke QA
 on:
   pull_request:
-    paths: ['neoforge/**', 'scripts/terrain_lab.py', 'qa/test_terrain_lab.py', '.github/workflows/fantasy-dimensions-server.yml']
+    paths: ['neoforge/**', 'scripts/terrain_lab.py', 'qa/neoforge/**', 'qa/test_terrain_lab.py', 'qa/test_fantasy_dimension_wiring.py', '.github/workflows/fantasy-dimensions-server.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,6 +25,7 @@ jobs:
           test -n "$lab_id"
           echo "LAB_WORLD=$lab_id" >> "$GITHUB_ENV"
           python3 -m unittest discover -s qa -p 'test_terrain_lab.py' -v
+          python3 -m unittest discover -s qa -p 'test_fantasy_dimension_wiring.py' -v
       - name: Prepare clean dedicated server world
         working-directory: neoforge
         run: |
