@@ -16,7 +16,7 @@ def scan(root):
     resources=root/"src/main/resources/data/realscale/dem"
     src=next(resources.glob("*.rgt.gz"))
     source,bounds=read_dem(src)
-    regions=[p for p in root.glob("run/**/region/r.*.*.mca") if "DIM" not in str(p)]
+    regions=[p for p in root.glob("run/**/region/r.*.*.mca") if "DIM" not in str(p) and p.stat().st_size>=8192]
     assert regions,"No saved Overworld Anvil regions"
     columns={}
     n=0
@@ -29,18 +29,23 @@ def scan(root):
             for dz in range(16):
                 for dx in range(16):
                     x=cx*16+dx;z=cz*16+dz
-                    if not (-1024<=x<=1024 and -1024<=z<=1024):continue
+                    if not (-2400<=x<=2400 and -2400<=z<=2400):continue
                     h=surface_height(chunk,dx,dz,-64,2096)
                     if h is not None:columns[(x,z)]=h
     interior=[abs(y-source(x,z)) for (x,z),y in columns.items()
               if -60<=x<=60 and -60<=z<=60]
     coverage=[abs(y-source(x,z)) for (x,z),y in columns.items()
               if -239<=x<=239 and -239<=z<=239]
-    fallback_columns=[(x,z) for x,z in columns if (x<=-1008 or x>=1008) and abs(z)<=32]
+    fallback_columns=[(x,z) for x,z in columns if (x<=-2320 or x>=2320) and abs(z)<=32]
+    mid_transition_columns=[(x,z) for x,z in columns if 864<=abs(x)<=928 and abs(z)<=32]
+    near_edge_columns=[y for (x,z),y in columns.items()
+                       if abs(x)<=288 and abs(z)<=288 and (abs(x)>=224 or abs(z)>=224)]
+    near_edge_to_floor=sum(y<=-60 for y in near_edge_columns)
     seam_residuals=[]
     nonseam_residuals=[]
     borders=[]
     internal=[]
+    worst_adjacent=[]
     directional={side:[] for side in ('west','east','north','south')}
     samples_by_side={s:0 for s in ("west","east","north","south")}
     for (x,z),y in columns.items():
@@ -48,6 +53,8 @@ def scan(root):
             other=columns.get((nx,nz))
             if other is None:continue
             step=abs(other-y)
+            if abs(x)<=384 and abs(z)<=384 and step>=32:
+                worst_adjacent.append({"x":x,"z":z,"nx":nx,"nz":nz,"step":step,"from_y":y,"to_y":other})
             if -239<=x<=239 and -239<=z<=239 and -239<=nx<=239 and -239<=nz<=239:
                 expected_step=source(nx,nz)-source(x,z)
                 residual=abs((other-y)-expected_step)
@@ -74,6 +81,10 @@ def scan(root):
         "measured_interior_p95_abs_error":p95(interior),
         "dem_full_tile_samples":len(coverage),
         "outer_unmodified_fallback_samples":len(fallback_columns),
+        "middle_2048m_transition_samples":len(mid_transition_columns),
+        "near_edge_columns":len(near_edge_columns),
+        "near_edge_void_floor_columns":near_edge_to_floor,
+        "worst_adjacent_steps_near_dem":sorted(worst_adjacent,key=lambda x:-x["step"])[:16],
         "dem_full_tile_p95_abs_error":p95(coverage),
         "chunk_seam_pair_samples":len(seam_residuals),
         "chunk_seam_residual_p95":p95(seam_residuals),
@@ -92,8 +103,10 @@ def scan(root):
         raise SystemExit("Insufficient USGS interior or four-sided boundary samples; generation unverified")
     if report["measured_interior_p95_abs_error"]>25:
         raise SystemExit("Measured DEM terrain deviates excessively from source heights")
-    if len(fallback_columns)<24:
-        raise SystemExit("USGS v2 procedural fallback area was not actually generated")
+    if len(fallback_columns)<24 or len(mid_transition_columns)<24:
+        raise SystemExit("USGS v2 2048m blend midpoint and procedural fallback were not both generated")
+    if near_edge_to_floor:
+        raise SystemExit("USGS tile edge unexpectedly descends to the world floor; vertical chasm remains")
     if len(coverage)<300 or p95(coverage)>25:
         raise SystemExit("Not enough full tile coverage or DEM elevation disagreement")
     if len(seam_residuals)<32 or len(nonseam_residuals)<100:
