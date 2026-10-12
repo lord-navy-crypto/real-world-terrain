@@ -36,6 +36,7 @@ def scan(root):
               if -60<=x<=60 and -60<=z<=60]
     coverage=[abs(y-source(x,z)) for (x,z),y in columns.items()
               if -239<=x<=239 and -239<=z<=239]
+    fallback_columns=[(x,z) for x,z in columns if (x<=-1008 or x>=1008) and abs(z)<=32]
     seam_residuals=[]
     nonseam_residuals=[]
     borders=[]
@@ -72,6 +73,7 @@ def scan(root):
         "measured_interior_median_abs_error":round(statistics.median(interior),3) if interior else None,
         "measured_interior_p95_abs_error":p95(interior),
         "dem_full_tile_samples":len(coverage),
+        "outer_unmodified_fallback_samples":len(fallback_columns),
         "dem_full_tile_p95_abs_error":p95(coverage),
         "chunk_seam_pair_samples":len(seam_residuals),
         "chunk_seam_residual_p95":p95(seam_residuals),
@@ -90,6 +92,8 @@ def scan(root):
         raise SystemExit("Insufficient USGS interior or four-sided boundary samples; generation unverified")
     if report["measured_interior_p95_abs_error"]>25:
         raise SystemExit("Measured DEM terrain deviates excessively from source heights")
+    if len(fallback_columns)<24:
+        raise SystemExit("USGS v2 procedural fallback area was not actually generated")
     if len(coverage)<300 or p95(coverage)>25:
         raise SystemExit("Not enough full tile coverage or DEM elevation disagreement")
     if len(seam_residuals)<32 or len(nonseam_residuals)<100:
