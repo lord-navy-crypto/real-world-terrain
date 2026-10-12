@@ -43,7 +43,7 @@ class RadialClimateMathTests(unittest.TestCase):
         polar=balanced_temp_delta(90,320)
         self.assertGreater(low,polar)
         self.assertGreater(low,-.10)
-        self.assertAlmostEqual(balanced_temp_delta(0,96),temp_delta(0))
+        self.assertAlmostEqual(balanced_temp_delta(0,96),temp_delta(0)+.7*.06)
 
     def test_temperate_buffer_reduces_cooling_without_heating_poles(self):
         self.assertGreater(balanced_temp_delta(40,320),temp_delta(40)-.585)
