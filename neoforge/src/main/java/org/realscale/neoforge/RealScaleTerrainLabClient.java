@@ -40,7 +40,8 @@ public final class RealScaleTerrainLabClient {
     }
 
     private static class Draft {
-        String preset = "realism_max";
+        String preset = "landscape";
+        int blendPercent = 25;
         int reliefPercent = 100;
         int elevation = 0;
         int caves = 50;
@@ -51,18 +52,34 @@ public final class RealScaleTerrainLabClient {
             if (!Files.exists(CONFIG)) return new Draft();
             try {
                 Draft data = JSON.fromJson(Files.readString(CONFIG, StandardCharsets.UTF_8), Draft.class);
-                if (data == null || !valid(data)) return new Draft();
+                if (data == null) return new Draft();
+                migrateLegacyDraft(data);
+                if (!valid(data)) return new Draft();
                 return data;
             } catch (IOException | JsonSyntaxException ex) {
                 return new Draft();
             }
         }
 
+        private static void migrateLegacyDraft(Draft d) {
+            // Saved YACL drafts from v1.4.1 remain readable. These names are
+            // normalized only in the next-world draft, never in existing saves.
+            if (d.preset == null) return;
+            switch (d.preset) {
+                case "realism_max", "georeal_ultimate", "ultimate" -> d.preset = "landscape";
+                case "himalayan", "realistic_mountains" -> d.preset = "alpine";
+                case "grand_canyon", "continental" -> d.preset = "canyon";
+                default -> { }
+            }
+            // Prior drafts predate this field, so Gson initializes it to 0.
+            // Retain 0 as a valid "original-mode only" blend choice.
+        }
+
         private static boolean valid(Draft d) {
             return switch (d.preset) {
-                case "realism_max", "georeal_ultimate", "himalayan",
-                    "grand_canyon", "continental", "realistic_mountains", "ultimate" ->
-                        d.reliefPercent >= 80 && d.reliefPercent <= 125
+                case "landscape", "alpine", "canyon" ->
+                        d.blendPercent >= 0 && d.blendPercent <= 50
+                        && d.reliefPercent >= 80 && d.reliefPercent <= 125
                         && d.elevation >= -48 && d.elevation <= 48
                         && d.caves >= 20 && d.caves <= 80
                         && (d.riverGrade == 0 || d.riverGrade == 3
@@ -94,11 +111,16 @@ public final class RealScaleTerrainLabClient {
                 .name(Component.literal("Landforms and Height"))
                 .option(Option.<String>createBuilder()
                     .name(Component.literal("Base Terrain"))
-                    .description(description("Seven noise algorithms. USGS measured DEM remains read-only."))
-                    .binding("realism_max", () -> d.preset, v -> d.preset = v)
+                    .description(description("Three merged families blend existing terrain noise fields. USGS measured DEM is separate and read-only."))
+                    .binding("landscape", () -> d.preset, v -> d.preset = v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(
-                        "realism_max", "georeal_ultimate", "himalayan", "grand_canyon",
-                        "continental", "realistic_mountains", "ultimate"))
+                        "landscape", "alpine", "canyon"))
+                    .build())
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Secondary Landform Mix (%)"))
+                    .description(description("0..50%; smoothly combine two real density fields before terrain height scaling."))
+                    .binding(25, () -> d.blendPercent, v -> d.blendPercent = v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,50).step(1))
                     .build())
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Terrain Relief (percent)"))
