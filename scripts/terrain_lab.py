@@ -211,6 +211,31 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     original_settings=jread(root,GEO_ROOT/"noise_settings"/(source+".json"))
     if original_settings["sea_level"]!=63:raise ValueError("Refuse to modify a non-Y63 preset")
     noise=replace_refs(original_settings,repl)
+    # Extra upper-mountain cave corridors for newly generated Lab presets only.
+    # The existing caves use a terrain-density window and high-density closure,
+    # which can leave tall mountain interiors largely solid. Extend exploration
+    # into thick rock, but preserve a positive-density surface shell.
+    # This intentionally does NOT change biome placement or legacy presets.
+    if preset in FAMILIES and caves >= 60:
+        terrain_depth=density_id+"/terrain_density"
+        core="realscale:"+source+"/cave_core"
+        # Independent narrow spaghetti-like corridor: abs(core noise) near zero
+        # can open in sufficiently thick mountain rock. No broad cheese OR.
+        corridor={"type":"minecraft:add",
+                  "argument1":{"type":"minecraft:abs",
+                               "argument":{"type":"minecraft:noise",
+                                           "noise":"minecraft:spaghetti_3d_1",
+                                           "xz_scale":0.45,"y_scale":0.35}},
+                  "argument2":-0.08}
+        extension={"type":"minecraft:range_choice",
+                   "input":terrain_depth,"min_inclusive":0.9,
+                   "max_exclusive":6.0,
+                   "when_in_range":corridor,
+                   "when_out_of_range":terrain_depth}
+        # Existing carve field AND narrow extra tunnels; solid shell remains.
+        final=noise["noise_router"]["final_density"]
+        noise["noise_router"]["final_density"]={
+            "type":"minecraft:min","argument1":final,"argument2":extension}
     # Temperature drives the VANILLA MultiNoise biome sampler.
     # It is specific to this new world noise_settings ID, never a
     # dimension-wide Lithostitched injector affecting unrelated worlds.
