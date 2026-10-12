@@ -18,7 +18,10 @@ def balanced_temp_delta(lat,y,cooling=.585,strength=.7):
     def smooth(a,b,x):
         t=max(0,min(1,(x-a)/(b-a)))
         return t*t*(3-2*t)
-    return temp_delta(lat,strength)-cooling*smooth(96,320,y)*(1-.75*(1-smooth(20,65,lat)))
+    tropical=1-smooth(12,37,lat)
+    temperate=smooth(18,38,lat)*(1-smooth(47,67,lat))
+    return (temp_delta(lat,strength)+strength*(.06*tropical+.13*temperate)
+            -cooling*smooth(96,320,y)*(1-.75*tropical-.40*temperate))
 
 def temp_delta(lat,strength=.7):
     polar=math.sin(math.radians(abs(lat)))
@@ -41,6 +44,11 @@ class RadialClimateMathTests(unittest.TestCase):
         self.assertGreater(low,polar)
         self.assertGreater(low,-.10)
         self.assertAlmostEqual(balanced_temp_delta(0,96),temp_delta(0))
+
+    def test_temperate_buffer_reduces_cooling_without_heating_poles(self):
+        self.assertGreater(balanced_temp_delta(40,320),temp_delta(40)-.585)
+        self.assertAlmostEqual(balanced_temp_delta(75,320),temp_delta(75)-.585)
+        self.assertLess(balanced_temp_delta(60,320),balanced_temp_delta(30,320))
 
     def test_center_pole_equator_and_repeat_at_earth_scale(self):
         cases=((0,0),(EARTH_Q,90),(2*EARTH_Q,0),(3*EARTH_Q,90),
