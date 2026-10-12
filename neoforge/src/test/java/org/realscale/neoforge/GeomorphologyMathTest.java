@@ -50,7 +50,7 @@ public class GeomorphologyMathTest {
         assertEquals(0,GeoMath.latitudeDeg(-4*q,0,q),1e-9);
         assertEquals(-90,GeoMath.latitudeDeg(q,0,q),1e-9);
         assertEquals(90,GeoMath.latitudeDeg(3*q,0,q),1e-9);
-        assertEquals(0,GeoMath.latitudeDeg(0,1000,1000),1e-9);
+        assertEquals(0,GeoMath.latitudeDeg(1000,1000,1000),1e-9);
         for(int offset=-3_000_000;offset<3_000_000;offset+=145_621){
             double lat=GeoMath.latitudeDeg(offset,0,1000);
             assertTrue(lat<=90 && lat>=-90);

@@ -47,6 +47,10 @@ public final class RealScaleTerrainLabClient {
         int strataPercent = 0;
         int climatePercent = 65;
         int valleyPercent = 0;
+        String latitudeMode = "off";
+        int latitudeStrength = 70;
+        int equatorZ = 0;
+        int basinPercent = 0;
         int reliefPercent = 100;
         int elevation = 0;
         int caves = 50;
@@ -89,6 +93,11 @@ public final class RealScaleTerrainLabClient {
                         && d.strataPercent >= 0 && d.strataPercent <= 20
                         && d.climatePercent >= 0 && d.climatePercent <= 100
                         && d.valleyPercent >= 0 && d.valleyPercent <= 100
+                        && (d.latitudeMode.equals("off") || d.latitudeMode.equals("earth")
+                            || d.latitudeMode.equals("preview"))
+                        && d.latitudeStrength >= 0 && d.latitudeStrength <= 100
+                        && d.equatorZ >= -4096 && d.equatorZ <= 4096
+                        && d.basinPercent >= 0 && d.basinPercent <= 100
                         && d.reliefPercent >= 80 && d.reliefPercent <= 125
                         && d.elevation >= -48 && d.elevation <= 48
                         && d.caves >= 20 && d.caves <= 80
@@ -154,6 +163,30 @@ public final class RealScaleTerrainLabClient {
                     .name(Component.literal("Valley Warming (Optional)"))
                     .description(description("0=off. Bounded local-valley warmth on inland terrain, using nearby terrain signals. Cold-air inversions are not simulated; requires restart and new world."))
                     .binding(0, () -> d.valleyPercent, v -> d.valleyPercent = v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5))
+                    .build())
+                .option(Option.<String>createBuilder()
+                    .name(Component.literal("Latitude Climate Cycle"))
+                    .description(description("Off = previous worlds unchanged; Earth = 1 block per meter and 10,001,966 blocks from equator to pole; Preview = pole in 16,384 blocks. Latitude depends on signed Z, not radial spawn distance."))
+                    .binding("off", () -> d.latitudeMode, v -> d.latitudeMode = v)
+                    .controller(o -> CyclingListControllerBuilder.create(o).values("off","earth","preview"))
+                    .build())
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Latitude Climate Strength"))
+                    .description(description("0..100; equator modestly warmer, poles much colder. Existing biomes and humidity remain in the climate sampler."))
+                    .binding(70, () -> d.latitudeStrength, v -> d.latitudeStrength = v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5))
+                    .build())
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Equator World Z"))
+                    .description(description("Latitude zero line is a fixed world Z, initially Z=0. The engine cannot know the auto-chosen future spawn before generating terrain."))
+                    .binding(0, () -> d.equatorZ, v -> d.equatorZ = v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(-4096,4096).step(128))
+                    .build())
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Enclosed Basin Warming (Optional)"))
+                    .description(description("Default OFF; only when all eight surrounding sample points form a basin rim, inland. Cold air pooling and temperature inversions not simulated."))
+                    .binding(0, () -> d.basinPercent, v -> d.basinPercent = v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5))
                     .build())
                 .option(Option.<Integer>createBuilder()
