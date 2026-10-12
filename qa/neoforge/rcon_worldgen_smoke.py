@@ -109,6 +109,7 @@ def main(root,expected_preset,profile):
         try:
             if profile=="usgs":
                 commands=[
+                    "execute in minecraft:overworld run forceload add -32 -32 32 32",
                     "execute in minecraft:overworld run forceload add 224 -16 256 16",
                     "execute in minecraft:overworld run forceload add -256 -16 -224 16",
                     "execute in minecraft:overworld run forceload add -16 224 16 256",
