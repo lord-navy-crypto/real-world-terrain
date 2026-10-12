@@ -15,7 +15,7 @@ ROOT=Path(sys.argv[1]) if len(sys.argv)>1 else Path(".")
 def collect(dimension):
     files=list(ROOT.rglob("DIM-1/region/*.mca" if dimension=="nether"
                          else "DIM1/region/*.mca"))
-    totals=defaultdict(lambda:{"samples":0,"solid":0,"air":0,"liquid":0})
+    totals=defaultdict(lambda:{"samples":0,"solid":0,"air":0,"liquid":0,"omitted_sections":0})
     chunks=0
     high_columns=0
     far_chunks=0
