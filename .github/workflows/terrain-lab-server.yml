@@ -44,8 +44,14 @@ jobs:
           max-players=1
           max-tick-time=-1
           online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
           PROPERTIES
           done
+      - name: Verify strict saved-spawn RCON probe regression
+        run: python3 -m unittest discover -s qa -p 'test_spawn_chunk_probe.py' -v
       - name: Start actual NeoForge server; verify mod registry and new world
         working-directory: neoforge
         run: |
@@ -64,9 +70,18 @@ jobs:
           t=threading.Thread(target=reader,daemon=True);t.start()
           deadline=time.time()+480
           while time.time()<deadline and p.poll() is None and not done.is_set():time.sleep(1)
+          spawn_probe_error=None
           if done.is_set():
             print('NEOFORGE_SERVER_BOOT_OK: reached Done milestone')
             time.sleep(18)
+            try:
+              import sys
+              sys.path.insert(0,str(pathlib.Path('../qa/neoforge').resolve()))
+              from ensure_spawn_chunk import ensure_saved_spawn_chunk
+              ensure_saved_spawn_chunk(pathlib.Path('run'),os.environ['LAB_WORLD')
+            except Exception as exc:
+              spawn_probe_error=repr(exc)
+              print('QA_SPAWN_PROBE_FAILED:',spawn_probe_error,flush=True)
           else:
             print('NEOFORGE_SERVER_BOOT_FAIL:',p.poll())
           try:
@@ -95,7 +110,7 @@ jobs:
                 valid=True;print('Correct generator in saved level.dat:',f)
               else:print('WARNING generated other preset',f)
             except Exception as e:print('Could not read level.dat',f,e)
-          if not done.is_set() or not valid:
+          if not done.is_set() or not valid or spawn_probe_error:
             raise SystemExit('NeoForge new-world smoke NOT VERIFIED')
           print('GAME ENGINE WORLDGEN SMOKE: PASS')
           PY
