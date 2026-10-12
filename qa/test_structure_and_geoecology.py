@@ -65,6 +65,7 @@ class VanillaStructureDensityTests(unittest.TestCase):
             self.assertEqual(len(data),len(structures.VANILLA)+1)
             self.assertNotIn("data/minecraft/worldgen/structure_set/strongholds.json",data)
             self.assertNotIn("data/minecraft/worldgen/structure_set/pillager_outposts.json",data)
+            self.assertNotIn("data/minecraft/worldgen/structure_set/ruined_portals.json",data)
             for name in structures.VANILLA:
                 p=f"data/minecraft/worldgen/structure_set/{name}.json"
                 original=structures.original_set(name)
