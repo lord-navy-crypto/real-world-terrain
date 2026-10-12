@@ -45,6 +45,7 @@ public final class RealScaleTerrainLabClient {
         int ridgePercent = 0;
         int erosionPercent = 0;
         int strataPercent = 0;
+        int climatePercent = 65;
         int reliefPercent = 100;
         int elevation = 0;
         int caves = 50;
@@ -85,6 +86,7 @@ public final class RealScaleTerrainLabClient {
                         && d.ridgePercent >= 0 && d.ridgePercent <= 40
                         && d.erosionPercent >= 0 && d.erosionPercent <= 30
                         && d.strataPercent >= 0 && d.strataPercent <= 20
+                        && d.climatePercent >= 0 && d.climatePercent <= 100
                         && d.reliefPercent >= 80 && d.reliefPercent <= 125
                         && d.elevation >= -48 && d.elevation <= 48
                         && d.caves >= 20 && d.caves <= 80
@@ -139,6 +141,12 @@ public final class RealScaleTerrainLabClient {
                     .description(description("0..30; seed-dependent limited terrain cutting. Not a watershed solver."))
                     .binding(0, () -> d.erosionPercent, v -> d.erosionPercent = v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,30).step(1))
+                    .build())
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Altitude-Aware Biomes"))
+                    .description(description("0 = vanilla climate. Higher settings cool elevated terrain in newly generated worlds; coastal and low valley climates remain unchanged."))
+                    .binding(65, () -> d.climatePercent, v -> d.climatePercent = v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5))
                     .build())
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Terrain Relief (percent)"))
