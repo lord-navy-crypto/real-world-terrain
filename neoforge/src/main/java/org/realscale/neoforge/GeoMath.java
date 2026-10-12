@@ -40,6 +40,20 @@ final class GeoMath {
         if(phase<=3.0)return 90*(2-phase);
         return 90*(phase-4);
     }
+    /** Repeating concentric climate belts around a fixed center.
+     * Equator 0 degrees at center, pole at one radius, next equator at 2 radii.
+     * North/south meridian labels are deliberately not assigned to rings.
+     * double arithmetic avoids integer overflow at large Minecraft coords.
+     */
+    static double radialLatitudeDeg(int x,int z,int centerX,int centerZ,int poleDistance){
+        double radius=Math.hypot((double)x-centerX,(double)z-centerZ);
+        double phase=(radius/poleDistance)%2.0;
+        return 90.0*(phase<=1.0?phase:2.0-phase);
+    }
+    static double climateBudget(double original,double adjusted,double maxCooling,double maxWarming){
+        double d=adjusted-original;
+        return original+clamp(d,-maxCooling,maxWarming);
+    }
     static double latitudeTemperature(double original,double latDeg,double strength){
         // Equator modestly warmer; poles markedly colder, with a smooth
         // derivative at both the equator and poles.

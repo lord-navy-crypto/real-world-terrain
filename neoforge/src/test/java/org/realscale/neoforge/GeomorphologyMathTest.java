@@ -77,6 +77,33 @@ public class GeomorphologyMathTest {
         assertEquals(.1,GeoMath.basinTemperature(.1,.1,allHigh,.6,590,0),1e-9);
     }
     @Test
+    public void radialLatitudeMakesRepeatingConcentricPolarRings(){
+        int q=10_001_966;
+        assertEquals(0,GeoMath.radialLatitudeDeg(0,0,0,0,q),1e-9);
+        assertEquals(90,GeoMath.radialLatitudeDeg(q,0,0,0,q),1e-9);
+        assertEquals(90,GeoMath.radialLatitudeDeg(-q,0,0,0,q),1e-9);
+        assertEquals(0,GeoMath.radialLatitudeDeg(2*q,0,0,0,q),1e-9);
+        assertEquals(90,GeoMath.radialLatitudeDeg(3*q,0,0,0,q),1e-9);
+        assertEquals(0,GeoMath.radialLatitudeDeg(4*q,0,0,0,q),1e-9);
+        assertEquals(90,GeoMath.radialLatitudeDeg(0,q,0,0,q),1e-9);
+        assertEquals(90,GeoMath.radialLatitudeDeg(0,-q,0,0,q),1e-9);
+        assertEquals(0,GeoMath.radialLatitudeDeg(10,20,10,20,q),1e-9);
+        assertEquals(90,GeoMath.radialLatitudeDeg(1100,20,100,20,1000),1e-9);
+        // Concentric rather than north/south bands: same radius gives same climate.
+        assertEquals(GeoMath.radialLatitudeDeg(700,0,0,0,1000),
+                     GeoMath.radialLatitudeDeg(0,700,0,0,1000),1e-9);
+        // Continuous across the pole, never a 90 degree jump back to 0.
+        assertTrue(Math.abs(GeoMath.radialLatitudeDeg(q-1,0,0,0,q)
+                        -GeoMath.radialLatitudeDeg(q+1,0,0,0,q))<.001);
+    }
+    @Test
+    public void radialClimateCapPreventsSnowDominationFromSummedCorrections(){
+        assertEquals(-.60,GeoMath.climateBudget(0,-1.22,.60,.45),1e-9);
+        assertEquals(.45,GeoMath.climateBudget(0,.75,.60,.45),1e-9);
+        assertEquals(.30,GeoMath.climateBudget(.2,.30,.60,.45),1e-9);
+        assertEquals(-.33,GeoMath.climateBudget(-.1,-.33,.60,.45),1e-9);
+    }
+    @Test
     public void strataHasNoBiasAtZeroStrengthAndBoundedAtPositiveStrength() {
         for (int y=-60;y<=960;y+=11) {
             assertEquals(0.5,GeoMath.strata(0.5,0.23,y,0,64),1e-9);
