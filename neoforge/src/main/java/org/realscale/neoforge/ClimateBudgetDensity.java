@@ -20,7 +20,7 @@ public record ClimateBudgetDensity(DensityFunction original,DensityFunction adju
         RecordCodecBuilder.mapCodec(i->i.group(
             DensityFunction.HOLDER_HELPER_CODEC.fieldOf("original").forGetter(ClimateBudgetDensity::original),
             DensityFunction.HOLDER_HELPER_CODEC.fieldOf("adjusted").forGetter(ClimateBudgetDensity::adjusted),
-            Codec.doubleRange(0.05,1.0).fieldOf("max_cooling").forGetter(ClimateBudgetDensity::maxCooling),
+            Codec.doubleRange(0.01,1.0).fieldOf("max_cooling").forGetter(ClimateBudgetDensity::maxCooling),
             Codec.doubleRange(0.05,0.8).fieldOf("max_warming").forGetter(ClimateBudgetDensity::maxWarming)
         ).apply(i,ClimateBudgetDensity::new));
     private static final KeyDispatchDataCodec<ClimateBudgetDensity> DISPATCH =
