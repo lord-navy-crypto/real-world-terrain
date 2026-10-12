@@ -190,21 +190,26 @@ def main(root,expected_preset,profile):
                 rcon.sock.settimeout(180)
                 queries=structure_targets(expected_preset)
                 observations=[]
+                # Persist intermediate candidates even if a later expensive
+                # /locate or chunk generation times out.
+                evidence_path=root/"vanilla_structure_locate_qa.json"
                 for target in queries:
                     reply=rcon.send("execute in minecraft:overworld run locate structure "+target)
                     hit=re.search(r"\[\s*(-?\d+)\s*,\s*(?:~|-?\d+)\s*,\s*(-?\d+)\s*\]",reply)
                     if not hit:
                         observations.append({"structure":target,"located":False,"response":reply})
+                        evidence_path.write_text(json.dumps(observations,indent=2))
                         continue
                     x,z=map(int,hit.groups())
                     observations.append({"structure":target,"located":True,"x":x,"z":z})
+                    evidence_path.write_text(json.dumps(observations,indent=2))
                     # Load ONE candidate-center chunk, not 25 high chunks.
                     # Anvil QA still requires a real, FULL structure start.
                     rcon.send(f"execute in minecraft:overworld run forceload add {x} {z}")
                     await_full_chunk(rcon,x,z,timeout_seconds=240)
                     rcon.send("save-all flush")
                     rcon.send(f"execute in minecraft:overworld run forceload remove {x} {z}")
-                (root/"vanilla_structure_locate_qa.json").write_text(json.dumps(observations,indent=2))
+                evidence_path.write_text(json.dumps(observations,indent=2))
                 if not any(x["located"] for x in observations):
                     raise RuntimeError("NO structures were located; cannot validate vanilla structure starts")
                 commands=[]
