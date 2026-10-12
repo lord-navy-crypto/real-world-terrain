@@ -14,7 +14,7 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * then blend smoothly to the unmodified procedural fallback OUTSIDE the
  * source square. No coordinate is relative to chunk origin.
  *
- * Monotone bicubic interpolation keeps 32 m sample values, reduces pointy
+ * A wider, smooth 2048 m transition is required because the small DEM tile\n * contains heights over 1 km above the unrelated procedural fallback.\n * A 768 m transition could make implausibly abrupt exterior escarpments.\n * Monotone bicubic interpolation keeps 32 m sample values, reduces pointy
  * grid-cell cusps, and cannot overshoot the surrounding four source samples.
  */
 public record RealDemSeamlessDensity(DensityFunction base, int blendMeters)
@@ -22,7 +22,7 @@ public record RealDemSeamlessDensity(DensityFunction base, int blendMeters)
     public static final MapCodec<RealDemSeamlessDensity> MAP_CODEC =
         RecordCodecBuilder.mapCodec(i -> i.group(
             DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(RealDemSeamlessDensity::base),
-            Codec.intRange(256,1536).fieldOf("blend_meters").forGetter(RealDemSeamlessDensity::blendMeters)
+            Codec.intRange(256,4096).fieldOf("blend_meters").forGetter(RealDemSeamlessDensity::blendMeters)
         ).apply(i,RealDemSeamlessDensity::new));
     private static final KeyDispatchDataCodec<RealDemSeamlessDensity> DISPATCH =
         KeyDispatchDataCodec.of(MAP_CODEC);
