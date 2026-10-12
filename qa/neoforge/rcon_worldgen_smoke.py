@@ -124,11 +124,21 @@ def main(root,expected_preset,profile):
                     "execute in minecraft:overworld run forceload add 1024 1024",
                     "execute in minecraft:overworld run forceload add -1024 -1024"
                 ]
+            elif profile=="fantasy":
+                commands=[
+                    "execute in minecraft:the_nether run forceload add 0 0",
+                    "execute in minecraft:the_nether run forceload add 512 0",
+                    "execute in minecraft:the_end run forceload add 0 0",
+                    "execute in minecraft:the_end run forceload add 2048 0",
+                    "execute in minecraft:the_end run forceload add 3072 0",
+                    "execute in minecraft:the_end run forceload add 4096 0",
+                    "execute in minecraft:the_end run forceload add 0 3072"
+                ]
             else:
                 raise ValueError("Unknown QA profile "+profile)
             for command in commands:
                 rcon.send(command)
-            time.sleep(75 if profile=="usgs" else 35)
+            time.sleep(100 if profile=="fantasy" else (75 if profile=="usgs" else 35))
             rcon.send("save-all flush")
             time.sleep(5)
             try:
@@ -156,6 +166,14 @@ def main(root,expected_preset,profile):
         print("SERVER LOG TAIL:",log.read_text(encoding="utf-8")[-4500:],flush=True)
     if failed is not None:raise failed
     if not ready.is_set():raise RuntimeError("Server did not boot")
+    if profile=="fantasy":
+        nether=list(root.glob("run/**/DIM-1/region/*.mca"))
+        end=list(root.glob("run/**/DIM1/region/*.mca"))
+        print("NETHER_PERSISTED_REGION_FILES:",list(map(str,nether)))
+        print("END_PERSISTED_REGION_FILES:",list(map(str,end)))
+        if not nether or not end:
+            raise RuntimeError("Fantasy Nether/End still has no persisted Anvil regions")
+
     levels=list(root.glob("run/**/level.dat"))
     matched=False
     for path in levels:
@@ -168,5 +186,5 @@ def main(root,expected_preset,profile):
 
 if __name__=="__main__":
     if len(sys.argv)!=4:
-        raise SystemExit("usage: rcon_worldgen_smoke.py neoForgeRoot preset usgs|distant")
+        raise SystemExit("usage: rcon_worldgen_smoke.py neoForgeRoot preset usgs|distant|fantasy")
     main(pathlib.Path(sys.argv[1]).resolve(),sys.argv[2],sys.argv[3])
