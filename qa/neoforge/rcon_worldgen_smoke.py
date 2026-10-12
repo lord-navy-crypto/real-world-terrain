@@ -176,11 +176,32 @@ def main(root,expected_preset,profile):
 
     levels=list(root.glob("run/**/level.dat"))
     matched=False
+    from realscale_headless_qa import read_nbt
     for path in levels:
-        if expected_preset.encode() in gzip.decompress(path.read_bytes()):
-            matched=True
-            print("Correct worldgen preset in saved NBT:",path,flush=True)
-    if not matched:raise RuntimeError("Saved level.dat does not contain "+expected_preset)
+        nbt=read_nbt(gzip.decompress(path.read_bytes()))
+        data=nbt.get("Data",nbt)
+        dimensions=data.get("WorldGenSettings",{}).get("dimensions",{})
+        overworld=dimensions.get("minecraft:overworld",{})
+        actual=overworld.get("generator",{}).get("settings")
+        if actual!=expected_preset:
+            print("Worldgen does not match requested preset:",path,actual,flush=True)
+            continue
+        if profile=="fantasy":
+            checks={
+                "minecraft:the_nether":"realscale:fantasy_nether_v2",
+                "minecraft:the_end":"realscale:fantasy_end_v2",
+            }
+            for dimension,expected in checks.items():
+                actual=dimensions.get(dimension,{}).get("generator",{}).get("settings")
+                if actual!=expected:
+                    raise RuntimeError(f"Fantasy dimension {dimension} did not load correct custom noise settings: {actual!r} != {expected!r}")
+            nether_type=dimensions.get("minecraft:the_nether",{}).get("type")
+            if nether_type!="realscale:fantasy_nether_v1":
+                raise RuntimeError("Expanded Nether dimension type missing: "+str(nether_type))
+            print("Saved NBT confirms both fantasy generation settings",flush=True)
+        matched=True
+        print("Correct worldgen preset in saved NBT:",path,flush=True)
+    if not matched:raise RuntimeError("Saved level.dat does not use "+expected_preset)
     print("NEOFORGE_RCON_WORLDGEN_BOOT_AND_COMMANDS: PASS",flush=True)
 
 
