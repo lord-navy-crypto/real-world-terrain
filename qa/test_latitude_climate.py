@@ -111,15 +111,75 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertEqual(t["base"]["type"],"realscale:latitude_temperature")
         self.assertEqual(t["base"]["pole_distance"],10_001_966)
 
+    def test_concentric_earth_radius_and_climate_budget(self):
+        name,opts,outputs=self.make(
+            latitude="radial_earth",latitude_strength=70,
+            center_x=1024,equator_z=-512,cold_limit=60,
+            climate=65,valley=25,basin=20)
+        temp=self.get_temperature(outputs,name)
+        self.assertEqual(temp["type"],"realscale:climate_budget")
+        self.assertEqual(temp["max_cooling"],.6)
+        self.assertEqual(temp["max_warming"],.45)
+        self.assertEqual(temp["original"]["type"],"minecraft:shifted_noise")
+        r=temp["adjusted"]["base"]["base"]
+        self.assertEqual(r["type"],"realscale:radial_latitude_temperature")
+        self.assertEqual(r["center_x"],1024)
+        self.assertEqual(r["center_z"],-512)
+        self.assertEqual(r["pole_distance"],10_001_966)
+        self.assertEqual(r["strength"],.7)
+        self.assertEqual(opts["latitude"],"radial_earth")
+        self.assertEqual(opts["cold_limit"],60)
+        self.assertEqual(opts["center_x"],1024)
+        n=outputs[lab.GEO_ROOT/"noise_settings"/(name+".json")]
+        self.assertEqual(n["sea_level"],63)
+        self.assertEqual(n["noise_router"]["temperature"],
+                         f"realscale:terrain_lab/{name}/biome_temperature")
+
+    def test_concentric_preview_cold_limit_can_be_disabled(self):
+        a,o,files=self.make(latitude="radial_preview",cold_limit=0)
+        r=self.get_temperature(files,a)
+        self.assertEqual(r["type"],"realscale:radial_latitude_temperature")
+        self.assertEqual(r["pole_distance"],16384)
+        self.assertNotIn("cold_limit",o)
+        b,oo,ff=self.make(latitude="radial_preview",cold_limit=60)
+        self.assertNotEqual(a,b)
+        self.assertEqual(self.get_temperature(ff,b)["type"],"realscale:climate_budget")
+
+    def test_existing_meridional_latitude_and_all_disabled_stay_identical(self):
+        for mode in ("earth","preview","off"):
+            x,a,b=self.make(latitude=mode,latitude_strength=70)
+            y,c,d=self.make(latitude=mode,latitude_strength=70,center_x=0,cold_limit=60)
+            self.assertEqual(x,y)
+            self.assertEqual(a,c)
+            self.assertEqual(b,d)
+        normal,_,normal_files=self.make()
+        ignored,_,ignored_files=self.make(latitude="off",cold_limit=0,center_x=1000)
+        self.assertEqual(normal,ignored)
+        self.assertEqual(normal_files,ignored_files)
+
+    def test_concentric_controls_validate_ranges(self):
+        for invalid in (
+            {"latitude":"radial_time"},
+            {"center_x":29_000_001},
+            {"center_x":.5},
+            {"cold_limit":-1},
+            {"cold_limit":101},
+            {"cold_limit":"60"},
+        ):
+            with self.subTest(invalid=invalid),self.assertRaises(ValueError):
+                self.make(**invalid)
+
     def test_source_registration_and_yacl_controls(self):
         src=ROOT/"neoforge/src/main/java/org/realscale/neoforge"
         mod=(src/"RealScaleMod.java").read_text()
         screen=(src/"RealScaleTerrainLabClient.java").read_text()
-        for name in ("latitude_temperature","basin_temperature"):
+        for name in ("latitude_temperature","basin_temperature","radial_latitude_temperature","climate_budget"):
             self.assertIn('"'+name+'"',mod)
         self.assertIn('Latitude Climate Cycle',screen)
         self.assertIn('Enclosed Basin Warming (Optional)',screen)
         self.assertIn('equatorZ',screen)
+        self.assertIn('radial_preview',screen)
+        self.assertIn('Radial Cold Climate Limit',screen)
 
 if __name__=="__main__":
     unittest.main()
