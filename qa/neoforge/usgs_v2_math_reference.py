@@ -80,6 +80,7 @@ class MonotoneDem:
         cx=self.clip(x,self.x0,self.maxx)
         cz=self.clip(z,self.z0,self.maxz)
         base=self.measured_height(cx,cz)
+        original_base=base
         dx=x-cx;dz=z-cz
         if dx:
             direction=32 if dx<0 else -32
@@ -88,7 +89,7 @@ class MonotoneDem:
         if dz:
             direction=32 if dz<0 else -32
             interior=self.measured_height(cx,cz+direction)
-            base+=self.clip((interior-base)/direction,-1.25,1.25)*self.taper(dz)
+            base+=self.clip((interior-original_base)/direction,-1.25,1.25)*self.taper(dz)
         return self.clip(base,-64,2031)
 
     def weight(self,x,z,fade=2048):
