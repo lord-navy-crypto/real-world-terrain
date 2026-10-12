@@ -84,7 +84,7 @@ class TerrainLabTests(unittest.TestCase):
 
     def test_new_high_mountain_caves_are_thin_and_protected(self):
         name,opts,_=lab.apply(self.root,"alpine",1.0,0,65,6,blend_percent=25)
-        self.assertEqual(opts["mountain_caves_revision"],4)
+        self.assertEqual(opts["mountain_caves_revision"],5)
         settings=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
         final=settings["noise_router"]["final_density"]
         self.assertEqual(final["type"],"minecraft:min")
@@ -94,10 +94,13 @@ class TerrainLabTests(unittest.TestCase):
         self.assertEqual(guarded["type"],"minecraft:add")
         connector=guarded["argument1"]["argument1"]
         self.assertEqual(connector["type"],"minecraft:min")
-        chamber=connector["argument2"]["argument1"]["argument1"]
+        bounded=connector["argument2"]
+        self.assertEqual(bounded["type"],"minecraft:max")
+        self.assertEqual(bounded["argument2"]["argument1"]["argument1"]["noise"],"minecraft:spaghetti_3d_2")
+        chamber=bounded["argument1"]["argument1"]["argument1"]
         self.assertEqual(chamber["type"],"minecraft:add")
         self.assertEqual(chamber["argument1"]["noise"],"minecraft:cave_cheese")
-        self.assertEqual(chamber["argument2"],0.72)
+        self.assertEqual(chamber["argument2"],0.84)
         roof=guarded["argument1"]["argument2"]
         self.assertEqual(roof["argument1"],0.018)
         surface_depth=roof["argument2"]["input"]["argument2"]["argument2"]
