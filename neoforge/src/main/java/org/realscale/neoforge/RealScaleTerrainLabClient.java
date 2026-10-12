@@ -50,6 +50,8 @@ public final class RealScaleTerrainLabClient {
         String latitudeMode = "off";
         int latitudeStrength = 70;
         int equatorZ = 0;
+        int radialCenterX = 0;
+        int coldLimitPercent = 60;
         int basinPercent = 0;
         int reliefPercent = 100;
         int elevation = 0;
@@ -95,9 +97,13 @@ public final class RealScaleTerrainLabClient {
                         && d.valleyPercent >= 0 && d.valleyPercent <= 100
                         && d.latitudeMode != null
                         && (d.latitudeMode.equals("off") || d.latitudeMode.equals("earth")
-                            || d.latitudeMode.equals("preview"))
+                            || d.latitudeMode.equals("preview")
+                            || d.latitudeMode.equals("radial_earth")
+                            || d.latitudeMode.equals("radial_preview"))
                         && d.latitudeStrength >= 0 && d.latitudeStrength <= 100
                         && d.equatorZ >= -4096 && d.equatorZ <= 4096
+                        && d.radialCenterX >= -4096 && d.radialCenterX <= 4096
+                        && d.coldLimitPercent >= 0 && d.coldLimitPercent <= 100
                         && d.basinPercent >= 0 && d.basinPercent <= 100
                         && d.reliefPercent >= 80 && d.reliefPercent <= 125
                         && d.elevation >= -48 && d.elevation <= 48
@@ -168,9 +174,9 @@ public final class RealScaleTerrainLabClient {
                     .build())
                 .option(Option.<String>createBuilder()
                     .name(Component.literal("Latitude Climate Cycle"))
-                    .description(description("Off = previous worlds unchanged; Earth = 1 block per meter and 10,001,966 blocks from equator to pole; Preview = pole in 16,384 blocks. Latitude depends on signed Z, not radial spawn distance."))
+                    .description(description("Off or north-south Earth/Preview or your concentric Radial Earth/Preview. Radial latitude follows distance from fixed X/Z center: equator -> circular pole -> next equator. 1 block=1m in Earth modes."))
                     .binding("off", () -> d.latitudeMode, v -> d.latitudeMode = v)
-                    .controller(o -> CyclingListControllerBuilder.create(o).values("off","earth","preview"))
+                    .controller(o -> CyclingListControllerBuilder.create(o).values("off","earth","preview","radial_earth","radial_preview"))
                     .build())
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Latitude Climate Strength"))
@@ -179,10 +185,22 @@ public final class RealScaleTerrainLabClient {
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5))
                     .build())
                 .option(Option.<Integer>createBuilder()
-                    .name(Component.literal("Equator World Z"))
-                    .description(description("Latitude zero line is a fixed world Z, initially Z=0. The engine cannot know the auto-chosen future spawn before generating terrain."))
+                    .name(Component.literal("Equator Line Z / Radial Center Z"))
+                    .description(description("For radial modes this is the center Z coordinate. For North/South modes this is equator Z. Actual auto-spawn need not be at the center."))
                     .binding(0, () -> d.equatorZ, v -> d.equatorZ = v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(-4096,4096).step(128))
+                    .build())
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Radial Ring Center X"))
+                    .description(description("Ring origin X; set alongside the Z center. This is not guaranteed to match the game's random spawn position."))
+                    .binding(0, () -> d.radialCenterX, v -> d.radialCenterX = v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(-4096,4096).step(128))
+                    .build())
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Radial Cold Climate Limit"))
+                    .description(description("Default 60; caps combined polar and mountain cooling relative to original temperature. 0=off. Applies only to concentric latitude modes."))
+                    .binding(60, () -> d.coldLimitPercent, v -> d.coldLimitPercent = v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5))
                     .build())
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Enclosed Basin Warming (Optional)"))
