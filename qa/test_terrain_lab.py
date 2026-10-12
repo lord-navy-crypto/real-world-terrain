@@ -162,7 +162,7 @@ class TerrainLabTests(unittest.TestCase):
         self.assertEqual(nether["noise_router"]["final_density"]["strength"],0.85)
         self.assertFalse(end["aquifers_enabled"])
         java=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/FantasyEndArchipelagoDensity.java").read_text()
-        self.assertIn("radius <= 1152",java)
+        self.assertIn("distance <= 1152.0",java)
         registration=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
         self.assertIn('"fantasy_end_archipelago"',registration)
         self.assertIn('"fantasy_nether_caverns"',registration)
