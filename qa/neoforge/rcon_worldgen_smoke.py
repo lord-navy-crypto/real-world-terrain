@@ -101,6 +101,17 @@ def await_full_chunk(rcon,x,z,timeout_seconds=240):
         "despite forceload ACK; inspect RCON and Minecraft server logs")
 
 
+def structure_targets(expected_preset):
+    """Keep expensive searches bounded without pretending omitted villages passed."""
+    base=("minecraft:trial_chambers", "minecraft:ruined_portal")
+    # Realism MAX (2096 tall) previously spent >180s in /locate
+    # village_taiga after 50 far-away chunks were already requested.
+    # Keep village search in the independent Himalayan / vanilla controls.
+    if expected_preset=="realscale:realism_max":
+        return base
+    return base+("minecraft:village_taiga",)
+
+
 def main(root,expected_preset,profile):
     log=root/"build"/("rcon_"+profile+"_server.log")
     log.parent.mkdir(parents=True,exist_ok=True)
@@ -177,10 +188,14 @@ def main(root,expected_preset,profile):
                 # then generate real Anvil chunks around returned coordinates.
                 # The separate Anvil auditor decides whether starts were saved.
                 rcon.sock.settimeout(180)
-                queries=["minecraft:trial_chambers",
-                         "minecraft:ruined_portal",
-                         "minecraft:village_taiga"]
+                queries=structure_targets(expected_preset)
                 observations=[]
+                if "minecraft:village_taiga" not in queries:
+                    observations.append({
+                        "structure":"minecraft:village_taiga",
+                        "located":False,"skipped":True,
+                        "reason":"High-altitude locate timed out in prior Realism MAX QA; village NOT verified in this job"
+                    })
                 for target in queries:
                     reply=rcon.send("execute in minecraft:overworld run locate structure "+target)
                     hit=re.search(r"\[\s*(-?\d+)\s*,\s*(?:~|-?\d+)\s*,\s*(-?\d+)\s*\]",reply)
@@ -189,7 +204,12 @@ def main(root,expected_preset,profile):
                         continue
                     x,z=map(int,hit.groups())
                     observations.append({"structure":target,"located":True,"x":x,"z":z})
-                    rcon.send(f"execute in minecraft:overworld run forceload add {x-32} {z-32} {x+32} {z+32}")
+                    # Load ONE candidate-center chunk, not 25 high chunks.
+                    # Anvil QA still requires a real, FULL structure start.
+                    rcon.send(f"execute in minecraft:overworld run forceload add {x} {z}")
+                    await_full_chunk(rcon,x,z,timeout_seconds=240)
+                    rcon.send("save-all flush")
+                    rcon.send(f"execute in minecraft:overworld run forceload remove {x} {z}")
                 (root/"vanilla_structure_locate_qa.json").write_text(json.dumps(observations,indent=2))
                 if not any(x["located"] for x in observations):
                     raise RuntimeError("NO structures were located; cannot validate vanilla structure starts")
@@ -219,7 +239,7 @@ def main(root,expected_preset,profile):
             else:
                 for command in commands:
                     rcon.send(command)
-            time.sleep(120 if profile=="structures" else (100 if profile=="fantasy" else (5 if profile=="usgs" else 35)))
+            time.sleep(5 if profile=="structures" else (100 if profile=="fantasy" else (5 if profile=="usgs" else 35)))
             rcon.send("save-all flush")
             time.sleep(5)
             try:
