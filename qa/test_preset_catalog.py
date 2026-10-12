@@ -19,10 +19,14 @@ class PresetCatalogChecks(unittest.TestCase):
     def test_only_four_main_choices(self):
         j=load(TAG/"normal.json")
         self.assertIs(j["replace"],False)
-        expected=["realscale:"+s for s in PRIMARY]
+        # Historical 96 m interior-blend USGS has extreme tile-edge cuts.
+        # Keep it as an explicit extended-only legacy comparison, not a
+        # normal create-world choice for new players.
+        default_modes=("realism_max","himalayan","grand_canyon","usgs_big_sur_v2")
+        expected=["realscale:"+s for s in default_modes]
         self.assertEqual(j["values"][:len(expected)],expected)
-        self.assertEqual(j["values"][len(expected)],"realscale:usgs_big_sur_v2")
-        self.assertTrue(all(s.startswith("realscale:lab_") for s in j["values"][len(expected)+1:]))
+        self.assertNotIn("realscale:usgs_big_sur",j["values"])
+        self.assertTrue(all(s.startswith("realscale:lab_") for s in j["values"][len(expected):]))
         self.assertEqual(len(j["values"]),len(set(j["values"])))
 
     def test_extended_preserves_all_eight(self):
