@@ -172,3 +172,74 @@ original vertical bounds and default sea level Y=63.
 
 Creating a new Lab hybrid world should always be followed by biome, spawn,
 seam, river connectivity and cave audits on at least two seeds.
+
+## v1.6 — Lithostitched and custom density functions (experimental)
+
+**Pinned source:** [Lithostitched 1.6.0 for NeoForge 1.21.1](https://modrinth.com/mod/lithostitched/version/1.6.0-neoforge-1.21.1),
+MIT licensed. The repository's Gradle mod dependencies resolve the artifact
+`maven.modrinth:XaDC71GB:u0UUKAE1`. A standalone RealScale mod installation
+also requires a matching Lithostitched JAR on **both client and server**.
+YACL continues to be a separate **client-only** dependency. Lithostitched is
+installed for future biome/structure and terrain interoperability; this
+release does **not** force global biome injection or use unsupported custom
+structure codecs.
+
+### Two native custom `DensityFunction` codec implementations
+
+1. `realscale:ridge_erosion`: takes `base`, seed-dependent `ridge_signal`,
+   seed-dependent `erosion_signal`, `ridge_gain` (0..0.32 density units),
+   and `erosion_gain` (0..0.24 density units). Smooth ridgeline uplift is
+   decreased where erosion climate is higher; incision subtracts a bounded
+   amount. The function is mathematically continuous when its inputs are
+   continuous and bounded by `base.minValue()-erosion_gain` and
+   `base.maxValue()+ridge_gain`. It is **not** a water-and-sediment transport
+   model; no volume or flow conservation is claimed.
+2. `realscale:strata`: takes `base`, noise-based `warp`, `strength`
+   (0..0.06 density units) and `period` (24..128 blocks). Adds a subtle
+   vertically periodic solidity variation with a clamped seed-sensitive warp,
+   *not* ore/material layer replacement. The function retains safe min/max
+   bounds and is applied only when the user selects nonzero strata strength.
+
+The YACL editor now offers three additional opt-in controls:
+`Ridge Enhancement 0..40`, `Erosion Incision 0..30`, and
+`Warped Geologic Strata 0..20`; all default **OFF (0)**.
+Gradle reads the YACL draft before resource compilation, and
+`scripts/terrain_lab.py` writes new unique density registries for the
+**three merged families only**. CLI equivalent:
+
+```bash
+python3 scripts/terrain_lab.py --preset landscape --blend 25 \
+  --ridge 10 --erosion 8 --strata 4 \
+  --relief 1.02 --elevation 4 --caves 50 --river-grade 6
+```
+
+The two new Java codecs are registered in `RealScaleMod.registerDensity`
+alongside the existing immutable `realscale:dem_density`. They are visited,
+seed-resolved and evaluated in the same regular `NoiseBasedChunkGenerator`
+pipeline used by RealScale. **Old v1.5 generated profile IDs remain byte-for-byte
+unchanged when all three new sliders equal zero**, and all eight historical
+preset IDs remain available. Y=63 sea level remains fixed.
+
+### Why no custom ChunkGenerator now?
+
+Replacing the existing `NoiseBasedChunkGenerator` would require implementing
+and validating the complete chunk lifecycle (terrain density, surface rules,
+aquifers, biome climate, features, structures, heightmaps, cave intersection,
+spawn and persistence). The current architecture can already register
+custom math without giving up the proven chunk lifecycle. Full replacement
+should be considered only if a future globally continuous watershed / DEM
+tile solver needs algorithms that cannot be encoded efficiently as
+density functions or ordinary placed features.
+
+### Verification
+
+```bash
+python3 -m unittest discover -s qa -p 'test_*.py' -v
+cd neoforge && gradle --no-daemon --console=plain test build
+```
+
+The dedicated experimental CI generates **a new landscape world with all
+three custom options active** and scans actual saved terrain, rivers, caves
+and spawn. This test must pass before the new functions are considered
+verified in live NeoForge worldgen. Broad seed testing and in-game visual
+verification remain separate unresolved checks.
