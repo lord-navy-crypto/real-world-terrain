@@ -3,10 +3,10 @@ loaderVersion="[4,)"
 license="Source research implementation; retains Minecraft's own vanilla assets/data references"
 [[mods]]
 modId="realscale"
-version="1.4.1-terrain-lab-yacl-experimental"
-displayName="RealScale Terrain - 5 Presets, Surface Rivers and Gated Caves"
+version="1.6.0-geomorphology-lithostitched-experimental"
+displayName="RealScale Terrain - 3 Blendable Families, GeoMath and Lithostitched"
 authors="RealScale Research"
-description="Experimental NEW worlds only; five curated presets and eight legacy IDs, sea-level Y63, locally grounded river-biome water, cautious 3D cave topology and preserved Big Sur DEM."
+description="Experimental new worlds only; three editable merged terrain families, eight original worldgen IDs, codec-registered ridge and geology functions, Lithostitched support, Y=63 sea level, and measured Big Sur DEM."
 [[dependencies.realscale]]
 modId="neoforge"
 type="required"
@@ -28,3 +28,13 @@ type="required"
 versionRange="[3.8.1,)"
 ordering="NONE"
 side="CLIENT"
+
+# Lithostitched provides worldgen extensibility and structure/biome integration.
+# Version 1.6.0 was published for NeoForge 1.21.1; no global biome/structure
+# injection is enabled until audited. Unlike YACL this runs on both sides.
+[[dependencies.realscale]]
+modId="lithostitched"
+type="required"
+versionRange="[1.6.0,)"
+ordering="NONE"
+side="BOTH"
