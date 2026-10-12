@@ -243,3 +243,93 @@ three custom options active** and scans actual saved terrain, rivers, caves
 and spawn. This test must pass before the new functions are considered
 verified in live NeoForge worldgen. Broad seed testing and in-game visual
 verification remain separate unresolved checks.
+
+## v1.7 Experimental — altitude-aware biome climate (safe per-world implementation)
+
+### What is implemented
+
+New **Altitude-Aware Biomes** slider (0..100, YACL default **65**) applies
+ONLY when preparing a **new merged Terrain Lab** world type. It changes the
+`noise_router.temperature` input of **that world's own** `noise_settings`.
+Vanilla's existing `minecraft:multi_noise` biome picker therefore receives
+lower temperature at higher sampling altitude, while humidity, erosion,
+continentalness, weirdness, underground biome parameters, surface rules,
+and sea level are left in their original registered pipelines.
+
+The generated density node `realscale:terrain_lab/<id>/biome_temperature`
+contains:
+
+```json
+{
+  "type": "minecraft:add",
+  "argument1": "<original temperature shifted-noise density function>",
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": -0.585,
+    "argument2": {
+      "type": "minecraft:y_clamped_gradient",
+      "from_y": 96,
+      "to_y": 320,
+      "from_value": 0.0,
+      "to_value": 1.0
+    }
+  }
+}
+```
+
+This illustrative example uses **65%** slider strength; the `argument1` in
+actual generated JSON contains the *unchanged real base temperature object*,
+not a placeholder string. The cooling factor is
+`0.009 * climate_percent * clamp((block_y - 96) / 224, 0, 1)`.
+Temperatures below Y=96 remain identical to their base values. Maximum
+adjustment is -0.9 climate noise units at 100%. This is a **Minecraft
+biome-selection temperature parameter**, not a Celsius air-temperature
+simulation, and remains affected by seed, humidity, inlandness and other
+biome parameters.
+
+Use:
+
+```bash
+python3 scripts/terrain_lab.py --preset alpine --blend 25 \
+  --biome-cooling 65 --ridge 10 --erosion 8 --strata 4
+```
+
+Or save the slider in **Mods -> RealScale Terrain -> Config**, exit the game,
+and use Gradle `runClient` again to bake the new immutable profile into
+the worldgen registries. The revised `lab_*` ID includes nonzero climate
+strength; existing v1.5/v1.6 IDs and old world registries are untouched.
+`--biome-cooling 0` preserves byte-identical legacy profile JSON/hashes.
+Measured **USGS Big Sur** stays read-only.
+
+### Why not add a global Lithostitched biome injector?
+
+Lithostitched 1.6.0 supports `data/<namespace>/lithostitched/biome_injector`
+with custom density function parameter conditions. However, its published
+injector format scopes to a **dimension key**, e.g.
+`"dimension":"minecraft:overworld"`, not to a named *world preset*.
+Unconditionally bundling an Overworld injector in the RealScale mod
+would change **vanilla or third-party Overworlds as well** and could save
+an incompatible wrapper in user worlds. We deliberately did **not**
+register any automatic global injector. The installed Lithostitched mod
+is still available for separate compatible worldgen integration; the
+safe, per-preset climate-routing link uses Minecraft's own
+`NoiseRouter`, which Lithostitched can coexist with.
+
+### Verification and limitations
+
+The saved Anvil world scanner now reports actual surface biome distributions
+in four Y bands, including snowy/frozen and hot/dry/tropical groups:
+Y63–95, Y96–159, Y160–239, and Y240+. Its observations distinguish
+climate-routing effects from the surface material and terrain-shape tests.
+These are diagnostics; they cannot establish a universally correct snowline.
+The dedicated real NeoForge server job uses `--biome-cooling 65` plus the
+custom geometry functions to check live registration and saved-block data.
+
+Important: this is an **altitude temperature lapse**, not a complete
+surface-height-prediction / temperature-rainfall / geomorphology model.
+Deep underground biome selection may also be influenced by Y-dependent
+temperature because it uses a 3D biome sampler. High desert and alpine
+vegetation still require calibrated climate/humidity and surface rules;
+Lithostitched alone does not solve that. No default worldgen preset, biome
+injector, vanilla game climate, existing save, or external dimension is
+modified by this optional Lab parameter.
