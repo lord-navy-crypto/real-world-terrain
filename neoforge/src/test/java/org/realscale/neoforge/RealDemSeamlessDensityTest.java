@@ -71,6 +71,15 @@ public final class RealDemSeamlessDensityTest {
                    "An artificial exterior terrace kink remains");
     }
 
+    @Test void cachedHeightIsIdenticalForEverySampleAndRepeatedVerticalUse() {
+        for(int x=-2464;x<=2464;x+=37)
+            for(int z=-2464;z<=2464;z+=43) {
+                double expected=RealDemSeamlessMath.extendedHeight(x,z);
+                assertEquals(expected,RealDemSeamlessMath.cachedExtendedHeight(x,z),0.0);
+                assertEquals(expected,RealDemSeamlessMath.cachedExtendedHeight(x,z),0.0);
+            }
+    }
+
     @Test void exteriorHeightStaysWithinWorldBounds() {
         for(int x=-1500;x<=1500;x+=100)
             for(int z=-1500;z<=1500;z+=100) {
