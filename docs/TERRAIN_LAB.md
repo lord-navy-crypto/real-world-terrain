@@ -333,3 +333,40 @@ vegetation still require calibrated climate/humidity and surface rules;
 Lithostitched alone does not solve that. No default worldgen preset, biome
 injector, vanilla game climate, existing save, or external dimension is
 modified by this optional Lab parameter.
+
+## v1.8 Optional Valley Warming — local relative-depression proxy
+
+YACL now offers **Valley Warming (Optional)**, from 0 to 100 in 5-point
+increments, with a **safe default of 0 (OFF)**. The equivalent CLI setting is
+`--valley-warming 35`. Combined use:
+
+```bash
+python3 scripts/terrain_lab.py --preset alpine --blend 25 \
+  --biome-cooling 65 --valley-warming 35
+```
+
+When nonzero, `scripts/terrain_lab.py` wraps **only the new Lab world**
+temperature density function in the new registered
+`realscale:valley_temperature` custom `DensityFunction` codec.
+
+This codec compares the local height signal to four samples 96 blocks away
+(E/W/N/S). A positive relative depression, inland continentalness and
+height below Y256 all provide smooth, bounded factors. The maximum warmth
+at 100% is +0.35 *Minecraft biome-climate parameter* (not 0.35 °C).
+Near-ocean regions and high ridges receive no guaranteed warming.
+The default 0 does **not** add any codec or change previous v1.7 world
+preset IDs, world files or old saves. The measured Big Sur DEM is excluded.
+
+**Limitations:** This is an approximate topographic position index, NOT a
+surface-aware weather forecast. A true atmospheric model would need
+radiation, winds, moisture, time-of-day and cold-air pooling calculations;
+cold-air drainage and inversion can make actual valleys colder than slopes.
+Minecraft's biome climate is a fixed worldgen classification and cannot
+represent daily temperatures. Samples may have extra noise-evaluation cost,
+so this feature is opt-in until verified on multiple seeds.
+
+Validation includes unit tests of bounds and coast/elevation masking, YACL
+draft import and actual NeoForge server world generation with both the
+altitude cooling (65) and valley warming (35) switched on. The tests do not
+claim that all valleys become warmer, or that Lithostitched automatically
+guarantees climatically correct biome distributions.

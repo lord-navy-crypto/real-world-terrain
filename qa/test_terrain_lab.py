@@ -102,6 +102,28 @@ class TerrainLabTests(unittest.TestCase):
         data=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/created.pop().name)
         self.assertIn("biome_temperature",data["noise_router"]["temperature"])
 
+    def test_saved_yacl_valley_warming_becomes_new_temperature_function(self):
+        draft=self.root/"valley-yacl.json"
+        draft.write_text(json.dumps({
+            "preset":"alpine","blendPercent":25,"reliefPercent":100,
+            "elevation":0,"caves":50,"riverGrade":6,"inland":True,
+            "ridgePercent":0,"erosionPercent":0,"strataPercent":0,
+            "climatePercent":65,"valleyPercent":35
+        }))
+        before=set((self.root/lab.GEO_ROOT/"noise_settings").glob("lab_alpine_*.json"))
+        self.assertEqual(lab.main(["--root",str(self.root),"--from-yacl",str(draft)]),0)
+        new=set((self.root/lab.GEO_ROOT/"noise_settings").glob("lab_alpine_*.json"))-before
+        self.assertEqual(len(new),1)
+        name=new.pop().stem
+        output=lab.jread(self.root,lab.GEO_ROOT/"density_function/terrain_lab"/name/"biome_temperature.json")
+        self.assertEqual(output["type"],"realscale:valley_temperature")
+        self.assertEqual(output["warmth"],.1225)
+        client=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleTerrainLabClient.java").read_text()
+        self.assertIn('Valley Warming (Optional)',client)
+        self.assertIn("valleyPercent = 0",client)
+        entry=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
+        self.assertIn('"valley_temperature"',entry)
+
     def test_new_profile_cannot_change_historical_modes(self):
         lab.apply(self.root,"realism_max",1.2,30,70,6)
         for name,digest in self.originals.items():
