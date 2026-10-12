@@ -6,5 +6,6 @@
   "generator.realscale.realism_max": "RealScale · 综合自然地形（Realism MAX）",
   "generator.realscale.realistic_mountains": "真实山脉 · 审计版",
   "generator.realscale.ultimate": "终极大 · 审计版 0.4",
-  "generator.realscale.usgs_big_sur": "RealScale · USGS Big Sur 实测高程"
+  "generator.realscale.usgs_big_sur": "RealScale · USGS Big Sur 实测高程",
+  "generator.realscale.usgs_big_sur_v2": "RealScale · USGS Big Sur 实测地形修复版 v2"
 }
