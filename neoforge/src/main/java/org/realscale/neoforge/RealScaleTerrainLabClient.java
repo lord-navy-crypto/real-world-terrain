@@ -42,6 +42,9 @@ public final class RealScaleTerrainLabClient {
     private static class Draft {
         String preset = "landscape";
         int blendPercent = 25;
+        int ridgePercent = 0;
+        int erosionPercent = 0;
+        int strataPercent = 0;
         int reliefPercent = 100;
         int elevation = 0;
         int caves = 50;
@@ -79,6 +82,9 @@ public final class RealScaleTerrainLabClient {
             return switch (d.preset) {
                 case "landscape", "alpine", "canyon" ->
                         d.blendPercent >= 0 && d.blendPercent <= 50
+                        && d.ridgePercent >= 0 && d.ridgePercent <= 40
+                        && d.erosionPercent >= 0 && d.erosionPercent <= 30
+                        && d.strataPercent >= 0 && d.strataPercent <= 20
                         && d.reliefPercent >= 80 && d.reliefPercent <= 125
                         && d.elevation >= -48 && d.elevation <= 48
                         && d.caves >= 20 && d.caves <= 80
@@ -123,6 +129,18 @@ public final class RealScaleTerrainLabClient {
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,50).step(1))
                     .build())
                 .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Ridge Enhancement"))
+                    .description(description("0..40; seed-dependent ridge shaping. Approximation, not hydraulic erosion."))
+                    .binding(0, () -> d.ridgePercent, v -> d.ridgePercent = v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,40).step(1))
+                    .build())
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Erosion Incision"))
+                    .description(description("0..30; seed-dependent limited terrain cutting. Not a watershed solver."))
+                    .binding(0, () -> d.erosionPercent, v -> d.erosionPercent = v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,30).step(1))
+                    .build())
+                .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Terrain Relief (percent)"))
                     .description(description("80..125% of original land-height density; affects NEW world only."))
                     .binding(100, () -> d.reliefPercent, v -> d.reliefPercent = v)
@@ -137,6 +155,12 @@ public final class RealScaleTerrainLabClient {
                 .build())
             .category(ConfigCategory.createBuilder()
                 .name(Component.literal("Caves and Rivers"))
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Warped Geologic Strata"))
+                    .description(description("0..20; subtle layered solidity bands. Does not swap rock materials."))
+                    .binding(0, () -> d.strataPercent, v -> d.strataPercent = v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,20).step(1))
+                    .build())
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Cave Activity"))
                     .description(description("20..80; higher tends to permit more rock cavities."))
