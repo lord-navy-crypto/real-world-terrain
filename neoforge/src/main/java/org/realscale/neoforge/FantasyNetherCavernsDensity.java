@@ -56,7 +56,7 @@ public record FantasyNetherCavernsDensity(
         // bedrock roof. The original Nether void field remains unchanged.
         double safety = GeoMath.smoothstep(30, 50, y)
                 * (1.0 - GeoMath.smoothstep(222, 246, y));
-        double safeCavity = openings * strength + (1.0-safety) * 0.65;
+        double safeCavity = openings * strength * safety + (1.0-safety) * 0.65;
         return Math.min(rock, safeCavity);
     }
 
