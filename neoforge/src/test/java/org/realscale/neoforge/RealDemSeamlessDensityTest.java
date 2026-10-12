@@ -54,6 +54,19 @@ public final class RealDemSeamlessDensityTest {
             }
     }
 
+    @Test void extrapolatedSlopeTapersToFlatWithoutHardCrease() {
+        assertEquals(0.0,RealDemSeamlessMath.taperedOutsideDisplacement(0),1e-12);
+        assertEquals(64.0,RealDemSeamlessMath.taperedOutsideDisplacement(128),1e-12);
+        assertEquals(64.0,RealDemSeamlessMath.taperedOutsideDisplacement(192),1e-12);
+        assertEquals(-64.0,RealDemSeamlessMath.taperedOutsideDisplacement(-192),1e-12);
+        double before=RealDemSeamlessMath.taperedOutsideDisplacement(128)
+                    -RealDemSeamlessMath.taperedOutsideDisplacement(127);
+        double after=RealDemSeamlessMath.taperedOutsideDisplacement(129)
+                   -RealDemSeamlessMath.taperedOutsideDisplacement(128);
+        assertTrue(Math.abs(before-after)<0.01,
+                   "An artificial exterior terrace kink remains");
+    }
+
     @Test void exteriorHeightStaysWithinWorldBounds() {
         for(int x=-1500;x<=1500;x+=100)
             for(int z=-1500;z<=1500;z+=100) {
