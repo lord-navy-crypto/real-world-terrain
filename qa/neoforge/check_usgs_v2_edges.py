@@ -34,6 +34,10 @@ def scan(root):
                     if h is not None:columns[(x,z)]=h
     interior=[abs(y-source(x,z)) for (x,z),y in columns.items()
               if -60<=x<=60 and -60<=z<=60]
+    coverage=[abs(y-source(x,z)) for (x,z),y in columns.items()
+              if -239<=x<=239 and -239<=z<=239]
+    seam_residuals=[]
+    nonseam_residuals=[]
     borders=[]
     internal=[]
     directional={side:[] for side in ('west','east','north','south')}
@@ -43,6 +47,13 @@ def scan(root):
             other=columns.get((nx,nz))
             if other is None:continue
             step=abs(other-y)
+            if -239<=x<=239 and -239<=z<=239 and -239<=nx<=239 and -239<=nz<=239:
+                expected_step=source(nx,nz)-source(x,z)
+                residual=abs((other-y)-expected_step)
+                if (nx==x+1 and x%16==15) or (nz==z+1 and z%16==15):
+                    seam_residuals.append(residual)
+                else:
+                    nonseam_residuals.append(residual)
             side=None
             if nz==z and x==-241 and -64<=z<=64:side="west"
             elif nz==z and x==239 and -64<=z<=64:side="east"
@@ -60,6 +71,11 @@ def scan(root):
         "measured_interior_samples":len(interior),
         "measured_interior_median_abs_error":round(statistics.median(interior),3) if interior else None,
         "measured_interior_p95_abs_error":p95(interior),
+        "dem_full_tile_samples":len(coverage),
+        "dem_full_tile_p95_abs_error":p95(coverage),
+        "chunk_seam_pair_samples":len(seam_residuals),
+        "chunk_seam_residual_p95":p95(seam_residuals),
+        "nonseam_residual_p95":p95(nonseam_residuals),
         "dem_edge_adjacent_pairs":len(borders),
         "edge_step_p95":p95(borders),
         "edge_step_max":max(borders) if borders else None,
@@ -74,6 +90,12 @@ def scan(root):
         raise SystemExit("Insufficient USGS interior or four-sided boundary samples; generation unverified")
     if report["measured_interior_p95_abs_error"]>25:
         raise SystemExit("Measured DEM terrain deviates excessively from source heights")
+    if len(coverage)<300 or p95(coverage)>25:
+        raise SystemExit("Not enough full tile coverage or DEM elevation disagreement")
+    if len(seam_residuals)<32 or len(nonseam_residuals)<100:
+        raise SystemExit("Insufficient observed chunk seams for DEM continuity analysis")
+    if p95(seam_residuals)>18 or p95(seam_residuals)>max(8,2*p95(nonseam_residuals)+4):
+        raise SystemExit("Minecraft chunk seam diverges from expected local DEM slope")
     if report["edge_step_p95"]>32 or report["edge_step_max"]>96:
         raise SystemExit("USGS boundary has an implausible discontinuity")
 
