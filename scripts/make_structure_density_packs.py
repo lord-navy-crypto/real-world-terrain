@@ -27,10 +27,6 @@ VANILLA = {
     "jungle_temples":(32,8,14357619,["jungle_pyramid"]),
     "ocean_monuments":(32,5,10387313,["monument"]),
     "ocean_ruins":(20,8,14357621,["ocean_ruin_cold","ocean_ruin_warm"]),
-    "ruined_portals":(40,15,34222645,["ruined_portal","ruined_portal_desert",
-                                      "ruined_portal_jungle","ruined_portal_swamp",
-                                      "ruined_portal_mountain","ruined_portal_ocean",
-                                      "ruined_portal_nether"]),
     "shipwrecks":(24,4,165745295,["shipwreck","shipwreck_beached"]),
     "swamp_huts":(32,8,14357620,["swamp_hut"]),
     "trail_ruins":(34,8,83469867,["trail_ruins"]),
@@ -42,11 +38,13 @@ VANILLA = {
 }
 TRIANGULAR = frozenset({"ocean_monuments", "woodland_mansions"})
 # All items above are Overworld-only structure sets.
+# NOTE: ruined_portals is a SHARED Overworld+Nether structure set; modifying
+# it would secretly increase Nether ruined portal density too. Omit it.
 # Omit pillager_outposts entirely: it has a 0.2 frequency reduction and a
 # ten-chunk village exclusion that requires separately modeled interactions.
 # Omitting strongholds also preserves their fixed 128-ring distribution.
 OMITTED = ("pillager_outposts", "strongholds", "mineshafts",
-           "buried_treasures", "nether_complexes", "nether_fossils",
+           "buried_treasures", "ruined_portals", "nether_complexes", "nether_fossils",
            "end_cities")
 
 def original_set(name):
