@@ -46,6 +46,7 @@ public final class RealScaleTerrainLabClient {
         int erosionPercent = 0;
         int strataPercent = 0;
         int climatePercent = 65;
+        int valleyPercent = 0;
         int reliefPercent = 100;
         int elevation = 0;
         int caves = 50;
@@ -87,6 +88,7 @@ public final class RealScaleTerrainLabClient {
                         && d.erosionPercent >= 0 && d.erosionPercent <= 30
                         && d.strataPercent >= 0 && d.strataPercent <= 20
                         && d.climatePercent >= 0 && d.climatePercent <= 100
+                        && d.valleyPercent >= 0 && d.valleyPercent <= 100
                         && d.reliefPercent >= 80 && d.reliefPercent <= 125
                         && d.elevation >= -48 && d.elevation <= 48
                         && d.caves >= 20 && d.caves <= 80
@@ -146,6 +148,12 @@ public final class RealScaleTerrainLabClient {
                     .name(Component.literal("Altitude-Aware Biomes"))
                     .description(description("0 = vanilla climate. Higher settings cool elevated terrain in newly generated worlds; coastal and low valley climates remain unchanged."))
                     .binding(65, () -> d.climatePercent, v -> d.climatePercent = v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5))
+                    .build())
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Valley Warming (Optional)"))
+                    .description(description("0=off. Bounded local-valley warmth on inland terrain, using nearby terrain signals. Cold-air inversions are not simulated; requires restart and new world."))
+                    .binding(0, () -> d.valleyPercent, v -> d.valleyPercent = v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5))
                     .build())
                 .option(Option.<Integer>createBuilder()

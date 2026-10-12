@@ -25,6 +25,21 @@ public class GeomorphologyMathTest {
         assertTrue(crest>flank);
     }
     @Test
+    public void valleyWarmingIsBoundedAndOnlyAffectsInlandDepressions(){
+        double baseline=.10;
+        double deep=GeoMath.valleyTemperature(baseline,-.2,.4,.8,90,.35);
+        assertTrue(deep>baseline);
+        assertTrue(deep<=baseline+.35+1e-10);
+        double high=GeoMath.valleyTemperature(baseline,-.2,.4,.8,300,.35);
+        assertEquals(baseline,high,1e-10);
+        double ridge=GeoMath.valleyTemperature(baseline,.6,.3,.8,90,.35);
+        assertEquals(baseline,ridge,1e-10);
+        double ocean=GeoMath.valleyTemperature(baseline,-.2,.4,-.9,90,.35);
+        assertEquals(baseline,ocean,1e-10);
+        double off=GeoMath.valleyTemperature(baseline,-.2,.4,.8,90,0);
+        assertEquals(baseline,off,1e-10);
+    }
+    @Test
     public void strataHasNoBiasAtZeroStrengthAndBoundedAtPositiveStrength() {
         for (int y=-60;y<=960;y+=11) {
             assertEquals(0.5,GeoMath.strata(0.5,0.23,y,0,64),1e-9);

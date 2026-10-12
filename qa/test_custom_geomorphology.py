@@ -80,6 +80,30 @@ class CustomGeoTests(unittest.TestCase):
             with self.subTest(n=n),self.assertRaises(ValueError):
                 lab.files_for(self.root,"landscape",1.0,0,50,6,climate=n)
 
+    def test_valley_warming_only_new_worlds_and_is_based_on_nearby_terrain(self):
+        for family in lab.FAMILIES:
+            with self.subTest(family=family):
+                name,opts,out=lab.files_for(self.root,family,1,0,50,6,climate=65,valley=40)
+                folder=lab.GEO_ROOT/"density_function/terrain_lab"/name
+                temp=out[folder/"biome_temperature.json"]
+                self.assertEqual(temp["type"],"realscale:valley_temperature")
+                self.assertEqual(temp["height_signal"],f"realscale:terrain_lab/{name}/height_signal")
+                self.assertEqual(temp["radius"],96)
+                self.assertEqual(temp["warmth"],.14)
+                self.assertEqual(temp["base"]["type"],"minecraft:add")
+                self.assertEqual(opts["valley"],40)
+                noise=out[lab.GEO_ROOT/"noise_settings"/(name+".json")]
+                self.assertEqual(noise["sea_level"],63)
+        for bad in (-1,101,12.5,"40"):
+            with self.subTest(bad=bad),self.assertRaises(ValueError):
+                lab.files_for(self.root,"landscape",1,0,50,6,valley=bad)
+        with self.assertRaises(ValueError):
+            lab.files_for(self.root,"realism_max",1,0,50,6,valley=30)
+        baseline,_,original=lab.files_for(self.root,"landscape",1,0,50,6,climate=65)
+        same,_,identical=lab.files_for(self.root,"landscape",1,0,50,6,climate=65,valley=0)
+        self.assertEqual(baseline,same)
+        self.assertEqual(original,identical)
+
     def test_zero_values_preserve_v15_profile_hash_and_files(self):
         one,options,files=lab.files_for(self.root,"landscape",1.0,0,50,6)
         two,options2,files2=lab.files_for(self.root,"landscape",1.0,0,50,6,ridge=0,erosion=0,strata=0)
