@@ -78,7 +78,7 @@ jobs:
               import sys
               sys.path.insert(0,str(pathlib.Path('../qa/neoforge').resolve()))
               from ensure_spawn_chunk import ensure_saved_spawn_chunk
-              ensure_saved_spawn_chunk(pathlib.Path('run'),os.environ['LAB_WORLD')
+              ensure_saved_spawn_chunk(pathlib.Path('run'),os.environ['LAB_WORLD'])
             except Exception as exc:
               spawn_probe_error=repr(exc)
               print('QA_SPAWN_PROBE_FAILED:',spawn_probe_error,flush=True)
