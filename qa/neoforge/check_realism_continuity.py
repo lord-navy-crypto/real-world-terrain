@@ -7,6 +7,35 @@ import json,sys,statistics
 from realscale_headless_qa import iter_region_chunks,surface_height,get_block,unpack_palette_index,read_nbt
 import gzip
 
+def altitude_biome_audit(heights, surface_biomes):
+    """Observed saved-block biome distribution by actual surface elevation.
+
+    Diagnostic, not a guarantee of climatically correct biome placement.
+    Nether/end and all unsampled positions are excluded by caller.
+    """
+    categories=((63,95),(96,159),(160,239),(240,4095))
+    bands={}
+    for low,high in categories:
+        subset=[surface_biomes.get(pos) for pos,y in heights.items()
+                if low<=y<=high and isinstance(surface_biomes.get(pos),str)]
+        snowy=sum(any(fragment in b for fragment in (
+            "snowy","frozen","ice_spikes","grove")) for b in subset)
+        hot=sum(any(fragment in b for fragment in (
+            "desert","savanna","jungle","badlands")) for b in subset)
+        bands[f"{low}-{high}"]={
+            "sample_columns":len(subset),
+            "snowy_or_frozen_count":snowy,
+            "hot_dry_or_tropical_count":hot,
+            "snowy_or_frozen_fraction":round(snowy/len(subset),6) if subset else None,
+            "hot_dry_or_tropical_fraction":round(hot/len(subset),6) if subset else None,
+        }
+    return {
+        "bands":bands,
+        "method":"Saved surface Y and saved surface biome palette only",
+        "note":"No guaranteed monotonic snowline; local humidity and world seed still matter."
+    }
+
+
 def classify_river_surface(upper, beneath, deep):
     """Only claim a wet river if liquid water actually exists.
 
@@ -433,6 +462,7 @@ def scan(root,preset="realism_max"):
       "height_p95":pct(list(H.values()),.95),
       "configured_sea_level":json.loads(settings_path.read_text())["sea_level"],
       "surface_biome_counts":surface_biome_counts,
+      "altitude_biome_audit":altitude_biome_audit(H,surface_biomes),
       "river_biome_columns":river_biome_columns,
       "river_surface_block_counts":river_surface_block_counts,
       "river_dry_surface_block_counts":river_dry_surface_block_counts,
