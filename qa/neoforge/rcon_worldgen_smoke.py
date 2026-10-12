@@ -113,22 +113,28 @@ def main(root,expected_preset,profile):
         if rcon is None:raise RuntimeError("Cannot authenticate to enabled RCON")
         try:
             if profile=="usgs":
+                # Previous QA requested 25 + 9*9 chunks at once in a
+                # 2096-block world. That overloaded CI and stalled RCON.
+                # One-chunk samples straddle EACH measured tile edge;
+                # include transition and the fully procedural fallback
+                # beyond v2's 2048-block exterior blending radius.
+                sites=[
+                    (-8,-8),(8,8),         # DEM measured interior
+                    (-245,8),(-235,8),      # west edge (x=-240)
+                    (233,8),(245,8),       # east edge (x=+240)
+                    (8,-245),(8,-235),     # north edge (z=-240)
+                    (8,233),(8,245),       # south edge (z=+240)
+                    (-896,8),(896,8),      # east/west mid-transition
+                    (-2352,8),(2352,8)    # outside v2 blend (abs(x)>2288)
+                ]
                 commands=[
-                    "execute in minecraft:overworld run forceload add -32 -32 32 32",
-                    "execute in minecraft:overworld run forceload add 224 -16 256 16",
-                    "execute in minecraft:overworld run forceload add -256 -16 -224 16",
-                    "execute in minecraft:overworld run forceload add -16 224 16 256",
-                    "execute in minecraft:overworld run forceload add -16 -256 16 -224",
-                    "execute in minecraft:overworld run forceload add 384 -16 416 16",
-                    "execute in minecraft:overworld run forceload add -416 -16 -384 16",
-                    "execute in minecraft:overworld run forceload add 1016 0",
-                    "execute in minecraft:overworld run forceload add -1016 0"
+                    f"execute in minecraft:overworld run forceload add {x} {z}"
+                    for x,z in sites
                 ]
             elif profile=="distant":
-                commands=[
-                    "execute in minecraft:overworld run forceload add 1024 1024",
-                    "execute in minecraft:overworld run forceload add -1024 -1024"
-                ]
+                # Spawn already loads many chunks. Avoid starting two
+                # expensive remote regions concurrently in high-relief maps.
+                commands=["execute in minecraft:overworld run forceload add 1024 1024"]
             elif profile=="packs":
                 # A real NeoForge server must load BOTH optional datapacks.
                 # Static JSON/ZIP tests alone cannot establish registry or
@@ -182,6 +188,8 @@ def main(root,expected_preset,profile):
                 raise ValueError("Unknown QA profile "+profile)
             for command in commands:
                 rcon.send(command)
+                if profile=="usgs":
+                    time.sleep(1)
             time.sleep(120 if profile=="structures" else (100 if profile=="fantasy" else (75 if profile=="usgs" else 35)))
             rcon.send("save-all flush")
             time.sleep(5)
