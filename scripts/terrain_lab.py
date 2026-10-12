@@ -97,7 +97,7 @@ def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ri
     if preset not in FAMILIES and valley:
         raise ValueError("Valley warming applies only to merged Lab families")
     if latitude not in ("off","earth","preview","radial_earth","radial_preview","radial_balanced"):
-        raise ValueError("Latitude mode must be off, earth, preview, radial_earth or radial_preview")
+        raise ValueError("Latitude mode must be off, earth, preview, radial_earth, radial_preview or radial_balanced")
     if type(latitude_strength) is not int or not 0 <= latitude_strength <= 100:
         raise ValueError("Latitude strength must be 0..100")
     if type(equator_z) is not int or not -29_000_000 <= equator_z <= 29_000_000:
@@ -564,7 +564,7 @@ def main(argv=None):
                         help="Opt-in height-aware temperature biome signal (0..100)")
     parser.add_argument("--valley-warming",type=int,default=0,
                         help="Opt-in bounded relative-valley temperature boost (0..100)")
-    parser.add_argument("--latitude-mode",choices=("off","earth","preview","radial_earth","radial_preview"),default="off",
+    parser.add_argument("--latitude-mode",choices=("off","earth","preview","radial_earth","radial_preview","radial_balanced"),default="off",
                         help="meridional or concentric latitude; Earth = 1m/block, preview = pole at radius 16,384 blocks")
     parser.add_argument("--latitude-strength",type=int,default=70,help="Latitude climate strength 0..100")
     parser.add_argument("--equator-z",type=int,default=0,
@@ -589,7 +589,7 @@ def main(argv=None):
         print("Measured (read-only): usgs_big_sur")
         print("Legacy compatible algorithms:",", ".join(LEGACY_EDITABLE))
         print("Tuning modes:",", ".join(PROFILES))
-        print("Adjustable: mix 0..50%, ridge 0..40, erosion 0..30, strata 0..20, biome cooling 0..100, valley warming 0..100, latitude mode off/earth/preview/radial_earth/radial_preview, latitude strength 0..100, equator-z, basin warming 0..100, relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
+        print("Adjustable: mix 0..50%, ridge 0..40, erosion 0..30, strata 0..20, biome cooling 0..100, valley warming 0..100, latitude mode off/earth/preview/radial_earth/radial_preview/radial_balanced, latitude strength 0..100, equator-z, basin warming 0..100, relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
         print("USGS Big Sur is a read-only measured DEM.")
         return 0
     root=args.root or resource_root()
