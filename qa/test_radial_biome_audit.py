@@ -23,6 +23,24 @@ class RadialBiomeAuditTests(unittest.TestCase):
         self.assertEqual(result["equatorial_0_30"]["warm_biome_fraction"],.5)
         self.assertEqual(result["range_blocks"],[0,1000])
 
+    def test_balanced_mapping_and_high_tropical_snow_warning(self):
+        radial={"center_x":0,"center_z":0,"pole_distance":8192,
+                "strength":.7,"balanced":True}
+        heights={(i,0):300 for i in range(80)}
+        biomes={(i,0):"minecraft:snowy_slopes" for i in range(80)}
+        report=radial_biome_audit(heights,biomes,radial)
+        self.assertEqual(report["mode"],"radial_balanced")
+        self.assertEqual(report["equatorial_plateau_check"]["high_plateau_columns_y240_plus"],80)
+        self.assertIsNotNone(report["equatorial_plateau_check"]["warning"])
+
+    def test_non_linear_band_at_radius_one_third_pole(self):
+        radial={"center_x":0,"center_z":0,"pole_distance":8192,
+                "strength":.7,"balanced":True}
+        h={(2730,0):260}
+        b={(2730,0):"minecraft:plains"}
+        out=radial_biome_audit(h,b,radial)
+        self.assertEqual(out["equatorial_0_30"]["sample_columns"],1)
+
     def test_no_radial_mode_is_explicitly_reported(self):
         self.assertEqual(radial_biome_audit({}, {}, None),{"mode":"not_radial"})
 
