@@ -370,3 +370,110 @@ draft import and actual NeoForge server world generation with both the
 altitude cooling (65) and valley warming (35) switched on. The tests do not
 claim that all valleys become warmer, or that Lithostitched automatically
 guarantees climatically correct biome distributions.
+
+## v1.9 Experimental — continuous cyclic latitude and optional enclosed-basin climate
+
+### Earth-equivalent latitude
+
+The **Latitude Climate Cycle** selector has three modes:
+
+- **off** (default): no latitude adjustment. Previously generated profiles,
+  historic worlds, all eight old world types, and measured USGS Big Sur
+  remain unchanged.
+- **earth**: one block corresponds to one metre along the north-south
+  Earth meridian, with **10,001,966 blocks** per 90° equator-to-pole quarter.
+  The Earth's meridional circumference is approximately 40,007,864 m.
+- **preview**: **16,384 blocks** per quarter; useful for physically travelling
+  across the biome transitions. This deliberately compresses the climate
+  latitude scale, **not** the terrain block size, which remains 1m/1 block
+  only in the real Earth scale mapping.
+
+The configured **Equator World Z** defaults to 0. Minecraft's Z decreases
+northward, so north is -Z and south is +Z. Signed latitude folds continuously
+from **0° → +90° → 0° → −90° → 0°** (for northward travel), repeating
+every four quarters without a discontinuity at the poles. Its mathematical
+period is only a climate-model tiling choice, **not** a physical global map
+of a spherical Earth. Longitude (X) does **not yet** modulate climate.
+
+**Spawn caveat:** Actual automatic world spawn is chosen *after* terrain
+generation and can be far from world origin. The generator cannot safely
+use that future coordinate as an equator anchor without circular worldgen
+dependencies. Use `--equator-z <integer>` (or the YACL offset slider for
+Z = -4096..4096) to pick an appropriate predefined equator line; default 0
+is merely close to the preferred start region. We make no claim that the
+saved spawn is exactly at latitude 0°. If necessary, a future world
+creation UI can resolve the equator anchor before the terrain seed is
+registered, not by rewriting a previously played world's worldgen profile.
+
+The latitude codec `realscale:latitude_temperature` wraps the previous
+biome temperature density function. At 100% strength, it adds a bounded
+climate noise offset from +0.22 near the equator to −0.68 near the poles.
+It remains **relative to regional temperature**, not a real-world
+thermometer in Celsius; humidity, coastlines, mountains, erosion and existing
+temperature noise also affect the final selected biome.
+YACL **Latitude Climate Strength 0–100** defaults to 70, but the mode is
+OFF by default for compatibility. This is seed-independent Z latitude; it
+does not produce concentric rings around the player or the world origin.
+
+Example with real Earth scale:
+
+```bash
+python3 scripts/terrain_lab.py --preset landscape \
+  --biome-cooling 65 \
+  --latitude-mode earth --latitude-strength 70 --equator-z 0
+```
+
+Example for practical biome inspection:
+
+```bash
+python3 scripts/terrain_lab.py --preset alpine \
+  --latitude-mode preview --latitude-strength 70 --equator-z 0
+```
+
+### Enclosed basins vs ordinary valleys
+
+**Enclosed Basin Warming 0–100** (default OFF) is separate from the existing
+four-sample **Valley Warming** control. A `realscale:basin_temperature`
+node uses **eight points** in a 192-block ring to check whether terrain
+density-height signals indicate a consistently elevated rim. An open valley
+with one lower outlet fails that strict proxy. Warming is further gated
+by inlandness and bounded to +0.35 Minecraft climate units at strength 100.
+
+This classifier **does not generate new basin terrain** or alter rock strata.
+It changes which biome can appear in *preexisting basin-shaped landforms*.
+A true basin geometry generator with drainage/outlet and groundwater
+analysis remains a separate later implementation. A real basin may be
+cold at night due to cold-air drainage and temperature inversions; this
+optional warmer-basin proxy does **not** model diurnal climate, winds or
+physical energy conservation.
+
+Example:
+
+```bash
+python3 scripts/terrain_lab.py --preset alpine \
+  --latitude-mode preview --latitude-strength 70 \
+  --biome-cooling 65 --valley-warming 0 --basin-warming 20
+```
+
+The YACL screen saves `latitudeMode`, `latitudeStrength`, `equatorZ`
+and `basinPercent` into its **next-new-world draft**. The Python
+resource generator compiles it to a distinct hash-addressed world ID.
+No auto-created global Lithostitched Overworld injector or retcon to
+existing world settings is involved.
+
+### Verification and limitations
+
+Both new Java density functions implement Minecraft/NeoForge 1.21.1
+`DensityFunction` codecs and use the same NoiseRouter climate path.
+Standalone pure-math JUnit tests cover equator/north/south/pole continuity,
+bounds and enclosed vs open valleys. Python tests check YACL draft import,
+proper per-preset density graphs, historical hash stability and parameter
+validation. The experimental CI workflow starts a **new** server with
+preview latitude and enclosed basin warming enabled and checks the saved
+world and region files.
+
+A successful unit test cannot validate biome quality; final approval also
+requires inspecting several actually generated worlds at different seeds
+and measuring warm/cold biome distribution along north–south travel.
+One-block-per-metre real-scale travel to a pole would require about
+10 million blocks, well outside typical render-distance QA.
