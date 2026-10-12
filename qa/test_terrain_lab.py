@@ -33,7 +33,7 @@ class TerrainLabTests(unittest.TestCase):
         }
 
     def test_all_seven_procedural_profiles_build_independently(self):
-        for preset in lab.EDITABLE:
+        for preset in lab.LEGACY_EDITABLE:
             with self.subTest(mode=preset):
                 name,_,paths=lab.apply(self.root,preset,1.12,16,60,9)
                 settings=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
@@ -56,6 +56,18 @@ class TerrainLabTests(unittest.TestCase):
                 self.assertTrue(name.endswith("_g9"))
                 self.assertTrue((self.root/"assets/minecraft/lang/zh_cn.json").exists())
                 self.assertEqual(len(paths),10)
+
+
+    def test_ui_really_exposes_only_three_merged_families(self):
+        self.assertEqual(lab.EDITABLE,("landscape","alpine","canyon"))
+        native=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleTerrainLabClient.java").read_text()
+        self.assertIn('"landscape", "alpine", "canyon"',native)
+        self.assertIn('Secondary Landform Mix (%)',native)
+        self.assertIn('blendPercent',native)
+        self.assertNotIn('"realism_max", "georeal_ultimate", "himalayan", "grand_canyon",',native)
+        original=lab.jread(self.root,lab.TAG_ROOT/"extended.json")
+        self.assertEqual(len(original["values"]),8)
+        self.assertEqual(len(lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"]),4)
 
     def test_merged_families_blend_actual_height_density_functions(self):
         for family,(base,secondary) in lab.FAMILIES.items():
