@@ -83,6 +83,10 @@ def audit(root:Path):
                     samples.append({"structure":sid,"x":x,"z":z,
                                     "status":"piece_column_not_generated"})
                     continue
+                if cchunk.get("Status",cchunk.get("status"))!="minecraft:full":
+                    samples.append({"structure":sid,"x":x,"z":z,
+                                    "status":"piece_chunk_not_fully_generated"})
+                    continue
                 bottom=y1-1
                 # Warning only; foundations/bridges, buried structures and
                 # intentionally floating pieces can be valid gameplay.
@@ -126,6 +130,7 @@ def audit(root:Path):
         "structures_by_saved_chunk_status":dict(structures_by_saved_chunk_status),
         "skipped_starts_missing_usable_bbox":dict(skipped_structure_starts),
         "fully_generated_structure_starts":structures_by_saved_chunk_status.get("minecraft:full",0),
+        "conclusive_saved_full_structure":structures_by_saved_chunk_status.get("minecraft:full",0)>0,
         "structure_ids":dict(sorted(by_type.items())),
         "piece_floor_support_samples":len(samples),
         "support_results":dict(sorted(by_status.items())),
@@ -157,8 +162,8 @@ def main():
     out.write_text(json.dumps(report,indent=2,ensure_ascii=False))
     print(json.dumps(report,indent=2,ensure_ascii=False))
     print("STRUCTURE_AUDIT_REPORT:",out)
-    if args.require_starts and report["natural_structure_starts"]==0:
-        raise SystemExit("NOT VERIFIED: no naturally generated vanilla structure starts in saved chunks")
+    if args.require_starts and report["fully_generated_structure_starts"]==0:
+        raise SystemExit("NOT VERIFIED: no fully generated vanilla structure starts; partial starts do not prove built structures")
     if report["saved_chunks"]==0:
         raise SystemExit("NO ANVIL DATA: cannot assess structures")
 
