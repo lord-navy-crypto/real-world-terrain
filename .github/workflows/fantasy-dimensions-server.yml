@@ -1,0 +1,106 @@
+name: RealScale experimental Nether and End expansion smoke QA
+on:
+  pull_request:
+    paths: ['neoforge/**', 'scripts/terrain_lab.py', 'qa/test_terrain_lab.py', '.github/workflows/fantasy-dimensions-server.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fantasy-dimensions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Generate opt-in fantasy dimensions world preset
+        run: |
+          set -euo pipefail
+          lab_id=$(python3 scripts/terrain_lab.py --preset landscape --profile natural --caves 50 --fantasy-dimensions | sed -n 's/^Prepared world type: //p')
+          test -n "$lab_id"
+          echo "LAB_WORLD=$lab_id" >> "$GITHUB_ENV"
+          python3 -m unittest discover -s qa -p 'test_terrain_lab.py' -v
+      - name: Prepare clean dedicated server world
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<PROPERTIES
+          level-name=world
+          level-type=${LAB_WORLD}
+          level-seed=785312
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-tick-time=-1
+          online-mode=false
+          PROPERTIES
+          done
+      - name: Boot and request Nether and End chunks
+        working-directory: neoforge
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,signal,subprocess,threading,time
+          log=pathlib.Path("build/fantasy-dimensions-server.log")
+          log.parent.mkdir(exist_ok=True,parents=True)
+          proc=subprocess.Popen(["gradle","--no-daemon","runServer","--stacktrace"],
+              stdin=subprocess.PIPE,stdout=subprocess.PIPE,
+              stderr=subprocess.STDOUT,text=True,bufsize=1,start_new_session=True)
+          lines=[];ready=threading.Event()
+          def read():
+              for line in proc.stdout:
+                  lines.append(line)
+                  if "Done (" in line and "For help" in line:ready.set()
+          reader=threading.Thread(target=read,daemon=True);reader.start()
+          try:
+              until=time.monotonic()+650
+              while not ready.is_set() and proc.poll() is None and time.monotonic()<until:
+                  time.sleep(1)
+              if not ready.is_set():raise RuntimeError("Server did not reach Done")
+              for cmd in (
+                  "execute in minecraft:the_nether run forceload add 0 0",
+                  "execute in minecraft:the_end run forceload add 0 0",
+                  "execute in minecraft:the_end run forceload add 2048 0",
+              ):
+                  proc.stdin.write(cmd+"\n")
+                  proc.stdin.flush()
+              time.sleep(45)
+          finally:
+              if proc.poll() is None:
+                  try:
+                      proc.stdin.write("stop\n");proc.stdin.flush()
+                      proc.wait(timeout=50)
+                  except Exception:
+                      if proc.poll() is None:
+                          os.killpg(proc.pid,signal.SIGINT)
+                          try:proc.wait(timeout=12)
+                          except subprocess.TimeoutExpired:
+                              os.killpg(proc.pid,signal.SIGKILL);proc.wait()
+              reader.join(timeout=3)
+              log.write_text("".join(lines))
+              print("LOG_TAIL:",log.read_text()[-8500:])
+          root=pathlib.Path("run")
+          nether=list(root.rglob("DIM-1/region/*.mca"))
+          end=list(root.rglob("DIM1/region/*.mca"))
+          print("NETHER_REGION_FILES:",list(map(str,nether)))
+          print("END_REGION_FILES:",list(map(str,end)))
+          if not nether or not end:
+              raise RuntimeError("Nether/End actual Anvil region generation NOT VERIFIED")
+          print("FANTASY_DIMENSIONS_WORLDGEN: PASS")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Fantasy-Dimensions-Server-QA
+          path: |
+            neoforge/build/fantasy-dimensions-server.log
+            neoforge/run/**/DIM-1/region/*.mca
+            neoforge/run/**/DIM1/region/*.mca
+            neoforge/run/**/logs/latest.log
+          if-no-files-found: warn
