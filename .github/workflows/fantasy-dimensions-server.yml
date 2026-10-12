@@ -65,8 +65,12 @@ jobs:
               if not ready.is_set():raise RuntimeError("Server did not reach Done")
               for cmd in (
                   "execute in minecraft:the_nether run forceload add 0 0",
+                  "execute in minecraft:the_nether run forceload add 512 0",
                   "execute in minecraft:the_end run forceload add 0 0",
                   "execute in minecraft:the_end run forceload add 2048 0",
+                  "execute in minecraft:the_end run forceload add 3072 0",
+                  "execute in minecraft:the_end run forceload add 4096 0",
+                  "execute in minecraft:the_end run forceload add 0 3072",
               ):
                   proc.stdin.write(cmd+"\n")
                   proc.stdin.flush()
@@ -94,12 +98,16 @@ jobs:
               raise RuntimeError("Nether/End actual Anvil region generation NOT VERIFIED")
           print("FANTASY_DIMENSIONS_WORLDGEN: PASS")
           PY
+      - name: Inspect saved Anvil vertical cave bands and outer sky islands
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/audit_fantasy_dimensions.py .
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Fantasy-Dimensions-Server-QA
           path: |
             neoforge/build/fantasy-dimensions-server.log
+            neoforge/fantasy_dimensions_anvil_qa.json
             neoforge/run/**/DIM-1/region/*.mca
             neoforge/run/**/DIM1/region/*.mca
             neoforge/run/**/logs/latest.log
