@@ -45,6 +45,41 @@ class CustomGeoTests(unittest.TestCase):
                 self.assertEqual(noise["noise_router"]["final_density"]["input"],"realscale:terrain_lab/"+name+"/terrain_density")
                 self.assertEqual(opts["ridge"],18)
 
+    def test_altitude_biome_cooling_uses_world_local_noise_router(self):
+        for family in lab.FAMILIES:
+            with self.subTest(family=family):
+                name,options,_=lab.apply(self.root,family,1.0,0,50,6,climate=65)
+                folder=lab.GEO_ROOT/"density_function/terrain_lab"/name
+                settings=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
+                self.assertEqual(settings["noise_router"]["temperature"],
+                                 f"realscale:terrain_lab/{name}/biome_temperature")
+                temperature=lab.jread(self.root,folder/"biome_temperature.json")
+                self.assertEqual(temperature["type"],"minecraft:add")
+                self.assertEqual(temperature["argument1"]["type"],"minecraft:shifted_noise")
+                self.assertEqual(temperature["argument2"]["argument1"],-.585)
+                gradient=temperature["argument2"]["argument2"]
+                self.assertEqual(gradient["type"],"minecraft:y_clamped_gradient")
+                self.assertEqual((gradient["from_y"],gradient["to_y"]),(96,320))
+                self.assertEqual(settings["noise_router"]["vegetation"]["type"],"minecraft:shifted_noise")
+                self.assertEqual(settings["sea_level"],63)
+                self.assertEqual(options["climate"],65)
+
+    def test_biome_signal_is_opt_in_and_preserves_original_worlds(self):
+        existing,old_opts,old_files=lab.files_for(self.root,"landscape",1.0,0,50,6)
+        same,new_opts,new_files=lab.files_for(self.root,"landscape",1.0,0,50,6,climate=0)
+        self.assertEqual(existing,same)
+        self.assertEqual(old_opts,new_opts)
+        self.assertEqual(old_files,new_files)
+        changed,changed_opts,output=lab.files_for(self.root,"landscape",1.0,0,50,6,climate=100)
+        self.assertNotEqual(existing,changed)
+        self.assertEqual(changed_opts["climate"],100)
+        self.assertEqual(len(output),7)
+        with self.assertRaises(ValueError):
+            lab.files_for(self.root,"usgs_big_sur",1,0,50,6,climate=50)
+        for n in (-1,101,"65"):
+            with self.subTest(n=n),self.assertRaises(ValueError):
+                lab.files_for(self.root,"landscape",1.0,0,50,6,climate=n)
+
     def test_zero_values_preserve_v15_profile_hash_and_files(self):
         one,options,files=lab.files_for(self.root,"landscape",1.0,0,50,6)
         two,options2,files2=lab.files_for(self.root,"landscape",1.0,0,50,6,ridge=0,erosion=0,strata=0)

@@ -87,6 +87,21 @@ class TerrainLabTests(unittest.TestCase):
         self.assertNotIn("blend_percent",opts)
         self.assertTrue(name.endswith("_g6"))
 
+    def test_yacl_biome_cooling_persists_into_new_world_noise_settings(self):
+        draft=self.root/"biomes-yacl.json"
+        draft.write_text(json.dumps({
+            "preset":"landscape","blendPercent":30,"reliefPercent":100,
+            "elevation":0,"caves":50,"riverGrade":6,"inland":True,
+            "ridgePercent":0,"erosionPercent":0,"strataPercent":0,
+            "climatePercent":75
+        }))
+        before=set((self.root/lab.GEO_ROOT/"noise_settings").glob("lab_landscape_*.json"))
+        self.assertEqual(lab.main(["--root",str(self.root),"--from-yacl",str(draft)]),0)
+        created=set((self.root/lab.GEO_ROOT/"noise_settings").glob("lab_landscape_*.json"))-before
+        self.assertEqual(len(created),1)
+        data=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/created.pop().name)
+        self.assertIn("biome_temperature",data["noise_router"]["temperature"])
+
     def test_new_profile_cannot_change_historical_modes(self):
         lab.apply(self.root,"realism_max",1.2,30,70,6)
         for name,digest in self.originals.items():
