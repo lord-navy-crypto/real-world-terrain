@@ -1,0 +1,44 @@
+name: RealScale winter ecology and vanilla structure density packs
+on:
+  pull_request:
+    paths:
+      - 'scripts/make_geoecology_suite.py'
+      - 'scripts/make_vanilla_ecology_pack.py'
+      - 'scripts/make_structure_density_packs.py'
+      - 'qa/test_structure_and_geoecology.py'
+      - 'qa/test_ecology_pack.py'
+      - '.github/workflows/geoecology-and-structures.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generate-explicitly-opt-in-packs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test original microhabitats
+        run: python3 -m unittest discover -s qa -p 'test_ecology_pack.py' -v
+      - name: Test winter geology & structure spacing
+        run: python3 -m unittest discover -s qa -p 'test_structure_and_geoecology.py' -v
+      - name: Build winter ecology and separate 2x/3x structure packs
+        run: |
+          python3 scripts/make_geoecology_suite.py
+          python3 scripts/make_structure_density_packs.py
+      - name: Inspect generated ZIP archives
+        run: |
+          python3 -m zipfile -t build/RealScale-GeoEcology-Winter-EXPERIMENTAL.zip
+          python3 -m zipfile -t build/RealScale-Vanilla-Structures-2x-EXPERIMENTAL.zip
+          python3 -m zipfile -t build/RealScale-Vanilla-Structures-3x-EXPERIMENTAL.zip
+      - name: Upload opt-in testing artifacts; never install automatically
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-GeoEcology-and-Structures-Experimental
+          path: |
+            build/RealScale-GeoEcology-Winter-EXPERIMENTAL.zip
+            build/RealScale-Vanilla-Structures-2x-EXPERIMENTAL.zip
+            build/RealScale-Vanilla-Structures-3x-EXPERIMENTAL.zip
+          if-no-files-found: error
