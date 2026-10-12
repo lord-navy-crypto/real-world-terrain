@@ -15,6 +15,22 @@ VOID={"minecraft:air","minecraft:cave_air","minecraft:void_air",
       "minecraft:water","minecraft:lava"}
 SKIP={"INVALID","minecraft:empty","minecraft:invalid"}
 
+def structure_bounds(start):
+    """In Minecraft 1.21.1 structure starts often OMIT a root BB; children carry it."""
+    bb=start.get("BB",[])
+    if isinstance(bb,list) and len(bb)==6 and all(isinstance(v,int) for v in bb):
+        return bb,"start_BB"
+    children=start.get("Children",[])
+    boxes=[c.get("BB") for c in children if isinstance(c,dict)]
+    boxes=[b for b in boxes if isinstance(b,list) and len(b)==6
+           and all(isinstance(v,int) for v in b)]
+    if not boxes:
+        return None,"missing_bounding_boxes"
+    return [min(b[0] for b in boxes),min(b[1] for b in boxes),
+            min(b[2] for b in boxes),max(b[3] for b in boxes),
+            max(b[4] for b in boxes),max(b[5] for b in boxes)],"children_BB"
+
+
 def audit(root:Path):
     files=[p for p in root.glob("run/**/region/r.*.*.mca")
            if "DIM" not in str(p) and p.stat().st_size>=8192]
@@ -24,6 +40,9 @@ def audit(root:Path):
     structure_key_samples=Counter()
     chunks_with_structure_compound=0
     chunks_with_structure_start_entries=0
+    bounding_box_sources=Counter()
+    structures_by_saved_chunk_status=Counter()
+    skipped_structure_starts=Counter()
     for f in files:
         for chunk in iter_region_chunks(f):
             cx,cz=chunk.get("xPos"),chunk.get("zPos")
@@ -40,12 +59,19 @@ def audit(root:Path):
                 if not isinstance(obj,dict):continue
                 sid=obj.get("id",key)
                 if sid in SKIP:continue
-                bb=obj.get("BB",[])
-                if not isinstance(bb,list) or len(bb)!=6:continue
-                starts.append((sid,key,(cx,cz),bb,obj.get("Children",[])))
+                bb,bbox_source=structure_bounds(obj)
+                if bb is None:
+                    skipped_structure_starts[str(sid)]+=1
+                    continue
+                bounding_box_sources[bbox_source]+=1
+                structures_by_saved_chunk_status[str(chunk.get("Status",chunk.get("status","MISSING_STATUS")))]+=1
+                starts.append((sid,key,(cx,cz),bb,obj.get("Children",[]),bbox_source))
     samples=[]
-    for sid,key,where,box,children in starts:
-        for c in children:
+    for sid,key,where,box,children,bbox_source in starts:
+        # Bound expensive floor reads; sample enough pieces across each
+        # structure without treating every underground corridor as a house.
+        stride=max(1,len(children)//24)
+        for c in children[::stride][:24]:
             b=c.get("BB",[]) if isinstance(c,dict) else []
             if not isinstance(b,list) or len(b)!=6:continue
             x1,y1,z1,x2,y2,z2=b
@@ -64,7 +90,7 @@ def audit(root:Path):
                           for down in range(16))
                 samples.append({"structure":sid,"x":x,"z":z,
                                 "status":"supported" if solid else "possible_floating"})
-    by_type=Counter(sid for sid,*_ in starts)
+    by_type=Counter(item[0] for item in starts)
     by_status=Counter(s["status"] for s in samples)
     located_file=root/"vanilla_structure_locate_qa.json"
     located=json.loads(located_file.read_text()) if located_file.is_file() else []
@@ -81,7 +107,12 @@ def audit(root:Path):
             "candidate_chunk_saved":bool(at),
             "candidate_chunk_status":str(at.get("Status",at.get("status"))) if at else None,
             "nearby_saved_chunks":len(nearby),
-            "candidate_chunk_structure_nbt":at.get("structures",at.get("Structures")) if at and isinstance(at.get("structures",at.get("Structures")),dict) else None
+            "candidate_chunk_structure_keys":list(at.get("structures",at.get("Structures",{})).get("starts",{}))
+                if at and isinstance(at.get("structures",at.get("Structures")),dict) else [],
+            "candidate_chunk_live_start_ids":[
+                v.get("id") for v in at.get("structures",at.get("Structures",{})).get("starts",{}).values()
+                if isinstance(v,dict) and v.get("id") not in SKIP
+            ] if at and isinstance(at.get("structures",at.get("Structures")),dict) else []
         })
     report={
         "region_files":len(files),"saved_chunks":len(chunks),
@@ -91,13 +122,17 @@ def audit(root:Path):
         "structure_root_key_shapes":dict(structure_key_samples),
         "located_candidate_chunk_evidence":located_checks,
         "natural_structure_starts":len(starts),
+        "bbox_sources":dict(bounding_box_sources),
+        "structures_by_saved_chunk_status":dict(structures_by_saved_chunk_status),
+        "skipped_starts_missing_usable_bbox":dict(skipped_structure_starts),
+        "fully_generated_structure_starts":structures_by_saved_chunk_status.get("minecraft:full",0),
         "structure_ids":dict(sorted(by_type.items())),
         "piece_floor_support_samples":len(samples),
         "support_results":dict(sorted(by_status.items())),
         "structure_start_examples":[
             {"id":sid,"key":key,"chunk":list(where),"bbox":box,
-             "pieces":len(children)}
-            for sid,key,where,box,children in starts[:30]
+             "pieces":len(children),"bbox_source":source}
+            for sid,key,where,box,children,source in starts[:30]
         ],
         "unsupported_piece_examples":[x for x in samples
                                         if x["status"]=="possible_floating"][:20],
@@ -105,9 +140,10 @@ def audit(root:Path):
         "warning_if_zero_starts":("Structure location queries do not prove placement. Check saved chunk statuses, "
                                   "candidate NBT, biomes and generate-structures in server config."
                                   if not starts else None),
-        "note":"These are naturally generated structure starts, NOT /place results. "
-               "Landform/biome filters may prevent structure candidates. "
-               "Piece-floor support is a warning, not structural integrity proof."
+        "note":"Natural NBT starts (including children-only bounding boxes), NOT /place results. "
+               "Anvil starts may be saved at structure_starts stage before physical blocks are finished: "
+               "use fully_generated_structure_starts and candidate chunk status separately. "
+               "Floor support is a warning, not integrity proof."
     }
     return report
 
