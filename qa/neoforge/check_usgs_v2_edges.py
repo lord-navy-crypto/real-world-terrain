@@ -96,8 +96,8 @@ def scan(root):
         raise SystemExit("Insufficient observed chunk seams for DEM continuity analysis")
     if p95(seam_residuals)>18 or p95(seam_residuals)>max(8,2*p95(nonseam_residuals)+4):
         raise SystemExit("Minecraft chunk seam diverges from expected local DEM slope")
-    if report["edge_step_p95"]>32 or report["edge_step_max"]>96:
-        raise SystemExit("USGS boundary has an implausible discontinuity")
+    if report["edge_step_p95"]>8 or report["edge_step_max"]>48:
+        raise SystemExit("USGS boundary contains implausibly steep single-block steps")
 
 if __name__=="__main__":
     scan(Path(sys.argv[1]) if len(sys.argv)>1 else Path("."))
