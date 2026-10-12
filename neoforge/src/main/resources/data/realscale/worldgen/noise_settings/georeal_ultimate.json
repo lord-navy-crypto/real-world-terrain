@@ -14,7 +14,7 @@
   "noise": {
     "min_y": -64,
     "height": 2096,
-    "size_horizontal": 2,
+    "size_horizontal": 4,
     "size_vertical": 1
   },
   "noise_router": {
