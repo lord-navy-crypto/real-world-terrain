@@ -96,7 +96,7 @@ class TerrainLabTests(unittest.TestCase):
         self.assertEqual(connector["type"],"minecraft:min")
         bounded=connector["argument2"]
         self.assertEqual(bounded["type"],"minecraft:max")
-        self.assertEqual(bounded["argument2"]["argument1"]["argument1"]["noise"],"minecraft:spaghetti_3d_2")
+        self.assertEqual(bounded["argument2"]["argument1"]["argument"]["noise"],"minecraft:spaghetti_3d_2")
         chamber=bounded["argument1"]["argument1"]["argument1"]
         self.assertEqual(chamber["type"],"minecraft:add")
         self.assertEqual(chamber["argument1"]["noise"],"minecraft:cave_cheese")
