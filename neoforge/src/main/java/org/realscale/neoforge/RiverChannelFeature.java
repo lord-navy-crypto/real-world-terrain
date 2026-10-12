@@ -72,7 +72,7 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
      * Avoid carving into uncontained slopes and downhill river steps.
      * Only READ adjacent blocks and keep all writes in the current chunk.
      */
-    private static boolean enclosedByBanks(WorldGenLevel level, BlockPos top, int inset) {
+    private static boolean enclosedByBanks(WorldGenLevel level, BlockPos top, int inset, int maxGrade) {
         for (Direction side : Direction.Plane.HORIZONTAL) {
             BlockPos neighbor = top.relative(side);
             BlockState atWaterSurface = level.getBlockState(neighbor.below(inset));
@@ -96,11 +96,24 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 // a cliff-like step still cannot become a source.
                 // Non-river banks remain solid at both water levels.
                 boolean alreadyFilled = existingRiverWater;
-                if (Math.abs(nextTop - top.getY()) > 6 && !alreadyFilled)
+                if (Math.abs(nextTop - top.getY()) > maxGrade && !alreadyFilled)
                     return false;
             }
         }
         return true;
+    }
+
+    /**
+     * Lab world types embed their persistent river-grade setting in the
+     * immutable registry ID. No client-only or mutable global config is read
+     * during generation; existing saved worlds retain their original rules.
+     */
+    private static int riverGradeForWorld(String id) {
+        if (!id.startsWith("lab_")) return 6;
+        for (int grade : new int[] {0, 3, 6, 9}) {
+            if (id.endsWith("_g" + grade)) return grade;
+        }
+        return -1; // Unsupported / malformed Lab id: never place fluids
     }
 
     @Override
@@ -114,6 +127,8 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
         ResourceLocation id = settingsKey.get().location();
         if (!id.getNamespace().equals("realscale") || id.getPath().equals("usgs_big_sur"))
             return false;
+        int maxGrade = riverGradeForWorld(id.getPath());
+        if (maxGrade <= 0) return false;
 
         WorldGenLevel level = context.level();
         ChunkPos chunk = new ChunkPos(context.origin());
@@ -148,10 +163,10 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 // On slopes with a lower neighboring bank, lower the water
                 // line another block INSTEAD of exposing the source above it.
                 // Never lower farther than two blocks: avoid artificial wells.
-                int inset = enclosedByBanks(level, top, 1) ? 1 : 0;
+                int inset = enclosedByBanks(level, top, 1, maxGrade) ? 1 : 0;
                 if (inset == 0 && natural(deepFoundation)
                     && level.getBlockState(top.below(5)).blocksMotion()
-                    && enclosedByBanks(level, top, 2))
+                    && enclosedByBanks(level, top, 2, maxGrade))
                     inset = 2;
                 if (inset == 0) continue;
 

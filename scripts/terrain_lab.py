@@ -267,7 +267,7 @@ def main(argv=None):
         print("Apply to a NEW WORLD only. Select it in Create World > World Type.")
         launch=args.launch and not args.dry_run
     if launch:
-        work=root.parents[3] # project root: neoforge/src/main/resources -> project/neoforge
+        work=root.parents[2] # resource root: neoforge/src/main/resources -> neoforge
         if not (work/"build.gradle").exists():
             raise RuntimeError("Expected build.gradle at "+str(work))
         return subprocess.call(["gradle","--no-daemon","--console=plain","runClient"],cwd=work)
