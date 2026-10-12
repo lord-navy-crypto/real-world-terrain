@@ -74,3 +74,41 @@ cd neoforge && gradle --no-daemon --console=plain build
 Use multiple NEW world seeds to inspect actual saved chunk heights, river connectivity, caves, flooding and spawn.
 Passing JSON and compile checks does **not** establish realistic drainage or perfect rendering.
 The historical USGS seed-42 spawn verification issue remains an open limitation.
+
+## Native Minecraft YACL interface (v1.4.1 experiment)
+
+The client-side NeoForge mod entrypoint now registers the **YACL config screen**.
+YACL **3.8.1+1.21.1-neoforge** is a separate client-side dependency; Gradle
+resolves `maven.modrinth:1eAoo2KR:h8Px82QV` and does NOT jar-in-jar it.
+Players using a standalone NeoForge JAR must also install the corresponding
+[YACL 3.8.1 NeoForge 1.21.1 JAR](https://modrinth.com/mod/yacl/version/3.8.1%2B1.21.1-neoforge)
+into their client mods folder. Dedicated servers do not require YACL.
+
+1. Open Minecraft's **Mods -> RealScale Terrain -> Config**.
+2. On the YACL screen, set **Base Terrain, Relief (%), Elevation, Cave
+   Activity, River Grade, Prefer Inland Spawn**, then click **Save**.
+3. Exit Minecraft completely. This saves **a draft** in the client's
+   `config/realscale-terrain-lab.json`; it intentionally does NOT modify
+   the currently loaded worldgen registry.
+4. Restart using the RealScale source project via
+   `cd neoforge && gradle --no-daemon --console=plain runClient`.
+   The Gradle `prepareTerrainLabDraft` task runs
+   `scripts/terrain_lab.py --from-yacl ...` **before resources are packaged**,
+   and creates a new immutable `realscale:lab_*` world preset. The generator's
+   Java river-grade code reads the per-preset suffix, not runtime/global state.
+5. Start a NEW WORLD and select the matching **RealScale Lab** preset under
+   World Type. Existing worlds never change just because this config draft changed.
+
+**Important limitations:** This build-time workflow applies only to the
+Gradle **development client**, not standalone JAR installations where there is
+no source tree to rebuild. For packaged deployments, use the Python CLI to
+create the preset *before building the release JAR*. There is not yet a direct,
+live world-generation menu or runtime per-world registry regeneration. A
+YACL slider changes the draft, not a currently running world or existing save.
+
+Dependency selection: YACL is useful for menus, **not a replacement for the
+vanilla/NeoForge DensityFunction engine**. Additional terrain-generation
+dependencies such as TerraBlender (biome blending) are deliberately not added
+until the mod actually adds new biomes and the existing game-engine river
+network passes continuity and flood checks. Adding libraries alone cannot
+fix drainage, visual seams or spawn-selection faults.

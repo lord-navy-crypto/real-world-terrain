@@ -94,6 +94,42 @@ class TerrainLabTests(unittest.TestCase):
             with self.subTest(values=vals), self.assertRaises(ValueError):
                 lab.apply(self.root,"realism_max",*vals)
 
+
+    def test_yacl_saved_draft_is_compiled_before_next_build(self):
+        draft=self.root/"realscale-terrain-lab.json"
+        draft.write_text(json.dumps({
+            "preset":"realism_max","reliefPercent":112,
+            "elevation":12,"caves":55,"riverGrade":3,"inland":True}))
+        self.assertEqual(lab.main(["--root",str(self.root),"--from-yacl",str(draft)]),0)
+        settings=list((self.root/lab.GEO_ROOT/"noise_settings").glob("lab_realism_max_*.json"))
+        self.assertEqual(len(settings),1)
+        self.assertIn("_g3",settings[0].name)
+        self.assertEqual(json.loads(settings[0].read_text())["sea_level"],63)
+        self.assertIn("generator.realscale.lab_realism_max_",(
+            self.root/lab.LABEL_ROOT/"en_us.json").read_text())
+
+    def test_invalid_yacl_draft_does_not_generate(self):
+        draft=self.root/"draft.json"
+        draft.write_text(json.dumps({
+            "preset":"usgs_big_sur","reliefPercent":112,
+            "elevation":12,"caves":55,"riverGrade":9,"inland":True}))
+        with self.assertRaises(ValueError):
+            lab.main(["--root",str(self.root),"--from-yacl",str(draft)])
+        self.assertFalse(list((self.root/lab.GEO_ROOT/"noise_settings").glob("lab_*.json")))
+
+    def test_yacl_integration_does_not_require_client_mod_on_server(self):
+        main=ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java"
+        client=ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleTerrainLabClient.java"
+        metadata=(ROOT/"neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text()
+        build=(ROOT/"neoforge/build.gradle").read_text()
+        self.assertNotIn("yacl3",main.read_text())
+        self.assertIn("dist = Dist.CLIENT",client.read_text())
+        self.assertIn("IConfigScreenFactory",client.read_text())
+        self.assertIn('side="CLIENT"',metadata)
+        self.assertIn("maven.modrinth:1eAoo2KR:h8Px82QV",build)
+        self.assertIn("prepareTerrainLabDraft",build)
+        self.assertIn("dependsOn tasks.named('prepareTerrainLabDraft')",build)
+
     def test_dry_run_does_not_create_new_preset(self):
         name,_,_=lab.apply(self.root,"realism_max",0.85,0,20,3,dry_run=True)
         self.assertFalse((self.root/lab.GEO_ROOT/"noise_settings"/(name+".json")).exists())
