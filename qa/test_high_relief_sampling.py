@@ -36,6 +36,29 @@ class UsgsBigSurIsolation(unittest.TestCase):
         reg=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
         self.assertIn('"dem_density_seamless"',reg)
 
+    def test_usgs_v2_does_not_turn_all_big_sur_highlands_into_snow(self):
+        old=json.loads((GEO/"noise_settings/usgs_big_sur.json").read_text())
+        new=json.loads((GEO/"noise_settings/usgs_big_sur_v2.json").read_text())
+        def unconditional_snow_above_550(obj):
+            found=[]
+            def walk(node):
+                if isinstance(node,list):
+                    for child in node:walk(child)
+                elif isinstance(node,dict):
+                    cond=node.get("if_true",{})
+                    run=node.get("then_run",{})
+                    if (isinstance(cond,dict) and isinstance(run,dict)
+                            and cond.get("type")=="minecraft:y_above"
+                            and cond.get("anchor")=={"absolute":550}
+                            and run.get("result_state",{}).get("Name")=="minecraft:snow_block"):
+                        found.append(node)
+                    for child in node.values():walk(child)
+            walk(obj["surface_rule"])
+            return found
+        self.assertEqual(len(unconditional_snow_above_550(old)),1)
+        self.assertEqual(unconditional_snow_above_550(new),[])
+        self.assertIn("minecraft:snowy_plains",json.dumps(new["surface_rule"]))
+
     def test_raw_dem_source_remains_verified_and_unchanged(self):
         source=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java").read_text()
         self.assertIn('SHA256="d43f41f4343fb9606e9647bcdd1ebcd667ec5b9f0334ffc6fef007f7fef19557"',source)
