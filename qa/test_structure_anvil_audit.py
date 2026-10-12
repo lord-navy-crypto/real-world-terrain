@@ -25,13 +25,12 @@ def chunk(with_start):
             "structures":{"starts":starts,"References":{}}}
 
 class StructureAnvilAuditorTests(unittest.TestCase):
-    def test_high_altitude_structure_probe_preserves_other_targets(self):
-        self.assertEqual(worldgen.structure_targets("realscale:realism_max"),(
-            "minecraft:trial_chambers","minecraft:ruined_portal"))
-        self.assertIn("minecraft:village_taiga",
-                      worldgen.structure_targets("realscale:himalayan"))
-        self.assertIn("minecraft:village_taiga",
-                      worldgen.structure_targets("minecraft:overworld"))
+    def test_serialize_one_chunk_without_dropping_village_search(self):
+        required=("minecraft:trial_chambers","minecraft:ruined_portal",
+                  "minecraft:village_taiga")
+        for settings in ("realscale:realism_max","realscale:himalayan",
+                         "minecraft:overworld"):
+            self.assertEqual(worldgen.structure_targets(settings),required)
 
     def fixture(self,root):
         p=root/"run/world/region"
