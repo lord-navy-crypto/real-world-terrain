@@ -60,7 +60,7 @@ in actual Himalayan and Realism MAX NeoForge servers, generates
 Anvil chunks, then inspects persisted structures.starts and
 piece bounding boxes, with a warning on possible floating floors.
 
-Selectable 2x and 3x packs override exactly 13 vanilla random_spread
+Selectable 2x and 3x packs override exactly 12 vanilla random_spread
 Overworld structure sets, preserving choices/weights/salt/separation
 and spread type, while lowering the candidate spacing. Villages:
 spacing 34 -> 24 (approx 2x candidate density) or 34 -> 20
@@ -68,7 +68,7 @@ spacing 34 -> 24 (approx 2x candidate density) or 34 -> 20
 not the actual count of constructed structures, which also depends
 on biome validity and terrain.
 
-Structure sets deliberately NOT modified: stronghold rings,
+Structure sets deliberately NOT modified: ruined portals (shared by Overworld and Nether), stronghold rings,
 pillager outposts, special-frequency buried treasures/mineshafts,
 Nether and End. More common villages could indirectly reduce
 outposts because outposts exclude nearby village candidates.
