@@ -93,6 +93,7 @@ public final class RealScaleTerrainLabClient {
                         && d.strataPercent >= 0 && d.strataPercent <= 20
                         && d.climatePercent >= 0 && d.climatePercent <= 100
                         && d.valleyPercent >= 0 && d.valleyPercent <= 100
+                        && d.latitudeMode != null
                         && (d.latitudeMode.equals("off") || d.latitudeMode.equals("earth")
                             || d.latitudeMode.equals("preview"))
                         && d.latitudeStrength >= 0 && d.latitudeStrength <= 100
