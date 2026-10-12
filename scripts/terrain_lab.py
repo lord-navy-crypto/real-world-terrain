@@ -140,7 +140,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         if ridge or erosion or strata:
             options.update(ridge=int(ridge),erosion=int(erosion),strata=int(strata))
         if caves >= 60:
-            options["mountain_caves_revision"]=3
+            options["mountain_caves_revision"]=4
         if climate:
             options["climate"]=climate
         if valley:
@@ -253,9 +253,28 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
             "argument2":positive_part(subtract(64.0,depth),64.0)}
         deep_penalty={"type":"minecraft:mul","argument1":0.0025,
             "argument2":positive_part(subtract(depth,512.0),256.0)}
+        # Sparse, wide chamber pockets. Unlike a general cheese-OR carve,
+        # the chamber must pass BOTH a rare low-frequency threshold and
+        # the local-depth roof/floor penalties. Connectors share the
+        # same final cave envelope as narrow spaghetti corridors.
+        chamber={"type":"minecraft:add",
+                 "argument1":{"type":"minecraft:noise",
+                              "noise":"minecraft:cave_cheese",
+                              "xz_scale":0.16,"y_scale":0.12},
+                 "argument2":0.72}
+        chamber_roof={"type":"minecraft:mul","argument1":0.05,
+                      "argument2":positive_part(subtract(96.0,depth),96.0)}
+        chamber_deep={"type":"minecraft:mul","argument1":0.004,
+                      "argument2":positive_part(subtract(depth,448.0),256.0)}
+        chamber_guard={"type":"minecraft:add",
+            "argument1":{"type":"minecraft:add",
+                         "argument1":chamber,"argument2":chamber_roof},
+            "argument2":chamber_deep}
+        connector={"type":"minecraft:min",
+                   "argument1":corridor,"argument2":chamber_guard}
         guarded={"type":"minecraft:add",
                  "argument1":{"type":"minecraft:add",
-                              "argument1":corridor,"argument2":roof_penalty},
+                              "argument1":connector,"argument2":roof_penalty},
                  "argument2":deep_penalty}
         # Retain original cave noise and refuse extra cutting where
         # original terrain is not solid. The safety envelope is
