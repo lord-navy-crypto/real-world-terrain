@@ -7,7 +7,7 @@ Tests the old center source and the newly generated area around +/-240 m.
 import json,sys,statistics
 from pathlib import Path
 from realscale_headless_qa import iter_region_chunks,surface_height
-from check_actual_chunk_heights import read_dem
+from usgs_v2_math_reference import MonotoneDem
 
 def p95(values):
     return round(sorted(values)[int(.95*(len(values)-1))],3) if values else None
@@ -15,7 +15,9 @@ def p95(values):
 def scan(root):
     resources=root/"src/main/resources/data/realscale/dem"
     src=next(resources.glob("*.rgt.gz"))
-    source,bounds=read_dem(src)
+    dem=MonotoneDem(src)
+    source=dem.measured_height
+    bounds=(dem.x0,dem.z0,dem.maxx,dem.maxz)
     regions=[p for p in root.glob("run/**/region/r.*.*.mca") if "DIM" not in str(p) and p.stat().st_size>=8192]
     assert regions,"No saved Overworld Anvil regions"
     columns={}
@@ -77,6 +79,7 @@ def scan(root):
         "saved_region_files":len(regions),"decoded_chunks":n,
         "saved_column_samples":len(columns),
         "measured_interior_samples":len(interior),
+        "expected_height_reference":"v2 monotone cubic DEM (actual Java-algorithm port)",
         "measured_interior_median_abs_error":round(statistics.median(interior),3) if interior else None,
         "measured_interior_p95_abs_error":p95(interior),
         "dem_full_tile_samples":len(coverage),
