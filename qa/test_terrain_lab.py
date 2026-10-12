@@ -68,7 +68,8 @@ class TerrainLabTests(unittest.TestCase):
         original=lab.jread(self.root,lab.TAG_ROOT/"extended.json")
         self.assertEqual([x for x in original["values"] if not x.startswith("realscale:lab_")][-1],"realscale:usgs_big_sur_v2")
         self.assertEqual(len([x for x in original["values"] if not x.startswith("realscale:lab_")]),9)
-        self.assertEqual(len([x for x in lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"] if not x.startswith("realscale:lab_")]),5)
+        self.assertEqual([x for x in lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"] if not x.startswith("realscale:lab_")],
+                         ["realscale:realism_max","realscale:himalayan","realscale:grand_canyon","realscale:usgs_big_sur_v2"])
 
     def test_merged_families_blend_actual_height_density_functions(self):
         for family,(base,secondary) in lab.FAMILIES.items():
@@ -225,7 +226,7 @@ class TerrainLabTests(unittest.TestCase):
         b,*_=lab.apply(self.root,"realism_max",1.1,0,50,6)
         self.assertNotEqual(a,b)
         normal=lab.jread(self.root,lab.TAG_ROOT/"normal.json")
-        expected=["realscale:"+x for x in lab.NORMAL]
+        expected=["realscale:realism_max","realscale:himalayan","realscale:grand_canyon","realscale:usgs_big_sur_v2"]
         self.assertEqual(normal["values"][:len(expected)],expected)
         self.assertIn("realscale:"+a,normal["values"])
         self.assertIn("realscale:"+b,normal["values"])
