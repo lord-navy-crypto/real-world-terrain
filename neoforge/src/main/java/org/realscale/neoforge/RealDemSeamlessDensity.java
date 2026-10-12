@@ -68,6 +68,13 @@ public record RealDemSeamlessDensity(DensityFunction base, int blendMeters)
         return HEIGHTS[(int)limit(row,0,GRID-1)][(int)limit(col,0,GRID-1)];
     }
 
+    private static double sampleRow(int row,int ix,double a) {
+        double p0=corner(row,ix),p1=corner(row,ix+1);
+        double pm=ix>0?corner(row,ix-1):2*p0-p1;
+        double pp=ix<GRID-2?corner(row,ix+2):2*p1-p0;
+        return smoothSegment(pm,p0,p1,pp,a);
+    }
+
     static double measuredHeight(double x,double z) {
         double cx=limit(x,DEM.originX(),DEM.maxX());
         double cz=limit(z,DEM.originZ(),DEM.maxZ());
@@ -75,16 +82,13 @@ public record RealDemSeamlessDensity(DensityFunction base, int blendMeters)
         int ix=Math.min(GRID-2,(int)Math.floor(gx));
         int iz=Math.min(GRID-2,(int)Math.floor(gz));
         double a=gx-ix,b=gz-iz;
-        double[] rows=new double[4];
-        for(int r=-1;r<=2;r++){
-            double p0=corner(iz+r,ix),p1=corner(iz+r,ix+1);
-            double pm=ix>0?corner(iz+r,ix-1):2*p0-p1;
-            double pp=ix<GRID-2?corner(iz+r,ix+2):2*p1-p0;
-            rows[r+1]=smoothSegment(pm,p0,p1,pp,a);
-        }
-        double lower=iz>0?rows[0]:2*rows[1]-rows[2];
-        double upper=iz<GRID-2?rows[3]:2*rows[2]-rows[1];
-        return smoothSegment(lower,rows[1],rows[2],upper,b);
+        double r0=sampleRow(iz-1,ix,a);
+        double r1=sampleRow(iz,ix,a);
+        double r2=sampleRow(iz+1,ix,a);
+        double r3=sampleRow(iz+2,ix,a);
+        double lower=iz>0?r0:2*r1-r2;
+        double upper=iz<GRID-2?r3:2*r2-r1;
+        return smoothSegment(lower,r1,r2,upper,b);
     }
 
     static double weightOutside(double x,double z,int fadeMeters) {
