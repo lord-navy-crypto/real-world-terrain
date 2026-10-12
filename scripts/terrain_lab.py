@@ -79,7 +79,7 @@ def replace_refs(node, replacements):
         return {key:replace_refs(value,replacements) for key,value in node.items()}
     return node
 
-def validate(preset, relief, elevation, caves, river_grade, blend_percent=25):
+def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ridge=0, erosion=0, strata=0):
     if preset not in PRESETS and preset not in FAMILIES:
         raise ValueError("Unknown terrain preset")
     if preset == "usgs_big_sur":
@@ -88,6 +88,12 @@ def validate(preset, relief, elevation, caves, river_grade, blend_percent=25):
         raise ValueError("Feature blend must be 0..50%")
     if preset not in FAMILIES and blend_percent != 25:
         raise ValueError("Legacy algorithm does not support feature blending")
+    if any(type(n) is not int for n in (ridge,erosion,strata)):
+        raise ValueError("Geology controls must be integers")
+    if not (0 <= ridge <= 40 and 0 <= erosion <= 30 and 0 <= strata <= 20):
+        raise ValueError("Ridge 0..40, erosion 0..30, strata 0..20")
+    if preset not in FAMILIES and (ridge or erosion or strata):
+        raise ValueError("Geology functions currently apply only to merged families")
     if not 0.8 <= relief <= 1.25:
         raise ValueError("Relief must be 0.80 to 1.25")
     if not -48 <= elevation <= 48:
@@ -97,8 +103,8 @@ def validate(preset, relief, elevation, caves, river_grade, blend_percent=25):
     if river_grade not in (0,3,6,9):
         raise ValueError("River slope must be Off (0), Conservative (3), Standard (6) or Flexible (9)")
 
-def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25):
-    validate(preset,relief,elevation,caves,river_grade,blend_percent)
+def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25, ridge=0, erosion=0, strata=0):
+    validate(preset,relief,elevation,caves,river_grade,blend_percent,ridge,erosion,strata)
     source=FAMILIES[preset][0] if preset in FAMILIES else preset
     secondary=FAMILIES[preset][1] if preset in FAMILIES else None
     options=dict(preset=preset,relief=round(float(relief),3),
@@ -107,6 +113,10 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     # Do not mutate the hash and files of any previously generated legacy preset.
     if preset in FAMILIES:
         options["blend_percent"]=int(blend_percent)
+        # Backward compatibility: an all-zero geology draft emits exactly the
+        # old v1.5 hash AND byte-identical profile. Never alter saved IDs.
+        if ridge or erosion or strata:
+            options.update(ridge=int(ridge),erosion=int(erosion),strata=int(strata))
     checksum=hashlib.sha256(json.dumps(options,sort_keys=True).encode()).hexdigest()[:10]
     name="lab_"+preset+"_"+checksum+"_g"+str(river_grade)
     density_folder="terrain_lab/"+name
@@ -138,11 +148,27 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
             "argument2":{"type":"minecraft:mul",
                          "argument1":weight,
                          "argument2":"realscale:"+secondary+"/height_signal"}}
+    if ridge or erosion:
+        # Each signal is a seed-dependent, cached vanilla/generated density
+        # function from the secondary biome geometry; the actual evaluation
+        # occurs in the registered custom Java codec.
+        raw_height={"type":"realscale:ridge_erosion",
+                    "base":raw_height,
+                    "ridge_signal":"realscale:"+secondary+"/ridges",
+                    "erosion_signal":"realscale:"+secondary+"/erosion",
+                    "ridge_gain":round(ridge*0.004,5),
+                    "erosion_gain":round(erosion*0.003,5)}
     height={"type":"minecraft:add",
             "argument1":{"type":"minecraft:mul",
                          "argument1":float(options["relief"]),
                          "argument2":raw_height},
             "argument2":options["elevation"]/128.0}
+    if strata:
+        terrain={"type":"realscale:strata",
+                 "base":terrain,
+                 "warp":"realscale:"+secondary+"/erosion",
+                 "strength":round(strata*0.002,5),
+                 "period":64}
     preliminary=replace_refs(jread(root,base/"preliminary_density.json"),repl)
     caves_base=replace_refs(jread(root,base/"cave_density.json"),repl)
     # Density >0 means solid. Negative cave bias opens slightly more voxels.
@@ -168,8 +194,8 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     }
     return name,options,output
 
-def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25):
-    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent)
+def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0):
+    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent,ridge,erosion,strata)
     paths={path:serialized(obj) for path,obj in output.items()}
     preset_id="realscale:"+name
     for tag in ("normal","extended"):
@@ -187,6 +213,8 @@ def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_
                else f"地形实验室 | {names[preset]} | 起伏 {relief:.2f}, 高差 {elevation:+d}, 洞穴 {caves}, 河流 {river_grade}")
         if preset in FAMILIES:
             label+=f" | mix {blend_percent}%"
+            if ridge or erosion or strata:
+                label+=f" | ridge {ridge}, erosion {erosion}, strata {strata}"
         labels["generator.realscale."+name]=label
         paths[path]=serialized(labels)
     # Never silently modify a previously generated worldgen codec: if a
@@ -211,7 +239,7 @@ def gui(root, launch):
         raise RuntimeError("This Python has no tkinter; use CLI options instead") from ex
     app=tk.Tk()
     app.title("RealScale Terrain Lab | NeoForge 1.21.1")
-    app.geometry("540x510")
+    app.geometry("570x720")
     main=ttk.Frame(app,padding=20)
     main.pack(fill="both",expand=True)
     ttk.Label(main,text="RealScale Terrain Lab",font=("",18,"bold")).pack(anchor="w",pady=(0,8))
@@ -223,6 +251,9 @@ def gui(root, launch):
     caves=tk.IntVar(value=50)
     grade=tk.IntVar(value=6)
     blend=tk.IntVar(value=25)
+    ridge=tk.IntVar(value=0)
+    erosion=tk.IntVar(value=0)
+    strata=tk.IntVar(value=0)
     inland=tk.BooleanVar(value=True)
     def chooser(label,variable,values):
         ttk.Label(main,text=label).pack(anchor="w",pady=(9,0))
@@ -239,6 +270,9 @@ def gui(root, launch):
                  showvalue=True,variable=variable,length=440).pack(side="left",fill="x",expand=True)
     slider("Terrain relief multiplier",relief,0.8,1.25,.01)
     slider("Secondary landform feature mix (%)",blend,0,50,1)
+    slider("Coherent ridge shaping (0..40)",ridge,0,40,1)
+    slider("Noise-driven incisional erosion (0..30)",erosion,0,30,1)
+    slider("Warped vertical strata solidity (0..20)",strata,0,20,1)
     slider("Elevation offset (blocks)",elevation,-48,48)
     slider("Cave activity (higher = more caves)",caves,20,80)
     chooser("Safe river grade: Off=0, Steep-safe=3, Normal=6, Flexible=9",
@@ -253,7 +287,7 @@ def gui(root, launch):
     result={"done":False}
     def save():
         try:
-            name,_,_=apply(root,preset.get(),round(relief.get(),2),elevation.get(),caves.get(),grade.get(),inland.get(),blend_percent=blend.get())
+            name,_,_=apply(root,preset.get(),round(relief.get(),2),elevation.get(),caves.get(),grade.get(),inland.get(),blend_percent=blend.get(),ridge=ridge.get(),erosion=erosion.get(),strata=strata.get())
         except Exception as ex:
             messagebox.showerror("Terrain Lab",str(ex))
             return
@@ -277,6 +311,9 @@ def main(argv=None):
     parser.add_argument("--profile",choices=PROFILES,default="natural")
     parser.add_argument("--relief",type=float,default=None)
     parser.add_argument("--blend",type=int,default=25,help="Secondary landform mix (0-50%) for merged modes")
+    parser.add_argument("--ridge",type=int,default=0,help="Opt-in ridgeline density perturbation (0-40)")
+    parser.add_argument("--erosion",type=int,default=0,help="Opt-in erosion density perturbation (0-30)")
+    parser.add_argument("--strata",type=int,default=0,help="Opt-in vertical strata solidity (0-20)")
     parser.add_argument("--elevation",type=int,default=None)
     parser.add_argument("--caves",type=int,default=None)
     parser.add_argument("--river-grade",type=int,choices=(0,3,6,9),default=None)
@@ -290,7 +327,7 @@ def main(argv=None):
         print("Measured (read-only): usgs_big_sur")
         print("Legacy compatible algorithms:",", ".join(LEGACY_EDITABLE))
         print("Tuning modes:",", ".join(PROFILES))
-        print("Adjustable: mix 0..50%, relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
+        print("Adjustable: mix 0..50%, ridge 0..40, erosion 0..30, strata 0..20, relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
         print("USGS Big Sur is a read-only measured DEM.")
         return 0
     root=args.root or resource_root()
@@ -309,7 +346,8 @@ def main(argv=None):
             raise ValueError("YACL preset must be a string")
         name,opts,files=apply(root,raw["preset"],raw["reliefPercent"]/100.0,
             raw["elevation"],raw["caves"],raw["riverGrade"],raw["inland"],args.dry_run,
-            raw.get("blendPercent",25))
+            raw.get("blendPercent",25),
+            raw.get("ridgePercent",0),raw.get("erosionPercent",0),raw.get("strataPercent",0))
         print("YACL draft compiled to new world preset: realscale:"+name)
         print("Worldgen resource files:",len(files))
         return 0
@@ -322,7 +360,7 @@ def main(argv=None):
         caves=args.caves if args.caves is not None else defaults[2]
         grade=args.river_grade if args.river_grade is not None else defaults[3]
         name,opts,files=apply(root,args.preset,relief,elevation,caves,grade,
-                              not args.coastal_spawn,args.dry_run,args.blend)
+                              not args.coastal_spawn,args.dry_run,args.blend,args.ridge,args.erosion,args.strata)
         print("Prepared world type: realscale:"+name)
         print("Settings:",json.dumps(opts,sort_keys=True))
         print("World preset files:",len(files))
