@@ -51,6 +51,26 @@ class MonotoneUSGSMathTests(unittest.TestCase):
                 delta=(-0.01 if z==d.z0 else 0.01)
                 self.assertLess(abs(v-d.extended_height(x,z+delta)),0.1)
 
+    def test_corner_slopes_are_independent_on_both_axes(self):
+        # The corner extrapolation must use the SAME measured base for both
+        # axis gradients. Using the X-updated height to compute Z is wrong.
+        d=self.dem
+        for cx in (d.x0,d.maxx):
+            for cz in (d.z0,d.maxz):
+                dx=-64 if cx==d.x0 else 64
+                dz=-64 if cz==d.z0 else 64
+                direction_x=32 if dx<0 else -32
+                direction_z=32 if dz<0 else -32
+                base=d.measured_height(cx,cz)
+                sx=d.clip((d.measured_height(cx+direction_x,cz)-base)/
+                          direction_x,-1.25,1.25)
+                sz=d.clip((d.measured_height(cx,cz+direction_z)-base)/
+                          direction_z,-1.25,1.25)
+                expected=d.clip(base+sx*d.taper(dx)+sz*d.taper(dz),-64,2031)
+                with self.subTest(cx=cx,cz=cz):
+                    self.assertAlmostEqual(d.extended_height(cx+dx,cz+dz),
+                                           expected,places=8)
+
     def test_four_sides_exterior_transition_reaches_procedural_region(self):
         d=self.dem
         cx=(d.x0+d.maxx)/2;cz=(d.z0+d.maxz)/2
