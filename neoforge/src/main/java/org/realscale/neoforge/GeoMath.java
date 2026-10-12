@@ -59,11 +59,19 @@ final class GeoMath {
     static double balancedRadialTemperature(double original,double latitude,double strength,
                                             double altitudeCooling,int y){
         double baseline=latitudeTemperature(original,latitude,strength);
-        double lowLatitude=1.0-smoothstep(20.0,65.0,latitude);
+        double tropical=1.0-smoothstep(12.0,37.0,latitude);
+        double temperate=smoothstep(18.0,38.0,latitude)
+                         *(1.0-smoothstep(47.0,67.0,latitude));
         double altitude=smoothstep(96.0,320.0,y);
-        // Refund a bounded fraction of the pre-applied altitude cooling only
-        // in warm latitudes. Real isolated summits can still become cold.
-        return baseline+altitudeCooling*altitude*0.75*lowLatitude;
+        // The tropics and temperate belt are both active: distribute a small
+        // additional warm/temperate climate signal smoothly, not by hard
+        // selecting biomes. Polar (>67 deg) latitude is left unmodified.
+        double latitudeBuffer=strength*(0.06*tropical+0.13*temperate);
+        // Relative relief proxy: low-latitude highlands receive more cooling
+        // relief than mid-latitude highlands. Peaks can still freeze.
+        double coolingRefund=altitudeCooling*altitude
+                             *(0.75*tropical+0.40*temperate);
+        return baseline+latitudeBuffer+coolingRefund;
     }
     static double climateBudget(double original,double adjusted,double maxCooling,double maxWarming){
         double d=adjusted-original;
