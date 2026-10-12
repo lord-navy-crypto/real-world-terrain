@@ -81,6 +81,24 @@ class Rcon:
         self.sock.close()
 
 
+def await_full_chunk(rcon,x,z,timeout_seconds=240):
+    """After forceload, distinguish command ACK from actual generated chunk."""
+    deadline=time.monotonic()+timeout_seconds
+    command=(f"execute in minecraft:overworld if loaded {x} 128 {z} "
+             "run say REALSCALE_QA_CHUNK_READY")
+    attempts=0
+    while time.monotonic()<deadline:
+        attempts+=1
+        reply=rcon.send(command)
+        if "REALSCALE_QA_CHUNK_READY" in reply:
+            print("QA_CHUNK_GENERATED:",x,z,"attempts",attempts,flush=True)
+            return
+        time.sleep(3)
+    raise TimeoutError(
+        f"Chunk at {x},{z} not fully loaded within {timeout_seconds}s "
+        "despite forceload ACK; inspect RCON and Minecraft server logs")
+
+
 def main(root,expected_preset,profile):
     log=root/"build"/("rcon_"+profile+"_server.log")
     log.parent.mkdir(parents=True,exist_ok=True)
@@ -186,11 +204,20 @@ def main(root,expected_preset,profile):
                 ]
             else:
                 raise ValueError("Unknown QA profile "+profile)
-            for command in commands:
-                rcon.send(command)
-                if profile=="usgs":
-                    time.sleep(1)
-            time.sleep(120 if profile=="structures" else (100 if profile=="fantasy" else (75 if profile=="usgs" else 35)))
+            if profile=="usgs":
+                # The RCON 'Marked chunk' reply only confirms a ticket,
+                # NOT that a 2096-high chunk has finished worldgen.
+                # Sequential full-chunk checks prevent many far-apart
+                # USGS regions from saturating the server simultaneously.
+                for command,(x,z) in zip(commands,sites):
+                    rcon.send(command)
+                    await_full_chunk(rcon,x,z)
+                    rcon.send("save-all flush")
+                    rcon.send(f"execute in minecraft:overworld run forceload remove {x} {z}")
+            else:
+                for command in commands:
+                    rcon.send(command)
+            time.sleep(120 if profile=="structures" else (100 if profile=="fantasy" else (5 if profile=="usgs" else 35)))
             rcon.send("save-all flush")
             time.sleep(5)
             try:
