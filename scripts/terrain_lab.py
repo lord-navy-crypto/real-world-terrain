@@ -139,6 +139,8 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         # old v1.5 hash AND byte-identical profile. Never alter saved IDs.
         if ridge or erosion or strata:
             options.update(ridge=int(ridge),erosion=int(erosion),strata=int(strata))
+        if caves >= 60:
+            options["mountain_caves_revision"]=1
         if climate:
             options["climate"]=climate
         if valley:
@@ -218,7 +220,6 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     # This intentionally does NOT change biome placement or legacy presets.
     if preset in FAMILIES and caves >= 60:
         terrain_depth=density_id+"/terrain_density"
-        core="realscale:"+source+"/cave_core"
         # Independent narrow spaghetti-like corridor: abs(core noise) near zero
         # can open in sufficiently thick mountain rock. No broad cheese OR.
         corridor={"type":"minecraft:add",
