@@ -1,4 +1,4 @@
-name: Merged Terrain Lab landscape actual server QA
+name: Lithostitched + custom geomorphology real-world server QA
 on:
   push:
     branches: [main]
@@ -23,7 +23,7 @@ jobs:
           gradle-version: '8.14.3'
       - name: Generate unique immutable custom density, cave and river profile
         run: |
-          lab_id=$(python3 scripts/terrain_lab.py --preset landscape --profile natural --blend 25 --relief 1.02 --elevation 4 --caves 50 --river-grade 6 | sed -n 's/^Prepared world type: //p')
+          lab_id=$(python3 scripts/terrain_lab.py --preset landscape --profile natural --blend 25 --ridge 10 --erosion 8 --strata 4 --relief 1.02 --elevation 4 --caves 50 --river-grade 6 | sed -n 's/^Prepared world type: //p')
           test -n "$lab_id"
           echo "LAB_WORLD=$lab_id" >> "$GITHUB_ENV"
           echo "Generated $lab_id"
