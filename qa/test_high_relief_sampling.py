@@ -30,6 +30,7 @@ class UsgsBigSurIsolation(unittest.TestCase):
         self.assertEqual(settings["noise"]["height"],2096)
         self.assertEqual(settings["noise_router"]["final_density"]["input"],
                          "realscale:usgs_big_sur_v2/terrain_density")
+        self.assertEqual(settings["noise_router"]["depth"],"realscale:usgs_big_sur_v2/terrain_density")
         self.assertEqual(density["type"],"realscale:dem_density_seamless")
         self.assertEqual(density["blend_meters"],768)
         reg=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
