@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Exercise structure NBT evidence classification without pretending it is live worldgen."""
 import importlib.util
-import rcon_worldgen_smoke as worldgen
 import json
 import sys
 import tempfile
@@ -11,6 +10,7 @@ from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"qa/neoforge"))
+import rcon_worldgen_smoke as worldgen
 spec=importlib.util.spec_from_file_location("structure_audit",ROOT/"qa/neoforge/audit_vanilla_structures.py")
 audit=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(audit)
