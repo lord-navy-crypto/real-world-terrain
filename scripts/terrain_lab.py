@@ -140,7 +140,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         if ridge or erosion or strata:
             options.update(ridge=int(ridge),erosion=int(erosion),strata=int(strata))
         if caves >= 60:
-            options["mountain_caves_revision"]=2
+            options["mountain_caves_revision"]=3
         if climate:
             options["climate"]=climate
         if valley:
@@ -228,38 +228,46 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                                            "noise":"minecraft:spaghetti_3d_1",
                                            "xz_scale":0.45,"y_scale":0.35}},
                   "argument2":-0.08}
-        # Continuous depth gate. Near-surface rock is protected by a
-        # positive carve penalty; the tunnel becomes available gradually
-        # in the thicker rock (density 0.9..1.8). Fade out again in very
-        # dense cores (4.5..6.0), avoiding a discontinuous range_choice.
-        def gate_bias(low,high,scale):
-            return {"type":"minecraft:mul","argument1":scale,
-                    "argument2":{"type":"minecraft:clamp",
-                        "input":{"type":"minecraft:add",
-                            "argument1":low,
-                            "argument2":{"type":"minecraft:mul",
-                                "argument1":-1.0,"argument2":terrain_depth}},
-                        "min":0.0,"max":high}}
-        roof_penalty=gate_bias(1.8,1.8,0.30)
-        deep_penalty={"type":"minecraft:mul","argument1":0.15,
-            "argument2":{"type":"minecraft:clamp",
-                "input":{"type":"minecraft:add",
-                    "argument1":terrain_depth,"argument2":-4.5},
-                "min":0.0,"max":1.5}}
+        # All three editable families use a 128-block-per-height-signal
+        # vertical gradient with zero crossing at Y=63. Derive estimated
+        # LOCAL underground depth = (63 + 128*height_signal) - current Y.
+        # This is a predicted surface, not a raycast of the final block
+        # heightmap; noise/caves/surface decorations can differ.
+        depth={"type":"minecraft:add",
+               "argument1":{"type":"minecraft:mul","argument1":128.0,
+                            "argument2":new_height},
+               "argument2":{"type":"minecraft:y_clamped_gradient",
+                            "from_y":-64,"to_y":2032,
+                            "from_value":127.0,"to_value":-1969.0}}
+        def positive_part(node,max_value):
+            return {"type":"minecraft:clamp","input":node,
+                    "min":0.0,"max":max_value}
+        def subtract(a,b):
+            return {"type":"minecraft:add","argument1":a,
+                    "argument2":{"type":"minecraft:mul","argument1":-1.0,
+                                 "argument2":b}}
+        # Minimum roof of ~24 estimated blocks, tapering toward open
+        # passages by 64 blocks below local surface. Fade far underground
+        # so the old deep-cave system retains its character.
+        roof_penalty={"type":"minecraft:mul","argument1":0.018,
+            "argument2":positive_part(subtract(64.0,depth),64.0)}
+        deep_penalty={"type":"minecraft:mul","argument1":0.0025,
+            "argument2":positive_part(subtract(depth,512.0),256.0)}
         guarded={"type":"minecraft:add",
-                 "argument1":{"type":"minecraft:add","argument1":corridor,
-                              "argument2":roof_penalty},
+                 "argument1":{"type":"minecraft:add",
+                              "argument1":corridor,"argument2":roof_penalty},
                  "argument2":deep_penalty}
-        # Original solid/void field remains the upper limit. The extra
-        # corridor is applied only where terrain is solid (positive).
+        # Retain original cave noise and refuse extra cutting where
+        # original terrain is not solid. The safety envelope is
+        # continuous and derived from local surface height.
         final=noise["noise_router"]["final_density"]
         noise["noise_router"]["final_density"]={
             "type":"minecraft:min","argument1":final,
             "argument2":{"type":"minecraft:max",
                 "argument1":{"type":"minecraft:mul","argument1":-1.0,
-                    "argument2":{"type":"minecraft:clamp",
-                        "input":{"type":"minecraft:mul","argument1":-1.0,
-                            "argument2":terrain_depth},"min":0.0,"max":1.0}},
+                    "argument2":positive_part(
+                        {"type":"minecraft:mul","argument1":-1.0,
+                         "argument2":terrain_depth},1.0)},
                 "argument2":guarded}}
     # Temperature drives the VANILLA MultiNoise biome sampler.
     # It is specific to this new world noise_settings ID, never a
