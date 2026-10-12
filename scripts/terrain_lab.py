@@ -21,7 +21,15 @@ PRESETS = (
     "realism_max", "georeal_ultimate", "himalayan", "grand_canyon",
     "usgs_big_sur", "continental", "realistic_mountains", "ultimate",
 )
-EDITABLE = tuple(x for x in PRESETS if x != "usgs_big_sur")
+# A small public UI, with legacy algorithms still accepted for old worlds and CLI.
+# These are REAL combinations of two underlying height density signals, not UI aliases.
+FAMILIES = {
+    "landscape": ("realism_max", "georeal_ultimate"),
+    "alpine": ("himalayan", "realistic_mountains"),
+    "canyon": ("grand_canyon", "continental"),
+}
+EDITABLE = tuple(FAMILIES)
+LEGACY_EDITABLE = tuple(x for x in PRESETS if x != "usgs_big_sur")
 PROFILES = {
     "natural":  (1.0, 0, 50, 6),
     "gentle":   (0.9, -12, 35, 3),
@@ -34,6 +42,9 @@ ENGLISH = {
     "usgs_big_sur":"USGS Big Sur (measured DEM; read-only)",
     "continental":"Continental", "realistic_mountains":"Realistic Mountains",
     "ultimate":"Ultimate",
+    "landscape":"Natural Landscape (Realism + GeoReal)",
+    "alpine":"Alpine Mountains (Himalayan + Realistic Mountains)",
+    "canyon":"Canyons and Plateaus (Grand Canyon + Continental)",
 }
 CHINESE = {
     "realism_max":"综合真实地形", "georeal_ultimate":"多尺度地貌",
@@ -41,8 +52,11 @@ CHINESE = {
     "usgs_big_sur":"USGS Big Sur（实测 DEM，不允许修改）",
     "continental":"大陆巨构", "realistic_mountains":"真实山脉",
     "ultimate":"终极地形",
+    "landscape":"自然地貌（真实综合 + GeoReal）",
+    "alpine":"高山地貌（喜马拉雅 + 真实山脉）",
+    "canyon":"峡谷台地（大峡谷 + 大陆地形）",
 }
-NORMAL = ("realism_max","georeal_ultimate","himalayan","grand_canyon","usgs_big_sur")
+NORMAL = ("realism_max","himalayan","grand_canyon","usgs_big_sur")
 GEO_ROOT = Path("data/realscale/worldgen")
 LABEL_ROOT = Path("assets/minecraft/lang")
 TAG_ROOT = Path("data/minecraft/tags/worldgen/world_preset")
@@ -65,11 +79,15 @@ def replace_refs(node, replacements):
         return {key:replace_refs(value,replacements) for key,value in node.items()}
     return node
 
-def validate(preset, relief, elevation, caves, river_grade):
-    if preset not in PRESETS:
+def validate(preset, relief, elevation, caves, river_grade, blend_percent=25):
+    if preset not in PRESETS and preset not in FAMILIES:
         raise ValueError("Unknown terrain preset")
     if preset == "usgs_big_sur":
         raise ValueError("USGS Big Sur is a measured DEM pilot: original preset only (no rescaling)")
+    if preset in FAMILIES and (type(blend_percent) is not int or not 0 <= blend_percent <= 50):
+        raise ValueError("Feature blend must be 0..50%")
+    if preset not in FAMILIES and blend_percent != 25:
+        raise ValueError("Legacy algorithm does not support feature blending")
     if not 0.8 <= relief <= 1.25:
         raise ValueError("Relief must be 0.80 to 1.25")
     if not -48 <= elevation <= 48:
@@ -79,21 +97,26 @@ def validate(preset, relief, elevation, caves, river_grade):
     if river_grade not in (0,3,6,9):
         raise ValueError("River slope must be Off (0), Conservative (3), Standard (6) or Flexible (9)")
 
-def files_for(root, preset, relief, elevation, caves, river_grade, inland=True):
-    validate(preset,relief,elevation,caves,river_grade)
+def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25):
+    validate(preset,relief,elevation,caves,river_grade,blend_percent)
+    source=FAMILIES[preset][0] if preset in FAMILIES else preset
+    secondary=FAMILIES[preset][1] if preset in FAMILIES else None
     options=dict(preset=preset,relief=round(float(relief),3),
                  elevation=int(elevation),caves=int(caves),
                  river_grade=int(river_grade),inland=bool(inland))
+    # Do not mutate the hash and files of any previously generated legacy preset.
+    if preset in FAMILIES:
+        options["blend_percent"]=int(blend_percent)
     checksum=hashlib.sha256(json.dumps(options,sort_keys=True).encode()).hexdigest()[:10]
     name="lab_"+preset+"_"+checksum+"_g"+str(river_grade)
     density_folder="terrain_lab/"+name
     density_id="realscale:"+density_folder
-    existing="realscale:"+preset
+    existing="realscale:"+source
     repl={existing+"/terrain_density":density_id+"/terrain_density",
           existing+"/preliminary_density":density_id+"/preliminary_density",
           existing+"/cave_density":density_id+"/cave_density"}
     new_height=density_id+"/height_signal"
-    base=GEO_ROOT/"density_function"/preset
+    base=GEO_ROOT/"density_function"/source
     input_terrain=jread(root,base/"terrain_density.json")
     ref_height=existing+"/height_signal"
     def swap_height(obj):
@@ -104,24 +127,35 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True):
     terrain=swap_height(input_terrain)
     if terrain==input_terrain:
         raise ValueError("Preset does not reference an editable height signal: "+preset)
+    # Blend the underlying smooth/interpolated height signals BEFORE scaling;
+    # this is a density-field merge, not a cosmetic preset rename.
+    raw_height=ref_height
+    if secondary and blend_percent:
+        weight=round(blend_percent/100.0,4)
+        raw_height={"type":"minecraft:add",
+            "argument1":{"type":"minecraft:mul",
+                         "argument1":round(1.0-weight,4),"argument2":ref_height},
+            "argument2":{"type":"minecraft:mul",
+                         "argument1":weight,
+                         "argument2":"realscale:"+secondary+"/height_signal"}}
     height={"type":"minecraft:add",
             "argument1":{"type":"minecraft:mul",
                          "argument1":float(options["relief"]),
-                         "argument2":ref_height},
+                         "argument2":raw_height},
             "argument2":options["elevation"]/128.0}
     preliminary=replace_refs(jread(root,base/"preliminary_density.json"),repl)
     caves_base=replace_refs(jread(root,base/"cave_density.json"),repl)
     # Density >0 means solid. Negative cave bias opens slightly more voxels.
     bias=round((50-options["caves"])/250.0,5)
     new_caves={"type":"minecraft:add","argument1":caves_base,"argument2":bias}
-    original_settings=jread(root,GEO_ROOT/"noise_settings"/(preset+".json"))
+    original_settings=jread(root,GEO_ROOT/"noise_settings"/(source+".json"))
     if original_settings["sea_level"]!=63:raise ValueError("Refuse to modify a non-Y63 preset")
     noise=replace_refs(original_settings,repl)
     if inland:
         for target in noise.get("spawn_target",[]):
             if "continentalness" in target:
                 target["continentalness"][0]=0.12
-    original_preset=jread(root,GEO_ROOT/"world_preset"/(preset+".json"))
+    original_preset=jread(root,GEO_ROOT/"world_preset"/(source+".json"))
     world_preset=copy.deepcopy(original_preset)
     world_preset["dimensions"]["minecraft:overworld"]["generator"]["settings"]="realscale:"+name
     output={
@@ -134,8 +168,8 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True):
     }
     return name,options,output
 
-def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False):
-    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland)
+def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25):
+    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent)
     paths={path:serialized(obj) for path,obj in output.items()}
     preset_id="realscale:"+name
     for tag in ("normal","extended"):
@@ -151,6 +185,8 @@ def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_
                f"| relief {relief:.2f}, height {elevation:+d}, caves {caves}, river {river_grade}"
                if lang=="en_us"
                else f"地形实验室 | {names[preset]} | 起伏 {relief:.2f}, 高差 {elevation:+d}, 洞穴 {caves}, 河流 {river_grade}")
+        if preset in FAMILIES:
+            label+=f" | mix {blend_percent}%"
         labels["generator.realscale."+name]=label
         paths[path]=serialized(labels)
     # Never silently modify a previously generated worldgen codec: if a
@@ -180,12 +216,13 @@ def gui(root, launch):
     main.pack(fill="both",expand=True)
     ttk.Label(main,text="RealScale Terrain Lab",font=("",18,"bold")).pack(anchor="w",pady=(0,8))
     ttk.Label(main,text="Each Apply creates a new world preset. Existing worlds are unchanged.").pack(anchor="w")
-    preset=tk.StringVar(value="realism_max")
+    preset=tk.StringVar(value="landscape")
     profile=tk.StringVar(value="natural")
     relief=tk.DoubleVar(value=1.0)
     elevation=tk.IntVar(value=0)
     caves=tk.IntVar(value=50)
     grade=tk.IntVar(value=6)
+    blend=tk.IntVar(value=25)
     inland=tk.BooleanVar(value=True)
     def chooser(label,variable,values):
         ttk.Label(main,text=label).pack(anchor="w",pady=(9,0))
@@ -201,6 +238,7 @@ def gui(root, launch):
         tk.Scale(frame,from_=frm,to=to,resolution=resolution,orient="horizontal",
                  showvalue=True,variable=variable,length=440).pack(side="left",fill="x",expand=True)
     slider("Terrain relief multiplier",relief,0.8,1.25,.01)
+    slider("Secondary landform feature mix (%)",blend,0,50,1)
     slider("Elevation offset (blocks)",elevation,-48,48)
     slider("Cave activity (higher = more caves)",caves,20,80)
     chooser("Safe river grade: Off=0, Steep-safe=3, Normal=6, Flexible=9",
@@ -215,7 +253,7 @@ def gui(root, launch):
     result={"done":False}
     def save():
         try:
-            name,_,_=apply(root,preset.get(),round(relief.get(),2),elevation.get(),caves.get(),grade.get(),inland.get())
+            name,_,_=apply(root,preset.get(),round(relief.get(),2),elevation.get(),caves.get(),grade.get(),inland.get(),blend_percent=blend.get())
         except Exception as ex:
             messagebox.showerror("Terrain Lab",str(ex))
             return
@@ -235,9 +273,10 @@ def main(argv=None):
     parser.add_argument("--from-yacl",type=Path,default=None,
                         help="Import a saved YACL draft; creates a NEW immutable world preset")
     parser.add_argument("--list",action="store_true",help="List preset and tuning choices")
-    parser.add_argument("--preset",choices=PRESETS,default="realism_max")
+    parser.add_argument("--preset",choices=PRESETS+tuple(FAMILIES),default="landscape")
     parser.add_argument("--profile",choices=PROFILES,default="natural")
     parser.add_argument("--relief",type=float,default=None)
+    parser.add_argument("--blend",type=int,default=25,help="Secondary landform mix (0-50%) for merged modes")
     parser.add_argument("--elevation",type=int,default=None)
     parser.add_argument("--caves",type=int,default=None)
     parser.add_argument("--river-grade",type=int,choices=(0,3,6,9),default=None)
@@ -247,9 +286,11 @@ def main(argv=None):
     parser.add_argument("--root",type=Path,default=None,help=argparse.SUPPRESS)
     args=parser.parse_args(argv)
     if args.list:
-        print("Presets:",", ".join(PRESETS))
+        print("Main merged modes:",", ".join(FAMILIES))
+        print("Measured (read-only): usgs_big_sur")
+        print("Legacy compatible algorithms:",", ".join(LEGACY_EDITABLE))
         print("Tuning modes:",", ".join(PROFILES))
-        print("Adjustable: relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
+        print("Adjustable: mix 0..50%, relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
         print("USGS Big Sur is a read-only measured DEM.")
         return 0
     root=args.root or resource_root()
@@ -267,7 +308,8 @@ def main(argv=None):
         if not isinstance(raw.get("preset"),str):
             raise ValueError("YACL preset must be a string")
         name,opts,files=apply(root,raw["preset"],raw["reliefPercent"]/100.0,
-            raw["elevation"],raw["caves"],raw["riverGrade"],raw["inland"],args.dry_run)
+            raw["elevation"],raw["caves"],raw["riverGrade"],raw["inland"],args.dry_run,
+            raw.get("blendPercent",25))
         print("YACL draft compiled to new world preset: realscale:"+name)
         print("Worldgen resource files:",len(files))
         return 0
@@ -280,7 +322,7 @@ def main(argv=None):
         caves=args.caves if args.caves is not None else defaults[2]
         grade=args.river_grade if args.river_grade is not None else defaults[3]
         name,opts,files=apply(root,args.preset,relief,elevation,caves,grade,
-                              not args.coastal_spawn,args.dry_run)
+                              not args.coastal_spawn,args.dry_run,args.blend)
         print("Prepared world type: realscale:"+name)
         print("Settings:",json.dumps(opts,sort_keys=True))
         print("World preset files:",len(files))

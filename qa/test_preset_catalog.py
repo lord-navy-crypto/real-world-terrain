@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Five main modes in UI, eight retained generator IDs."""
+"""Four main categories in UI, eight retained generator IDs."""
 import json
 import unittest
 from pathlib import Path
@@ -8,15 +8,15 @@ ROOT=Path(__file__).resolve().parents[1]/"neoforge/src/main/resources"
 TAG=ROOT/"data/minecraft/tags/worldgen/world_preset"
 DATA=ROOT/"data/realscale/worldgen"
 LANG=ROOT/"assets/minecraft/lang"
-PRIMARY=("realism_max","georeal_ultimate","himalayan","grand_canyon","usgs_big_sur")
-HIDDEN=("continental","realistic_mountains","ultimate")
+PRIMARY=("realism_max","himalayan","grand_canyon","usgs_big_sur")
+HIDDEN=("georeal_ultimate","continental","realistic_mountains","ultimate")
 ALL=PRIMARY+HIDDEN
 
 def load(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 class PresetCatalogChecks(unittest.TestCase):
-    def test_only_five_main_choices(self):
+    def test_only_four_main_choices(self):
         j=load(TAG/"normal.json")
         self.assertIs(j["replace"],False)
         expected=["realscale:"+s for s in PRIMARY]

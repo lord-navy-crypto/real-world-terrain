@@ -2,7 +2,6 @@
   "replace": false,
   "values": [
     "realscale:realism_max",
-    "realscale:georeal_ultimate",
     "realscale:himalayan",
     "realscale:grand_canyon",
     "realscale:usgs_big_sur"

@@ -57,6 +57,24 @@ class TerrainLabTests(unittest.TestCase):
                 self.assertTrue((self.root/"assets/minecraft/lang/zh_cn.json").exists())
                 self.assertEqual(len(paths),10)
 
+    def test_merged_families_blend_actual_height_density_functions(self):
+        for family,(base,secondary) in lab.FAMILIES.items():
+            with self.subTest(family=family):
+                name,opts,_=lab.apply(self.root,family,1.0,0,50,6,blend_percent=35)
+                h=lab.jread(self.root,lab.GEO_ROOT/"density_function/terrain_lab"/name/"height_signal.json")
+                mix=h["argument1"]["argument2"]
+                self.assertEqual(mix["type"],"minecraft:add")
+                self.assertEqual(mix["argument1"]["argument1"],0.65)
+                self.assertEqual(mix["argument1"]["argument2"],f"realscale:{base}/height_signal")
+                self.assertEqual(mix["argument2"]["argument1"],0.35)
+                self.assertEqual(mix["argument2"]["argument2"],f"realscale:{secondary}/height_signal")
+                self.assertEqual(opts["blend_percent"],35)
+
+    def test_legacy_hash_remains_stable(self):
+        name,opts,_=lab.files_for(self.root,"realism_max",1.0,0,50,6,True)
+        self.assertNotIn("blend_percent",opts)
+        self.assertTrue(name.endswith("_g6"))
+
     def test_new_profile_cannot_change_historical_modes(self):
         lab.apply(self.root,"realism_max",1.2,30,70,6)
         for name,digest in self.originals.items():
@@ -134,6 +152,11 @@ class TerrainLabTests(unittest.TestCase):
         self.assertIn("maven.modrinth:1eAoo2KR:h8Px82QV",build)
         self.assertIn("prepareTerrainLabDraft",build)
         self.assertIn("dependsOn tasks.named('prepareTerrainLabDraft')",build)
+
+    def test_merged_blend_bounds_are_enforced(self):
+        for mix in (-1,51):
+            with self.assertRaises(ValueError):
+                lab.apply(self.root,"landscape",1.0,0,50,6,blend_percent=mix)
 
     def test_dry_run_does_not_create_new_preset(self):
         name,_,_=lab.apply(self.root,"realism_max",0.85,0,20,3,dry_run=True)
