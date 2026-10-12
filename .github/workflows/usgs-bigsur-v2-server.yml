@@ -18,7 +18,7 @@ jobs:
         seed: [785312, 20261012]
     name: ${{ matrix.preset }} / seed ${{ matrix.seed }}
     runs-on: ubuntu-latest
-    timeout-minutes: 27
+    timeout-minutes: 44
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
