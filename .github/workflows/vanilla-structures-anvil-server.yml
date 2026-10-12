@@ -38,6 +38,7 @@ jobs:
           level-name=world
           level-type=realscale:${{ matrix.preset }}
           level-seed=785312
+          generate-structures=true
           max-players=1
           view-distance=3
           simulation-distance=3
