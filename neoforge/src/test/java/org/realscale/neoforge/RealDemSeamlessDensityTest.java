@@ -39,6 +39,10 @@ public final class RealDemSeamlessDensityTest {
                 assertEquals(1.0,RealDemSeamlessMath.weightOutside(x,z,768),1e-12);
         assertEquals(0.0,RealDemSeamlessMath.weightOutside(1008,0,768),1e-12);
         assertEquals(0.0,RealDemSeamlessMath.weightOutside(0,-1008,768),1e-12);
+        assertEquals(0.0,RealDemSeamlessMath.weightOutside(2288,0,2048),1e-12);
+        assertEquals(0.0,RealDemSeamlessMath.weightOutside(0,-2288,2048),1e-12);
+        assertEquals(1.0,RealDemSeamlessMath.weightOutside(240,0,2048),1e-12);
+        assertTrue(RealDemSeamlessMath.weightOutside(1008,0,2048)>0.5);
     }
 
     @Test void exteriorBlendIsContinuousAtEveryTileBorder() {
