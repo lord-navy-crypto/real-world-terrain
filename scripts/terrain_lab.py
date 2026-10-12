@@ -138,7 +138,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     if preset in FAMILIES:
         options["blend_percent"]=int(blend_percent)
         if fantasy_dimensions:
-            options["fantasy_dimensions"]="v1"
+            options["fantasy_dimensions"]="v2"
         # Backward compatibility: an all-zero geology draft emits exactly the
         # old v1.5 hash AND byte-identical profile. Never alter saved IDs.
         if ridge or erosion or strata:
@@ -324,10 +324,10 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     if fantasy_dimensions:
         nether=world_preset["dimensions"]["minecraft:the_nether"]
         nether["type"]="realscale:fantasy_nether_v1"
-        nether["generator"]["settings"]="realscale:fantasy_nether_v1"
+        nether["generator"]["settings"]="realscale:fantasy_nether_v2"
         end=world_preset["dimensions"]["minecraft:the_end"]
         # Preserve the vanilla End dimension type and dragon fight arena.
-        end["generator"]["settings"]="realscale:fantasy_end_v1"
+        end["generator"]["settings"]="realscale:fantasy_end_v2"
     output={
         GEO_ROOT/"density_function"/density_folder/"height_signal.json":height,
         GEO_ROOT/"density_function"/density_folder/"terrain_density.json":terrain,
