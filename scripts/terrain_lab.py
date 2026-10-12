@@ -140,7 +140,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         if ridge or erosion or strata:
             options.update(ridge=int(ridge),erosion=int(erosion),strata=int(strata))
         if caves >= 60:
-            options["mountain_caves_revision"]=1
+            options["mountain_caves_revision"]=2
         if climate:
             options["climate"]=climate
         if valley:
@@ -228,15 +228,39 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                                            "noise":"minecraft:spaghetti_3d_1",
                                            "xz_scale":0.45,"y_scale":0.35}},
                   "argument2":-0.08}
-        extension={"type":"minecraft:range_choice",
-                   "input":terrain_depth,"min_inclusive":0.9,
-                   "max_exclusive":6.0,
-                   "when_in_range":corridor,
-                   "when_out_of_range":terrain_depth}
-        # Existing carve field AND narrow extra tunnels; solid shell remains.
+        # Continuous depth gate. Near-surface rock is protected by a
+        # positive carve penalty; the tunnel becomes available gradually
+        # in the thicker rock (density 0.9..1.8). Fade out again in very
+        # dense cores (4.5..6.0), avoiding a discontinuous range_choice.
+        def gate_bias(low,high,scale):
+            return {"type":"minecraft:mul","argument1":scale,
+                    "argument2":{"type":"minecraft:clamp",
+                        "input":{"type":"minecraft:add",
+                            "argument1":low,
+                            "argument2":{"type":"minecraft:mul",
+                                "argument1":-1.0,"argument2":terrain_depth}},
+                        "min":0.0,"max":high}}
+        roof_penalty=gate_bias(1.8,1.8,0.30)
+        deep_penalty={"type":"minecraft:mul","argument1":0.15,
+            "argument2":{"type":"minecraft:clamp",
+                "input":{"type":"minecraft:add",
+                    "argument1":terrain_depth,"argument2":-4.5},
+                "min":0.0,"max":1.5}}
+        guarded={"type":"minecraft:add",
+                 "argument1":{"type":"minecraft:add","argument1":corridor,
+                              "argument2":roof_penalty},
+                 "argument2":deep_penalty}
+        # Original solid/void field remains the upper limit. The extra
+        # corridor is applied only where terrain is solid (positive).
         final=noise["noise_router"]["final_density"]
         noise["noise_router"]["final_density"]={
-            "type":"minecraft:min","argument1":final,"argument2":extension}
+            "type":"minecraft:min","argument1":final,
+            "argument2":{"type":"minecraft:max",
+                "argument1":{"type":"minecraft:mul","argument1":-1.0,
+                    "argument2":{"type":"minecraft:clamp",
+                        "input":{"type":"minecraft:mul","argument1":-1.0,
+                            "argument2":terrain_depth},"min":0.0,"max":1.0}},
+                "argument2":guarded}}
     # Temperature drives the VANILLA MultiNoise biome sampler.
     # It is specific to this new world noise_settings ID, never a
     # dimension-wide Lithostitched injector affecting unrelated worlds.
