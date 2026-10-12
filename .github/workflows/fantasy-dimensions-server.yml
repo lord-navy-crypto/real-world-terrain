@@ -40,64 +40,15 @@ jobs:
           simulation-distance=3
           max-tick-time=-1
           online-mode=false
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
           PROPERTIES
           done
-      - name: Boot and request Nether and End chunks
+      - name: Boot real NeoForge server and force-load Nether and End using RCON
         working-directory: neoforge
-        run: |
-          python3 - <<'PY'
-          import os,pathlib,signal,subprocess,threading,time
-          log=pathlib.Path("build/fantasy-dimensions-server.log")
-          log.parent.mkdir(exist_ok=True,parents=True)
-          proc=subprocess.Popen(["gradle","--no-daemon","runServer","--stacktrace"],
-              stdin=subprocess.PIPE,stdout=subprocess.PIPE,
-              stderr=subprocess.STDOUT,text=True,bufsize=1,start_new_session=True)
-          lines=[];ready=threading.Event()
-          def read():
-              for line in proc.stdout:
-                  lines.append(line)
-                  if "Done (" in line and "For help" in line:ready.set()
-          reader=threading.Thread(target=read,daemon=True);reader.start()
-          try:
-              until=time.monotonic()+650
-              while not ready.is_set() and proc.poll() is None and time.monotonic()<until:
-                  time.sleep(1)
-              if not ready.is_set():raise RuntimeError("Server did not reach Done")
-              for cmd in (
-                  "execute in minecraft:the_nether run forceload add 0 0",
-                  "execute in minecraft:the_nether run forceload add 512 0",
-                  "execute in minecraft:the_end run forceload add 0 0",
-                  "execute in minecraft:the_end run forceload add 2048 0",
-                  "execute in minecraft:the_end run forceload add 3072 0",
-                  "execute in minecraft:the_end run forceload add 4096 0",
-                  "execute in minecraft:the_end run forceload add 0 3072",
-              ):
-                  proc.stdin.write(cmd+"\n")
-                  proc.stdin.flush()
-              time.sleep(45)
-          finally:
-              if proc.poll() is None:
-                  try:
-                      proc.stdin.write("stop\n");proc.stdin.flush()
-                      proc.wait(timeout=50)
-                  except Exception:
-                      if proc.poll() is None:
-                          os.killpg(proc.pid,signal.SIGINT)
-                          try:proc.wait(timeout=12)
-                          except subprocess.TimeoutExpired:
-                              os.killpg(proc.pid,signal.SIGKILL);proc.wait()
-              reader.join(timeout=3)
-              log.write_text("".join(lines))
-              print("LOG_TAIL:",log.read_text()[-8500:])
-          root=pathlib.Path("run")
-          nether=list(root.rglob("DIM-1/region/*.mca"))
-          end=list(root.rglob("DIM1/region/*.mca"))
-          print("NETHER_REGION_FILES:",list(map(str,nether)))
-          print("END_REGION_FILES:",list(map(str,end)))
-          if not nether or not end:
-              raise RuntimeError("Nether/End actual Anvil region generation NOT VERIFIED")
-          print("FANTASY_DIMENSIONS_WORLDGEN: PASS")
-          PY
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . "$LAB_WORLD" fantasy
       - name: Inspect saved Anvil vertical cave bands and outer sky islands
         working-directory: neoforge
         run: python3 ../qa/neoforge/audit_fantasy_dimensions.py .
@@ -106,7 +57,7 @@ jobs:
         with:
           name: Fantasy-Dimensions-Server-QA
           path: |
-            neoforge/build/fantasy-dimensions-server.log
+            neoforge/build/rcon_fantasy_server.log
             neoforge/fantasy_dimensions_anvil_qa.json
             neoforge/run/**/DIM-1/region/*.mca
             neoforge/run/**/DIM1/region/*.mca
