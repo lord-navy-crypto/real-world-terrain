@@ -98,7 +98,7 @@ class TerrainLabTests(unittest.TestCase):
         self.assertNotEqual(a,b)
         normal=lab.jread(self.root,lab.TAG_ROOT/"normal.json")
         expected=["realscale:"+x for x in lab.NORMAL]
-        self.assertEqual(normal["values"][:5],expected)
+        self.assertEqual(normal["values"][:len(expected)],expected)
         self.assertIn("realscale:"+a,normal["values"])
         self.assertIn("realscale:"+b,normal["values"])
         self.assertEqual(len(normal["values"]),len(set(normal["values"])))
