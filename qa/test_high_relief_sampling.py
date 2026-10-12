@@ -25,14 +25,14 @@ class UsgsBigSurIsolation(unittest.TestCase):
     def test_new_usgs_uses_dedicated_measured_v2_density(self):
         settings=json.loads((GEO/"noise_settings/usgs_big_sur_v2.json").read_text())
         density=json.loads((GEO/"density_function/usgs_big_sur_v2/terrain_density.json").read_text())
-        self.assertEqual(settings["noise"]["size_horizontal"],2)
+        self.assertEqual(settings["noise"]["size_horizontal"],4)
         self.assertEqual(settings["sea_level"],63)
         self.assertEqual(settings["noise"]["height"],2096)
         self.assertEqual(settings["noise_router"]["final_density"]["input"],
                          "realscale:usgs_big_sur_v2/terrain_density")
         self.assertEqual(settings["noise_router"]["depth"],"realscale:usgs_big_sur_v2/terrain_density")
         self.assertEqual(density["type"],"realscale:dem_density_seamless")
-        self.assertEqual(density["blend_meters"],768)
+        self.assertEqual(density["blend_meters"],2048)
         reg=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
         self.assertIn('"dem_density_seamless"',reg)
 
