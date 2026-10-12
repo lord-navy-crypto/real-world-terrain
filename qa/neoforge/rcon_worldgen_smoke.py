@@ -8,6 +8,7 @@ Save-all flush and actual saved Anvil block inspection remain separate gates.
 import gzip
 import json
 import os
+import re
 import pathlib
 import signal
 import socket
@@ -124,6 +125,28 @@ def main(root,expected_preset,profile):
                     "execute in minecraft:overworld run forceload add 1024 1024",
                     "execute in minecraft:overworld run forceload add -1024 -1024"
                 ]
+            elif profile=="structures":
+                # Locate chooses natural structure candidates; forceload will
+                # then generate real Anvil chunks around returned coordinates.
+                # The separate Anvil auditor decides whether starts were saved.
+                rcon.sock.settimeout(180)
+                queries=["minecraft:trial_chambers",
+                         "minecraft:ruined_portal",
+                         "minecraft:village_taiga"]
+                observations=[]
+                for target in queries:
+                    reply=rcon.send("execute in minecraft:overworld run locate structure "+target)
+                    hit=re.search(r"\[\s*(-?\d+)\s*,\s*(?:~|-?\d+)\s*,\s*(-?\d+)\s*\]",reply)
+                    if not hit:
+                        observations.append({"structure":target,"located":False,"response":reply})
+                        continue
+                    x,z=map(int,hit.groups())
+                    observations.append({"structure":target,"located":True,"x":x,"z":z})
+                    rcon.send(f"execute in minecraft:overworld run forceload add {x-32} {z-32} {x+32} {z+32}")
+                (root/"vanilla_structure_locate_qa.json").write_text(json.dumps(observations,indent=2))
+                if not any(x["located"] for x in observations):
+                    raise RuntimeError("NO structures were located; cannot validate vanilla structure starts")
+                commands=[]
             elif profile=="fantasy":
                 commands=[
                     "execute in minecraft:the_nether run forceload add 0 0",
@@ -138,7 +161,7 @@ def main(root,expected_preset,profile):
                 raise ValueError("Unknown QA profile "+profile)
             for command in commands:
                 rcon.send(command)
-            time.sleep(100 if profile=="fantasy" else (75 if profile=="usgs" else 35))
+            time.sleep(120 if profile=="structures" else (100 if profile=="fantasy" else (75 if profile=="usgs" else 35)))
             rcon.send("save-all flush")
             time.sleep(5)
             try:
@@ -207,5 +230,5 @@ def main(root,expected_preset,profile):
 
 if __name__=="__main__":
     if len(sys.argv)!=4:
-        raise SystemExit("usage: rcon_worldgen_smoke.py neoForgeRoot preset usgs|distant|fantasy")
+        raise SystemExit("usage: rcon_worldgen_smoke.py neoForgeRoot preset usgs|distant|fantasy|structures")
     main(pathlib.Path(sys.argv[1]).resolve(),sys.argv[2],sys.argv[3])
