@@ -66,8 +66,9 @@ class TerrainLabTests(unittest.TestCase):
         self.assertIn('blendPercent',native)
         self.assertNotIn('"realism_max", "georeal_ultimate", "himalayan", "grand_canyon",',native)
         original=lab.jread(self.root,lab.TAG_ROOT/"extended.json")
-        self.assertEqual(len([x for x in original["values"] if not x.startswith("realscale:lab_")]),8)
-        self.assertEqual(len([x for x in lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"] if not x.startswith("realscale:lab_")]),4)
+        self.assertEqual([x for x in original["values"] if not x.startswith("realscale:lab_")][-1],"realscale:usgs_big_sur_v2")
+        self.assertEqual(len([x for x in original["values"] if not x.startswith("realscale:lab_")]),9)
+        self.assertEqual(len([x for x in lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"] if not x.startswith("realscale:lab_")]),5)
 
     def test_merged_families_blend_actual_height_density_functions(self):
         for family,(base,secondary) in lab.FAMILIES.items():
