@@ -21,7 +21,8 @@ class PresetCatalogChecks(unittest.TestCase):
         self.assertIs(j["replace"],False)
         expected=["realscale:"+s for s in PRIMARY]
         self.assertEqual(j["values"][:len(expected)],expected)
-        self.assertTrue(all(s.startswith("realscale:lab_") for s in j["values"][len(expected):]))
+        self.assertEqual(j["values"][len(expected)],"realscale:usgs_big_sur_v2")
+        self.assertTrue(all(s.startswith("realscale:lab_") for s in j["values"][len(expected)+1:]))
         self.assertEqual(len(j["values"]),len(set(j["values"])))
 
     def test_extended_preserves_all_eight(self):
@@ -29,7 +30,8 @@ class PresetCatalogChecks(unittest.TestCase):
         self.assertIs(j["replace"],False)
         expected=["realscale:"+s for s in ALL]
         self.assertEqual(j["values"][:len(expected)],expected)
-        self.assertTrue(all(s.startswith("realscale:lab_") for s in j["values"][len(expected):]))
+        self.assertEqual(j["values"][len(expected)],"realscale:usgs_big_sur_v2")
+        self.assertTrue(all(s.startswith("realscale:lab_") for s in j["values"][len(expected)+1:]))
         self.assertEqual(len(j["values"]),len(set(j["values"])))
 
     def test_legacy_world_ids_keep_original_noise_settings(self):
@@ -42,6 +44,17 @@ class PresetCatalogChecks(unittest.TestCase):
                 self.assertTrue((DATA/"density_function"/mode/"terrain_density.json").is_file())
                 self.assertIn("minecraft:the_nether",preset["dimensions"])
                 self.assertIn("minecraft:the_end",preset["dimensions"])
+
+    def test_usgs_v2_is_separate_world_preset(self):
+        old=load(DATA/"world_preset/usgs_big_sur.json")
+        fixed=load(DATA/"world_preset/usgs_big_sur_v2.json")
+        original=old["dimensions"]["minecraft:overworld"]["generator"]["settings"]
+        new=fixed["dimensions"]["minecraft:overworld"]["generator"]["settings"]
+        self.assertEqual(original,"realscale:usgs_big_sur")
+        self.assertEqual(new,"realscale:usgs_big_sur_v2")
+        self.assertEqual(fixed["dimensions"]["minecraft:the_nether"],old["dimensions"]["minecraft:the_nether"])
+        self.assertEqual(fixed["dimensions"]["minecraft:the_end"],old["dimensions"]["minecraft:the_end"])
+
 
     def test_labels_cover_every_preset(self):
         for language in ("en_us","zh_cn"):
