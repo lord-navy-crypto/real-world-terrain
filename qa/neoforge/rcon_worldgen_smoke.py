@@ -102,14 +102,14 @@ def await_full_chunk(rcon,x,z,timeout_seconds=240):
 
 
 def structure_targets(expected_preset):
-    """Keep expensive searches bounded without pretending omitted villages passed."""
-    base=("minecraft:trial_chambers", "minecraft:ruined_portal")
-    # Realism MAX (2096 tall) previously spent >180s in /locate
-    # village_taiga after 50 far-away chunks were already requested.
-    # Keep village search in the independent Himalayan / vanilla controls.
-    if expected_preset=="realscale:realism_max":
-        return base
-    return base+("minecraft:village_taiga",)
+    """Keep all three vanilla structure probes; serialize worldgen per hit.
+
+    The old test marked 25 far-away chunks per located target without
+    waiting for any to finish, overwhelming the 2096-height server before
+    the third (village) locate. Coverage must not silently disappear.
+    """
+    return ("minecraft:trial_chambers", "minecraft:ruined_portal",
+            "minecraft:village_taiga")
 
 
 def main(root,expected_preset,profile):
@@ -190,12 +190,6 @@ def main(root,expected_preset,profile):
                 rcon.sock.settimeout(180)
                 queries=structure_targets(expected_preset)
                 observations=[]
-                if "minecraft:village_taiga" not in queries:
-                    observations.append({
-                        "structure":"minecraft:village_taiga",
-                        "located":False,"skipped":True,
-                        "reason":"High-altitude locate timed out in prior Realism MAX QA; village NOT verified in this job"
-                    })
                 for target in queries:
                     reply=rcon.send("execute in minecraft:overworld run locate structure "+target)
                     hit=re.search(r"\[\s*(-?\d+)\s*,\s*(?:~|-?\d+)\s*,\s*(-?\d+)\s*\]",reply)
