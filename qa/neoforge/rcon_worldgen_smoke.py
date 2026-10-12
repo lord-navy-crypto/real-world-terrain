@@ -84,13 +84,15 @@ class Rcon:
 def await_full_chunk(rcon,x,z,timeout_seconds=240):
     """After forceload, distinguish command ACK from actual generated chunk."""
     deadline=time.monotonic()+timeout_seconds
+    # /seed always returns an explicit success result, unlike /say
+    # whose RCON reply often omits the spoken message itself.
     command=(f"execute in minecraft:overworld if loaded {x} 128 {z} "
-             "run say REALSCALE_QA_CHUNK_READY")
+             "run seed")
     attempts=0
     while time.monotonic()<deadline:
         attempts+=1
         reply=rcon.send(command)
-        if "REALSCALE_QA_CHUNK_READY" in reply:
+        if "Seed:" in reply:
             print("QA_CHUNK_GENERATED:",x,z,"attempts",attempts,flush=True)
             return
         time.sleep(3)
