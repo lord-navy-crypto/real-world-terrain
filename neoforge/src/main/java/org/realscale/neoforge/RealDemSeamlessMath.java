@@ -79,6 +79,12 @@ final class RealDemSeamlessMath {
         return 1.0-t*t*(3.0-2.0*t);
     }
 
+    static double taperedOutsideDisplacement(double distance) {
+        double length=Math.min(Math.abs(distance),128.0);
+        double softened=length-length*length/256.0;
+        return Math.copySign(softened,distance);
+    }
+
     static double extendedHeight(double x,double z) {
         double cx=limit(x,DEM.originX(),DEM.maxX());
         double cz=limit(z,DEM.originZ(),DEM.maxZ());
@@ -87,12 +93,12 @@ final class RealDemSeamlessMath {
         if(dx!=0.0) {
             double neighbor=measuredHeight(cx+(dx<0?CELL:-CELL),cz);
             double slope=(neighbor-center)/(dx<0?CELL:-CELL);
-            center+=limit(slope,-1.25,1.25)*limit(dx,-128,128);
+            center+=limit(slope,-1.25,1.25)*taperedOutsideDisplacement(dx);
         }
         if(dz!=0.0) {
             double neighbor=measuredHeight(cx,cz+(dz<0?CELL:-CELL));
             double slope=(neighbor-center)/(dz<0?CELL:-CELL);
-            center+=limit(slope,-1.25,1.25)*limit(dz,-128,128);
+            center+=limit(slope,-1.25,1.25)*taperedOutsideDisplacement(dz);
         }
         return limit(center,-64.0,2031.0);
     }
