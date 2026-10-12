@@ -58,6 +58,7 @@ public final class RealScaleTerrainLabClient {
         int caves = 50;
         int riverGrade = 6;
         boolean inland = true;
+        boolean fantasyDimensions = false;
 
         static Draft read() {
             if (!Files.exists(CONFIG)) return new Draft();
@@ -176,7 +177,7 @@ public final class RealScaleTerrainLabClient {
                     .name(Component.literal("Latitude Climate Cycle"))
                     .description(description("Off or north-south Earth/Preview or your concentric Radial Earth/Preview. Radial latitude follows distance from fixed X/Z center: equator -> circular pole -> next equator. 1 block=1m in Earth modes."))
                     .binding("off", () -> d.latitudeMode, v -> d.latitudeMode = v)
-                    .controller(o -> CyclingListControllerBuilder.create(o).values("off","earth","preview","radial_earth","radial_preview"))
+                    .controller(o -> CyclingListControllerBuilder.create(o).values("off","earth","preview","radial_earth","radial_preview","radial_balanced"))
                     .build())
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Latitude Climate Strength"))
@@ -240,6 +241,12 @@ public final class RealScaleTerrainLabClient {
                     .description(description("0 off, 3 conservative, 6 standard, 9 flexible. Banks are still required."))
                     .binding(6, () -> d.riverGrade, v -> d.riverGrade = v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(0,3,6,9))
+                    .build())
+                .option(Option.<Boolean>createBuilder()
+                    .name(Component.literal("Fantasy Nether and End Expansion (Experimental)"))
+                    .description(description("Opt-in for NEXT NEW WORLD only. Nether terrain fills 256 levels; outer End gains tiered islands beyond 1152 blocks. Preserve old worlds; dragon and portal gameplay require in-client testing."))
+                    .binding(false, () -> d.fantasyDimensions, v -> d.fantasyDimensions = v)
+                    .controller(BooleanControllerBuilder::create)
                     .build())
                 .option(Option.<Boolean>createBuilder()
                     .name(Component.literal("Prefer Inland Spawn"))
