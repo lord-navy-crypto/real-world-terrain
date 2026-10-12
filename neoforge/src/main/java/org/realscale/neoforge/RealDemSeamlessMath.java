@@ -11,6 +11,39 @@ final class RealDemSeamlessMath {
     private static final int GRID = 16;
     private static final double[][] HEIGHTS = loadHeights();
 
+    /*
+     * Minecraft re-evaluates final_density at many Y cells for each X/Z.
+     * Bicubic DEM interpolation depends ONLY on X/Z. Avoid repeating four
+     * spline evaluations for each of ~2096 vertical sample heights.
+     *
+     * Fixed-size direct-mapped per-thread cache: no unbounded world state,
+     * no synchronization on multi-threaded worldgen, no seed dependence.
+     * Hash collisions can only lower hit rate, not alter a computed value.
+     */
+    private static final int CACHE_SIZE = 256;
+    private static final class HeightCache {
+        final int[] xs = new int[CACHE_SIZE];
+        final int[] zs = new int[CACHE_SIZE];
+        final double[] values = new double[CACHE_SIZE];
+        final boolean[] valid = new boolean[CACHE_SIZE];
+    }
+    private static final ThreadLocal<HeightCache> HEIGHT_CACHE =
+        ThreadLocal.withInitial(HeightCache::new);
+
+    static double cachedExtendedHeight(int x, int z) {
+        HeightCache cache = HEIGHT_CACHE.get();
+        int slot = (x*0x9e3779b9 ^ Integer.rotateLeft(z*0x85ebca6b,13))
+                   & (CACHE_SIZE-1);
+        if (cache.valid[slot] && cache.xs[slot]==x && cache.zs[slot]==z)
+            return cache.values[slot];
+        double height=extendedHeight(x,z);
+        cache.valid[slot]=true;
+        cache.xs[slot]=x;
+        cache.zs[slot]=z;
+        cache.values[slot]=height;
+        return height;
+    }
+
     private RealDemSeamlessMath() {}
 
     private static double[][] loadHeights() {
