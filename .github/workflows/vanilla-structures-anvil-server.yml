@@ -16,7 +16,16 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        preset: [realism_max, himalayan]
+        include:
+          - preset: realism_max
+            level_type: realscale:realism_max
+            noise_settings: realscale:realism_max
+          - preset: himalayan
+            level_type: realscale:himalayan
+            noise_settings: realscale:himalayan
+          - preset: vanilla
+            level_type: minecraft:normal
+            noise_settings: minecraft:overworld
     name: Real vanilla structures / ${{ matrix.preset }}
     runs-on: ubuntu-latest
     timeout-minutes: 32
@@ -39,7 +48,7 @@ jobs:
             printf 'eula=true\n' > "$dir/eula.txt"
             cat > "$dir/server.properties" <<'PROPERTIES'
           level-name=world
-          level-type=realscale:${{ matrix.preset }}
+          level-type=${{ matrix.level_type }}
           level-seed=785312
           generate-structures=true
           max-players=1
@@ -55,7 +64,7 @@ jobs:
           done
       - name: Locate and force-generate real structure candidates with RCON
         working-directory: neoforge
-        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . 'realscale:${{ matrix.preset }}' structures
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . '${{ matrix.noise_settings }}' structures
       - name: Inspect NATURAL persisted Minecraft structure starts and piece foundations
         working-directory: neoforge
         run: python3 ../qa/neoforge/audit_vanilla_structures.py . --require-starts
