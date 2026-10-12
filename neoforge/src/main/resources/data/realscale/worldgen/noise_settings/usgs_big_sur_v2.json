@@ -25,7 +25,7 @@
       "y_scale": 0.5
     },
     "continents": "realscale:realism_max/continental_field",
-    "depth": "realscale:realism_max/terrain_density",
+    "depth": "realscale:usgs_big_sur_v2/terrain_density",
     "erosion": "realscale:realism_max/erosion_field",
     "final_density": {
       "type": "minecraft:range_choice",
