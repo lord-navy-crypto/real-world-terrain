@@ -125,7 +125,7 @@ class TerrainLabTests(unittest.TestCase):
         expanded,options,_=lab.apply(self.root,"landscape",1.0,0,50,6,
                                      fantasy_dimensions=True)
         self.assertNotEqual(base,expanded)
-        self.assertEqual(options["fantasy_dimensions"],"v1")
+        self.assertEqual(options["fantasy_dimensions"],"v2")
         before=lab.jread(self.root,lab.GEO_ROOT/"world_preset"/(base+".json"))
         after=lab.jread(self.root,lab.GEO_ROOT/"world_preset"/(expanded+".json"))
         self.assertEqual(before["dimensions"]["minecraft:the_nether"]["generator"]["settings"],
@@ -135,18 +135,18 @@ class TerrainLabTests(unittest.TestCase):
         self.assertEqual(after["dimensions"]["minecraft:the_nether"]["type"],
                          "realscale:fantasy_nether_v1")
         self.assertEqual(after["dimensions"]["minecraft:the_nether"]["generator"]["settings"],
-                         "realscale:fantasy_nether_v1")
+                         "realscale:fantasy_nether_v2")
         self.assertEqual(after["dimensions"]["minecraft:the_end"]["type"],
                          "minecraft:the_end")
         self.assertEqual(after["dimensions"]["minecraft:the_end"]["generator"]["settings"],
-                         "realscale:fantasy_end_v1")
+                         "realscale:fantasy_end_v2")
         self.assertEqual(after["dimensions"]["minecraft:overworld"]["generator"]["settings"],
                          "realscale:"+expanded)
 
     def test_fantasy_height_bounds_and_original_biome_sources(self):
         generated=ROOT/"neoforge/src/main/resources"
-        nether=lab.jread(generated,lab.GEO_ROOT/"noise_settings/fantasy_nether_v1.json")
-        end=lab.jread(generated,lab.GEO_ROOT/"noise_settings/fantasy_end_v1.json")
+        nether=lab.jread(generated,lab.GEO_ROOT/"noise_settings/fantasy_nether_v2.json")
+        end=lab.jread(generated,lab.GEO_ROOT/"noise_settings/fantasy_end_v2.json")
         nether_type=lab.jread(generated,Path("data/realscale/dimension_type/fantasy_nether_v1.json"))
         self.assertEqual(nether["noise"]["height"],256)
         self.assertEqual(nether_type["logical_height"],256)
@@ -157,12 +157,15 @@ class TerrainLabTests(unittest.TestCase):
         self.assertEqual(end["noise"]["height"],256)
         self.assertEqual(end["default_block"]["Name"],"minecraft:end_stone")
         self.assertEqual(end["noise_router"]["final_density"]["type"],
-                         "realscale:fantasy_end_islands")
+                         "realscale:fantasy_end_archipelago")
+        self.assertEqual(nether["noise_router"]["final_density"]["type"],"realscale:fantasy_nether_caverns")
+        self.assertEqual(nether["noise_router"]["final_density"]["strength"],0.85)
         self.assertFalse(end["aquifers_enabled"])
-        java=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/FantasyEndIslandsDensity.java").read_text()
+        java=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/FantasyEndArchipelagoDensity.java").read_text()
         self.assertIn("radius <= 1152",java)
         registration=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
-        self.assertIn('"fantasy_end_islands"',registration)
+        self.assertIn('"fantasy_end_archipelago"',registration)
+        self.assertIn('"fantasy_nether_caverns"',registration)
 
     def test_fantasy_dimension_rejects_legacy_preset(self):
         with self.assertRaisesRegex(ValueError,"Fantasy dimensions require"):
