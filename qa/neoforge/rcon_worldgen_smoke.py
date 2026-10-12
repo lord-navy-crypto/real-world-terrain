@@ -128,7 +128,10 @@ def main(root,expected_preset,profile):
             time.sleep(75 if profile=="usgs" else 35)
             rcon.send("save-all flush")
             time.sleep(5)
-            rcon.send("stop")
+            try:
+                rcon.send("stop")
+            except (EOFError, ConnectionResetError, BrokenPipeError):
+                print("RCON stop closed connection as expected",flush=True)
             proc.wait(timeout=125)
         finally:
             rcon.close()
