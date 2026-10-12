@@ -232,6 +232,8 @@ def gui(root, launch):
 def main(argv=None):
     parser=argparse.ArgumentParser(description="Generate a selectable RealScale world preset with real numeric controls")
     parser.add_argument("--gui",action="store_true",help="Open graphical profile chooser")
+    parser.add_argument("--from-yacl",type=Path,default=None,
+                        help="Import a saved YACL draft; creates a NEW immutable world preset")
     parser.add_argument("--list",action="store_true",help="List preset and tuning choices")
     parser.add_argument("--preset",choices=PRESETS,default="realism_max")
     parser.add_argument("--profile",choices=PROFILES,default="natural")
@@ -251,6 +253,24 @@ def main(argv=None):
         print("USGS Big Sur is a read-only measured DEM.")
         return 0
     root=args.root or resource_root()
+    if args.from_yacl is not None:
+        raw=json.loads(args.from_yacl.read_text(encoding="utf-8"))
+        if not isinstance(raw,dict):
+            raise ValueError("Terrain Lab YACL file must contain one JSON object")
+        # Be strict, do not silently create worlds from malformed UI settings.
+        if type(raw.get("reliefPercent")) is not int:
+            raise ValueError("YACL reliefPercent must be an integer")
+        if type(raw.get("elevation")) is not int or type(raw.get("caves")) is not int:
+            raise ValueError("YACL elevation and caves must be integers")
+        if type(raw.get("riverGrade")) is not int or type(raw.get("inland")) is not bool:
+            raise ValueError("YACL riverGrade and inland must have their declared types")
+        if not isinstance(raw.get("preset"),str):
+            raise ValueError("YACL preset must be a string")
+        name,opts,files=apply(root,raw["preset"],raw["reliefPercent"]/100.0,
+            raw["elevation"],raw["caves"],raw["riverGrade"],raw["inland"],args.dry_run)
+        print("YACL draft compiled to new world preset: realscale:"+name)
+        print("Worldgen resource files:",len(files))
+        return 0
     if args.gui:
         launch=gui(root,args.launch)
     else:
