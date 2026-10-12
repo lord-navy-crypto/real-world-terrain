@@ -63,7 +63,13 @@ jobs:
           while time.time()<deadline and p.poll() is None and not done.is_set():time.sleep(1)
           if done.is_set():
             print('NEOFORGE_SERVER_BOOT_OK: reached Done milestone')
-            time.sleep(18)
+            for command in (
+              'execute in minecraft:overworld run forceload add 1024 1024',
+              'execute in minecraft:overworld run forceload add -1024 -1024',
+            ):
+              p.stdin.write(command+'\n')
+              p.stdin.flush()
+            time.sleep(42)
           else:
             print('NEOFORGE_SERVER_BOOT_FAIL:',p.poll())
           try:
