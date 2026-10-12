@@ -84,17 +84,19 @@ class TerrainLabTests(unittest.TestCase):
 
     def test_new_high_mountain_caves_are_thin_and_protected(self):
         name,opts,_=lab.apply(self.root,"alpine",1.0,0,65,6,blend_percent=25)
-        self.assertEqual(opts["mountain_caves_revision"],1)
+        self.assertEqual(opts["mountain_caves_revision"],2)
         settings=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
         final=settings["noise_router"]["final_density"]
         self.assertEqual(final["type"],"minecraft:min")
         extra=final["argument2"]
-        self.assertEqual(extra["type"],"minecraft:range_choice")
-        self.assertEqual(extra["min_inclusive"],0.9)
-        self.assertEqual(extra["max_exclusive"],6.0)
-        self.assertEqual(extra["when_out_of_range"],
-                         "realscale:terrain_lab/"+name+"/terrain_density")
-        self.assertEqual(extra["when_in_range"]["argument1"]["type"],"minecraft:abs")
+        self.assertEqual(extra["type"],"minecraft:max")
+        guarded=extra["argument2"]
+        self.assertEqual(guarded["type"],"minecraft:add")
+        # Ensure the mountain tunnel uses smooth, bounded density penalties,
+        # rather than hard density window edges that cause abrupt seams.
+        self.assertEqual(guarded["argument1"]["argument2"]["type"],"minecraft:mul")
+        self.assertEqual(guarded["argument2"]["type"],"minecraft:mul")
+        self.assertEqual(extra["argument1"]["type"],"minecraft:mul")
         self.assertEqual(settings["sea_level"],63)
         self.assertTrue(settings["aquifers_enabled"])
 
