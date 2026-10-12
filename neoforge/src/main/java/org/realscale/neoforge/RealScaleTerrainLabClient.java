@@ -99,7 +99,7 @@ public final class RealScaleTerrainLabClient {
                         && (d.latitudeMode.equals("off") || d.latitudeMode.equals("earth")
                             || d.latitudeMode.equals("preview")
                             || d.latitudeMode.equals("radial_earth")
-                            || d.latitudeMode.equals("radial_preview"))
+                            || d.latitudeMode.equals("radial_preview") || d.latitudeMode.equals("radial_balanced"))
                         && d.latitudeStrength >= 0 && d.latitudeStrength <= 100
                         && d.equatorZ >= -4096 && d.equatorZ <= 4096
                         && d.radialCenterX >= -4096 && d.radialCenterX <= 4096
