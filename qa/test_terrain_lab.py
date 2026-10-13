@@ -347,7 +347,7 @@ class TerrainLabTests(unittest.TestCase):
                 self.assertEqual(lab.jread(self.root,label_path),labels_before)
                 self.assertEqual(same, name)
                 self.assertEqual(options["lithostitched_geology"],
-                                 "perlin_shift_strata_caves_v3")
+                                 "perlin_shift_strata_caves_v4")
                 base=lab.GEO_ROOT/"density_function/terrain_lab"/name
                 height=lab.jread(self.root,base/"height_signal.json")
                 weighted=height["argument1"]["argument2"]
@@ -386,8 +386,8 @@ class TerrainLabTests(unittest.TestCase):
                 self.assertEqual(terrain["type"],"realscale:strata")
                 stratum=terrain["warp"]
                 self.assertEqual(stratum["type"],"lithostitched:mix")
-                self.assertEqual(stratum["argument1"]["type"],"minecraft:clamp")
-                self.assertEqual((stratum["argument1"]["min"],stratum["argument1"]["max"]),(-1.0,1.0))
+                self.assertEqual(stratum["argument1"],
+                                 f"realscale:{secondary}/erosion")
                 sine=stratum["argument2"]
                 self.assertEqual(sine["type"],"lithostitched:sin")
                 self.assertEqual(sine["argument"]["argument2"],

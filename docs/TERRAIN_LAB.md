@@ -668,7 +668,7 @@ matching RealScale mod JAR **and** Lithostitched on both client and server.
 A profile with the Deep Geology switch OFF retains its previous noise
 trees/hashes (including prior Adaptive Blend v1 profiles).
 
-The range-safe optimized pipeline is tagged `perlin_shift_strata_caves_v3` so it will
+The range-safe optimized pipeline is tagged `perlin_shift_strata_caves_v4` so it will
 never overwrite earlier v1 experiment profile IDs. These are deliberate,
 bounded experimental effects, NOT claims of measured geology or physical
 erosion. The real-world CI creates a deep Landscape
@@ -677,3 +677,11 @@ and exporter pack contents. Deep mode takes precedence over the lightweight
 Adaptive Blend v1 toggle, so both switch combinations produce the same
 v3 density/profile ID. Benchmark high-altitude server-startup times before
 promoting this experimental mode to stable.
+
+
+**Dedicated NeoForge 1.21.1 compatibility:** Lithostitched 1.6.0
+accepts the existing erosion registry reference directly in the strata
+`mix` codec; nesting that reference inside `minecraft:clamp` caused a
+registry load failure in the v3 experimental profile. The v4 profile
+uses the already bounded direct erosion signal, and the unchanged
+`sin(axis Y)` branch. The original nine fixed presets are unaffected.

@@ -150,7 +150,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
             # otherwise identical deep profile get a different registry ID.
             options["blend_engine"]="lithostitched_adaptive_v1"
         if lithostitched_geology:
-            options["lithostitched_geology"]="perlin_shift_strata_caves_v3"
+            options["lithostitched_geology"]="perlin_shift_strata_caves_v4"
         if fantasy_dimensions:
             options["fantasy_dimensions"]="v2"
         # Backward compatibility: an all-zero geology draft emits exactly the
@@ -286,13 +286,13 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                 "argument":{"type":"minecraft:mul",
                     "argument1":0.0490873852,
                     "argument2":{"type":"lithostitched:axis","axis":"y"}}}
-            # Both input signals now have the same [-1,1] envelope,
-            # avoiding Lithostitched 1.21.1 mix range under-reporting.
+            # IMPORTANT: Lithostitched 1.6.0's HOLDER_HELPER codec
+            # accepts the EXISTING direct erosion registry reference, but
+            # wrapping that reference inside minecraft:clamp fails registry
+            # decoding in dedicated NeoForge 1.21.1. The source erosion
+            # noise already samples within [-1,+1], like the sine branch.
             strata_warp={"type":"lithostitched:mix",
-                "input":0.2,
-                "argument1":{"type":"minecraft:clamp",
-                    "input":strata_warp,"min":-1.0,"max":1.0},
-                "argument2":sine}
+                "input":0.2,"argument1":strata_warp,"argument2":sine}
         terrain={"type":"realscale:strata",
                  "base":terrain,
                  "warp":strata_warp,
