@@ -54,6 +54,24 @@ def test_biome_lab():
     stable = load(PRESETS / "realism_max.json")
     assert stable["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]["preset"] == "minecraft:overworld"
 
+def test_supported_microstructures():
+    java = (Path(__file__).resolve().parents[1]
+            / "neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
+    features = ["fallen_oak_log", "fallen_spruce_log", "woodland_hummock", "upland_scree"]
+    for name in features:
+        assert ('"' + name + '"') in java, "Missing Java Feature registration: " + name
+        feature = load(FEATURES / (name + ".json"))
+        assert feature["type"] == "realscale:" + name, name
+        assert feature["config"] == {}, name
+        placed = load(PLACED / (name + ".json"))
+        assert placed["feature"] == "realscale:" + name, name
+        assert placed["placement"][-1]["type"] == "minecraft:biome", name
+        assert 4 <= placed["placement"][0]["chance"] <= 20, name
+        assert placed["placement"][2]["heightmap"] == "MOTION_BLOCKING_NO_LEAVES", name
+        modifier = load(MODIFIERS / (name + ".json"))
+        assert modifier["type"] == "neoforge:add_features", name
+        assert len(modifier["biomes"]) >= 3, name
+
 def test_ecotone_gallery():
     gallery = load(PRESETS / "ecotone_gallery.json")
     source = gallery["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
@@ -87,5 +105,6 @@ if __name__ == "__main__":
     test_biome_lab()
     test_ecotone_catalog()
     test_ecotone_gallery()
+    test_supported_microstructures()
     print("STATIC PASS: 40 ecotone specifications, 10 priority biomes, referenced features and opt-in biome lab.")
     print("RUNTIME NOT TESTED: Minecraft biome codec, server loading, cave/river geometry.")
