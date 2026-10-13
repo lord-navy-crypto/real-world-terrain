@@ -73,3 +73,14 @@ by independent no-dependency javac smoke verification. NeoForge client
 runs can be launched via `gradle runClient` in a local development
 copy with its `client { client() }` run configuration added. The JUnit
 test fix is not proof that water, cliffs and new-world caves have no bugs.
+
+## Packaged YACL Config export (Beta)
+
+The matching CI build artifact includes RealScale-Config-Exporter.pyz.
+After saving Mods -> RealScale Terrain -> Config, exit Minecraft and
+run the exporter with the installed mod JAR plus the saved YACL draft.
+It creates an installable Minecraft 1.21.1 new-world datapack and optional
+display-name resource pack, without Gradle or source modifications.
+Enable the datapack at Create New World -> Data Packs before choosing
+the new Lab preset. Existing saves remain unchanged.
+See [standalone Config instructions](docs/TERRAIN_LAB.md#standalone-jar-export-yacl-config-to-a-new-world-datapack-beta).

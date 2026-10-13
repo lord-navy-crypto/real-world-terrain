@@ -554,3 +554,36 @@ https://www.noaa.gov/jetstream/appendix/weather-glossary-l
 
 NOAA basin inversion and persistent cold-air pools:
 https://repository.library.noaa.gov/view/noaa/25478
+
+## Standalone JAR: export YACL Config to a new-world datapack (Beta)
+
+Ordinary RealScale JAR users can now use the bundled RealScale-Config-Exporter.pyz
+(Python 3.9+). No Gradle or source checkout is necessary. The exporter uses
+the worldgen resources embedded inside the matching RealScale mod JAR.
+
+1. Install Minecraft 1.21.1, NeoForge, Java 21, the RealScale JAR and
+   its matching dependencies (Lithostitched on client/server; YACL on client).
+   Back up the instance; install only one RealScale version.
+2. Open Mods -> RealScale Terrain -> Config. Configure Landscape, Alpine or
+   Canyon, Save, and exit Minecraft completely. Locate the instance's
+   config/realscale-terrain-lab.json file.
+3. Download the matching RealScale-Config-Exporter.pyz build artifact, and
+   run the following with your own full file paths:
+
+       python3 RealScale-Config-Exporter.pyz --jar /path/to/RealScaleTerrain.jar --draft /path/to/instance/config/realscale-terrain-lab.json --output /path/to/My-Lab-World.zip
+
+4. In Create New World -> Data Packs, add and enable My-Lab-World.zip BEFORE
+   selecting the custom realscale:lab_* World Type. Create a NEW world.
+5. Optionally install My-Lab-World-Language.zip in Options -> Resource Packs
+   to give the world type English and Chinese names instead of a raw ID.
+
+The data pack format is 48 and the optional resource pack format is 34,
+for Minecraft Java 1.21.1 only. The datapack references RealScale's custom
+worldgen codecs, so keep the same RealScale mod JAR installed. Keep the
+exported datapack with the new saved world; do not replace it with different
+worldgen settings on an existing save. The tool will not overwrite an
+existing exported ZIP, change the JAR, or modify old world saves.
+
+This is a working standalone OFFLINE EXPORT flow, not live in-game worldgen
+editing, and not a one-click Apply button inside YACL. Measured USGS Big Sur
+remains read-only to preserve the original DEM elevations.
