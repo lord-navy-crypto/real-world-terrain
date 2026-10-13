@@ -15,5 +15,15 @@ public final class RealScaleMod {
         event.register(Registries.DENSITY_FUNCTION_TYPE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_density"), RealDemDensity.MAP_CODEC)
         );
+        event.register(Registries.FEATURE, helper -> {
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fallen_oak_log"),
+                    new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.OAK_LOG));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fallen_spruce_log"),
+                    new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.SPRUCE_LOG));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "woodland_hummock"),
+                    new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.FOREST_HUMMOCK));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "upland_scree"),
+                    new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.UPLAND_SCREE));
+        });
     }
 }
