@@ -38,7 +38,7 @@ class ConsolidationTests(unittest.TestCase):
                     "realscale:" + name,
                 )
                 self.assertTrue((WORLD / "noise_settings" / (name + ".json")).is_file())
-                self.assertTrue((WORLD / "density_function" / name / "height_signal.json").is_file())
+                self.assertTrue((WORLD / "density_function" / name / "terrain_density.json").is_file())
 
     def test_real_world_dem_remains_separate_read_only_and_visible(self):
         from_tag = json.loads((TAG / "normal.json").read_text())["values"]
@@ -59,7 +59,7 @@ class ConsolidationTests(unittest.TestCase):
         self.assertIn("profiles.get(preset).copyTo(this)", client)
         self.assertIn("data.initializeProfiles()", client)
         self.assertIn(".save(d::save)", client)
-        self.assertIn("Shared Latitude & Export", client)
+        self.assertIn("Shared Climate & Latitude / Export", client)
         self.assertNotIn("Restart/Build Required", client)
 
     def test_family_presets_have_different_reasonable_defaults(self):
