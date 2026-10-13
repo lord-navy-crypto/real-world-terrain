@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:jungle",
+    "minecraft:sparse_jungle"
+  ],
+  "features": "realscale:jungle_floor_melon_patches",
+  "step": "vegetal_decoration"
+}
