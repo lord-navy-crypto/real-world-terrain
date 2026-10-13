@@ -16,10 +16,10 @@ import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 
 /**
- * Conservative above-sea-level stream restore for vanilla River biomes
- * in RealScale procedural presets.
+ * Above-sea-level river and intentionally floodable mountain cascade
+ * restore for vanilla River biomes in RealScale worlds.
  *
- * No cross-chunk writes, no forced sea-level changes, no use of minecraft:lake
+ * No direct cross-chunk writes, no forced sea-level changes, no use of minecraft:lake
  * (known to be unsafe for 1.21.x water generation).
  *
  * This is a shallow stream, NOT surveyed basin-scale river hydrology.
@@ -103,6 +103,110 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
         return true;
     }
 
+
+
+    // Highland reaches deliberately allow LOCAL overbank flooding/cascades.
+    // Limited source pairs per placement keep new chunks from becoming
+    // endless flat artificial lakes. Vanilla fluid simulation controls any
+    // downhill flow once those limited sources are placed.
+    private static final int MAX_HIGHLAND_REACHES = 8;
+    private static final int MAX_OPEN_BANK_FACES = 3;
+
+    /**
+     * Creates a paired riverbed with a common water level on a mountain
+     * slope. Unlike the enclosed pool path, a few exterior faces may be
+     * open, creating small waterfalls and overbank flow. Both columns
+     * must have natural bedrock-like foundations and biome labels.
+     * The entire pair is validated BEFORE touching any blocks.
+     */
+    private static boolean tryHighlandOverflowReach(WorldGenLevel level,
+            ChunkPos chunk, BlockPos first, int floor, int maxGrade) {
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            int x = first.getX() + side.getStepX();
+            int z = first.getZ() + side.getStepZ();
+            if (x < chunk.getMinBlockX() || x > chunk.getMaxBlockX()
+                    || z < chunk.getMinBlockZ() || z > chunk.getMaxBlockZ())
+                continue;
+            int h = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) - 1;
+            BlockPos surface = new BlockPos(x, h, z);
+            BlockPos second = removableCover(level.getBlockState(surface))
+                    ? surface.below() : surface;
+            if (!level.getBiome(second).is(Biomes.RIVER)
+                    && !level.getBiome(second).is(Biomes.FROZEN_RIVER))
+                continue;
+            // Accept slope steps for natural cascades, but never excavate
+            // a sheer cliff or a deep well just to produce water.
+            if (Math.abs(first.getY() - second.getY()) > Math.min(3, maxGrade))
+                continue;
+            int waterY = Math.min(first.getY(), second.getY()) - 1;
+            if (waterY <= floor || waterY > level.getMaxBuildHeight() - 7)
+                continue;
+            BlockPos[] pair = {first, second};
+            boolean valid = true;
+            for (BlockPos cell : pair) {
+                BlockState cap = level.getBlockState(cell.above());
+                if (!cap.isAir() && !removableCover(cap)) {
+                    valid = false;
+                    break;
+                }
+                for (int y = cell.getY(); y >= waterY - 2; y--) {
+                    if (!natural(level.getBlockState(
+                            new BlockPos(cell.getX(), y, cell.getZ())))) {
+                        valid = false;
+                        break;
+                    }
+                }
+                if (!valid || !natural(level.getBlockState(
+                        new BlockPos(cell.getX(), waterY - 3, cell.getZ())))) {
+                    valid = false;
+                    break;
+                }
+            }
+            if (!valid) continue;
+
+            // Six exterior bank faces surround a two-cell reach. Up to
+            // three may open to a downslope, which makes flooding possible
+            // without excavating an entirely unsupported water platform.
+            int openFaces = 0;
+            for (BlockPos cell : pair) {
+                for (Direction wall : Direction.Plane.HORIZONTAL) {
+                    int nx = cell.getX() + wall.getStepX();
+                    int nz = cell.getZ() + wall.getStepZ();
+                    if ((nx == first.getX() && nz == first.getZ())
+                            || (nx == second.getX() && nz == second.getZ()))
+                        continue;
+                    BlockPos bank = new BlockPos(nx, waterY, nz);
+                    BlockState upper = level.getBlockState(bank);
+                    BlockState lower = level.getBlockState(bank.below());
+                    boolean existingReach =
+                        (upper.is(Blocks.WATER) || upper.is(Blocks.ICE))
+                        && lower.is(Blocks.WATER);
+                    if (!existingReach && (!solidBank(upper) || !solidBank(lower)))
+                        openFaces++;
+                }
+            }
+            if (openFaces > MAX_OPEN_BANK_FACES) continue;
+
+            // Each block modified belongs to this 16x16 generating chunk.
+            // The original DEM density and reference heights are untouched.
+            for (BlockPos cell : pair) {
+                if (removableCover(level.getBlockState(cell.above())))
+                    level.setBlock(cell.above(), Blocks.AIR.defaultBlockState(), 2);
+                for (int y = cell.getY(); y > waterY; y--)
+                    level.setBlock(new BlockPos(cell.getX(), y, cell.getZ()),
+                            Blocks.AIR.defaultBlockState(), 2);
+                BlockPos water = new BlockPos(cell.getX(), waterY, cell.getZ());
+                level.setBlock(water.below(2), Blocks.GRAVEL.defaultBlockState(), 2);
+                level.setBlock(water.below(), Blocks.WATER.defaultBlockState(), 2);
+                level.setBlock(water,
+                    level.getBiome(cell).is(Biomes.FROZEN_RIVER)
+                        ? Blocks.ICE.defaultBlockState()
+                        : Blocks.WATER.defaultBlockState(), 2);
+            }
+            return true;
+        }
+        return false;
+    }
 
     /**
      * Conservative connected streamlet: two adjacent river cells share a
@@ -233,6 +337,7 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
         ChunkPos chunk = new ChunkPos(context.origin());
         int floor = Math.max(level.getMinBuildHeight() + 8, noise.getSeaLevel() + 6);
         boolean made = false;
+        int highlandReaches = 0;
 
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
             for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
@@ -257,6 +362,17 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                     || (!level.getBlockState(top.above()).isAir()
                         && !(covered && removableCover(level.getBlockState(top.above())))))
                     continue;
+
+                // In high mountains, bank overflow is an intended natural
+                // effect. Paired ice/water reaches can descend into cascades.
+                // Other climates retain the protected-bank algorithm.
+                if (top.getY() >= Math.max(128, floor + 32)
+                        && highlandReaches < MAX_HIGHLAND_REACHES
+                        && tryHighlandOverflowReach(level, chunk, top, floor, maxGrade)) {
+                    highlandReaches++;
+                    made = true;
+                    continue;
+                }
 
                 // Prefer a mutually contained water pair over an isolated spring.
                 if (tryAdjacentSafeRiverPool(level, chunk, top, floor, maxGrade)) {

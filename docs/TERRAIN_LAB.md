@@ -760,3 +760,36 @@ columns, and \`himalayan / seed 2\` lacked a persisted spawn chunk in the
 audited region. They remain genuine blockers pending repaired and rerun
 worldgen evidence. Static tests and Java compilation alone cannot approve
 the first stable release.
+
+## Intentional highland floods and river cascades (experimental)
+
+In the river-worldgen update after the curated-preset consolidation, high
+mountains are ALLOWED to overflow: waterfalls, short cascades, and small
+overbank floods are intentional landscape features, not automatic defects.
+
+The feature first builds a natural-ground-validated, **two-column shared
+water-level reach** inside the current chunk when two adjoining River or
+Frozen River columns descend by at most 3 blocks. Frozen River water
+receives an ice surface and liquid water underneath. The lower beds
+receive gravel, with solid natural foundation below. Unlike the strict
+banked-stream path, up to three of the six exterior bank faces may be
+open: downhill runoff is explicitly permitted. At most eight such pairs
+are initially seeded per feature invocation. Non-highland reaches retain
+the conservative enclosed-bank path. No vanilla or third-party worldgen
+receives this feature, and it never writes a block outside its generating
+chunk.
+
+This is intentionally not a guarantee that water will remain contained;
+Minecraft's own fluid simulation may spread downhill beyond the seeded
+river cells. The number of **placed sources** and depth of **excavation**
+are bounded; the final size of a natural flood is not. Do not build near
+a mountain river if overflow would be undesirable. Previously generated
+chunks are not rewritten, but NEW adjacent chunks can have different
+river geometry. Real DEM elevation density is not regenerated or changed
+by this shallow feature.
+
+Release CI STILL requires real saved-world evidence: at least 5 river
+wet columns in large river-biome samples, at least one orthogonally
+connected wet reach, no widespread >8% high-altitude non-river water,
+and no artificial 16-block/4-block height seams or unsafe water spawns.
+Do not reduce these tests simply because mountain overflow is allowed.
