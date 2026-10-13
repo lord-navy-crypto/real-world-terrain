@@ -209,10 +209,12 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                 "input":"realscale:"+secondary+"/height_signal",
                 "shift_x":{"type":"minecraft:mul","argument1":8.0,"argument2":perlin},
                 "shift_y":0.0,
-                "shift_z":{"type":"minecraft:mul","argument1":8.0,
-                    "argument2":{"type":"minecraft:clamp",
-                        "input":"realscale:"+secondary+"/erosion",
-                        "min":-1.0,"max":1.0}}}
+                # Use the same seeded low-frequency Perlin with an opposite
+                # direction/shorter reach. An unresolved nested reference to
+                # the secondary erosion holder can break Lithostitched's shift
+                # registry decode on the dedicated 1.21.1 server.
+                "shift_z":{"type":"minecraft:mul","argument1":-6.0,
+                    "argument2":perlin}}
             spatial_weight={"type":"minecraft:clamp",
                 "input":{"type":"minecraft:add","argument1":weight,
                     "argument2":{"type":"minecraft:mul",
