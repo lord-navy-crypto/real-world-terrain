@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Four main categories in UI, eight retained generator IDs."""
+"""Curated four world choices, nine immutable legacy worldgen IDs."""
 import json
 import unittest
 from pathlib import Path
@@ -8,8 +8,8 @@ ROOT=Path(__file__).resolve().parents[1]/"neoforge/src/main/resources"
 TAG=ROOT/"data/minecraft/tags/worldgen/world_preset"
 DATA=ROOT/"data/realscale/worldgen"
 LANG=ROOT/"assets/minecraft/lang"
-PRIMARY=("realism_max","himalayan","grand_canyon","usgs_big_sur")
-HIDDEN=("georeal_ultimate","continental","realistic_mountains","ultimate")
+PRIMARY=("realism_max","himalayan","grand_canyon","usgs_big_sur_v2")
+HIDDEN=("georeal_ultimate","continental","realistic_mountains","ultimate","usgs_big_sur")
 ALL=PRIMARY+HIDDEN
 
 def load(path):
@@ -29,14 +29,21 @@ class PresetCatalogChecks(unittest.TestCase):
         self.assertTrue(all(s.startswith("realscale:lab_") for s in j["values"][len(expected):]))
         self.assertEqual(len(j["values"]),len(set(j["values"])))
 
-    def test_extended_preserves_all_eight(self):
-        j=load(TAG/"extended.json")
-        self.assertIs(j["replace"],False)
-        expected=["realscale:"+s for s in ALL]
-        self.assertEqual(j["values"][:len(expected)],expected)
-        self.assertEqual(j["values"][len(expected)],"realscale:usgs_big_sur_v2")
-        self.assertTrue(all(s.startswith("realscale:lab_") for s in j["values"][len(expected)+1:]))
-        self.assertEqual(len(j["values"]),len(set(j["values"])))
+    def test_extended_menu_is_as_simple_as_normal(self):
+        normal=load(TAG/"normal.json")
+        extended=load(TAG/"extended.json")
+        self.assertIs(extended["replace"],False)
+        self.assertEqual(extended["values"],normal["values"])
+        self.assertEqual(extended["values"],["realscale:"+p for p in PRIMARY])
+        self.assertEqual(len(extended["values"]),4)
+
+    def test_old_worlds_are_hidden_not_deleted(self):
+        # Removing an ID from a world-preset tag must NOT delete its
+        # registered noise settings, density functions, or dimension data.
+        for old_id in HIDDEN:
+            self.assertNotIn("realscale:"+old_id,load(TAG/"normal.json")["values"])
+            self.assertNotIn("realscale:"+old_id,load(TAG/"extended.json")["values"])
+            self.assertTrue((DATA/"world_preset"/(old_id+".json")).is_file())
 
     def test_legacy_world_ids_keep_original_noise_settings(self):
         for mode in ALL:

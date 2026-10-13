@@ -1,7 +1,7 @@
-name: Five primary presets new-seed ocean spawn regression
+name: Curated four plus legacy USGS seed spawn and rivers QA
 on:
   pull_request:
-    paths: ['neoforge/**', 'qa/**', '.github/workflows/multi-seed-server.yml']
+    paths: ['neoforge/**', 'qa/**', '.github/workflows/spawn-ocean-server.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       max-parallel: 3
       matrix:
-        preset: [realism_max, georeal_ultimate, himalayan, grand_canyon, usgs_big_sur]
+        preset: [realism_max, himalayan, grand_canyon, usgs_big_sur_v2, usgs_big_sur]
         seed: [2, 42]
     name: Spawn/ocean QA / ${{ matrix.preset }} / ${{ matrix.seed }}
     runs-on: ubuntu-latest
@@ -44,6 +44,10 @@ jobs:
           max-players=1
           max-tick-time=-1
           online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
           PROPERTIES
           done
       - name: Start actual NeoForge server; verify mod registry and new world
@@ -64,9 +68,18 @@ jobs:
           t=threading.Thread(target=reader,daemon=True);t.start()
           deadline=time.time()+480
           while time.time()<deadline and p.poll() is None and not done.is_set():time.sleep(1)
+          spawn_probe_error=None
           if done.is_set():
             print('NEOFORGE_SERVER_BOOT_OK: reached Done milestone')
             time.sleep(18)
+            try:
+              import sys
+              sys.path.insert(0,str(pathlib.Path('../qa/neoforge').resolve()))
+              from ensure_spawn_chunk import ensure_saved_spawn_chunk
+              ensure_saved_spawn_chunk(pathlib.Path('run'),'realscale:${{ matrix.preset }}')
+            except Exception as exc:
+              spawn_probe_error=repr(exc)
+              print('QA_SPAWN_PROBE_FAILED:',spawn_probe_error,flush=True)
           else:
             print('NEOFORGE_SERVER_BOOT_FAIL:',p.poll())
           try:
@@ -95,11 +108,11 @@ jobs:
                 valid=True;print('Correct generator in saved level.dat:',f)
               else:print('WARNING generated other preset',f)
             except Exception as e:print('Could not read level.dat',f,e)
-          if not done.is_set() or not valid:
-            raise SystemExit('NeoForge new-world smoke NOT VERIFIED')
+          if not done.is_set() or not valid or spawn_probe_error is not None:
+            raise SystemExit('NeoForge new-world spawn and chunk NOT VERIFIED: '+str(spawn_probe_error))
           print('GAME ENGINE WORLDGEN SMOKE: PASS')
           PY
-      - name: Assert safe actual world spawn and inspect ocean coverage, caves, streams
+      - name: Assert actual saved spawn, terrain, ocean, caves and connected streams
         working-directory: neoforge
         run: python3 ../qa/neoforge/check_realism_continuity.py . '${{ matrix.preset }}'
       - name: Validate dry-air cave traversal graph logic

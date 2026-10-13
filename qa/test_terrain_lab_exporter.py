@@ -75,6 +75,37 @@ class ExporterTests(unittest.TestCase):
             self.assertIn("generator.realscale." + stem, en)
             self.assertFalse(any(s.startswith("data/") for s in archive.namelist()))
 
+
+    def test_three_family_profiles_export_only_selected_family(self):
+        # YACL saves all three independent tuning slots but synchronizes
+        # the chosen one into the legacy flat exporter-compatible fields.
+        draft = json.loads(self.draft.read_text(encoding="utf-8"))
+        draft.update(preset="alpine", blendPercent=30, reliefPercent=108,
+                     elevation=9, caves=55, riverGrade=3,
+                     climatePercent=70, ridgePercent=18,
+                     lithostitchedBlend=False, lithostitchedGeology=False)
+        draft["profiles"] = {
+            "landscape": {"blendPercent": 5, "reliefPercent": 80},
+            "alpine": {"blendPercent": 30, "reliefPercent": 108},
+            "canyon": {"blendPercent": 50, "reliefPercent": 125},
+        }
+        self.draft.write_text(json.dumps(draft), encoding="utf-8")
+        profile, _ = export(self.jar, self.draft, self.output)
+        self.assertTrue(profile.startswith("realscale:lab_alpine_"))
+        with ZipFile(self.output) as archive:
+            stem = profile.split(":")[1]
+            name = ("data/realscale/worldgen/density_function/terrain_lab/"
+                    + stem + "/height_signal.json")
+            height = json.loads(archive.read(name))
+            self.assertEqual(height["argument1"]["argument1"], 1.08)
+            self.assertEqual(height["argument2"], 9 / 128)
+            noise = json.loads(archive.read(
+                "data/realscale/worldgen/noise_settings/" + stem + ".json"))
+            self.assertEqual(noise["sea_level"], 63)
+            self.assertFalse(any(n.startswith(
+                "data/realscale/worldgen/world_preset/lab_canyon_")
+                for n in archive.namelist()))
+
     def test_no_silent_overwrite(self):
         export(self.jar, self.draft, self.output)
         with self.assertRaises(FileExistsError):

@@ -2,7 +2,7 @@
 """RealScale Terrain Lab: safe, per-world selectable worldgen profiles.
 
 Creates a NEW, uniquely named Minecraft world preset, noise settings and four
-density functions inside the mod's resources. Does not change the eight
+density functions inside the mod's resources. Does not change the nine
 existing world IDs, Y=63 sea level, archived releases or existing save data.
 
 Apply settings BEFORE building/restarting the Minecraft client. Worldgen

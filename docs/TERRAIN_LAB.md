@@ -685,3 +685,78 @@ accepts the existing erosion registry reference directly in the strata
 registry load failure in the v3 experimental profile. The v4 profile
 uses the already bounded direct erosion signal, and the unchanged
 `sin(axis Y)` branch. The original nine fixed presets are unaffected.
+
+## Consolidated preset catalog and per-family YACL profiles (release-candidate)
+
+RealScale now has **four meaningful new-world choices** in both Minecraft's
+normal and extended world-type menus:
+
+| Visible core type | Underlying behavior | Custom controls |
+| --- | --- | --- |
+| Natural / Realism MAX | Existing Realism MAX fixed profile; GeoReal becomes the optional secondary height signal of the Landscape editor | Landscape YACL family |
+| Alpine / Himalayan | Existing Himalayan fixed profile; Realistic Mountains becomes the editable secondary source | Alpine YACL family |
+| Canyon / Grand Canyon | Existing Grand Canyon fixed profile; Continental becomes the editable secondary source | Canyon YACL family |
+| Real-World / USGS Big Sur v2 | Measured DEM pilot with four-side transition fixes | **Read-only**; select directly in Create New World |
+
+**What "consolidation" actually means:** The nine existing worldgen
+registry IDs and their original noise/density/world-preset JSON are
+**preserved**, including GeoReal Ultimate, Continental, Realistic Mountains,
+Ultimate and USGS Big Sur Legacy. Only the world-type tags for **new**
+world creation are reduced to four entries. Previously saved worlds can still
+resolve their original registered generator types; there is no destructive
+renaming, conversion, or forced relinking. The old IDs are not offered as
+new UI choices. They remain usable by explicit old dedicated-server
+\`level-type\` selections where Minecraft permits them.
+
+**YACL has independent configuration slots per editable family.** Open
+Mods -> RealScale Terrain -> Config:
+
+1. In **Choose World Type**, pick Landscape, Alpine or Canyon. The
+   fourth, USGS Big Sur v2, is measured and cannot be safely rescaled;
+   choose it directly in Minecraft's Create New World screen.
+2. Tune each family in its own YACL tab. Its blend, relief, elevation,
+   ridges, erosion, strata, caves, river grade, altitude cooling, valley
+   warming, enclosed basin warming, inland-spawn preference,
+   Lithostitched options and fantasy dimensions **persist separately**.
+3. Shared **Latitude & Export** options control latitude cycle/strength,
+   ring center and radial cold budget for the active exported world.
+4. Press **Save**. The editor writes all three family slots as
+   \`profiles\` in the same JSON draft **and also copies the currently
+   selected family's values to the legacy top-level fields**. Thus the
+   existing offline Config Exporter and Gradle \`--from-yacl\` keep working.
+   Exit Minecraft; export a new-world datapack with the matching JAR.
+5. Enable the datapack *before* creating the new world. Nothing here can
+   modify existing chunks or load a new preset dynamically.
+
+Suggested **starting** values, not measured physical guarantees:
+
+| Tuning | Landscape | Alpine | Canyon |
+| --- | ---: | ---: | ---: |
+| Secondary terrain mix | 25% | 30% | 30% |
+| Relief | 100% | 110% | 105% |
+| Elevation offset | 0 | +10 | 0 |
+| Ridge | 6 | 18 | 6 |
+| Erosion | 5 | 8 | 18 |
+| Strata | 4 | 8 | 12 |
+| Caves | 50 | 55 | 45 |
+| Safe river grade | 6 | 3 | 6 |
+| Altitude cooling | 60 | 70 | 35 |
+| Valley warming | 15 | 25 | 35 |
+| Enclosed basin warming | 10 | 10 | 30 |
+
+The profiles intentionally differ, but their effects remain seed-dependent.
+High mountains may be cold, and river continuity is **not** solved solely by
+adjusting the river-grade selector. Advanced Lithostitched Deep Geology is
+OFF by default for every family and requires Secondary Landform Mix > 0.
+
+**Migration:** old YACL files without \`profiles\` migrate their selected
+family's existing flat values intact; the other two families receive
+their suggested starting values. Files with independent slots load each
+slot separately. No old saved world is edited. Keep a backup before upgrading.
+
+**Release gate:** The last pre-consolidation CI had two known failing jobs:
+legacy \`usgs_big_sur / seed 2\` produced disconnected individual ice/water
+columns, and \`himalayan / seed 2\` lacked a persisted spawn chunk in the
+audited region. They remain genuine blockers pending repaired and rerun
+worldgen evidence. Static tests and Java compilation alone cannot approve
+the first stable release.

@@ -45,9 +45,9 @@ CI 自动运行离线核验、Java DEM 测试和 NeoForge 构建，并保留新�
 
 > **v1.3 全模式修复仍处于实验分支，不能替代已交付的 v1.1。** 七种程序化模式已改成保留四格缓存但逐方块插值，以解决规则的 4×4 地表台阶；全部八种模式加入按岩层深度限定的三维洞穴。上一轮 v1.2 的逐方块复杂公式导致出生区生成性能问题，因此本版改为连续插值并保留低频缓存。详见 [v1.3 研发与测试说明](docs/V1.3_ALL_PRESETS_REPAIR.md)。
 
-## v1.3.5 菜单精简及兼容模式（仅实验分支）
+## 历史：v1.3.5 五模式菜单（已由最新四类型融合方案取代）
 
-新建世界的常规列表从八种压缩为五种：**Realism MAX（综合）、GeoReal Multi-scale（多尺度）、Himalayan（高山）、Grand Canyon（峡谷）和 USGS Big Sur（实测高程）**。另外三个功能定位重叠的老模式（Continental、Realistic Mountains、Ultimate）不再占用常规菜单位置，但保留所有旧的生成器 ID、噪声和密度公式；按住 **Alt** 切换扩展世界类型列表可访问八种模式，服务器可通过原有 `level-type=realscale:continental` 等名称选择旧模式。
+v1.3.5 时新建世界的常规列表曾从八种压缩为五种：**Realism MAX（综合）、GeoReal Multi-scale（多尺度）、Himalayan（高山）、Grand Canyon（峡谷）和 USGS Big Sur（实测高程）**。另外三个功能定位重叠的老模式（Continental、Realistic Mountains、Ultimate）不再占用常规菜单位置，但保留所有旧的生成器 ID、噪声和密度公式；按住 **Alt** 切换扩展世界类型列表可访问八种模式，服务器可通过原有 `level-type=realscale:continental` 等名称选择旧模式。
 
 这个改动是**无损菜单合并**，不是修改既有世界的生成算法。建议先备份并只在新创建的实验世界中测试，不要直接用实验 JAR 覆盖 v1.1 旧存档。修复了跨区块洞穴单元测试（测试样本数量不足）并将所有快速 `qa/test_*.py` 纳入标准 CI。此版本还未完成客户端可视化验证。
 
@@ -113,3 +113,26 @@ registry configuration in the new-world datapack. This is not a global
 biome/structure injector; the fixed presets and existing saves are untouched.
 Requires Lithostitched 1.6.0 on client and server. See
 [Terrain Lab documentation](docs/TERRAIN_LAB.md#lithostitched-deep-geology-opt-in-seeded-terrain-strata-and-cave-integration).
+
+## 最新：四种核心世界类型与独立 Config（融合预览）
+
+**创建新世界的普通与扩展菜单都只展示四种有明显区别的预设：**
+Realism MAX（自然综合）、Himalayan（高山）、Grand Canyon（峡谷台地）、
+USGS Big Sur v2（真实测绘，只读）。已保留九种历史世界生成器的原始
+ID、噪声与密度文件，所以旧存档无需迁移；GeoReal、Continental、
+Realistic Mountains 作为 Terrain Lab 三个混合家族的次级地貌，
+Ultimate 与 USGS Legacy 只保留兼容，不再挤占玩家菜单。
+
+**Mods → RealScale Terrain → Config** 现在把 Landscape、
+Alpine、Canyon 的参数分别存放在三个独立的配置标签页中：
+混合比例、山脊、侵蚀、地层、洞穴、河流、冷却、谷地与盆地升温、
+Lithostitched 和其他可调设置彼此不会串值。另有共享纬度设置。
+当前选择的家族仍会写入兼容旧导出器的顶层草稿字段，玩家退出
+Minecraft 后可以通过匹配的 RealScale-Config-Exporter.pyz 生成新世界数据包。
+USGS v2 的 DEM 高程不可通过滑块改写，也不会改变已有世界。
+建议初始参数与兼容性细节见
+[融合方案文档](docs/TERRAIN_LAB.md#consolidated-preset-catalog-and-per-family-yacl-profiles-release-candidate)。
+
+**发布仍需验证：** 之前 USGS Legacy 种子 2 的河流连通性检查与
+Himalayan 种子 2 的出生点区块检查尚未通过；不把隐藏历史预设当作
+消除这两项错误。
