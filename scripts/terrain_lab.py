@@ -145,11 +145,12 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     # Do not mutate the hash and files of any previously generated legacy preset.
     if preset in FAMILIES:
         options["blend_percent"]=int(blend_percent)
-        if lithostitched_blend and blend_percent:
-            # New immutable profile ID: never replace the JSON of an old Lab world.
+        if lithostitched_blend and blend_percent and not lithostitched_geology:
+            # Deep Geology owns its adaptive mix; v1 toggle cannot make an
+            # otherwise identical deep profile get a different registry ID.
             options["blend_engine"]="lithostitched_adaptive_v1"
         if lithostitched_geology:
-            options["lithostitched_geology"]="perlin_shift_strata_caves_v2"
+            options["lithostitched_geology"]="perlin_shift_strata_caves_v3"
         if fantasy_dimensions:
             options["fantasy_dimensions"]="v2"
         # Backward compatibility: an all-zero geology draft emits exactly the
@@ -213,18 +214,34 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                     "input":{"type":"lithostitched:fast_noise",
                              "config":perlin_id,"xz_scale":1.0,"y_scale":0.0},
                     "shift_x":64.0,"shift_y":0.0,"shift_z":-48.0}}
-            secondary_height={"type":"minecraft:add",
-                "argument1":"realscale:"+secondary+"/height_signal",
-                "argument2":{"type":"minecraft:mul",
-                    "argument1":0.02,"argument2":shifted_perlin}}
             spatial_weight={"type":"minecraft:clamp",
                 "input":{"type":"minecraft:add","argument1":weight,
                     "argument2":{"type":"minecraft:mul",
                         "argument1":0.04,"argument2":perlin}},
                 "min":0.0,"max":0.5}
-            raw_height={"type":"lithostitched:mix",
-                "input":spatial_weight,"argument1":ref_height,
-                "argument2":secondary_height}
+            # Lithostitched mix is intentionally LIMITED to two cheap,
+            # well-bounded +/-1 Perlin fields. Its 1.21.1 implementation
+            # evaluates complex argument functions point-by-point and
+            # has a conservative maxValue(): mixing full-height signals
+            # can hurt both performance and range accounting.
+            microform={"type":"lithostitched:mix",
+                "input":spatial_weight,
+                "argument1":perlin,"argument2":shifted_perlin}
+            secondary_height={"type":"minecraft:add",
+                "argument1":"realscale:"+secondary+"/height_signal",
+                "argument2":{"type":"minecraft:mul",
+                    "argument1":0.02,"argument2":microform}}
+            primary_weight={"type":"minecraft:add",
+                "argument1":1.0,
+                "argument2":{"type":"minecraft:mul",
+                    "argument1":-1.0,"argument2":spatial_weight}}
+            # Vanilla density arithmetic handles the expensive mountain
+            # signals and retains normal batch/fillArray optimization.
+            raw_height={"type":"minecraft:add",
+                "argument1":{"type":"minecraft:mul",
+                    "argument1":primary_weight,"argument2":ref_height},
+                "argument2":{"type":"minecraft:mul",
+                    "argument1":spatial_weight,"argument2":secondary_height}}
         elif lithostitched_blend:
             # Genuine Lithostitched 1.6.0 codec: low-frequency erosion drives
             # at most +/-5 percentage points of smooth regional blend variation.
@@ -269,8 +286,13 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                 "argument":{"type":"minecraft:mul",
                     "argument1":0.0490873852,
                     "argument2":{"type":"lithostitched:axis","axis":"y"}}}
+            # Both input signals now have the same [-1,1] envelope,
+            # avoiding Lithostitched 1.21.1 mix range under-reporting.
             strata_warp={"type":"lithostitched:mix",
-                "input":0.2,"argument1":strata_warp,"argument2":sine}
+                "input":0.2,
+                "argument1":{"type":"minecraft:clamp",
+                    "input":strata_warp,"min":-1.0,"max":1.0},
+                "argument2":sine}
         terrain={"type":"realscale:strata",
                  "base":terrain,
                  "warp":strata_warp,
@@ -289,11 +311,13 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                 "argument2":{"type":"minecraft:mul",
                     "argument1":0.35,"argument2":perlin}},
             "min":0.0,"max":1.0}
-        # Mix ONLY CHEAP constants, then add to the original caves ONCE.
-        # The previous equivalent mix(caves, caves+0.025) re-evaluated the
-        # expensive entire cave density twice per voxel.
-        regional_bias={"type":"lithostitched:mix",
-            "input":cave_weight,"argument1":0.0,"argument2":0.025}
+        # Vanilla multiplication is faster than Lithostitched mix here.
+        # Important: upstream 1.21.1 mix.maxValue() returns min of its two
+        # argument maxima; for mix(0,0.025) this advertises max 0 despite
+        # real positive output. Avoid incorrect ranges for cave density.
+        # Compute the EXPENSIVE cave function exactly once.
+        regional_bias={"type":"minecraft:mul",
+            "argument1":0.025,"argument2":cave_weight}
         new_caves={"type":"minecraft:add",
             "argument1":new_caves,"argument2":regional_bias}
     original_settings=jread(root,GEO_ROOT/"noise_settings"/(source+".json"))
@@ -527,7 +551,7 @@ def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_
                 label+=f" | basin warmth {basin}%"
             if fantasy_dimensions:
                 label+= " | Fantasy Nether + End expansion (EXPERIMENTAL)"
-            if lithostitched_blend and blend_percent:
+            if lithostitched_blend and blend_percent and not lithostitched_geology:
                 label+= " | Lithostitched adaptive mix"
             if lithostitched_geology:
                 label+= " | Lithostitched Deep Geology"

@@ -38,12 +38,17 @@ jobs:
           name=os.environ["LAB_WORLD"].removeprefix("realscale:")
           file=pathlib.Path("neoforge/src/main/resources/data/realscale/worldgen/density_function/terrain_lab")/name/"height_signal.json"
           tree=json.loads(file.read_text())["argument1"]["argument2"]["base"]
-          assert tree["type"]=="lithostitched:mix",tree
-          assert tree["input"]["type"]=="minecraft:clamp",tree
-          assert tree["argument2"]["type"]=="minecraft:add",tree
-          microform=tree["argument2"]["argument2"]
+          assert tree["type"]=="minecraft:add",tree
+          assert tree["argument1"]["type"]=="minecraft:mul",tree
+          secondary=tree["argument2"]
+          assert secondary["type"]=="minecraft:mul",tree
+          assert secondary["argument1"]["type"]=="minecraft:clamp",tree
+          microform=secondary["argument2"]["argument2"]
           assert microform["type"]=="minecraft:mul" and microform["argument1"]==0.02
-          warped=microform["argument2"]
+          local_mix=microform["argument2"]
+          assert local_mix["type"]=="lithostitched:mix"
+          assert local_mix["argument1"]["type"]=="minecraft:cache_2d"
+          warped=local_mix["argument2"]
           assert warped["type"]=="minecraft:cache_2d"
           assert warped["argument"]["type"]=="lithostitched:shift"
           assert warped["argument"]["input"]["type"]=="lithostitched:fast_noise"
@@ -55,7 +60,8 @@ jobs:
           cave=root/"worldgen/density_function/terrain_lab"/name/"cave_density.json"
           cave_density=json.loads(cave.read_text())
           assert cave_density["type"]=="minecraft:add",cave_density
-          assert cave_density["argument2"]["type"]=="lithostitched:mix",cave_density
+          assert cave_density["argument2"]["type"]=="minecraft:mul",cave_density
+          assert cave_density["argument2"]["argument1"]==0.025
           print("LITHOSTITCHED_MIX_IN_LIVE_WORLD: PASS",name)
           PY
       - name: Prepare EULA and actual world type

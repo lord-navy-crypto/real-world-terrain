@@ -336,20 +336,43 @@ class TerrainLabTests(unittest.TestCase):
                                                  lithostitched_blend=True,
                                                  lithostitched_geology=True)
                 self.assertNotEqual(name, old)
+                # Deep mode supersedes the old adaptive toggle, without
+                # emitting two IDs for the exact same density settings.
+                label_path=lab.LABEL_ROOT/"en_us.json"
+                labels_before=lab.jread(self.root,label_path)
+                same, _, _ = lab.apply(self.root, family, 1.0, 0, 50, 6,
+                                       blend_percent=30, strata=8,
+                                       lithostitched_blend=False,
+                                       lithostitched_geology=True)
+                self.assertEqual(lab.jread(self.root,label_path),labels_before)
+                self.assertEqual(same, name)
                 self.assertEqual(options["lithostitched_geology"],
-                                 "perlin_shift_strata_caves_v2")
+                                 "perlin_shift_strata_caves_v3")
                 base=lab.GEO_ROOT/"density_function/terrain_lab"/name
                 height=lab.jread(self.root,base/"height_signal.json")
-                mix=height["argument1"]["argument2"]
-                self.assertEqual(mix["type"], "lithostitched:mix")
-                secondary_height=mix["argument2"]
+                weighted=height["argument1"]["argument2"]
+                self.assertEqual(weighted["type"],"minecraft:add")
+                primary_branch=weighted["argument1"]
+                secondary_branch=weighted["argument2"]
+                self.assertEqual(primary_branch["type"],"minecraft:mul")
+                self.assertEqual(primary_branch["argument2"],
+                                 f"realscale:{primary}/height_signal")
+                self.assertEqual(secondary_branch["type"],"minecraft:mul")
+                mixweight=secondary_branch["argument1"]
+                self.assertEqual(mixweight["type"],"minecraft:clamp")
+                self.assertEqual((mixweight["min"],mixweight["max"]),(0.0,0.5))
+                secondary_height=secondary_branch["argument2"]
                 self.assertEqual(secondary_height["type"],"minecraft:add")
                 self.assertEqual(secondary_height["argument1"],
                                  f"realscale:{secondary}/height_signal")
                 microform=secondary_height["argument2"]
                 self.assertEqual(microform["type"],"minecraft:mul")
                 self.assertEqual(microform["argument1"],0.02)
-                shifted=microform["argument2"]
+                local_mix=microform["argument2"]
+                self.assertEqual(local_mix["type"],"lithostitched:mix")
+                self.assertEqual(local_mix["input"],mixweight)
+                self.assertEqual(local_mix["argument1"]["type"],"minecraft:cache_2d")
+                shifted=local_mix["argument2"]
                 self.assertEqual(shifted["type"],"minecraft:cache_2d")
                 shift=shifted["argument"]
                 self.assertEqual(shift["type"],"lithostitched:shift")
@@ -363,6 +386,8 @@ class TerrainLabTests(unittest.TestCase):
                 self.assertEqual(terrain["type"],"realscale:strata")
                 stratum=terrain["warp"]
                 self.assertEqual(stratum["type"],"lithostitched:mix")
+                self.assertEqual(stratum["argument1"]["type"],"minecraft:clamp")
+                self.assertEqual((stratum["argument1"]["min"],stratum["argument1"]["max"]),(-1.0,1.0))
                 sine=stratum["argument2"]
                 self.assertEqual(sine["type"],"lithostitched:sin")
                 self.assertEqual(sine["argument"]["argument2"],
@@ -371,9 +396,9 @@ class TerrainLabTests(unittest.TestCase):
                 self.assertEqual(cave["type"],"minecraft:add")
                 self.assertEqual(cave["argument1"]["type"],"minecraft:add")
                 bias=cave["argument2"]
-                self.assertEqual(bias["type"],"lithostitched:mix")
-                self.assertEqual((bias["argument1"],bias["argument2"]),(0.0,0.025))
-                self.assertEqual(bias["input"]["type"],"minecraft:clamp")
+                self.assertEqual(bias["type"],"minecraft:mul")
+                self.assertEqual(bias["argument1"],0.025)
+                self.assertEqual(bias["argument2"]["type"],"minecraft:clamp")
                 config=(Path("data/realscale/lithostitched/fast_noise_config/"
                              "terrain_lab")/(name+".json"))
                 self.assertIn(config,files)

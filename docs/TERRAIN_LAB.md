@@ -637,29 +637,29 @@ Requires one of Landscape / Alpine / Canyon and Secondary Landform Mix > 0.
 The opt-in worldgen pipeline now uses multiple *actual* Lithostitched
 1.6.0 / Minecraft 1.21.1 codecs in three separate systems:
 
-1. **Regional terrain geometry**: a profile-specific, seeded
-   `lithostitched:perlin` fast-noise configuration in Lithostitched's
-   dynamic `fast_noise_config` registry drives
-   `lithostitched:fast_noise`. The noise smoothly changes the terrain
-   `lithostitched:mix` between the two existing family heights by
-   +/-4 percentage points. Instead of re-evaluating the whole
-   height signal at shifted coordinates (too slow at Y=2032),
-   `lithostitched:shift` resamples only a CHEAP regional Perlin signal
-   with fixed offsets. The shifted noise adds a bounded +/-0.02 secondary
-   height-density microform (approximately +/-2.56 blocks under the usual
-   128-block gradient). The primary terrain and Y=63 sea level stay fixed.
+1. **Regional terrain geometry**: a profile-specific seeded
+   `lithostitched:perlin` fast-noise configuration and
+   `lithostitched:fast_noise` generate smooth spatial variation.
+   Minecraft's native `add`/`mul` density functions now blend the
+   two EXPENSIVE family height fields with a bounded regional weight
+   (secondary share varies by +/-4 percentage points). Lithostitched's
+   `mix` only operates on two cheap, equally bounded Perlin inputs;
+   `shift` resamples one Perlin signal at fixed offsets to add at most
+   +/-0.02 to secondary height density (roughly +/-2.56 blocks with the
+   standard 128-block height gradient). This avoids bypassing efficient
+   Minecraft batch density calculation. The Y=63 sea level is unchanged.
 2. **Solid-rock layer shaping**: when Strata > 0, a weak
    `lithostitched:sin` of the `lithostitched:axis` Y coordinate is
    blended with the existing erosion warp (20% contribution) inside
    RealScale's existing density-based strata codec. This changes *solidity*
    slightly; it does not replace Minecraft's geological block materials.
-3. **Caves**: `lithostitched:mix` now blends inexpensive constant density
-   offsets and adds the resulting field to the original caves once,
-   avoiding repeated evaluation of full cave networks. The resulting
-   additional solid-density bias is **only**
-   0..+0.025. It cannot weaken RealScale's existing outer rock envelope,
-   but passages can differ. It is **not** a watershed solver and does not
-   guarantee every cave entrance is accessible.
+3. **Caves**: Lithostitched Perlin noise also informs a small
+   regional cave-solidification signal. Native `minecraft:mul` and
+   `minecraft:add` apply a bounded 0..+0.025 density bias while
+   evaluating the expensive cave signal once. This avoids upstream
+   Lithostitched `mix` output-bound under-reporting for unequal constant
+   arguments. The cave exterior protection remains intact.
+   It is NOT a watershed solver or hydraulic erosion simulation.
 
 Each deep profile gets a unique content-hashed `lab_*` ID, and the
 standalone `RealScale-Config-Exporter.pyz` includes the custom Lithostitched
@@ -668,10 +668,12 @@ matching RealScale mod JAR **and** Lithostitched on both client and server.
 A profile with the Deep Geology switch OFF retains its previous noise
 trees/hashes (including prior Adaptive Blend v1 profiles).
 
-The optimized pipeline is tagged `perlin_shift_strata_caves_v2` so it will
+The range-safe optimized pipeline is tagged `perlin_shift_strata_caves_v3` so it will
 never overwrite earlier v1 experiment profile IDs. These are deliberate,
 bounded experimental effects, NOT claims of measured geology or physical
 erosion. The real-world CI creates a deep Landscape
 world and inspects saved blocks; offline tests cover all three Lab families
-and exporter pack contents. Be mindful of slower world generation due to
-additional per-voxel density evaluation.
+and exporter pack contents. Deep mode takes precedence over the lightweight
+Adaptive Blend v1 toggle, so both switch combinations produce the same
+v3 density/profile ID. Benchmark high-altitude server-startup times before
+promoting this experimental mode to stable.

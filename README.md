@@ -107,7 +107,7 @@ Lithostitched integration. Enable **Lithostitched Deep Geology** in the YACL
 screen (with Secondary Landform Mix > 0), or run Terrain Lab with
 `--lithostitched-geology`. The generated world uses Lithostitched's
 seeded Perlin fast noise, cheap shifted Perlin-driven terrain microvariation,
-smooth terrain and cave density mixing, and gently curved rock strata.
+vanilla-batched mountain blending, low-cost Lithostitched Perlin micro-mixing, and gently curved rock strata. Cave density uses bounded vanilla arithmetic.
 The matching standalone Config Exporter includes its private fast-noise
 registry configuration in the new-world datapack. This is not a global
 biome/structure injector; the fixed presets and existing saves are untouched.

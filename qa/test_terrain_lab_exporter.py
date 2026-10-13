@@ -50,11 +50,15 @@ class ExporterTests(unittest.TestCase):
             self.assertTrue(all(not k.startswith("assets/") for k in names))
             height_data = json.loads(archive.read(
                 "data/realscale/worldgen/density_function/terrain_lab/" + stem + "/height_signal.json"))
-            self.assertEqual(height_data["argument1"]["argument2"]["type"],
-                             "lithostitched:mix")
-            secondary_height=height_data["argument1"]["argument2"]["argument2"]
+            weight_base=height_data["argument1"]["argument2"]
+            self.assertEqual(weight_base["type"],"minecraft:add")
+            self.assertEqual(weight_base["argument1"]["type"],"minecraft:mul")
+            secondary_height=weight_base["argument2"]["argument2"]
             self.assertEqual(secondary_height["type"],"minecraft:add")
-            shifted=secondary_height["argument2"]["argument2"]["argument"]
+            micro=secondary_height["argument2"]["argument2"]
+            self.assertEqual(micro["type"],"lithostitched:mix")
+            self.assertEqual(micro["argument1"]["type"],"minecraft:cache_2d")
+            shifted=micro["argument2"]["argument"]
             self.assertEqual(shifted["type"],"lithostitched:shift")
             path="data/realscale/lithostitched/fast_noise_config/terrain_lab/"+stem+".json"
             self.assertIn(path,names)
