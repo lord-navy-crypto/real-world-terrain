@@ -642,16 +642,21 @@ The opt-in worldgen pipeline now uses multiple *actual* Lithostitched
    dynamic `fast_noise_config` registry drives
    `lithostitched:fast_noise`. The noise smoothly changes the terrain
    `lithostitched:mix` between the two existing family heights by
-   +/-4 percentage points. `lithostitched:shift` bends ONLY the secondary
-   height signal, with x/z offsets clamped to +/-8 blocks. Primary terrain
-   and the fixed sea level are not globally displaced.
+   +/-4 percentage points. Instead of re-evaluating the whole
+   height signal at shifted coordinates (too slow at Y=2032),
+   `lithostitched:shift` resamples only a CHEAP regional Perlin signal
+   with fixed offsets. The shifted noise adds a bounded +/-0.02 secondary
+   height-density microform (approximately +/-2.56 blocks under the usual
+   128-block gradient). The primary terrain and Y=63 sea level stay fixed.
 2. **Solid-rock layer shaping**: when Strata > 0, a weak
    `lithostitched:sin` of the `lithostitched:axis` Y coordinate is
    blended with the existing erosion warp (20% contribution) inside
    RealScale's existing density-based strata codec. This changes *solidity*
    slightly; it does not replace Minecraft's geological block materials.
-3. **Caves**: `lithostitched:mix` gradually varies the cave density
-   across Perlin regions. The additional solid-density bias is **only**
+3. **Caves**: `lithostitched:mix` now blends inexpensive constant density
+   offsets and adds the resulting field to the original caves once,
+   avoiding repeated evaluation of full cave networks. The resulting
+   additional solid-density bias is **only**
    0..+0.025. It cannot weaken RealScale's existing outer rock envelope,
    but passages can differ. It is **not** a watershed solver and does not
    guarantee every cave entrance is accessible.
@@ -663,8 +668,10 @@ matching RealScale mod JAR **and** Lithostitched on both client and server.
 A profile with the Deep Geology switch OFF retains its previous noise
 trees/hashes (including prior Adaptive Blend v1 profiles).
 
-These are deliberate, bounded experimental effects, NOT claims of measured
-geology or physical erosion. The real-world CI creates a deep Landscape
+The optimized pipeline is tagged `perlin_shift_strata_caves_v2` so it will
+never overwrite earlier v1 experiment profile IDs. These are deliberate,
+bounded experimental effects, NOT claims of measured geology or physical
+erosion. The real-world CI creates a deep Landscape
 world and inspects saved blocks; offline tests cover all three Lab families
 and exporter pack contents. Be mindful of slower world generation due to
 additional per-voxel density evaluation.

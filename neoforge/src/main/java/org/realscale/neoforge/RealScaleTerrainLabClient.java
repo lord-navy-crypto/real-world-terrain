@@ -171,7 +171,7 @@ public final class RealScaleTerrainLabClient {
                     .build())
                 .option(Option.<Boolean>createBuilder()
                     .name(Component.literal("Lithostitched Deep Geology (Experimental)"))
-                    .description(description("Requires Secondary Landform Mix > 0. NEW Lab world only: seeded Lithostitched Perlin noise, safe 8-block regional warp of secondary terrain, spatial mixing, gently curved strata when enabled, and bounded underground cave variation. Default OFF. May generate more slowly; no change to existing saves or fixed USGS DEM. Save draft, then export a new-world datapack."))
+                    .description(description("Requires Secondary Landform Mix > 0. NEW Lab world only: seeded Lithostitched Perlin noise, lightweight shifted Perlin micro-terrain variation (about 2-3 surface blocks), spatial mixing, gently curved strata when enabled, and bounded underground cave variation. Default OFF. May generate more slowly; no change to existing saves or fixed USGS DEM. Save draft, then export a new-world datapack."))
                     .binding(false, () -> d.lithostitchedGeology, v -> d.lithostitchedGeology = v)
                     .controller(BooleanControllerBuilder::create)
                     .build())

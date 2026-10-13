@@ -50,7 +50,7 @@ The three new-world Terrain Lab families now have a deeper optional
 Lithostitched integration. Enable **Lithostitched Deep Geology** in the YACL
 screen (with Secondary Landform Mix > 0), or run Terrain Lab with
 `--lithostitched-geology`. The generated world uses Lithostitched's
-seeded Perlin fast noise, 8-block-bounded lateral coordinate shifting,
+seeded Perlin fast noise, cheap shifted Perlin-driven terrain microvariation,
 smooth terrain and cave density mixing, and gently curved rock strata.
 The matching standalone Config Exporter includes its private fast-noise
 registry configuration in the new-world datapack. This is not a global

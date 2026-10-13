@@ -149,7 +149,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
             # New immutable profile ID: never replace the JSON of an old Lab world.
             options["blend_engine"]="lithostitched_adaptive_v1"
         if lithostitched_geology:
-            options["lithostitched_geology"]="perlin_shift_strata_caves_v1"
+            options["lithostitched_geology"]="perlin_shift_strata_caves_v2"
         if fantasy_dimensions:
             options["fantasy_dimensions"]="v2"
         # Backward compatibility: an all-zero geology draft emits exactly the
@@ -202,19 +202,21 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     if secondary and blend_percent:
         weight=round(blend_percent/100.0,4)
         if lithostitched_geology:
-            # Continuously blend smooth multi-scale topography. Only the
-            # secondary height is displaced (at most 8 blocks horizontally).
-            # No global biome/structure modifiers or DEM height edits.
-            secondary_height={"type":"lithostitched:shift",
-                "input":"realscale:"+secondary+"/height_signal",
-                "shift_x":{"type":"minecraft:mul","argument1":8.0,"argument2":perlin},
-                "shift_y":0.0,
-                # Use the same seeded low-frequency Perlin with an opposite
-                # direction/shorter reach. An unresolved nested reference to
-                # the secondary erosion holder can break Lithostitched's shift
-                # registry decode on the dedicated 1.21.1 server.
-                "shift_z":{"type":"minecraft:mul","argument1":-6.0,
-                    "argument2":perlin}}
+            # Sampling the FULL height_signal via lithostitched:shift
+            # bypassed Minecraft's interpolation caches and made 2096-high
+            # chunks extremely slow (51% spawn at the 480s smoke deadline).
+            # Shift ONLY one inexpensive seeded Perlin sample; use its
+            # bounded +/-0.02 height signal as an added secondary microform
+            # (~2.56 vertical blocks with a 128-block height gradient).
+            shifted_perlin={"type":"minecraft:cache_2d",
+                "argument":{"type":"lithostitched:shift",
+                    "input":{"type":"lithostitched:fast_noise",
+                             "config":perlin_id,"xz_scale":1.0,"y_scale":0.0},
+                    "shift_x":64.0,"shift_y":0.0,"shift_z":-48.0}}
+            secondary_height={"type":"minecraft:add",
+                "argument1":"realscale:"+secondary+"/height_signal",
+                "argument2":{"type":"minecraft:mul",
+                    "argument1":0.02,"argument2":shifted_perlin}}
             spatial_weight={"type":"minecraft:clamp",
                 "input":{"type":"minecraft:add","argument1":weight,
                     "argument2":{"type":"minecraft:mul",
@@ -287,11 +289,13 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                 "argument2":{"type":"minecraft:mul",
                     "argument1":0.35,"argument2":perlin}},
             "min":0.0,"max":1.0}
-        new_caves={"type":"lithostitched:mix",
-            "input":cave_weight,
-            "argument1":new_caves,
-            "argument2":{"type":"minecraft:add",
-                "argument1":new_caves,"argument2":0.025}}
+        # Mix ONLY CHEAP constants, then add to the original caves ONCE.
+        # The previous equivalent mix(caves, caves+0.025) re-evaluated the
+        # expensive entire cave density twice per voxel.
+        regional_bias={"type":"lithostitched:mix",
+            "input":cave_weight,"argument1":0.0,"argument2":0.025}
+        new_caves={"type":"minecraft:add",
+            "argument1":new_caves,"argument2":regional_bias}
     original_settings=jread(root,GEO_ROOT/"noise_settings"/(source+".json"))
     if original_settings["sea_level"]!=63:raise ValueError("Refuse to modify a non-Y63 preset")
     noise=replace_refs(original_settings,repl)

@@ -52,7 +52,9 @@ class ExporterTests(unittest.TestCase):
                 "data/realscale/worldgen/density_function/terrain_lab/" + stem + "/height_signal.json"))
             self.assertEqual(height_data["argument1"]["argument2"]["type"],
                              "lithostitched:mix")
-            shifted=height_data["argument1"]["argument2"]["argument2"]
+            secondary_height=height_data["argument1"]["argument2"]["argument2"]
+            self.assertEqual(secondary_height["type"],"minecraft:add")
+            shifted=secondary_height["argument2"]["argument2"]["argument"]
             self.assertEqual(shifted["type"],"lithostitched:shift")
             path="data/realscale/lithostitched/fast_noise_config/terrain_lab/"+stem+".json"
             self.assertIn(path,names)

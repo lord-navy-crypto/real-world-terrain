@@ -40,15 +40,22 @@ jobs:
           tree=json.loads(file.read_text())["argument1"]["argument2"]["base"]
           assert tree["type"]=="lithostitched:mix",tree
           assert tree["input"]["type"]=="minecraft:clamp",tree
-          assert tree["argument2"]["type"]=="lithostitched:shift",tree
-          assert tree["argument2"]["shift_x"]["argument2"]["argument"]["type"]=="lithostitched:fast_noise"
+          assert tree["argument2"]["type"]=="minecraft:add",tree
+          microform=tree["argument2"]["argument2"]
+          assert microform["type"]=="minecraft:mul" and microform["argument1"]==0.02
+          warped=microform["argument2"]
+          assert warped["type"]=="minecraft:cache_2d"
+          assert warped["argument"]["type"]=="lithostitched:shift"
+          assert warped["argument"]["input"]["type"]=="lithostitched:fast_noise"
           root=pathlib.Path("neoforge/src/main/resources/data/realscale")
           config=root/"lithostitched/fast_noise_config/terrain_lab"/(name+".json")
           assert json.loads(config.read_text())["type"]=="lithostitched:perlin"
           strata=root/"worldgen/density_function/terrain_lab"/name/"terrain_density.json"
           assert json.loads(strata.read_text())["warp"]["argument2"]["type"]=="lithostitched:sin"
           cave=root/"worldgen/density_function/terrain_lab"/name/"cave_density.json"
-          assert json.loads(cave.read_text())["type"]=="lithostitched:mix", tree
+          cave_density=json.loads(cave.read_text())
+          assert cave_density["type"]=="minecraft:add",cave_density
+          assert cave_density["argument2"]["type"]=="lithostitched:mix",cave_density
           print("LITHOSTITCHED_MIX_IN_LIVE_WORLD: PASS",name)
           PY
       - name: Prepare EULA and actual world type
