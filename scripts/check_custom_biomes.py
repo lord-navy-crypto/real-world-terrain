@@ -54,6 +54,16 @@ def test_biome_lab():
     stable = load(PRESETS / "realism_max.json")
     assert stable["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]["preset"] == "minecraft:overworld"
 
+def test_ecotone_gallery():
+    gallery = load(PRESETS / "ecotone_gallery.json")
+    source = gallery["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+    assert source["type"] == "minecraft:checkerboard"
+    assert len(source["biomes"]) == 40
+    assert len(set(source["biomes"])) == 40
+    for name in source["biomes"]:
+        assert name.startswith("realscale:")
+        assert (BIOMES / (name.split(":", 1)[1] + ".json")).exists()
+
 def test_ecotone_catalog():
     catalog = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/catalog.json")
     entries = catalog["entries"]
@@ -76,5 +86,6 @@ if __name__ == "__main__":
     test_modifier_references()
     test_biome_lab()
     test_ecotone_catalog()
+    test_ecotone_gallery()
     print("STATIC PASS: 40 ecotone specifications, 10 priority biomes, referenced features and opt-in biome lab.")
     print("RUNTIME NOT TESTED: Minecraft biome codec, server loading, cave/river geometry.")
