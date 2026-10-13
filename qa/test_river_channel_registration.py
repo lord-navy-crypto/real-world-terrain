@@ -28,7 +28,12 @@ class RiverRegression(unittest.TestCase):
         self.assertEqual(b["step"],"local_modifications")
         self.assertNotIn("minecraft:lake",json.dumps((f,p,b)))
         java=(SRC/"RiverChannelFeature.java").read_text()
-        self.assertIn('id.getPath().equals("usgs_big_sur")',java)
+        # A former blanket exclusion left all legacy USGS mountain rivers dry:
+        # seed 2 measured 0 wet columns from 448 sampled River columns.
+        # Other RealScale worldgen retains the existing bank/foundation guard.
+        self.assertNotIn('id.getPath().equals("usgs_big_sur")',java)
+        self.assertIn('if (!id.getNamespace().equals("realscale"))',java)
+        self.assertIn('return 6;',java)
         self.assertIn('id.getNamespace().equals("realscale")',java)
         self.assertIn('new ChunkPos(context.origin())',java)
         self.assertIn('noise.getSeaLevel() + 6',java)

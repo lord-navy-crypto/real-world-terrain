@@ -120,12 +120,16 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         ChunkGenerator base = context.chunkGenerator();
         if (!(base instanceof NoiseBasedChunkGenerator noise)) return false;
-        // NeoForge biome modifiers are global. Absolutely do not touch vanilla,
-        // foreign-mod worlds, or the measured DEM pilot.
+        // NeoForge biome modifiers are global: never touch vanilla or
+        // foreign-mod worlds. Legacy USGS DEM has high river biomes far
+        // above sea level; allow the same bank-guarded shallow channels as
+        // other RealScale presets. The underlying DEM density and sample
+        // elevations remain unchanged; only safe river surface columns in
+        // newly generated chunks may receive the two-layer stream.
         var settingsKey = noise.generatorSettings().unwrapKey();
         if (settingsKey.isEmpty()) return false;
         ResourceLocation id = settingsKey.get().location();
-        if (!id.getNamespace().equals("realscale") || id.getPath().equals("usgs_big_sur"))
+        if (!id.getNamespace().equals("realscale"))
             return false;
         int maxGrade = riverGradeForWorld(id.getPath());
         if (maxGrade <= 0) return false;
