@@ -155,8 +155,10 @@ def main(root,expected_preset,profile):
                     (233,8),(245,8),       # east edge (x=+240)
                     (8,-245),(8,-235),     # north edge (z=-240)
                     (8,233),(8,245),       # south edge (z=+240)
-                    (-896,8),(896,8),      # east/west mid-transition
-                    (-2352,8),(2352,8)    # outside v2 blend (abs(x)>2288)
+                    (-896,8),(896,8),      # west/east mid-transition
+                    (8,-896),(8,896),      # north/south mid-transition
+                    (-2352,8),(2352,8),   # west/east exterior fallback
+                    (8,-2352),(8,2352)    # north/south exterior fallback
                 ]
                 commands=[
                     f"execute in minecraft:overworld run forceload add {x} {z}"
