@@ -21,6 +21,14 @@ public final class HabitatMathSmoke {
                 == EcotoneMath.Transition.SEMI_ARID_SCRUBLAND, "dry ecotone");
         check(EcotoneMath.compatible(EcotoneMath.Habitat.TAIGA, EcotoneMath.Habitat.ALPINE)
                 == EcotoneMath.Transition.SUBALPINE_WOODLAND, "alpine ecotone");
+        check(EcotoneMath.compatible(EcotoneMath.Habitat.RIVER, EcotoneMath.Habitat.PLAINS)
+                == EcotoneMath.Transition.FLOODPLAIN_MARGIN, "protected bank pairing");
+        check(EcotoneMath.compatible(EcotoneMath.Habitat.FOREST, EcotoneMath.Habitat.SWAMP)
+                == EcotoneMath.Transition.MARSHY_WOODLAND, "wet forest pairing");
+        check(EcotoneMath.compatible(EcotoneMath.Habitat.TAIGA, EcotoneMath.Habitat.SNOW)
+                == EcotoneMath.Transition.SNOWY_TREELINE, "snowy timberline");
+        check(EcotoneMath.compatible(EcotoneMath.Habitat.BIRCH_FOREST, EcotoneMath.Habitat.TAIGA)
+                == EcotoneMath.Transition.BIRCH_CONIFER_TRANSITION, "mixed woods");
         check(EcotoneMath.insideBand(0, 32, 15, false), "center should be covered");
         check(!EcotoneMath.insideBand(22, 32, 15, false), "outside band");
         check(!EcotoneMath.insideBand(0, 32, 15, true), "never overwrite water channel");
