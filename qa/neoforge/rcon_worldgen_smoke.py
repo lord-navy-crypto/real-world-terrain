@@ -169,12 +169,13 @@ def main(root,expected_preset,profile):
                 # expensive remote regions concurrently in high-relief maps.
                 commands=["execute in minecraft:overworld run forceload add 1024 1024"]
             elif profile=="packs":
-                # A real NeoForge server must load BOTH optional datapacks.
+                # A real NeoForge server must load ALL THREE optional datapacks.
                 # Static JSON/ZIP tests alone cannot establish registry or
                 # Feature codec compatibility.
                 reply=rcon.send("datapack list enabled")
                 expected_pack_names=(
                     "RealScale-GeoEcology-Winter-EXPERIMENTAL.zip",
+                    "RealScale-Vanilla-Habitat-Structures-EXPERIMENTAL.zip",
                     "RealScale-Vanilla-Structures-2x-EXPERIMENTAL.zip",
                 )
                 missing=[p for p in expected_pack_names if p not in reply]
@@ -183,7 +184,7 @@ def main(root,expected_preset,profile):
                         "NeoForge did not enable experimental data packs: "+str(missing)
                         +" in "+reply
                     )
-                print("NEOFORGE_LOADED_WINTER_AND_STRUCTURE_PACKS: PASS",flush=True)
+                print("NEOFORGE_LOADED_WINTER_HABITAT_AND_STRUCTURE_PACKS: PASS",flush=True)
                 commands=["execute in minecraft:overworld run forceload add 64 64"]
             elif profile=="structures":
                 # Locate chooses natural structure candidates; forceload will
@@ -291,10 +292,11 @@ def main(root,expected_preset,profile):
         if profile=="packs":
             enabled=data.get("DataPacks",{}).get("Enabled",[])
             for packname in ("RealScale-GeoEcology-Winter-EXPERIMENTAL.zip",
+                             "RealScale-Vanilla-Habitat-Structures-EXPERIMENTAL.zip",
                              "RealScale-Vanilla-Structures-2x-EXPERIMENTAL.zip"):
                 if not any(packname in pack for pack in enabled):
                     raise RuntimeError(f"Saved level.dat missing enabled data pack {packname}: {enabled}")
-            print("Saved NBT confirms both opt-in test data packs",flush=True)
+            print("Saved NBT confirms three opt-in test data packs",flush=True)
         if profile=="fantasy":
             checks={
                 "minecraft:the_nether":"realscale:fantasy_nether_v2",

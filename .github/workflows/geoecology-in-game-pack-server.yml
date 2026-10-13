@@ -1,8 +1,12 @@
-name: NeoForge actually loads winter ecology and 2x structures datapacks
+name: NeoForge actually loads winter ecology and vanilla habitats datapacks
 on:
   pull_request:
     paths:
       - 'scripts/make_geoecology_suite.py'
+      - 'scripts/make_vanilla_habitat_structures_pack.py'
+      - 'neoforge/src/main/java/org/realscale/neoforge/VanillaHabitatFeature.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java'
+      - 'qa/test_vanilla_habitat_structures.py'
       - 'scripts/make_vanilla_ecology_pack.py'
       - 'scripts/make_structure_density_packs.py'
       - 'qa/neoforge/rcon_worldgen_smoke.py'
@@ -26,25 +30,28 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
-      - name: Build both optional datapacks and validate ZIP files
+      - name: Build winter, structures and new habitat datapacks; validate ZIP files
         run: |
           python3 -m unittest discover -s qa -p 'test_structure_and_geoecology.py' -v
+          python3 -m unittest discover -s qa -p 'test_vanilla_habitat_structures.py' -v
           python3 scripts/make_geoecology_suite.py
+          python3 scripts/make_vanilla_habitat_structures_pack.py
           python3 scripts/make_structure_density_packs.py
-      - name: Configure NEW disposable NeoForge world with both packs preinstalled
+      - name: Configure NEW disposable RealScale world with three opt-in packs
         working-directory: neoforge
         run: |
           for dir in run run/server run/gametestserver; do
             mkdir -p "$dir/world/datapacks"
             printf 'eula=true\n' > "$dir/eula.txt"
             cp ../build/RealScale-GeoEcology-Winter-EXPERIMENTAL.zip "$dir/world/datapacks/"
+            cp ../build/RealScale-Vanilla-Habitat-Structures-EXPERIMENTAL.zip "$dir/world/datapacks/"
             cp ../build/RealScale-Vanilla-Structures-2x-EXPERIMENTAL.zip "$dir/world/datapacks/"
             cat > "$dir/server.properties" <<'PROPERTIES'
           level-name=world
-          level-type=minecraft:normal
+          level-type=realscale:realism_max
           level-seed=785312
           generate-structures=true
-          initial-enabled-packs=vanilla,file/RealScale-GeoEcology-Winter-EXPERIMENTAL.zip,file/RealScale-Vanilla-Structures-2x-EXPERIMENTAL.zip
+          initial-enabled-packs=vanilla,file/RealScale-GeoEcology-Winter-EXPERIMENTAL.zip,file/RealScale-Vanilla-Habitat-Structures-EXPERIMENTAL.zip,file/RealScale-Vanilla-Structures-2x-EXPERIMENTAL.zip
           spawn-protection=0
           view-distance=3
           simulation-distance=3
@@ -57,9 +64,9 @@ jobs:
           rcon.password=realscale_ci_probe_only
           PROPERTIES
           done
-      - name: Launch REAL NeoForge server; verify both packs via RCON and saved NBT
+      - name: Launch REAL RealScale server; verify three packs via RCON and saved NBT
         working-directory: neoforge
-        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . 'minecraft:overworld' packs
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . 'realscale:realism_max' packs
       - name: Upload server registry, NBT and data pack diagnostic logs
         if: always()
         uses: actions/upload-artifact@v4
