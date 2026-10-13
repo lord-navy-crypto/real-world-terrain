@@ -60,9 +60,27 @@ jobs:
           t=threading.Thread(target=reader,daemon=True);t.start()
           deadline=time.time()+480
           while time.time()<deadline and p.poll() is None and not done.is_set():time.sleep(1)
+          origin_verified=False
           if done.is_set():
             print('NEOFORGE_SERVER_BOOT_OK: reached Done milestone')
-            time.sleep(18)
+            p.stdin.write('forceload add 0 0\n')
+            p.stdin.flush()
+            import contextlib,io,sys
+            sys.path.insert(0,str(pathlib.Path('../qa/neoforge').resolve()))
+            import check_actual_chunk_heights
+            limit=time.monotonic()+300
+            while time.monotonic()<limit and p.poll() is None:
+              p.stdin.write('save-all flush\n')
+              p.stdin.flush()
+              time.sleep(12)
+              try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                  check_actual_chunk_heights.scan(pathlib.Path('.'))
+                origin_verified=True
+                print('FORCED DEM CENTER VERIFIED: actual persisted block heights match USGS')
+                break
+              except (SystemExit,AssertionError,OSError,ValueError) as exc:
+                print('DEM center still generating:',str(exc)[:180])
           else:
             print('NEOFORGE_SERVER_BOOT_FAIL:',p.poll())
           try:
@@ -91,7 +109,7 @@ jobs:
                 valid=True;print('Correct generator in saved level.dat:',f)
               else:print('WARNING generated other preset',f)
             except Exception as e:print('Could not read level.dat',f,e)
-          if not done.is_set() or not valid:
+          if not done.is_set() or not valid or not origin_verified:
             raise SystemExit('NeoForge new-world smoke NOT VERIFIED')
           print('GAME ENGINE WORLDGEN SMOKE: PASS')
           PY
