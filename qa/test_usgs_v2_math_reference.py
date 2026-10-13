@@ -14,7 +14,9 @@ class MonotoneUSGSMathTests(unittest.TestCase):
     def setUpClass(cls):
         source=next((ROOT/"neoforge/src/main/resources/data/realscale/dem").glob("*.rgt.gz"))
         cls.dem=MonotoneDem(source)
-        cls.legacy,cls.bounds=read_dem(source)
+        legacy,cls.bounds=read_dem(source)
+        # A function stored on a class otherwise binds self on instance access.
+        cls.legacy=staticmethod(legacy)
 
     def test_exactly_preserves_every_measured_grid_point(self):
         dem=self.dem
