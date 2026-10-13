@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:meadow",
+    "minecraft:plains",
+    "minecraft:sunflower_plains"
+  ],
+  "features": "realscale:meadow_wildflower_patch",
+  "step": "vegetal_decoration"
+}
