@@ -32,6 +32,33 @@ jobs:
       - name: Build readable NeoForge project
         working-directory: neoforge
         run: gradle --no-daemon --stacktrace build
+      - name: Package standalone YACL config exporter (Python zipapp)
+        run: |
+          mkdir -p build/config-exporter
+          cp scripts/terrain_lab.py build/config-exporter/terrain_lab.py
+          cp scripts/export_terrain_lab_datapack.py build/config-exporter/__main__.py
+          python3 -m zipapp build/config-exporter -o build/RealScale-Config-Exporter.pyz -p '/usr/bin/env python3'
+          python3 build/RealScale-Config-Exporter.pyz --help
+      - name: Confirm portable exporter can use the built mod JAR
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          target=pathlib.Path('build/release-test')
+          target.mkdir(parents=True,exist_ok=True)
+          (target/'yacl.json').write_text(json.dumps({
+              'preset':'landscape','reliefPercent':100,'elevation':0,'caves':50,
+              'riverGrade':6,'inland':True,'blendPercent':25,'climatePercent':65
+          }))
+          PY
+          python3 build/RealScale-Config-Exporter.pyz \
+            --jar "$(find neoforge/build/libs -maxdepth 1 -name '*.jar' | head -n 1)" \
+            --draft build/release-test/yacl.json --output build/release-test/LabWorld.zip
+          python3 - <<'PY'
+          import json,zipfile
+          with zipfile.ZipFile('build/release-test/LabWorld.zip') as pack:
+              assert json.loads(pack.read('pack.mcmeta'))['pack']['pack_format']==48
+              assert any(s.startswith('data/realscale/worldgen/world_preset/lab_') for s in pack.namelist())
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -39,4 +66,6 @@ jobs:
           path: |
             neoforge/build/libs/*.jar
             build/saved-world-replay.json
+            build/RealScale-Config-Exporter.pyz
+            build/release-test/*.zip
           if-no-files-found: error

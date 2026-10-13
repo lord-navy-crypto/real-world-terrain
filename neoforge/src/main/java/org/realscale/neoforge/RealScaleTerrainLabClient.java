@@ -259,7 +259,7 @@ public final class RealScaleTerrainLabClient {
                 .name(Component.literal("Applying Settings"))
                 .option(Option.<Boolean>createBuilder()
                     .name(Component.literal("Restart/Build Required"))
-                    .description(description("Save the draft, EXIT Minecraft, then relaunch via Gradle runClient. "
+                    .description(description("Save draft for a NEW world. Source developers can rebuild via Gradle; for standalone JARs use the bundled RealScale-Config-Exporter.pyz with this JSON to create a datapack. "
                         + "The new RealScale Lab world type appears under Create World > World Type. "
                         + "Never modifies an existing world."))
                     .binding(true, () -> true, v -> {})
