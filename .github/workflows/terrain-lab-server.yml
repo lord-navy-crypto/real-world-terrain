@@ -26,11 +26,22 @@ jobs:
           gradle-version: '8.14.3'
       - name: Generate unique immutable custom density, cave and river profile
         run: |
-          lab_id=$(python3 scripts/terrain_lab.py --preset landscape --profile natural --blend 25 --ridge 10 --erosion 8 --strata 4 --biome-cooling 65 --valley-warming 35 --latitude-mode radial_preview --radial-center-x 0 --equator-z 0 --latitude-strength 70 --cold-limit 60 --basin-warming 20 --relief 1.02 --elevation 4 --caves 50 --river-grade 6 | sed -n 's/^Prepared world type: //p')
+          lab_id=$(python3 scripts/terrain_lab.py --preset landscape --profile natural --blend 25 --lithostitched-blend --ridge 10 --erosion 8 --strata 4 --biome-cooling 65 --valley-warming 35 --latitude-mode radial_preview --radial-center-x 0 --equator-z 0 --latitude-strength 70 --cold-limit 60 --basin-warming 20 --relief 1.02 --elevation 4 --caves 50 --river-grade 6 | sed -n 's/^Prepared world type: //p')
           test -n "$lab_id"
           echo "LAB_WORLD=$lab_id" >> "$GITHUB_ENV"
           echo "Generated $lab_id"
           python3 -m unittest discover -s qa -p 'test_terrain_lab.py' -v
+      - name: Verify Lithostitched density codec in the generated Lab preset
+        run: |
+          python3 - <<'PY'
+          import os,json,pathlib
+          name=os.environ["LAB_WORLD"].removeprefix("realscale:")
+          file=pathlib.Path("neoforge/src/main/resources/data/realscale/worldgen/density_function/terrain_lab")/name/"height_signal.json"
+          tree=json.loads(file.read_text())["argument1"]["argument2"]["base"]
+          assert tree["type"]=="lithostitched:mix", tree
+          assert tree["input"]["type"]=="minecraft:clamp", tree
+          print("LITHOSTITCHED_MIX_IN_LIVE_WORLD: PASS",name)
+          PY
       - name: Prepare EULA and actual world type
         working-directory: neoforge
         run: |

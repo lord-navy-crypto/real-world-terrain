@@ -28,3 +28,18 @@ This intentionally consolidates only the **player-facing choices**; no historica
 The ocean **sea level stays at Y=63** in all eight presets. A guarded NeoForge feature adds shallow river-biome channels at local terrain elevations in procedural RealScale worlds, but never in regular vanilla worlds or the measured Big Sur DEM. High-altitude rivers may freeze at the top; the latest revision retains water underneath the ice. The first real save sample at seed 785312 observed 126 wet/icy river columns out of 177, but the two-water-layer revision still needs new-world verification.
 
 A cross-seed QA gate exposed extreme hollow mountains, so the revised cave field requires the spaghetti tube and the cheese gate to agree rather than allowing cheese noise to independently hollow entire mountains. A complete basin-scale watershed, continuous lakes, realistic karst and navigable cave survey are **not** implemented or proven; this draft branch must not replace the stable v1.1 release.
+
+## Opt-in Lithostitched world blending and improved YACL Config (experimental)
+
+YACL's Next-World editor now has clearer terrain, climate and cave sections,
+with the disabled fake Apply toggle removed. **Save writes a draft only.**
+Installed-JAR users can export it using the matching
+RealScale-Config-Exporter.pyz (Python 3.9+), then enable the resulting
+datapack before creating the new Lab world.
+
+Three merged Terrain Lab families can enable **Lithostitched Adaptive Blend**:
+this actually uses the lithostitched:mix density codec to vary the secondary
+landform blend smoothly with local erosion noise. The default is OFF to keep
+previous Lab profile IDs intact. New opt-in worlds receive a new registry ID.
+The original fixed presets and saved worlds are unchanged. Lithostitched
+1.6.0 remains required on client and server.

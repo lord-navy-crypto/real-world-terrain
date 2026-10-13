@@ -66,7 +66,7 @@ def _draft_options(path: Path) -> dict:
         "strataPercent": 0, "climatePercent": 0, "valleyPercent": 0,
         "latitudeMode": "off", "latitudeStrength": 70, "equatorZ": 0,
         "basinPercent": 0, "radialCenterX": 0, "coldLimitPercent": 60,
-        "fantasyDimensions": False,
+        "fantasyDimensions": False, "lithostitchedBlend": False,
     }
     for key, default in optional.items():
         val = draft.get(key, default)
@@ -86,6 +86,7 @@ def _draft_options(path: Path) -> dict:
         center_x=optional["radialCenterX"],
         cold_limit=optional["coldLimitPercent"],
         fantasy_dimensions=optional["fantasyDimensions"],
+        lithostitched_blend=optional["lithostitchedBlend"],
     )
 
 

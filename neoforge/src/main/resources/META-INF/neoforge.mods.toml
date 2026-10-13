@@ -29,9 +29,9 @@ versionRange="[3.8.1,)"
 ordering="NONE"
 side="CLIENT"
 
-# Lithostitched provides worldgen extensibility and structure/biome integration.
-# Version 1.6.0 was published for NeoForge 1.21.1; no global biome/structure
-# injection is enabled until audited. Unlike YACL this runs on both sides.
+# Lithostitched 1.6.0 is now really used for opt-in Terrain Lab
+# lithostitched:mix density blending. It must load on BOTH client and server.
+# No global biome/structure injection is added.
 [[dependencies.realscale]]
 modId="lithostitched"
 type="required"

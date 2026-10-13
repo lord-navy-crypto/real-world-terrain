@@ -587,3 +587,38 @@ existing exported ZIP, change the JAR, or modify old world saves.
 This is a working standalone OFFLINE EXPORT flow, not live in-game worldgen
 editing, and not a one-click Apply button inside YACL. Measured USGS Big Sur
 remains read-only to preserve the original DEM elevations.
+
+## YACL screen cleanup and real Lithostitched adaptive blending (opt-in)
+
+The client YACL editor retains its supported NeoForge 1.21.1 version. The
+control screen now separates terrain shape, climate/latitude, and height/caves/
+rivers. The disabled fake "Restart/Build Required" boolean has been removed.
+The title and base-mode tooltip explicitly explain that **Save writes a
+NEXT NEW WORLD draft**, not an in-game change. Standalone JAR users must
+exit Minecraft and use the accompanying RealScale-Config-Exporter.pyz to
+turn config/realscale-terrain-lab.json into a world-creation datapack; then
+enable it under Create New World > Data Packs and select the new Lab world.
+YACL writes drafts atomically to avoid partially written JSON files.
+
+**Lithostitched Adaptive Blend** is a new optional control (default OFF)
+for the three merged Terrain Lab families. It also has an equivalent CLI
+switch, --lithostitched-blend. When active with a nonzero secondary blend,
+the generator ACTUALLY uses Lithostitched 1.6.0's
+lithostitched:mix density codec, with a smoothly varying weight driven by
+the secondary terrain family's existing erosion signal:
+
+    local_weight = clamp(blend_fraction + 0.05 * secondary_erosion, 0, 0.5)
+    mixed_height = lithostitched:mix(primary_height, secondary_height, local_weight)
+
+This changes the world generator: it is not a cosmetic YACL toggle.
+It changes the secondary blend by at most about five percentage points
+where the erosion signal is within [-1,+1]. It is NOT watershed erosion,
+does not add new biomes, and does not globally inject structures.
+
+Enabled profiles use new content-hashed worldgen IDs marked
+"lithostitched_adaptive_v1", so previous Lab profiles are not rewritten.
+With the toggle OFF, previously generated profile IDs/JSON remain intact.
+The nine fixed worldgen types (including both measured Big Sur DEM pilots)
+remain untouched. Lithostitched 1.6.0 stays a required mod on both
+client and dedicated server. The dedicated Terrain Lab CI now generates
+and boots a real world with lithostitched:mix enabled and scans saved blocks.

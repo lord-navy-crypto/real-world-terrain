@@ -30,7 +30,7 @@ class ExporterTests(unittest.TestCase):
             "caves": 50, "riverGrade": 6, "inland": True,
             "blendPercent": 25, "climatePercent": 65,
             "latitudeMode": "radial_balanced", "latitudeStrength": 70,
-            "coldLimitPercent": 60
+            "coldLimitPercent": 60, "lithostitchedBlend": True
         }), encoding="utf-8")
         self.output = self.base / "Custom-World.zip"
 
@@ -47,6 +47,10 @@ class ExporterTests(unittest.TestCase):
             self.assertIn("data/realscale/worldgen/noise_settings/" + stem + ".json", names)
             self.assertIn("data/realscale/worldgen/density_function/terrain_lab/" + stem + "/height_signal.json", names)
             self.assertTrue(all(not k.startswith("assets/") for k in names))
+            height_data = json.loads(archive.read(
+                "data/realscale/worldgen/density_function/terrain_lab/" + stem + "/height_signal.json"))
+            self.assertEqual(height_data["argument1"]["argument2"]["type"],
+                             "lithostitched:mix")
             for tag in ("normal", "extended"):
                 value = json.loads(archive.read(
                     "data/minecraft/tags/worldgen/world_preset/" + tag + ".json"))

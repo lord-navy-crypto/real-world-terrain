@@ -24,8 +24,9 @@ import java.nio.file.Path;
 
 /**
  * YACL is strictly client-only. Saving here writes a NEXT-WORLD draft.
- * On the NEXT Gradle client launch, prepareTerrainLabDraft produces an immutable
- * world preset before Minecraft loads worldgen registries.
+ * Standalone JAR players run the matching Config Exporter to create an
+ * immutable NEW-WORLD datapack. Development builds can use Gradle to bake
+ * the same draft before Minecraft loads worldgen registries.
  *
  * Never change generator settings of a loaded world in-place.
  */
@@ -42,6 +43,7 @@ public final class RealScaleTerrainLabClient {
     private static class Draft {
         String preset = "landscape";
         int blendPercent = 25;
+        boolean lithostitchedBlend = false;
         int ridgePercent = 0;
         int erosionPercent = 0;
         int strataPercent = 0;
@@ -117,11 +119,21 @@ public final class RealScaleTerrainLabClient {
 
         void save() {
             if (!valid(this)) throw new IllegalArgumentException("Terrain Lab draft is invalid");
+            Path temp = CONFIG.resolveSibling(CONFIG.getFileName().toString() + ".tmp");
             try {
                 Files.createDirectories(CONFIG.getParent());
-                Files.writeString(CONFIG, JSON.toJson(this), StandardCharsets.UTF_8);
+                Files.writeString(temp, JSON.toJson(this), StandardCharsets.UTF_8);
+                // Do not leave a half-written config if the game exits mid-save.
+                try {
+                    Files.move(temp, CONFIG, java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                } catch (java.nio.file.AtomicMoveNotSupportedException ex) {
+                    Files.move(temp, CONFIG, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
             } catch (IOException ex) {
-                throw new IllegalStateException("Cannot write next-world Terrain Lab draft", ex);
+                throw new IllegalStateException("Cannot save next-world Terrain Lab draft", ex);
+            } finally {
+                try { Files.deleteIfExists(temp); } catch (IOException ignored) { }
             }
         }
     }
@@ -133,12 +145,12 @@ public final class RealScaleTerrainLabClient {
     private static Screen createScreen(Screen parent) {
         Draft d = Draft.read();
         return YetAnotherConfigLib.createBuilder()
-            .title(Component.literal("RealScale Terrain Lab - Next New World"))
+            .title(Component.literal("RealScale Terrain Lab | SAVE DRAFT for NEXT WORLD"))
             .category(ConfigCategory.createBuilder()
-                .name(Component.literal("Landforms and Height"))
+                .name(Component.literal("Terrain Shape & Height"))
                 .option(Option.<String>createBuilder()
                     .name(Component.literal("Base Terrain"))
-                    .description(description("Three merged families blend existing terrain noise fields. USGS measured DEM is separate and read-only."))
+                    .description(description("Configure a NEW Lab world, not a loaded save. Press Save, quit Minecraft, then use the bundled RealScale-Config-Exporter.pyz on this instance\u0027s config/realscale-terrain-lab.json and matching mod JAR. Enable its ZIP under Create New World > Data Packs, THEN choose the new Lab World Type. USGS measured DEM is read-only."))
                     .binding("landscape", () -> d.preset, v -> d.preset = v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(
                         "landscape", "alpine", "canyon"))
@@ -148,6 +160,12 @@ public final class RealScaleTerrainLabClient {
                     .description(description("0..50%; smoothly combine two real density fields before terrain height scaling."))
                     .binding(25, () -> d.blendPercent, v -> d.blendPercent = v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,50).step(1))
+                    .build())
+                .option(Option.<Boolean>createBuilder()
+                    .name(Component.literal("Lithostitched Adaptive Blend (Opt-in)"))
+                    .description(description("NEW Lab worlds ONLY: use Lithostitched's mix density codec for softly varying terrain blend across regions (+/-5 percentage points). OFF keeps older world profile IDs unchanged. Save a draft; export a new world datapack after leaving Minecraft."))
+                    .binding(false, () -> d.lithostitchedBlend, v -> d.lithostitchedBlend = v)
+                    .controller(BooleanControllerBuilder::create)
                     .build())
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Ridge Enhancement"))
@@ -161,6 +179,9 @@ public final class RealScaleTerrainLabClient {
                     .binding(0, () -> d.erosionPercent, v -> d.erosionPercent = v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,30).step(1))
                     .build())
+                .build())
+            .category(ConfigCategory.createBuilder()
+                .name(Component.literal("Climate & Latitude"))
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Altitude-Aware Biomes"))
                     .description(description("0 = vanilla climate. Higher settings cool elevated terrain in newly generated worlds; coastal and low valley climates remain unchanged."))
@@ -209,6 +230,9 @@ public final class RealScaleTerrainLabClient {
                     .binding(0, () -> d.basinPercent, v -> d.basinPercent = v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5))
                     .build())
+                .build())
+            .category(ConfigCategory.createBuilder()
+                .name(Component.literal("Height, Caves & Rivers"))
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Terrain Relief (percent)"))
                     .description(description("80..125% of original land-height density; affects NEW world only."))
@@ -221,9 +245,6 @@ public final class RealScaleTerrainLabClient {
                     .binding(0, () -> d.elevation, v -> d.elevation = v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(-48,48).step(1))
                     .build())
-                .build())
-            .category(ConfigCategory.createBuilder()
-                .name(Component.literal("Caves and Rivers"))
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Warped Geologic Strata"))
                     .description(description("0..20; subtle layered solidity bands. Does not swap rock materials."))
@@ -253,18 +274,6 @@ public final class RealScaleTerrainLabClient {
                     .description(description("Biases NEW world initial spawn away from coastlines."))
                     .binding(true, () -> d.inland, v -> d.inland = v)
                     .controller(BooleanControllerBuilder::create)
-                    .build())
-                .build())
-            .category(ConfigCategory.createBuilder()
-                .name(Component.literal("Applying Settings"))
-                .option(Option.<Boolean>createBuilder()
-                    .name(Component.literal("Restart/Build Required"))
-                    .description(description("Save draft for a NEW world. Source developers can rebuild via Gradle; for standalone JARs use the bundled RealScale-Config-Exporter.pyz with this JSON to create a datapack. "
-                        + "The new RealScale Lab world type appears under Create World > World Type. "
-                        + "Never modifies an existing world."))
-                    .binding(true, () -> true, v -> {})
-                    .controller(BooleanControllerBuilder::create)
-                    .available(false)
                     .build())
                 .build())
             .save(d::save)

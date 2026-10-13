@@ -294,6 +294,70 @@ class TerrainLabTests(unittest.TestCase):
         self.assertIn("prepareTerrainLabDraft",build)
         self.assertIn("dependsOn tasks.named('prepareTerrainLabDraft')",build)
 
+
+    def test_lithostitched_mix_opt_in_uses_real_codec_and_new_world_id(self):
+        for family, (primary, secondary) in lab.FAMILIES.items():
+            with self.subTest(family=family):
+                old, _, _ = lab.apply(self.root, family, 1., 0, 50, 6,
+                                      blend_percent=25)
+                new, opts, _ = lab.apply(self.root, family, 1., 0, 50, 6,
+                                         blend_percent=25,
+                                         lithostitched_blend=True)
+                self.assertNotEqual(old, new)
+                self.assertEqual(opts["blend_engine"], "lithostitched_adaptive_v1")
+                prefix = lab.GEO_ROOT / "density_function/terrain_lab"
+                node = lab.jread(self.root, prefix / new / "height_signal.json")
+                mixed = node["argument1"]["argument2"]
+                self.assertEqual(mixed["type"], "lithostitched:mix")
+                self.assertEqual(mixed["argument1"],
+                                 f"realscale:{primary}/height_signal")
+                self.assertEqual(mixed["argument2"],
+                                 f"realscale:{secondary}/height_signal")
+                weight = mixed["input"]
+                self.assertEqual(weight["type"], "minecraft:clamp")
+                self.assertEqual([weight["min"], weight["max"]], [0.0, 0.5])
+                self.assertEqual(weight["input"]["argument1"], 0.25)
+                variance = weight["input"]["argument2"]
+                self.assertEqual(variance["argument1"], 0.05)
+                self.assertEqual(variance["argument2"],
+                                 f"realscale:{secondary}/erosion")
+                legacy = lab.jread(self.root, prefix / old / "height_signal.json")
+                self.assertEqual(legacy["argument1"]["argument2"]["type"],
+                                 "minecraft:add")
+
+    def test_lithostitched_opt_in_rejects_legacy_worlds_or_invalid_flag(self):
+        with self.assertRaisesRegex(ValueError, "only supports"):
+            lab.apply(self.root, "realism_max", 1., 0, 50, 6,
+                      lithostitched_blend=True)
+        with self.assertRaisesRegex(ValueError, "must be a boolean"):
+            lab.apply(self.root, "landscape", 1., 0, 50, 6,
+                      lithostitched_blend="yes")
+
+    def test_yacl_lithostitched_draft_and_settings_ui(self):
+        draft = self.root / "lithio-yacl.json"
+        draft.write_text(json.dumps({
+            "preset": "landscape", "reliefPercent": 100, "elevation": 0,
+            "caves": 50, "riverGrade": 6, "inland": True,
+            "blendPercent": 25, "lithostitchedBlend": True
+        }))
+        self.assertEqual(lab.main(["--root", str(self.root),
+                                   "--from-yacl", str(draft)]), 0)
+        files = list((self.root/lab.GEO_ROOT/"noise_settings").glob(
+            "lab_landscape_*.json"))
+        self.assertEqual(len(files), 1)
+        name = files[0].stem
+        node = lab.jread(self.root, lab.GEO_ROOT/"density_function/terrain_lab"/
+                         name/"height_signal.json")
+        self.assertEqual(node["argument1"]["argument2"]["type"],
+                         "lithostitched:mix")
+        screen = (ROOT/"neoforge/src/main/java/org/realscale/neoforge/"
+                  "RealScaleTerrainLabClient.java").read_text()
+        self.assertIn("Lithostitched Adaptive Blend (Opt-in)", screen)
+        self.assertIn("lithostitchedBlend = false", screen)
+        self.assertIn("Climate & Latitude", screen)
+        self.assertIn("RealScale-Config-Exporter.pyz", screen)
+        self.assertNotIn("Restart/Build Required", screen)
+
     def test_merged_blend_bounds_are_enforced(self):
         for mix in (-1,51):
             with self.assertRaises(ValueError):

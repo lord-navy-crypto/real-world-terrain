@@ -84,3 +84,18 @@ display-name resource pack, without Gradle or source modifications.
 Enable the datapack at Create New World -> Data Packs before choosing
 the new Lab preset. Existing saves remain unchanged.
 See [standalone Config instructions](docs/TERRAIN_LAB.md#standalone-jar-export-yacl-config-to-a-new-world-datapack-beta).
+
+## Opt-in Lithostitched world blending and improved YACL Config (experimental)
+
+YACL's Next-World editor now has clearer terrain, climate and cave sections,
+with the disabled fake Apply toggle removed. **Save writes a draft only.**
+Installed-JAR users can export it using the matching
+RealScale-Config-Exporter.pyz (Python 3.9+), then enable the resulting
+datapack before creating the new Lab world.
+
+Three merged Terrain Lab families can enable **Lithostitched Adaptive Blend**:
+this actually uses the lithostitched:mix density codec to vary the secondary
+landform blend smoothly with local erosion noise. The default is OFF to keep
+previous Lab profile IDs intact. New opt-in worlds receive a new registry ID.
+The original fixed presets and saved worlds are unchanged. Lithostitched
+1.6.0 remains required on client and server.
