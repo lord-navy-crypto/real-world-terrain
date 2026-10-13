@@ -21,6 +21,8 @@ jobs:
           python-version: '3.12'
       - name: Verify recovered source, artifacts and actual saved world
         run: python3 qa/verify_repository.py
+      - name: Validate custom biome registry resources (static)
+        run: python3 scripts/check_custom_biomes.py
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
