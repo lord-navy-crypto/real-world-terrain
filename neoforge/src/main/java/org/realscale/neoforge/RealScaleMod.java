@@ -11,12 +11,22 @@ public final class RealScaleMod {
     public RealScaleMod(IEventBus bus) {
         bus.addListener(this::registerDensity);
         bus.addListener(this::registerRiverFeature);
+        bus.addListener(this::registerHabitatFeatures);
     }
     private void registerRiverFeature(RegisterEvent event) {
         event.register(Registries.FEATURE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "river_channel"),
                 new RiverChannelFeature())
         );
+    }
+
+    private void registerHabitatFeatures(RegisterEvent event) {
+        event.register(Registries.FEATURE, helper -> {
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fallen_timber"),
+                new VanillaHabitatFeature(VanillaHabitatFeature.Habitat.FALLEN_TIMBER));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "riparian_reeds"),
+                new VanillaHabitatFeature(VanillaHabitatFeature.Habitat.RIPARIAN_REEDS));
+        });
     }
 
     private void registerDensity(RegisterEvent event) {
