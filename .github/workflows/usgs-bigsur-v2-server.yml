@@ -32,6 +32,8 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_usgs_serial_chunk_qa.py' -v
       - name: Verify monotone USGS v2 sample math and 4-sided smooth transition
         run: python3 -m unittest discover -s qa -p 'test_usgs_v2_math_reference.py' -v
+      - name: Require persisted transition and fallback on each cardinal side
+        run: python3 -m unittest discover -s qa -p 'test_usgs_v2_four_side_coverage.py' -v
       - name: Prepare EULA and actual world type
         working-directory: neoforge
         run: |
