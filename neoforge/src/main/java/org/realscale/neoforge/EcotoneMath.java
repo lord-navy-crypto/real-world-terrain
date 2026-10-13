@@ -8,15 +8,23 @@ package org.realscale.neoforge;
 public final class EcotoneMath {
     private EcotoneMath() {}
 
-    public enum Habitat { FOREST, MEADOW, DESERT, GRASSLAND, TAIGA, ALPINE, RIVER, OCEAN, OTHER }
-    public enum Transition { NONE, WOODLAND_MEADOW, SEMI_ARID_SCRUBLAND, SUBALPINE_WOODLAND }
+    public enum Habitat { FOREST, MEADOW, DESERT, GRASSLAND, TAIGA, ALPINE, RIVER, OCEAN, SWAMP, PLAINS, SNOW, BIRCH_FOREST, OTHER }
+    public enum Transition { NONE, WOODLAND_MEADOW, SEMI_ARID_SCRUBLAND, SUBALPINE_WOODLAND, FOREST_STEPPE, MARSHY_WOODLAND, ROCKY_ALPINE_MEADOW, SNOWY_TREELINE, FLOODPLAIN_MARGIN, BIRCH_CONIFER_TRANSITION, WET_MEADOW }
 
     public static Transition compatible(Habitat first, Habitat second) {
-        if (first == second || first == Habitat.RIVER || second == Habitat.RIVER
-                || first == Habitat.OCEAN || second == Habitat.OCEAN) return Transition.NONE;
+        if (first == second || first == Habitat.OCEAN || second == Habitat.OCEAN) return Transition.NONE;
+        if (first == Habitat.RIVER || second == Habitat.RIVER) {
+            return pair(first, second, Habitat.RIVER, Habitat.PLAINS) ? Transition.FLOODPLAIN_MARGIN : Transition.NONE;
+        }
         if (pair(first, second, Habitat.FOREST, Habitat.MEADOW)) return Transition.WOODLAND_MEADOW;
         if (pair(first, second, Habitat.DESERT, Habitat.GRASSLAND)) return Transition.SEMI_ARID_SCRUBLAND;
         if (pair(first, second, Habitat.TAIGA, Habitat.ALPINE)) return Transition.SUBALPINE_WOODLAND;
+        if (pair(first, second, Habitat.FOREST, Habitat.GRASSLAND)) return Transition.FOREST_STEPPE;
+        if (pair(first, second, Habitat.FOREST, Habitat.SWAMP)) return Transition.MARSHY_WOODLAND;
+        if (pair(first, second, Habitat.MEADOW, Habitat.ALPINE)) return Transition.ROCKY_ALPINE_MEADOW;
+        if (pair(first, second, Habitat.TAIGA, Habitat.SNOW)) return Transition.SNOWY_TREELINE;
+        if (pair(first, second, Habitat.BIRCH_FOREST, Habitat.TAIGA)) return Transition.BIRCH_CONIFER_TRANSITION;
+        if (pair(first, second, Habitat.PLAINS, Habitat.SWAMP)) return Transition.WET_MEADOW;
         return Transition.NONE;
     }
 
