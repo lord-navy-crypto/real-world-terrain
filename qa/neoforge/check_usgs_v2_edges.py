@@ -12,6 +12,23 @@ from usgs_v2_math_reference import MonotoneDem
 def p95(values):
     return round(sorted(values)[int(.95*(len(values)-1))],3) if values else None
 
+def side_band_counts(coordinates, lower, upper, lateral=32):
+    """Count persisted samples at each cardinal side independently.
+
+    Missing north/south chunks must not be concealed by plentiful west/east
+    samples; this measures actual saved Anvil coverage, not predicted heights.
+    """
+    counts={side:0 for side in ("west","east","north","south")}
+    for x,z in coordinates:
+        if abs(z)<=lateral:
+            if -upper<=x<=-lower: counts["west"]+=1
+            if lower<=x<=upper: counts["east"]+=1
+        if abs(x)<=lateral:
+            if -upper<=z<=-lower: counts["north"]+=1
+            if lower<=z<=upper: counts["south"]+=1
+    return counts
+
+
 def scan(root):
     resources=root/"src/main/resources/data/realscale/dem"
     src=next(resources.glob("*.rgt.gz"))
@@ -38,8 +55,10 @@ def scan(root):
               if -60<=x<=60 and -60<=z<=60]
     coverage=[abs(y-source(x,z)) for (x,z),y in columns.items()
               if -239<=x<=239 and -239<=z<=239]
-    fallback_columns=[(x,z) for x,z in columns if (x<=-2320 or x>=2320) and abs(z)<=32]
-    mid_transition_columns=[(x,z) for x,z in columns if 864<=abs(x)<=928 and abs(z)<=32]
+    fallback_by_side=side_band_counts(columns,2320,2400)
+    transition_by_side=side_band_counts(columns,864,928)
+    fallback_columns=sum(fallback_by_side.values())
+    mid_transition_columns=sum(transition_by_side.values())
     near_edge_columns=[y for (x,z),y in columns.items()
                        if abs(x)<=288 and abs(z)<=288 and (abs(x)>=224 or abs(z)>=224)]
     near_edge_to_floor=sum(y<=-60 for y in near_edge_columns)
@@ -83,8 +102,10 @@ def scan(root):
         "measured_interior_median_abs_error":round(statistics.median(interior),3) if interior else None,
         "measured_interior_p95_abs_error":p95(interior),
         "dem_full_tile_samples":len(coverage),
-        "outer_unmodified_fallback_samples":len(fallback_columns),
-        "middle_2048m_transition_samples":len(mid_transition_columns),
+        "outer_unmodified_fallback_samples":fallback_columns,
+        "outer_unmodified_fallback_samples_by_side":fallback_by_side,
+        "middle_2048m_transition_samples":mid_transition_columns,
+        "middle_2048m_transition_samples_by_side":transition_by_side,
         "near_edge_columns":len(near_edge_columns),
         "near_edge_void_floor_columns":near_edge_to_floor,
         "worst_adjacent_steps_near_dem":sorted(worst_adjacent,key=lambda x:-x["step"])[:16],
@@ -106,8 +127,10 @@ def scan(root):
         raise SystemExit("Insufficient USGS interior or four-sided boundary samples; generation unverified")
     if report["measured_interior_p95_abs_error"]>25:
         raise SystemExit("Measured DEM terrain deviates excessively from source heights")
-    if len(fallback_columns)<24 or len(mid_transition_columns)<24:
-        raise SystemExit("USGS v2 2048m blend midpoint and procedural fallback were not both generated")
+    if any(n<24 for n in fallback_by_side.values()):
+        raise SystemExit("USGS v2 exterior procedural fallback missing on one or more cardinal sides")
+    if any(n<24 for n in transition_by_side.values()):
+        raise SystemExit("USGS v2 2048m transition band missing on one or more cardinal sides")
     if near_edge_to_floor:
         raise SystemExit("USGS tile edge unexpectedly descends to the world floor; vertical chasm remains")
     if len(coverage)<300 or p95(coverage)>25:
