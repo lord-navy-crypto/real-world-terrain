@@ -1,10 +1,11 @@
 {
   "generator.realscale.continental": "大陆巨构 · 审计版",
-  "generator.realscale.georeal_ultimate": "终极大 - 真实地貌实验版",
-  "generator.realscale.grand_canyon": "巨型峡谷 · 审计版",
-  "generator.realscale.himalayan": "喜马拉雅风格 · 审计版",
-  "generator.realscale.realism_max": "终极大 - 真实地理 v0.6（实验）",
+  "generator.realscale.georeal_ultimate": "RealScale · 多尺度地貌（GeoReal）",
+  "generator.realscale.grand_canyon": "RealScale · 大峡谷地貌",
+  "generator.realscale.himalayan": "RealScale · 喜马拉雅高山",
+  "generator.realscale.realism_max": "RealScale · 综合自然地形（Realism MAX）",
   "generator.realscale.realistic_mountains": "真实山脉 · 审计版",
   "generator.realscale.ultimate": "终极大 · 审计版 0.4",
-  "generator.realscale.usgs_big_sur": "美国地质调查局 Big Sur 真实高程（1米:1格实验版）"
+  "generator.realscale.usgs_big_sur": "RealScale · USGS Big Sur 实测高程",
+  "generator.realscale.usgs_big_sur_v2": "RealScale · USGS Big Sur 实测地形修复版 v2"
 }

@@ -1,0 +1,130 @@
+name: Curated four plus legacy USGS seed spawn and rivers QA
+on:
+  pull_request:
+    paths: ['neoforge/**', 'qa/**', '.github/workflows/spawn-ocean-server.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: realscale-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  neoforge-worldgen:
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        preset: [realism_max, himalayan, grand_canyon, usgs_big_sur_v2, usgs_big_sur]
+        seed: [2, 42]
+    name: Spawn/ocean QA / ${{ matrix.preset }} / ${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 27
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Prepare EULA and actual world type
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=world
+          level-type=realscale:${{ matrix.preset }}
+          level-seed=${{ matrix.seed }}
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Start actual NeoForge server; verify mod registry and new world
+        working-directory: neoforge
+        run: |
+          python3 - <<'PY'
+          import subprocess,threading,time,os,signal,json,pathlib,re
+          log=pathlib.Path('build/neoforge-server-smoke.log')
+          log.parent.mkdir(exist_ok=True,parents=True)
+          p=subprocess.Popen(['gradle','--no-daemon','runServer','--stacktrace'],stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1,
+                             start_new_session=True)
+          out=[];done=threading.Event()
+          def reader():
+            for line in p.stdout:
+              out.append(line)
+              if 'Done (' in line and 'For help' in line:done.set()
+          t=threading.Thread(target=reader,daemon=True);t.start()
+          deadline=time.time()+480
+          while time.time()<deadline and p.poll() is None and not done.is_set():time.sleep(1)
+          spawn_probe_error=None
+          if done.is_set():
+            print('NEOFORGE_SERVER_BOOT_OK: reached Done milestone')
+            time.sleep(18)
+            try:
+              import sys
+              sys.path.insert(0,str(pathlib.Path('../qa/neoforge').resolve()))
+              from ensure_spawn_chunk import ensure_saved_spawn_chunk
+              ensure_saved_spawn_chunk(pathlib.Path('run'),'realscale:${{ matrix.preset }}')
+            except Exception as exc:
+              spawn_probe_error=repr(exc)
+              print('QA_SPAWN_PROBE_FAILED:',spawn_probe_error,flush=True)
+          else:
+            print('NEOFORGE_SERVER_BOOT_FAIL:',p.poll())
+          try:
+            if p.poll() is None:
+              p.stdin.write('stop\n');p.stdin.flush()
+              p.wait(timeout=45)
+          except Exception:
+            if p.poll() is None:
+              os.killpg(p.pid,signal.SIGINT)
+              try:p.wait(timeout=15)
+              except subprocess.TimeoutExpired:
+                os.killpg(p.pid,signal.SIGKILL);p.wait()
+          t.join(timeout=2)
+          log.write_text(''.join(out))
+          text=log.read_text()
+          print('SERVER_LOG_TAIL:',text[-5500:])
+          print('NeoForge Done marker:',done.is_set(),'lines:',len(out))
+          files=list(pathlib.Path('run').glob('**/level.dat'))
+          print('Level DAT candidates:',[str(x) for x in files])
+          valid=False
+          import gzip
+          for f in files:
+            try:
+              data=gzip.decompress(f.read_bytes())
+              if b'realscale:${{ matrix.preset }}' in data:
+                valid=True;print('Correct generator in saved level.dat:',f)
+              else:print('WARNING generated other preset',f)
+            except Exception as e:print('Could not read level.dat',f,e)
+          if not done.is_set() or not valid or spawn_probe_error is not None:
+            raise SystemExit('NeoForge new-world spawn and chunk NOT VERIFIED: '+str(spawn_probe_error))
+          print('GAME ENGINE WORLDGEN SMOKE: PASS')
+          PY
+      - name: Assert actual saved spawn, terrain, ocean, caves and connected streams
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/check_realism_continuity.py . '${{ matrix.preset }}'
+      - name: Validate dry-air cave traversal graph logic
+        run: python3 -m unittest discover -s qa -p 'test_cave_walkability.py' -v
+      - name: Upload spawn, ocean, cave and river diagnostics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RealScale-${{ matrix.preset }}-Seed-${{ matrix.seed }}-SavedWorld-QA
+          path: |
+            neoforge/realism_continuity_qa.json
+            neoforge/build/neoforge-server-smoke.log
+            neoforge/run/**/level.dat
+            neoforge/run/**/logs/latest.log
+          if-no-files-found: warn

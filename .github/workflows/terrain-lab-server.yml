@@ -1,0 +1,167 @@
+name: RealScale concentric radial latitude and cold-budget real world QA
+on:
+  push:
+    branches: [main]
+    paths: ['neoforge/**', 'scripts/terrain_lab.py', 'qa/**', '.github/workflows/terrain-lab-server.yml']
+  pull_request:
+    paths: ['neoforge/**', 'scripts/terrain_lab.py', 'qa/**', '.github/workflows/terrain-lab-server.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: realscale-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  terrain-lab-worldgen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 36
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Generate unique immutable custom density, cave and river profile
+        run: |
+          lab_id=$(python3 scripts/terrain_lab.py --preset landscape --profile natural --blend 25 --lithostitched-blend --lithostitched-geology --ridge 10 --erosion 8 --strata 4 --biome-cooling 65 --valley-warming 35 --latitude-mode radial_preview --radial-center-x 0 --equator-z 0 --latitude-strength 70 --cold-limit 60 --basin-warming 20 --relief 1.02 --elevation 4 --caves 50 --river-grade 6 | sed -n 's/^Prepared world type: //p')
+          test -n "$lab_id"
+          echo "LAB_WORLD=$lab_id" >> "$GITHUB_ENV"
+          echo "Generated $lab_id"
+          python3 -m unittest discover -s qa -p 'test_terrain_lab.py' -v
+      - name: Verify Lithostitched density codec in the generated Lab preset
+        run: |
+          python3 - <<'PY'
+          import os,json,pathlib
+          name=os.environ["LAB_WORLD"].removeprefix("realscale:")
+          file=pathlib.Path("neoforge/src/main/resources/data/realscale/worldgen/density_function/terrain_lab")/name/"height_signal.json"
+          tree=json.loads(file.read_text())["argument1"]["argument2"]["base"]
+          assert tree["type"]=="minecraft:add",tree
+          assert tree["argument1"]["type"]=="minecraft:mul",tree
+          secondary=tree["argument2"]
+          assert secondary["type"]=="minecraft:mul",tree
+          assert secondary["argument1"]["type"]=="minecraft:clamp",tree
+          microform=secondary["argument2"]["argument2"]
+          assert microform["type"]=="minecraft:mul" and microform["argument1"]==0.02
+          local_mix=microform["argument2"]
+          assert local_mix["type"]=="lithostitched:mix"
+          assert local_mix["argument1"]["type"]=="minecraft:cache_2d"
+          warped=local_mix["argument2"]
+          assert warped["type"]=="minecraft:cache_2d"
+          assert warped["argument"]["type"]=="lithostitched:shift"
+          assert warped["argument"]["input"]["type"]=="lithostitched:fast_noise"
+          root=pathlib.Path("neoforge/src/main/resources/data/realscale")
+          config=root/"lithostitched/fast_noise_config/terrain_lab"/(name+".json")
+          assert json.loads(config.read_text())["type"]=="lithostitched:perlin"
+          strata=root/"worldgen/density_function/terrain_lab"/name/"terrain_density.json"
+          assert json.loads(strata.read_text())["warp"]["argument2"]["type"]=="lithostitched:sin"
+          cave=root/"worldgen/density_function/terrain_lab"/name/"cave_density.json"
+          cave_density=json.loads(cave.read_text())
+          assert cave_density["type"]=="minecraft:add",cave_density
+          assert cave_density["argument2"]["type"]=="minecraft:mul",cave_density
+          assert cave_density["argument2"]["argument1"]==0.025
+          print("LITHOSTITCHED_MIX_IN_LIVE_WORLD: PASS",name)
+          PY
+      - name: Prepare EULA and actual world type
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=world
+          level-type=${{ env.LAB_WORLD }}
+          level-seed=785312
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Verify strict saved-spawn RCON probe regression
+        run: python3 -m unittest discover -s qa -p 'test_spawn_chunk_probe.py' -v
+      - name: Start actual NeoForge server; verify mod registry and new world
+        working-directory: neoforge
+        run: |
+          python3 - <<'PY'
+          import subprocess,threading,time,os,signal,json,pathlib,re
+          log=pathlib.Path('build/neoforge-server-smoke.log')
+          log.parent.mkdir(exist_ok=True,parents=True)
+          p=subprocess.Popen(['gradle','--no-daemon','runServer','--stacktrace'],stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1,
+                             start_new_session=True)
+          out=[];done=threading.Event()
+          def reader():
+            for line in p.stdout:
+              out.append(line)
+              if 'Done (' in line and 'For help' in line:done.set()
+          t=threading.Thread(target=reader,daemon=True);t.start()
+          deadline=time.time()+480
+          while time.time()<deadline and p.poll() is None and not done.is_set():time.sleep(1)
+          spawn_probe_error=None
+          if done.is_set():
+            print('NEOFORGE_SERVER_BOOT_OK: reached Done milestone')
+            time.sleep(18)
+            try:
+              import sys
+              sys.path.insert(0,str(pathlib.Path('../qa/neoforge').resolve()))
+              from ensure_spawn_chunk import ensure_saved_spawn_chunk
+              ensure_saved_spawn_chunk(pathlib.Path('run'),os.environ['LAB_WORLD'])
+            except Exception as exc:
+              spawn_probe_error=repr(exc)
+              print('QA_SPAWN_PROBE_FAILED:',spawn_probe_error,flush=True)
+          else:
+            print('NEOFORGE_SERVER_BOOT_FAIL:',p.poll())
+          try:
+            if p.poll() is None:
+              p.stdin.write('stop\n');p.stdin.flush()
+              p.wait(timeout=45)
+          except Exception:
+            if p.poll() is None:
+              os.killpg(p.pid,signal.SIGINT)
+              try:p.wait(timeout=15)
+              except subprocess.TimeoutExpired:
+                os.killpg(p.pid,signal.SIGKILL);p.wait()
+          t.join(timeout=2)
+          log.write_text(''.join(out))
+          text=log.read_text()
+          print('SERVER_LOG_TAIL:',text[-5500:])
+          print('NeoForge Done marker:',done.is_set(),'lines:',len(out))
+          files=list(pathlib.Path('run').glob('**/level.dat'))
+          print('Level DAT candidates:',[str(x) for x in files])
+          valid=False
+          import gzip
+          for f in files:
+            try:
+              data=gzip.decompress(f.read_bytes())
+              if os.environ['LAB_WORLD'].encode() in data:
+                valid=True;print('Correct generator in saved level.dat:',f)
+              else:print('WARNING generated other preset',f)
+            except Exception as e:print('Could not read level.dat',f,e)
+          if not done.is_set() or not valid or spawn_probe_error:
+            raise SystemExit('NeoForge new-world smoke NOT VERIFIED')
+          print('GAME ENGINE WORLDGEN SMOKE: PASS')
+          PY
+      - name: Scan custom profile actual saved river, caves, spawn and terrain seams
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/check_realism_continuity.py . "${LAB_WORLD#realscale:}"
+      - name: Upload server diagnostics and generated world metadata
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RealScale-Terrain-Lab-CustomProfile-Server-QA
+          path: |
+            neoforge/realism_continuity_qa.json
+            neoforge/build/neoforge-server-smoke.log
+            neoforge/run/**/level.dat
+            neoforge/run/**/region/*.mca
+            neoforge/run/**/logs/latest.log
+          if-no-files-found: warn

@@ -1,10 +1,11 @@
 {
   "generator.realscale.continental": "Continental - Audited",
-  "generator.realscale.georeal_ultimate": "Ultimate MAX - Geological Realism (Experimental)",
-  "generator.realscale.grand_canyon": "Grand Canyon-inspired - Audited",
-  "generator.realscale.himalayan": "Himalayan-inspired - Audited",
-  "generator.realscale.realism_max": "Ultimate MAX - Realistic Geography v0.6 [EXPERIMENT]",
+  "generator.realscale.georeal_ultimate": "RealScale | GeoReal Multi-scale (Advanced)",
+  "generator.realscale.grand_canyon": "RealScale | Grand Canyon Landforms",
+  "generator.realscale.himalayan": "RealScale | Himalayan High Mountains",
+  "generator.realscale.realism_max": "RealScale | Realism MAX (Balanced)",
   "generator.realscale.realistic_mountains": "Realistic Mountains - Audited",
   "generator.realscale.ultimate": "ULTIMATE MAX - Audit 0.4",
-  "generator.realscale.usgs_big_sur": "USGS Big Sur 1:1 [Real DEM pilot]"
+  "generator.realscale.usgs_big_sur": "RealScale | USGS Big Sur (Measured DEM)",
+  "generator.realscale.usgs_big_sur_v2": "RealScale | USGS Big Sur (Seamless DEM v2)"
 }

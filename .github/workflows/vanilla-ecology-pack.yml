@@ -1,0 +1,35 @@
+name: Vanilla-block ecology opt-in datapack static QA
+on:
+  pull_request:
+    paths:
+      - 'scripts/make_vanilla_ecology_pack.py'
+      - 'qa/test_ecology_pack.py'
+      - 'docs/BRANCH_ARCHEOLOGY_AND_VANILLA_ECOLOGY.md'
+      - '.github/workflows/vanilla-ecology-pack.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: realscale-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  build-ecology-datapack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check standalone vanilla-block biome decoration wiring
+        run: python3 -m unittest discover -s qa -p 'test_ecology_pack.py' -v
+      - name: Build explicitly opt-in experimental ZIP
+        run: python3 scripts/make_vanilla_ecology_pack.py
+      - name: Test datapack archive integrity
+        run: python3 -m zipfile -t build/RealScale-Vanilla-Ecology-Lab-EXPERIMENTAL.zip
+      - name: Upload ecology lab pilot (NOT AUTO-INSTALLED)
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-Vanilla-Ecology-Lab-EXPERIMENTAL
+          path: build/RealScale-Vanilla-Ecology-Lab-EXPERIMENTAL.zip
+          if-no-files-found: error

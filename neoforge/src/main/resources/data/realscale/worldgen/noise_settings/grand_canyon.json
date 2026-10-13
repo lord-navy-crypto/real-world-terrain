@@ -14,7 +14,7 @@
   "noise": {
     "min_y": -64,
     "height": 1024,
-    "size_horizontal": 1,
+    "size_horizontal": 4,
     "size_vertical": 1
   },
   "noise_router": {
@@ -27,7 +27,18 @@
     "continents": "realscale:grand_canyon/continents",
     "depth": "realscale:grand_canyon/terrain_density",
     "erosion": "realscale:grand_canyon/erosion",
-    "final_density": "realscale:grand_canyon/terrain_density",
+    "final_density": {
+      "type": "minecraft:range_choice",
+      "input": "realscale:grand_canyon/terrain_density",
+      "min_inclusive": 0.25,
+      "max_exclusive": 4,
+      "when_in_range": {
+        "type": "minecraft:min",
+        "argument1": "realscale:grand_canyon/terrain_density",
+        "argument2": "realscale:grand_canyon/cave_density"
+      },
+      "when_out_of_range": "realscale:grand_canyon/terrain_density"
+    },
     "fluid_level_floodedness": {
       "type": "minecraft:noise",
       "noise": "minecraft:aquifer_fluid_level_floodedness",
@@ -52,19 +63,19 @@
       "type": "minecraft:shifted_noise",
       "noise": "minecraft:temperature",
       "shift_x": "minecraft:shift_x",
-      "shift_y": 0.0,
+      "shift_y": 0,
       "shift_z": "minecraft:shift_z",
       "xz_scale": 0.25,
-      "y_scale": 0.0
+      "y_scale": 0
     },
     "vegetation": {
       "type": "minecraft:shifted_noise",
       "noise": "minecraft:vegetation",
       "shift_x": "minecraft:shift_x",
-      "shift_y": 0.0,
+      "shift_y": 0,
       "shift_z": "minecraft:shift_z",
       "xz_scale": 0.25,
-      "y_scale": 0.0
+      "y_scale": 0
     },
     "vein_gap": 0,
     "vein_ridged": 0,
@@ -76,9 +87,9 @@
     {
       "continentalness": [
         -0.11,
-        1.0
+        1
       ],
-      "depth": 0.0,
+      "depth": 0,
       "erosion": [
         -1,
         1
@@ -87,7 +98,7 @@
         -1,
         1
       ],
-      "offset": 0.0,
+      "offset": 0,
       "temperature": [
         -1,
         1
@@ -100,9 +111,9 @@
     {
       "continentalness": [
         -0.11,
-        1.0
+        1
       ],
-      "depth": 0.0,
+      "depth": 0,
       "erosion": [
         -1,
         1
@@ -111,7 +122,7 @@
         -1,
         1
       ],
-      "offset": 0.0,
+      "offset": 0,
       "temperature": [
         -1,
         1

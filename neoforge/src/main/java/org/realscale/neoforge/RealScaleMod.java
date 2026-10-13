@@ -10,10 +10,39 @@ import net.minecraft.resources.ResourceLocation;
 public final class RealScaleMod {
     public RealScaleMod(IEventBus bus) {
         bus.addListener(this::registerDensity);
+        bus.addListener(this::registerRiverFeature);
+        bus.addListener(this::registerHabitatFeatures);
     }
-    private void registerDensity(RegisterEvent event) {
-        event.register(Registries.DENSITY_FUNCTION_TYPE, helper ->
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_density"), RealDemDensity.MAP_CODEC)
+    private void registerRiverFeature(RegisterEvent event) {
+        event.register(Registries.FEATURE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "river_channel"),
+                new RiverChannelFeature())
         );
+    }
+
+    private void registerHabitatFeatures(RegisterEvent event) {
+        event.register(Registries.FEATURE, helper -> {
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fallen_timber"),
+                new VanillaHabitatFeature(VanillaHabitatFeature.Habitat.FALLEN_TIMBER));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "riparian_reeds"),
+                new VanillaHabitatFeature(VanillaHabitatFeature.Habitat.RIPARIAN_REEDS));
+        });
+    }
+
+    private void registerDensity(RegisterEvent event) {
+        event.register(Registries.DENSITY_FUNCTION_TYPE, helper -> {
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_density"), RealDemDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_density_seamless"), RealDemSeamlessDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "ridge_erosion"), RidgeErosionDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "strata"), StrataDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "valley_temperature"), ValleyTemperatureDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "latitude_temperature"), LatitudeTemperatureDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "basin_temperature"), BasinTemperatureDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "radial_latitude_temperature"), RadialLatitudeTemperatureDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "climate_budget"), ClimateBudgetDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fantasy_end_islands"), FantasyEndIslandsDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fantasy_nether_caverns"), FantasyNetherCavernsDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fantasy_end_archipelago"), FantasyEndArchipelagoDensity.MAP_CODEC);
+        });
     }
 }

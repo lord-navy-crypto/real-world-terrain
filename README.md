@@ -41,3 +41,98 @@ CI 自动运行离线核验、Java DEM 测试和 NeoForge 构建，并保留新�
 [来源清单](docs/PROVENANCE.json)记录原始提交、压缩快照校验值、Actions run 和附件 ID。只迁移 RealScale 相关路径；没有导入 SWARM-MOBS 的怪物 AI、资源或提交历史。旧版本以 archive 保存。
 
 原始源码没有明确的开源许可授权，本次没有擅自补成 MIT。请阅读 [LICENSE](LICENSE) 和 [第三方来源声明](THIRD_PARTY_NOTICES.md)。
+
+
+> **v1.3 全模式修复仍处于实验分支，不能替代已交付的 v1.1。** 七种程序化模式已改成保留四格缓存但逐方块插值，以解决规则的 4×4 地表台阶；全部八种模式加入按岩层深度限定的三维洞穴。上一轮 v1.2 的逐方块复杂公式导致出生区生成性能问题，因此本版改为连续插值并保留低频缓存。详见 [v1.3 研发与测试说明](docs/V1.3_ALL_PRESETS_REPAIR.md)。
+
+## 历史：v1.3.5 五模式菜单（已由最新四类型融合方案取代）
+
+v1.3.5 时新建世界的常规列表曾从八种压缩为五种：**Realism MAX（综合）、GeoReal Multi-scale（多尺度）、Himalayan（高山）、Grand Canyon（峡谷）和 USGS Big Sur（实测高程）**。另外三个功能定位重叠的老模式（Continental、Realistic Mountains、Ultimate）不再占用常规菜单位置，但保留所有旧的生成器 ID、噪声和密度公式；按住 **Alt** 切换扩展世界类型列表可访问八种模式，服务器可通过原有 `level-type=realscale:continental` 等名称选择旧模式。
+
+这个改动是**无损菜单合并**，不是修改既有世界的生成算法。建议先备份并只在新创建的实验世界中测试，不要直接用实验 JAR 覆盖 v1.1 旧存档。修复了跨区块洞穴单元测试（测试样本数量不足）并将所有快速 `qa/test_*.py` 纳入标准 CI。此版本还未完成客户端可视化验证。
+
+## v1.3.6 地表水与洞穴修复（实验）
+
+海平面继续保持 **Y=63**，不通过抬高海水高度淹没山脉。加入限定在 RealScale 程序化世界的高海拔河道生成，在 River/Frozen River 生物群系的自然地表挖浅水道，水下面使用砾石河床；寒冷区域表层可能结冰，但冰下保留水。实测种子 785312 中，177 个 River 地表样本有 126 个生成了可见水或冰（第一版单层水道）；新加入的两层水道还需进一步复测。
+
+跨种子地下空腔检查已经发现旧洞穴可能极端挖空山体，新洞穴核心把 Cheese 噪声由独立挖空源改为对 Spaghetti 通道的门控，防止巨大空心层。**这不是已经验证的完整天然河流/地下水系统**，请以 [GitHub Actions](https://github.com/lord-navy-crypto/real-world-terrain/actions) 的最终结果和客户端检查为准；旧的 v1.1 安装包和保存世界均不覆盖。
+
+## macOS Gradle 9.x test-discovery fix (v1.3.6 experiment)
+
+Gradle 9.x reports `Task :test FAILED` when the test source set only
+contains `RealDemTileSmoke.main()` and no framework-discoverable tests.
+The mod now has a JUnit Jupiter bridge in `RealDemTileJUnitTest.java`,
+the platform launcher dependency and `useJUnitPlatform()` in
+`neoforge/build.gradle`. Unlike setting
+`failOnNoDiscoveredTests=false`, this actually executes the original
+14,641-point DEM integrity smoke test as part of `gradle build`.
+
+The original `RealDemTileSmoke.java` is deliberately unmodified
+because it is SHA-256-pinned to the v1.1 preservation manifest and used
+by independent no-dependency javac smoke verification. NeoForge client
+runs can be launched via `gradle runClient` in a local development
+copy with its `client { client() }` run configuration added. The JUnit
+test fix is not proof that water, cliffs and new-world caves have no bugs.
+
+## Packaged YACL Config export (Beta)
+
+The matching CI build artifact includes RealScale-Config-Exporter.pyz.
+After saving Mods -> RealScale Terrain -> Config, exit Minecraft and
+run the exporter with the installed mod JAR plus the saved YACL draft.
+It creates an installable Minecraft 1.21.1 new-world datapack and optional
+display-name resource pack, without Gradle or source modifications.
+Enable the datapack at Create New World -> Data Packs before choosing
+the new Lab preset. Existing saves remain unchanged.
+See [standalone Config instructions](docs/TERRAIN_LAB.md#standalone-jar-export-yacl-config-to-a-new-world-datapack-beta).
+
+## Opt-in Lithostitched world blending and improved YACL Config (experimental)
+
+YACL's Next-World editor now has clearer terrain, climate and cave sections,
+with the disabled fake Apply toggle removed. **Save writes a draft only.**
+Installed-JAR users can export it using the matching
+RealScale-Config-Exporter.pyz (Python 3.9+), then enable the resulting
+datapack before creating the new Lab world.
+
+Three merged Terrain Lab families can enable **Lithostitched Adaptive Blend**:
+this actually uses the lithostitched:mix density codec to vary the secondary
+landform blend smoothly with local erosion noise. The default is OFF to keep
+previous Lab profile IDs intact. New opt-in worlds receive a new registry ID.
+The original fixed presets and saved worlds are unchanged. Lithostitched
+1.6.0 remains required on client and server.
+
+## Lithostitched Deep Geology (Experimental)
+
+The three new-world Terrain Lab families now have a deeper optional
+Lithostitched integration. Enable **Lithostitched Deep Geology** in the YACL
+screen (with Secondary Landform Mix > 0), or run Terrain Lab with
+`--lithostitched-geology`. The generated world uses Lithostitched's
+seeded Perlin fast noise, cheap shifted Perlin-driven terrain microvariation,
+vanilla-batched mountain blending, low-cost Lithostitched Perlin micro-mixing, and gently curved rock strata. Cave density uses bounded vanilla arithmetic.
+The matching standalone Config Exporter includes its private fast-noise
+registry configuration in the new-world datapack. This is not a global
+biome/structure injector; the fixed presets and existing saves are untouched.
+Requires Lithostitched 1.6.0 on client and server. See
+[Terrain Lab documentation](docs/TERRAIN_LAB.md#lithostitched-deep-geology-opt-in-seeded-terrain-strata-and-cave-integration).
+
+## 最新：四种核心世界类型与独立 Config（融合预览）
+
+**创建新世界的普通与扩展菜单都只展示四种有明显区别的预设：**
+Realism MAX（自然综合）、Himalayan（高山）、Grand Canyon（峡谷台地）、
+USGS Big Sur v2（真实测绘，只读）。已保留九种历史世界生成器的原始
+ID、噪声与密度文件，所以旧存档无需迁移；GeoReal、Continental、
+Realistic Mountains 作为 Terrain Lab 三个混合家族的次级地貌，
+Ultimate 与 USGS Legacy 只保留兼容，不再挤占玩家菜单。
+
+**Mods → RealScale Terrain → Config** 现在把 Landscape、
+Alpine、Canyon 的参数分别存放在三个独立的配置标签页中：
+混合比例、山脊、侵蚀、地层、洞穴、河流、冷却、谷地与盆地升温、
+Lithostitched 和其他可调设置彼此不会串值。另有共享纬度设置。
+当前选择的家族仍会写入兼容旧导出器的顶层草稿字段，玩家退出
+Minecraft 后可以通过匹配的 RealScale-Config-Exporter.pyz 生成新世界数据包。
+USGS v2 的 DEM 高程不可通过滑块改写，也不会改变已有世界。
+建议初始参数与兼容性细节见
+[融合方案文档](docs/TERRAIN_LAB.md#consolidated-preset-catalog-and-per-family-yacl-profiles-release-candidate)。
+
+**发布仍需验证：** 之前 USGS Legacy 种子 2 的河流连通性检查与
+Himalayan 种子 2 的出生点区块检查尚未通过；不把隐藏历史预设当作
+消除这两项错误。

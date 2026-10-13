@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "realscale:realism_max",
+    "realscale:himalayan",
+    "realscale:grand_canyon",
+    "realscale:usgs_big_sur_v2"
+  ]
+}

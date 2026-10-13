@@ -3,10 +3,10 @@ loaderVersion="[4,)"
 license="Source research implementation; retains Minecraft's own vanilla assets/data references"
 [[mods]]
 modId="realscale"
-version="1.1.0-final-candidate"
-displayName="RealScale Terrain - Real Data Pilot"
+version="1.6.0-geomorphology-lithostitched-experimental"
+displayName="RealScale Terrain - 3 Blendable Families, GeoMath and Lithostitched"
 authors="RealScale Research"
-description="Vanilla blocks only; USGS Big Sur DEM overlay plus 7 unchanged fallback world presets."
+description="Experimental new worlds only; three editable merged terrain families, eight original worldgen IDs, codec-registered ridge and geology functions, Lithostitched support, Y=63 sea level, and measured Big Sur DEM."
 [[dependencies.realscale]]
 modId="neoforge"
 type="required"
@@ -17,5 +17,24 @@ side="BOTH"
 modId="minecraft"
 type="required"
 versionRange="[1.21.1,1.21.2)"
+ordering="NONE"
+side="BOTH"
+
+# Terrain Lab's in-game settings UI is client-only. Dedicated servers do
+# not require YACL, and YACL must be installed as a separate client mod.
+[[dependencies.realscale]]
+modId="yet_another_config_lib_v3"
+type="required"
+versionRange="[3.8.1,)"
+ordering="NONE"
+side="CLIENT"
+
+# Lithostitched 1.6.0 powers opt-in Terrain Lab mix AND Deep Geology
+# via fast_noise/perlin/shift/sin/axis density codecs and protected caves.
+# Must load on BOTH client and server. No global worldgen injection.
+[[dependencies.realscale]]
+modId="lithostitched"
+type="required"
+versionRange="[1.6.0,)"
 ordering="NONE"
 side="BOTH"

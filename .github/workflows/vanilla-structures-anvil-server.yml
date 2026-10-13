@@ -1,0 +1,85 @@
+name: Vanilla structures actually generated in RealScale terrain
+on:
+  pull_request:
+    paths:
+      - 'neoforge/**'
+      - 'qa/neoforge/audit_vanilla_structures.py'
+      - 'qa/test_structure_anvil_audit.py'
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - '.github/workflows/vanilla-structures-anvil-server.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: realscale-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  real-vanilla-structure-starts:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - preset: realism_max
+            level_type: realscale:realism_max
+            noise_settings: realscale:realism_max
+          - preset: himalayan
+            level_type: realscale:himalayan
+            noise_settings: realscale:himalayan
+          - preset: vanilla
+            level_type: minecraft:normal
+            noise_settings: minecraft:overworld
+    name: Real vanilla structures / ${{ matrix.preset }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Validate positive and inconclusive structure-NBT auditor fixtures
+        run: python3 -m unittest discover -s qa -p 'test_structure_anvil_audit.py' -v
+      - name: Configure disposable NeoForge world
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=world
+          level-type=${{ matrix.level_type }}
+          level-seed=785312
+          generate-structures=true
+          max-players=1
+          view-distance=3
+          simulation-distance=3
+          max-tick-time=-1
+          online-mode=false
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Locate and force-generate real structure candidates with RCON
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . '${{ matrix.noise_settings }}' structures
+      - name: Inspect NATURAL persisted Minecraft structure starts and piece foundations
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/audit_vanilla_structures.py . --require-starts
+      - name: Upload generated Anvil evidence, including failure logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-${{ matrix.preset }}-Native-Structures-QA
+          if-no-files-found: warn
+          path: |
+            neoforge/vanilla_structure_locate_qa.json
+            neoforge/vanilla_structure_anvil_qa.json
+            neoforge/build/rcon_structures_server.log
+            neoforge/run/**/level.dat
+            neoforge/run/**/region/*.mca

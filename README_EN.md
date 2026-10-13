@@ -13,3 +13,69 @@ The DEM covers approximately 480×480m. Its 32m grid is derived from EPQS servic
 No open-source license was present in the recovered project. See `LICENSE` and `THIRD_PARTY_NOTICES.md`; this migration does not invent a permission grant. Source commit and artifact provenance is preserved in `docs/PROVENANCE.json`.
 
 The full original server ZIP is available as a separate local deliverable, not stored in GitHub because its upload exceeded automatic approval review capacity. To replay it, run `python3 qa/verify_repository.py /path/to/RealScale-v1.1-original-server-qa.zip`. Without this argument CI explicitly skips historical-world replay; the new server workflow generates and checks its own world.
+
+
+> **v1.3 all-presets repair is an experimental branch, not an installable final release.** Seven procedural height functions now interpolate the original cached coarse field to eliminate 4×4 sampling terraces; all eight receive bounded 3D cave density. The previous v1.2 per-block cache strategy caused spawn-time performance concerns. **Current v1.1 remains the verified public build.** See [v1.3 design and QA](docs/V1.3_ALL_PRESETS_REPAIR.md).
+
+## Historical v1.3.5 five-preset menu (superseded by latest four types)
+
+The older v1.3.5 normal Create World selector offered **five** distinctive modes: Realism MAX, GeoReal Multi-scale, Himalayan, Grand Canyon and measured USGS Big Sur. **Continental, Realistic Mountains and Ultimate** are hidden from the normal menu but remain registered, with unchanged terrain density/noise JSON and world preset IDs. Hold **Alt** for the extended menu showing all eight, or use the old `level-type=realscale:<id>` on a dedicated server.
+
+This intentionally consolidates only the **player-facing choices**; no historical terrain algorithm is silently remapped and no previously saved worlds are migrated. Back up existing saves and create fresh test worlds. Also fixes the 16-voxel cross-chunk cave unit-test fixture; all rapid QA tests run before the expensive NeoForge server checks. Client screenshots, cave entrances, structure foundations and multi-seed usability remain incomplete.
+
+## v1.3.6 high-altitude water & cave fixes (experimental)
+
+The ocean **sea level stays at Y=63** in all eight presets. A guarded NeoForge feature adds shallow river-biome channels at local terrain elevations in procedural RealScale worlds, but never in regular vanilla worlds or the measured Big Sur DEM. High-altitude rivers may freeze at the top; the latest revision retains water underneath the ice. The first real save sample at seed 785312 observed 126 wet/icy river columns out of 177, but the two-water-layer revision still needs new-world verification.
+
+A cross-seed QA gate exposed extreme hollow mountains, so the revised cave field requires the spaghetti tube and the cheese gate to agree rather than allowing cheese noise to independently hollow entire mountains. A complete basin-scale watershed, continuous lakes, realistic karst and navigable cave survey are **not** implemented or proven; this draft branch must not replace the stable v1.1 release.
+
+## Opt-in Lithostitched world blending and improved YACL Config (experimental)
+
+YACL's Next-World editor now has clearer terrain, climate and cave sections,
+with the disabled fake Apply toggle removed. **Save writes a draft only.**
+Installed-JAR users can export it using the matching
+RealScale-Config-Exporter.pyz (Python 3.9+), then enable the resulting
+datapack before creating the new Lab world.
+
+Three merged Terrain Lab families can enable **Lithostitched Adaptive Blend**:
+this actually uses the lithostitched:mix density codec to vary the secondary
+landform blend smoothly with local erosion noise. The default is OFF to keep
+previous Lab profile IDs intact. New opt-in worlds receive a new registry ID.
+The original fixed presets and saved worlds are unchanged. Lithostitched
+1.6.0 remains required on client and server.
+
+## Lithostitched Deep Geology (Experimental)
+
+The three new-world Terrain Lab families now have a deeper optional
+Lithostitched integration. Enable **Lithostitched Deep Geology** in the YACL
+screen (with Secondary Landform Mix > 0), or run Terrain Lab with
+`--lithostitched-geology`. The generated world uses Lithostitched's
+seeded Perlin fast noise, cheap shifted Perlin-driven terrain microvariation,
+vanilla-batched mountain blending, low-cost Lithostitched Perlin micro-mixing, and gently curved rock strata. Cave density uses bounded vanilla arithmetic.
+The matching standalone Config Exporter includes its private fast-noise
+registry configuration in the new-world datapack. This is not a global
+biome/structure injector; the fixed presets and existing saves are untouched.
+Requires Lithostitched 1.6.0 on client and server. See
+[Terrain Lab documentation](docs/TERRAIN_LAB.md#lithostitched-deep-geology-opt-in-seeded-terrain-strata-and-cave-integration).
+
+## Current: four curated world types and separate family configs
+
+Both the normal and extended Create World selectors now offer four
+distinct choices: **Realism MAX (natural), Himalayan (alpine),
+Grand Canyon (canyons) and USGS Big Sur v2 (measured DEM, read-only)**.
+All nine historical registry IDs and generator JSON are preserved for
+existing saved-world compatibility. GeoReal, Realistic Mountains and
+Continental contribute as the secondary height signals in the three
+real Terrain Lab blends; Ultimate and legacy USGS are compatibility-only.
+
+In Mods -> RealScale Terrain -> Config, the Landscape / Alpine / Canyon
+tabs each store separate terrain, caves, stream, climate and Lithostitched
+settings. Latitude settings are shared. The selected family is mirrored
+into the original top-level YACL fields when saving so the standalone
+Config Exporter still generates a NEW world datapack without Gradle.
+USGS measured elevations and already-generated chunks remain untouched.
+See [the consolidation guide](docs/TERRAIN_LAB.md#consolidated-preset-catalog-and-per-family-yacl-profiles-release-candidate).
+
+Release-blocking tests from the prior run remain: disconnected legacy USGS
+rivers (seed 2) and an unverified Himalayan saved spawn chunk (seed 2).
+These are not silently waived by hiding historical menu options.
