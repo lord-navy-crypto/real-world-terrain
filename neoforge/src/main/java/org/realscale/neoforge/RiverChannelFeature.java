@@ -103,6 +103,101 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
         return true;
     }
 
+
+    /**
+     * Conservative connected streamlet: two adjacent river cells share a
+     * water elevation only after both cells and ALL exterior bank faces have
+     * been validated. Never writes outside the generating chunk.
+     *
+     * This complements, but does not replace, basin-wide river hydrology.
+     * Rejects uncontained slopes rather than risking a mountainside flood.
+     */
+    private static boolean tryAdjacentSafeRiverPool(WorldGenLevel level,
+            ChunkPos chunk, BlockPos first, int floor, int maxGrade) {
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            int x = first.getX() + side.getStepX();
+            int z = first.getZ() + side.getStepZ();
+            if (x < chunk.getMinBlockX() || x > chunk.getMaxBlockX()
+                    || z < chunk.getMinBlockZ() || z > chunk.getMaxBlockZ())
+                continue;
+            int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) - 1;
+            BlockPos cover = new BlockPos(x, surfaceY, z);
+            BlockPos second = removableCover(level.getBlockState(cover))
+                    ? cover.below() : cover;
+            if (Math.abs(first.getY() - second.getY()) > Math.min(2, maxGrade))
+                continue;
+            if (!level.getBiome(second).is(Biomes.RIVER)
+                    && !level.getBiome(second).is(Biomes.FROZEN_RIVER))
+                continue;
+            int waterY = Math.min(first.getY(), second.getY()) - 1;
+            if (waterY <= floor || waterY > level.getMaxBuildHeight() - 7)
+                continue;
+            BlockPos[] cells = {first, second};
+            boolean enclosed = true;
+            // Two liquid levels, a gravel floor, and intact rock beneath.
+            for (BlockPos cell : cells) {
+                BlockState cap = level.getBlockState(cell.above());
+                if (!cap.isAir() && !removableCover(cap)) {
+                    enclosed = false;
+                    break;
+                }
+                for (int y = cell.getY(); y >= waterY - 2; y--) {
+                    if (!natural(level.getBlockState(
+                            new BlockPos(cell.getX(), y, cell.getZ())))) {
+                        enclosed = false;
+                        break;
+                    }
+                }
+                if (!enclosed || !level.getBlockState(
+                        new BlockPos(cell.getX(), waterY - 3, cell.getZ()))
+                        .blocksMotion()) {
+                    enclosed = false;
+                    break;
+                }
+            }
+            if (!enclosed) continue;
+            // The perimeter remains a two-level solid bank. Both water
+            // surfaces of the pair are internal and need no bank between.
+            for (BlockPos cell : cells) {
+                for (Direction wall : Direction.Plane.HORIZONTAL) {
+                    int nx = cell.getX() + wall.getStepX();
+                    int nz = cell.getZ() + wall.getStepZ();
+                    if ((nx == first.getX() && nz == first.getZ())
+                            || (nx == second.getX() && nz == second.getZ()))
+                        continue;
+                    BlockPos bank = new BlockPos(nx, waterY, nz);
+                    BlockState upper = level.getBlockState(bank);
+                    BlockState lower = level.getBlockState(bank.below());
+                    boolean joined = (upper.is(Blocks.WATER) || upper.is(Blocks.ICE))
+                            && lower.is(Blocks.WATER);
+                    if (!joined && (!solidBank(upper) || !solidBank(lower))) {
+                        enclosed = false;
+                        break;
+                    }
+                }
+                if (!enclosed) break;
+            }
+            if (!enclosed) continue;
+
+            // All checks passed. Commit only these two in-chunk columns.
+            for (BlockPos cell : cells) {
+                if (removableCover(level.getBlockState(cell.above())))
+                    level.setBlock(cell.above(), Blocks.AIR.defaultBlockState(), 2);
+                for (int y = cell.getY(); y > waterY; y--)
+                    level.setBlock(new BlockPos(cell.getX(), y, cell.getZ()),
+                            Blocks.AIR.defaultBlockState(), 2);
+                BlockPos water = new BlockPos(cell.getX(), waterY, cell.getZ());
+                level.setBlock(water.below(2), Blocks.GRAVEL.defaultBlockState(), 2);
+                level.setBlock(water.below(), Blocks.WATER.defaultBlockState(), 2);
+                level.setBlock(water, level.getBiome(cell).is(Biomes.FROZEN_RIVER)
+                        ? Blocks.ICE.defaultBlockState()
+                        : Blocks.WATER.defaultBlockState(), 2);
+            }
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Lab world types embed their persistent river-grade setting in the
      * immutable registry ID. No client-only or mutable global config is read
@@ -162,6 +257,12 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                     || (!level.getBlockState(top.above()).isAir()
                         && !(covered && removableCover(level.getBlockState(top.above())))))
                     continue;
+
+                // Prefer a mutually contained water pair over an isolated spring.
+                if (tryAdjacentSafeRiverPool(level, chunk, top, floor, maxGrade)) {
+                    made = true;
+                    continue;
+                }
 
                 // A shallow one-block inset works on gentle valley floors.
                 // On slopes with a lower neighboring bank, lower the water

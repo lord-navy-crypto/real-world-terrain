@@ -631,6 +631,14 @@ def scan(root,preset="realism_max"):
             f"Dry river regression: {river_water_columns} wet of "
             f"{river_biome_columns} river-biome surface columns"
         )
+    # Some river water is not enough: a saved river with many sampled columns
+    # must have at least one genuinely adjacent water/ice pair, not just
+    # isolated one-column springs. Cross-chunk connectivity is still reported.
+    if river_biome_columns >= 100 and river_water_columns >= 5:
+        assert river_topology["largest_wet_component_columns"] >= 2, (
+            f"Disconnected river regression: {river_water_columns} isolated "
+            f"wet columns among {river_biome_columns} River surface columns"
+        )
     # Flag the confirmed hollow mountain failure instead of labeling it a PASS.
     # 20% is an experimental QA guard, not a universal geological porosity target.
     assert examined_rock_voxels>0 and len(cave_voxels)/examined_rock_voxels<0.20, (
