@@ -29,9 +29,9 @@ versionRange="[3.8.1,)"
 ordering="NONE"
 side="CLIENT"
 
-# Lithostitched 1.6.0 is now really used for opt-in Terrain Lab
-# lithostitched:mix density blending. It must load on BOTH client and server.
-# No global biome/structure injection is added.
+# Lithostitched 1.6.0 powers opt-in Terrain Lab mix AND Deep Geology
+# via fast_noise/perlin/shift/sin/axis density codecs and protected caves.
+# Must load on BOTH client and server. No global worldgen injection.
 [[dependencies.realscale]]
 modId="lithostitched"
 type="required"

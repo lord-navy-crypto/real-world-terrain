@@ -47,7 +47,8 @@ jobs:
           target.mkdir(parents=True,exist_ok=True)
           (target/'yacl.json').write_text(json.dumps({
               'preset':'landscape','reliefPercent':100,'elevation':0,'caves':50,
-              'riverGrade':6,'inland':True,'blendPercent':25,'climatePercent':65
+              'riverGrade':6,'inland':True,'blendPercent':25,'climatePercent':65,
+              'lithostitchedGeology':True
           }))
           PY
           python3 build/RealScale-Config-Exporter.pyz \
@@ -58,6 +59,7 @@ jobs:
           with zipfile.ZipFile('build/release-test/LabWorld.zip') as pack:
               assert json.loads(pack.read('pack.mcmeta'))['pack']['pack_format']==48
               assert any(s.startswith('data/realscale/worldgen/world_preset/lab_') for s in pack.namelist())
+              assert any(s.startswith('data/realscale/lithostitched/fast_noise_config/terrain_lab/lab_') for s in pack.namelist())
           PY
       - uses: actions/upload-artifact@v4
         if: always()

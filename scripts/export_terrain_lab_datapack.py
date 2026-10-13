@@ -67,6 +67,7 @@ def _draft_options(path: Path) -> dict:
         "latitudeMode": "off", "latitudeStrength": 70, "equatorZ": 0,
         "basinPercent": 0, "radialCenterX": 0, "coldLimitPercent": 60,
         "fantasyDimensions": False, "lithostitchedBlend": False,
+        "lithostitchedGeology": False,
     }
     for key, default in optional.items():
         val = draft.get(key, default)
@@ -87,6 +88,7 @@ def _draft_options(path: Path) -> dict:
         cold_limit=optional["coldLimitPercent"],
         fantasy_dimensions=optional["fantasyDimensions"],
         lithostitched_blend=optional["lithostitchedBlend"],
+        lithostitched_geology=optional["lithostitchedGeology"],
     )
 
 
@@ -111,7 +113,8 @@ def export(jar: Path, draft: Path, output: Path,
         name, saved_options, files = apply(root, **options)
         profile_id = "realscale:" + name
         generated = sorted((Path(item) for item in files
-                            if str(item).startswith("data/realscale/worldgen/")),
+                            if str(item).startswith("data/realscale/worldgen/")
+                            or str(item).startswith("data/realscale/lithostitched/fast_noise_config/")),
                            key=str)
         if not generated or not any(str(p).endswith("/world_preset/" + name + ".json")
                                      for p in generated):

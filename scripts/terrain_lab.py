@@ -79,7 +79,7 @@ def replace_refs(node, replacements):
         return {key:replace_refs(value,replacements) for key,value in node.items()}
     return node
 
-def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False):
+def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False):
     if preset not in PRESETS and preset not in FAMILIES:
         raise ValueError("Unknown terrain preset")
     if preset == "usgs_big_sur":
@@ -88,6 +88,10 @@ def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ri
         raise ValueError("Lithostitched adaptive blending must be a boolean")
     if lithostitched_blend and preset not in FAMILIES:
         raise ValueError("Lithostitched adaptive blending only supports the three merged Lab families")
+    if type(lithostitched_geology) is not bool:
+        raise ValueError("Lithostitched Deep Geology must be a boolean")
+    if lithostitched_geology and (preset not in FAMILIES or blend_percent == 0):
+        raise ValueError("Lithostitched Deep Geology requires a merged Lab family and nonzero blend")
     if preset in FAMILIES and (type(blend_percent) is not int or not 0 <= blend_percent <= 50):
         raise ValueError("Feature blend must be 0..50%")
     if preset not in FAMILIES and blend_percent != 25:
@@ -129,8 +133,8 @@ def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ri
     if river_grade not in (0,3,6,9):
         raise ValueError("River slope must be Off (0), Conservative (3), Standard (6) or Flexible (9)")
 
-def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False):
-    validate(preset,relief,elevation,caves,river_grade,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend)
+def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False):
+    validate(preset,relief,elevation,caves,river_grade,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology)
     if type(fantasy_dimensions) is not bool or (fantasy_dimensions and preset not in FAMILIES):
         raise ValueError("Fantasy dimensions require a merged Lab family and a boolean setting")
     source=FAMILIES[preset][0] if preset in FAMILIES else preset
@@ -144,6 +148,8 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         if lithostitched_blend and blend_percent:
             # New immutable profile ID: never replace the JSON of an old Lab world.
             options["blend_engine"]="lithostitched_adaptive_v1"
+        if lithostitched_geology:
+            options["lithostitched_geology"]="perlin_shift_strata_caves_v1"
         if fantasy_dimensions:
             options["fantasy_dimensions"]="v2"
         # Backward compatibility: an all-zero geology draft emits exactly the
@@ -187,9 +193,35 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     # Blend the underlying smooth/interpolated height signals BEFORE scaling;
     # this is a density-field merge, not a cosmetic preset rename.
     raw_height=ref_height
+    # Each deep-geology Lab profile owns a separate seeded Perlin noise
+    # registry entry, stored with that world's DATAPACK when exported.
+    perlin_id="realscale:terrain_lab/"+name
+    perlin={"type":"minecraft:cache_2d","argument":{
+        "type":"lithostitched:fast_noise",
+        "config":perlin_id,"xz_scale":1.0,"y_scale":0.0}} if lithostitched_geology else None
     if secondary and blend_percent:
         weight=round(blend_percent/100.0,4)
-        if lithostitched_blend:
+        if lithostitched_geology:
+            # Continuously blend smooth multi-scale topography. Only the
+            # secondary height is displaced (at most 8 blocks horizontally).
+            # No global biome/structure modifiers or DEM height edits.
+            secondary_height={"type":"lithostitched:shift",
+                "input":"realscale:"+secondary+"/height_signal",
+                "shift_x":{"type":"minecraft:mul","argument1":8.0,"argument2":perlin},
+                "shift_y":0.0,
+                "shift_z":{"type":"minecraft:mul","argument1":8.0,
+                    "argument2":{"type":"minecraft:clamp",
+                        "input":"realscale:"+secondary+"/erosion",
+                        "min":-1.0,"max":1.0}}}
+            spatial_weight={"type":"minecraft:clamp",
+                "input":{"type":"minecraft:add","argument1":weight,
+                    "argument2":{"type":"minecraft:mul",
+                        "argument1":0.04,"argument2":perlin}},
+                "min":0.0,"max":0.5}
+            raw_height={"type":"lithostitched:mix",
+                "input":spatial_weight,"argument1":ref_height,
+                "argument2":secondary_height}
+        elif lithostitched_blend:
             # Genuine Lithostitched 1.6.0 codec: low-frequency erosion drives
             # at most +/-5 percentage points of smooth regional blend variation.
             # Only a NEW hashed Lab world can contain this dependency.
@@ -226,9 +258,18 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                          "argument2":raw_height},
             "argument2":options["elevation"]/128.0}
     if strata:
+        strata_warp="realscale:"+secondary+"/erosion"
+        if lithostitched_geology:
+            # Subtle vertically wavy solids, not a rock-material swap.
+            sine={"type":"lithostitched:sin",
+                "argument":{"type":"minecraft:mul",
+                    "argument1":0.0490873852,
+                    "argument2":{"type":"lithostitched:axis","axis":"y"}}}
+            strata_warp={"type":"lithostitched:mix",
+                "input":0.2,"argument1":strata_warp,"argument2":sine}
         terrain={"type":"realscale:strata",
                  "base":terrain,
-                 "warp":"realscale:"+secondary+"/erosion",
+                 "warp":strata_warp,
                  "strength":round(strata*0.002,5),
                  "period":64}
     preliminary=replace_refs(jread(root,base/"preliminary_density.json"),repl)
@@ -236,6 +277,19 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     # Density >0 means solid. Negative cave bias opens slightly more voxels.
     bias=round((50-options["caves"])/250.0,5)
     new_caves={"type":"minecraft:add","argument1":caves_base,"argument2":bias}
+    if lithostitched_geology:
+        # Bounded 0..0.025 positive solidity bias varies regionally;
+        # surface shell/river water protections are never weakened.
+        cave_weight={"type":"minecraft:clamp",
+            "input":{"type":"minecraft:add","argument1":0.5,
+                "argument2":{"type":"minecraft:mul",
+                    "argument1":0.35,"argument2":perlin}},
+            "min":0.0,"max":1.0}
+        new_caves={"type":"lithostitched:mix",
+            "input":cave_weight,
+            "argument1":new_caves,
+            "argument2":{"type":"minecraft:add",
+                "argument1":new_caves,"argument2":0.025}}
     original_settings=jread(root,GEO_ROOT/"noise_settings"/(source+".json"))
     if original_settings["sea_level"]!=63:raise ValueError("Refuse to modify a non-Y63 preset")
     noise=replace_refs(original_settings,repl)
@@ -358,6 +412,10 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         GEO_ROOT/"noise_settings"/(name+".json"):noise,
         GEO_ROOT/"world_preset"/(name+".json"):world_preset,
     }
+    if lithostitched_geology:
+        output[Path("data/realscale/lithostitched/fast_noise_config/terrain_lab")
+            /(name+".json")]={"type":"lithostitched:perlin",
+                               "frequency":0.0015,"salt":731947}
     if climate or valley or basin or (latitude != "off" and latitude_strength):
         # Preserve the exact prior cooling-only object when all new options are off.
         temp_value=temperature_before
@@ -430,8 +488,8 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         output[GEO_ROOT/"density_function"/density_folder/"biome_temperature.json"]=temp_value
     return name,options,output
 
-def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False):
-    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend)
+def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False):
+    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology)
     paths={path:serialized(obj) for path,obj in output.items()}
     preset_id="realscale:"+name
     for tag in ("normal","extended"):
@@ -465,6 +523,8 @@ def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_
                 label+= " | Fantasy Nether + End expansion (EXPERIMENTAL)"
             if lithostitched_blend and blend_percent:
                 label+= " | Lithostitched adaptive mix"
+            if lithostitched_geology:
+                label+= " | Lithostitched Deep Geology"
         labels["generator.realscale."+name]=label
         paths[path]=serialized(labels)
     # Never silently modify a previously generated worldgen codec: if a
@@ -515,6 +575,7 @@ def gui(root, launch):
     inland=tk.BooleanVar(value=True)
     fantasy=tk.BooleanVar(value=False)
     lithomix=tk.BooleanVar(value=False)
+    lithogeology=tk.BooleanVar(value=False)
     def chooser(label,variable,values):
         ttk.Label(main,text=label).pack(anchor="w",pady=(9,0))
         box=ttk.Combobox(main,textvariable=variable,values=values,state="readonly")
@@ -531,6 +592,7 @@ def gui(root, launch):
     slider("Terrain relief multiplier",relief,0.8,1.25,.01)
     slider("Secondary landform feature mix (%)",blend,0,50,1)
     ttk.Checkbutton(main,text="Lithostitched adaptive blend (new world)",variable=lithomix).pack(anchor="w",pady=(7,0))
+    ttk.Checkbutton(main,text="Lithostitched Deep Geology (new world)",variable=lithogeology).pack(anchor="w",pady=(7,0))
     slider("Coherent ridge shaping (0..40)",ridge,0,40,1)
     slider("Noise-driven incisional erosion (0..30)",erosion,0,30,1)
     slider("Warped vertical strata solidity (0..20)",strata,0,20,1)
@@ -559,7 +621,7 @@ def gui(root, launch):
         try:
             name,_,_=apply(root,preset.get(),round(relief.get(),2),elevation.get(),caves.get(),grade.get(),inland.get(),blend_percent=blend.get(),ridge=ridge.get(),erosion=erosion.get(),strata=strata.get(),climate=climate.get(),valley=valley.get(),latitude=latitude.get(),
                     latitude_strength=latitude_strength.get(),equator_z=equator_z.get(),basin=basin.get(),
-                    center_x=center_x.get(),cold_limit=cold_limit.get(),fantasy_dimensions=fantasy.get(),lithostitched_blend=lithomix.get())
+                    center_x=center_x.get(),cold_limit=cold_limit.get(),fantasy_dimensions=fantasy.get(),lithostitched_blend=lithomix.get(),lithostitched_geology=lithogeology.get())
         except Exception as ex:
             messagebox.showerror("Terrain Lab",str(ex))
             return
@@ -607,6 +669,7 @@ def main(argv=None):
     parser.add_argument("--coastal-spawn",action="store_true",help="Do not prefer inland world spawn")
     parser.add_argument("--fantasy-dimensions",action="store_true",help="Experimental 256-block Nether and multi-tier End (new Lab worlds only)")
     parser.add_argument("--lithostitched-blend",action="store_true",help="Opt-in Lithostitched:mix spatial blending in NEW merged Lab worlds")
+    parser.add_argument("--lithostitched-geology",action="store_true",help="Opt-in seeded Perlin, shifted terrain, layered geology and regional cave blending")
     parser.add_argument("--dry-run",action="store_true")
     parser.add_argument("--launch",action="store_true",help="Launch runClient after generating a preset")
     parser.add_argument("--root",type=Path,default=None,help=argparse.SUPPRESS)
@@ -619,6 +682,7 @@ def main(argv=None):
         print("Adjustable: mix 0..50%, ridge 0..40, erosion 0..30, strata 0..20, biome cooling 0..100, valley warming 0..100, latitude mode off/earth/preview/radial_earth/radial_preview/radial_balanced, latitude strength 0..100, equator-z, basin warming 0..100, relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
         print("USGS Big Sur is a read-only measured DEM.")
         print("Optional Lithostitched terrain blending: --lithostitched-blend (merged families).")
+        print("Deep geology suite: --lithostitched-geology (nonzero merged blend required).")
         return 0
     root=args.root or resource_root()
     if args.from_yacl is not None:
@@ -641,7 +705,8 @@ def main(argv=None):
             raw.get("climatePercent",0),raw.get("valleyPercent",0),
             raw.get("latitudeMode","off"),raw.get("latitudeStrength",70),raw.get("equatorZ",0),
             raw.get("basinPercent",0),raw.get("radialCenterX",0),raw.get("coldLimitPercent",60),
-            raw.get("fantasyDimensions",False),raw.get("lithostitchedBlend",False))
+            raw.get("fantasyDimensions",False),raw.get("lithostitchedBlend",False),
+            raw.get("lithostitchedGeology",False))
         print("YACL draft compiled to new world preset: realscale:"+name)
         print("Worldgen resource files:",len(files))
         return 0
@@ -656,7 +721,7 @@ def main(argv=None):
         name,opts,files=apply(root,args.preset,relief,elevation,caves,grade,
                               not args.coastal_spawn,args.dry_run,args.blend,args.ridge,args.erosion,args.strata,args.biome_cooling,args.valley_warming,
                               args.latitude_mode,args.latitude_strength,args.equator_z,args.basin_warming,
-                              args.radial_center_x,args.cold_limit,args.fantasy_dimensions,args.lithostitched_blend)
+                              args.radial_center_x,args.cold_limit,args.fantasy_dimensions,args.lithostitched_blend,args.lithostitched_geology)
         print("Prepared world type: realscale:"+name)
         print("Settings:",json.dumps(opts,sort_keys=True))
         print("World preset files:",len(files))

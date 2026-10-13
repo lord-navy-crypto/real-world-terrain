@@ -99,3 +99,17 @@ landform blend smoothly with local erosion noise. The default is OFF to keep
 previous Lab profile IDs intact. New opt-in worlds receive a new registry ID.
 The original fixed presets and saved worlds are unchanged. Lithostitched
 1.6.0 remains required on client and server.
+
+## Lithostitched Deep Geology (Experimental)
+
+The three new-world Terrain Lab families now have a deeper optional
+Lithostitched integration. Enable **Lithostitched Deep Geology** in the YACL
+screen (with Secondary Landform Mix > 0), or run Terrain Lab with
+`--lithostitched-geology`. The generated world uses Lithostitched's
+seeded Perlin fast noise, 8-block-bounded lateral coordinate shifting,
+smooth terrain and cave density mixing, and gently curved rock strata.
+The matching standalone Config Exporter includes its private fast-noise
+registry configuration in the new-world datapack. This is not a global
+biome/structure injector; the fixed presets and existing saves are untouched.
+Requires Lithostitched 1.6.0 on client and server. See
+[Terrain Lab documentation](docs/TERRAIN_LAB.md#lithostitched-deep-geology-opt-in-seeded-terrain-strata-and-cave-integration).

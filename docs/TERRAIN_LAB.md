@@ -622,3 +622,49 @@ The nine fixed worldgen types (including both measured Big Sur DEM pilots)
 remain untouched. Lithostitched 1.6.0 stays a required mod on both
 client and dedicated server. The dedicated Terrain Lab CI now generates
 and boots a real world with lithostitched:mix enabled and scans saved blocks.
+
+## Lithostitched Deep Geology: opt-in seeded terrain, strata, and cave integration
+
+This is a **NEW Terrain Lab profile** only; it is not a global biome or
+structure modifier and does not touch the nine fixed RealScale presets,
+measured USGS DEM, existing Lab profile hashes, or existing saves.
+
+**Switch:** YACL -> Terrain Shape & Height ->
+**Lithostitched Deep Geology (Experimental)** (default OFF).
+CLI: `--lithostitched-geology`.
+Requires one of Landscape / Alpine / Canyon and Secondary Landform Mix > 0.
+
+The opt-in worldgen pipeline now uses multiple *actual* Lithostitched
+1.6.0 / Minecraft 1.21.1 codecs in three separate systems:
+
+1. **Regional terrain geometry**: a profile-specific, seeded
+   `lithostitched:perlin` fast-noise configuration in Lithostitched's
+   dynamic `fast_noise_config` registry drives
+   `lithostitched:fast_noise`. The noise smoothly changes the terrain
+   `lithostitched:mix` between the two existing family heights by
+   +/-4 percentage points. `lithostitched:shift` bends ONLY the secondary
+   height signal, with x/z offsets clamped to +/-8 blocks. Primary terrain
+   and the fixed sea level are not globally displaced.
+2. **Solid-rock layer shaping**: when Strata > 0, a weak
+   `lithostitched:sin` of the `lithostitched:axis` Y coordinate is
+   blended with the existing erosion warp (20% contribution) inside
+   RealScale's existing density-based strata codec. This changes *solidity*
+   slightly; it does not replace Minecraft's geological block materials.
+3. **Caves**: `lithostitched:mix` gradually varies the cave density
+   across Perlin regions. The additional solid-density bias is **only**
+   0..+0.025. It cannot weaken RealScale's existing outer rock envelope,
+   but passages can differ. It is **not** a watershed solver and does not
+   guarantee every cave entrance is accessible.
+
+Each deep profile gets a unique content-hashed `lab_*` ID, and the
+standalone `RealScale-Config-Exporter.pyz` includes the custom Lithostitched
+fast-noise registry JSON in its new-world datapack. It still requires a
+matching RealScale mod JAR **and** Lithostitched on both client and server.
+A profile with the Deep Geology switch OFF retains its previous noise
+trees/hashes (including prior Adaptive Blend v1 profiles).
+
+These are deliberate, bounded experimental effects, NOT claims of measured
+geology or physical erosion. The real-world CI creates a deep Landscape
+world and inspects saved blocks; offline tests cover all three Lab families
+and exporter pack contents. Be mindful of slower world generation due to
+additional per-voxel density evaluation.

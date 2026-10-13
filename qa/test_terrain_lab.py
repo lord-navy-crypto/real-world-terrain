@@ -325,6 +325,75 @@ class TerrainLabTests(unittest.TestCase):
                 self.assertEqual(legacy["argument1"]["argument2"]["type"],
                                  "minecraft:add")
 
+    def test_lithostitched_deep_geology_subsystems_and_world_id(self):
+        for family, (primary, secondary) in lab.FAMILIES.items():
+            with self.subTest(family=family):
+                old, _, _ = lab.apply(self.root, family, 1.0, 0, 50, 6,
+                                       blend_percent=30, strata=8,
+                                       lithostitched_blend=True)
+                name, options, files = lab.apply(self.root, family, 1.0, 0, 50, 6,
+                                                 blend_percent=30, strata=8,
+                                                 lithostitched_blend=True,
+                                                 lithostitched_geology=True)
+                self.assertNotEqual(name, old)
+                self.assertEqual(options["lithostitched_geology"],
+                                 "perlin_shift_strata_caves_v1")
+                base=lab.GEO_ROOT/"density_function/terrain_lab"/name
+                height=lab.jread(self.root,base/"height_signal.json")
+                mix=height["argument1"]["argument2"]
+                self.assertEqual(mix["type"], "lithostitched:mix")
+                shifted=mix["argument2"]
+                self.assertEqual(shifted["type"],"lithostitched:shift")
+                self.assertEqual(shifted["input"],f"realscale:{secondary}/height_signal")
+                self.assertEqual(shifted["shift_y"],0.0)
+                self.assertEqual(shifted["shift_x"]["argument1"],8.0)
+                noise=shifted["shift_x"]["argument2"]
+                self.assertEqual(noise["type"],"minecraft:cache_2d")
+                self.assertEqual(noise["argument"]["type"],"lithostitched:fast_noise")
+                self.assertEqual(noise["argument"]["y_scale"],0.0)
+                self.assertEqual(noise["argument"]["config"],
+                                 "realscale:terrain_lab/"+name)
+                terrain=lab.jread(self.root,base/"terrain_density.json")
+                self.assertEqual(terrain["type"],"realscale:strata")
+                stratum=terrain["warp"]
+                self.assertEqual(stratum["type"],"lithostitched:mix")
+                sine=stratum["argument2"]
+                self.assertEqual(sine["type"],"lithostitched:sin")
+                self.assertEqual(sine["argument"]["argument2"],
+                                 {"type":"lithostitched:axis","axis":"y"})
+                cave=lab.jread(self.root,base/"cave_density.json")
+                self.assertEqual(cave["type"],"lithostitched:mix")
+                self.assertEqual(cave["argument2"]["argument2"],0.025)
+                config=(Path("data/realscale/lithostitched/fast_noise_config/"
+                             "terrain_lab")/(name+".json"))
+                self.assertIn(config,files)
+                self.assertEqual(lab.jread(self.root,config),
+                                 {"type":"lithostitched:perlin",
+                                  "frequency":0.0015,"salt":731947})
+
+    def test_deep_geology_rejects_invalid_and_fixed_presets(self):
+        for family, percent, enabled, diagnostic in (
+            ("landscape",25,"yes","must be a boolean"),
+            ("realism_max",25,True,"requires a merged"),
+            ("landscape",0,True,"requires a merged")
+        ):
+            with self.subTest(family=family,percent=percent):
+                with self.assertRaisesRegex(ValueError,diagnostic):
+                    lab.apply(self.root,family,1.,0,50,6,
+                              blend_percent=percent,lithostitched_geology=enabled)
+
+    def test_deep_geology_keeps_existing_profiles_byte_identical(self):
+        legacy,_,_=lab.apply(self.root,"landscape",1.,0,50,6,blend_percent=25)
+        f=self.root/lab.GEO_ROOT/"density_function/terrain_lab"/legacy/"height_signal.json"
+        before=f.read_bytes()
+        updated,_,_=lab.apply(self.root,"landscape",1.,0,50,6,
+                              blend_percent=25,lithostitched_geology=True)
+        self.assertNotEqual(legacy,updated)
+        self.assertEqual(f.read_bytes(),before)
+        self.assertEqual(lab.apply(self.root,"landscape",1.,0,50,6,blend_percent=25)[0],legacy)
+        for file,digest in self.originals.items():
+            self.assertEqual(hashlib.sha256((self.root/file).read_bytes()).hexdigest(),digest)
+
     def test_lithostitched_opt_in_rejects_legacy_worlds_or_invalid_flag(self):
         with self.assertRaisesRegex(ValueError, "only supports"):
             lab.apply(self.root, "realism_max", 1., 0, 50, 6,
@@ -355,6 +424,8 @@ class TerrainLabTests(unittest.TestCase):
                   "RealScaleTerrainLabClient.java").read_text()
         self.assertIn("Lithostitched Adaptive Blend (Opt-in)", screen)
         self.assertIn("lithostitchedBlend = false", screen)
+        self.assertIn("lithostitchedGeology = false", screen)
+        self.assertIn("Lithostitched Deep Geology (Experimental)", screen)
         self.assertIn("Climate & Latitude", screen)
         self.assertIn("RealScale-Config-Exporter.pyz", screen)
         self.assertNotIn("Restart/Build Required", screen)

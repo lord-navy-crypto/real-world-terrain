@@ -44,6 +44,7 @@ public final class RealScaleTerrainLabClient {
         String preset = "landscape";
         int blendPercent = 25;
         boolean lithostitchedBlend = false;
+        boolean lithostitchedGeology = false;
         int ridgePercent = 0;
         int erosionPercent = 0;
         int strataPercent = 0;
@@ -93,6 +94,7 @@ public final class RealScaleTerrainLabClient {
             return switch (d.preset) {
                 case "landscape", "alpine", "canyon" ->
                         d.blendPercent >= 0 && d.blendPercent <= 50
+                        && (!d.lithostitchedGeology || d.blendPercent > 0)
                         && d.ridgePercent >= 0 && d.ridgePercent <= 40
                         && d.erosionPercent >= 0 && d.erosionPercent <= 30
                         && d.strataPercent >= 0 && d.strataPercent <= 20
@@ -165,6 +167,12 @@ public final class RealScaleTerrainLabClient {
                     .name(Component.literal("Lithostitched Adaptive Blend (Opt-in)"))
                     .description(description("NEW Lab worlds ONLY: use Lithostitched's mix density codec for softly varying terrain blend across regions (+/-5 percentage points). OFF keeps older world profile IDs unchanged. Save a draft; export a new world datapack after leaving Minecraft."))
                     .binding(false, () -> d.lithostitchedBlend, v -> d.lithostitchedBlend = v)
+                    .controller(BooleanControllerBuilder::create)
+                    .build())
+                .option(Option.<Boolean>createBuilder()
+                    .name(Component.literal("Lithostitched Deep Geology (Experimental)"))
+                    .description(description("Requires Secondary Landform Mix > 0. NEW Lab world only: seeded Lithostitched Perlin noise, safe 8-block regional warp of secondary terrain, spatial mixing, gently curved strata when enabled, and bounded underground cave variation. Default OFF. May generate more slowly; no change to existing saves or fixed USGS DEM. Save draft, then export a new-world datapack."))
+                    .binding(false, () -> d.lithostitchedGeology, v -> d.lithostitchedGeology = v)
                     .controller(BooleanControllerBuilder::create)
                     .build())
                 .option(Option.<Integer>createBuilder()
