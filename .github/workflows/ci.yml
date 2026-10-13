@@ -23,6 +23,14 @@ jobs:
         run: python3 qa/verify_repository.py
       - name: Validate custom biome registry resources (static)
         run: python3 scripts/check_custom_biomes.py
+      - name: Compile and execute ecotone and cave classifier smoke tests
+        run: |
+          mkdir -p build/habitat-smoke
+          javac -d build/habitat-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/EcotoneMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/CaveHabitatMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/HabitatMathSmoke.java
+          java -cp build/habitat-smoke org.realscale.neoforge.HabitatMathSmoke
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
