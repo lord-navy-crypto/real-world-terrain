@@ -30,9 +30,10 @@ class SerialUsgsTests(unittest.TestCase):
     def test_rcon_must_not_accept_empty_success(self):
         rcon=FakeRcon([""])
         with patch.object(worldgen.time,"sleep",return_value=None),patch.object(
-                worldgen.time,"monotonic",side_effect=[0,2]):
+                worldgen.time,"monotonic",side_effect=[0,0,2]):
             with self.assertRaisesRegex(TimeoutError,"not fully loaded"):
                 worldgen.await_full_chunk(rcon,240,0,timeout_seconds=1)
+        self.assertEqual(len(rcon.commands),1,"An empty RCON response must actually be probed")
 
     def test_profile_forceloads_serially_with_flush_and_release(self):
         source=(Path(__file__).resolve().parent/"neoforge/rcon_worldgen_smoke.py").read_text()
@@ -43,6 +44,8 @@ class SerialUsgsTests(unittest.TestCase):
         self.assertIn("(8,-245),(8,-235)",usgs)
         self.assertIn("(8,233),(8,245)",usgs)
         self.assertIn("(-2352,8),(2352,8)",usgs)
+        self.assertIn("(8,-896),(8,896)",usgs)
+        self.assertIn("(8,-2352),(8,2352)",usgs)
         loop=source.split('if profile=="usgs":',2)[2].split('else:',1)[0]
         self.assertIn("await_full_chunk(rcon,x,z)",loop)
         self.assertIn('rcon.send("save-all flush")',loop)
