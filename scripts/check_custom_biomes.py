@@ -62,6 +62,8 @@ def test_ecotone_catalog():
     assert len(set(ids)) == 40
     priority = [entry for entry in entries if entry["phase"] == "priority-10"]
     assert len(priority) == 10
+    for entry in entries:
+        assert (BIOMES / (entry["id"] + ".json")).exists(), entry["id"]
     for entry in priority:
         assert (BIOMES / (entry["id"] + ".json")).exists(), entry["id"]
         assert 16 <= entry["target_width_blocks"] <= 64
