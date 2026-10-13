@@ -52,7 +52,11 @@ public final class GroundMicrostructureFeature extends Feature<NoneFeatureConfig
     }
 
     private static boolean emptyDrySpace(WorldGenLevel level, BlockPos pos) {
-        return level.getBlockState(pos).isAir() && level.getFluidState(pos).isEmpty()
+        BlockState state = level.getBlockState(pos);
+        // Replace only air or common undergrowth. Never overwrite flowers, roots,
+        // water, leaf canopy, logs, structures, or block entities.
+        boolean free = state.isAir() || state.is(Blocks.SHORT_GRASS) || state.is(Blocks.FERN);
+        return free && level.getFluidState(pos).isEmpty()
                 && level.getBlockState(pos.above()).isAir();
     }
 
