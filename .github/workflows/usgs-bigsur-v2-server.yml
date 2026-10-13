@@ -2,9 +2,9 @@ name: USGS Big Sur legacy versus v2 multi-seed and four-edge Anvil QA
 on:
   push:
     branches: [main]
-    paths: ['neoforge/**', 'qa/neoforge/**', '.github/workflows/usgs-bigsur-v2-server.yml']
+    paths: ['neoforge/**', 'qa/neoforge/**', 'qa/test_usgs*.py', '.github/workflows/usgs-bigsur-v2-server.yml']
   pull_request:
-    paths: ['neoforge/**', 'qa/neoforge/**', '.github/workflows/usgs-bigsur-v2-server.yml']
+    paths: ['neoforge/**', 'qa/neoforge/**', 'qa/test_usgs*.py', '.github/workflows/usgs-bigsur-v2-server.yml']
   workflow_dispatch:
 permissions:
   contents: read
