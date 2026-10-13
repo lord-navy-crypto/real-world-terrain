@@ -31,6 +31,13 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/CaveHabitatMath.java \
             neoforge/src/test/java/org/realscale/neoforge/HabitatMathSmoke.java
           java -cp build/habitat-smoke org.realscale.neoforge.HabitatMathSmoke
+      - name: Measure DEM grid continuity and tile boundary blend
+        run: |
+          mkdir -p build/terrain-continuity
+          javac -d build/terrain-continuity \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
+            neoforge/src/test/java/org/realscale/neoforge/TerrainContinuitySmoke.java
+          java -cp build/terrain-continuity:neoforge/src/main/resources org.realscale.neoforge.TerrainContinuitySmoke
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
