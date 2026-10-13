@@ -340,12 +340,13 @@ class TerrainLabTests(unittest.TestCase):
             "caves": 50, "riverGrade": 6, "inland": True,
             "blendPercent": 25, "lithostitchedBlend": True
         }))
+        folder = self.root/lab.GEO_ROOT/"noise_settings"
+        before = set(folder.glob("lab_landscape_*.json"))
         self.assertEqual(lab.main(["--root", str(self.root),
                                    "--from-yacl", str(draft)]), 0)
-        files = list((self.root/lab.GEO_ROOT/"noise_settings").glob(
-            "lab_landscape_*.json"))
-        self.assertEqual(len(files), 1)
-        name = files[0].stem
+        created = set(folder.glob("lab_landscape_*.json")) - before
+        self.assertEqual(len(created), 1)
+        name = created.pop().stem
         node = lab.jread(self.root, lab.GEO_ROOT/"density_function/terrain_lab"/
                          name/"height_signal.json")
         self.assertEqual(node["argument1"]["argument2"]["type"],
