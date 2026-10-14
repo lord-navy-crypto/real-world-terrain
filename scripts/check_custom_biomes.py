@@ -52,7 +52,7 @@ def test_natural_ecotone_preset():
     assert generator["biome_source"]["type"] == "realscale:natural_ecotones"
     assert generator["biome_source"]["source"] == baseline["biome_source"]
     assert load(PRESETS / "realism_max.json") == original
-    tag = load(ROOT.parents[2] / "minecraft/tags/worldgen/world_preset/normal.json")
+    tag = load(ROOT.parent / "minecraft/tags/worldgen/world_preset/normal.json")
     assert "realscale:realism_max_ecotones" in tag["values"]
 
 def test_biome_lab():
