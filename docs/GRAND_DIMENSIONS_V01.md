@@ -37,3 +37,14 @@ New `grand-dimensions.yml` runs a dedicated NeoForge 1.21.1 server, starts the e
 4. End: verify dragon arena at X0/Z0 appears as vanilla, dragon battle and portal/gateways work, then fly into outer End beyond radius 1700 and look for elevated end-stone continent sheets at around Y150–430.
 5. Test End city/ship spawning and chunk boundaries on both positive and negative coordinates. Supply seed, F3 position, screenshot and `latest.log` with anomalies.
 6. Watch performance: 512-block secondary dimensions can cost substantially more CPU, disk, memory and chunk-generation time than vanilla 128-block noise.
+
+## Phase I-B — Continuous hollow mountains and connected chambers
+Grand Nether now wraps only `realscale:grand_nether` final density in `realscale:grand_nether_caverns`. It carves a continuous 3-D void field at elevations **Y144–440**, preserving vanilla Y0–143 (including lava ocean and historic fortress/bastion vertical zones) and the enlarged upper bedrock region above Y440.
+
+The tunnel/cavern network uses a deterministic **256×256-block cell** lattice, with **two enormous ellipsoidal halls per cell** near Y205 and Y348. Hall horizontal semiaxes are roughly 52–71 blocks, vertical semiaxes 31–40 blocks. All four neighboring halls on each level are joined by **22-block-wide natural tunnels**, and the low and high halls by **20-block-wide diagonal shafts**. The *entire solid density is modified to air* inside the hall and connector cores. Intersections are computed from absolute coordinates, so they remain continuous across chunk borders and are independent of generation order.
+
+The first prototype uses fixed coordinate-derived hall jitter, so the network geometry itself is not yet seeded, although the rock around it follows seeded Nether noise. Worker-local site caches and bounding-box rejection limit geometry recalculation. These upper caves do NOT yet directly connect to every original low-level cave, and Nether fortress/bastion generation at high elevation still needs playtesting.
+
+Server CI loads the first low hall (X126,Y190,Z114), the second high hall (X118,Y355,Z158), a neighboring hall (X360,Y190,Z125), a horizontal midpoint tunnel (X243,Y190,Z120), and the vertical link midpoint (X122,Y272,Z136). It verifies saved Anvil chunks have real air blocks at those exact coordinates, alongside existing lava and roof checks.
+
+**Performance caution:** evaluating a connected 3D cave-density network makes the 512-block Nether more computationally demanding; benchmark chunkgen time and memory before release.

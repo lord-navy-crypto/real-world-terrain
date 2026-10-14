@@ -67,6 +67,11 @@ jobs:
               if not ready.is_set():raise RuntimeError("Grand Dimensions world failed to boot")
               for query in (
                     "execute in minecraft:the_nether run forceload add 0 0",
+                    "execute in minecraft:the_nether run forceload add 126 114",
+                    "execute in minecraft:the_nether run forceload add 118 158",
+                    "execute in minecraft:the_nether run forceload add 243 120",
+                    "execute in minecraft:the_nether run forceload add 122 136",
+                    "execute in minecraft:the_nether run forceload add 360 125",
                     "execute in minecraft:the_end run forceload add 0 0",
                     "execute in minecraft:the_end run forceload add 2208 0",
                     "execute in minecraft:the_end run forceload add 2592 256",
@@ -74,7 +79,7 @@ jobs:
                   result=command(query)
                   if "Unknown" in result or "Incorrect" in result or "Failed" in result:
                       raise RuntimeError("Dimension load command failed: "+result)
-              time.sleep(65)
+              time.sleep(80)
               command("save-all flush")
               time.sleep(8)
               try:command("stop")
