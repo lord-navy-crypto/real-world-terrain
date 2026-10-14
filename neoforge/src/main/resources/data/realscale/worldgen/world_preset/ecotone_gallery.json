@@ -53,7 +53,19 @@
             "realscale:tropical_littoral_forest",
             "realscale:frost_riparian_banks",
             "realscale:montane_spruce_meadow",
-            "realscale:dry_grass_dunes"
+            "realscale:dry_grass_dunes",
+            "realscale:cherry_oak_woodland",
+            "realscale:cherry_meadow_fringe",
+            "realscale:birch_snowline_scrub",
+            "realscale:spruce_snowdrift_edge",
+            "realscale:mangrove_freshwater_margin",
+            "realscale:coastal_marsh_woodland",
+            "realscale:dune_pine_woodland",
+            "realscale:montane_oak_foothills",
+            "realscale:rocky_savanna_foothills",
+            "realscale:badlands_peak_scree",
+            "realscale:bamboo_meadow_fringe",
+            "realscale:snowy_spruce_riverbank"
           ]
         },
         "settings": "realscale:realism_max",

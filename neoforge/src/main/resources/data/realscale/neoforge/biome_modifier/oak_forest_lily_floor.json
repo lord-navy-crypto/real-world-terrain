@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:forest",
+    "minecraft:birch_forest",
+    "minecraft:dark_forest",
+    "minecraft:old_growth_birch_forest"
+  ],
+  "features": "realscale:oak_forest_lily_floor",
+  "step": "vegetal_decoration"
+}

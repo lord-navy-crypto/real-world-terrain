@@ -102,7 +102,7 @@ def test_supported_microstructures():
 def test_all_custom_biome_carvers():
     # Minecraft 1.21.1 expects a carving-stage map, not the later-version list.
     all_biomes = list(BIOMES.glob("*.json"))
-    assert len(all_biomes) == 54, len(all_biomes)
+    assert len(all_biomes) == 66, len(all_biomes)
     for path in all_biomes:
         biome = load(path)
         assert isinstance(biome.get("carvers"), dict), path
@@ -110,8 +110,9 @@ def test_all_custom_biome_carvers():
 
 def test_vanilla_habitat_microfeatures():
     """Protect original water columns while enriching dry vanilla surfaces."""
-    ids = ["forest_wildflower_glades","spruce_berry_understory","mixed_forest_fern_mosaic","savanna_seasonal_grasses","meadow_oxeye_pockets","wetland_fern_islands","highland_grassy_terraces","arid_scrub_mosaics","old_growth_moss_floors","jungle_understory_ferns"]
-    assert len(set(ids)) == 10
+    manifest = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/vanilla_microhabitats.json")
+    ids = manifest["features"]
+    assert len(ids) == 18 and len(set(ids)) == 18
     for stem in ids:
         configured = load(FEATURES / (stem + ".json"))
         placed = load(PLACED / (stem + ".json"))
@@ -145,7 +146,7 @@ def test_surface_ecotone_habitats():
     """Active surface ecotones must retain vanilla ores, life and decoration."""
     mapping = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/habitat_donors.json")["donor_by_ecotone"]
     catalog = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/catalog.json")
-    assert len(mapping) == 48
+    assert len(mapping) == 60
     assert set(mapping) == {entry["id"] for entry in catalog["entries"]}
     import re
     source = (Path(__file__).resolve().parents[1] / "neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java").read_text()
@@ -169,8 +170,8 @@ def test_ecotone_gallery():
     gallery = load(PRESETS / "ecotone_gallery.json")
     source = gallery["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
     assert source["type"] == "minecraft:checkerboard"
-    assert len(source["biomes"]) == 48
-    assert len(set(source["biomes"])) == 48
+    assert len(source["biomes"]) == 60
+    assert len(set(source["biomes"])) == 60
     for name in source["biomes"]:
         assert name.startswith("realscale:")
         assert (BIOMES / (name.split(":", 1)[1] + ".json")).exists()
@@ -178,9 +179,9 @@ def test_ecotone_gallery():
 def test_ecotone_catalog():
     catalog = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/catalog.json")
     entries = catalog["entries"]
-    assert len(entries) == 48
+    assert len(entries) == 60
     ids = [entry["id"] for entry in entries]
-    assert len(set(ids)) == 48
+    assert len(set(ids)) == 60
     priority = [entry for entry in entries if entry["phase"] == "priority-10"]
     assert len(priority) == 10
     for entry in entries:
@@ -204,5 +205,5 @@ if __name__ == "__main__":
     test_ecotone_gallery()
     test_all_custom_biome_carvers()
     test_supported_microstructures()
-    print("STATIC PASS: 48 ecotone specifications, 10 priority biomes, referenced features and opt-in biome lab.")
+    print("STATIC PASS: 60 surface ecotones, 18 vanilla microhabitats, 10 priority biomes, referenced features and opt-in biome lab.")
     print("RUNTIME NOT TESTED: Minecraft biome codec, server loading, cave/river geometry.")
