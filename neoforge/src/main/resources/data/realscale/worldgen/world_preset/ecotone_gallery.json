@@ -45,7 +45,15 @@
             "realscale:seasonal_floodforest",
             "realscale:meadow_bog_margin",
             "realscale:coastal_dune_meadow",
-            "realscale:terracotta_scrub"
+            "realscale:terracotta_scrub",
+            "realscale:birch_parkland",
+            "realscale:boreal_parkland",
+            "realscale:peat_bog_taiga",
+            "realscale:seasonal_savanna_wetland",
+            "realscale:tropical_littoral_forest",
+            "realscale:frost_riparian_banks",
+            "realscale:montane_spruce_meadow",
+            "realscale:dry_grass_dunes"
           ]
         },
         "settings": "realscale:realism_max",

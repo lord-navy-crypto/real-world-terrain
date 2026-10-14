@@ -62,6 +62,16 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     /** Declared in priority order for three-way border corners. */
     private static final List<Rule> RULES = List.of(
+            // Real geographic micro-habitats are matched before broad forest/plains
+            // ecotones so narrow birch glades are not painted as generic woodland.
+            rule("birch_parkland",24,"birch_forest,old_growth_birch_forest",PLAINS),
+            rule("boreal_parkland",32,"taiga,old_growth_pine_taiga,old_growth_spruce_taiga",PLAINS),
+            rule("peat_bog_taiga",24,TAIGA,"swamp"),
+            rule("seasonal_savanna_wetland",24,SAVANNA,"swamp"),
+            rule("tropical_littoral_forest",24,"jungle,sparse_jungle","beach"),
+            rule("frost_riparian_banks",16,"snowy_plains","frozen_river"),
+            rule("montane_spruce_meadow",24,TAIGA,"meadow"),
+            rule("dry_grass_dunes",32,"desert",PLAINS),
             rule("woodland_meadow",32,FOREST,"meadow,"+PLAINS),
             rule("forest_steppe",40,FOREST,SAVANNA),
             rule("marshy_woodland",24,"forest,birch_forest,old_growth_birch_forest","swamp,mangrove_swamp"),

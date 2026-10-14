@@ -108,6 +108,39 @@ def test_all_custom_biome_carvers():
         assert isinstance(biome.get("carvers"), dict), path
         assert isinstance(biome["carvers"].get("air"), list), path
 
+def test_vanilla_habitat_microfeatures():
+    """Protect original water columns while enriching dry vanilla surfaces."""
+    ids = ["forest_wildflower_glades","spruce_berry_understory","mixed_forest_fern_mosaic","savanna_seasonal_grasses","meadow_oxeye_pockets","wetland_fern_islands","highland_grassy_terraces","arid_scrub_mosaics","old_growth_moss_floors","jungle_understory_ferns"]
+    assert len(set(ids)) == 10
+    for stem in ids:
+        configured = load(FEATURES / (stem + ".json"))
+        placed = load(PLACED / (stem + ".json"))
+        modifier = load(MODIFIERS / (stem + ".json"))
+        assert configured["type"] == "minecraft:random_patch", stem
+        config = configured["config"]
+        assert 8 <= config["tries"] <= 32, stem
+        feature = config["feature"]
+        assert feature["feature"]["type"] == "minecraft:simple_block", stem
+        pred = feature["placement"][0]["predicate"]
+        assert pred["type"] == "minecraft:all_of", stem
+        air, support = pred["predicates"]
+        assert air["type"] == "minecraft:matching_blocks", stem
+        assert air["blocks"] == ["minecraft:air"], stem
+        assert support["type"] == "minecraft:matching_blocks", stem
+        assert support["offset"] == [0, -1, 0], stem
+        assert all(name.startswith("minecraft:") for name in support["blocks"]), stem
+        assert placed["feature"] == "realscale:" + stem, stem
+        assert 6 <= placed["placement"][0]["chance"] <= 20, stem
+        assert placed["placement"][2] == {"type": "minecraft:heightmap", "heightmap": "MOTION_BLOCKING_NO_LEAVES"}, stem
+        assert placed["placement"][-1]["type"] == "minecraft:biome", stem
+        assert modifier["type"] == "neoforge:add_features", stem
+        assert modifier["features"] == "realscale:" + stem, stem
+        assert modifier["step"] == "vegetal_decoration", stem
+        assert len(modifier["biomes"]) >= 2, stem
+        assert all(x.startswith("minecraft:") and "ocean" not in x and "river" not in x
+                   for x in modifier["biomes"]), stem
+
+
 def test_surface_ecotone_habitats():
     """Active surface ecotones must retain vanilla ores, life and decoration."""
     mapping = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/habitat_donors.json")["donor_by_ecotone"]
@@ -160,6 +193,7 @@ if __name__ == "__main__":
     test_natural_ecotone_preset()
     test_natural_ecotone_undergrowth()
     test_surface_ecotone_habitats()
+    test_vanilla_habitat_microfeatures()
     test_ecotone_catalog()
     test_ecotone_gallery()
     test_all_custom_biome_carvers()

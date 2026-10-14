@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "reference": "misode/mcmeta tag 1.21.1-data, data/minecraft/worldgen/biome",
-  "scope": "40 opt-in surface ecotones only",
+  "scope": "48 opt-in surface ecotones (including eight v0.5 habitat variants)",
   "donor_by_ecotone": {
     "woodland_meadow": "plains",
     "forest_steppe": "savanna",
@@ -42,6 +42,14 @@
     "seasonal_floodforest": "swamp",
     "meadow_bog_margin": "swamp",
     "coastal_dune_meadow": "meadow",
-    "terracotta_scrub": "badlands"
+    "terracotta_scrub": "badlands",
+    "birch_parkland": "birch_forest",
+    "boreal_parkland": "taiga",
+    "peat_bog_taiga": "swamp",
+    "seasonal_savanna_wetland": "savanna",
+    "tropical_littoral_forest": "sparse_jungle",
+    "frost_riparian_banks": "snowy_plains",
+    "montane_spruce_meadow": "meadow",
+    "dry_grass_dunes": "desert"
   }
 }
