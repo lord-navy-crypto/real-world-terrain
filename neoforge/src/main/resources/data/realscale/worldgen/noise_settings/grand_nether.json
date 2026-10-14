@@ -73,6 +73,12 @@
             }
           }
         }
+      },
+      "warp": {
+        "type": "minecraft:noise",
+        "noise": "minecraft:continentalness",
+        "xz_scale": 0.018,
+        "y_scale": 0.014
       }
     },
     "fluid_level_floodedness": 0,
