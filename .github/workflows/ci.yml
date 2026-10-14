@@ -45,6 +45,13 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/GrandDimensionMath.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandDimensionMathSmoke.java
           java -cp build/grand-dimension-smoke org.realscale.neoforge.GrandDimensionMathSmoke
+      - name: Validate giant connected Grand Nether caverns and roof protection
+        run: |
+          mkdir -p build/grand-cave-smoke
+          javac -d build/grand-cave-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/GrandNetherCaveNetwork.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkSmoke.java
+          java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkSmoke
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
