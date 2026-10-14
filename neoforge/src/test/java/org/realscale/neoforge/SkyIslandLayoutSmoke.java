@@ -29,8 +29,13 @@ public final class SkyIslandLayoutSmoke {
         check(SkyIslandLayout.remoteDeepOcean(s, (x,z)->true, (x,z)->true),"open ocean qualifies");
         check(!SkyIslandLayout.remoteDeepOcean(s, (x,z)->false, (x,z)->true),
                 "shallow open ocean cannot qualify");
-        check(!SkyIslandLayout.remoteDeepOcean(s, (x,z)->true, (x,z)->x!=s.x()+224),
+        check(!SkyIslandLayout.remoteDeepOcean(s, (x,z)->true, (x,z)->x!=s.x()+384),
                 "sampled coastline blocks island");
+        int wedgeX = (int)Math.round(384 * Math.cos(Math.PI / 8));
+        int wedgeZ = (int)Math.round(384 * Math.sin(Math.PI / 8));
+        check(!SkyIslandLayout.remoteDeepOcean(s, (x,z)->true,
+                    (x,z)->x != s.x()+wedgeX || z != s.z()+wedgeZ),
+                "coastline between old compass rays must veto island");
         System.out.println("PASS: "+visited+" deterministic sky island layout samples, ocean Y64 protected");
     }
 }
