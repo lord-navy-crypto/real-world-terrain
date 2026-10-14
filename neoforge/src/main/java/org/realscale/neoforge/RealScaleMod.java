@@ -15,6 +15,10 @@ public final class RealScaleMod {
         event.register(Registries.DENSITY_FUNCTION_TYPE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_density"), RealDemDensity.MAP_CODEC)
         );
+        event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones"),
+                    NaturalEcotoneBiomeSource.CODEC)
+        );
         event.register(Registries.FEATURE, helper -> {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fallen_oak_log"),
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.OAK_LOG));
