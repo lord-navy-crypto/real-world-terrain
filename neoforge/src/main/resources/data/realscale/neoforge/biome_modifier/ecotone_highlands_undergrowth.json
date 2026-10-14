@@ -1,0 +1,18 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:subalpine_woodland",
+    "realscale:rocky_alpine_meadow",
+    "realscale:snowy_treeline",
+    "realscale:heathland",
+    "realscale:scree_transition",
+    "realscale:taiga_to_tundra",
+    "realscale:snowfield_margin",
+    "realscale:gravel_shore_fringe",
+    "realscale:rocky_plateau_grass",
+    "realscale:frost_shrub_tundra",
+    "realscale:lichen_rockland"
+  ],
+  "features": "realscale:stony_highland_sparse_grass",
+  "step": "vegetal_decoration"
+}

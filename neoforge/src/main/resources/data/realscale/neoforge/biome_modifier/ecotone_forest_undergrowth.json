@@ -1,0 +1,17 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:woodland_meadow",
+    "realscale:forest_steppe",
+    "realscale:birch_conifer_transition",
+    "realscale:riverine_woodland",
+    "realscale:lake_woodland_margin",
+    "realscale:temperate_to_birch",
+    "realscale:oak_to_dark_forest",
+    "realscale:pine_oak_mosaic",
+    "realscale:tropical_forest_edge",
+    "realscale:bamboo_jungle_edge"
+  ],
+  "features": "realscale:birch_understory_ferns",
+  "step": "vegetal_decoration"
+}

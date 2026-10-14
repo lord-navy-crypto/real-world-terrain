@@ -1,0 +1,95 @@
+name: Natural ecotone preset dedicated server boot
+on:
+  pull_request:
+    paths:
+      - 'neoforge/**'
+      - '.github/workflows/ecotone-world.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ecotone-preset-world:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Prepare an isolated ecotone world
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=ecotone-test
+          level-type=realscale:realism_max_ecotones
+          level-seed=785312
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          PROPERTIES
+          done
+      - name: Boot NeoForge and persist world generated with natural ecotone BiomeSource
+        working-directory: neoforge
+        run: |
+          python3 - <<'PY'
+          import subprocess,threading,time,os,signal,gzip,pathlib
+          logfile=pathlib.Path('build/ecotone-server.log')
+          logfile.parent.mkdir(exist_ok=True,parents=True)
+          p=subprocess.Popen(['gradle','--no-daemon','runServer','--stacktrace'],stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1,
+                             start_new_session=True)
+          lines=[];ready=threading.Event()
+          def read():
+            for line in p.stdout:
+              lines.append(line)
+              if 'Done (' in line and 'For help' in line:ready.set()
+          t=threading.Thread(target=read,daemon=True);t.start()
+          deadline=time.time()+420
+          while time.time()<deadline and p.poll() is None and not ready.is_set():time.sleep(1)
+          if ready.is_set():time.sleep(15)
+          try:
+            if p.poll() is None:
+              p.stdin.write('stop\n');p.stdin.flush();p.wait(timeout=50)
+          except Exception:
+            if p.poll() is None:
+              os.killpg(p.pid,signal.SIGINT)
+              try:p.wait(timeout=15)
+              except subprocess.TimeoutExpired:
+                os.killpg(p.pid,signal.SIGKILL);p.wait()
+          t.join(timeout=3)
+          logfile.write_text(''.join(lines))
+          print('server_boot_ready',ready.is_set(),'output_tail',logfile.read_text()[-9000:])
+          found=False
+          for path in pathlib.Path('run').glob('**/level.dat'):
+            data=gzip.decompress(path.read_bytes())
+            if b'realscale:natural_ecotones' in data and b'realscale:realism_max' in data:
+              print('CUSTOM_ECOTONE_PRESET_PERSISTED',path)
+              found=True
+          if not ready.is_set() or not found:
+            raise SystemExit('FAIL: ecotone preset did not boot into a persisted new world')
+          print('PASS: ecotone source registry decode and dedicated server world boot')
+          PY
+      - name: Check Anvil chunk palettes for actual climate-boundary ecotone selections
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/check_ecotone_biomes.py run/ecotone-test
+      - name: Upload ecotone test diagnostics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Natural-ecotone-server-log
+          path: |
+            neoforge/build/ecotone-server.log
+            neoforge/build/ecotone-anvil-qa.json
+            neoforge/run/**/ecotone-test/level.dat
+            neoforge/run/**/ecotone-test/region/*.mca
+          if-no-files-found: warn

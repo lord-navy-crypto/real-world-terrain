@@ -92,6 +92,26 @@ jobs:
             raise SystemExit('NeoForge new-world smoke NOT VERIFIED')
           print('GAME ENGINE WORLDGEN SMOKE: PASS')
           PY
+      - name: Wait for saved region chunks before USGS height verification
+        working-directory: neoforge
+        run: |
+          python3 - <<'PY'
+          import pathlib,time
+          deadline=time.monotonic()+90
+          seen=0
+          while True:
+            seen=0
+            for region in pathlib.Path('run').glob('**/region/*.mca'):
+              data=region.read_bytes()[:4096]
+              seen+=sum(int.from_bytes(data[i:i+3], 'big') > 0 for i in range(0, min(4096,len(data)), 4))
+            if seen>=300:
+              time.sleep(8)
+              break
+            if time.monotonic()>=deadline:
+              raise SystemExit('Insufficient persisted chunks for reliable DEM check: '+str(seen))
+            time.sleep(4)
+          print('REGION_FLUSH_READY:',seen,'stored chunks')
+          PY
       - name: Verify ACTUAL Anvil block heights match USGS sampled terrain
         working-directory: neoforge
         run: python3 ../qa/neoforge/check_actual_chunk_heights.py .
