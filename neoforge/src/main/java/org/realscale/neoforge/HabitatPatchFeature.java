@@ -45,15 +45,11 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
     private static BlockPos nearbyCaveFloor(WorldGenLevel w, BlockPos origin, boolean dripstone) {
         int min = Math.max(w.getMinBuildHeight() + 3, -58);
         int max = Math.min(45, w.getMaxBuildHeight() - 3);
-        for (int offset = 0; offset <= CAVE_SCAN_RADIUS_Y; offset++) {
-            for (int sign = 0; sign < (offset == 0 ? 1 : 2); sign++) {
-                int y = origin.getY() + (sign == 0 ? -offset : offset);
-                if (y < min || y > max) continue;
-                BlockPos pos = new BlockPos(origin.getX(), y, origin.getZ());
-                if (dryCaveFloor(w, pos, dripstone)) return pos;
-            }
-        }
-        return null;
+        int resultY = HabitatFloorSearch.nearest(origin.getY(), min, max,
+                CAVE_SCAN_RADIUS_Y, y -> dryCaveFloor(w,
+                    new BlockPos(origin.getX(), y, origin.getZ()), dripstone));
+        return resultY == HabitatFloorSearch.NOT_FOUND
+                ? null : new BlockPos(origin.getX(), resultY, origin.getZ());
     }
 
     @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
