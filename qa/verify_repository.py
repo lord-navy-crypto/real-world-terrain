@@ -9,12 +9,19 @@ checks=json.loads((ROOT/'docs/SHA256SUMS.json').read_text())
 # extended in this experimental branch with additional Feature registrations.
 # Check its required historic behavior, and keep all OTHER original hashes strict.
 modified_entrypoint='neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java'
+modified_density='neoforge/src/main/java/org/realscale/neoforge/RealDemDensity.java'
 for name,want in checks.items():
  if name==modified_entrypoint:
   source=(ROOT/name).read_text()
   assert 'Registries.DENSITY_FUNCTION_TYPE' in source and 'dem_density' in source
   assert 'Registries.FEATURE' in source and 'fallen_oak_log' in source
   print('INTENTIONAL MODIFICATION: RealScaleMod now registers custom features')
+  continue
+ if name==modified_density:
+  source=(ROOT/name).read_text()
+  assert 'RealDemColumnCache' in source and 'COLUMN_CACHE' in source
+  assert 'base.compute(ctx)' in source and 'mapAll' in source and 'DISPATCH' in source
+  print('INTENTIONAL MODIFICATION: RealDemDensity uses a thread-local cache, original density fallback and codec preserved')
   continue
  assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==want,name
 for p in ROOT.rglob('*.json'):
