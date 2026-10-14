@@ -135,8 +135,57 @@ def test_ecotone_catalog():
         assert entry["from"] != entry["to"]
         assert 8 <= entry["target_width_blocks"] <= 64
 
+def test_grand_dimensions():
+    """Dimensions use full-size noise, not only taller empty dimension types."""
+    preset = load(PRESETS / "realism_max_three_realms.json")
+    old = load(PRESETS / "realism_max.json")
+    assert preset["dimensions"]["minecraft:overworld"] == old["dimensions"]["minecraft:overworld"]
+    for dimension, type_id, settings, sea in (
+        ("minecraft:the_nether", "realscale:grand_nether","grand_nether",32),
+        ("minecraft:the_end", "realscale:grand_end","grand_end",0)):
+        d = preset["dimensions"][dimension]
+        prior = old["dimensions"][dimension]
+        assert d["type"] == type_id
+        assert d["generator"]["type"] == "minecraft:noise"
+        assert d["generator"]["settings"] == "realscale:"+settings
+        assert d["generator"]["biome_source"] == prior["generator"]["biome_source"]
+        dim_type = load(ROOT / "dimension_type" / (settings+".json"))
+        noise = load(ROOT / "worldgen/noise_settings" / (settings+".json"))
+        assert dim_type["min_y"] == noise["noise"]["min_y"] == 0
+        assert dim_type["height"] == dim_type["logical_height"] == noise["noise"]["height"] == 512
+        assert noise["sea_level"] == sea
+    nether = load(ROOT / "worldgen/noise_settings/grand_nether.json")
+    assert nether["default_fluid"]["Name"] == "minecraft:lava"
+    assert nether["default_block"]["Name"] == "minecraft:netherrack"
+    assert nether["surface_rule"]["sequence"][0]["if_true"]["random_name"] == "minecraft:bedrock_floor"
+    assert nether["surface_rule"]["sequence"][1]["if_true"]["invert"]["random_name"] == "minecraft:bedrock_roof"
+    def gradients(node):
+        if isinstance(node, dict):
+            if node.get("type") == "minecraft:y_clamped_gradient":
+                yield (node["from_y"], node["to_y"])
+            for value in node.values():
+                yield from gradients(value)
+        elif isinstance(node, list):
+            for value in node:
+                yield from gradients(value)
+    assert (448,496) in list(gradients(nether["noise_router"]["final_density"]))
+    assert load(ROOT/"dimension_type/grand_nether.json")["coordinate_scale"] == 8
+    end = load(ROOT/"worldgen/noise_settings/grand_end.json")
+    assert end["default_block"]["Name"] == "minecraft:end_stone"
+    assert end["noise_router"]["final_density"]["type"] == "realscale:grand_end_density"
+    assert end["noise_router"]["initial_density_without_jaggedness"]["type"] == "realscale:grand_end_density"
+    assert load(ROOT/"dimension_type/grand_end.json")["coordinate_scale"] == 1
+    mod_java = (ROOT.parents[4] / "java/org/realscale/neoforge/RealScaleMod.java").read_text()
+    assert '"grand_end_density"' in mod_java
+    tag = load(ROOT.parent/"minecraft/tags/worldgen/world_preset/normal.json")
+    assert "realscale:realism_max_three_realms" in tag["values"]
+    for file in ("realism_max.json","realism_max_ecotones.json"):
+        assert load(PRESETS/file)["dimensions"]["minecraft:the_nether"]["generator"]["settings"] == "minecraft:nether"
+        assert load(PRESETS/file)["dimensions"]["minecraft:the_end"]["generator"]["settings"] == "minecraft:end"
+
 if __name__ == "__main__":
     test_biomes()
+    test_grand_dimensions()
     test_modifier_references()
     test_biome_lab()
     test_natural_ecotone_preset()
