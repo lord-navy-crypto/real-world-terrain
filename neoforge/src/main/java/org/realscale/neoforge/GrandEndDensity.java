@@ -15,7 +15,10 @@ public record GrandEndDensity(DensityFunction base,DensityFunction islandNoise,
         ).apply(i,GrandEndDensity::new));
     private static final KeyDispatchDataCodec<GrandEndDensity> DISPATCH=KeyDispatchDataCodec.of(MAP_CODEC);
     @Override public double compute(DensityFunction.FunctionContext context){
-        double original=base.compute(context);
+        // Original End noise only generates blocks up to Y127. Preserve the
+        // dragon battle void above that cap exactly, even though we now
+        // allocate a 512-block-tall dimension.
+        double original=context.blockY()>=128 ? -1.0 : base.compute(context);
         double blend=GrandDimensionMath.outerEndBlend(context.blockX(),context.blockZ());
         if(blend==0.0||context.blockY()<128||context.blockY()>=GrandDimensionMath.HEIGHT)
             return original;
