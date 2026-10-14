@@ -35,6 +35,29 @@ public final class HabitatMathSmoke {
         check(!EcotoneMath.insideBand(0, 32, 55, false), "avoid cliff");
         check(!EcotoneMath.insideBand(0, 80, 15, false), "reject wide ecotone");
         check(!EcotoneMath.insideBand(Double.NaN, 32, 0, false), "reject NaN");
+        check(EcotoneMath.quartDistanceSquared(1, 0, 3) == 144,
+                "three cardinal quart steps = 12 block distance squared");
+        check(EcotoneMath.quartDistanceSquared(1, 1, 3) == 288,
+                "diagonals must use actual Euclidean distance");
+        check(EcotoneMath.withinRadialBand(1, 1, 2, 24),
+                "two diagonal steps fit within 12-block half-band");
+        check(!EcotoneMath.withinRadialBand(1, 1, 3, 24),
+                "three diagonal steps exceed 12-block half-band");
+        check(EcotoneMath.withinRadialBand(1, 0, 3, 24),
+                "12 block cardinal distance is on boundary");
+        check(!EcotoneMath.withinRadialBand(1, 0, 4, 24),
+                "16 block cardinal distance is outside boundary");
+        check(!EcotoneMath.withinRadialBand(0, 1, 1, 80),
+                "reject unrealistically wide ecotone bands");
+        check(!EcotoneMath.withinRadialBand(1, 0, 1, 0),
+                "reject zero width");
+        check(EcotoneMath.quartDistanceSquared(-1, 1, 3)
+                == EcotoneMath.quartDistanceSquared(1, -1, 3),
+                "negative and positive directions must be symmetric");
+        try {
+            EcotoneMath.quartDistanceSquared(0, 0, 1);
+            throw new AssertionError("zero direction must be rejected");
+        } catch (IllegalArgumentException expected) { }
         check(EcotoneMath.weight(0, 32) == 1.0, "edge weight central");
         check(EcotoneMath.weight(16, 32) == 0.0, "edge weight boundary");
         check(Math.abs(EcotoneMath.weight(-5, 32) - EcotoneMath.weight(5, 32)) < 1e-12,
