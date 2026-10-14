@@ -12,6 +12,11 @@
 - Keep all extra excavation inside Y144–440. Nether lava, Y0–143 and the roof Y441–511 remain delegated to the previous generator.
 - No world-seed-dependent *hall-center positions* have been introduced. The warp already depends on seeded world noise; the geometric topology still uses deterministic coordinate hashes. **Do not claim the lattice is fully seed-randomized.**
 
+### Grand End upper-island regression discovered and fixed
+The first stronger Anvil verification (run `38522194518`) found **2,433 lower-tier end-stone samples but zero upper-tier samples** with seed `785312`. The original upper tier was only triggered by `ridgeNoise > 0.41`, causing an entire sampled distant-End region to miss the intended high layer even though the lower layer existed.
+
+The upper-layer density now combines continentalness-driven stacked islands with erosion-driven independent high islands; both signals remain seeded and continuous. The center dragon arena stays protected, and a regression case checks upper islands with weak erosion noise. The assertion for both distinct altitude tiers stays enabled. **This fix is unverified until the follow-up real-server run passes.**
+
 ### Stronger proof from real saved blocks
 The dedicated NeoForge server job loads additional chunk columns covering eight intervals of the known horizontal passage and checks nine actual block samples along both the horizontal and interlayer paths. The verifier asserts:
 - All hall cores and sampled connector interiors are air in saved Anvil data.
