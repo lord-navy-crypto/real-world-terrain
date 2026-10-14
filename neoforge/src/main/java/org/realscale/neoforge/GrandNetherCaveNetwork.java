@@ -71,29 +71,58 @@ public final class GrandNetherCaveNetwork {
 
     private static double tube(double x, double y, double z, Hall a, Hall b,
                                double radius) {
-        // Reject points outside the capsule bounding box without vector math.
-        if (x < Math.min(a.x(),b.x())-radius
-                || x > Math.max(a.x(),b.x())+radius
-                || y < Math.min(a.y(),b.y())-radius
-                || y > Math.max(a.y(),b.y())+radius
-                || z < Math.min(a.z(),b.z())-radius
-                || z > Math.max(a.z(),b.z())+radius) return 0;
+        // Canonicalize the direction: each side of a chunk boundary must use
+        // exactly the same curved centerline, independent of which hall owns it.
+        if (a.x() > b.x() || (a.x() == b.x() && a.z() > b.z())
+                || (a.x() == b.x() && a.z() == b.z() && a.y() > b.y())) {
+            Hall temp = a; a = b; b = temp;
+        }
+        // Bends never exceed four blocks, so expand the early rejection box.
+        double reach = radius + 4.0;
+        if (x < Math.min(a.x(),b.x())-reach
+                || x > Math.max(a.x(),b.x())+reach
+                || y < Math.min(a.y(),b.y())-reach
+                || y > Math.max(a.y(),b.y())+reach
+                || z < Math.min(a.z(),b.z())-reach
+                || z > Math.max(a.z(),b.z())+reach) return 0;
         double vx=b.x()-a.x(), vy=b.y()-a.y(), vz=b.z()-a.z();
         double t=((x-a.x())*vx+(y-a.y())*vy+(z-a.z())*vz)
                   /(vx*vx+vy*vy+vz*vz);
-        if(t<=0 || t>=1)return 0;
-        double dx=x-(a.x()+t*vx);
-        double dy=y-(a.y()+t*vy);
-        double dz=z-(a.z()+t*vz);
+        if (t <= 0 || t >= 1) return 0;
+
+        // One deterministic, smooth sideways bend per passage. The parabola
+        // goes to zero at both halls, retaining the original continuous graph.
+        long keyA=mix((long)a.x()*0x9e3779b97f4a7c15L
+                ^ (long)a.y()*0xc2b2ae3d27d4eb4fL ^ (long)a.z());
+        long keyB=mix((long)b.x()*0x9e3779b97f4a7c15L
+                ^ (long)b.y()*0xc2b2ae3d27d4eb4fL ^ (long)b.z());
+        long key=mix(keyA ^ Long.rotateLeft(keyB,21));
+        double curve=4.0*t*(1.0-t);
+        double bend1=((int)Math.floorMod(key,9L)-4)*curve;
+        double bend2=((int)Math.floorMod(key >>> 24,7L)-3)*curve;
+        double cx=a.x()+t*vx, cy=a.y()+t*vy, cz=a.z()+t*vz;
+        if (Math.abs(vx)>=Math.abs(vz) && Math.abs(vx)>=Math.abs(vy)) {
+            cy+=bend2; cz+=bend1;
+        } else if (Math.abs(vz)>=Math.abs(vy)) {
+            cx+=bend1; cy+=bend2;
+        } else {
+            cx+=bend1; cz+=bend2;
+        }
+        double dx=x-cx, dy=y-cy, dz=z-cz;
         double ratio=(dx*dx+dy*dy+dz*dz)/(radius*radius);
         return ratio>=1 ? 0 : 1-ratio;
     }
 
     /** Positive strength means excavated air; zero means original density. */
     public static double strength(int x, int y, int z) {
+        return strength((double)x, (double)y, (double)z);
+    }
+
+    /** Sub-block sampling keeps noise-warped cave walls smooth. */
+    public static double strength(double x, double y, double z) {
         if(y<MIN_Y || y>MAX_Y)return 0;
-        int gx=Math.floorDiv(x,CELL);
-        int gz=Math.floorDiv(z,CELL);
+        int gx=(int)Math.floor(x/CELL);
+        int gz=(int)Math.floor(z/CELL);
         CellCache cache=CACHED_HALLS.get();
         cache.initialize(gx,gz);
         double answer=0;
