@@ -43,6 +43,18 @@ def test_modifier_references():
         if ref.startswith("realscale:"):
             assert (FEATURES / (ref.split(":", 1)[1] + ".json")).exists(), f
 
+def test_natural_ecotone_preset():
+    natural = load(PRESETS / "realism_max_ecotones.json")
+    original = load(PRESETS / "realism_max.json")
+    generator = natural["dimensions"]["minecraft:overworld"]["generator"]
+    baseline = original["dimensions"]["minecraft:overworld"]["generator"]
+    assert generator["settings"] == baseline["settings"]
+    assert generator["biome_source"]["type"] == "realscale:natural_ecotones"
+    assert generator["biome_source"]["source"] == baseline["biome_source"]
+    assert load(PRESETS / "realism_max.json") == original
+    tag = load(ROOT.parents[2] / "minecraft/tags/worldgen/world_preset/normal.json")
+    assert "realscale:realism_max_ecotones" in tag["values"]
+
 def test_biome_lab():
     d = load(PRESETS / "biome_lab.json")
     source = d["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
@@ -113,6 +125,7 @@ if __name__ == "__main__":
     test_biomes()
     test_modifier_references()
     test_biome_lab()
+    test_natural_ecotone_preset()
     test_ecotone_catalog()
     test_ecotone_gallery()
     test_all_custom_biome_carvers()
