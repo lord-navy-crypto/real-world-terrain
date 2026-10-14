@@ -108,6 +108,24 @@ def test_all_custom_biome_carvers():
         assert isinstance(biome.get("carvers"), dict), path
         assert isinstance(biome["carvers"].get("air"), list), path
 
+def test_surface_ecotone_habitats():
+    """Active surface ecotones must retain vanilla ores, life and decoration."""
+    mapping = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/habitat_donors.json")["donor_by_ecotone"]
+    catalog = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/catalog.json")
+    assert len(mapping) == 40
+    assert set(mapping) == {entry["id"] for entry in catalog["entries"]}
+    for stem, donor in mapping.items():
+        assert donor and donor.replace("_", "").isalnum(), (stem, donor)
+        biome = load(BIOMES / (stem + ".json"))
+        stages = biome["features"]
+        assert len(stages) == 11, stem
+        assert "minecraft:amethyst_geode" in stages[2], stem
+        assert any(ref.startswith("minecraft:ore_") for ref in stages[6]), stem
+        assert len(stages[9]) > 0, stem
+        assert len(biome["spawners"].get("monster", [])) > 0, stem
+        assert len(biome["spawners"].get("ambient", [])) > 0, stem
+        assert "mood_sound" in biome["effects"], stem
+
 def test_ecotone_gallery():
     gallery = load(PRESETS / "ecotone_gallery.json")
     source = gallery["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
@@ -141,6 +159,7 @@ if __name__ == "__main__":
     test_biome_lab()
     test_natural_ecotone_preset()
     test_natural_ecotone_undergrowth()
+    test_surface_ecotone_habitats()
     test_ecotone_catalog()
     test_ecotone_gallery()
     test_all_custom_biome_carvers()
