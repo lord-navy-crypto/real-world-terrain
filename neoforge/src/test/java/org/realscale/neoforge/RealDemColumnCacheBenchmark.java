@@ -77,6 +77,11 @@ public final class RealDemColumnCacheBenchmark {
     }
 
     private static double[] runTrials(RealDemTile tile, Work work, Pattern kind) {
+        double reference = run(tile, work, false);
+        double candidate = run(tile, work, true);
+        if (Double.doubleToRawLongBits(reference) != Double.doubleToRawLongBits(candidate)) {
+            throw new AssertionError(kind + " produced different density checksum");
+        }
         for (int i = 0; i < WARMUP; i++) {
             run(tile, work, false);
             run(tile, work, true);
