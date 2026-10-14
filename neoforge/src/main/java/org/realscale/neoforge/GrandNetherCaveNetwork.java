@@ -106,7 +106,9 @@ public final class GrandNetherCaveNetwork {
         } else if (Math.abs(vz)>=Math.abs(vy)) {
             cx+=bend1; cy+=bend2;
         } else {
-            cx+=bend1; cz+=bend2;
+            // Narrower diagonal shafts also receive the seeded noise warp.
+            // Halve their lateral bend to keep the original core traversable.
+            cx+=bend1*0.5; cz+=bend2*0.5;
         }
         double dx=x-cx, dy=y-cy, dz=z-cz;
         double ratio=(dx*dx+dy*dy+dz*dz)/(radius*radius);
