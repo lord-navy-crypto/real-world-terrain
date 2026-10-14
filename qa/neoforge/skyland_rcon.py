@@ -35,8 +35,15 @@ def command(message):
             with socket.create_connection((HOST,PORT),timeout=8) as sock:
                 sock.settimeout(20)
                 _send(sock,101,3,PASSWORD)
-                authid, _, _ = _receive(sock)
-                if authid != 101: raise ValueError("RCON auth failure")
+                # Vanilla may send an empty response-value packet before
+                # the actual type=2 authentication acknowledgement.
+                for _ in range(3):
+                    authid,auth_type,_ = _receive(sock)
+                    if auth_type == 2:
+                        if authid != 101: raise ValueError("RCON auth failure")
+                        break
+                else:
+                    raise ValueError("No RCON auth acknowledgement received")
                 _send(sock,102,2,message)
                 command_id,_,reply = _receive(sock)
                 if command_id != 102: raise ValueError("RCON command failure")
