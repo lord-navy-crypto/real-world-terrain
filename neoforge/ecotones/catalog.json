@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "description": "Experimental ecological boundary registry; not yet attached to Minecraft BiomeSource",
+  "description": "48 implemented climate-boundary surface ecotones (including 8 v0.5 habitat variants); opt-in natural_ecotones BiomeSource",
   "entries": [
     {
       "id": "woodland_meadow",
@@ -346,6 +346,70 @@
       "to": "shrubland",
       "target_width_blocks": 32,
       "phase": "candidate"
+    },
+    {
+      "id": "birch_parkland",
+      "from": "birch_forest",
+      "to": "plains",
+      "target_width_blocks": 24,
+      "visual_mood": "sunlit birch parkland",
+      "phase": "v05-habitat-variants"
+    },
+    {
+      "id": "boreal_parkland",
+      "from": "taiga",
+      "to": "plains",
+      "target_width_blocks": 32,
+      "visual_mood": "boreal grassy openings",
+      "phase": "v05-habitat-variants"
+    },
+    {
+      "id": "peat_bog_taiga",
+      "from": "taiga",
+      "to": "swamp",
+      "target_width_blocks": 24,
+      "visual_mood": "boggy mossland spruce edge",
+      "phase": "v05-habitat-variants"
+    },
+    {
+      "id": "seasonal_savanna_wetland",
+      "from": "savanna",
+      "to": "swamp",
+      "target_width_blocks": 24,
+      "visual_mood": "seasonally flooded savanna",
+      "phase": "v05-habitat-variants"
+    },
+    {
+      "id": "tropical_littoral_forest",
+      "from": "jungle",
+      "to": "beach",
+      "target_width_blocks": 24,
+      "visual_mood": "warm coastal tropical woodland",
+      "phase": "v05-habitat-variants"
+    },
+    {
+      "id": "frost_riparian_banks",
+      "from": "snowy_plains",
+      "to": "frozen_river",
+      "target_width_blocks": 16,
+      "visual_mood": "freezing tundra riverbanks",
+      "phase": "v05-habitat-variants"
+    },
+    {
+      "id": "montane_spruce_meadow",
+      "from": "taiga",
+      "to": "meadow",
+      "target_width_blocks": 24,
+      "visual_mood": "spruce tree-line grassland",
+      "phase": "v05-habitat-variants"
+    },
+    {
+      "id": "dry_grass_dunes",
+      "from": "desert",
+      "to": "plains",
+      "target_width_blocks": 32,
+      "visual_mood": "windblown grass-bound dunes",
+      "phase": "v05-habitat-variants"
     }
   ]
 }

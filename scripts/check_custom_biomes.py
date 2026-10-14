@@ -102,18 +102,57 @@ def test_supported_microstructures():
 def test_all_custom_biome_carvers():
     # Minecraft 1.21.1 expects a carving-stage map, not the later-version list.
     all_biomes = list(BIOMES.glob("*.json"))
-    assert len(all_biomes) == 46, len(all_biomes)
+    assert len(all_biomes) == 54, len(all_biomes)
     for path in all_biomes:
         biome = load(path)
         assert isinstance(biome.get("carvers"), dict), path
         assert isinstance(biome["carvers"].get("air"), list), path
 
+def test_vanilla_habitat_microfeatures():
+    """Protect original water columns while enriching dry vanilla surfaces."""
+    ids = ["forest_wildflower_glades","spruce_berry_understory","mixed_forest_fern_mosaic","savanna_seasonal_grasses","meadow_oxeye_pockets","wetland_fern_islands","highland_grassy_terraces","arid_scrub_mosaics","old_growth_moss_floors","jungle_understory_ferns"]
+    assert len(set(ids)) == 10
+    for stem in ids:
+        configured = load(FEATURES / (stem + ".json"))
+        placed = load(PLACED / (stem + ".json"))
+        modifier = load(MODIFIERS / (stem + ".json"))
+        assert configured["type"] == "minecraft:random_patch", stem
+        config = configured["config"]
+        assert 8 <= config["tries"] <= 32, stem
+        feature = config["feature"]
+        assert feature["feature"]["type"] == "minecraft:simple_block", stem
+        pred = feature["placement"][0]["predicate"]
+        assert pred["type"] == "minecraft:all_of", stem
+        air, support = pred["predicates"]
+        assert air["type"] == "minecraft:matching_blocks", stem
+        assert air["blocks"] == ["minecraft:air"], stem
+        assert support["type"] == "minecraft:matching_blocks", stem
+        assert support["offset"] == [0, -1, 0], stem
+        assert all(name.startswith("minecraft:") for name in support["blocks"]), stem
+        assert placed["feature"] == "realscale:" + stem, stem
+        assert 6 <= placed["placement"][0]["chance"] <= 20, stem
+        assert placed["placement"][2] == {"type": "minecraft:heightmap", "heightmap": "MOTION_BLOCKING_NO_LEAVES"}, stem
+        assert placed["placement"][-1]["type"] == "minecraft:biome", stem
+        assert modifier["type"] == "neoforge:add_features", stem
+        assert modifier["features"] == "realscale:" + stem, stem
+        assert modifier["step"] == "vegetal_decoration", stem
+        assert len(modifier["biomes"]) >= 2, stem
+        assert all(x.startswith("minecraft:") and "ocean" not in x and "river" not in x
+                   for x in modifier["biomes"]), stem
+
+
 def test_surface_ecotone_habitats():
     """Active surface ecotones must retain vanilla ores, life and decoration."""
     mapping = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/habitat_donors.json")["donor_by_ecotone"]
     catalog = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/catalog.json")
-    assert len(mapping) == 40
+    assert len(mapping) == 48
     assert set(mapping) == {entry["id"] for entry in catalog["entries"]}
+    import re
+    source = (Path(__file__).resolve().parents[1] / "neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java").read_text()
+    rules = re.findall(r'rule\("([a-z_]+)"', source)
+    assert len(rules) == len(set(rules)), "Duplicate natural biome rules"
+    assert set(rules) == set(mapping), "Natural biome rule / donor mapping mismatch"
+    assert "protectedWater(current)" in source, "Original river/ocean protection removed"
     for stem, donor in mapping.items():
         assert donor and donor.replace("_", "").isalnum(), (stem, donor)
         biome = load(BIOMES / (stem + ".json"))
@@ -130,8 +169,8 @@ def test_ecotone_gallery():
     gallery = load(PRESETS / "ecotone_gallery.json")
     source = gallery["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
     assert source["type"] == "minecraft:checkerboard"
-    assert len(source["biomes"]) == 40
-    assert len(set(source["biomes"])) == 40
+    assert len(source["biomes"]) == 48
+    assert len(set(source["biomes"])) == 48
     for name in source["biomes"]:
         assert name.startswith("realscale:")
         assert (BIOMES / (name.split(":", 1)[1] + ".json")).exists()
@@ -139,9 +178,9 @@ def test_ecotone_gallery():
 def test_ecotone_catalog():
     catalog = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/catalog.json")
     entries = catalog["entries"]
-    assert len(entries) == 40
+    assert len(entries) == 48
     ids = [entry["id"] for entry in entries]
-    assert len(set(ids)) == 40
+    assert len(set(ids)) == 48
     priority = [entry for entry in entries if entry["phase"] == "priority-10"]
     assert len(priority) == 10
     for entry in entries:
@@ -160,9 +199,10 @@ if __name__ == "__main__":
     test_natural_ecotone_preset()
     test_natural_ecotone_undergrowth()
     test_surface_ecotone_habitats()
+    test_vanilla_habitat_microfeatures()
     test_ecotone_catalog()
     test_ecotone_gallery()
     test_all_custom_biome_carvers()
     test_supported_microstructures()
-    print("STATIC PASS: 40 ecotone specifications, 10 priority biomes, referenced features and opt-in biome lab.")
+    print("STATIC PASS: 48 ecotone specifications, 10 priority biomes, referenced features and opt-in biome lab.")
     print("RUNTIME NOT TESTED: Minecraft biome codec, server loading, cave/river geometry.")

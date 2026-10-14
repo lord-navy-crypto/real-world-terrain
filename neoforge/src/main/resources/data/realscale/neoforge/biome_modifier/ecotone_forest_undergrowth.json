@@ -10,7 +10,11 @@
     "realscale:oak_to_dark_forest",
     "realscale:pine_oak_mosaic",
     "realscale:tropical_forest_edge",
-    "realscale:bamboo_jungle_edge"
+    "realscale:bamboo_jungle_edge",
+    "realscale:birch_parkland",
+    "realscale:boreal_parkland",
+    "realscale:tropical_littoral_forest",
+    "realscale:montane_spruce_meadow"
   ],
   "features": "realscale:birch_understory_ferns",
   "step": "vegetal_decoration"
