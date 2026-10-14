@@ -69,6 +69,45 @@ def test_natural_ecotone_preset():
     tag = load(ROOT.parent / "minecraft/tags/worldgen/world_preset/normal.json")
     assert "realscale:realism_max_ecotones" in tag["values"]
 
+def test_skylands_and_habitats():
+    sky = load(PRESETS / "realism_max_ecotones_skylands.json")
+    prior = load(PRESETS / "realism_max_ecotones.json")
+    wrapped = sky["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+    assert wrapped["type"] == "realscale:sky_ocean"
+    assert wrapped["source"] == prior["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+    assert sky["dimensions"]["minecraft:overworld"]["generator"]["settings"] == "realscale:realism_max"
+    normal = load(ROOT.parent / "minecraft/tags/worldgen/world_preset/normal.json")
+    assert "realscale:realism_max_ecotones_skylands" in normal["values"]
+    assert (BIOMES / "sky_blossom_isles.json").exists()
+    for name in ("sky_blossom_island", "cave_moss_nooks", "cave_stalagmites",
+                 "ocean_seagrass_patches", "ocean_sediment_stones"):
+        configured = load(FEATURES / (name+".json"))
+        assert configured == {"type": "realscale:"+name, "config": {}}
+        placed = load(PLACED / (name+".json"))
+        assert placed["feature"] == "realscale:"+name
+        if name.startswith("ocean_"):
+            assert not (MODIFIERS / (name+".json")).exists(), (
+                "Vanilla ocean biome injection must be disabled: "+name)
+        else:
+            modifier = load(MODIFIERS / (name+".json"))
+            assert modifier["type"] == "neoforge:add_features"
+            assert modifier["features"] == "realscale:"+name
+    # Avoid silently suppressing ocean structures or changing the seabed.
+    # No RealScale modifiers attach additional features to vanilla ocean biomes.
+    for modifier_path in MODIFIERS.glob("*.json"):
+        modifier = load(modifier_path)
+        for biome in modifier.get("biomes", []):
+            if biome.startswith("minecraft:") and "ocean" in biome:
+                raise AssertionError("Vanilla ocean modification: "+str(modifier_path))
+    sky_mod = load(MODIFIERS/"sky_blossom_island.json")
+    assert sky_mod["biomes"] == ["realscale:sky_blossom_isles"]
+    assert load(PLACED/"sky_blossom_island.json")["placement"] == []
+    java = (Path(__file__).resolve().parents[1] /
+        "neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
+    for name in ("sky_ocean", "sky_blossom_island", "cave_moss_nooks", "cave_stalagmites",
+                 "ocean_seagrass_patches", "ocean_sediment_stones"):
+        assert '"'+name+'"' in java
+
 def test_biome_lab():
     d = load(PRESETS / "biome_lab.json")
     source = d["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
@@ -102,7 +141,7 @@ def test_supported_microstructures():
 def test_all_custom_biome_carvers():
     # Minecraft 1.21.1 expects a carving-stage map, not the later-version list.
     all_biomes = list(BIOMES.glob("*.json"))
-    assert len(all_biomes) == 46, len(all_biomes)
+    assert len(all_biomes) == 47, len(all_biomes)
     for path in all_biomes:
         biome = load(path)
         assert isinstance(biome.get("carvers"), dict), path
@@ -139,6 +178,7 @@ if __name__ == "__main__":
     test_biomes()
     test_modifier_references()
     test_biome_lab()
+    test_skylands_and_habitats()
     test_natural_ecotone_preset()
     test_natural_ecotone_undergrowth()
     test_ecotone_catalog()

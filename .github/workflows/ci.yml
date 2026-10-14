@@ -38,6 +38,20 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
             neoforge/src/test/java/org/realscale/neoforge/TerrainContinuitySmoke.java
           java -cp build/terrain-continuity:neoforge/src/main/resources org.realscale.neoforge.TerrainContinuitySmoke
+      - name: Validate deep-ocean sky-island deterministic grid
+        run: |
+          mkdir -p build/sky-layout-smoke
+          javac -d build/sky-layout-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
+            neoforge/src/test/java/org/realscale/neoforge/SkyIslandLayoutSmoke.java
+          java -cp build/sky-layout-smoke org.realscale.neoforge.SkyIslandLayoutSmoke
+      - name: Test bounded cave-floor sampling before NeoForge build
+        run: |
+          mkdir -p build/cave-floor-smoke
+          javac -d build/cave-floor-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/HabitatFloorSearch.java \
+            neoforge/src/test/java/org/realscale/neoforge/HabitatFloorSearchSmoke.java
+          java -cp build/cave-floor-smoke org.realscale.neoforge.HabitatFloorSearchSmoke
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
