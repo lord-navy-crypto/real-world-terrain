@@ -1,0 +1,15 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:marshy_woodland",
+    "realscale:floodplain_margin",
+    "realscale:wet_meadow",
+    "realscale:reed_marsh_edge",
+    "realscale:mountain_wetland",
+    "realscale:mangrove_transition",
+    "realscale:seasonal_floodforest",
+    "realscale:meadow_bog_margin"
+  ],
+  "features": "realscale:wetland_moss_patch",
+  "step": "vegetal_decoration"
+}
