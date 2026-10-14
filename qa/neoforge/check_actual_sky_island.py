@@ -79,6 +79,11 @@ submerged_columns = 0
 original_structure_starts = 0
 for region_path in regions:
     for chunk in iter_region_chunks(region_path):
+        # Early Minecraft protochunks legitimately carry placeholder plains
+        # palettes before the BIOMES status. Judge actual ocean integrity
+        # only on chunks that fully completed all worldgen stages.
+        if chunk.get("Status") != "minecraft:full":
+            continue
         section = next((section for section in chunk.get("sections", [])
                         if section.get("Y") == 3), None)
         if section is None: continue
