@@ -72,13 +72,16 @@ jobs:
           found=False
           for path in pathlib.Path('run').glob('**/level.dat'):
             data=gzip.decompress(path.read_bytes())
-            if b'realscale:realism_max_ecotones' in data:
+            if b'realscale:natural_ecotones' in data and b'realscale:realism_max' in data:
               print('CUSTOM_ECOTONE_PRESET_PERSISTED',path)
               found=True
           if not ready.is_set() or not found:
             raise SystemExit('FAIL: ecotone preset did not boot into a persisted new world')
           print('PASS: ecotone source registry decode and dedicated server world boot')
           PY
+      - name: Check Anvil chunk palettes for actual climate-boundary ecotone selections
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/check_ecotone_biomes.py run/ecotone-test
       - name: Upload ecotone test diagnostics
         uses: actions/upload-artifact@v4
         if: always()
@@ -86,6 +89,7 @@ jobs:
           name: Natural-ecotone-server-log
           path: |
             neoforge/build/ecotone-server.log
+            neoforge/build/ecotone-anvil-qa.json
             neoforge/run/**/ecotone-test/level.dat
             neoforge/run/**/ecotone-test/region/*.mca
           if-no-files-found: warn
