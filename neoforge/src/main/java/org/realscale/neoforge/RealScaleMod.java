@@ -28,6 +28,8 @@ public final class RealScaleMod {
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.FOREST_HUMMOCK));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "upland_scree"),
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.UPLAND_SCREE));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "coastal_driftwood"),
+                    new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.COASTAL_DRIFTWOOD));
         });
     }
 }

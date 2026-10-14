@@ -84,7 +84,7 @@ def test_biome_lab():
 def test_supported_microstructures():
     java = (Path(__file__).resolve().parents[1]
             / "neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
-    features = ["fallen_oak_log", "fallen_spruce_log", "woodland_hummock", "upland_scree"]
+    features = ["fallen_oak_log", "fallen_spruce_log", "woodland_hummock", "upland_scree", "coastal_driftwood"]
     for name in features:
         assert ('"' + name + '"') in java, "Missing Java Feature registration: " + name
         feature = load(FEATURES / (name + ".json"))
