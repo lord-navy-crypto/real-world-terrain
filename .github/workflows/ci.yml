@@ -38,6 +38,22 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
             neoforge/src/test/java/org/realscale/neoforge/TerrainContinuitySmoke.java
           java -cp build/terrain-continuity:neoforge/src/main/resources org.realscale.neoforge.TerrainContinuitySmoke
+      - name: Compare cached DEM columns against original calculations (including worker threads)
+        run: |
+          mkdir -p build/dem-cache-smoke
+          javac -d build/dem-cache-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java \
+            neoforge/src/test/java/org/realscale/neoforge/RealDemColumnCacheSmoke.java
+          java -cp build/dem-cache-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemColumnCacheSmoke
+      - name: DEM cache performance microbenchmark (non-gating; reports locality patterns)
+        run: |
+          mkdir -p build/dem-cache-benchmark
+          javac -d build/dem-cache-benchmark \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java \
+            neoforge/src/test/java/org/realscale/neoforge/RealDemColumnCacheBenchmark.java
+          java -cp build/dem-cache-benchmark:neoforge/src/main/resources org.realscale.neoforge.RealDemColumnCacheBenchmark | tee build/dem-cache-benchmark.txt
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
@@ -51,4 +67,5 @@ jobs:
           path: |
             neoforge/build/libs/*.jar
             build/saved-world-replay.json
+            build/dem-cache-benchmark.txt
           if-no-files-found: error
