@@ -85,13 +85,20 @@ def test_skylands_and_habitats():
         assert configured == {"type": "realscale:"+name, "config": {}}
         placed = load(PLACED / (name+".json"))
         assert placed["feature"] == "realscale:"+name
-        modifier = load(MODIFIERS / (name+".json"))
-        assert modifier["type"] == "neoforge:add_features"
-        assert modifier["features"] == "realscale:"+name
-    marine = load(MODIFIERS / "ocean_seagrass_patches.json")
-    for ocean in ("minecraft:ocean", "minecraft:warm_ocean", "minecraft:cold_ocean",
-                  "minecraft:deep_cold_ocean", "minecraft:lukewarm_ocean"):
-        assert ocean in marine["biomes"], ocean
+        if name.startswith("ocean_"):
+            assert not (MODIFIERS / (name+".json")).exists(), (
+                "Vanilla ocean biome injection must be disabled: "+name)
+        else:
+            modifier = load(MODIFIERS / (name+".json"))
+            assert modifier["type"] == "neoforge:add_features"
+            assert modifier["features"] == "realscale:"+name
+    # Avoid silently suppressing ocean structures or changing the seabed.
+    # No RealScale modifiers attach additional features to vanilla ocean biomes.
+    for modifier_path in MODIFIERS.glob("*.json"):
+        modifier = load(modifier_path)
+        for biome in modifier.get("biomes", []):
+            if biome.startswith("minecraft:") and "ocean" in biome:
+                raise AssertionError("Vanilla ocean modification: "+str(modifier_path))
     sky_mod = load(MODIFIERS/"sky_blossom_island.json")
     assert sky_mod["biomes"] == ["realscale:sky_blossom_isles"]
     assert load(PLACED/"sky_blossom_island.json")["placement"] == []

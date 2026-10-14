@@ -56,6 +56,10 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
         WorldGenLevel w = context.level();
         BlockPos start = context.origin();
         boolean cave = kind == Kind.CAVE_MOSS || kind == Kind.CAVE_DRIPSTONE;
+        // Marine experiments must not affect vanilla oceans in stable RealScale
+        // or any other mod's world preset, even if a data pack re-adds features.
+        if (!cave && !(context.chunkGenerator().getBiomeSource() instanceof SkyOceanBiomeSource))
+            return false;
         if (cave) {
             if (start.getY() > 46 || start.getY() < w.getMinBuildHeight() + 3)
                 return false;
