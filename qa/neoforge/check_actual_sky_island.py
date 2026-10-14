@@ -41,4 +41,33 @@ while True:
     if time.monotonic() >= deadline:
         raise AssertionError("Sky biome or island blocks absent after Anvil save flush")
     time.sleep(5)
+# Validate vertical geology at the deterministic test island center, not
+# just palette membership (palettes alone cannot prove connected structures).
+from realscale_headless_qa import iter_region_chunks, get_block
+center_chunk = None
+for chunk in iter_region_chunks(root / "region/r.0.0.mca"):
+    if chunk.get("xPos") == 2 and chunk.get("zPos") == 3:
+        center_chunk = chunk
+        break
+assert center_chunk is not None, "Island center chunk (2,3) missing"
+def block(y):
+    return get_block(center_chunk, 0, y, 15)  # world X=32, Z=63
+expected = {
+    174: {"minecraft:air"},
+    175: {"minecraft:stone","minecraft:end_stone"},
+    178: {"minecraft:stone","minecraft:end_stone"},
+    181: {"minecraft:dirt"},
+    182: {"minecraft:dirt"},
+    183: {"minecraft:moss_block","minecraft:grass_block"},
+    184: {"minecraft:amethyst_block"},
+    185: {"minecraft:sea_lantern"},
+    186: {"minecraft:air"},
+}
+for y, allowed in expected.items():
+    observed = block(y)
+    assert observed in allowed, (y, observed, sorted(allowed))
+sky_sections = [section for section in center_chunk.get("sections", [])
+                if "realscale:sky_blossom_isles" in section.get("biomes", {}).get("palette", [])]
+assert any(section.get("Y") == 11 for section in sky_sections), "Sky biome missing at Y176..191"
+print("PASS: verified real floating geological column and sky-specific biome at X32/Z63")
 print("PASS: actual generated sky biome and solid fantasy island terrain")
