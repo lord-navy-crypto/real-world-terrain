@@ -18,6 +18,24 @@ public final class GrandNetherCaveNetwork {
     public static final int MAX_Y = 440;
     private static final int[] DX = {1, -1, 0, 0};
     private static final int[] DZ = {0, 0, 1, -1};
+    // Noise density sampling evaluates thousands of cells in the same
+    // horizontal macro-region. Cache only the 10 local hall sites per
+    // generating worker; never share mutable data between chunk threads.
+    private static final class CellCache {
+        int gx = Integer.MIN_VALUE, gz = Integer.MIN_VALUE;
+        final Hall[][] halls = new Hall[2][5];
+        void initialize(int x, int z) {
+            if (gx == x && gz == z) return;
+            gx = x; gz = z;
+            for (int layer = 0; layer < 2; layer++) {
+                halls[layer][0] = hall(x,z,layer);
+                for (int i = 0; i < 4; i++)
+                    halls[layer][i+1] = hall(x+DX[i],z+DZ[i],layer);
+            }
+        }
+    }
+    private static final ThreadLocal<CellCache> CACHED_HALLS =
+            ThreadLocal.withInitial(CellCache::new);
 
     public record Hall(double x, double y, double z, double radiusX,
                        double radiusY, double radiusZ) {}
@@ -53,6 +71,13 @@ public final class GrandNetherCaveNetwork {
 
     private static double tube(double x, double y, double z, Hall a, Hall b,
                                double radius) {
+        // Reject points outside the capsule bounding box without vector math.
+        if (x < Math.min(a.x(),b.x())-radius
+                || x > Math.max(a.x(),b.x())+radius
+                || y < Math.min(a.y(),b.y())-radius
+                || y > Math.max(a.y(),b.y())+radius
+                || z < Math.min(a.z(),b.z())-radius
+                || z > Math.max(a.z(),b.z())+radius) return 0;
         double vx=b.x()-a.x(), vy=b.y()-a.y(), vz=b.z()-a.z();
         double t=((x-a.x())*vx+(y-a.y())*vy+(z-a.z())*vz)
                   /(vx*vx+vy*vy+vz*vz);
@@ -69,22 +94,23 @@ public final class GrandNetherCaveNetwork {
         if(y<MIN_Y || y>MAX_Y)return 0;
         int gx=Math.floorDiv(x,CELL);
         int gz=Math.floorDiv(z,CELL);
+        CellCache cache=CACHED_HALLS.get();
+        cache.initialize(gx,gz);
         double answer=0;
         for(int layer=0;layer<2;layer++) {
-            Hall center=hall(gx,gz,layer);
-            answer=Math.max(answer,chamber(x,y,z,center));
+            Hall center=cache.halls[layer][0];
+            // Height cull avoids most local geometry evaluations.
+            if(Math.abs(y-center.y()) < center.radiusY()+1)
+                answer=Math.max(answer,chamber(x,y,z,center));
             if(answer>=1)return 1;
-            // The same world-space edge is evaluated from either adjoining
-            // cell. Only nearby cells are needed; no chunks are read.
-            for(int edge=0;edge<4;edge++) {
-                Hall target=hall(gx+DX[edge],gz+DZ[edge],layer);
-                answer=Math.max(answer,tube(x,y,z,center,target,11));
-            }
-            // A diagonal chimney links the low and high halls, building a
-            // vertically navigable network through elevated Nether mountains.
-            if(layer==0)
-                answer=Math.max(answer,tube(x,y,z,center,hall(gx,gz,1),10));
+            for(int edge=0;edge<4;edge++)
+                answer=Math.max(answer,tube(x,y,z,center,
+                          cache.halls[layer][edge+1],11));
         }
+        // A diagonal chimney links low and high halls. The edge is evaluated
+        // only from its own cell, so no additional worldgen/chunk access occurs.
+        answer=Math.max(answer,tube(x,y,z,cache.halls[0][0],
+                                    cache.halls[1][0],10));
         return answer;
     }
 }
