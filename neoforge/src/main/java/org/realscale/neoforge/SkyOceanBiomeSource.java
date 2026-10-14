@@ -59,22 +59,12 @@ public final class SkyOceanBiomeSource extends BiomeSource {
                 }).orElse("");
     }
     private boolean deepOceanCenter(SkyIslandLayout.Site s, Climate.Sampler sampler) {
-        String atCenter = underlying(s.x(), s.z(), sampler);
-        if (!atCenter.startsWith("deep_") || !atCenter.endsWith("ocean"))
-            return false;
-        // Ocean-only rings; no nearby coast, river, island or mainland samples.
-        // This is a conservative 24-directional-point approximation to the
-        // nearest land distance, not an exact continent distance field.
-        int[] distances = {96, 224, SkyIslandLayout.RING_RADIUS};
-        final double[] angles = {0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4,
-                Math.PI, 5 * Math.PI / 4, 3 * Math.PI / 2, 7 * Math.PI / 4};
-        for (int d : distances) for (double angle : angles) {
-            int px = s.x() + (int) Math.round(d * Math.cos(angle));
-            int pz = s.z() + (int) Math.round(d * Math.sin(angle));
-            if (!underlying(px, pz, sampler).contains("ocean"))
-                return false;
-        }
-        return true;
+        return SkyIslandLayout.remoteDeepOcean(s,
+                (x,z) -> {
+                    String id = underlying(x,z,sampler);
+                    return id.startsWith("deep_") && id.endsWith("ocean");
+                },
+                (x,z) -> underlying(x,z,sampler).contains("ocean"));
     }
     private boolean eligible(SkyIslandLayout.Site s, Climate.Sampler sampler) {
         EligibilityCache c = cache.get();

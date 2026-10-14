@@ -22,6 +22,12 @@ public final class SkyIslandLayoutSmoke {
                 visited++;
             }
         }
+        var s = SkyIslandLayout.at(100, 100);
+        check(SkyIslandLayout.remoteDeepOcean(s, (x,z)->true, (x,z)->true),"open ocean qualifies");
+        check(!SkyIslandLayout.remoteDeepOcean(s, (x,z)->false, (x,z)->true),
+                "shallow open ocean cannot qualify");
+        check(!SkyIslandLayout.remoteDeepOcean(s, (x,z)->true, (x,z)->x!=s.x()+224),
+                "sampled coastline blocks island");
         System.out.println("PASS: "+visited+" deterministic sky island layout samples, ocean Y64 protected");
     }
 }

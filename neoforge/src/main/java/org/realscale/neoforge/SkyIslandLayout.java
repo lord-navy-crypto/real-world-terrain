@@ -23,6 +23,23 @@ public final class SkyIslandLayout {
         int radius = 10 + (int) Math.floorMod(hash >>> 47, 5L);
         return new Site(x, z, y, radius);
     }
+    /**
+     * A finite conservative coastal-distance probe, not a global shortest
+     * distance field. Samples only the ungenerated underlying climate source.
+     */
+    public static boolean remoteDeepOcean(Site site,
+            java.util.function.BiPredicate<Integer,Integer> deep,
+            java.util.function.BiPredicate<Integer,Integer> ocean) {
+        if (!deep.test(site.x(),site.z())) return false;
+        int[] distances = {96, 224, RING_RADIUS};
+        for (int distance : distances) for (int i=0;i<8;i++) {
+            double angle = i * Math.PI / 4.0;
+            int x = site.x() + (int)Math.round(distance * Math.cos(angle));
+            int z = site.z() + (int)Math.round(distance * Math.sin(angle));
+            if (!ocean.test(x,z)) return false;
+        }
+        return true;
+    }
     public static boolean insideBiome(Site site, int blockX, int blockY, int blockZ) {
         int dx = blockX - site.x(), dz = blockZ - site.z();
         return dx * dx + dz * dz <= site.radius() * site.radius()
