@@ -37,7 +37,7 @@ jobs:
           online-mode=true
           PROPERTIES
           done
-      - name: Generate site at X288 Z319 and flush Minecraft chunks
+      - name: Generate site at X32 Z63 and flush Minecraft chunks
         working-directory: neoforge
         run: |
           python3 - <<'PY'
@@ -61,10 +61,9 @@ jobs:
           if not ready.is_set():
               log.write_text("".join(lines))
               raise SystemExit("Minecraft skyland fixture server failed to boot")
-          # Grid cell (0,0) site is X288 Z319 by SkyIslandLayout.mix.
-          p.stdin.write("forceload add 288 319\n")
-          p.stdin.flush()
-          time.sleep(100)
+          # Centered lattice puts site (32,63) in the naturally generated spawn area.
+          # Gradle runServer does not reliably forward console stdin commands.
+          time.sleep(12)
           p.stdin.write("save-all flush\n")
           p.stdin.flush()
           time.sleep(12)
