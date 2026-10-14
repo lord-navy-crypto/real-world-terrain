@@ -43,6 +43,30 @@ public final class GrandNetherCaveNetworkSmoke {
                 samples++;
             }
         }
+        // Check an actual negative/positive chunk crossing in the same tunnel.
+        var negative=GrandNetherCaveNetwork.hall(-1,0,0);
+        var positive=GrandNetherCaveNetwork.hall(0,0,0);
+        double borderT=(0.0-negative.x())/(positive.x()-negative.x());
+        double borderY=negative.y()+borderT*(positive.y()-negative.y());
+        double borderZ=negative.z()+borderT*(positive.z()-negative.z());
+        for (double x : new double[]{-1.0,-0.5,0.0,0.5,1.0}) {
+            yes(GrandNetherCaveNetwork.strength(x,borderY,borderZ)>0.15,
+                    "Negative-to-positive cross-cell tunnel blocked at X="+x);
+            samples++;
+        }
+        // Sub-block samples must change continuously without integer stair-steps.
+        var mid=GrandNetherCaveNetwork.hall(0,0,0);
+        var east=GrandNetherCaveNetwork.hall(1,0,0);
+        double mx=(mid.x()+east.x())*0.5;
+        double my=(mid.y()+east.y())*0.5;
+        double mz=(mid.z()+east.z())*0.5;
+        for (int i=-8;i<=8;i++) {
+            double x=mx+i*0.125;
+            double a=GrandNetherCaveNetwork.strength(x,my,mz);
+            double b=GrandNetherCaveNetwork.strength(x+0.01,my,mz);
+            yes(Math.abs(a-b)<0.05,"Sub-block cave sampling discontinuity at "+x);
+            samples++;
+        }
         System.out.println("PASS: connected 3D Grand Nether cave network, "+samples
                 +" signed-coordinate and vanilla-protection samples");
     }
