@@ -29,11 +29,11 @@ public record GrandNetherCaverns(DensityFunction base,DensityFunction warp)
         // Gently distort ideal ellipsoids and straight corridors using a
         // smooth world-seeded 3D noise field. Less than the radius of a
         // connector, preserving walkable links across all chunk borders.
-        double displacement=warp.compute(context);
-        int dx=(int)Math.round(displacement*5.0);
-        int dy=(int)Math.round(displacement*2.0);
-        int dz=(int)Math.round(displacement*-4.0);
-        double strength=GrandNetherCaveNetwork.strength(x+dx,y+dy,z+dz);
+        // Keep the seeded warp continuous: rounding to whole blocks caused
+        // artificial, stair-stepped cave walls in the first prototype.
+        double displacement=Math.max(-1.0,Math.min(1.0,warp.compute(context)));
+        double strength=GrandNetherCaveNetwork.strength(
+                x+displacement*5.0, y+displacement*2.0, z-displacement*4.0);
         return strength<=0 ? original : Math.min(original,-1.8*strength);
     }
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {

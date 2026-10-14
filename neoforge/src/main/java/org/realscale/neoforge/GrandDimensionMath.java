@@ -16,7 +16,14 @@ public final class GrandDimensionMath {
         double lowerCenter=195.0+48.0*m;
         double upperCenter=356.0+28.0*n;
         double lower=(n-0.27)*1.7-Math.abs(y-lowerCenter)/65.0;
-        double upper=(m-0.41)*1.7-Math.abs(y-upperCenter)/48.0;
+        // The old upper tier depended solely on high erosion noise (m>0.41).
+        // Some valid world seeds then generated zero upper-tier islands across
+        // broad distant-End regions. Combine two seeded signals instead:
+        // continentalness supports stacked islands while erosion can still
+        // form isolated upper islands without a lower counterpart.
+        double upperSignal=Math.max((n-0.20)*1.8+0.10*m,
+                                    (m-0.50)*1.1);
+        double upper=upperSignal-Math.abs(y-upperCenter)/60.0;
         return Math.max(lower,upper);
     }
 }
