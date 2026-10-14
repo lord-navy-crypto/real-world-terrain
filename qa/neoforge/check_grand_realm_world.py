@@ -29,6 +29,7 @@ summary={"nether_full_chunks":len(nether),"end_full_chunks":len(end),
          "nether_upper_terrain":0,"nether_roof_bedrock":0,
          "nether_below_128_terrain":0,"nether_lava_samples":0,
          "nether_hollow_halls":{},"nether_connecting_tunnels":{},
+         "nether_satellite_galleries":{},"nether_satellite_branches":{},
          "dragon_center_air_at_y160":None,"dragon_center_end_stone_at_y60":None,
          "end_upper_stone_samples":0,"end_lower_island_samples":0,
          "end_high_island_samples":0,"end_outer_chunks":0}
@@ -73,6 +74,30 @@ for name,(x,y,z) in tunnel_sites.items():
     observed=nether_at(x,y,z)
     summary["nether_connecting_tunnels"][name]={"xyz":[x,y,z],"block":observed}
     assert observed in void_blocks,("disconnected natural tunnel",name,observed)
+
+# Phase III galleries are computed from the exact Java coordinate hashes
+# for cell (0,0), seed-independent local skeleton. The wrapped density field
+# still follows the actual world's seeded Nether warp.
+satellite_sites={
+    "lower_northeast":(182,199,169),
+    "lower_southwest":(70,181,59),
+    "upper_northwest":(67,366,102),
+    "upper_southeast":(169,344,214),
+}
+branch_sites={
+    "lower_northeast_link":(154,195,142),
+    "lower_southwest_link":(98,186,87),
+    "upper_northwest_link":(93,360,130),
+    "upper_southeast_link":(144,350,186),
+}
+for name,(x,y,z) in satellite_sites.items():
+    block=nether_at(x,y,z)
+    summary["nether_satellite_galleries"][name]={"xyz":[x,y,z],"block":block}
+    assert block in void_blocks,("Phase III satellite gallery missing",name,block)
+for name,(x,y,z) in branch_sites.items():
+    block=nether_at(x,y,z)
+    summary["nether_satellite_branches"][name]={"xyz":[x,y,z],"block":block}
+    assert block in void_blocks,("Phase III satellite connector obstructed",name,block)
 
 # Verify corridors at several actual saved chunks, not just one midpoint.
 # A pass here demonstrates continuous air at sampled positions across chunk
@@ -124,4 +149,4 @@ assert summary["end_outer_chunks"]>0,"No distant End chunks reached"
 assert summary["end_lower_island_samples"]>0,"No elevated End stone at lower island tier"
 assert summary["end_high_island_samples"]>0,"No elevated End stone at upper island tier"
 assert summary["dragon_center_end_stone_at_y60"]=="minecraft:end_stone","Dragon center island missing"
-print("PASS: saved Grand Nether halls, sampled connected corridors, lava sea and upper roof; both elevated End island tiers and protected dragon arena")
+print("PASS: Grand Nether main halls, 4 satellite galleries + branch samples, lava and roof; both End island tiers and dragon arena")

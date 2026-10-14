@@ -3,9 +3,10 @@ package org.realscale.neoforge;
 /**
  * Continuous 3D rock-void network for Grand Nether's upper strata.
  *
- * Every 256x256 horizontal cell has two underground halls. Each hall joins
- * neighbors in all four cardinal directions, and the two levels have a
- * vertical diagonal connector. Geometry is calculated from absolute world
+ * Every 256x256 horizontal cell has two underground halls and four smaller
+ * satellite galleries. Main halls join neighbors in four cardinal directions
+ * and both levels are linked by a vertical diagonal connector. Every satellite
+ * connects to its own layer's main hall. Absolute coordinates determine world
  * coordinates, so independent chunk-generation order cannot cut tunnels.
  *
  * Restricted to Y144..440: original lava sea, normal Nether structures and
@@ -18,12 +19,12 @@ public final class GrandNetherCaveNetwork {
     public static final int MAX_Y = 440;
     private static final int[] DX = {1, -1, 0, 0};
     private static final int[] DZ = {0, 0, 1, -1};
-    // Noise density sampling evaluates thousands of cells in the same
-    // horizontal macro-region. Cache only the 10 local hall sites per
-    // generating worker; never share mutable data between chunk threads.
+    // Cache the 10 main hall sites and 4 local satellite galleries per worker.
+    // No neighboring chunks are loaded and nothing is shared between threads.
     private static final class CellCache {
         int gx = Integer.MIN_VALUE, gz = Integer.MIN_VALUE;
         final Hall[][] halls = new Hall[2][5];
+        final Hall[][] satellites = new Hall[2][2];
         void initialize(int x, int z) {
             if (gx == x && gz == z) return;
             gx = x; gz = z;
@@ -31,6 +32,8 @@ public final class GrandNetherCaveNetwork {
                 halls[layer][0] = hall(x,z,layer);
                 for (int i = 0; i < 4; i++)
                     halls[layer][i+1] = hall(x+DX[i],z+DZ[i],layer);
+                for (int i = 0; i < 2; i++)
+                    satellites[layer][i] = satellite(halls[layer][0],x,z,layer,i);
             }
         }
     }
@@ -61,10 +64,42 @@ public final class GrandNetherCaveNetwork {
                 52 + (int)Math.floorMod(hash >>> 53, 11L));
     }
 
+    /**
+     * Deterministic smaller cave attached to a main hall.
+     * Offsets are diagonal and bounded: even after ±5 blocks of density warp,
+     * the gallery stays inside its own 256×256 cell, so one cell's gallery
+     * cannot disappear when evaluated from its neighbor.
+     */
+    public static Hall satellite(int gx,int gz,int layer,int index) {
+        if(layer<0 || layer>1 || index<0 || index>1)
+            throw new IllegalArgumentException("Expected layer and index 0 or 1");
+        return satellite(hall(gx,gz,layer),gx,gz,layer,index);
+    }
+
+    private static Hall satellite(Hall center,int gx,int gz,int layer,int index) {
+        long hash=mix((long)gx*0x632be59bd9b4e019L
+                 ^ (long)gz*0x94d049bb133111ebL
+                 ^ (layer==0 ? 0x7e2f93a16172c307L : 0x5a91da132775b693L));
+        int sx=((hash & 1L)==0 ? -1 : 1)*(50+(int)Math.floorMod(hash >>> 8,7L));
+        int sz=((hash & 2L)==0 ? -1 : 1)*(50+(int)Math.floorMod(hash >>> 18,7L));
+        if(index==1) {sx=-sx;sz=-sz;}
+        int dy=(index==0 ? 1:-1)*(6+(int)Math.floorMod(hash >>> 28,7L));
+        long variation=mix(hash ^ ((long)index*0xbf58476d1ce4e5b9L));
+        return new Hall(center.x()+sx,center.y()+dy,center.z()+sz,
+                14+(int)Math.floorMod(variation,8L),
+                11+(int)Math.floorMod(variation >>> 12,6L),
+                14+(int)Math.floorMod(variation >>> 23,8L));
+    }
+
     private static double chamber(double x, double y, double z, Hall h) {
+        // Cheap per-axis rejection avoids evaluating full quadratic distances
+        // for the much more numerous points outside small galleries.
         double dx = (x-h.x())/h.radiusX();
+        if(Math.abs(dx)>=1)return 0;
         double dy = (y-h.y())/h.radiusY();
+        if(Math.abs(dy)>=1)return 0;
         double dz = (z-h.z())/h.radiusZ();
+        if(Math.abs(dz)>=1)return 0;
         double normalized = dx*dx+dy*dy+dz*dz;
         return normalized >= 1 ? 0 : 1 - normalized;
     }
@@ -137,6 +172,17 @@ public final class GrandNetherCaveNetwork {
             for(int edge=0;edge<4;edge++)
                 answer=Math.max(answer,tube(x,y,z,center,
                           cache.halls[layer][edge+1],11));
+            // All satellite chambers and connectors lie within ±80 X/Z and
+            // ±30 Y of their parent. Skip secondary graph work far from them.
+            if (Math.abs(x-center.x())<=80 && Math.abs(z-center.z())<=80
+                    && Math.abs(y-center.y())<=30) {
+                for(int gallery=0;gallery<2;gallery++) {
+                    Hall side=cache.satellites[layer][gallery];
+                    if(Math.abs(y-side.y())<side.radiusY()+1)
+                        answer=Math.max(answer,chamber(x,y,z,side));
+                    answer=Math.max(answer,tube(x,y,z,center,side,7));
+                }
+            }
         }
         // A diagonal chimney links low and high halls. The edge is evaluated
         // only from its own cell, so no additional worldgen/chunk access occurs.
