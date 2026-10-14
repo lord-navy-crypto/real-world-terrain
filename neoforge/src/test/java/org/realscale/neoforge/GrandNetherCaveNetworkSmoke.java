@@ -84,9 +84,48 @@ public final class GrandNetherCaveNetworkSmoke {
             yes(Math.abs(a-b)<0.05,"Sub-block cave sampling discontinuity at "+x);
             samples++;
         }
+        verifyConcurrentCellCache();
         System.out.println("PASS: connected 3D Grand Nether cave network, "+samples
                 +" signed-coordinate and vanilla-protection samples");
     }
+    /** Verify worker-local caches are independent of chunk order and threads. */
+    private static void verifyConcurrentCellCache() {
+        final int count=400;
+        final int[][] coords=new int[count][3];
+        final long[] expected=new long[count];
+        for(int i=0;i<count;i++) {
+            var h=GrandNetherCaveNetwork.hall((i*17)%11-5,(i*31)%11-5,i%2);
+            coords[i][0]=(int)h.x()+(i%7)*5-15;
+            coords[i][1]=(int)h.y()+(i%5)*3-6;
+            coords[i][2]=(int)h.z()+(i%9)*4-16;
+            expected[i]=Double.doubleToRawLongBits(
+                    GrandNetherCaveNetwork.strength(coords[i][0],coords[i][1],coords[i][2]));
+        }
+        var failure=new java.util.concurrent.atomic.AtomicReference<Throwable>();
+        Thread[] workers=new Thread[4];
+        for(int w=0;w<workers.length;w++) {
+            final int shift=w*101;
+            workers[w]=new Thread(()->{
+                try {
+                    for(int round=0;round<3;round++)for(int k=0;k<count;k++) {
+                        int i=(k*73+shift+round*29)%count;
+                        long observed=Double.doubleToRawLongBits(GrandNetherCaveNetwork.strength(
+                                coords[i][0],coords[i][1],coords[i][2]));
+                        yes(observed==expected[i],"Cave graph changed by threaded chunk order");
+                    }
+                } catch(Throwable t) {failure.compareAndSet(null,t);}
+            },"grand-cave-test-"+w);
+            workers[w].start();
+        }
+        for(Thread worker:workers) {
+            try {worker.join();} catch(InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError("Interrupted concurrency smoke test",e);
+            }
+        }
+        if(failure.get()!=null)throw new AssertionError("Concurrent cave cache regression",failure.get());
+    }
+
     private static void connected(GrandNetherCaveNetwork.Hall a,
                                   GrandNetherCaveNetwork.Hall b,String what) {
         // Check every quarter-span has a carved core, across multiple chunks.
