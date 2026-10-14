@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:coastal_heath",
+    "realscale:coastal_dune_meadow"
+  ],
+  "features": "realscale:meadow_wildflower_patch",
+  "step": "vegetal_decoration"
+}
