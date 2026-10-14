@@ -14,7 +14,7 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 
 /**
  * Actual floating stone/soil landmass in the special, opt-in sky-ocean preset.
- * Worldgen only, at most one center per 512x512 block grid and only over
+ * Worldgen only, at most five islands per 512x512 block grid and only over
  * biome-source-confirmed far-ocean conditions. Does not touch sea or seabed.
  */
 public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
@@ -26,17 +26,30 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         if (!(context.chunkGenerator().getBiomeSource() instanceof SkyOceanBiomeSource))
-            return false; // Never activate in vanilla worlds or existing RealScale presets.
+            return false; // Existing worlds and vanilla presets cannot create islands.
         WorldGenLevel world = context.level();
         BlockPos origin = context.origin();
-        SkyIslandLayout.Site site = SkyIslandLayout.at(origin.getX(), origin.getZ());
-        // A site is generated only by the decoration pass of its home chunk.
-        if (Math.floorDiv(site.x(), 16) != Math.floorDiv(origin.getX(), 16)
-                || Math.floorDiv(site.z(), 16) != Math.floorDiv(origin.getZ(), 16))
-            return false;
+        SkyIslandLayout.Site base = SkyIslandLayout.at(origin.getX(), origin.getZ());
+        boolean any = false;
+        // A group shares the same 512-block lattice cell. Each distinct island
+        // is generated only by its own home chunk, never by the other islands'
+        // decorating chunks. Unselected far-ocean satellites do nothing.
+        for (int slot = 0; slot < SkyIslandLayout.SLOTS; slot++) {
+            SkyIslandLayout.Site site = SkyIslandLayout.satellite(base, slot);
+            if (Math.floorDiv(site.x(), 16) != Math.floorDiv(origin.getX(), 16)
+                    || Math.floorDiv(site.z(), 16) != Math.floorDiv(origin.getZ(), 16))
+                continue;
+            any |= placeIsland(world, site);
+        }
+        return any;
+    }
+
+    private static boolean placeIsland(WorldGenLevel world, SkyIslandLayout.Site site) {
         if (site.topY() + 4 >= world.getMaxBuildHeight()
                 || site.topY() - 17 <= world.getMinBuildHeight())
             return false;
+        // Biome selection enforces the sampled ocean isolation tier, so an
+        // inactive island slot cannot write a real landmass.
         // Must be selected by the actual high-altitude climate sampler.
         if (!world.getBiome(new BlockPos(site.x(), site.topY(), site.z())).is(SKY))
             return false;
