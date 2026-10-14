@@ -4,7 +4,10 @@
     "minecraft:ocean",
     "minecraft:lukewarm_ocean",
     "minecraft:deep_lukewarm_ocean",
-    "minecraft:deep_ocean"
+    "minecraft:deep_ocean",
+    "minecraft:warm_ocean",
+    "minecraft:cold_ocean",
+    "minecraft:deep_cold_ocean"
   ],
   "features": "realscale:ocean_seagrass_patches",
   "step": "vegetal_decoration"
