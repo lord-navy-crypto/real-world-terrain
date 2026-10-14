@@ -12,9 +12,10 @@ public final class RealScaleMod {
         bus.addListener(this::registerDensity);
     }
     private void registerDensity(RegisterEvent event) {
-        event.register(Registries.DENSITY_FUNCTION_TYPE, helper ->
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_density"), RealDemDensity.MAP_CODEC)
-        );
+        event.register(Registries.DENSITY_FUNCTION_TYPE, helper -> {
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_density"), RealDemDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "grand_end_density"), GrandEndDensity.MAP_CODEC);
+        });
         event.register(Registries.BIOME_SOURCE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones"),
                     NaturalEcotoneBiomeSource.CODEC)
