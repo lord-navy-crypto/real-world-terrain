@@ -70,4 +70,36 @@ sky_sections = [section for section in center_chunk.get("sections", [])
                 if "realscale:sky_blossom_isles" in section.get("biomes", {}).get("palette", [])]
 assert any(section.get("Y") == 11 for section in sky_sections), "Sky biome missing at Y176..191"
 print("PASS: verified real floating geological column and sky-specific biome at X32/Z63")
+
+# The forced ocean biome alone does not guarantee submerged terrain. Check the
+# actual saved ocean world independently below sea level, and forbid any sky
+# archipelago palette at Y48..63 (ocean and structures stay vanilla).
+ocean_chunks = 0
+submerged_columns = 0
+original_structure_starts = 0
+for region_path in regions:
+    for chunk in iter_region_chunks(region_path):
+        section = next((section for section in chunk.get("sections", [])
+                        if section.get("Y") == 3), None)
+        if section is None: continue
+        biomes = section.get("biomes", {}).get("palette", [])
+        assert biomes == ["minecraft:deep_ocean"], (
+            "original ocean biome was overwritten below sea level",
+            chunk.get("xPos"),chunk.get("zPos"),biomes)
+        ocean_chunks += 1
+        for lx in (0,4,8,12):
+            for lz in (0,4,8,12):
+                if get_block(chunk,lx,62,lz) == "minecraft:water":
+                    submerged_columns += 1
+        starts = chunk.get("structures",{}).get("starts",{})
+        original_structure_starts += sum(
+            1 for val in starts.values()
+            if isinstance(val,dict) and val.get("id") not in ("INVALID","minecraft:empty"))
+print("VANILLA_OCEAN_INTEGRITY",{"actual_ocean_chunks":ocean_chunks,
+    "submerged_water_columns_at_y62":submerged_columns,
+    "existing_structure_starts":original_structure_starts})
+assert ocean_chunks >= 10, "No saved underwater ocean biome sections"
+assert submerged_columns >= 10, "No submerged ocean columns detected"
+print("PASS: original deep ocean biome preserved below sea level, real seawater present")
+
 print("PASS: actual generated sky biome and solid fantasy island terrain")
