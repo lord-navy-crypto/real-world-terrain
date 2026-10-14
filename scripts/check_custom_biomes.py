@@ -155,6 +155,10 @@ def test_grand_dimensions():
         assert dim_type["height"] == dim_type["logical_height"] == noise["noise"]["height"] == 512
         assert noise["sea_level"] == sea
     nether = load(ROOT / "worldgen/noise_settings/grand_nether.json")
+    assert nether["noise_router"]["final_density"]["type"] == "realscale:grand_nether_caverns"
+    assert nether["noise_router"]["final_density"]["base"]["type"] == "minecraft:squeeze"
+    assert '"grand_nether_caverns"' in (ROOT.parents[2] /
+        "java/org/realscale/neoforge/RealScaleMod.java").read_text()
     assert nether["default_fluid"]["Name"] == "minecraft:lava"
     assert nether["default_block"]["Name"] == "minecraft:netherrack"
     assert nether["surface_rule"]["sequence"][0]["if_true"]["random_name"] == "minecraft:bedrock_floor"
