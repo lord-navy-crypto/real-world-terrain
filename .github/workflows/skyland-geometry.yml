@@ -4,6 +4,7 @@ on:
     paths:
       - 'neoforge/**'
       - 'qa/neoforge/check_actual_sky_island.py'
+      - 'qa/neoforge/skyland_rcon.py'
       - '.github/workflows/skyland-geometry.yml'
   workflow_dispatch:
 permissions:
@@ -35,6 +36,9 @@ jobs:
           simulation-distance=3
           max-tick-time=-1
           online-mode=true
+          enable-rcon=true
+          rcon.password=realscale-ci-only
+          rcon.port=25575
           PROPERTIES
           done
       - name: Generate site at X32 Z63 and flush Minecraft chunks
@@ -61,14 +65,24 @@ jobs:
           if not ready.is_set():
               log.write_text("".join(lines))
               raise SystemExit("Minecraft skyland fixture server failed to boot")
-          # Centered lattice puts site (32,63) in the naturally generated spawn area.
-          # Gradle runServer does not reliably forward console stdin commands.
-          time.sleep(12)
-          p.stdin.write("save-all flush\n")
-          p.stdin.flush()
-          time.sleep(12)
-          p.stdin.write("stop\n")
-          p.stdin.flush()
+          # Use the REAL server RCON endpoint. Gradle stdin is not guaranteed
+          # to forward console commands; unfinished chunks previously gave
+          # false-negative satellite island tests.
+          import sys
+          sys.path.insert(0, "../qa/neoforge")
+          from skyland_rcon import command
+          for x,z in ((32,63),(128,63),(-64,63),(32,159),(32,-33)):
+              response=command(f"forceload add {x} {z}")
+              if "Unknown" in response or "Incorrect" in response:
+                  raise RuntimeError("Unable to force-generate island chunk: "+response)
+          time.sleep(45)
+          command("save-all flush")
+          time.sleep(8)
+          try:
+              command("stop")
+          except Exception as e:
+              # The Minecraft RCON socket may close before acknowledging stop.
+              print("RCON stop disconnected:",e)
           try: p.wait(timeout=60)
           except subprocess.TimeoutExpired:
               os.killpg(p.pid,signal.SIGINT)
