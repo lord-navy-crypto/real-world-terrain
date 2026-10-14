@@ -6,7 +6,7 @@ package org.realscale.neoforge;
  * This cache never changes the noise sampling grid or the original arithmetic.
  */
 final class RealDemColumnCache {
-    private static final int SLOTS = 256;
+    private static final int SLOTS = 1024;
     private static final Column OUTSIDE = new Column(0.0, Double.NaN);
 
     record Column(double influence, double elevation) {}

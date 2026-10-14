@@ -14,7 +14,7 @@ placement, dimension height, or saved-world schema.
 - Inside the measured region, cache the **X/Z-only** elevation and smoothstep
   weight. Minecraft samples many different Y positions for the same X/Z.
 - Cache entries are keyed by signed X, signed Z and `blendMeters`, bounded to
-  256 direct-mapped slots **per generation worker thread**, not an unbounded
+  1024 direct-mapped slots **per generation worker thread**, not an unbounded
   world-wide cache. Collisions replace entries and cannot change correctness.
 - Preserve the original order of floating-point operations in density blending.
   Identical world settings and sampled coordinates should yield bit-identical
