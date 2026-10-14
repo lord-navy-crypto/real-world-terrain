@@ -180,7 +180,7 @@ def test_ecotone_catalog():
     entries = catalog["entries"]
     assert len(entries) == 48
     ids = [entry["id"] for entry in entries]
-    assert len(set(ids)) == 40
+    assert len(set(ids)) == 48
     priority = [entry for entry in entries if entry["phase"] == "priority-10"]
     assert len(priority) == 10
     for entry in entries:
