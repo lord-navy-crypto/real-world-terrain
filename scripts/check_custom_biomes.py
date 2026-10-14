@@ -157,6 +157,8 @@ def test_grand_dimensions():
     nether = load(ROOT / "worldgen/noise_settings/grand_nether.json")
     assert nether["noise_router"]["final_density"]["type"] == "realscale:grand_nether_caverns"
     assert nether["noise_router"]["final_density"]["base"]["type"] == "minecraft:squeeze"
+    assert nether["noise_router"]["final_density"]["warp"]["type"] == "minecraft:noise"
+    assert nether["noise_router"]["final_density"]["warp"]["noise"] == "minecraft:continentalness"
     assert '"grand_nether_caverns"' in (ROOT.parents[2] /
         "java/org/realscale/neoforge/RealScaleMod.java").read_text()
     assert nether["default_fluid"]["Name"] == "minecraft:lava"
