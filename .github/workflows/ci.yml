@@ -21,6 +21,23 @@ jobs:
           python-version: '3.12'
       - name: Verify recovered source, artifacts and actual saved world
         run: python3 qa/verify_repository.py
+      - name: Validate custom biome registry resources (static)
+        run: python3 scripts/check_custom_biomes.py
+      - name: Compile and execute ecotone and cave classifier smoke tests
+        run: |
+          mkdir -p build/habitat-smoke
+          javac -d build/habitat-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/EcotoneMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/CaveHabitatMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/HabitatMathSmoke.java
+          java -cp build/habitat-smoke org.realscale.neoforge.HabitatMathSmoke
+      - name: Measure DEM grid continuity and tile boundary blend
+        run: |
+          mkdir -p build/terrain-continuity
+          javac -d build/terrain-continuity \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
+            neoforge/src/test/java/org/realscale/neoforge/TerrainContinuitySmoke.java
+          java -cp build/terrain-continuity:neoforge/src/main/resources org.realscale.neoforge.TerrainContinuitySmoke
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'

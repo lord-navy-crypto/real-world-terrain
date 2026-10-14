@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
     paths: ['neoforge/**', 'qa/neoforge/**', '.github/workflows/server.yml']
+  pull_request:
+    paths: ['neoforge/**', 'qa/neoforge/**', '.github/workflows/server.yml']
   workflow_dispatch:
 permissions:
   contents: read

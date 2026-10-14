@@ -1,0 +1,351 @@
+{
+  "schema_version": 1,
+  "description": "Experimental ecological boundary registry; not yet attached to Minecraft BiomeSource",
+  "entries": [
+    {
+      "id": "woodland_meadow",
+      "from": "forest",
+      "to": "meadow",
+      "target_width_blocks": 32,
+      "visual_mood": "sunlit sparse forest",
+      "blocks": [
+        "grass_block",
+        "oak_log",
+        "poppy",
+        "fern"
+      ],
+      "phase": "priority-10"
+    },
+    {
+      "id": "forest_steppe",
+      "from": "forest",
+      "to": "grassland",
+      "target_width_blocks": 40,
+      "visual_mood": "windy semi-open woodland",
+      "blocks": [
+        "coarse_dirt",
+        "grass_block",
+        "short_grass"
+      ],
+      "phase": "priority-10"
+    },
+    {
+      "id": "marshy_woodland",
+      "from": "forest",
+      "to": "swamp",
+      "target_width_blocks": 24,
+      "visual_mood": "shaded damp woodland",
+      "blocks": [
+        "mud",
+        "moss_block",
+        "fern",
+        "oak_log"
+      ],
+      "phase": "priority-10"
+    },
+    {
+      "id": "semi_arid_scrubland",
+      "from": "desert",
+      "to": "grassland",
+      "target_width_blocks": 48,
+      "visual_mood": "dry sparse scrub",
+      "blocks": [
+        "sand",
+        "coarse_dirt",
+        "dead_bush"
+      ],
+      "phase": "priority-10"
+    },
+    {
+      "id": "subalpine_woodland",
+      "from": "taiga",
+      "to": "alpine",
+      "target_width_blocks": 32,
+      "visual_mood": "cold timberline",
+      "blocks": [
+        "spruce_log",
+        "stone",
+        "grass_block"
+      ],
+      "phase": "priority-10"
+    },
+    {
+      "id": "rocky_alpine_meadow",
+      "from": "meadow",
+      "to": "alpine",
+      "target_width_blocks": 24,
+      "visual_mood": "wind-exposed alpine grass",
+      "blocks": [
+        "stone",
+        "gravel",
+        "grass_block",
+        "poppy"
+      ],
+      "phase": "priority-10"
+    },
+    {
+      "id": "snowy_treeline",
+      "from": "taiga",
+      "to": "snow",
+      "target_width_blocks": 24,
+      "visual_mood": "patchy snowline",
+      "blocks": [
+        "snow_block",
+        "spruce_log",
+        "stone"
+      ],
+      "phase": "priority-10"
+    },
+    {
+      "id": "floodplain_margin",
+      "from": "river",
+      "to": "plains",
+      "target_width_blocks": 16,
+      "visual_mood": "dynamic riparian border",
+      "blocks": [
+        "mud",
+        "clay",
+        "grass_block",
+        "gravel"
+      ],
+      "phase": "priority-10"
+    },
+    {
+      "id": "birch_conifer_transition",
+      "from": "birch_forest",
+      "to": "taiga",
+      "target_width_blocks": 32,
+      "visual_mood": "cool mixed woodland",
+      "blocks": [
+        "birch_log",
+        "spruce_log",
+        "podzol",
+        "fern"
+      ],
+      "phase": "priority-10"
+    },
+    {
+      "id": "wet_meadow",
+      "from": "plains",
+      "to": "swamp",
+      "target_width_blocks": 24,
+      "visual_mood": "waterlogged meadow",
+      "blocks": [
+        "grass_block",
+        "mud",
+        "short_grass"
+      ],
+      "phase": "priority-10"
+    },
+    {
+      "id": "riverine_woodland",
+      "from": "river",
+      "to": "forest",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "heathland",
+      "from": "grassland",
+      "to": "mountain",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "shrub_prairie",
+      "from": "grassland",
+      "to": "savanna",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "oasis_fringe",
+      "from": "desert",
+      "to": "freshwater",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "badlands_fringe",
+      "from": "badlands",
+      "to": "grassland",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "scree_transition",
+      "from": "mountain",
+      "to": "valley",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "reed_marsh_edge",
+      "from": "lake",
+      "to": "swamp",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "lake_woodland_margin",
+      "from": "lake",
+      "to": "forest",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "dune_scrub",
+      "from": "beach",
+      "to": "inland",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "coastal_heath",
+      "from": "coast",
+      "to": "grassland",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "temperate_to_birch",
+      "from": "forest",
+      "to": "birch_forest",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "oak_to_dark_forest",
+      "from": "forest",
+      "to": "dark_forest",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "taiga_to_tundra",
+      "from": "taiga",
+      "to": "tundra",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "snowfield_margin",
+      "from": "meadow",
+      "to": "snow",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "mountain_wetland",
+      "from": "alpine",
+      "to": "wetland",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "gravel_shore_fringe",
+      "from": "stony_shore",
+      "to": "forest",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "mangrove_transition",
+      "from": "mangrove",
+      "to": "swamp",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "tropical_forest_edge",
+      "from": "jungle",
+      "to": "plains",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "bamboo_jungle_edge",
+      "from": "bamboo_jungle",
+      "to": "jungle",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "savanna_badlands",
+      "from": "savanna",
+      "to": "badlands",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "cold_desert_scrub",
+      "from": "desert",
+      "to": "snow",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "warm_river_margin",
+      "from": "river",
+      "to": "savanna",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "pine_oak_mosaic",
+      "from": "pine",
+      "to": "oak",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "rocky_plateau_grass",
+      "from": "plateau",
+      "to": "grassland",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "frost_shrub_tundra",
+      "from": "tundra",
+      "to": "shrubland",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "lichen_rockland",
+      "from": "stony_peaks",
+      "to": "tundra",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "seasonal_floodforest",
+      "from": "floodplain",
+      "to": "forest",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "meadow_bog_margin",
+      "from": "meadow",
+      "to": "bog",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "coastal_dune_meadow",
+      "from": "dune",
+      "to": "meadow",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    },
+    {
+      "id": "terracotta_scrub",
+      "from": "badlands",
+      "to": "shrubland",
+      "target_width_blocks": 32,
+      "phase": "candidate"
+    }
+  ]
+}
