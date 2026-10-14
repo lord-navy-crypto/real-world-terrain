@@ -175,7 +175,7 @@ def test_grand_dimensions():
     assert end["noise_router"]["final_density"]["type"] == "realscale:grand_end_density"
     assert end["noise_router"]["initial_density_without_jaggedness"]["type"] == "realscale:grand_end_density"
     assert load(ROOT/"dimension_type/grand_end.json")["coordinate_scale"] == 1
-    mod_java = (ROOT.parents[4] / "java/org/realscale/neoforge/RealScaleMod.java").read_text()
+    mod_java = (ROOT.parents[2] / "java/org/realscale/neoforge/RealScaleMod.java").read_text()
     assert '"grand_end_density"' in mod_java
     tag = load(ROOT.parent/"minecraft/tags/worldgen/world_preset/normal.json")
     assert "realscale:realism_max_three_realms" in tag["values"]
