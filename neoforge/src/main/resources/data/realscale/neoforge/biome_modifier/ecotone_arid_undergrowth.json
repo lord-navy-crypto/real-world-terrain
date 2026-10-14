@@ -1,0 +1,16 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:semi_arid_scrubland",
+    "realscale:shrub_prairie",
+    "realscale:oasis_fringe",
+    "realscale:badlands_fringe",
+    "realscale:dune_scrub",
+    "realscale:savanna_badlands",
+    "realscale:cold_desert_scrub",
+    "realscale:warm_river_margin",
+    "realscale:terracotta_scrub"
+  ],
+  "features": "realscale:dry_scrub_patch",
+  "step": "vegetal_decoration"
+}
