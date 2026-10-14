@@ -5,7 +5,7 @@
 
 ### Sky Blossom Isles
 - Each 512×512-block-centered cell has **at most one candidate**, with a deterministic jittered center (within ±128 blocks of the lattice node). The origin cell's candidate is **X32, Z63** for repeatable verification.
-- An island is eligible only when its center is vanilla **deep ocean** and 24 evenly spaced samples up to **352 blocks** in 8 directions are all ocean biomes. This is a conservative sampled distance proxy; it is **not** an exact continent-distance computation.
+- An island is eligible only when its center is vanilla **deep ocean** and 64 sampled ocean points across 4 rings reaching **384 blocks** in 16 compass directions are all ocean biomes. This is a conservative sampled distance proxy; it is **not** an exact continent-distance computation.
 - An eligible site receives a small 10–14-block-radius floating island at approximately Y 183–203. Island mass is genuine generated blocks (stone/end stone base, dirt, grass/moss top) with flowers and a glowing amethyst/sealight core.
 - The sky biome `realscale:sky_blossom_isles` exists only in a volume around a confirmed eligible floating island. Ocean, river, seabed and cave biomes are never overwritten by the sky source at normal elevations.
 - Full-island preflight avoids intersecting existing blocks or water. No fluids, ocean topography, or terrain noise are changed.
@@ -34,5 +34,5 @@
 - The ordinary preset-boot test **cannot guarantee seeing an island** near spawn. A separate dedicated `skylands_test_deep_ocean` fixture verifies a solid island and the SKY biome in actual generated Anvil files.
 - The forced-deep-ocean test passed on commit `bab2b5f`, locating the SKY biome in four generated chunks and the real center's geological column at X32, Z63: end stone and stone beneath dirt/moss, purple amethyst at Y184 and sea lantern at Y185. This is **not** proof of island rarity or distance-to-land accuracy in naturally generated oceans.
 - Updated QA also checks the island's vertically continuous solid center, detached underside and saved biome section; keep the PR experimental until the final CI pass and visual field testing.
-- Cave/underwater decorative density is experimental. Ocean-island sampling adds up to 25 extra underlying biome reads per candidate's eligibility check, bounded by per-worker caching.
+- Cave/underwater decorative density is experimental. Ocean-island sampling adds up to 65 extra underlying biome reads per candidate's eligibility check, bounded by per-worker caching.
 - Feature generation is intentionally restrained; do not claim improved performance or flawless marine ecology before screenshots and profiler evidence.
