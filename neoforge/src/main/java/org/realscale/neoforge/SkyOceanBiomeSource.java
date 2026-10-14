@@ -15,83 +15,73 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-/**
- * Opt-in sky island decorator layered on top of the existing RealScale ecotone
- * source. The land/ocean biome below Y~170 is never modified. A potential sky
- * biome is selected only when ALL radial climate probes remain oceanic and the
- * center is in deep ocean. This avoids loading neighboring chunks in worldgen.
+/** Opt-in offshore archipelago on top of the unchanged vanilla/ecotone
+ * biome source. Everything below Y160 is delegated without modification.
  */
 public final class SkyOceanBiomeSource extends BiomeSource {
-    public static final MapCodec<SkyOceanBiomeSource> CODEC = RecordCodecBuilder.mapCodec(i ->
-            i.group(BiomeSource.CODEC.fieldOf("source").forGetter(SkyOceanBiomeSource::source),
-                    RegistryOps.retrieveGetter(Registries.BIOME))
-                    .apply(i, SkyOceanBiomeSource::new));
+    public static final MapCodec<SkyOceanBiomeSource> CODEC=RecordCodecBuilder.mapCodec(i->
+        i.group(BiomeSource.CODEC.fieldOf("source").forGetter(SkyOceanBiomeSource::source),
+                RegistryOps.retrieveGetter(Registries.BIOME))
+          .apply(i,SkyOceanBiomeSource::new));
     private final BiomeSource source;
     private final Holder<Biome> blossomIsle;
-    private final ThreadLocal<EligibilityCache> cache = ThreadLocal.withInitial(EligibilityCache::new);
+    private final ThreadLocal<EligibilityCache> cache=ThreadLocal.withInitial(EligibilityCache::new);
 
     private static final class EligibilityCache {
         Climate.Sampler sampler;
-        final LinkedHashMap<Long, Boolean> result = new LinkedHashMap<>(256, .75f, true) {
-            @Override protected boolean removeEldestEntry(Map.Entry<Long, Boolean> first) {
-                return size() > 256;
+        final LinkedHashMap<Long,Integer> tiers=new LinkedHashMap<>(256,.75f,true) {
+            @Override protected boolean removeEldestEntry(Map.Entry<Long,Integer> eldest) {
+                return size()>256;
             }
         };
     }
-
-    private SkyOceanBiomeSource(BiomeSource source, HolderGetter<Biome> registry) {
-        this.source = source;
-        blossomIsle = registry.getOrThrow(ResourceKey.create(Registries.BIOME,
-                ResourceLocation.fromNamespaceAndPath("realscale", "sky_blossom_isles")));
+    private SkyOceanBiomeSource(BiomeSource source,HolderGetter<Biome> biomes) {
+        this.source=source;
+        blossomIsle=biomes.getOrThrow(ResourceKey.create(Registries.BIOME,
+            ResourceLocation.fromNamespaceAndPath("realscale","sky_blossom_isles")));
     }
-    private BiomeSource source() { return source; }
-
-    @Override protected MapCodec<? extends BiomeSource> codec() { return CODEC; }
+    private BiomeSource source(){return source;}
+    @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
-        return Stream.concat(source.possibleBiomes().stream(), Stream.of(blossomIsle)).distinct();
+        return Stream.concat(source.possibleBiomes().stream(),Stream.of(blossomIsle)).distinct();
     }
-
-    private String underlying(int x, int z, Climate.Sampler sampler) {
-        return source.getNoiseBiome(Math.floorDiv(x,4), 16, Math.floorDiv(z,4), sampler)
-                .unwrapKey().map(k -> {
-                    var loc = k.location();
-                    return "minecraft".equals(loc.getNamespace()) ? loc.getPath() : "";
+    private String underlying(int x,int z,Climate.Sampler sampler) {
+        return source.getNoiseBiome(Math.floorDiv(x,4),16,Math.floorDiv(z,4),sampler)
+                .unwrapKey().map(k->{
+                    var id=k.location();
+                    return "minecraft".equals(id.getNamespace())?id.getPath():"";
                 }).orElse("");
     }
-    private boolean deepOceanCenter(SkyIslandLayout.Site s, Climate.Sampler sampler) {
-        return SkyIslandLayout.remoteDeepOcean(s,
-                (x,z) -> {
-                    String id = underlying(x,z,sampler);
-                    return id.startsWith("deep_") && id.endsWith("ocean");
+    private int isolationTier(SkyIslandLayout.Site base,Climate.Sampler sampler) {
+        EligibilityCache c=cache.get();
+        if(c.sampler!=sampler){c.sampler=sampler;c.tiers.clear();}
+        long key=((long)base.x()<<32)|(base.z()&0xffffffffL);
+        Integer previous=c.tiers.get(key);
+        if(previous!=null)return previous;
+        int value=SkyIslandLayout.oceanTier(base,
+                (x,z)->{
+                    String id=underlying(x,z,sampler);
+                    return id.startsWith("deep_")&&id.endsWith("ocean");
                 },
-                (x,z) -> underlying(x,z,sampler).contains("ocean"));
+                (x,z)->underlying(x,z,sampler).endsWith("ocean"));
+        c.tiers.put(key,value);
+        return value;
     }
-    private boolean eligible(SkyIslandLayout.Site s, Climate.Sampler sampler) {
-        EligibilityCache c = cache.get();
-        if (c.sampler != sampler) {
-            c.sampler = sampler;
-            c.result.clear();
+    @Override public Holder<Biome> getNoiseBiome(int quartX,int quartY,int quartZ,
+                                                  Climate.Sampler sampler) {
+        // Explicit identity delegation for ocean, seabed, ocean structures and
+        // even tall surface mountain biomes that do not contain an island.
+        int y=quartY*4;
+        if(y<160||y>224)return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
+        int x=quartX*4,z=quartZ*4;
+        SkyIslandLayout.Site base=SkyIslandLayout.at(x,z);
+        // Reject most positions without computing a single remote-climate ring.
+        for(int slot=0;slot<SkyIslandLayout.SLOTS;slot++){
+            SkyIslandLayout.Site island=SkyIslandLayout.satellite(base,slot);
+            if(!SkyIslandLayout.insideBiome(island,x,y,z))continue;
+            if(slot<SkyIslandLayout.countForTier(isolationTier(base,sampler)))
+                return blossomIsle;
         }
-        long key = ((long) s.x() << 32) | (s.z() & 0xffffffffL);
-        Boolean stored = c.result.get(key);
-        if (stored != null) return stored;
-        boolean checked = deepOceanCenter(s, sampler);
-        c.result.put(key, checked);
-        return checked;
-    }
-
-    @Override
-    public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
-        // Expensive ocean qualification never happens for sea floor, normal
-        // terrain or caves. Surface and ocean climate remain byte-for-byte
-        // controlled by the wrapped multi-noise/ecotone source.
-        int y = quartY * 4;
-        if (y < 168 || y > 215)
-            return source.getNoiseBiome(quartX, quartY, quartZ, sampler);
-        int x = quartX * 4, z = quartZ * 4;
-        SkyIslandLayout.Site site = SkyIslandLayout.at(x, z);
-        if (SkyIslandLayout.insideBiome(site, x, y, z) && eligible(site, sampler))
-            return blossomIsle;
-        return source.getNoiseBiome(quartX, quartY, quartZ, sampler);
+        return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
     }
 }

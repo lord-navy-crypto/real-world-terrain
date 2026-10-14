@@ -1,59 +1,93 @@
 package org.realscale.neoforge;
 
-/** Shared deterministic grid for rare, opt-in ocean sky islands. Pure math, no world access. */
+import java.util.function.BiPredicate;
+
+/**
+ * Deterministic, world-seed-independent geometry for optional fantasy sky
+ * archipelagos. The wrapped Minecraft climate source decides which candidate
+ * cells are actually far enough from land to create islands.
+ */
 public final class SkyIslandLayout {
     private SkyIslandLayout() {}
     public static final int GRID = 512;
-    public static final int RING_RADIUS = 384;
-    private static final int[] PROBE_RADII = {96, 192, 288, RING_RADIUS};
+    public static final int MIN_ISOLATION = 384;
+    public static final int MAX_ISOLATION = 896;
+    public static final int SLOTS = 5;
     private static final int DIRECTIONS = 16;
-    private static final int[] PROBE_X = new int[PROBE_RADII.length * DIRECTIONS];
+    // Four rings to qualify a sparse offshore island; two more for small
+    // groups, and two additional rings for the densest ocean archipelago.
+    private static final int[] PROBE_RADII = {96,192,288,384,512,640,768,896};
+    private static final int[] PROBE_X = new int[PROBE_RADII.length*DIRECTIONS];
     private static final int[] PROBE_Z = new int[PROBE_X.length];
+    private static final int[][] SATELLITES = {{0,0},{96,0},{-96,0},{0,96},{0,-96}};
     static {
-        for (int n = 0; n < PROBE_RADII.length; n++) {
-            for (int i = 0; i < DIRECTIONS; i++) {
-                double a = i * 2.0 * Math.PI / DIRECTIONS;
-                PROBE_X[n * DIRECTIONS + i] = (int)Math.round(PROBE_RADII[n] * Math.cos(a));
-                PROBE_Z[n * DIRECTIONS + i] = (int)Math.round(PROBE_RADII[n] * Math.sin(a));
-            }
+        for (int n=0;n<PROBE_RADII.length;n++) for (int i=0;i<DIRECTIONS;i++) {
+            double angle=i*2.0*Math.PI/DIRECTIONS;
+            PROBE_X[n*DIRECTIONS+i]=(int)Math.round(PROBE_RADII[n]*Math.cos(angle));
+            PROBE_Z[n*DIRECTIONS+i]=(int)Math.round(PROBE_RADII[n]*Math.sin(angle));
         }
     }
-    public record Site(int x, int z, int topY, int radius) {}
+    public record Site(int x,int z,int topY,int radius) {}
     private static long mix(long x) {
-        x ^= x >>> 30; x *= 0xbf58476d1ce4e5b9L;
-        x ^= x >>> 27; x *= 0x94d049bb133111ebL;
-        return x ^ (x >>> 31);
+        x^=x>>>30; x*=0xbf58476d1ce4e5b9L;
+        x^=x>>>27; x*=0x94d049bb133111ebL;
+        return x^(x>>>31);
     }
-    public static Site at(int blockX, int blockZ) {
-        long gx = Math.floorDiv((long) blockX + GRID / 2, GRID);
-        long gz = Math.floorDiv((long) blockZ + GRID / 2, GRID);
-        long hash = mix((gx * 0x9e3779b97f4a7c15L)
-                      ^ (gz * 0xc2b2ae3d27d4eb4fL)
-                      ^ 0x3bc7f54a83e1d209L);
-        int x = (int) (gx * GRID - 128 + Math.floorMod(hash, 256L));
-        int z = (int) (gz * GRID - 128 + Math.floorMod(hash >>> 15, 256L));
-        int y = 183 + (int) Math.floorMod(hash >>> 30, 21L);
-        int radius = 10 + (int) Math.floorMod(hash >>> 47, 5L);
-        return new Site(x, z, y, radius);
+    public static Site at(int blockX,int blockZ) {
+        long gx=Math.floorDiv((long)blockX+GRID/2,GRID);
+        long gz=Math.floorDiv((long)blockZ+GRID/2,GRID);
+        long hash=mix((gx*0x9e3779b97f4a7c15L)
+               ^ (gz*0xc2b2ae3d27d4eb4fL) ^ 0x3bc7f54a83e1d209L);
+        int x=(int)(gx*GRID-128+Math.floorMod(hash,256L));
+        int z=(int)(gz*GRID-128+Math.floorMod(hash>>>15,256L));
+        return new Site(x,z,183+(int)Math.floorMod(hash>>>30,21L),
+                10+(int)Math.floorMod(hash>>>47,5L));
     }
-    /**
-     * A finite conservative coastal-distance probe, not a global shortest
-     * distance field. Samples only the ungenerated underlying climate source.
+    /** The main island plus four distant, independently shaped satellites. */
+    public static Site satellite(Site base,int slot) {
+        if(slot<0||slot>=SLOTS) throw new IllegalArgumentException("invalid sky slot");
+        if(slot==0)return base;
+        long hash=mix((((long)base.x())<<32) ^ (base.z()&0xffffffffL)
+                ^ (0x9e3779b97f4a7c15L*slot));
+        return new Site(base.x()+SATELLITES[slot][0],
+                base.z()+SATELLITES[slot][1],
+                base.topY()+(int)Math.floorMod(hash,7L)-3,
+                7+(int)Math.floorMod(hash>>>27,5L));
+    }
+    /** 0 absent, 1 sparse, 2 a three-island group, 3 a five-island cluster.
+     * Returns only a *sampled lower bound* on coast isolation, NOT an exact
+     * shortest distance to every land block. The first failed ring stops
+     * all further checks, preventing needless climate lookups near coasts.
      */
-    public static boolean remoteDeepOcean(Site site,
-            java.util.function.BiPredicate<Integer,Integer> deep,
-            java.util.function.BiPredicate<Integer,Integer> ocean) {
-        if (!deep.test(site.x(),site.z())) return false;
-        // Denser 22.5-degree sampling detects coast wedges between the
-        // original eight 45-degree compass rays. Trigonometry is precomputed.
-        for (int i = 0; i < PROBE_X.length; i++)
-            if (!ocean.test(site.x() + PROBE_X[i], site.z() + PROBE_Z[i]))
-                return false;
-        return true;
+    public static int oceanTier(Site base,
+            BiPredicate<Integer,Integer> deep,
+            BiPredicate<Integer,Integer> ocean) {
+        if(!deep.test(base.x(),base.z()))return 0;
+        for(int ring=0;ring<PROBE_RADII.length;ring++) {
+            int first=ring*DIRECTIONS;
+            for(int i=0;i<DIRECTIONS;i++)
+                if(!ocean.test(base.x()+PROBE_X[first+i],
+                               base.z()+PROBE_Z[first+i]))
+                    return ring<4?0:ring<6?1:2;
+        }
+        return 3;
     }
-    public static boolean insideBiome(Site site, int blockX, int blockY, int blockZ) {
-        int dx = blockX - site.x(), dz = blockZ - site.z();
-        return dx * dx + dz * dz <= site.radius() * site.radius()
-                && blockY >= site.topY() - 13 && blockY <= site.topY() + 8;
+    public static int countForTier(int tier) {
+        return switch(tier) {
+            case 1 -> 1;
+            case 2 -> 3;
+            case 3 -> 5;
+            default -> 0;
+        };
+    }
+    public static boolean remoteDeepOcean(Site base,
+            BiPredicate<Integer,Integer> deep,
+            BiPredicate<Integer,Integer> ocean) {
+        return oceanTier(base,deep,ocean)>0;
+    }
+    public static boolean insideBiome(Site site,int x,int y,int z) {
+        long dx=(long)x-site.x(), dz=(long)z-site.z();
+        return dx*dx+dz*dz <= (long)site.radius()*site.radius()
+                && y>=site.topY()-13 && y<=site.topY()+8;
     }
 }
