@@ -14,7 +14,7 @@ placement, dimension height, or saved-world schema.
 - Inside the measured region, cache the **X/Z-only** elevation and smoothstep
   weight. Minecraft samples many different Y positions for the same X/Z.
 - Cache entries are keyed by signed X, signed Z and `blendMeters`, bounded to
-  1024 direct-mapped slots **per generation worker thread**, not an unbounded
+  4096 direct-mapped slots **per generation worker thread**, not an unbounded
   world-wide cache. Collisions replace entries and cannot change correctness.
 - Preserve the original order of floating-point operations in density blending.
   Identical world settings and sampled coordinates should yield bit-identical
@@ -79,3 +79,7 @@ procedural-noise cache or thread scheduling changes. Avoid global mutable
 caches, removing legitimate terrain, or modifying vanilla world-generation
 threading. Rendering optimizations remain the domain of optional Sodium/Iris
 and other client performance mods.
+
+## Cache locality tuning results (GitHub CI microbenchmark)
+
+Initial 256-slot direct-mapped design had collision-heavy regressions on interleaved columns. 1024-slot intermediate design reduced them but remained slower in that synthetic access pattern. Current 4096-slot build adds a last-column fast path, but its performance MUST be measured separately. The new upper bound increases per-worker memory; do not assert full-game speed gains from JVM microbenchmark data alone.

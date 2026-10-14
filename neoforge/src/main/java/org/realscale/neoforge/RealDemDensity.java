@@ -18,7 +18,7 @@ public record RealDemDensity(DensityFunction base,int blendMeters) implements De
     ).apply(i,RealDemDensity::new));
     private static final KeyDispatchDataCodec<RealDemDensity> DISPATCH=KeyDispatchDataCodec.of(MAP_CODEC);
 
-    // Only active near the measured tile; each worker keeps at most 1024 X/Z samples.
+    // Only active near the measured tile; each worker keeps at most 4096 X/Z samples.
     // Sharing a mutable cache across generator worker threads would be unsafe.
     private static final ThreadLocal<RealDemColumnCache> COLUMN_CACHE =
         ThreadLocal.withInitial(() -> new RealDemColumnCache(DEM));

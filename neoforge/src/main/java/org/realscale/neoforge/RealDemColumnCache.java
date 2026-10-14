@@ -6,7 +6,7 @@ package org.realscale.neoforge;
  * This cache never changes the noise sampling grid or the original arithmetic.
  */
 final class RealDemColumnCache {
-    private static final int SLOTS = 1024;
+    private static final int SLOTS = 4096;
     private static final Column OUTSIDE = new Column(0.0, Double.NaN);
 
     record Column(double influence, double elevation) {}
@@ -16,15 +16,26 @@ final class RealDemColumnCache {
     private final int[] blendWidths = new int[SLOTS];
     private final Column[] values = new Column[SLOTS];
 
+    // Density evaluation commonly visits many Y cells for the same X/Z.
+    // This avoids hashing and array probes on the hot repeated-column path.
+    private long lastCoordinate;
+    private int lastBlendMeters;
+    private Column lastColumn;
+
     RealDemColumnCache(RealDemTile dem) {
         this.dem = java.util.Objects.requireNonNull(dem);
     }
 
     Column sample(int x, int z, int blendMeters) {
-        final int slot = index(x, z, blendMeters);
         final long coordinate = ((long) x << 32) | (z & 0xffffffffL);
+        if (lastColumn != null && lastCoordinate == coordinate
+                && lastBlendMeters == blendMeters) return lastColumn;
+        final int slot = index(x, z, blendMeters);
         final Column previous = values[slot];
         if (previous != null && coordinates[slot] == coordinate && blendWidths[slot] == blendMeters) {
+            lastCoordinate = coordinate;
+            lastBlendMeters = blendMeters;
+            lastColumn = previous;
             return previous;
         }
 
@@ -34,6 +45,9 @@ final class RealDemColumnCache {
         coordinates[slot] = coordinate;
         blendWidths[slot] = blendMeters;
         values[slot] = result;
+        lastCoordinate = coordinate;
+        lastBlendMeters = blendMeters;
+        lastColumn = result;
         return result;
     }
 
