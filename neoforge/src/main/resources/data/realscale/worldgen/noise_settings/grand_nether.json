@@ -23,45 +23,48 @@
     "depth": 0,
     "erosion": 0,
     "final_density": {
-      "type": "minecraft:squeeze",
-      "argument": {
-        "type": "minecraft:mul",
-        "argument1": 0.64,
-        "argument2": {
-          "type": "minecraft:interpolated",
-          "argument": {
-            "type": "minecraft:blend_density",
+      "type": "realscale:grand_nether_caverns",
+      "base": {
+        "type": "minecraft:squeeze",
+        "argument": {
+          "type": "minecraft:mul",
+          "argument1": 0.64,
+          "argument2": {
+            "type": "minecraft:interpolated",
             "argument": {
-              "type": "minecraft:add",
-              "argument1": 2.5,
-              "argument2": {
-                "type": "minecraft:mul",
-                "argument1": {
-                  "type": "minecraft:y_clamped_gradient",
-                  "from_value": 0,
-                  "from_y": -8,
-                  "to_value": 1,
-                  "to_y": 24
-                },
+              "type": "minecraft:blend_density",
+              "argument": {
+                "type": "minecraft:add",
+                "argument1": 2.5,
                 "argument2": {
-                  "type": "minecraft:add",
-                  "argument1": -2.5,
+                  "type": "minecraft:mul",
+                  "argument1": {
+                    "type": "minecraft:y_clamped_gradient",
+                    "from_value": 0,
+                    "from_y": -8,
+                    "to_value": 1,
+                    "to_y": 24
+                  },
                   "argument2": {
                     "type": "minecraft:add",
-                    "argument1": 0.9375,
+                    "argument1": -2.5,
                     "argument2": {
-                      "type": "minecraft:mul",
-                      "argument1": {
-                        "type": "minecraft:y_clamped_gradient",
-                        "from_value": 1,
-                        "from_y": 448,
-                        "to_value": 0,
-                        "to_y": 496
-                      },
+                      "type": "minecraft:add",
+                      "argument1": 0.9375,
                       "argument2": {
-                        "type": "minecraft:add",
-                        "argument1": -0.9375,
-                        "argument2": "minecraft:nether/base_3d_noise"
+                        "type": "minecraft:mul",
+                        "argument1": {
+                          "type": "minecraft:y_clamped_gradient",
+                          "from_value": 1,
+                          "from_y": 448,
+                          "to_value": 0,
+                          "to_y": 496
+                        },
+                        "argument2": {
+                          "type": "minecraft:add",
+                          "argument1": -0.9375,
+                          "argument2": "minecraft:nether/base_3d_noise"
+                        }
                       }
                     }
                   }
