@@ -62,6 +62,19 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     /** Declared in priority order for three-way border corners. */
     private static final List<Rule> RULES = List.of(
+            // Narrow, geographically distinct v0.6 climate boundaries.
+            rule("cherry_oak_woodland",32,"cherry_grove","forest"),
+            rule("cherry_meadow_fringe",24,"cherry_grove","meadow"),
+            rule("birch_snowline_scrub",24,"birch_forest","snowy_slopes"),
+            rule("spruce_snowdrift_edge",24,"grove","snowy_slopes"),
+            rule("mangrove_freshwater_margin",16,"mangrove_swamp","river"),
+            rule("coastal_marsh_woodland",24,"swamp","beach"),
+            rule("dune_pine_woodland",24,"taiga","beach"),
+            rule("montane_oak_foothills",32,"forest","windswept_forest"),
+            rule("rocky_savanna_foothills",32,"savanna","stony_peaks"),
+            rule("badlands_peak_scree",24,"badlands","stony_peaks"),
+            rule("bamboo_meadow_fringe",24,"bamboo_jungle","meadow"),
+            rule("snowy_spruce_riverbank",16,"snowy_taiga","frozen_river"),
             // Real geographic micro-habitats are matched before broad forest/plains
             // ecotones so narrow birch glades are not painted as generic woodland.
             rule("birch_parkland",24,"birch_forest,old_growth_birch_forest",PLAINS),
@@ -119,6 +132,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
             .collect(Collectors.toUnmodifiableSet());
     private static final int MAX_SEARCH_QUARTS = RULES.stream()
             .mapToInt(rule -> rule.widthBlocks() / 8).max().orElse(0);
+    private static final int[][] CARDINAL = {{1,0},{-1,0},{0,1},{0,-1}};
 
     /** Bounded per-thread climate cache, invalidated when the climate sampler changes. */
     private static final class SamplingCache {
@@ -205,8 +219,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         // width of 32 blocks, these samples never exceed 8 quart cells.
         Rule nearest = null;
         int closest = Integer.MAX_VALUE;
-        final int[][] directions = {{1,0},{-1,0},{0,1},{0,-1}};
-        for (int[] direction : directions) {
+        for (int[] direction : CARDINAL) {
             for (int step = 1; step <= MAX_SEARCH_QUARTS; step++) {
                 String next = vanillaId(sampleBase(quartX + direction[0] * step,
                         quartY, quartZ + direction[1] * step, sampler));

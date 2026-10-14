@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "reference": "misode/mcmeta tag 1.21.1-data, data/minecraft/worldgen/biome",
-  "scope": "48 opt-in surface ecotones (including eight v0.5 habitat variants)",
+  "scope": "60 opt-in natural surface ecotones, 12 v0.6 regional variants",
   "donor_by_ecotone": {
     "woodland_meadow": "plains",
     "forest_steppe": "savanna",
@@ -50,6 +50,18 @@
     "tropical_littoral_forest": "sparse_jungle",
     "frost_riparian_banks": "snowy_plains",
     "montane_spruce_meadow": "meadow",
-    "dry_grass_dunes": "desert"
+    "dry_grass_dunes": "desert",
+    "cherry_oak_woodland": "cherry_grove",
+    "cherry_meadow_fringe": "meadow",
+    "birch_snowline_scrub": "grove",
+    "spruce_snowdrift_edge": "grove",
+    "mangrove_freshwater_margin": "mangrove_swamp",
+    "coastal_marsh_woodland": "swamp",
+    "dune_pine_woodland": "taiga",
+    "montane_oak_foothills": "windswept_forest",
+    "rocky_savanna_foothills": "savanna",
+    "badlands_peak_scree": "badlands",
+    "bamboo_meadow_fringe": "jungle",
+    "snowy_spruce_riverbank": "snowy_taiga"
   }
 }

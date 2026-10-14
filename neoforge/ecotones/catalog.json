@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "description": "48 implemented climate-boundary surface ecotones (including 8 v0.5 habitat variants); opt-in natural_ecotones BiomeSource",
+  "description": "60 naturally selectable opt-in surface climate ecotones; 12 additional regional mosaics in v0.6",
   "entries": [
     {
       "id": "woodland_meadow",
@@ -410,6 +410,102 @@
       "target_width_blocks": 32,
       "visual_mood": "windblown grass-bound dunes",
       "phase": "v05-habitat-variants"
+    },
+    {
+      "id": "cherry_oak_woodland",
+      "from": "cherry_grove",
+      "to": "forest",
+      "target_width_blocks": 32,
+      "visual_mood": "mixed cherry-oak glades",
+      "phase": "v06-regional-mosaics"
+    },
+    {
+      "id": "cherry_meadow_fringe",
+      "from": "cherry_grove",
+      "to": "meadow",
+      "target_width_blocks": 24,
+      "visual_mood": "flowering meadow along cherry woodland",
+      "phase": "v06-regional-mosaics"
+    },
+    {
+      "id": "birch_snowline_scrub",
+      "from": "birch_forest",
+      "to": "snowy_slopes",
+      "target_width_blocks": 24,
+      "visual_mood": "scrubby snowline birch forest",
+      "phase": "v06-regional-mosaics"
+    },
+    {
+      "id": "spruce_snowdrift_edge",
+      "from": "grove",
+      "to": "snowy_slopes",
+      "target_width_blocks": 24,
+      "visual_mood": "wind-worn snowy spruce line",
+      "phase": "v06-regional-mosaics"
+    },
+    {
+      "id": "mangrove_freshwater_margin",
+      "from": "mangrove_swamp",
+      "to": "river",
+      "target_width_blocks": 16,
+      "visual_mood": "riverbank mangrove wetland",
+      "phase": "v06-regional-mosaics"
+    },
+    {
+      "id": "coastal_marsh_woodland",
+      "from": "swamp",
+      "to": "beach",
+      "target_width_blocks": 24,
+      "visual_mood": "moist temperate coastal woodland",
+      "phase": "v06-regional-mosaics"
+    },
+    {
+      "id": "dune_pine_woodland",
+      "from": "taiga",
+      "to": "beach",
+      "target_width_blocks": 24,
+      "visual_mood": "sea-edge conifer woodland",
+      "phase": "v06-regional-mosaics"
+    },
+    {
+      "id": "montane_oak_foothills",
+      "from": "forest",
+      "to": "windswept_forest",
+      "target_width_blocks": 32,
+      "visual_mood": "rocky foothill oak mosaic",
+      "phase": "v06-regional-mosaics"
+    },
+    {
+      "id": "rocky_savanna_foothills",
+      "from": "savanna",
+      "to": "stony_peaks",
+      "target_width_blocks": 32,
+      "visual_mood": "rocky savanna and alpine grass edge",
+      "phase": "v06-regional-mosaics"
+    },
+    {
+      "id": "badlands_peak_scree",
+      "from": "badlands",
+      "to": "stony_peaks",
+      "target_width_blocks": 24,
+      "visual_mood": "badland scree highland fringe",
+      "phase": "v06-regional-mosaics"
+    },
+    {
+      "id": "bamboo_meadow_fringe",
+      "from": "bamboo_jungle",
+      "to": "meadow",
+      "target_width_blocks": 24,
+      "visual_mood": "bamboo jungle meadow clearings",
+      "phase": "v06-regional-mosaics"
+    },
+    {
+      "id": "snowy_spruce_riverbank",
+      "from": "snowy_taiga",
+      "to": "frozen_river",
+      "target_width_blocks": 16,
+      "visual_mood": "snowy boreal river bank",
+      "phase": "v06-regional-mosaics"
     }
   ]
 }
