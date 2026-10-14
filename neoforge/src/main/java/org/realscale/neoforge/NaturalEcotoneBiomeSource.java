@@ -3,6 +3,7 @@ package org.realscale.neoforge;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.RegistryOps;
@@ -15,9 +16,11 @@ import net.minecraft.world.level.biome.Climate;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -101,7 +104,27 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
             rule("terracotta_scrub",32,BADLANDS,"desert")
     );
 
+    private static final Set<String> CANDIDATE_IDS = RULES.stream()
+            .flatMap(rule -> Stream.concat(rule.left().stream(), rule.right().stream()))
+            .collect(Collectors.toUnmodifiableSet());
+    private static final int MAX_SEARCH_QUARTS = RULES.stream()
+            .mapToInt(rule -> rule.widthBlocks() / 8).max().orElse(0);
+
+    /** Bounded per-thread climate cache, invalidated when the climate sampler changes. */
+    private static final class SamplingCache {
+        private static final int LIMIT = 8192;
+        Climate.Sampler sampler;
+        final LinkedHashMap<Long, Holder<Biome>> positions =
+                new LinkedHashMap<>(LIMIT, 0.75f, true) {
+                    @Override
+                    protected boolean removeEldestEntry(Map.Entry<Long, Holder<Biome>> eldest) {
+                        return size() > LIMIT;
+                    }
+                };
+    }
+
     private final BiomeSource source;
+    private final ThreadLocal<SamplingCache> cached = ThreadLocal.withInitial(SamplingCache::new);
     private final Map<String, Holder<Biome>> transitionBiomes;
 
     private NaturalEcotoneBiomeSource(BiomeSource source, HolderGetter<Biome> biomes) {
@@ -111,6 +134,20 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
             ResourceLocation location = ResourceLocation.fromNamespaceAndPath("realscale", rule.target());
             transitionBiomes.put(rule.target(), biomes.getOrThrow(ResourceKey.create(Registries.BIOME, location)));
         }
+    }
+
+    private Holder<Biome> sampleBase(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
+        SamplingCache cache = cached.get();
+        if (cache.sampler != sampler) {
+            cache.sampler = sampler;
+            cache.positions.clear();
+        }
+        long key = BlockPos.asLong(quartX, quartY, quartZ);
+        Holder<Biome> existing = cache.positions.get(key);
+        if (existing != null) return existing;
+        Holder<Biome> found = source.getNoiseBiome(quartX, quartY, quartZ, sampler);
+        cache.positions.put(key, found);
+        return found;
     }
 
     private BiomeSource source() {
@@ -147,11 +184,11 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     @Override
     public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
-        Holder<Biome> original = source.getNoiseBiome(quartX, quartY, quartZ, sampler);
+        Holder<Biome> original = sampleBase(quartX, quartY, quartZ, sampler);
         // Surface ecotones must not be painted across caves or deep aquifers.
         if (quartY < 12) return original;
         String current = vanillaId(original);
-        if (current.isEmpty() || protectedWater(current)) return original;
+        if (current.isEmpty() || protectedWater(current) || !CANDIDATE_IDS.contains(current)) return original;
 
         // Check multiple quart positions outward, stopping at the first
         // underlying biome boundary in each direction. With a maximum half
@@ -160,8 +197,8 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         int closest = Integer.MAX_VALUE;
         final int[][] directions = {{1,0},{-1,0},{0,1},{0,-1}};
         for (int[] direction : directions) {
-            for (int step = 1; step <= 8; step++) {
-                String next = vanillaId(source.getNoiseBiome(quartX + direction[0] * step,
+            for (int step = 1; step <= MAX_SEARCH_QUARTS; step++) {
+                String next = vanillaId(sampleBase(quartX + direction[0] * step,
                         quartY, quartZ + direction[1] * step, sampler));
                 if (current.equals(next)) continue;
                 Rule rule = findPair(current, next);
