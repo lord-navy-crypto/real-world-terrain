@@ -172,11 +172,16 @@ public final class GrandNetherCaveNetwork {
             for(int edge=0;edge<4;edge++)
                 answer=Math.max(answer,tube(x,y,z,center,
                           cache.halls[layer][edge+1],11));
-            for(int gallery=0;gallery<2;gallery++) {
-                Hall side=cache.satellites[layer][gallery];
-                if(Math.abs(y-side.y())<side.radiusY()+1)
-                    answer=Math.max(answer,chamber(x,y,z,side));
-                answer=Math.max(answer,tube(x,y,z,center,side,7));
+            // All satellite chambers and connectors lie within ±80 X/Z and
+            // ±30 Y of their parent. Skip secondary graph work far from them.
+            if (Math.abs(x-center.x())<=80 && Math.abs(z-center.z())<=80
+                    && Math.abs(y-center.y())<=30) {
+                for(int gallery=0;gallery<2;gallery++) {
+                    Hall side=cache.satellites[layer][gallery];
+                    if(Math.abs(y-side.y())<side.radiusY()+1)
+                        answer=Math.max(answer,chamber(x,y,z,side));
+                    answer=Math.max(answer,tube(x,y,z,center,side,7));
+                }
             }
         }
         // A diagonal chimney links low and high halls. The edge is evaluated
