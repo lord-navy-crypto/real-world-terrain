@@ -24,6 +24,7 @@ def test_biomes():
         data = load(BIOMES / (stem + ".json"))
         assert "effects" in data and "temperature" in data and "downfall" in data
         assert isinstance(data["features"], list) and len(data["features"]) == 11
+        assert isinstance(data["carvers"], dict), "Minecraft 1.21.1 biome carvers must be an object: " + stem
 
 def test_modifier_references():
     for f in MODIFIERS.glob("*.json"):
@@ -72,6 +73,15 @@ def test_supported_microstructures():
         assert modifier["type"] == "neoforge:add_features", name
         assert len(modifier["biomes"]) >= 3, name
 
+def test_all_custom_biome_carvers():
+    # Minecraft 1.21.1 expects a carving-stage map, not the later-version list.
+    all_biomes = list(BIOMES.glob("*.json"))
+    assert len(all_biomes) == 46, len(all_biomes)
+    for path in all_biomes:
+        biome = load(path)
+        assert isinstance(biome.get("carvers"), dict), path
+        assert isinstance(biome["carvers"].get("air"), list), path
+
 def test_ecotone_gallery():
     gallery = load(PRESETS / "ecotone_gallery.json")
     source = gallery["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
@@ -105,6 +115,7 @@ if __name__ == "__main__":
     test_biome_lab()
     test_ecotone_catalog()
     test_ecotone_gallery()
+    test_all_custom_biome_carvers()
     test_supported_microstructures()
     print("STATIC PASS: 40 ecotone specifications, 10 priority biomes, referenced features and opt-in biome lab.")
     print("RUNTIME NOT TESTED: Minecraft biome codec, server loading, cave/river geometry.")
