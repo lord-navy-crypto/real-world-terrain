@@ -16,6 +16,23 @@ public final class GrandNetherCaveNetworkSmoke {
                         "Hollow halls have real large volume");
                 yes(h.y()-h.radiusY()>144&&h.y()+h.radiusY()<440,
                         "Bedrock, original lava sea and original structure region protected");
+                // Every one of the four local satellites must form a real
+                // pocket connected to its parent hall by an open branch.
+                for(int gallery=0;gallery<2;gallery++) {
+                    var side=GrandNetherCaveNetwork.satellite(cx,cz,layer,gallery);
+                    yes(side.x()-side.radiusX() > (long)cx*256+8
+                            && side.x()+side.radiusX() < (long)(cx+1)*256-8,
+                            "Satellite must not extend into a neighbor's cell");
+                    yes(side.z()-side.radiusZ() > (long)cz*256+8
+                            && side.z()+side.radiusZ() < (long)(cz+1)*256-8,
+                            "Satellite Z must stay inside its cell");
+                    yes(side.y()-side.radiusY()>148 && side.y()+side.radiusY()<436,
+                            "Satellite height must protect Nether lower and roof");
+                    yes(GrandNetherCaveNetwork.strength(side.x(),side.y(),side.z())>0.8,
+                            "Satellite gallery core must be excavated");
+                    connected(h,side,"secondary gallery branch");
+                    samples+=20;
+                }
                 for(int dx=-1;dx<=1;dx++)for(int dz=-1;dz<=1;dz++) {
                     // Query equality ensures a data-independent seamless result.
                     int x=(int)h.x()+dx*30,z=(int)h.z()+dz*30,y=(int)h.y();
