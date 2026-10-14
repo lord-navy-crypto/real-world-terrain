@@ -88,6 +88,10 @@ def test_skylands_and_habitats():
         modifier = load(MODIFIERS / (name+".json"))
         assert modifier["type"] == "neoforge:add_features"
         assert modifier["features"] == "realscale:"+name
+    marine = load(MODIFIERS / "ocean_seagrass_patches.json")
+    for ocean in ("minecraft:ocean", "minecraft:warm_ocean", "minecraft:cold_ocean",
+                  "minecraft:deep_cold_ocean", "minecraft:lukewarm_ocean"):
+        assert ocean in marine["biomes"], ocean
     sky_mod = load(MODIFIERS/"sky_blossom_island.json")
     assert sky_mod["biomes"] == ["realscale:sky_blossom_isles"]
     assert load(PLACED/"sky_blossom_island.json")["placement"] == []
