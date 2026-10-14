@@ -102,4 +102,29 @@ assert ocean_chunks >= 10, "No saved underwater ocean biome sections"
 assert submerged_columns >= 10, "No submerged ocean columns detected"
 print("PASS: original deep ocean biome preserved below sea level, real seawater present")
 
+# Require every member of the maximal five-island archipelago to become a
+# FULLY DECORATED chunk, not just a sky biome in a partially saved protochunk.
+# The forced-deep-ocean fixture always qualifies for isolation tier 3.
+candidates = ((32,63,183),(128,63,181),(-64,63,185),(32,159,186),(32,-33,186))
+wanted = {(x//16,z//16): (x,z,top) for x,z,top in candidates}
+found_chunks = {}
+for path in regions:
+    for ch in iter_region_chunks(path):
+        key = (ch.get("xPos"),ch.get("zPos"))
+        if key in wanted: found_chunks[key] = ch
+assert len(found_chunks) == 5, (
+    "Satellite chunks not generated; check CI RCON forceload responses",
+    sorted(found_chunks), sorted(wanted))
+for key, (x,z,top) in wanted.items():
+    chunk = found_chunks[key]
+    assert chunk.get("Status") == "minecraft:full", (key,chunk.get("Status"))
+    lx,lz = x%16,z%16
+    assert get_block(chunk,lx,top+1,lz) == "minecraft:amethyst_block", (x,z,top)
+    assert get_block(chunk,lx,top+2,lz) == "minecraft:sea_lantern", (x,z,top)
+    assert get_block(chunk,lx,top-10,lz) == "minecraft:air", (
+        "Island underside must remain detached",x,z,top)
+    sections = [v for v in chunk.get("sections",[])
+                if "realscale:sky_blossom_isles" in v.get("biomes",{}).get("palette",[])]
+    assert sections, (x,z,"missing satellite SKY biome")
+print("PASS: five separate physically generated floating islands, 3D biomes, and detached undersides")
 print("PASS: actual generated sky biome and solid fantasy island terrain")
