@@ -130,6 +130,25 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     private static final Set<String> CANDIDATE_IDS = RULES.stream()
             .flatMap(rule -> Stream.concat(rule.left().stream(), rule.right().stream()))
             .collect(Collectors.toUnmodifiableSet());
+    /**
+     * Ordered pair lookup: builds all compatible vanilla biome combinations
+     * exactly once instead of scanning 60 rules for every quart boundary.
+     * putIfAbsent retains the original RULES priority at overlapping pairs.
+     */
+    private static final Map<String, Map<String, Rule>> RULE_BY_BIOME = indexRules();
+
+    private static Map<String, Map<String, Rule>> indexRules() {
+        Map<String, Map<String, Rule>> mutable = new HashMap<>();
+        for (Rule rule : RULES) {
+            for (String a : rule.left()) for (String b : rule.right()) {
+                mutable.computeIfAbsent(a, key -> new HashMap<>()).putIfAbsent(b, rule);
+                mutable.computeIfAbsent(b, key -> new HashMap<>()).putIfAbsent(a, rule);
+            }
+        }
+        Map<String, Map<String, Rule>> immutable = new HashMap<>();
+        mutable.forEach((id, partners) -> immutable.put(id, Map.copyOf(partners)));
+        return Map.copyOf(immutable);
+    }
     private static final int MAX_SEARCH_QUARTS = RULES.stream()
             .mapToInt(rule -> rule.widthBlocks() / 8).max().orElse(0);
     private static final int[][] CARDINAL = {{1,0},{-1,0},{0,1},{0,-1}};
@@ -200,10 +219,8 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     }
 
     private static Rule findPair(String first, String second) {
-        for (Rule rule : RULES) {
-            if (rule.matches(first, second)) return rule;
-        }
-        return null;
+        Map<String, Rule> partners = RULE_BY_BIOME.get(first);
+        return partners == null ? null : partners.get(second);
     }
 
     @Override
