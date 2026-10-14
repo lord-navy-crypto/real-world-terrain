@@ -9,7 +9,13 @@ checks=json.loads((ROOT/'docs/SHA256SUMS.json').read_text())
 # extended in this experimental branch with additional Feature registrations.
 # Check its required historic behavior, and keep all OTHER original hashes strict.
 modified_entrypoint='neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java'
+modified_preset_tag='neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json'
 for name,want in checks.items():
+ if name==modified_preset_tag:
+  tag=json.loads((ROOT/name).read_text())
+  assert 'realscale:realism_max_ecotones' in tag.get('values',[])
+  print('INTENTIONAL MODIFICATION: appended opt-in ecotone preset')
+  continue
  if name==modified_entrypoint:
   source=(ROOT/name).read_text()
   assert 'Registries.DENSITY_FUNCTION_TYPE' in source and 'dem_density' in source
@@ -55,6 +61,8 @@ with tempfile.TemporaryDirectory() as tmp:
     relative=p.relative_to(ROOT/'neoforge/src/main/resources').as_posix()
     # The archived v1.1 JAR is a historical baseline; new experimental
     # resources must be validated separately and need not exist in that JAR.
+    if relative=='data/minecraft/tags/worldgen/world_preset/normal.json':
+     continue
     if relative in z.namelist():
      assert z.read(relative)==p.read_bytes(),str(p)
 print('PASS: checksums, JSON, 5 original parser tests, Java DEM smoke, JAR resource/source identity (saved-world replay only when artifact is supplied)')
