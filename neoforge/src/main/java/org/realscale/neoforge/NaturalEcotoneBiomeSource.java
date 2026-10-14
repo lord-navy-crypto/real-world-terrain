@@ -151,7 +151,12 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     }
     private static final int MAX_SEARCH_QUARTS = RULES.stream()
             .mapToInt(rule -> rule.widthBlocks() / 8).max().orElse(0);
-    private static final int[][] CARDINAL = {{1,0},{-1,0},{0,1},{0,-1}};
+    // Cardinal and diagonal rays: the same Euclidean radius in all headings.
+    // Cardinals first preserve deterministic precedence for equal distances.
+    private static final int[][] DIRECTIONS = {
+            {1,0},{-1,0},{0,1},{0,-1},
+            {1,1},{1,-1},{-1,1},{-1,-1}
+    };
 
     /** Bounded per-thread climate cache, invalidated when the climate sampler changes. */
     private static final class SamplingCache {
@@ -235,19 +240,27 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         // underlying biome boundary in each direction. With a maximum half
         // width of 32 blocks, these samples never exceed 8 quart cells.
         Rule nearest = null;
-        int closest = Integer.MAX_VALUE;
-        for (int[] direction : CARDINAL) {
+        int closestDistanceSquared = Integer.MAX_VALUE;
+        for (int[] direction : DIRECTIONS) {
             for (int step = 1; step <= MAX_SEARCH_QUARTS; step++) {
+                int distanceSquared = EcotoneMath.quartDistanceSquared(
+                        direction[0], direction[1], step);
+                // No rule can be wider than the configured global search span.
+                if (distanceSquared > 16 * MAX_SEARCH_QUARTS * MAX_SEARCH_QUARTS) break;
+                // Rays are visited from closest to farthest. We can safely
+                // stop once a heading cannot beat the best existing border.
+                if (distanceSquared >= closestDistanceSquared) break;
                 String next = vanillaId(sampleBase(quartX + direction[0] * step,
                         quartY, quartZ + direction[1] * step, sampler));
                 if (current.equals(next)) continue;
                 Rule rule = findPair(current, next);
-                if (rule != null && step * 4 <= rule.widthBlocks() / 2
-                        && step < closest) {
+                if (rule != null && EcotoneMath.withinRadialBand(
+                        direction[0], direction[1], step, rule.widthBlocks())) {
                     nearest = rule;
-                    closest = step;
+                    closestDistanceSquared = distanceSquared;
                 }
-                // Do not skip across an incompatible third biome.
+                // The very first adjacent nonmatching biome is the physical
+                // interface; never search through an unrelated third biome.
                 break;
             }
         }

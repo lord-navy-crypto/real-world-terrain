@@ -84,7 +84,7 @@ def test_biome_lab():
 def test_supported_microstructures():
     java = (Path(__file__).resolve().parents[1]
             / "neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
-    features = ["fallen_oak_log", "fallen_spruce_log", "woodland_hummock", "upland_scree"]
+    features = ["fallen_oak_log", "fallen_spruce_log", "woodland_hummock", "upland_scree", "coastal_driftwood"]
     for name in features:
         assert ('"' + name + '"') in java, "Missing Java Feature registration: " + name
         feature = load(FEATURES / (name + ".json"))
@@ -154,6 +154,11 @@ def test_surface_ecotone_habitats():
     assert len(rules) == len(set(rules)), "Duplicate natural biome rules"
     assert set(rules) == set(mapping), "Natural biome rule / donor mapping mismatch"
     assert "protectedWater(current)" in source, "Original river/ocean protection removed"
+    assert "Map<String, Map<String, Rule>> RULE_BY_BIOME" in source, "Fast biome pair index removed"
+    assert "private static final int[][] DIRECTIONS" in source, "Radial direction array removed"
+    assert "{1,1},{1,-1},{-1,1},{-1,-1}" in source, "Diagonal searches removed"
+    assert "EcotoneMath.withinRadialBand(" in source, "Euclidean border metric removed"
+    assert "quartDistanceSquared" in source, "Missing radial nearest-boundary distance"
     for stem, donor in mapping.items():
         assert donor and donor.replace("_", "").isalnum(), (stem, donor)
         biome = load(BIOMES / (stem + ".json"))

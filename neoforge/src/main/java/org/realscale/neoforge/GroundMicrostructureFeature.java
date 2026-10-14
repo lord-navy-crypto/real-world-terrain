@@ -19,7 +19,7 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  * sites leave the world unchanged, including when crossing a chunk border.</p>
  */
 public final class GroundMicrostructureFeature extends Feature<NoneFeatureConfiguration> {
-    public enum Kind { OAK_LOG, SPRUCE_LOG, FOREST_HUMMOCK, UPLAND_SCREE }
+    public enum Kind { OAK_LOG, SPRUCE_LOG, FOREST_HUMMOCK, UPLAND_SCREE, COASTAL_DRIFTWOOD }
     private final Kind kind;
 
     public GroundMicrostructureFeature(Kind kind) {
@@ -39,6 +39,7 @@ public final class GroundMicrostructureFeature extends Feature<NoneFeatureConfig
             case SPRUCE_LOG -> fallenLog(level, origin, random, Blocks.SPRUCE_LOG.defaultBlockState());
             case FOREST_HUMMOCK -> smallHummock(level, origin, random);
             case UPLAND_SCREE -> smallScree(level, origin, random);
+            case COASTAL_DRIFTWOOD -> coastalDriftwood(level, origin, random);
         };
     }
 
@@ -58,6 +59,40 @@ public final class GroundMicrostructureFeature extends Feature<NoneFeatureConfig
         boolean free = state.isAir() || state.is(Blocks.SHORT_GRASS) || state.is(Blocks.FERN);
         return free && level.getFluidState(pos).isEmpty()
                 && level.getBlockState(pos.above()).isAir();
+    }
+
+    /**
+     * An occasional shoreline log fully supported by sand, red sand, gravel
+     * or rock. Entire structure is validated before writing a single block.
+     * Never replaces ocean water, river water, leaves or existing structures.
+     */
+    private static boolean coastalDriftwood(WorldGenLevel level, BlockPos origin, RandomSource random) {
+        boolean alongX = random.nextBoolean();
+        int length = 2 + random.nextInt(3);
+        int offset = length / 2;
+        BlockState wood = (random.nextBoolean() ? Blocks.OAK_LOG : Blocks.SPRUCE_LOG)
+                .defaultBlockState()
+                .setValue(RotatedPillarBlock.AXIS,
+                        alongX ? Direction.Axis.X : Direction.Axis.Z);
+        for (int i = 0; i < length; i++) {
+            BlockPos p = origin.offset(alongX ? i - offset : 0, 0,
+                    alongX ? 0 : i - offset);
+            BlockPos ground = p.below();
+            BlockState s = level.getBlockState(ground);
+            if (!(s.is(Blocks.SAND) || s.is(Blocks.RED_SAND)
+                    || s.is(Blocks.GRAVEL) || s.is(Blocks.STONE))
+                    || !s.isCollisionShapeFullBlock(level, ground)
+                    || !level.getFluidState(ground).isEmpty()
+                    || !level.getBlockState(p).isAir()
+                    || !level.getFluidState(p).isEmpty()
+                    || !level.getBlockState(p.above()).isAir()) return false;
+        }
+        for (int i = 0; i < length; i++) {
+            BlockPos p = origin.offset(alongX ? i - offset : 0, 0,
+                    alongX ? 0 : i - offset);
+            level.setBlock(p, wood, 2);
+        }
+        return true;
     }
 
     /** Complete horizontal log supported on every segment; no hovering or partial logs. */
