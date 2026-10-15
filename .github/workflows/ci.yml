@@ -47,6 +47,15 @@ jobs:
           java -cp build/habitat-smoke org.realscale.neoforge.HabitatMathSmoke
       - name: Validate experimental navigable waterways and hovercraft assets
         run: python3 -m unittest discover -s qa -p 'test_navigable_waterway_hovercraft.py' -v
+      - name: Verify regional drainage graph and tributary confluences
+        run: |
+          mkdir -p build/watershed-routing-smoke
+          javac -d build/watershed-routing-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/WatershedRoutingMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/WatershedRoutingMathSmoke.java
+          java -cp build/watershed-routing-smoke org.realscale.neoforge.WatershedRoutingMathSmoke
+      - name: Validate navigable river water geometry and vertical steps
+        run: python3 -m unittest discover -s qa -p 'test_river_navigation_audit.py' -v
       - name: Verify worldgen timing is disabled by default and opt-in is bounded
         run: |
           mkdir -p build/worldgen-profiler-smoke
