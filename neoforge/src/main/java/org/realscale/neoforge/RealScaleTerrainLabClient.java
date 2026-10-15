@@ -225,7 +225,8 @@ public final class RealScaleTerrainLabClient {
                         && (d.latitudeMode.equals("off") || d.latitudeMode.equals("earth")
                             || d.latitudeMode.equals("preview")
                             || d.latitudeMode.equals("radial_earth")
-                            || d.latitudeMode.equals("radial_preview") || d.latitudeMode.equals("radial_balanced"))
+                            || d.latitudeMode.equals("radial_preview") || d.latitudeMode.equals("radial_balanced")
+                            || d.latitudeMode.equals("radial_equal_area"))
                         && d.latitudeStrength >= 0 && d.latitudeStrength <= 100
                         && d.equatorZ >= -4096 && d.equatorZ <= 4096
                         && d.radialCenterX >= -4096 && d.radialCenterX <= 4096
@@ -391,10 +392,11 @@ public final class RealScaleTerrainLabClient {
                 .name(Component.literal("Shared Climate & Latitude / Export"))
                 .option(Option.<String>createBuilder()
                     .name(Component.literal("Latitude Climate Cycle"))
-                    .description(description("Shared advanced climate position for custom families; choose off, Earth, preview or concentric modes."))
+                    .description(description("Advanced new-world latitude: radial_equal_area balances climate-zone land AREA within each ring. Save, export and enable the preset for custom worlds; core TVA world presets already include an equal-area climate by default."))
                     .binding("off", () -> d.latitudeMode, v -> d.latitudeMode=v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(
-                        "off","earth","preview","radial_earth","radial_preview","radial_balanced")).build())
+                        "off","earth","preview","radial_earth","radial_preview","radial_balanced",
+                        "radial_equal_area")).build())
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Latitude Strength"))
                     .description(description("0-100; regional pole/equator temperature differences."))
