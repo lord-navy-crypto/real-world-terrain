@@ -45,6 +45,8 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/CaveHabitatMath.java \
             neoforge/src/test/java/org/realscale/neoforge/HabitatMathSmoke.java
           java -cp build/habitat-smoke org.realscale.neoforge.HabitatMathSmoke
+      - name: Validate experimental navigable waterways and hovercraft assets
+        run: python3 -m unittest discover -s qa -p 'test_navigable_waterway_hovercraft.py' -v
       - name: Verify worldgen timing is disabled by default and opt-in is bounded
         run: |
           mkdir -p build/worldgen-profiler-smoke
