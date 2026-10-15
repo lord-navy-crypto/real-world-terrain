@@ -10,6 +10,8 @@
     "realscale:realism_max",
     "realscale:usgs_big_sur",
     "realscale:realism_max_ecotones",
-    "realscale:realism_max_three_realms"
+    "realscale:realism_max_three_realms",
+    "realscale:grand_ecology_three_realms",
+    "realscale:apes_gallery_three_realms"
   ]
 }

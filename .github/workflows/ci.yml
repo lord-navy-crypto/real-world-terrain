@@ -23,6 +23,15 @@ jobs:
         run: python3 qa/verify_repository.py
       - name: Validate custom biome registry resources (static)
         run: python3 scripts/check_custom_biomes.py
+      - name: Validate Grand Ecology registrations and preserved dimensions
+        run: python3 scripts/check_grand_ecology.py
+      - name: Deterministic macro-ecology density and elevation smoke
+        run: |
+          mkdir -p build/ecology-math-smoke
+          javac -d build/ecology-math-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/EcologyDistributionMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/EcologyDistributionMathSmoke.java
+          java -cp build/ecology-math-smoke org.realscale.neoforge.EcologyDistributionMathSmoke
       - name: Compile and execute ecotone and cave classifier smoke tests
         run: |
           mkdir -p build/habitat-smoke

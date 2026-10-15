@@ -12,6 +12,6 @@
     "realscale:tropical_forest_edge",
     "realscale:bamboo_jungle_edge"
   ],
-  "features": "realscale:birch_understory_ferns",
+  "features": "realscale:ecotone_forest_undergrowth",
   "step": "vegetal_decoration"
 }

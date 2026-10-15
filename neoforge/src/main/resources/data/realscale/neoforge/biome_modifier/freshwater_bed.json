@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:river",
+    "minecraft:swamp"
+  ],
+  "features": "realscale:freshwater_bed",
+  "step": "vegetal_decoration"
+}

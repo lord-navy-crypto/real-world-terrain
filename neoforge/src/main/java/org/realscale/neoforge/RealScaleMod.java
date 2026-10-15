@@ -30,6 +30,36 @@ public final class RealScaleMod {
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.FOREST_HUMMOCK));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "upland_scree"),
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.UPLAND_SCREE));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "temperate_rainforest"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.TEMPERATE_RAINFOREST));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "savanna_canopy"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.SAVANNA_CANOPY));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "chaparral_scrub"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.CHAPARRAL_SCRUB));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "grassland_mosaic"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.GRASSLAND_MOSAIC));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "alpine_tundra"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.ALPINE_TUNDRA));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "floodplain_bank"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.FLOODPLAIN_BANK));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "tropical_rainforest"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.TROPICAL_RAINFOREST));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "temperate_seasonal_forest"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.TEMPERATE_SEASONAL_FOREST));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "boreal_taiga_floor"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.BOREAL_TAIGA));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "desert_outcrops"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.DESERT_OUTCROPS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "arctic_tundra"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.ARCTIC_TUNDRA));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "freshwater_bed"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.FRESHWATER_BED));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "coastal_seagrass"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.COASTAL_SEAGRASS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "coral_reef_floor"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.CORAL_REEF_FLOOR));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "estuary_shallows"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.ESTUARY_SHALLOWS));
         });
     }
 }

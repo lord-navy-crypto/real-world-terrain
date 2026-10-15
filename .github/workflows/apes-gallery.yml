@@ -1,0 +1,170 @@
+name: APES 16-biome gallery actual saved-world proof
+on:
+  pull_request:
+    paths:
+      - 'neoforge/**'
+      - '.github/workflows/apes-gallery.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apes-gallery-worldgen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Prepare an isolated APES gallery world
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=apes-gallery-test
+          level-type=realscale:apes_gallery_three_realms
+          level-seed=785312
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25592
+          rcon.password=apes-gallery-ci-local-only
+          PROPERTIES
+          done
+      - name: Boot NeoForge, generate gallery outpost and persist world
+        working-directory: neoforge
+        run: |
+          python3 - <<'PY'
+          import subprocess,threading,time,os,signal,gzip,pathlib
+          logfile=pathlib.Path('build/apes-gallery-server.log')
+          logfile.parent.mkdir(exist_ok=True,parents=True)
+          p=subprocess.Popen(['gradle','--no-daemon','runServer','--stacktrace'],stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1,
+                             start_new_session=True)
+          lines=[];ready=threading.Event()
+          def read():
+            for line in p.stdout:
+              lines.append(line)
+              if 'Done (' in line and 'For help' in line:ready.set()
+          t=threading.Thread(target=read,daemon=True);t.start()
+          deadline=time.time()+420
+          while time.time()<deadline and p.poll() is None and not ready.is_set():time.sleep(1)
+          # Gradle runServer does not reliably forward post-boot stdin
+          # commands to Minecraft. Use the actual local dedicated-server RCON.
+          # This is a disposable CI world only, never a production setting.
+          import socket,struct
+          def read_exact(s,n):
+            out=b''
+            while len(out)<n:
+              part=s.recv(n-len(out))
+              if not part:raise ConnectionError('RCON socket closed')
+              out+=part
+            return out
+          def read_packet(s):
+            size=struct.unpack('<i',read_exact(s,4))[0]
+            if size<10 or size>4096:raise ValueError('Malformed RCON size '+str(size))
+            raw=read_exact(s,size)
+            ident,typ=struct.unpack('<ii',raw[:8])
+            return ident,typ,raw[8:-2].decode('utf-8','replace')
+          def send_packet(s,ident,typ,message):
+            payload=struct.pack('<ii',ident,typ)+message.encode()+bytes(2)
+            s.sendall(struct.pack('<i',len(payload))+payload)
+          def connect_rcon():
+            stop_at=time.monotonic()+30
+            while time.monotonic()<stop_at:
+              try:
+                s=socket.create_connection(('127.0.0.1',25592),timeout=5)
+                s.settimeout(12)
+                send_packet(s,2301,3,'apes-gallery-ci-local-only')
+                for _ in range(3):
+                  ident,typ,reply=read_packet(s)
+                  if ident==-1:raise RuntimeError('Local CI RCON auth rejected')
+                  if ident==2301 and typ==2:return s
+                raise RuntimeError('RCON auth response not received')
+              except (OSError,ConnectionError):
+                time.sleep(1)
+            raise RuntimeError('Local CI RCON unavailable after server startup')
+          def rcon(s,command,ident):
+            send_packet(s,ident,2,command)
+            while True:
+              rid,typ,reply=read_packet(s)
+              if rid==ident:return reply
+          rcon_socket=None
+          if ready.is_set() and p.poll() is None:
+            rcon_socket=connect_rcon()
+            answer=rcon(rcon_socket,'forceload add 112 0 160 0',2302)
+            print('APES_RCON_FORCELOAD',repr(answer),flush=True)
+            if 'force loaded' not in answer.lower() and 'marked' not in answer.lower():
+              raise RuntimeError('RCON force-loading was not acknowledged: '+answer)
+            # Wait for the server to fully generate, not merely ticket, all
+            # four deterministic checkerboard indices at chunk X=7..10.
+            positions=(112,128,144,160)
+            generated=False
+            until=time.monotonic()+240
+            while time.monotonic()<until and p.poll() is None:
+              status=[]
+              for i,x in enumerate(positions):
+                try:
+                  result=rcon(rcon_socket,f'execute if loaded {x} 90 0',2400+i)
+                except (OSError,ConnectionError):
+                  result='RCON connection interrupted'
+                status.append(result)
+              if all('test passed' in answer.lower() for answer in status):
+                print('APES_RCON_ALL_SATELLITE_CHUNKS_LOADED',status,flush=True)
+                generated=True
+                break
+              time.sleep(4)
+            if not generated:
+              print('APES_RCON_SATELLITE_WAIT_EXPIRED',status,flush=True)
+            if p.poll() is None:
+              saved=rcon(rcon_socket,'save-all flush',2501)
+              print('APES_RCON_SAVE_FLUSH',repr(saved),flush=True)
+              time.sleep(6)
+            rcon_socket.close()
+          try:
+            if p.poll() is None:
+              p.stdin.write('stop\n');p.stdin.flush();p.wait(timeout=50)
+          except Exception:
+            if p.poll() is None:
+              os.killpg(p.pid,signal.SIGINT)
+              try:p.wait(timeout=15)
+              except subprocess.TimeoutExpired:
+                os.killpg(p.pid,signal.SIGKILL);p.wait()
+          t.join(timeout=3)
+          logfile.write_text(''.join(lines))
+          print('server_boot_ready',ready.is_set(),'output_tail',logfile.read_text()[-9000:])
+          found=False
+          for path in pathlib.Path('run').glob('**/level.dat'):
+            data=gzip.decompress(path.read_bytes())
+            if b'minecraft:checkerboard' in data and b'realscale:grand_nether' in data and b'realscale:grand_end' in data:
+              print('APES_GALLERY_PRESET_PERSISTED',path)
+              found=True
+          if not ready.is_set() or not found:
+            raise SystemExit('FAIL: APES gallery did not boot into a persisted 3-realm checkerboard world')
+          print('PASS: APES gallery registry decode, outpost generation request and world boot')
+          PY
+      - name: Verify all 16 actual saved Anvil biome palettes and satellite chunks
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/check_apes_gallery.py run/apes-gallery-test
+      - name: Upload APES gallery saved-world evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: APES-Gallery-Actual-Saved-World
+          path: |
+            neoforge/build/apes-gallery-server.log
+            neoforge/build/apes-gallery-anvil-report.json
+            neoforge/run/**/apes-gallery-test/level.dat
+            neoforge/run/**/apes-gallery-test/region/*.mca
+          if-no-files-found: warn

@@ -10,6 +10,6 @@
     "realscale:seasonal_floodforest",
     "realscale:meadow_bog_margin"
   ],
-  "features": "realscale:wetland_moss_patch",
+  "features": "realscale:ecotone_wetland_undergrowth",
   "step": "vegetal_decoration"
 }
