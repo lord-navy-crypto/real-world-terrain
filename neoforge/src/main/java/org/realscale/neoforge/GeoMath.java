@@ -56,6 +56,26 @@ final class GeoMath {
         double outward=phase<=1.0?phase:2.0-phase;
         return 90.0*Math.pow(outward,1.15);
     }
+    /**
+     * Equal-area radial climate cycle. A ring's area grows with radius, so a
+     * linear radius->latitude triangle unfairly concentrates cold climates
+     * in the outer annulus. Partition each 2Q-wide full period into four
+     * equal-area annuli: equator -> pole -> equator -> pole -> equator.
+     *
+     * The squared-radius phase gives each of the four temperature quarters
+     * equal disk area. Repeated cycles stay continuous (including at 2Q)
+     * and cover the same concentric geography without abrupt blocky bands.
+     */
+    static double areaBalancedRadialLatitudeDeg(int x,int z,int cx,int cz,int poleDistance) {
+        double radius=Math.hypot((double)x-cx,(double)z-cz);
+        double radiusPhase=radius/(2.0*poleDistance);
+        double areaPhase=(radiusPhase*radiusPhase)%1.0;
+        double quarter=4.0*areaPhase;
+        if(quarter<=1.0)return 90.0*quarter;
+        if(quarter<=2.0)return 90.0*(2.0-quarter);
+        if(quarter<=3.0)return 90.0*(quarter-2.0);
+        return 90.0*(4.0-quarter);
+    }
     static double balancedRadialTemperature(double original,double latitude,double strength,
                                             double altitudeCooling,int y){
         double baseline=latitudeTemperature(original,latitude,strength);
