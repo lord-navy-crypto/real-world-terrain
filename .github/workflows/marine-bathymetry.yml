@@ -1,0 +1,115 @@
+name: TVA Natural ocean bathymetry and vanilla biome integrity
+on:
+  pull_request:
+    paths:
+      - 'neoforge/**'
+      - 'qa/neoforge/audit_natural_ocean.py'
+      - 'qa/neoforge/check_realism_continuity.py'
+      - 'qa/neoforge/skyland_rcon.py'
+      - '.github/workflows/marine-bathymetry.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  natural-ocean-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Configure a REAL, vanilla-climate-ocean RealScale world
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=marine-ocean-proof
+          level-type=realscale:tva_sacred_timeline_three_realms
+          level-seed=785312
+          view-distance=3
+          simulation-distance=3
+          max-tick-time=-1
+          online-mode=true
+          enable-rcon=true
+          rcon.password=realscale-ci-only
+          rcon.port=25575
+          PROPERTIES
+          done
+      - name: Locate actual deep ocean, fully generate floor chunks and save
+        working-directory: neoforge
+        run: |
+          python3 - <<'PY'
+          import pathlib,os,signal,subprocess,sys,threading,time,re
+          sys.path.insert(0,"../qa/neoforge")
+          from skyland_rcon import command
+          path=pathlib.Path("build/natural-marine-server.log")
+          path.parent.mkdir(parents=True,exist_ok=True)
+          p=subprocess.Popen(["gradle","--no-daemon","runServer","--stacktrace"],
+               stdout=subprocess.PIPE,stderr=subprocess.STDOUT,stdin=subprocess.PIPE,
+               text=True,bufsize=1,start_new_session=True)
+          lines=[];ready=threading.Event()
+          def drain():
+              for line in p.stdout:
+                  lines.append(line)
+                  if "Done (" in line and "For help" in line:ready.set()
+          thread=threading.Thread(target=drain,daemon=True);thread.start()
+          try:
+              limit=time.time()+420
+              while time.time()<limit and p.poll() is None and not ready.is_set():
+                  time.sleep(1)
+              if not ready.is_set():raise RuntimeError("Natural-ocean Minecraft server failed to boot")
+              response=command("locate biome minecraft:deep_ocean")
+              if "Could not find" in response or "not found" in response.lower():
+                  response=command("locate biome minecraft:deep_cold_ocean")
+              # Minecraft coordinates may contain '~' in the vertical field.
+              match=re.search(r"\[(-?\d+),\s*[-~0-9]+,\s*(-?\d+)\]",response)
+              if not match:raise RuntimeError("Could not locate a natural deep ocean: "+response)
+              x,z=map(int,match.groups())
+              pathlib.Path("build/natural-marine-target.txt").write_text(f"{x} {z}\n")
+              print("NATURAL_DEEP_OCEAN_LOCATION",x,z,flush=True)
+              for dx,dz in ((0,0),(32,0),(-32,0),(0,32),(0,-32)):
+                  result=command(f"forceload add {x+dx} {z+dz}")
+                  if "Unknown" in result or "Incorrect" in result:
+                      raise RuntimeError("Failed to load ocean chunk: "+result)
+              time.sleep(50)
+              command("save-all flush")
+              time.sleep(7)
+              try:command("stop")
+              except Exception as exc:print("RCON stop disconnected:",exc)
+              try:p.wait(timeout=70)
+              except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGINT)
+              thread.join(timeout=4)
+          finally:
+              if p.poll() is None:
+                  os.killpg(p.pid,signal.SIGKILL)
+                  p.wait()
+              path.write_text("".join(lines))
+              print("NATURAL_MARINE_SERVER_TAIL",path.read_text()[-5500:],flush=True)
+          PY
+      - name: Verify real ocean water coverage and detect dry ocean biomes
+        working-directory: neoforge
+        run: |
+          read X Z < build/natural-marine-target.txt
+          python3 ../qa/neoforge/audit_natural_ocean.py run/marine-ocean-proof "$X" "$Z"
+      - name: Save marine evidence even if bathymetry fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-natural-marine-bathymetry-evidence
+          path: |
+            neoforge/build/natural-marine-target.txt
+            neoforge/build/natural-marine-server.log
+            neoforge/build/natural-ocean-bathymetry.json
+            neoforge/run/**/marine-ocean-proof/level.dat
+            neoforge/run/**/marine-ocean-proof/region/*.mca
+          if-no-files-found: warn

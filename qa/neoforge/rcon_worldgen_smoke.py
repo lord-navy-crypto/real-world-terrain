@@ -277,6 +277,15 @@ def main(root,expected_preset,profile):
         if not nether or not end:
             raise RuntimeError("Fantasy Nether/End still has no persisted Anvil regions")
 
+    # Canonical TVA world preset IDs are *not* noise-settings IDs: the
+    # four menu presets point to separate, stable base terrain settings.
+    # Derive the expected NBT settings from the actual preset JSON, then
+    # also validate 512-block Grand dimensions for TVA menu worlds.
+    json_root=pathlib.Path(__file__).resolve().parents[2]/"neoforge/src/main/resources/data/realscale/worldgen/world_preset"
+    preset_file=json_root/(expected_preset.removeprefix("realscale:")+".json")
+    preset_json=json.loads(preset_file.read_text()) if preset_file.is_file() else None
+    expected_overworld=(preset_json["dimensions"]["minecraft:overworld"]["generator"]["settings"]
+                        if preset_json is not None else expected_preset)
     levels=list(root.glob("run/**/level.dat"))
     matched=False
     from realscale_headless_qa import read_nbt
@@ -286,9 +295,20 @@ def main(root,expected_preset,profile):
         dimensions=data.get("WorldGenSettings",{}).get("dimensions",{})
         overworld=dimensions.get("minecraft:overworld",{})
         actual=overworld.get("generator",{}).get("settings")
-        if actual!=expected_preset:
-            print("Worldgen does not match requested preset:",path,actual,flush=True)
+        if actual!=expected_overworld:
+            print("Worldgen does not match requested terrain settings:",path,actual,
+                  "expected",expected_overworld,flush=True)
             continue
+        if expected_preset.startswith("realscale:tva_"):
+            required=preset_json["dimensions"]
+            for dimension in ("minecraft:the_nether","minecraft:the_end"):
+                target=required[dimension]["generator"]["settings"]
+                found=dimensions.get(dimension,{}).get("generator",{}).get("settings")
+                if found!=target:
+                    raise RuntimeError(f"TVA Grand dimension regression {dimension}: {found} != {target}")
+            source=overworld.get("generator",{}).get("biome_source",{})
+            if not isinstance(source,dict) or source.get("type")!="realscale:sky_ocean":
+                raise RuntimeError("TVA sky/ocean biome source lost in persisted new world")
         if profile=="packs":
             enabled=data.get("DataPacks",{}).get("Enabled",[])
             for packname in ("RealScale-GeoEcology-Winter-EXPERIMENTAL.zip",

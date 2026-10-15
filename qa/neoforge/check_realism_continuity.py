@@ -364,10 +364,16 @@ def _cave_section_index(chunk):
     return sections
 
 def scan(root,preset="realism_max"):
-    # Each preset has its own Y range and packed WORLD_SURFACE bit width.
-    settings_path=(Path(__file__).resolve().parents[2]/
-        "neoforge/src/main/resources/data/realscale/worldgen/noise_settings"/
-        (preset+".json"))
+    # A TVA world-preset ID selects a different underlying noise-settings
+    # registry ID. Read the real mapping instead of guessing both IDs match.
+    root_data=Path(__file__).resolve().parents[2]/"neoforge/src/main/resources/data/realscale/worldgen"
+    source= preset
+    world_path=root_data/"world_preset"/(preset+".json")
+    if world_path.is_file():
+        world=json.loads(world_path.read_text())
+        source=world["dimensions"]["minecraft:overworld"]["generator"]["settings"].split(":",1)[1]
+    expected_noise_id="realscale:"+source
+    settings_path=root_data/"noise_settings"/(source+".json")
     noise=json.loads(settings_path.read_text())["noise"]
     min_y=noise["min_y"]
     world_height=noise["height"]
@@ -527,8 +533,12 @@ def scan(root,preset="realism_max"):
             data=root_nbt.get("Data",root_nbt)
             gen=(data.get("WorldGenSettings",{}).get("dimensions",{})
                  .get("minecraft:overworld",{}).get("generator",{}))
-            if gen.get("settings")!=f"realscale:{preset}":
+            if gen.get("settings")!=expected_noise_id:
                 continue
+            if preset.startswith("tva_"):
+                biome=gen.get("biome_source",{})
+                if not isinstance(biome,dict) or biome.get("type")!="realscale:sky_ocean":
+                    continue
             if all(isinstance(data.get(k),int) for k in ("SpawnX","SpawnY","SpawnZ")):
                 world_spawn=(data["SpawnX"],data["SpawnY"],data["SpawnZ"])
                 spawn_file=str(level_file)
