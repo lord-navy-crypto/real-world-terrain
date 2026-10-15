@@ -57,15 +57,15 @@ jobs:
           deadline=time.time()+420
           while time.time()<deadline and p.poll() is None and not ready.is_set():time.sleep(1)
           # The initial 7x7 FULL spawn grid covers only thirteen checkerboard
-          # indices even at scale=0. A real forced chunk at (+160,0) gives
-          # samples at checkerboard indices 8-10, including river/snow/peaks.
+          # indices even at scale=0. A three-chunk force-loaded span
+          # X=128..160, Z=0 targets checkerboard indices 8-10 exactly.
           # Request, generate and save it rather than diluting the 16-ID test.
           if ready.is_set() and p.poll() is None:
-            p.stdin.write('forceload add 160 0\\n'.replace('\\n','\n'))
+            p.stdin.write('forceload add 128 0 160 0\\n'.replace('\\n','\n'))
             p.stdin.flush()
             wait_until=time.time()+60
             while time.time()<wait_until and p.poll() is None:
-              if any('Marked chunk' in line for line in lines[-80:]):
+              if any('Marked' in line and 'force loaded' in line for line in lines[-80:]):
                 break
               time.sleep(.5)
             # Give the high-ceiling terrain pipeline time to finish the

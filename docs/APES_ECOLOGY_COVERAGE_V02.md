@@ -130,3 +130,11 @@ not forced under global sea-level because high-elevation streams exist. This
 changes only decoration acceptance probability — never the ocean floor,
 fluid generation, original ocean/river IDs, terrain density or currents.
 Unit tests cover shallow vs deep ocean, warm reef and upland freshwater.
+
+### v0.4 hardening — force FULL palette coverage for three missing biome indices
+
+The gallery server now forces an *inclusive block range*
+`forceload add 128 0 160 0` (chunk X 8, 9, 10 at Z 0) rather
+than relying on a single satellite chunk's unspecified FULL-generation
+neighbors. Saved-Anvil QA explicitly requires all three exact FULL chunk
+positions, in addition to the original sixteen required biome IDs.
