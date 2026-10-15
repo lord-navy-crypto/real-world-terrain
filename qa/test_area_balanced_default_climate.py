@@ -12,7 +12,13 @@ class AreaBalancedDefaultClimateTest(unittest.TestCase):
                 d=json.loads((NOISE/(name+".json")).read_text())
                 temp=d["noise_router"]["temperature"]
                 self.assertEqual(temp["type"],"realscale:climate_budget")
-                radial=temp["adjusted"]
+                adjusted=temp["adjusted"]
+                if name!="usgs_big_sur_v2":
+                    self.assertEqual(adjusted["type"],"realscale:mountain_basin_temperature")
+                    self.assertGreater(adjusted["warmth"],0)
+                    radial=adjusted["base"]
+                else:
+                    radial=adjusted
                 self.assertEqual(radial["type"],"realscale:radial_latitude_temperature")
                 self.assertTrue(radial["area_balanced"])
                 self.assertTrue(radial["balanced"])

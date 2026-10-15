@@ -87,6 +87,15 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/GrandDimensionMath.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandDimensionMathSmoke.java
           java -cp build/grand-dimension-smoke org.realscale.neoforge.GrandDimensionMathSmoke
+      - name: Verify restored alpine basins, flat plateaus, rims and coast protection
+        run: |
+          mkdir -p build/mountain-relief-smoke
+          javac -d build/mountain-relief-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/MountainReliefMathSmoke.java
+          java -cp build/mountain-relief-smoke org.realscale.neoforge.MountainReliefMathSmoke
+          python3 -m unittest discover -s qa -p 'test_mountain_basin_plateau_default.py' -v
       - name: Verify equal-area concentric latitude math and default climate wiring
         run: |
           mkdir -p build/area-balanced-climate
