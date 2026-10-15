@@ -85,7 +85,13 @@ with tempfile.TemporaryDirectory() as tmp:
     relative=p.relative_to(ROOT/'neoforge/src/main/resources').as_posix()
     # The archived v1.1 JAR is a historical baseline; new experimental
     # resources must be validated separately and need not exist in that JAR.
-    if relative=='data/minecraft/tags/worldgen/world_preset/normal.json':
+    if relative in (
+        'data/minecraft/tags/worldgen/world_preset/normal.json',
+        'assets/minecraft/lang/en_us.json',
+        'assets/minecraft/lang/zh_cn.json',
+    ):
+     # World menu and additive translation labels were verified against the
+     # original archived keys in the SHA loop above; keep the JAR immutable.
      continue
     if relative in z.namelist():
      assert z.read(relative)==p.read_bytes(),str(p)
