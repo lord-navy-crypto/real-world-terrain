@@ -103,6 +103,15 @@ jobs:
           python3 -m unittest discover -s qa -p test_radial_climate_math.py -v
           python3 -m unittest discover -s qa -p test_latitude_climate.py -v
           python3 -m unittest discover -s qa -p test_custom_geomorphology.py -v
+      - name: Restore cross-branch water, river, cave, spawn, and structures unit gates
+        run: |
+          python3 -m unittest discover -s qa -p 'test_water_connectivity.py' -v
+          python3 -m unittest discover -s qa -p 'test_spawn_safety.py' -v
+          python3 -m unittest discover -s qa -p 'test_cave_walkability.py' -v
+          python3 -m unittest discover -s qa -p 'test_surface_quality_gates.py' -v
+          python3 -m unittest discover -s qa -p 'test_spawn_chunk_probe.py' -v
+          python3 -m unittest discover -s qa -p 'test_structure_and_geoecology.py' -v
+          python3 -m unittest discover -s qa -p 'test_river_channel_registration.py' -v
       - name: Prove ALL inherited worldgen density reference graphs resolve
         run: python3 -m unittest discover -s qa -p test_all_worldgen_graphs.py -v
       - name: Verify TVA Terrain Lab independent families, Grand realms and saved-world menu stability
