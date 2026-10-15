@@ -45,6 +45,13 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/CaveHabitatMath.java \
             neoforge/src/test/java/org/realscale/neoforge/HabitatMathSmoke.java
           java -cp build/habitat-smoke org.realscale.neoforge.HabitatMathSmoke
+      - name: Verify bounded ecotone resolution cache and parallel sampler isolation
+        run: |
+          mkdir -p build/ecotone-result-cache-smoke
+          javac -d build/ecotone-result-cache-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/QuartBiomeResultCache.java \
+            neoforge/src/test/java/org/realscale/neoforge/QuartBiomeResultCacheSmoke.java
+          java -cp build/ecotone-result-cache-smoke org.realscale.neoforge.QuartBiomeResultCacheSmoke
       - name: Measure DEM grid continuity and tile boundary blend
         run: |
           mkdir -p build/terrain-continuity
