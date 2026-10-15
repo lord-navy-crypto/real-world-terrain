@@ -81,6 +81,10 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
             neoforge/src/test/java/org/realscale/neoforge/SkyIslandLayoutSmoke.java
           java -cp build/tva-sky org.realscale.neoforge.SkyIslandLayoutSmoke
+      - name: Verify NeoForge runClient task is registered
+        working-directory: neoforge
+        run: |
+          gradle --no-daemon tasks --all | grep -E '^[[:space:]]*runClient([[:space:]]|$)'
       - name: Build readable NeoForge project
         working-directory: neoforge
         run: gradle --no-daemon --stacktrace build
