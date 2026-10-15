@@ -373,11 +373,13 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 BlockState bed = level.getBlockState(top.below(2));
                 BlockState foundation = level.getBlockState(top.below(3));
                 BlockState deepFoundation = level.getBlockState(top.below(4));
-                BlockState overhead = level.getBlockState(top.above());
+                // Skip the overhead lookup entirely for unsuitable riverbeds.
                 if (!natural(surface) || !natural(below) || !natural(bed)
-                    || !natural(foundation) || !deepFoundation.blocksMotion()
-                    || (!overhead.isAir()
-                        && !(covered && removableCover(overhead))))
+                    || !natural(foundation) || !deepFoundation.blocksMotion())
+                    continue;
+                BlockState overhead = level.getBlockState(top.above());
+                if (!overhead.isAir()
+                        && !(covered && removableCover(overhead)))
                     continue;
 
                 // In high mountains, bank overflow is an intended natural
