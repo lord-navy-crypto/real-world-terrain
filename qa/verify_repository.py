@@ -39,7 +39,8 @@ for name,want in checks.items():
   for required in ('modLoader="javafml"','modId="realscale"',
                    'version="2.0.0-tva-preview.1"',
                    'versionRange="[21.1.0,)"',
-                   'versionRange="[1.21.1,1.21.2)"'):
+                   'versionRange="[1.21.1,1.21.2)"',
+                   'modId="yet_another_config_lib_v3"'):
    assert required in descriptor,(name,required)
   print('INTENTIONAL MODIFICATION: TVA preview metadata with intact mod/dependency IDs')
   continue

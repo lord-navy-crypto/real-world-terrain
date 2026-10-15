@@ -424,16 +424,29 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         for target in noise.get("spawn_target",[]):
             if "continentalness" in target:
                 target["continentalness"][0]=0.12
-    original_preset=jread(root,GEO_ROOT/"world_preset"/(source+".json"))
+    # The original Terrain Lab used legacy presets and VANILLA Nether/End.
+    # Every NEW generated TVA profile must inherit the merged three realms
+    # and ocean-aware ecotones, never silently regress to vanilla dimensions.
+    tva_families={
+        "landscape":"tva_sacred_timeline_three_realms",
+        "alpine":"tva_alpine_three_realms",
+        "canyon":"tva_canyon_three_realms",
+    }
+    if preset in tva_families:
+        original_preset=jread(root,GEO_ROOT/"world_preset"/(tva_families[preset]+".json"))
+    else:
+        original_preset=jread(root,GEO_ROOT/"world_preset"/(source+".json"))
     world_preset=copy.deepcopy(original_preset)
     world_preset["dimensions"]["minecraft:overworld"]["generator"]["settings"]="realscale:"+name
-    if fantasy_dimensions:
-        nether=world_preset["dimensions"]["minecraft:the_nether"]
-        nether["type"]="realscale:fantasy_nether_v1"
-        nether["generator"]["settings"]="realscale:fantasy_nether_v2"
-        end=world_preset["dimensions"]["minecraft:the_end"]
-        # Preserve the vanilla End dimension type and dragon fight arena.
-        end["generator"]["settings"]="realscale:fantasy_end_v2"
+    # Legacy fantasyDimensions drafts remain readable, but must not downgrade
+    # the selected TVA Grand Nether/End from 512 blocks back to 256.
+    # The optional 256-height fantasy presets remain in the registry as
+    # independent historical experiments, never replacing the canonical TVA.
+    if fantasy_dimensions and preset in tva_families:
+        assert world_preset["dimensions"]["minecraft:the_nether"]["generator"]["settings"]=="realscale:grand_nether"
+        assert world_preset["dimensions"]["minecraft:the_end"]["generator"]["settings"]=="realscale:grand_end"
+    elif fantasy_dimensions:
+        raise ValueError("Legacy fantasy dimension overrides require TVA family settings")
     output={
         GEO_ROOT/"density_function"/density_folder/"height_signal.json":height,
         GEO_ROOT/"density_function"/density_folder/"terrain_density.json":terrain,

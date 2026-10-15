@@ -19,3 +19,12 @@ type="required"
 versionRange="[1.21.1,1.21.2)"
 ordering="NONE"
 side="BOTH"
+
+# The restored in-game Terrain Lab GUI is provided by YACL on the CLIENT only.
+# Standalone players install YACL 3.8.1+ separately; servers never need it.
+[[dependencies.realscale]]
+modId="yet_another_config_lib_v3"
+type="required"
+versionRange="[3.8.1,)"
+ordering="NONE"
+side="CLIENT"

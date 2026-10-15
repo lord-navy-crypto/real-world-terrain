@@ -17,6 +17,16 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_density_seamless"), RealDemSeamlessDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "grand_end_density"), GrandEndDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "grand_nether_caverns"), GrandNetherCaverns.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "ridge_erosion"), RidgeErosionDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "strata"), StrataDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "valley_temperature"), ValleyTemperatureDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "latitude_temperature"), LatitudeTemperatureDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "basin_temperature"), BasinTemperatureDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "radial_latitude_temperature"), RadialLatitudeTemperatureDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "climate_budget"), ClimateBudgetDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fantasy_end_islands"), FantasyEndIslandsDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fantasy_nether_caverns"), FantasyNetherCavernsDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fantasy_end_archipelago"), FantasyEndArchipelagoDensity.MAP_CODEC);
         });
         event.register(Registries.BIOME_SOURCE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones"),
@@ -27,6 +37,15 @@ public final class RealScaleMod {
                     SkyOceanBiomeSource.CODEC)
         );
         event.register(Registries.FEATURE, helper -> {
+            // Terrain Lab's bank-protected, source-only river channels. The
+            // feature itself rejects vanilla/foreign noise settings.
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "river_channel"),
+                    new RiverChannelFeature());
+            // Optional structures from vanilla blocks; datapack controls where.
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fallen_timber"),
+                    new VanillaHabitatFeature(VanillaHabitatFeature.Habitat.FALLEN_TIMBER));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "riparian_reeds"),
+                    new VanillaHabitatFeature(VanillaHabitatFeature.Habitat.RIPARIAN_REEDS));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fallen_oak_log"),
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.OAK_LOG));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fallen_spruce_log"),
