@@ -57,6 +57,17 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
 
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+        // The common path adds only a constant false branch; no clock reads.
+        if (!WorldgenProfiler.ENABLED) return placeUnprofiled(context);
+        long started = WorldgenProfiler.begin();
+        try {
+            return placeUnprofiled(context);
+        } finally {
+            WorldgenProfiler.finish(WorldgenProfiler.Section.GRAND_ECOLOGY, started);
+        }
+    }
+
+    private boolean placeUnprofiled(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         // Limit global NeoForge biome-modifier decorations to RealScale worlds.
         if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
         WorldGenLevel level = context.level();
