@@ -43,6 +43,38 @@ def test_modifier_references():
         if ref.startswith("realscale:"):
             assert (FEATURES / (ref.split(":", 1)[1] + ".json")).exists(), f
 
+def test_ecotone_feature_order_isolation():
+    """The same PlacedFeature holder in conflicting relative order causes a
+    FeatureSorter cycle, e.g. swamp vs seasonal_floodforest. Alias the placed
+    features, not the configured blocks, for ecotone-only decoration.
+    """
+    groups = {
+        "arid": "dry_scrub_patch",
+        "coastal": "meadow_wildflower_patch",
+        "forest": "birch_understory_ferns",
+        "highlands": "stony_highland_sparse_grass",
+        "wetland": "wetland_moss_patch",
+    }
+    for group, original_name in groups.items():
+        modifier = load(MODIFIERS / ("ecotone_" + group + "_undergrowth.json"))
+        custom_id = "ecotone_" + group + "_undergrowth"
+        assert modifier["features"] == "realscale:" + custom_id
+        assert all(b.startswith("realscale:") for b in modifier["biomes"])
+        clone = load(PLACED / (custom_id + ".json"))
+        original = load(PLACED / (original_name + ".json"))
+        assert clone == original, "Ecotone features must preserve placement: " + group
+        assert clone["feature"].startswith("realscale:")
+    vanilla_features = set()
+    for path in MODIFIERS.glob("*.json"):
+        d = load(path)
+        if d.get("type") != "neoforge:add_features":
+            continue
+        if any(b.startswith("minecraft:") for b in d["biomes"]):
+            fs = d["features"] if isinstance(d["features"], list) else [d["features"]]
+            vanilla_features.update(fs)
+    for group in groups:
+        assert ("realscale:ecotone_" + group + "_undergrowth") not in vanilla_features
+
 def test_natural_ecotone_undergrowth():
     seen = set()
     for modifier_path in MODIFIERS.glob("ecotone_*_undergrowth.json"):
@@ -196,6 +228,7 @@ if __name__ == "__main__":
     test_biome_lab()
     test_natural_ecotone_preset()
     test_natural_ecotone_undergrowth()
+    test_ecotone_feature_order_isolation()
     test_ecotone_catalog()
     test_ecotone_gallery()
     test_all_custom_biome_carvers()

@@ -13,6 +13,6 @@
     "realscale:frost_shrub_tundra",
     "realscale:lichen_rockland"
   ],
-  "features": "realscale:stony_highland_sparse_grass",
+  "features": "realscale:ecotone_highlands_undergrowth",
   "step": "vegetal_decoration"
 }

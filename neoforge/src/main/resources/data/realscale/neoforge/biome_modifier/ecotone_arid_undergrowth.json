@@ -11,6 +11,6 @@
     "realscale:warm_river_margin",
     "realscale:terracotta_scrub"
   ],
-  "features": "realscale:dry_scrub_patch",
+  "features": "realscale:ecotone_arid_undergrowth",
   "step": "vegetal_decoration"
 }

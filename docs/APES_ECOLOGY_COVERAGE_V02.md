@@ -58,3 +58,15 @@ Engine integration: https://docs.neoforged.net/docs/1.21.1/worldgen/biomemodifie
   mapped to APES categories plus existing narrow ecotone IDs.
 - Full 40–80-block branched giant forests, forest density calibration and structure
   conflict/protected masks beyond conservative block replacement checks.
+
+## FeatureSorter cycle regression fix (NeoForge real server)
+
+At commit `df9bbdbb`, the saved-world server test crashed at the
+`minecraft:swamp` / `realscale:seasonal_floodforest` boundary with
+`Feature order cycle found`. Both biomes inherited the *same placed-feature
+registry holder* `realscale:wetland_moss_patch`, but new floodplain features
+were registered in a conflicting relative order. All five ecotone decoration
+groups now receive **their own placed-feature aliases** pointing at the same
+existing configured features and placement predicates. This prevents implicit
+cross-biome identity/order constraints without changing the underlying plants.
+The static alias test is not proof of success; repeat real server tests.

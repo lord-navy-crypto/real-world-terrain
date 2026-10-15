@@ -4,6 +4,6 @@
     "realscale:coastal_heath",
     "realscale:coastal_dune_meadow"
   ],
-  "features": "realscale:meadow_wildflower_patch",
+  "features": "realscale:ecotone_coastal_undergrowth",
   "step": "vegetal_decoration"
 }
