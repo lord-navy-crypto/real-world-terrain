@@ -109,4 +109,20 @@ public final class EcologyDistributionMath {
         return Math.max(0.0, Math.min(0.98,
                 density * (0.12 + 0.88 * clump) * altitudeFactor(habitat, y)));
     }
+
+    /**
+     * Light-limited aquatic visual accents: shallow seagrass meadows and
+     * estuary vegetation do not belong on very deep marine seafloors.
+     * Freshwater beds are exempt: they can occur high above sea level.
+     * This is a simple light-depth proxy, not a marine carbon model.
+     */
+    public static boolean aquaticDepthSuitable(Habitat habitat, int bottomY, int seaLevel) {
+        int depth = seaLevel - bottomY;
+        return switch (habitat) {
+            case COASTAL_SEAGRASS -> depth >= 1 && depth <= 16;
+            case CORAL_REEF_FLOOR -> depth >= 1 && depth <= 28;
+            case ESTUARY_SHALLOWS -> depth >= 1 && depth <= 10;
+            default -> true;
+        };
+    }
 }

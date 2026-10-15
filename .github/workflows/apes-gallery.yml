@@ -20,7 +20,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
-      - name: Prepare an isolated ecotone world
+      - name: Prepare an isolated APES gallery world
         working-directory: neoforge
         run: |
           for dir in run run/server run/gametestserver; do
@@ -38,7 +38,7 @@ jobs:
           online-mode=true
           PROPERTIES
           done
-      - name: Boot NeoForge and persist world generated with natural ecotone BiomeSource
+      - name: Boot NeoForge, generate gallery outpost and persist world
         working-directory: neoforge
         run: |
           python3 - <<'PY'
@@ -56,7 +56,25 @@ jobs:
           t=threading.Thread(target=read,daemon=True);t.start()
           deadline=time.time()+420
           while time.time()<deadline and p.poll() is None and not ready.is_set():time.sleep(1)
-          if ready.is_set():time.sleep(15)
+          # The initial 7x7 FULL spawn grid covers only thirteen checkerboard
+          # indices even at scale=0. A real forced chunk at (+160,0) gives
+          # samples at checkerboard indices 8-10, including river/snow/peaks.
+          # Request, generate and save it rather than diluting the 16-ID test.
+          if ready.is_set() and p.poll() is None:
+            p.stdin.write('forceload add 160 0\\n'.replace('\\n','\n'))
+            p.stdin.flush()
+            wait_until=time.time()+60
+            while time.time()<wait_until and p.poll() is None:
+              if any('Marked chunk' in line for line in lines[-80:]):
+                break
+              time.sleep(.5)
+            # Give the high-ceiling terrain pipeline time to finish the
+            # requested satellite chunks before synchronous save-all.
+            time.sleep(55)
+            if p.poll() is None:
+              p.stdin.write('save-all flush\\n'.replace('\\n','\n'))
+              p.stdin.flush()
+              time.sleep(12)
           try:
             if p.poll() is None:
               p.stdin.write('stop\n');p.stdin.flush();p.wait(timeout=50)
@@ -76,13 +94,13 @@ jobs:
               print('APES_GALLERY_PRESET_PERSISTED',path)
               found=True
           if not ready.is_set() or not found:
-            raise SystemExit('FAIL: ecotone preset did not boot into a persisted new world')
-          print('PASS: ecotone source registry decode and dedicated server world boot')
+            raise SystemExit('FAIL: APES gallery did not boot into a persisted 3-realm checkerboard world')
+          print('PASS: APES gallery registry decode, outpost generation request and world boot')
           PY
-      - name: Check Anvil chunk palettes for actual climate-boundary ecotone selections
+      - name: Verify all 16 actual saved Anvil biome palettes and satellite chunks
         working-directory: neoforge
         run: python3 ../qa/neoforge/check_apes_gallery.py run/apes-gallery-test
-      - name: Upload ecotone test diagnostics
+      - name: Upload APES gallery saved-world evidence
         uses: actions/upload-artifact@v4
         if: always()
         with:

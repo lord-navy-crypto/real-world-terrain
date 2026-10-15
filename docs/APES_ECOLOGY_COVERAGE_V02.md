@@ -112,3 +112,21 @@ controls and freshwater/marine categories into a compact test world.
   >=100 chunks and 16 IDs. The debug-only gallery is now scale=0, and
   accepted complete spawn chunks are >=32; the **16 ID saved-Anvil check
   remains mandatory**. Only the real server rerun can confirm the fix.
+
+## v0.4 — enforce real 16-biome gallery coverage and shallow marine plants
+
+The APES gallery originally generated only 49 FULL spawn chunks: despite
+the scale-0 checkerboard, its saved palettes were missing three IDs
+(`minecraft:river`, `minecraft:snowy_plains`, `minecraft:stony_peaks`).
+Instead of weakening the rule, the isolated gallery CI now sends an actual
+`forceload add 160 0` command after server startup, waits for its generated
+satellite chunks, flushes the save, and requires at least one **fully saved
+outpost** chunk. All 16 distinct biome IDs are still required.
+
+For vegetation physics, `EcologyDistributionMath.aquaticDepthSuitable`
+now limits ocean seagrass and estuary decoration to shallow ocean floors,
+with a separate allowance for shallow warm-reef undergrowth; freshwater is
+not forced under global sea-level because high-elevation streams exist. This
+changes only decoration acceptance probability — never the ocean floor,
+fluid generation, original ocean/river IDs, terrain density or currents.
+Unit tests cover shallow vs deep ocean, warm reef and upland freshwater.

@@ -54,6 +54,24 @@ public final class EcologyDistributionMathSmoke {
         require(EcologyDistributionMath.altitudeFactor(Habitat.ALPINE_TUNDRA, 700)
                 > EcologyDistributionMath.altitudeFactor(Habitat.ALPINE_TUNDRA, 75),
                 "Alpine high-elevation preference missing");
+        require(EcologyDistributionMath.aquaticDepthSuitable(
+                Habitat.COASTAL_SEAGRASS, 59, 63),
+                "Shallow ocean vegetation must remain allowed");
+        require(!EcologyDistributionMath.aquaticDepthSuitable(
+                Habitat.COASTAL_SEAGRASS, 15, 63),
+                "Deep-ocean seagrass incorrectly accepted");
+        require(!EcologyDistributionMath.aquaticDepthSuitable(
+                Habitat.ESTUARY_SHALLOWS, 45, 63),
+                "Deep estuary vegetation incorrectly accepted");
+        require(EcologyDistributionMath.aquaticDepthSuitable(
+                Habitat.FRESHWATER_BED, 600, 63),
+                "High-altitude freshwater incorrectly rejected");
+        require(EcologyDistributionMath.aquaticDepthSuitable(
+                Habitat.CORAL_REEF_FLOOR, 44, 63),
+                "Ordinary warm reef depth rejected");
+        require(!EcologyDistributionMath.aquaticDepthSuitable(
+                Habitat.CORAL_REEF_FLOOR, 12, 63),
+                "Abyssal coral proxy incorrectly accepted");
         require(EcologyDistributionMath.patchIndex(Habitat.TROPICAL_RAINFOREST, 1000, 2000)
                 != EcologyDistributionMath.patchIndex(Habitat.DESERT_OUTCROPS, 1000, 2000),
                 "Independent habitat salt missing");

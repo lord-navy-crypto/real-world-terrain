@@ -36,6 +36,7 @@ EXPECTED = [
 counts = Counter()
 observed_blocks = Counter()
 chunks = 0
+outpost_chunks = 0
 regions = sorted((WORLD / "region").glob("r.*.*.mca"))
 assert regions, "No gallery overworld region files persisted"
 for region in regions:
@@ -43,6 +44,8 @@ for region in regions:
         if chunk.get("Status") != "minecraft:full":
             continue
         chunks += 1
+        if abs(chunk.get("xPos", 0)) >= 8:
+            outpost_chunks += 1
         for section in chunk.get("sections", []):
             biome_palette = section.get("biomes", {}).get("palette", [])
             counts.update(set(x for x in biome_palette if isinstance(x, str) and x in EXPECTED))
@@ -61,6 +64,7 @@ missing = sorted(set(EXPECTED) - set(counts))
 report = {
     "purpose": "diagnostic checkerboard, NOT natural world or decoration proof",
     "full_chunks": chunks,
+    "outpost_full_chunks": outpost_chunks,
     "region_files": len(regions),
     "biome_palette_sections": dict(sorted(counts.items())),
     "informational_block_palette_sections": dict(sorted(observed_blocks.items())),
@@ -71,7 +75,9 @@ output.parent.mkdir(parents=True, exist_ok=True)
 output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 print("APES_GALLERY_SAVED_WORLD", json.dumps(report, sort_keys=True))
 # High-ceiling terrain has fewer fully saved spawn chunks under short CI runs.
-# A compact scale-0 checkerboard probes all categories even in ~7x7 chunks.
-assert chunks >= 32, f"Too few fully generated chunks: {chunks}"
+# Initial spawn-only generation reached 13/16. We must see the saved
+# satellite force-loaded site (not just a launch flag) and all 16 biome IDs.
+assert chunks >= 40, f"Too few fully generated chunks: {chunks}"
+assert outpost_chunks >= 1, "Force-loaded satellite never reached FULL Anvil status"
 assert not missing, f"Gallery lacked biome sections for: {missing}"
 print("PASS: all nine APES terrestrial categories and seven aquatic/alpine controls have saved chunk biome palettes")

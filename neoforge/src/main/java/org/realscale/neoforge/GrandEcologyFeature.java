@@ -64,6 +64,8 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
         };
         if (underwater ? !level.getFluidState(origin).is(FluidTags.WATER)
                 : !level.getFluidState(origin).isEmpty()) return false;
+        if (underwater && !EcologyDistributionMath.aquaticDepthSuitable(
+                habitat, origin.getY(), level.getSeaLevel())) return false;
 
         // A continuous 768/128-block site-suitability field clusters plants
         // into groves, open meadows and sparse strips. No chunk lookups,
