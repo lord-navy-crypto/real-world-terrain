@@ -25,6 +25,10 @@ public final class GrandNetherCaveNetwork {
         int gx = Integer.MIN_VALUE, gz = Integer.MIN_VALUE;
         final Hall[][] halls = new Hall[2][5];
         final Hall[][] satellites = new Hall[2][2];
+        // Corridor bend seeds depend only on hall endpoints, never on voxels.
+        final long[][] corridorKeys = new long[2][4];
+        final long[][] satelliteKeys = new long[2][2];
+        long interlayerKey;
         void initialize(int x, int z) {
             if (gx == x && gz == z) return;
             gx = x; gz = z;
@@ -34,7 +38,12 @@ public final class GrandNetherCaveNetwork {
                     halls[layer][i+1] = hall(x+DX[i],z+DZ[i],layer);
                 for (int i = 0; i < 2; i++)
                     satellites[layer][i] = satellite(halls[layer][0],x,z,layer,i);
+                for (int i = 0; i < 4; i++)
+                    corridorKeys[layer][i] = tubeBendKey(halls[layer][0], halls[layer][i+1]);
+                for (int i = 0; i < 2; i++)
+                    satelliteKeys[layer][i] = tubeBendKey(halls[layer][0], satellites[layer][i]);
             }
+            interlayerKey = tubeBendKey(halls[0][0], halls[1][0]);
         }
     }
     private static final ThreadLocal<CellCache> CACHED_HALLS =
@@ -104,8 +113,21 @@ public final class GrandNetherCaveNetwork {
         return normalized >= 1 ? 0 : 1 - normalized;
     }
 
+    /** Precompute deterministic bend seeds for all corridors of one cave cell. */
+    static long tubeBendKey(Hall a, Hall b) {
+        if (a.x() > b.x() || (a.x() == b.x() && a.z() > b.z())
+                || (a.x() == b.x() && a.z() == b.z() && a.y() > b.y())) {
+            Hall temp = a; a = b; b = temp;
+        }
+        long keyA=mix((long)a.x()*0x9e3779b97f4a7c15L
+                ^ (long)a.y()*0xc2b2ae3d27d4eb4fL ^ (long)a.z());
+        long keyB=mix((long)b.x()*0x9e3779b97f4a7c15L
+                ^ (long)b.y()*0xc2b2ae3d27d4eb4fL ^ (long)b.z());
+        return mix(keyA ^ Long.rotateLeft(keyB,21));
+    }
+
     private static double tube(double x, double y, double z, Hall a, Hall b,
-                               double radius) {
+                               double radius, long key) {
         // Canonicalize the direction: each side of a chunk boundary must use
         // exactly the same curved centerline, independent of which hall owns it.
         if (a.x() > b.x() || (a.x() == b.x() && a.z() > b.z())
@@ -127,11 +149,6 @@ public final class GrandNetherCaveNetwork {
 
         // One deterministic, smooth sideways bend per passage. The parabola
         // goes to zero at both halls, retaining the original continuous graph.
-        long keyA=mix((long)a.x()*0x9e3779b97f4a7c15L
-                ^ (long)a.y()*0xc2b2ae3d27d4eb4fL ^ (long)a.z());
-        long keyB=mix((long)b.x()*0x9e3779b97f4a7c15L
-                ^ (long)b.y()*0xc2b2ae3d27d4eb4fL ^ (long)b.z());
-        long key=mix(keyA ^ Long.rotateLeft(keyB,21));
         double curve=4.0*t*(1.0-t);
         double bend1=((int)Math.floorMod(key,9L)-4)*curve;
         double bend2=((int)Math.floorMod(key >>> 24,7L)-3)*curve;
@@ -171,7 +188,7 @@ public final class GrandNetherCaveNetwork {
             if(answer>=1)return 1;
             for(int edge=0;edge<4;edge++)
                 answer=Math.max(answer,tube(x,y,z,center,
-                          cache.halls[layer][edge+1],11));
+                          cache.halls[layer][edge+1],11,cache.corridorKeys[layer][edge]));
             // All satellite chambers and connectors lie within ±80 X/Z and
             // ±30 Y of their parent. Skip secondary graph work far from them.
             if (Math.abs(x-center.x())<=80 && Math.abs(z-center.z())<=80
@@ -180,14 +197,15 @@ public final class GrandNetherCaveNetwork {
                     Hall side=cache.satellites[layer][gallery];
                     if(Math.abs(y-side.y())<side.radiusY()+1)
                         answer=Math.max(answer,chamber(x,y,z,side));
-                    answer=Math.max(answer,tube(x,y,z,center,side,7));
+                    answer=Math.max(answer,tube(x,y,z,center,side,7,
+                            cache.satelliteKeys[layer][gallery]));
                 }
             }
         }
         // A diagonal chimney links low and high halls. The edge is evaluated
         // only from its own cell, so no additional worldgen/chunk access occurs.
         answer=Math.max(answer,tube(x,y,z,cache.halls[0][0],
-                                    cache.halls[1][0],10));
+                                    cache.halls[1][0],10,cache.interlayerKey));
         return answer;
     }
 }
