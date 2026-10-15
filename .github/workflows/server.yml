@@ -1,4 +1,9 @@
 name: NeoForge dedicated server and saved-block verification
+# Keep only the newest PR validation; old experimental commits must not
+# monopolize expensive high-ceiling Minecraft server runners.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
   push:
     branches: [main]

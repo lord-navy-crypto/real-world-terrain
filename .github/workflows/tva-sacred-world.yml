@@ -1,4 +1,9 @@
 name: TVA Sacred Timeline three-realm dedicated server
+# Keep only the newest PR validation; old experimental commits must not
+# monopolize expensive high-ceiling Minecraft server runners.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
   pull_request:
     paths:
@@ -8,7 +13,7 @@ on:
 permissions:
   contents: read
 jobs:
-  grand-ecology-preset-world:
+  tva-sacred-preset-world:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
