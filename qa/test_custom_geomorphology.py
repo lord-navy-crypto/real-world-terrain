@@ -42,7 +42,13 @@ class CustomGeoTests(unittest.TestCase):
                 self.assertIn(src.name,f"terrain_lab/{name}")
                 noise=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
                 self.assertEqual(noise["sea_level"],63)
-                self.assertEqual(noise["noise_router"]["final_density"]["input"],"realscale:terrain_lab/"+name+"/terrain_density")
+                # v1.3 used a range_choice final-density wrapper, whereas
+                # TVA's rebuilt Realism MAX uses a direct density-function ID.
+                # Both are valid; the important requirement is that the
+                # generated noise router actually references this Lab profile.
+                final=noise["noise_router"]["final_density"]
+                wired=final if isinstance(final,str) else final["input"]
+                self.assertEqual(wired,"realscale:terrain_lab/"+name+"/terrain_density")
                 self.assertEqual(opts["ridge"],18)
 
     def test_altitude_biome_cooling_uses_world_local_noise_router(self):
@@ -126,8 +132,10 @@ class CustomGeoTests(unittest.TestCase):
         meta=(base/"resources/META-INF/neoforge.mods.toml").read_text()
         entry=(base/"java/org/realscale/neoforge/RealScaleMod.java").read_text()
         self.assertIn("maven.modrinth:XaDC71GB:u0UUKAE1",gradle)
-        self.assertIn('modId="lithostitched"',meta)
-        self.assertIn('side="BOTH"',meta)
+        # TVA canonical worlds intentionally DO NOT require Lithostitched.
+        # Only exported opt-in Deep Geology profiles reference its codecs.
+        self.assertNotIn('modId="lithostitched"',meta)
+        self.assertIn('modId="yet_another_config_lib_v3"',meta)
         for function in ("ridge_erosion","strata"):
             self.assertIn('"'+function+'"',entry)
         for cls in ("RidgeErosionDensity","StrataDensity"):
