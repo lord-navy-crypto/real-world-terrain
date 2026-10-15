@@ -93,6 +93,11 @@ jobs:
         working-directory: neoforge
         run: |
           gradle --no-daemon tasks --all | grep -E '^[[:space:]]*runClient([[:space:]]|$)'
+      - name: Regress radial latitude, basin climates and scientific geomorphology
+        run: |
+          python3 -m unittest discover -s qa -p test_radial_climate_math.py -v
+          python3 -m unittest discover -s qa -p test_latitude_climate.py -v
+          python3 -m unittest discover -s qa -p test_custom_geomorphology.py -v
       - name: Prove ALL inherited worldgen density reference graphs resolve
         run: python3 -m unittest discover -s qa -p test_all_worldgen_graphs.py -v
       - name: Verify TVA Terrain Lab independent families, Grand realms and saved-world menu stability
