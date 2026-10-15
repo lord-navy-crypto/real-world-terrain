@@ -12,7 +12,7 @@
             }
           }
         },
-        "settings": "realscale:realism_max",
+        "settings": "realscale:tva_natural_smoothed",
         "type": "minecraft:noise"
       },
       "type": "realscale:realism_max_overworld"

@@ -13,7 +13,7 @@ assert src["source"]==b["dimensions"]["minecraft:overworld"]["generator"]["biome
 for name in ("minecraft:the_nether","minecraft:the_end"):
     assert v["dimensions"][name]==b["dimensions"][name]
 FAMILIES={
- "tva_sacred_timeline_three_realms":"realscale:realism_max",
+ "tva_sacred_timeline_three_realms":"realscale:tva_natural_smoothed",
  "tva_alpine_three_realms":"realscale:himalayan",
  "tva_canyon_three_realms":"realscale:grand_canyon",
  "tva_measured_three_realms":"realscale:usgs_big_sur_v2",
