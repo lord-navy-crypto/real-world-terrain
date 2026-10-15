@@ -106,8 +106,8 @@ def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ri
         raise ValueError("Altitude biome cooling applies only to merged Lab families")
     if preset not in FAMILIES and valley:
         raise ValueError("Valley warming applies only to merged Lab families")
-    if latitude not in ("off","earth","preview","radial_earth","radial_preview","radial_balanced"):
-        raise ValueError("Latitude mode must be off, earth, preview, radial_earth, radial_preview or radial_balanced")
+    if latitude not in ("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area"):
+        raise ValueError("Latitude mode must be off, earth, preview, radial_earth, radial_preview, radial_balanced or radial_equal_area")
     if type(latitude_strength) is not int or not 0 <= latitude_strength <= 100:
         raise ValueError("Latitude strength must be 0..100")
     if type(equator_z) is not int or not -29_000_000 <= equator_z <= 29_000_000:
@@ -483,9 +483,10 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                     "base":temp_value,
                     "center_x":center_x,
                     "center_z":equator_z,
-                    "pole_distance":10_001_966 if latitude=="radial_earth" else (8_192 if latitude=="radial_balanced" else 16_384),
+                    "pole_distance":10_001_966 if latitude=="radial_earth" else (8_192 if latitude in ("radial_balanced","radial_equal_area") else 16_384),
                     "strength":round(latitude_strength/100.0,5),
-                    **({"balanced":True,"altitude_cooling":cool} if latitude=="radial_balanced" else {})
+                    **({"balanced":True,"altitude_cooling":cool} if latitude in ("radial_balanced","radial_equal_area") else {}),
+                    **({"area_balanced":True} if latitude=="radial_equal_area" else {})
                 }
             else:
                 # Preserve old North/South latitude semantics AND bytes.
@@ -643,7 +644,7 @@ def gui(root, launch):
     slider("Warped vertical strata solidity (0..20)",strata,0,20,1)
     slider("Altitude-aware biome cooling (0..100)",climate,0,100,1)
     slider("Optional valley-floor warming (0..100)",valley,0,100,5)
-    chooser("Latitude climate cycle",latitude,("off","earth","preview","radial_earth","radial_preview","radial_balanced"))
+    chooser("Latitude climate cycle",latitude,("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area"))
     slider("Latitude temperature strength (0..100)",latitude_strength,0,100,5)
     slider("Equator origin Z / ring center Z",equator_z,-4096,4096,128)
     slider("Concentric ring center X",center_x,-4096,4096,128)
@@ -697,7 +698,7 @@ def main(argv=None):
                         help="Opt-in height-aware temperature biome signal (0..100)")
     parser.add_argument("--valley-warming",type=int,default=0,
                         help="Opt-in bounded relative-valley temperature boost (0..100)")
-    parser.add_argument("--latitude-mode",choices=("off","earth","preview","radial_earth","radial_preview","radial_balanced"),default="off",
+    parser.add_argument("--latitude-mode",choices=("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area"),default="off",
                         help="meridional or concentric latitude; Earth = 1m/block, preview = pole at radius 16,384 blocks")
     parser.add_argument("--latitude-strength",type=int,default=70,help="Latitude climate strength 0..100")
     parser.add_argument("--equator-z",type=int,default=0,
