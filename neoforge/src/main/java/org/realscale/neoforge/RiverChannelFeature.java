@@ -303,6 +303,39 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
     }
 
     /**
+     * Navigation-first river fill for NEW world generation.
+     *
+     * Earlier bank-guarded riverlets often left natural sediment at boat
+     * depth, and rejected water wherever slopes could spill. The optional
+     * hovercraft cannot fix a solid channel blockage, so new river columns
+     * now receive a three-block open waterway over one gravel floor.
+     *
+     * Deliberately permits vanilla water simulation to spill down exposed
+     * natural slopes. This implementation never builds artificial soil dams,
+     * never writes outside the current channel column, never excavates
+     * non-natural blocks, and preserves vanilla oceans and the sea level.
+     */
+    private static boolean tryOpenNavigableChannel(
+            WorldGenLevel level, BlockPos top, BlockPos coverPos,
+            boolean covered, boolean frozen, int floor) {
+        if (top.getY() - 3 <= floor) return false;
+        // The fourth supporting layer was already checked by the caller.
+        // No deep cave punctures or unsupported fluid columns.
+        if (!natural(level.getBlockState(top.below(3))))
+            return false;
+        if (covered) {
+            level.setBlock(coverPos, Blocks.AIR.defaultBlockState(), 2);
+        }
+        level.setBlock(top.below(3), Blocks.GRAVEL.defaultBlockState(), 2);
+        level.setBlock(top.below(2), Blocks.WATER.defaultBlockState(), 2);
+        level.setBlock(top.below(), Blocks.WATER.defaultBlockState(), 2);
+        level.setBlock(top, frozen
+                ? Blocks.ICE.defaultBlockState()
+                : Blocks.WATER.defaultBlockState(), 2);
+        return true;
+    }
+
+    /**
      * Lab world types embed their persistent river-grade setting in the
      * immutable registry ID. No client-only or mutable global config is read
      * during generation; existing saved worlds retain their original rules.
@@ -380,6 +413,14 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 if (!overhead.isAir()
                         && !(covered && removableCover(overhead)))
                     continue;
+
+                // Prioritize open navigable water above sea level; shore
+                // overflow is preferable to solid plugs in the channel.
+                if (tryOpenNavigableChannel(
+                        level, top, coverPos, covered, frozen, floor)) {
+                    made = true;
+                    continue;
+                }
 
                 // In high mountains, bank overflow is an intended natural
                 // effect. Paired ice/water reaches can descend into cascades.
