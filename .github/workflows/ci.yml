@@ -158,6 +158,8 @@ jobs:
       - name: Build readable NeoForge project
         working-directory: neoforge
         run: gradle --no-daemon --stacktrace build
+      - name: Verify RealScale JAR contains selectable structure packs and Config integration
+        run: python3 -m unittest discover -s qa -p 'test_builtin_structure_packs.py' -v
       - name: Export real TVA YACL Terrain Lab datapack from compiled JAR
         run: |
           python3 qa/test_tva_exporter_end_to_end.py
