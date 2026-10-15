@@ -41,6 +41,8 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
 
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+        // Limit global NeoForge biome-modifier decorations to RealScale worlds.
+        if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
         RandomSource random = context.random();

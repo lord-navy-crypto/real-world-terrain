@@ -53,6 +53,8 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
     }
 
     @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+        // Limit global NeoForge biome-modifier decorations to RealScale worlds.
+        if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
         WorldGenLevel w = context.level();
         BlockPos start = context.origin();
         boolean cave = kind == Kind.CAVE_MOSS || kind == Kind.CAVE_DRIPSTONE;

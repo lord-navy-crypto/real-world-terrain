@@ -48,6 +48,12 @@ assert len(catalog)==60
 assert len(list((D/"worldgen/biome").glob("*.json")))==67
 for e in catalog:
     assert (D/"worldgen/biome"/(e["id"]+".json")).exists(),e["id"]
+guard=R/"neoforge/src/main/java/org/realscale/neoforge/TVAWorldGuard.java"
+assert guard.is_file()
+assert "generator.generatorSettings().unwrapKey()" in guard.read_text()
+for f in ("GrandEcologyFeature","GroundMicrostructureFeature","HabitatPatchFeature"):
+    impl=(R/"neoforge/src/main/java/org/realscale/neoforge"/(f+".java")).read_text()
+    assert "TVAWorldGuard.hasRealScaleGenerator(context)" in impl,f
 code=(R/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
 for symbol in ("grand_nether_caverns","grand_end_density","sky_ocean",
 "sky_blossom_island","coastal_driftwood","tropical_rainforest"):
