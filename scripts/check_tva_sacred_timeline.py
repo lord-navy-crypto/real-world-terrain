@@ -53,6 +53,10 @@ for symbol in ("grand_nether_caverns","grand_end_density","sky_ocean",
 "sky_blossom_island","coastal_driftwood","tropical_rainforest"):
     assert '"'+symbol+'"' in code,symbol
 assert (R/"neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java").exists()
+build=(R/"neoforge/build.gradle").read_text()
+meta=(R/"neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text()
+assert "2.0.0-tva-preview.1" in build and "2.0.0-tva-preview.1" in meta
+assert "RealScale-TVA-Ultimate" in build and "Sacred Timeline Ultimate" in meta
 for p in (D/"neoforge/biome_modifier").glob("*.json"):
     m=read(p)
     if m.get("type")!="neoforge:add_features":continue

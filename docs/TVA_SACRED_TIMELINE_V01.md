@@ -109,3 +109,11 @@ first port omitted that secondary density function, causing the entire
 worldgen registry to fail during data loading. The original `cave_core`
 resource has now been imported without changing existing Realism MAX
 terrain presets, and the new TVA validation asserts its presence.
+
+## TVA preview identity (no more v1.1 USGS artifact names)
+
+TVA integrated builds use version `2.0.0-tva-preview.1` and output the
+`RealScale-TVA-Ultimate-NeoForge-1.21.1` JAR family. Mod metadata now
+accurately describes the four TVA world choices and 512-block Nether/End
+rather than the original v1.1 USGS-only pilot. The original v1.1 immutable
+release JAR, archives and historical worldgen IDs remain untouched.

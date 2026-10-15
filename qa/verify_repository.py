@@ -34,6 +34,15 @@ for name,want in checks.items():
    assert new.get('generator.realscale.'+preset), (name,preset)
   print('INTENTIONAL MODIFICATION: additive TVA labels, historical labels unchanged')
   continue
+ if name=='neoforge/src/main/resources/META-INF/neoforge.mods.toml':
+  descriptor=(ROOT/name).read_text()
+  for required in ('modLoader="javafml"','modId="realscale"',
+                   'version="2.0.0-tva-preview.1"',
+                   'versionRange="[21.1.0,)"',
+                   'versionRange="[1.21.1,1.21.2)"'):
+   assert required in descriptor,(name,required)
+  print('INTENTIONAL MODIFICATION: TVA preview metadata with intact mod/dependency IDs')
+  continue
  if name==modified_density:
   source=(ROOT/name).read_text()
   assert 'RealDemColumnCache' in source and 'COLUMN_CACHE' in source
@@ -89,6 +98,7 @@ with tempfile.TemporaryDirectory() as tmp:
         'data/minecraft/tags/worldgen/world_preset/normal.json',
         'assets/minecraft/lang/en_us.json',
         'assets/minecraft/lang/zh_cn.json',
+        'META-INF/neoforge.mods.toml',
     ):
      # World menu and additive translation labels were verified against the
      # original archived keys in the SHA loop above; keep the JAR immutable.
