@@ -4,7 +4,7 @@
       "generator": {
         "biome_source": {
           "type": "minecraft:checkerboard",
-          "scale": 3,
+          "scale": 0,
           "biomes": [
             "minecraft:jungle",
             "minecraft:old_growth_spruce_taiga",

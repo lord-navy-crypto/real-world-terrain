@@ -31,10 +31,12 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
     }
 
     private final Kind kind;
+    private final EcologyDistributionMath.Habitat habitat;
 
     public GrandEcologyFeature(Kind kind) {
         super(NoneFeatureConfiguration.CODEC);
         this.kind = kind;
+        this.habitat = EcologyDistributionMath.Habitat.valueOf(kind.name());
     }
 
     @Override
@@ -62,6 +64,13 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
         };
         if (underwater ? !level.getFluidState(origin).is(FluidTags.WATER)
                 : !level.getFluidState(origin).isEmpty()) return false;
+
+        // A continuous 768/128-block site-suitability field clusters plants
+        // into groves, open meadows and sparse strips. No chunk lookups,
+        // climate remapping, terrain changes or additional registry nodes.
+        double chance = EcologyDistributionMath.placementProbability(
+                habitat, origin.getX(), origin.getY(), origin.getZ());
+        if (random.nextDouble() >= chance) return false;
         return switch (kind) {
             case TEMPERATE_RAINFOREST -> giantConifer(level, origin, random);
             case SAVANNA_CANOPY -> umbrellaAcacia(level, origin, random);

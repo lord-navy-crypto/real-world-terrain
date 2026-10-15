@@ -90,3 +90,25 @@ controls and freshwater/marine categories into a compact test world.
   came from the new `GrandEcologyFeature`.
 - Natural climate realism, cross-chunk visual quality and rare-feature
   occurrence frequency remain outstanding real-player QA tasks.
+
+## v0.3 — coherent macro vegetation, relative height, and gallery QA repair
+
+- Added `EcologyDistributionMath.java`: continuous deterministic 768-block
+  macro suitability with 128-block sub-patches. Fifteen different habitat
+  salts and densities give groves, open areas and denser wetland strands,
+  rather than independent white-noise attempts.
+- The existing NeoForge placed features consult the field **before any block
+  modification**. The seed-dependent final roll remains Minecraft's feature
+  random stream. No new generator, fluid, aquifer or biome registry changes.
+- Relative-height **visual preferences** attenuate very tall lowland tropical
+  and savanna trees on extremely elevated ground; alpine decoration becomes
+  more likely as Y increases. **No physical temperature lapse rate, basin
+  warmth, precipitation or rain shadow is modeled here.** Biome IDs remain
+  controlled by vanilla multi-noise and natural ecotone ribbons.
+- Pure Java smoke tests sample >50k coordinates across negative and positive
+  positions, validate smooth patch boundaries, diversity and preferences.
+- APES Gallery used scale=3 and examined only 49 full chunks. This sampled
+  just three biome IDs near spawn, while its test incorrectly required
+  >=100 chunks and 16 IDs. The debug-only gallery is now scale=0, and
+  accepted complete spawn chunks are >=32; the **16 ID saved-Anvil check
+  remains mandatory**. Only the real server rerun can confirm the fix.

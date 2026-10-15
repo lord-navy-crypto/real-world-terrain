@@ -68,7 +68,7 @@ def check():
     gallery = read(WORLD_PRESET / "apes_gallery_three_realms.json")
     gallery_source = gallery["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
     assert gallery_source["type"] == "minecraft:checkerboard"
-    assert gallery_source["scale"] == 3
+    assert gallery_source["scale"] == 0
     assert len(gallery_source["biomes"]) == 16
     assert len(set(gallery_source["biomes"])) == 16
     assert set(gallery_source["biomes"]) == {
