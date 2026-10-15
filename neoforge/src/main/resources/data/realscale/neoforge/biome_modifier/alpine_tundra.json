@@ -1,0 +1,13 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:stony_peaks",
+    "minecraft:meadow",
+    "minecraft:windswept_gravelly_hills",
+    "realscale:rocky_alpine_meadow",
+    "realscale:lichen_rockland",
+    "realscale:frost_shrub_tundra"
+  ],
+  "features": "realscale:alpine_tundra",
+  "step": "vegetal_decoration"
+}

@@ -23,6 +23,8 @@ jobs:
         run: python3 qa/verify_repository.py
       - name: Validate custom biome registry resources (static)
         run: python3 scripts/check_custom_biomes.py
+      - name: Validate Grand Ecology registrations and preserved dimensions
+        run: python3 scripts/check_grand_ecology.py
       - name: Compile and execute ecotone and cave classifier smoke tests
         run: |
           mkdir -p build/habitat-smoke
