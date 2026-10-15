@@ -16,7 +16,7 @@ concurrency:
 jobs:
   natural-ocean-integrity:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 38
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -78,30 +78,65 @@ jobs:
                   (3072,1024),(-3072,-1024),(1024,3072),(-1024,-3072),
                   (4096,4096),(-4096,-4096),(4096,-4096),(-4096,4096)
               ]
+              # A biome condition on an UNLOADED chunk silently returns
+              # empty RCON feedback. Force-load ONE candidate at a time,
+              # await a confirmed loaded chunk, then test its natural biome.
+              control=command("time query daytime",max_attempts=1,timeout_seconds=20)
+              if "the time is " not in control.lower():
+                  raise RuntimeError("Minecraft RCON time-query feedback is unavailable")
               found=None
               for x,z in probes:
-                  query=(f"execute in minecraft:overworld if biome {x} 62 {z} "
-                         "#minecraft:is_deep_ocean run time query daytime")
                   try:
-                      answer=command(query,max_attempts=1,timeout_seconds=35)
-                  except RuntimeError as exc:
-                      print("DEEP_OCEAN_BOUNDED_QUERY_UNRESPONSIVE",x,z,str(exc),flush=True)
-                      continue
-                  print("DEEP_OCEAN_BOUNDED_SAMPLE",x,z,repr(answer[:250]),flush=True)
-                  if "the time is " in answer.lower():
-                      found=(x,z)
-                      break
-                  if any(t in answer.lower() for t in ("unknown biome", "unknown tag", "unknown command", "incorrect argument")):
-                      raise RuntimeError("Deep-ocean biome tag unavailable: "+answer)
+                      loaded=command(f"execute in minecraft:overworld run forceload add {x} {z}",
+                                     max_attempts=1,timeout_seconds=30)
+                      print("DEEP_OCEAN_FORCELOAD",x,z,repr(loaded[:220]),flush=True)
+                      if any(token in loaded.lower() for token in
+                             ("unknown command","incorrect argument","no chunks were marked")):
+                          raise RuntimeError("Unable to force-load candidate: "+loaded)
+                      ready=False
+                      for attempt in range(12):
+                          try:
+                              answer=command(
+                                  f"execute in minecraft:overworld if loaded {x} 62 {z} run time query daytime",
+                                  max_attempts=1,timeout_seconds=18)
+                              if "the time is " in answer.lower():
+                                  ready=True
+                                  break
+                          except RuntimeError as exc:
+                              print("DEEP_OCEAN_LOAD_PENDING",x,z,str(exc),flush=True)
+                          time.sleep(4)
+                      if not ready:
+                          print("DEEP_OCEAN_CHUNK_NOT_FULL",x,z,flush=True)
+                          continue
+                      query=(f"execute in minecraft:overworld if biome {x} 62 {z} "
+                             "#minecraft:is_deep_ocean run time query daytime")
+                      response=command(query,max_attempts=1,timeout_seconds=25)
+                      print("DEEP_OCEAN_SAMPLED_LOADED_CHUNK",x,z,repr(response[:200]),flush=True)
+                      if "the time is " in response.lower():
+                          found=(x,z)
+                          break
+                      if any(t in response.lower() for t in
+                             ("unknown biome","unknown tag","unknown command","incorrect argument")):
+                          raise RuntimeError("Deep-ocean tag unavailable: "+response)
+                  finally:
+                      # Avoid unbounded forced chunks and runaway server RAM.
+                      if found is None:
+                          try:command(f"execute in minecraft:overworld run forceload remove {x} {z}",
+                                      max_attempts=1,timeout_seconds=15)
+                          except RuntimeError as exc:
+                              print("FORCELOAD_REMOVE_DIAGNOSTIC",x,z,str(exc),flush=True)
               if found is None:
-                  raise RuntimeError("No natural deep-ocean sample confirmed by bounded biome queries; water quality remains UNVERIFIED")
+                  raise RuntimeError("No natural deep ocean was verified in fully loaded candidate chunks")
               x,z=found
               pathlib.Path("build/natural-marine-target.txt").write_text(f"{x} {z}\n")
               print("NATURAL_DEEP_OCEAN_LOCATION",x,z,flush=True)
-              for dx,dz in ((0,0),(32,0),(-32,0),(0,32),(0,-32)):
-                  result=command(f"forceload add {x+dx} {z+dz}")
-                  if "Unknown" in result or "Incorrect" in result:
-                      raise RuntimeError("Failed to load ocean chunk: "+result)
+              # Persist at least a 3x3 sample of complete ocean chunks.
+              for dx in (-16,0,16):
+                  for dz in (-16,0,16):
+                      result=command(f"execute in minecraft:overworld run forceload add {x+dx} {z+dz}",
+                                     max_attempts=1,timeout_seconds=25)
+                      if "Unknown" in result or "Incorrect" in result:
+                          raise RuntimeError("Failed to load ocean chunk: "+result)
               time.sleep(50)
               command("save-all flush")
               time.sleep(7)
