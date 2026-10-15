@@ -77,3 +77,16 @@ described as entirely preset-gated.
   https://apcentral.collegeboard.org/courses/ap-environmental-science
 - National Park Service, elevational vegetation zones:
   https://www.nps.gov/
+
+## v0.2 APES Unit 1 category completion (code, not final ecology simulation)
+
+Nine APES terrestrial categories now each have a targeted decoration feature.
+Four more underwater features cover freshwater riverbed, ocean-floor seagrass,
+warm-water reef undergrowth and estuarine/mangrove shallows. The terrestrial
+tundra is distinct from alpine tundra. **See the truthful per-category matrix:
+`docs/APES_ECOLOGY_COVERAGE_V02.md`.**
+
+This does NOT add a global climate redistribution solver or change original
+ocean biome choices. New marine plants replace only eligible source water with
+standard water-compatible vanilla plants. Do not infer actual lake salinity,
+coral community composition, or real-world aquatic productivity.

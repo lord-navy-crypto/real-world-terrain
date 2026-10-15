@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:warm_ocean"
+  ],
+  "features": "realscale:coral_reef_floor",
+  "step": "vegetal_decoration"
+}

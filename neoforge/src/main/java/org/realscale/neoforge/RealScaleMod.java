@@ -42,6 +42,24 @@ public final class RealScaleMod {
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.ALPINE_TUNDRA));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "floodplain_bank"),
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.FLOODPLAIN_BANK));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "tropical_rainforest"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.TROPICAL_RAINFOREST));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "temperate_seasonal_forest"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.TEMPERATE_SEASONAL_FOREST));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "boreal_taiga_floor"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.BOREAL_TAIGA));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "desert_outcrops"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.DESERT_OUTCROPS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "arctic_tundra"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.ARCTIC_TUNDRA));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "freshwater_bed"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.FRESHWATER_BED));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "coastal_seagrass"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.COASTAL_SEAGRASS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "coral_reef_floor"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.CORAL_REEF_FLOOR));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "estuary_shallows"),
+                    new GrandEcologyFeature(GrandEcologyFeature.Kind.ESTUARY_SHALLOWS));
         });
     }
 }

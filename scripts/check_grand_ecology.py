@@ -13,6 +13,15 @@ NAMES = {
     "grassland_mosaic": "GRASSLAND_MOSAIC",
     "alpine_tundra": "ALPINE_TUNDRA",
     "floodplain_bank": "FLOODPLAIN_BANK",
+    "tropical_rainforest": "TROPICAL_RAINFOREST",
+    "temperate_seasonal_forest": "TEMPERATE_SEASONAL_FOREST",
+    "boreal_taiga_floor": "BOREAL_TAIGA",
+    "desert_outcrops": "DESERT_OUTCROPS",
+    "arctic_tundra": "ARCTIC_TUNDRA",
+    "freshwater_bed": "FRESHWATER_BED",
+    "coastal_seagrass": "COASTAL_SEAGRASS",
+    "coral_reef_floor": "CORAL_REEF_FLOOR",
+    "estuary_shallows": "ESTUARY_SHALLOWS",
 }
 
 def read(path):
@@ -34,8 +43,13 @@ def check():
         assert modifier["features"] == "realscale:" + name, name
         assert modifier["step"] == "vegetal_decoration", name
         assert modifier["biomes"], name
-        assert not any("ocean" in b or b in ("minecraft:river", "minecraft:frozen_river")
-                       for b in modifier["biomes"]), name
+        aquatic = name in ("freshwater_bed", "coastal_seagrass",
+                           "coral_reef_floor", "estuary_shallows")
+        expected_heightmap = "OCEAN_FLOOR_WG" if aquatic else "MOTION_BLOCKING_NO_LEAVES"
+        assert placed["placement"][2]["heightmap"] == expected_heightmap, name
+        if not aquatic:
+            assert not any("ocean" in b or b in ("minecraft:river", "minecraft:frozen_river")
+                           for b in modifier["biomes"]), name
     original = read(WORLD_PRESET / "realism_max_three_realms.json")
     ecology = read(WORLD_PRESET / "grand_ecology_three_realms.json")
     for dim in ("minecraft:the_nether", "minecraft:the_end"):
@@ -56,7 +70,7 @@ def check():
     assert "setBlock" in feature_java
     assert "getFluidState" in feature_java
     assert "sameChunk" in feature_java
-    print("Grand Ecology static registry, 6 feature groups and protected dimension configuration: PASS")
+    print("Grand Ecology: 15 biome feature groups including all nine APES terrestrial categories, plus aquatic proxies: PASS")
 
 if __name__ == "__main__":
     check()
