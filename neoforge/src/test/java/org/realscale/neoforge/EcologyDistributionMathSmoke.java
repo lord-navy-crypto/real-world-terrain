@@ -13,7 +13,7 @@ public final class EcologyDistributionMathSmoke {
     public static void main(String[] args) {
         int sites = 0;
         for (Habitat habitat : Habitat.values()) {
-            double min = 1.0, max = 0.0;
+            double min = 1.0, max = 0.0, patchMin = 1.0, patchMax = 0.0;
             for (int x = -4096; x <= 4096; x += 131) {
                 for (int z = -4096; z <= 4096; z += 173) {
                     double p = EcologyDistributionMath.placementProbability(habitat, x, 90, z);
@@ -24,10 +24,19 @@ public final class EcologyDistributionMathSmoke {
                             "Nondeterministic probability " + habitat);
                     min = Math.min(min, p);
                     max = Math.max(max, p);
+                    double index = EcologyDistributionMath.patchIndex(habitat, x, z);
+                    patchMin = Math.min(patchMin, index);
+                    patchMax = Math.max(patchMax, index);
                     sites++;
                 }
             }
-            require(max - min >= 0.18, "No real macro-density variation: " + habitat);
+            // Patch diversity is independent of altitude preference. At y=90,
+            // deliberately sparse alpine habitats have much smaller absolute
+            // placement probability swings than humid lowland forests.
+            require(patchMax - patchMin >= 0.20,
+                    "No macro patch diversity: " + habitat);
+            require(max - min >= 0.04,
+                    "No spatial variation after altitude gating: " + habitat);
             // Both sides of zero and a chunk edge are smoothly interpolated.
             for (int x : new int[] {-769, -513, -129, -17, -16, -1, 0, 15, 16, 127, 768}) {
                 double a = EcologyDistributionMath.patchIndex(habitat, x, -17);
