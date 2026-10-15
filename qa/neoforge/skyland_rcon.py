@@ -28,12 +28,12 @@ def _receive(sock):
     packet_id,kind = struct.unpack("<ii",raw[:8])
     return packet_id,kind,raw[8:-2].decode("utf-8","replace")
 
-def command(message):
+def command(message, max_attempts=12, timeout_seconds=20):
     last = None
-    for attempt in range(12):
+    for attempt in range(max_attempts):
         try:
             with socket.create_connection((HOST,PORT),timeout=8) as sock:
-                sock.settimeout(20)
+                sock.settimeout(timeout_seconds)
                 _send(sock,101,3,PASSWORD)
                 # Vanilla may send an empty response-value packet before
                 # the actual type=2 authentication acknowledgement.

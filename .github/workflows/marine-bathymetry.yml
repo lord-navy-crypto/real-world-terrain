@@ -68,13 +68,34 @@ jobs:
               while time.time()<limit and p.poll() is None and not ready.is_set():
                   time.sleep(1)
               if not ready.is_set():raise RuntimeError("Natural-ocean Minecraft server failed to boot")
-              response=command("locate biome minecraft:deep_ocean")
-              if "Could not find" in response or "not found" in response.lower():
-                  response=command("locate biome minecraft:deep_cold_ocean")
-              # Minecraft coordinates may contain '~' in the vertical field.
-              match=re.search(r"\[(-?\d+),\s*[-~0-9]+,\s*(-?\d+)\]",response)
-              if not match:raise RuntimeError("Could not locate a natural deep ocean: "+response)
-              x,z=map(int,match.groups())
+              # Avoid unbounded vanilla biome search across many 2096-high
+              # chunks; probe finite coordinates with the vanilla deep-ocean
+              # tag and require a real match from the natural biome source.
+              probes=[
+                  (512,512),(-512,-512),(1024,-1024),(-1024,1024),
+                  (2048,0),(0,2048),(-2048,0),(0,-2048),
+                  (2048,2048),(-2048,-2048),(2048,-2048),(-2048,2048),
+                  (3072,1024),(-3072,-1024),(1024,3072),(-1024,-3072),
+                  (4096,4096),(-4096,-4096),(4096,-4096),(-4096,4096)
+              ]
+              found=None
+              for x,z in probes:
+                  query=(f"execute in minecraft:overworld if biome {x} 62 {z} "
+                         "#minecraft:is_deep_ocean run time query daytime")
+                  try:
+                      answer=command(query,max_attempts=1,timeout_seconds=35)
+                  except RuntimeError as exc:
+                      print("DEEP_OCEAN_BOUNDED_QUERY_UNRESPONSIVE",x,z,str(exc),flush=True)
+                      continue
+                  print("DEEP_OCEAN_BOUNDED_SAMPLE",x,z,repr(answer[:250]),flush=True)
+                  if re.search(r"\\b(?:time is|time:|daytime)\\b",answer,re.I):
+                      found=(x,z)
+                      break
+                  if any(t in answer.lower() for t in ("unknown biome", "unknown tag", "unknown command", "incorrect argument")):
+                      raise RuntimeError("Deep-ocean biome tag unavailable: "+answer)
+              if found is None:
+                  raise RuntimeError("No natural deep-ocean sample confirmed by bounded biome queries; water quality remains UNVERIFIED")
+              x,z=found
               pathlib.Path("build/natural-marine-target.txt").write_text(f"{x} {z}\n")
               print("NATURAL_DEEP_OCEAN_LOCATION",x,z,flush=True)
               for dx,dz in ((0,0),(32,0),(-32,0),(0,32),(0,-32)):
