@@ -7,8 +7,12 @@
     " L "
   ],
   "key": {
-    "L": "minecraft:leather",
-    "B": "#minecraft:boats"
+    "L": {
+      "item": "minecraft:leather"
+    },
+    "B": {
+      "tag": "minecraft:boats"
+    }
   },
   "result": {
     "id": "realscale:hovercraft",
