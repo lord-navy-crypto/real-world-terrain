@@ -385,12 +385,27 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
                         || !level.getFluidState(pos).isEmpty()) continue;
                 BlockPos groundPos = pos.below();
                 BlockState ground = level.getBlockState(groundPos);
-                if (!level.getFluidState(groundPos).isEmpty()
+                BlockPos target = pos;
+                if (ground.is(Blocks.SNOW)) {
+                    // Thin snow on top of solid frozen ground: replace only
+                    // that snow layer with grounded exposed rock, never hover.
+                    BlockPos belowSnow = groundPos.below();
+                    BlockState actualGround = level.getBlockState(belowSnow);
+                    if (!sameChunk(origin, groundPos)
+                            || !level.getFluidState(belowSnow).isEmpty()
+                            || !actualGround.isCollisionShapeFullBlock(level, belowSnow)
+                            || !(actualGround.is(Blocks.GRASS_BLOCK)
+                                || actualGround.is(Blocks.DIRT)
+                                || actualGround.is(Blocks.STONE)
+                                || actualGround.is(Blocks.SNOW_BLOCK)
+                                || actualGround.is(Blocks.COARSE_DIRT))) continue;
+                    target = groundPos;
+                } else if (!level.getFluidState(groundPos).isEmpty()
                         || !ground.isCollisionShapeFullBlock(level, groundPos)
                         || !(ground.is(Blocks.SNOW_BLOCK) || ground.is(Blocks.GRASS_BLOCK)
                             || ground.is(Blocks.STONE) || ground.is(Blocks.GRAVEL)
                             || ground.is(Blocks.COARSE_DIRT))) continue;
-                level.setBlock(pos, Blocks.COBBLESTONE.defaultBlockState(),2);
+                level.setBlock(target, Blocks.COBBLESTONE.defaultBlockState(), 2);
                 placed++;
             }
         }

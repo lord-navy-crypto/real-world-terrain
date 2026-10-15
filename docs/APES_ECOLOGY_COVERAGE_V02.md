@@ -39,6 +39,8 @@ Engine integration: https://docs.neoforged.net/docs/1.21.1/worldgen/biomemodifie
 - Never modify noise_router, base climate sampler, cave density, sea level, river carve,
   aquifers, ocean-floor sediment or underwater terrain in this phase.
 - Only native aquatic plants replace eligible still-water blocks; no terrain excavations.
+- Rare frostland exposed rocks may replace a thin snow layer only when anchored
+  to intact solid ground below; they do not change snow/ice climate or terrain.
 - Aboveground structures are placed only after full-footprint check where possible;
   all proposed changes stay in the initiating chunk.
 - Existing natural ecotone sampler remains bounded, with protected ocean and river selections.
