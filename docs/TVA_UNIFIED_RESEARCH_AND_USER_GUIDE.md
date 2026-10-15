@@ -87,3 +87,26 @@ realms and the optional offshore sky source.
 
 A green build alone does not imply passing Anvil tests. **Do not merge
 PR #15 until server checks conclude successfully**.
+
+## TVA v2 continuous terrain — new-world registry mapping
+
+The canonical Natural, Alpine and Canyon **new-world** presets now reference
+new independent noise settings: `tva_natural_smoothed`,
+`tva_alpine_smoothed`, and `tva_canyon_smoothed`.
+The original `realism_max`, `himalayan` and `grand_canyon` noise settings
+and all historical worldgen IDs remain intact for existing world saves.
+
+Scientific A/B comparison of *saved Minecraft chunks* at seed 2, without
+lowering thresholds:
+* Natural 16-block boundary 4.97x → 1.07x, 4-block grid 67.52x → 1.01x.
+* Alpine 16-block boundary 4.40x → 1.10x, 4-block grid 26.64x → 1.03x.
+* Canyon with correct dimension-height decoding and interpolated signal:
+  boundary 1.19x and grid 1.04x, zero isolated 4-neighbor spikes.
+
+The high-level world presets remain four; the A/B investigation presets are
+deliberately hidden from the player menu. The fourth, measured USGS v2, has
+its own sampling algorithm and is not wrapped in the procedural interpolation.
+
+The YACL Terrain Lab custom-profile exporter is still independent and must
+be checked separately for its authored density signal and interpolation.
+Existing saves must be backed up before changing versions.

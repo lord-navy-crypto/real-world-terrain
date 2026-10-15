@@ -103,6 +103,8 @@ jobs:
           python3 -m unittest discover -s qa -p test_radial_climate_math.py -v
           python3 -m unittest discover -s qa -p test_latitude_climate.py -v
           python3 -m unittest discover -s qa -p test_custom_geomorphology.py -v
+      - name: Verify the four TVA menu presets use isolated seed-proven smoothed density graphs
+        run: python3 -m unittest discover -s qa -p 'test_tva_smoothed_families.py' -v
       - name: Ensure 2096-height Anvil heightmaps never decode using Canyon's shorter generator height
         run: python3 -m unittest discover -s qa -p 'test_tva_heightmap_decoding.py' -v
       - name: Restore cross-branch water, river, cave, spawn, and structures unit gates
