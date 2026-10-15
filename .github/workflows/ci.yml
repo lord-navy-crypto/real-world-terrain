@@ -93,6 +93,8 @@ jobs:
         working-directory: neoforge
         run: |
           gradle --no-daemon tasks --all | grep -E '^[[:space:]]*runClient([[:space:]]|$)'
+      - name: Prove ALL inherited worldgen density reference graphs resolve
+        run: python3 -m unittest discover -s qa -p test_all_worldgen_graphs.py -v
       - name: Verify TVA Terrain Lab independent families, Grand realms and saved-world menu stability
         run: python3 -m unittest discover -s qa -p test_tva_terrain_lab.py -v
       - name: Build readable NeoForge project
