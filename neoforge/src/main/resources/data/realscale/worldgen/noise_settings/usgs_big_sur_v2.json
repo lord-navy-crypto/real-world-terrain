@@ -28,16 +28,26 @@
     "depth": "realscale:usgs_big_sur_v2/terrain_density",
     "erosion": "realscale:realism_max/erosion_field",
     "final_density": {
-      "type": "minecraft:range_choice",
-      "input": "realscale:usgs_big_sur_v2/terrain_density",
-      "min_inclusive": 0.25,
-      "max_exclusive": 4,
-      "when_in_range": {
-        "type": "minecraft:min",
-        "argument1": "realscale:usgs_big_sur_v2/terrain_density",
-        "argument2": "realscale:usgs_big_sur_v2/cave_density"
+      "type": "realscale:grand_overworld_caverns",
+      "base": {
+        "type": "minecraft:range_choice",
+        "input": "realscale:usgs_big_sur_v2/terrain_density",
+        "min_inclusive": 0.25,
+        "max_exclusive": 4,
+        "when_in_range": {
+          "type": "minecraft:min",
+          "argument1": "realscale:usgs_big_sur_v2/terrain_density",
+          "argument2": "realscale:usgs_big_sur_v2/cave_density"
+        },
+        "when_out_of_range": "realscale:usgs_big_sur_v2/terrain_density"
       },
-      "when_out_of_range": "realscale:usgs_big_sur_v2/terrain_density"
+      "warp": {
+        "type": "minecraft:noise",
+        "noise": "minecraft:spaghetti_3d_1",
+        "xz_scale": 0.038,
+        "y_scale": 0.03
+      },
+      "small_caves": "realscale:realism_max/cave_core"
     },
     "fluid_level_floodedness": {
       "noise": "minecraft:aquifer_fluid_level_floodedness",
