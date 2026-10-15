@@ -53,6 +53,8 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/WorldgenProfilerSmoke.java
           java -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
           java -Drealscale.worldgen.profile=true -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
+      - name: Test RealScale feature-profile log comparison
+        run: python3 -m unittest discover -s qa -p 'test_worldgen_profile_compare.py' -v
       - name: Verify bounded ecotone resolution cache and parallel sampler isolation
         run: |
           mkdir -p build/ecotone-result-cache-smoke
