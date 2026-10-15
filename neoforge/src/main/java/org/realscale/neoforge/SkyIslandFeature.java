@@ -25,6 +25,17 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
 
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+        // The common path adds only a constant false branch; no clock reads.
+        if (!WorldgenProfiler.ENABLED) return placeUnprofiled(context);
+        long started = WorldgenProfiler.begin();
+        try {
+            return placeUnprofiled(context);
+        } finally {
+            WorldgenProfiler.finish(WorldgenProfiler.Section.SKY_ISLAND, started);
+        }
+    }
+
+    private boolean placeUnprofiled(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         if (!(context.chunkGenerator().getBiomeSource() instanceof SkyOceanBiomeSource))
             return false; // Existing worlds and vanilla presets cannot create islands.
         WorldGenLevel world = context.level();

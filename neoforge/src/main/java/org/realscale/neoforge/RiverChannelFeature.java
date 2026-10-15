@@ -309,6 +309,7 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
      */
     private static int riverGradeForWorld(String id) {
         if (!id.startsWith("lab_")) return 6;
+        // Preserve the existing tested persistent grade parsing contract.
         for (int grade : new int[] {0, 3, 6, 9}) {
             if (id.endsWith("_g" + grade)) return grade;
         }
@@ -317,6 +318,17 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
 
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+        // The common path adds only a constant false branch; no clock reads.
+        if (!WorldgenProfiler.ENABLED) return placeUnprofiled(context);
+        long started = WorldgenProfiler.begin();
+        try {
+            return placeUnprofiled(context);
+        } finally {
+            WorldgenProfiler.finish(WorldgenProfiler.Section.RIVER, started);
+        }
+    }
+
+    private boolean placeUnprofiled(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         ChunkGenerator base = context.chunkGenerator();
         if (!(base instanceof NoiseBasedChunkGenerator noise)) return false;
         // NeoForge biome modifiers are global: never touch vanilla or
@@ -347,8 +359,11 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 int y = covered ? surfaceY - 1 : surfaceY;
                 if (y <= floor || y > level.getMaxBuildHeight() - 6) continue;
                 BlockPos top = new BlockPos(x, y, z);
-                boolean frozen = level.getBiome(top).is(Biomes.FROZEN_RIVER);
-                if (!frozen && !level.getBiome(top).is(Biomes.RIVER)) continue;
+                // A single biome lookup covers both checks. This matters for
+                // decorated biome sources that scan nearby quart boundaries.
+                var biome = level.getBiome(top);
+                boolean frozen = biome.is(Biomes.FROZEN_RIVER);
+                if (!frozen && !biome.is(Biomes.RIVER)) continue;
 
                 // Prefer natural ground, and refuse to carve through player-like
                 // structures, fluids, dangling snow, cave roofs or vegetation.
@@ -357,10 +372,13 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 BlockState bed = level.getBlockState(top.below(2));
                 BlockState foundation = level.getBlockState(top.below(3));
                 BlockState deepFoundation = level.getBlockState(top.below(4));
+                // Skip the overhead lookup entirely for unsuitable riverbeds.
                 if (!natural(surface) || !natural(below) || !natural(bed)
-                    || !natural(foundation) || !deepFoundation.blocksMotion()
-                    || (!level.getBlockState(top.above()).isAir()
-                        && !(covered && removableCover(level.getBlockState(top.above())))))
+                    || !natural(foundation) || !deepFoundation.blocksMotion())
+                    continue;
+                BlockState overhead = level.getBlockState(top.above());
+                if (!overhead.isAir()
+                        && !(covered && removableCover(overhead)))
                     continue;
 
                 // In high mountains, bank overflow is an intended natural

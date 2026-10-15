@@ -45,6 +45,16 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/CaveHabitatMath.java \
             neoforge/src/test/java/org/realscale/neoforge/HabitatMathSmoke.java
           java -cp build/habitat-smoke org.realscale.neoforge.HabitatMathSmoke
+      - name: Verify worldgen timing is disabled by default and opt-in is bounded
+        run: |
+          mkdir -p build/worldgen-profiler-smoke
+          javac -d build/worldgen-profiler-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/WorldgenProfiler.java \
+            neoforge/src/test/java/org/realscale/neoforge/WorldgenProfilerSmoke.java
+          java -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
+          java -Drealscale.worldgen.profile=true -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
+      - name: Test RealScale feature-profile log comparison
+        run: python3 -m unittest discover -s qa -p 'test_worldgen_profile_compare.py' -v
       - name: Verify bounded ecotone resolution cache and parallel sampler isolation
         run: |
           mkdir -p build/ecotone-result-cache-smoke
