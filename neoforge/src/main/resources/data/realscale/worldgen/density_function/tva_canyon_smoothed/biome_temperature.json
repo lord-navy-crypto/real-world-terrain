@@ -1,0 +1,61 @@
+{
+  "type": "realscale:climate_budget",
+  "original": {
+    "type": "minecraft:shifted_noise",
+    "noise": "minecraft:temperature",
+    "shift_x": "minecraft:shift_x",
+    "shift_y": 0,
+    "shift_z": "minecraft:shift_z",
+    "xz_scale": 0.25,
+    "y_scale": 0
+  },
+  "adjusted": {
+    "type": "realscale:basin_temperature",
+    "base": {
+      "type": "realscale:valley_temperature",
+      "base": {
+        "type": "realscale:radial_latitude_temperature",
+        "base": {
+          "type": "minecraft:add",
+          "argument1": {
+            "type": "minecraft:shifted_noise",
+            "noise": "minecraft:temperature",
+            "shift_x": "minecraft:shift_x",
+            "shift_y": 0,
+            "shift_z": "minecraft:shift_z",
+            "xz_scale": 0.25,
+            "y_scale": 0
+          },
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": -0.45,
+            "argument2": {
+              "type": "minecraft:y_clamped_gradient",
+              "from_y": 96,
+              "to_y": 768,
+              "from_value": 0,
+              "to_value": 1
+            }
+          }
+        },
+        "center_x": 0,
+        "center_z": 0,
+        "pole_distance": 8192,
+        "strength": 0.68,
+        "balanced": true,
+        "altitude_cooling": 0.45,
+        "area_balanced": true
+      },
+      "height_signal": "realscale:tva_canyon_smoothed/height_signal",
+      "continents": "realscale:grand_canyon/continents",
+      "warmth": 0.085,
+      "radius": 96
+    },
+    "height_signal": "realscale:tva_canyon_smoothed/height_signal",
+    "continents": "realscale:grand_canyon/continents",
+    "warmth": 0.055,
+    "radius": 192
+  },
+  "max_cooling": 0.6,
+  "max_warming": 0.45
+}
