@@ -309,9 +309,11 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
      */
     private static int riverGradeForWorld(String id) {
         if (!id.startsWith("lab_")) return 6;
-        for (int grade : new int[] {0, 3, 6, 9}) {
-            if (id.endsWith("_g" + grade)) return grade;
-        }
+        // Avoid allocating a temporary grade array per feature placement.
+        if (id.endsWith("_g0")) return 0;
+        if (id.endsWith("_g3")) return 3;
+        if (id.endsWith("_g6")) return 6;
+        if (id.endsWith("_g9")) return 9;
         return -1; // Unsupported / malformed Lab id: never place fluids
     }
 
@@ -347,8 +349,11 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 int y = covered ? surfaceY - 1 : surfaceY;
                 if (y <= floor || y > level.getMaxBuildHeight() - 6) continue;
                 BlockPos top = new BlockPos(x, y, z);
-                boolean frozen = level.getBiome(top).is(Biomes.FROZEN_RIVER);
-                if (!frozen && !level.getBiome(top).is(Biomes.RIVER)) continue;
+                // A single biome lookup covers both checks. This matters for
+                // decorated biome sources that scan nearby quart boundaries.
+                var biome = level.getBiome(top);
+                boolean frozen = biome.is(Biomes.FROZEN_RIVER);
+                if (!frozen && !biome.is(Biomes.RIVER)) continue;
 
                 // Prefer natural ground, and refuse to carve through player-like
                 // structures, fluids, dangling snow, cave roofs or vegetation.
@@ -357,10 +362,11 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 BlockState bed = level.getBlockState(top.below(2));
                 BlockState foundation = level.getBlockState(top.below(3));
                 BlockState deepFoundation = level.getBlockState(top.below(4));
+                BlockState overhead = level.getBlockState(top.above());
                 if (!natural(surface) || !natural(below) || !natural(bed)
                     || !natural(foundation) || !deepFoundation.blocksMotion()
-                    || (!level.getBlockState(top.above()).isAir()
-                        && !(covered && removableCover(level.getBlockState(top.above())))))
+                    || (!overhead.isAir()
+                        && !(covered && removableCover(overhead))))
                     continue;
 
                 // In high mountains, bank overflow is an intended natural
