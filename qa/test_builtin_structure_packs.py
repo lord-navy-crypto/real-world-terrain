@@ -49,7 +49,8 @@ class BuiltinStructureTests(unittest.TestCase):
         for profile, expected in PROFILES.items():
             with self.subTest(profile=profile):
                 location=GENERATED / f"realscale_structures_{profile}"
-                actual={}
+                actual={"pack.mcmeta":json.loads(
+                    (location / "pack.mcmeta").read_text(encoding="utf-8"))}
                 for f in location.rglob("*.json"):
                     actual[str(f.relative_to(location)).replace("\\", "/")] = json.loads(f.read_text())
                 self.assertEqual(set(actual),set(expected))
