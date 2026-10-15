@@ -16,6 +16,23 @@ public final class GrandNetherCaveNetworkSmoke {
                         "Hollow halls have real large volume");
                 yes(h.y()-h.radiusY()>144&&h.y()+h.radiusY()<440,
                         "Bedrock, original lava sea and original structure region protected");
+                // Every one of the four local satellites must form a real
+                // pocket connected to its parent hall by an open branch.
+                for(int gallery=0;gallery<2;gallery++) {
+                    var side=GrandNetherCaveNetwork.satellite(cx,cz,layer,gallery);
+                    yes(side.x()-side.radiusX() > (long)cx*256+8
+                            && side.x()+side.radiusX() < (long)(cx+1)*256-8,
+                            "Satellite must not extend into a neighbor's cell");
+                    yes(side.z()-side.radiusZ() > (long)cz*256+8
+                            && side.z()+side.radiusZ() < (long)(cz+1)*256-8,
+                            "Satellite Z must stay inside its cell");
+                    yes(side.y()-side.radiusY()>148 && side.y()+side.radiusY()<436,
+                            "Satellite height must protect Nether lower and roof");
+                    yes(GrandNetherCaveNetwork.strength(side.x(),side.y(),side.z())>0.8,
+                            "Satellite gallery core must be excavated");
+                    connected(h,side,"secondary gallery branch");
+                    samples+=20;
+                }
                 for(int dx=-1;dx<=1;dx++)for(int dz=-1;dz<=1;dz++) {
                     // Query equality ensures a data-independent seamless result.
                     int x=(int)h.x()+dx*30,z=(int)h.z()+dz*30,y=(int)h.y();
@@ -43,9 +60,72 @@ public final class GrandNetherCaveNetworkSmoke {
                 samples++;
             }
         }
+        // Check an actual negative/positive chunk crossing in the same tunnel.
+        var negative=GrandNetherCaveNetwork.hall(-1,0,0);
+        var positive=GrandNetherCaveNetwork.hall(0,0,0);
+        double borderT=(0.0-negative.x())/(positive.x()-negative.x());
+        double borderY=negative.y()+borderT*(positive.y()-negative.y());
+        double borderZ=negative.z()+borderT*(positive.z()-negative.z());
+        for (double x : new double[]{-1.0,-0.5,0.0,0.5,1.0}) {
+            yes(GrandNetherCaveNetwork.strength(x,borderY,borderZ)>0.15,
+                    "Negative-to-positive cross-cell tunnel blocked at X="+x);
+            samples++;
+        }
+        // Sub-block samples must change continuously without integer stair-steps.
+        var mid=GrandNetherCaveNetwork.hall(0,0,0);
+        var east=GrandNetherCaveNetwork.hall(1,0,0);
+        double mx=(mid.x()+east.x())*0.5;
+        double my=(mid.y()+east.y())*0.5;
+        double mz=(mid.z()+east.z())*0.5;
+        for (int i=-8;i<=8;i++) {
+            double x=mx+i*0.125;
+            double a=GrandNetherCaveNetwork.strength(x,my,mz);
+            double b=GrandNetherCaveNetwork.strength(x+0.01,my,mz);
+            yes(Math.abs(a-b)<0.05,"Sub-block cave sampling discontinuity at "+x);
+            samples++;
+        }
+        verifyConcurrentCellCache();
         System.out.println("PASS: connected 3D Grand Nether cave network, "+samples
                 +" signed-coordinate and vanilla-protection samples");
     }
+    /** Verify worker-local caches are independent of chunk order and threads. */
+    private static void verifyConcurrentCellCache() {
+        final int count=400;
+        final int[][] coords=new int[count][3];
+        final long[] expected=new long[count];
+        for(int i=0;i<count;i++) {
+            var h=GrandNetherCaveNetwork.hall((i*17)%11-5,(i*31)%11-5,i%2);
+            coords[i][0]=(int)h.x()+(i%7)*5-15;
+            coords[i][1]=(int)h.y()+(i%5)*3-6;
+            coords[i][2]=(int)h.z()+(i%9)*4-16;
+            expected[i]=Double.doubleToRawLongBits(
+                    GrandNetherCaveNetwork.strength(coords[i][0],coords[i][1],coords[i][2]));
+        }
+        var failure=new java.util.concurrent.atomic.AtomicReference<Throwable>();
+        Thread[] workers=new Thread[4];
+        for(int w=0;w<workers.length;w++) {
+            final int shift=w*101;
+            workers[w]=new Thread(()->{
+                try {
+                    for(int round=0;round<3;round++)for(int k=0;k<count;k++) {
+                        int i=(k*73+shift+round*29)%count;
+                        long observed=Double.doubleToRawLongBits(GrandNetherCaveNetwork.strength(
+                                coords[i][0],coords[i][1],coords[i][2]));
+                        yes(observed==expected[i],"Cave graph changed by threaded chunk order");
+                    }
+                } catch(Throwable t) {failure.compareAndSet(null,t);}
+            },"grand-cave-test-"+w);
+            workers[w].start();
+        }
+        for(Thread worker:workers) {
+            try {worker.join();} catch(InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError("Interrupted concurrency smoke test",e);
+            }
+        }
+        if(failure.get()!=null)throw new AssertionError("Concurrent cave cache regression",failure.get());
+    }
+
     private static void connected(GrandNetherCaveNetwork.Hall a,
                                   GrandNetherCaveNetwork.Hall b,String what) {
         // Check every quarter-span has a carved core, across multiple chunks.

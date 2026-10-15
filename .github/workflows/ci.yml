@@ -64,6 +64,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
+      - name: Prove DEM column locality cache equivalence under all tile edges
+        run: |
+          mkdir -p build/dem-cache-smoke
+          javac -d build/dem-cache-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java \
+            neoforge/src/test/java/org/realscale/neoforge/RealDemColumnCacheSmoke.java
+          java -cp build/dem-cache-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemColumnCacheSmoke
       - name: Build readable NeoForge project
         working-directory: neoforge
         run: gradle --no-daemon --stacktrace build
