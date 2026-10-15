@@ -91,11 +91,15 @@ class VanillaStructureDensityTests(unittest.TestCase):
     def test_independent_zip_products(self):
         with tempfile.TemporaryDirectory() as t:
             out=structures.build(Path(t))
-            self.assertEqual(len(out),2)
+            self.assertEqual(len(out),6)
+            self.assertEqual(len(set(path.name for path in out)),6)
             for target in out:
                 with ZipFile(target) as z:
                     self.assertIsNone(z.testzip())
-                    self.assertEqual(len(z.namelist()),len(structures.VANILLA)+1)
+                    target_length = (len(structures.DIMENSIONAL) + 1
+                        if "Nether-End" in target.name
+                        else len(structures.VANILLA) + 1)
+                    self.assertEqual(len(z.namelist()),target_length)
                     self.assertEqual(json.loads(z.read("pack.mcmeta"))["pack"]["pack_format"],48)
 
 if __name__=="__main__":
