@@ -72,9 +72,7 @@ public final class GrandOverworldCaveNetwork {
                 for(int previous=0;previous<2;previous++) {
                     int ax=axis==0 ? Math.floorDiv(x,3)*3-previous*3 : x;
                     int az=axis==1 ? Math.floorDiv(z,3)*3-previous*3 : z;
-                    long branch=mix(cellKey(ax,az,tier+1)^
-                            (axis==0 ? 0x7ef6c15cf3b8ad91L : 0x4bd83e9a6c157f20L));
-                    if(Math.floorMod(branch,6L)==0) {
+                    if(arterialActive(ax,az,tier+1,axis==0)) {
                         Hall a=hall(ax,az,tier+1);
                         Hall b=hall(ax+(axis==0?3:0),az+(axis==1?3:0),tier+1);
                         long key=passageKey(a,b);
@@ -136,6 +134,14 @@ public final class GrandOverworldCaveNetwork {
         double y=origin.y()+(int)Math.floorMod(h>>>33,61L)-30;
         double r=27+(int)Math.floorMod(h>>>42,35L);
         return new Hall(x,y,z,r,r*0.82,r*0.95);
+    }
+
+    /** True for the exact 1536-block arterial segments used during density sampling. */
+    static boolean arterialActive(int anchorGX,int anchorGZ,int layer,boolean xAxis) {
+        if(layer!=1 && layer!=2) return false;
+        long key=mix(cellKey(anchorGX,anchorGZ,layer)^
+                (xAxis ? 0x7ef6c15cf3b8ad91L : 0x4bd83e9a6c157f20L));
+        return Math.floorMod(key,6L)==0;
     }
 
     private static long passageKey(Hall a,Hall b) {
