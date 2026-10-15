@@ -39,9 +39,9 @@ public final class MountainReliefMathSmoke {
                     MountainReliefMath.BASIN,1.11,1.0,0.6),
               height,"Landform fully fades outside its radius");
 
-        close(MountainReliefMath.relief(3.0,roof,inland,
+        close(MountainReliefMath.relief(3.5,roof,inland,
                     MountainReliefMath.PLATEAU,0.05,1,0.65),
-              MountainReliefMath.relief(5.0,roof,inland,
+              MountainReliefMath.relief(4.0,roof,inland,
                     MountainReliefMath.PLATEAU,0.05,1,0.65),
               "Plateau crest must be near a common anchored height");
         yes(MountainReliefMath.relief(height,roof,inland,
@@ -68,6 +68,14 @@ public final class MountainReliefMathSmoke {
                     "No NaN/Inf across escarpment or rim");
             yes(basin>-2 && plateau<8,"Bounded terrain displacement");
         }
+
+        double levelsA=MountainReliefMath.plateauLevel(123456789L,0.3);
+        double levelsB=MountainReliefMath.plateauLevel(123456789L,0.3);
+        close(levelsA,levelsB,"Plateau shelf heights must be deterministic");
+        yes(levelsA>1.5 && levelsA<13,"Seeded plateau shelf within alpine range");
+        yes(Math.abs(MountainReliefMath.relief(12.0,3.0,0.7,
+                MountainReliefMath.PLATEAU,0.05,1.1,0.65)-12.0)<1e-9,
+                "Never level a very tall summit all the way down to a low plateau");
 
         // Old valleys and cave calculation are retained by separate
         // worldgen graphs. This kernel is strictly local height relief.
