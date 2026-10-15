@@ -162,6 +162,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     private static final class SamplingCache {
         private static final int LIMIT = 8192;
         Climate.Sampler sampler;
+        final QuartBiomeResultCache<Holder<Biome>> resolved = new QuartBiomeResultCache<>();
         final LinkedHashMap<Long, Holder<Biome>> positions =
                 new LinkedHashMap<>(LIMIT, 0.75f, true) {
                     @Override
@@ -169,6 +170,14 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
                         return size() > LIMIT;
                     }
                 };
+
+        void prepare(Climate.Sampler nextSampler) {
+            if (sampler == nextSampler) return;
+            sampler = nextSampler;
+            positions.clear();
+            // A new sampler may resolve the same quart coordinate differently.
+            resolved.clear();
+        }
     }
 
     private final BiomeSource source;
@@ -186,10 +195,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     private Holder<Biome> sampleBase(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
         SamplingCache cache = cached.get();
-        if (cache.sampler != sampler) {
-            cache.sampler = sampler;
-            cache.positions.clear();
-        }
+        cache.prepare(sampler);
         long key = BlockPos.asLong(quartX, quartY, quartZ);
         Holder<Biome> existing = cache.positions.get(key);
         if (existing != null) return existing;
@@ -230,6 +236,23 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     @Override
     public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
+        SamplingCache cache = cached.get();
+        cache.prepare(sampler);
+        long key = BlockPos.asLong(quartX, quartY, quartZ);
+        Holder<Biome> previous = cache.resolved.get(key);
+        if (previous != null) return previous;
+
+        Holder<Biome> result = resolveUncached(quartX, quartY, quartZ, sampler);
+        cache.resolved.put(key, result);
+        return result;
+    }
+
+    /**
+     * Original ecotone algorithm: unchanged priority, boundary search, water
+     * preservation and final holder resolution. Only callers memoize output.
+     */
+    private Holder<Biome> resolveUncached(
+            int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
         Holder<Biome> original = sampleBase(quartX, quartY, quartZ, sampler);
         // Surface ecotones must not be painted across caves or deep aquifers.
         if (quartY < 12) return original;
