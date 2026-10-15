@@ -24,7 +24,11 @@ class CoreSmoothing(unittest.TestCase):
     self.assertEqual(dimensions["minecraft:the_end"]["generator"]["settings"],"realscale:grand_end")
     settings=read(R/"noise_settings"/(smoothed+".json"))
     self.assertEqual(settings["noise"]["size_horizontal"],4)
-    for tag,suffix in [("final_density","terrain_density"),("depth","terrain_density"),("initial_density_without_jaggedness","preliminary_density")]:
+    final=settings["noise_router"]["final_density"]
+    self.assertEqual(final["type"],"realscale:grand_overworld_caverns")
+    self.assertEqual(final["base"],"realscale:"+smoothed+"/terrain_density")
+    self.assertEqual(final["small_caves"],"realscale:realism_max/cave_core")
+    for tag,suffix in [("depth","terrain_density"),("initial_density_without_jaggedness","preliminary_density")]:
      self.assertEqual(settings["noise_router"][tag],"realscale:"+smoothed+"/"+suffix)
     self.assertEqual(read(R/"density_function"/smoothed/"height_signal.json"),
       {"type":"minecraft:interpolated","argument":"realscale:"+legacy+"/height_signal"})

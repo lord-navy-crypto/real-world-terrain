@@ -95,7 +95,10 @@ class WorldgenGraphIntegrity(unittest.TestCase):
         # Require the SAME independent source-vs-v2 distinction either way.
         source_id=lambda node:node if isinstance(node,str) else node["input"]
         self.assertEqual(source_id(old["final_density"]),"realscale:usgs_big_sur/terrain_density")
-        self.assertEqual(source_id(new["final_density"]),"realscale:usgs_big_sur_v2/terrain_density")
+        wrapped=new["final_density"]
+        self.assertEqual(wrapped["type"],"realscale:grand_overworld_caverns")
+        self.assertEqual(wrapped["base"]["input"],"realscale:usgs_big_sur_v2/terrain_density")
+        self.assertEqual(wrapped["small_caves"],"realscale:realism_max/cave_core")
         self.assertEqual(load(DENSITY/"usgs_big_sur/terrain_density.json")["type"],
                          "realscale:dem_density")
         self.assertEqual(load(DENSITY/"usgs_big_sur_v2/terrain_density.json")["type"],
