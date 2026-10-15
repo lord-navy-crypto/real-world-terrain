@@ -71,7 +71,7 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
         // into groves, open meadows and sparse strips. No chunk lookups,
         // climate remapping, terrain changes or additional registry nodes.
         double chance = EcologyDistributionMath.placementProbability(
-                habitat, origin.getX(), origin.getY(), origin.getZ());
+                habitat, origin.getX(), origin.getY(), origin.getZ(), level.getSeed());
         if (random.nextDouble() >= chance) return false;
         return switch (kind) {
             case TEMPERATE_RAINFOREST -> giantConifer(level, origin, random);

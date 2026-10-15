@@ -153,3 +153,15 @@ queries the loaded state of the four target chunks, runs an acknowledged
 and four FULL outpost chunk assertions**. RCON is enabled exclusively in
 the CI-generated `server.properties`; it is not part of the distributable
 mod, presets or user server settings.
+
+## v0.5 — seed-dependent macro vegetation patterns
+
+The earlier 768/128-block ecology suitability map was keyed to habitat
+and coordinates but **not the Minecraft world seed**, so two unrelated seeds
+had identical broad vegetation-patch geometry. The generation code now passes
+`WorldGenLevel.getSeed()` into `EcologyDistributionMath`. Each seed has a
+deterministic distinct habitat patch layout, while adjacent 16-block chunks
+still interpolate continuously. The previous four-argument pure Java method
+remains for deterministic baseline smoke testing, and added world-seed tests
+prove reproducibility, seed diversity and negative-coordinate seam behavior.
+This is decorative habitat density only, not a new global climate sampler.

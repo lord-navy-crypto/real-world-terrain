@@ -60,7 +60,15 @@ public final class EcologyDistributionMath {
      * different clustered shapes instead of white-noise speckles.
      */
     public static double patchIndex(Habitat habitat, int x, int z) {
-        long salt = 0x53eac019c6b11e2dL
+        return patchIndex(habitat, x, z, 0L);
+    }
+
+    /**
+     * World-seed-aware coherent patch field. The same seed always produces
+     * the same patches across chunk loads; distinct seeds rearrange patches.
+     */
+    public static double patchIndex(Habitat habitat, int x, int z, long worldSeed) {
+        long salt = mix64(worldSeed ^ 0x53eac019c6b11e2dL)
                 ^ (long) (habitat.ordinal() + 1) * 0x9e3779b97f4a7c15L;
         double broad = sample(x, z, 768, salt);
         double local = sample(x, z, 128, salt ^ 0x679f5fdef4a5186dL);
@@ -92,6 +100,11 @@ public final class EcologyDistributionMath {
     }
 
     public static double placementProbability(Habitat habitat, int x, int y, int z) {
+        return placementProbability(habitat, x, y, z, 0L);
+    }
+
+    public static double placementProbability(Habitat habitat, int x, int y,
+                                              int z, long worldSeed) {
         double density = switch (habitat) {
             case TROPICAL_RAINFOREST, TEMPERATE_RAINFOREST -> 0.94;
             case TEMPERATE_SEASONAL_FOREST -> 0.85;
@@ -105,7 +118,8 @@ public final class EcologyDistributionMath {
             case FRESHWATER_BED, COASTAL_SEAGRASS -> 0.82;
             case CORAL_REEF_FLOOR, ESTUARY_SHALLOWS -> 0.70;
         };
-        double clump = between(0.13, 0.81, patchIndex(habitat, x, z));
+        double clump = between(0.13, 0.81,
+                patchIndex(habitat, x, z, worldSeed));
         return Math.max(0.0, Math.min(0.98,
                 density * (0.12 + 0.88 * clump) * altitudeFactor(habitat, y)));
     }

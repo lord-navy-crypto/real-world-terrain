@@ -72,6 +72,23 @@ public final class EcologyDistributionMathSmoke {
         require(!EcologyDistributionMath.aquaticDepthSuitable(
                 Habitat.CORAL_REEF_FLOOR, 12, 63),
                 "Abyssal coral proxy incorrectly accepted");
+        // A single world remains deterministic; two different world seeds
+        // must not share the identical ecological macro-patch map.
+        for (Habitat h : Habitat.values()) {
+            double first = EcologyDistributionMath.patchIndex(h, 1536, -720, 785312L);
+            double repeated = EcologyDistributionMath.patchIndex(h, 1536, -720, 785312L);
+            double second = EcologyDistributionMath.patchIndex(h, 1536, -720, 20261015L);
+            require(Double.doubleToLongBits(first) == Double.doubleToLongBits(repeated),
+                    "World seed reproducibility failed: " + h);
+            require(Math.abs(first - second) > 1.0e-7,
+                    "Ecological patch field does not respond to world seed: " + h);
+            for (int x : new int[] {-769, -16, -1, 0, 15, 127, 768}) {
+                double left = EcologyDistributionMath.patchIndex(h, x, -33, 785312L);
+                double right = EcologyDistributionMath.patchIndex(h, x + 1, -33, 785312L);
+                require(Math.abs(left - right) < 0.02,
+                        "World-seeded patch seam at " + x + ", " + h);
+            }
+        }
         require(EcologyDistributionMath.patchIndex(Habitat.TROPICAL_RAINFOREST, 1000, 2000)
                 != EcologyDistributionMath.patchIndex(Habitat.DESERT_OUTCROPS, 1000, 2000),
                 "Independent habitat salt missing");
