@@ -25,9 +25,9 @@
       "y_scale": 0.5
     },
     "continents": "realscale:grand_canyon/continents",
-    "depth": "realscale:grand_canyon/terrain_density",
+    "depth": "realscale:tva_canyon_smoothing_probe/terrain_density",
     "erosion": "realscale:grand_canyon/erosion",
-    "final_density": "realscale:grand_canyon/terrain_density",
+    "final_density": "realscale:tva_canyon_smoothing_probe/terrain_density",
     "fluid_level_floodedness": {
       "type": "minecraft:noise",
       "noise": "minecraft:aquifer_fluid_level_floodedness",
@@ -40,7 +40,7 @@
       "xz_scale": 1,
       "y_scale": 0.7142857142857143
     },
-    "initial_density_without_jaggedness": "realscale:grand_canyon/preliminary_density",
+    "initial_density_without_jaggedness": "realscale:tva_canyon_smoothing_probe/preliminary_density",
     "lava": {
       "type": "minecraft:noise",
       "noise": "minecraft:aquifer_lava",
