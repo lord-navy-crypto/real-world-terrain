@@ -15,7 +15,7 @@ for name in ("minecraft:the_nether","minecraft:the_end"):
 FAMILIES={
  "tva_sacred_timeline_three_realms":"realscale:tva_natural_smoothed",
  "tva_alpine_three_realms":"realscale:tva_alpine_smoothed",
- "tva_canyon_three_realms":"realscale:grand_canyon",
+ "tva_canyon_three_realms":"realscale:tva_canyon_smoothed",
  "tva_measured_three_realms":"realscale:usgs_big_sur_v2",
 }
 expected=["realscale:"+k for k in FAMILIES]

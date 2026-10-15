@@ -12,7 +12,7 @@
             }
           }
         },
-        "settings": "realscale:grand_canyon",
+        "settings": "realscale:tva_canyon_smoothed",
         "type": "minecraft:noise"
       },
       "type": "realscale:realism_max_overworld"
