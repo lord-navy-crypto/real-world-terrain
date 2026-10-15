@@ -85,7 +85,11 @@ jobs:
             while time.monotonic()<stop_at:
               try:
                 s=socket.create_connection(('127.0.0.1',25592),timeout=5)
-                s.settimeout(12)
+                # High-ceiling RealScale worldgen can block the Minecraft
+                # server thread for well over 12 seconds on initial forceload.
+                # RCON must await the synchronous command reply rather than
+                # misclassifying long chunk generation as a crashed server.
+                s.settimeout(300)
                 send_packet(s,2301,3,'apes-gallery-ci-local-only')
                 for _ in range(3):
                   ident,typ,reply=read_packet(s)
@@ -111,7 +115,7 @@ jobs:
             # four deterministic checkerboard indices at chunk X=7..10.
             positions=(112,128,144,160)
             generated=False
-            until=time.monotonic()+240
+            until=time.monotonic()+320
             while time.monotonic()<until and p.poll() is None:
               status=[]
               for i,x in enumerate(positions):
