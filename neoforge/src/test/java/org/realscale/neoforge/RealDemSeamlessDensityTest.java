@@ -138,4 +138,43 @@ public final class RealDemSeamlessDensityTest {
         }
     }
 
+
+    @Test void cachedFadeWeightIsBitExactAcrossBordersAndFarField() {
+        for (int fade : new int[]{256, 768, 2048, 4096}) {
+            // Multiple directions, both coordinate signs, corners and far field.
+            for (int x = -4608; x <= 4608; x += 83) {
+                for (int z = -4608; z <= 4608; z += 97) {
+                    assertFadeWeightBits(x, z, fade);
+                    assertFadeWeightBits(x, z, fade); // warm cache hit
+                }
+            }
+            for (int x : new int[]{-240-fade, -241, -240, -239, 0, 239, 240,
+                    241, 240+fade, Integer.MIN_VALUE, Integer.MAX_VALUE}) {
+                for (int z : new int[]{-240-fade, -241, -240, -239, 0, 239, 240,
+                        241, 240+fade, Integer.MIN_VALUE, Integer.MAX_VALUE}) {
+                    assertFadeWeightBits(x, z, fade);
+                }
+            }
+        }
+    }
+
+    @Test void cachedFadeWeightIsBitExactAcrossWorkerThreads() {
+        java.util.stream.IntStream.range(0, 8).parallel().forEach(worker -> {
+            for (int i = 0; i < 3000; i++) {
+                int x = ((worker * 131 + i * 53) % 8400) - 4200;
+                int z = ((worker * 197 + i * 71) % 8400) - 4200;
+                int fade = (i & 1) == 0 ? 768 : 2048;
+                assertFadeWeightBits(x, z, fade);
+                assertFadeWeightBits(x, z, fade);
+            }
+        });
+    }
+
+    private static void assertFadeWeightBits(int x, int z, int fade) {
+        double expected = RealDemSeamlessMath.weightOutside(x, z, fade);
+        double actual = RealDemSeamlessMath.cachedWeightOutside(x, z, fade);
+        assertEquals(Double.doubleToRawLongBits(expected),
+                     Double.doubleToRawLongBits(actual),
+                     "Fade weight changed at " + x + "," + z + " (width=" + fade + ")");
+    }
 }

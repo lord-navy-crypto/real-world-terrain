@@ -44,6 +44,71 @@ final class RealDemSeamlessMath {
         return height;
     }
 
+    /*
+     * The DEM fade weight is constant for every vertical density evaluation
+     * at the same X/Z and blend width. Cache only the transition ring:
+     * - tile interior is exactly 1.0, without allocating a cache;
+     * - at or beyond the fade distance it is exactly 0.0;
+     * - the ring retains the original weightOutside() arithmetic on misses.
+     *
+     * Per-thread, fixed-size direct mapping is lock-free and bounded. Hash
+     * collisions can affect performance but never alter terrain results.
+     */
+    private static final int WEIGHT_CACHE_SIZE = 1024;
+    private static final class WeightCache {
+        final long[] coordinates = new long[WEIGHT_CACHE_SIZE];
+        final int[] fadeWidths = new int[WEIGHT_CACHE_SIZE];
+        final double[] weights = new double[WEIGHT_CACHE_SIZE];
+        final boolean[] valid = new boolean[WEIGHT_CACHE_SIZE];
+        boolean lastValid;
+        long lastCoordinate;
+        int lastFadeWidth;
+        double lastWeight;
+    }
+    private static final ThreadLocal<WeightCache> WEIGHT_CACHE =
+            ThreadLocal.withInitial(WeightCache::new);
+
+    static double cachedWeightOutside(int x, int z, int fadeMeters) {
+        // The codec requires positive widths; fall back to the original
+        // formula for other callers rather than changing its edge semantics.
+        if (fadeMeters <= 0) return weightOutside(x, z, fadeMeters);
+
+        final int minX = DEM.originX(), maxX = DEM.maxX();
+        final int minZ = DEM.originZ(), maxZ = DEM.maxZ();
+        if (x >= minX && x <= maxX && z >= minZ && z <= maxZ)
+            return 1.0;
+        if (x <= minX - fadeMeters || x >= maxX + fadeMeters
+                || z <= minZ - fadeMeters || z >= maxZ + fadeMeters)
+            return 0.0;
+
+        final long coordinate = ((long) x << 32) | (z & 0xffffffffL);
+        final WeightCache cache = WEIGHT_CACHE.get();
+        if (cache.lastValid && cache.lastCoordinate == coordinate
+                && cache.lastFadeWidth == fadeMeters)
+            return cache.lastWeight;
+
+        final int hash = x * 0x9e3779b9
+                ^ Integer.rotateLeft(z * 0x85ebca6b, 13)
+                ^ fadeMeters * 0xc2b2ae35;
+        final int slot = (hash ^ (hash >>> 16)) & (WEIGHT_CACHE_SIZE - 1);
+        final double result;
+        if (cache.valid[slot] && cache.coordinates[slot] == coordinate
+                && cache.fadeWidths[slot] == fadeMeters) {
+            result = cache.weights[slot];
+        } else {
+            result = weightOutside(x, z, fadeMeters);
+            cache.coordinates[slot] = coordinate;
+            cache.fadeWidths[slot] = fadeMeters;
+            cache.weights[slot] = result;
+            cache.valid[slot] = true;
+        }
+        cache.lastCoordinate = coordinate;
+        cache.lastFadeWidth = fadeMeters;
+        cache.lastWeight = result;
+        cache.lastValid = true;
+        return result;
+    }
+
     private RealDemSeamlessMath() {}
 
     private static double[][] loadHeights() {

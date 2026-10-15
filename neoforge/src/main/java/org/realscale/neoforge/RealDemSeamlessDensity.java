@@ -28,8 +28,8 @@ public record RealDemSeamlessDensity(DensityFunction base, int blendMeters)
         KeyDispatchDataCodec.of(MAP_CODEC);
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
-        double x=ctx.blockX(),z=ctx.blockZ();
-        double w=RealDemSeamlessMath.weightOutside(x,z,blendMeters);
+        int x=ctx.blockX(),z=ctx.blockZ();
+        double w=RealDemSeamlessMath.cachedWeightOutside(x,z,blendMeters);
         if (w<=0.0) return base.compute(ctx);
         double solid=(RealDemSeamlessMath.cachedExtendedHeight(ctx.blockX(),ctx.blockZ())-ctx.blockY())/128.0;
         if (w>=1.0) return solid;

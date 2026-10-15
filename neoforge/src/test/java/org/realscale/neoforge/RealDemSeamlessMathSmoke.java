@@ -39,6 +39,20 @@ public final class RealDemSeamlessMathSmoke {
                         "USGS per-thread height cache changed computed result");
             }
         }
+        // The optimized transition-weight lookup must reproduce every bit of
+        // the original formula across the tile, fade ring and far field.
+        for (int fade : new int[]{256, 768, 2048, 4096}) {
+            for (int x = -4608; x <= 4608; x += 109) {
+                for (int z = -4608; z <= 4608; z += 127) {
+                    long original = Double.doubleToRawLongBits(
+                            RealDemSeamlessMath.weightOutside(x, z, fade));
+                    long cached = Double.doubleToRawLongBits(
+                            RealDemSeamlessMath.cachedWeightOutside(x, z, fade));
+                    require(original == cached,
+                            "Fade weight changed at " + x + "," + z + " width=" + fade);
+                }
+            }
+        }
         System.out.println("TVA_USGS_V2_SMOKE_PASS: 256 measured elevations, four 2048m fade sides, cache fidelity");
     }
 }
