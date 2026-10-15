@@ -1,4 +1,8 @@
 {
-  "type": "minecraft:interpolated",
-  "argument": "realscale:realism_max/height_signal"
+  "type": "realscale:mountain_relief",
+  "base": "realscale:tva_natural_smoothed/original_height_signal",
+  "continents": "realscale:realism_max/continental_field",
+  "selector": "realscale:realism_max/erosion_field",
+  "basin_depth": 0.9,
+  "plateau_rise": 0.65
 }
