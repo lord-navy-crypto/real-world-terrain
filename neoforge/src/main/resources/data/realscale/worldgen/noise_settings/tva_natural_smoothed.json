@@ -58,15 +58,7 @@
       "y_scale": 1
     },
     "ridges": "realscale:realism_max/mountain_axis",
-    "temperature": {
-      "noise": "minecraft:temperature",
-      "shift_x": "minecraft:shift_x",
-      "shift_y": 0,
-      "shift_z": "minecraft:shift_z",
-      "type": "minecraft:shifted_noise",
-      "xz_scale": 0.15,
-      "y_scale": 0
-    },
+    "temperature": "realscale:tva_natural_smoothed/biome_temperature",
     "vegetation": {
       "noise": "minecraft:vegetation",
       "shift_x": "minecraft:shift_x",
