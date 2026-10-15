@@ -72,6 +72,15 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java \
             neoforge/src/test/java/org/realscale/neoforge/RealDemColumnCacheSmoke.java
           java -cp build/dem-cache-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemColumnCacheSmoke
+      - name: TVA multi-branch integration contract
+        run: python3 scripts/check_tva_sacred_timeline.py
+      - name: Validate concentric offshore sky island geometry
+        run: |
+          mkdir -p build/tva-sky
+          javac -d build/tva-sky \
+            neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
+            neoforge/src/test/java/org/realscale/neoforge/SkyIslandLayoutSmoke.java
+          java -cp build/tva-sky org.realscale.neoforge.SkyIslandLayoutSmoke
       - name: Build readable NeoForge project
         working-directory: neoforge
         run: gradle --no-daemon --stacktrace build

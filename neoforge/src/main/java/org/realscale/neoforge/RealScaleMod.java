@@ -21,6 +21,10 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones"),
                     NaturalEcotoneBiomeSource.CODEC)
         );
+        event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_ocean"),
+                    SkyOceanBiomeSource.CODEC)
+        );
         event.register(Registries.FEATURE, helper -> {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fallen_oak_log"),
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.OAK_LOG));
@@ -30,6 +34,20 @@ public final class RealScaleMod {
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.FOREST_HUMMOCK));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "upland_scree"),
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.UPLAND_SCREE));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "coastal_driftwood"),
+                    new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.COASTAL_DRIFTWOOD));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_blossom_island"),
+                    new SkyIslandFeature());
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"),
+                    new HabitatPatchFeature(HabitatPatchFeature.Kind.CAVE_MOSS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_stalagmites"),
+                    new HabitatPatchFeature(HabitatPatchFeature.Kind.CAVE_DRIPSTONE));
+            // Registered experimental marine decorations are not added to normal
+            // ocean biomes: native seabed and ocean structures stay untouched.
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "ocean_seagrass_patches"),
+                    new HabitatPatchFeature(HabitatPatchFeature.Kind.OCEAN_SEAGRASS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "ocean_sediment_stones"),
+                    new HabitatPatchFeature(HabitatPatchFeature.Kind.OCEAN_STONE));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "temperate_rainforest"),
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.TEMPERATE_RAINFOREST));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "savanna_canopy"),

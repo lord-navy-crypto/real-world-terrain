@@ -134,7 +134,7 @@ def test_supported_microstructures():
 def test_all_custom_biome_carvers():
     # Minecraft 1.21.1 expects a carving-stage map, not the later-version list.
     all_biomes = list(BIOMES.glob("*.json"))
-    assert len(all_biomes) == 46, len(all_biomes)
+    assert len(all_biomes) == 67, len(all_biomes)
     for path in all_biomes:
         biome = load(path)
         assert isinstance(biome.get("carvers"), dict), path
@@ -153,9 +153,9 @@ def test_ecotone_gallery():
 def test_ecotone_catalog():
     catalog = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/catalog.json")
     entries = catalog["entries"]
-    assert len(entries) == 40
+    assert len(entries) == 60
     ids = [entry["id"] for entry in entries]
-    assert len(set(ids)) == 40
+    assert len(set(ids)) == 60
     priority = [entry for entry in entries if entry["phase"] == "priority-10"]
     assert len(priority) == 10
     for entry in entries:
