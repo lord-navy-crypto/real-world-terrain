@@ -1,6 +1,7 @@
 package org.realscale.neoforge;
 
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
@@ -9,8 +10,8 @@ import java.util.function.Supplier;
 
 /** Optional gameplay vehicle, separate from density functions and presets. */
 public final class RealScaleVehicles {
-    private static final DeferredRegister.Entities ENTITIES =
-            DeferredRegister.createEntities("realscale");
+    private static final DeferredRegister<EntityType<?>> ENTITIES =
+            DeferredRegister.create(Registries.ENTITY_TYPE, "realscale");
     private static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems("realscale");
 
