@@ -78,7 +78,7 @@ jobs:
             ident,typ=struct.unpack('<ii',raw[:8])
             return ident,typ,raw[8:-2].decode('utf-8','replace')
           def send_packet(s,ident,typ,message):
-            payload=struct.pack('<ii',ident,typ)+message.encode()+b'\\0\\0'
+            payload=struct.pack('<ii',ident,typ)+message.encode()+bytes(2)
             s.sendall(struct.pack('<i',len(payload))+payload)
           def connect_rcon():
             stop_at=time.monotonic()+30
