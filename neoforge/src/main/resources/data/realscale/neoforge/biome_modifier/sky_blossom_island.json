@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:sky_blossom_isles"
+  ],
+  "features": "realscale:sky_blossom_island",
+  "step": "vegetal_decoration"
+}

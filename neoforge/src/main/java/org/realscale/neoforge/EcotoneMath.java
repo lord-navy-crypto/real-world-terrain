@@ -46,6 +46,25 @@ public final class EcotoneMath {
         return Math.abs(distanceBlocks) <= effectiveWidth * 0.5;
     }
 
+    /**
+     * Quart-position radial distance squared in BLOCK units, avoiding sqrt in
+     * Minecraft's dense per-chunk biome sampling loop. One quart is 4 blocks.
+     * A diagonal step is correctly sqrt(2) times a cardinal step.
+     */
+    public static int quartDistanceSquared(int dx, int dz, int step) {
+        if (step < 1 || (dx == 0 && dz == 0)
+                || Math.abs(dx) > 1 || Math.abs(dz) > 1)
+            throw new IllegalArgumentException("Expected nonzero unit heading and positive step");
+        return 16 * step * step * (dx * dx + dz * dz);
+    }
+
+    /** Whether a candidate at radial quart distance is inside a biome border. */
+    public static boolean withinRadialBand(int dx, int dz, int step, int widthBlocks) {
+        return widthBlocks >= 16 && widthBlocks <= 64
+                && 4L * quartDistanceSquared(dx, dz, step)
+                    <= (long) widthBlocks * widthBlocks;
+    }
+
     /** Smooth transition membership weight from a mathematically measured edge. */
     public static double weight(double distanceBlocks, double widthBlocks) {
         if (!Double.isFinite(distanceBlocks) || !Double.isFinite(widthBlocks)

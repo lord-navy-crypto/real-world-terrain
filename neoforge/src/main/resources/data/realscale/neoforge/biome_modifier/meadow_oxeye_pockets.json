@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:meadow",
+    "minecraft:cherry_grove",
+    "minecraft:flower_forest"
+  ],
+  "features": "realscale:meadow_oxeye_pockets",
+  "step": "vegetal_decoration"
+}
