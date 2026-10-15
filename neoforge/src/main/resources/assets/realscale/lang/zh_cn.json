@@ -1,3 +1,5 @@
 {
-  "generator.realscale.realism_max_three_realms": "RealScale 宏大三界 · 主世界、下界与末地（实验）"
+  "generator.realscale.realism_max_three_realms": "RealScale 宏大三界 · 主世界、下界与末地（实验）",
+  "item.realscale.hovercraft": "气垫船",
+  "entity.realscale.hovercraft": "气垫船"
 }
