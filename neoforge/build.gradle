@@ -9,6 +9,9 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 neoForge {
     version = '21.1.249'
     runs {
+        client {
+            client()
+        }
         server {
             server()
             programArgument '--nogui'
