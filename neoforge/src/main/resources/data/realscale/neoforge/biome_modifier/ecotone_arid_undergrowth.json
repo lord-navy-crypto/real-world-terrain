@@ -9,7 +9,8 @@
     "realscale:savanna_badlands",
     "realscale:cold_desert_scrub",
     "realscale:warm_river_margin",
-    "realscale:terracotta_scrub"
+    "realscale:terracotta_scrub",
+    "realscale:dry_grass_dunes"
   ],
   "features": "realscale:ecotone_arid_undergrowth",
   "step": "vegetal_decoration"

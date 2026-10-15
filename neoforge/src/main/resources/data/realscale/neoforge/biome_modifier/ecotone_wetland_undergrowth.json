@@ -8,7 +8,13 @@
     "realscale:mountain_wetland",
     "realscale:mangrove_transition",
     "realscale:seasonal_floodforest",
-    "realscale:meadow_bog_margin"
+    "realscale:meadow_bog_margin",
+    "realscale:peat_bog_taiga",
+    "realscale:seasonal_savanna_wetland",
+    "realscale:frost_riparian_banks",
+    "realscale:mangrove_freshwater_margin",
+    "realscale:coastal_marsh_woodland",
+    "realscale:snowy_spruce_riverbank"
   ],
   "features": "realscale:ecotone_wetland_undergrowth",
   "step": "vegetal_decoration"

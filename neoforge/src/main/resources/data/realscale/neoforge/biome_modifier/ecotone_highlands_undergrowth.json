@@ -11,7 +11,11 @@
     "realscale:gravel_shore_fringe",
     "realscale:rocky_plateau_grass",
     "realscale:frost_shrub_tundra",
-    "realscale:lichen_rockland"
+    "realscale:lichen_rockland",
+    "realscale:birch_snowline_scrub",
+    "realscale:spruce_snowdrift_edge",
+    "realscale:badlands_peak_scree",
+    "realscale:rocky_savanna_foothills"
   ],
   "features": "realscale:ecotone_highlands_undergrowth",
   "step": "vegetal_decoration"
