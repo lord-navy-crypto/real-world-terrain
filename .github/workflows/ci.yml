@@ -111,7 +111,7 @@ jobs:
           mkdir -p build/tva-exporter
           python3 -m zipapp scripts \
             --main export_terrain_lab_datapack:main \
-            --interpreter '/usr/bin/env python3' \
+            --python '/usr/bin/env python3' \
             --output build/tva-exporter/RealScale-TVA-Config-Exporter.pyz
       - uses: actions/upload-artifact@v4
         if: always()
@@ -120,4 +120,5 @@ jobs:
           path: |
             neoforge/build/libs/*.jar
             build/saved-world-replay.json
+            build/tva-exporter/*.pyz
           if-no-files-found: error
