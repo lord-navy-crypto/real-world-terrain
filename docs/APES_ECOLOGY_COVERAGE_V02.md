@@ -138,3 +138,18 @@ The gallery server now forces an *inclusive block range*
 than relying on a single satellite chunk's unspecified FULL-generation
 neighbors. Saved-Anvil QA explicitly requires all three exact FULL chunk
 positions, in addition to the original sixteen required biome IDs.
+
+## v0.4.1 — real server command delivery fix
+
+Logs from `0ae40a4` showed Minecraft reached `Done`, but the
+GitHub Actions gallery script wrote `forceload` to **Gradle's process
+stdin**, and the actual server never generated a FULL satellite chunk.
+This is a test-harness defect, not an observed terrain crash.
+
+The gallery now enables **localhost-only, disposable CI RCON**, performs
+real server console authentication, sends `forceload add 112 0 160 0`,
+queries the loaded state of the four target chunks, runs an acknowledged
+`save-all flush`, and preserves the **strict sixteen-biome palette
+and four FULL outpost chunk assertions**. RCON is enabled exclusively in
+the CI-generated `server.properties`; it is not part of the distributable
+mod, presets or user server settings.
