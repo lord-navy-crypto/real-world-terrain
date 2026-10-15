@@ -1,4 +1,8 @@
 {
-  "type": "minecraft:interpolated",
-  "argument": "realscale:himalayan/height_signal"
+  "type": "realscale:mountain_relief",
+  "base": "realscale:tva_alpine_smoothed/original_height_signal",
+  "continents": "realscale:himalayan/continents",
+  "selector": "realscale:himalayan/erosion",
+  "basin_depth": 1.18,
+  "plateau_rise": 0.86
 }
