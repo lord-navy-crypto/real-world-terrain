@@ -384,9 +384,24 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
         boolean made = false;
         int highlandReaches = 0;
 
+        // Capture the 16x16 surface before writing any water. Previously a
+        // neighboring column could see a heightmap already changed by an
+        // earlier riverlet, making carving dependent on traversal order.
+        // This is a bounded snapshot, with no neighbor chunk reads.
+        int[] originalSurface = new int[256];
+        for (int dx = 0; dx < 16; dx++) {
+            for (int dz = 0; dz < 16; dz++) {
+                int x = chunk.getMinBlockX() + dx;
+                int z = chunk.getMinBlockZ() + dz;
+                originalSurface[(dx << 4) | dz] =
+                        level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) - 1;
+            }
+        }
+
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
             for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
-                int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) - 1;
+                int surfaceY = originalSurface[
+                        ((x - chunk.getMinBlockX()) << 4) | (z - chunk.getMinBlockZ())];
                 BlockPos coverPos = new BlockPos(x, surfaceY, z);
                 boolean covered = removableCover(level.getBlockState(coverPos));
                 int y = covered ? surfaceY - 1 : surfaceY;

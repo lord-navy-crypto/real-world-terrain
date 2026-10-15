@@ -181,6 +181,57 @@ def surface_water_components(wet_columns):
     }
 
 
+def navigable_water_components(water_columns, max_surface_step=0, min_depth=2):
+    """Inspect real saved surface water for plausible boat corridors.
+
+    water_columns: (absolute_x,absolute_z) -> (water_surface_y, water_depth).
+    Ice and unverified surface blocks must be excluded by the caller.
+    This is a conservative geometric proxy: it does NOT simulate boats, flow
+    velocity, obstruction above the surface, turn radius, or waterfalls.
+    """
+    eligible={p: v for p,v in water_columns.items() if v[1]>=min_depth}
+    remaining=set(eligible)
+    sizes=[]
+    cross_chunk=0
+    while remaining:
+        start=remaining.pop()
+        stack=[start]
+        component_size=0
+        chunks=set()
+        while stack:
+            x,z=stack.pop()
+            component_size+=1
+            chunks.add((x//16,z//16))
+            water_y=eligible[(x,z)][0]
+            for next_pos in ((x-1,z),(x+1,z),(x,z-1),(x,z+1)):
+                if next_pos not in remaining:
+                    continue
+                if abs(eligible[next_pos][0]-water_y) > max_surface_step:
+                    continue
+                remaining.remove(next_pos)
+                stack.append(next_pos)
+        sizes.append(component_size)
+        if len(chunks)>1:cross_chunk+=1
+    sizes.sort(reverse=True)
+    edges_with_steep_step=0
+    for (x,z),(y,depth) in eligible.items():
+        for pos in ((x+1,z),(x,z+1)):
+            if pos in eligible and abs(y-eligible[pos][0])>max_surface_step:
+                edges_with_steep_step+=1
+    return {
+        "sampled_deep_water_columns":len(eligible),
+        "navigable_components":len(sizes),
+        "largest_navigable_component_columns":sizes[0] if sizes else 0,
+        "largest_navigable_component_fraction":round(sizes[0]/len(eligible),6)
+                if eligible else 0,
+        "cross_chunk_navigable_components":cross_chunk,
+        "steep_adjacent_water_edges":edges_with_steep_step,
+        "min_depth_blocks":min_depth,
+        "max_surface_step_blocks":max_surface_step,
+        "note":"Geometric proxy based on actually saved Anvil water; not a boat gameplay test."
+    }
+
+
 def terrain_quality_gates(chunk_border_deltas, within_chunk_deltas,
                           grid_boundary_deltas, inner_grid_deltas,
                           isolated_spikes, sample_columns, high_nonriver_water):
@@ -420,6 +471,7 @@ def scan(root,preset="realism_max"):
     river_biome_columns=0
     river_water_columns=0
     river_wet_surface_positions=set()
+    river_water_navigation_columns={}
     river_surface_block_counts={}
     river_dry_surface_block_counts={}
     river_ice_surface_columns=0
@@ -472,6 +524,15 @@ def scan(root,preset="realism_max"):
                         river_water_columns+=wet
                         if wet:
                             river_wet_surface_positions.add((x,z))
+                        # Open liquid surfaces with >=2 full water blocks
+                        # are navigable candidates; frozen lids are excluded.
+                        if upper_block=="minecraft:water":
+                            depth=1
+                            for water_depth in range(1,5):
+                                if get_block(chunk,dx,h-water_depth,dz)!="minecraft:water":
+                                    break
+                                depth+=1
+                            river_water_navigation_columns[(x,z)]=(h,depth)
                         ice=(upper_block=="minecraft:ice")
                         river_ice_surface_columns+=ice
                         river_water_below_ice_columns+=wet_state["exposed_ice_with_liquid"]
@@ -562,6 +623,8 @@ def scan(root,preset="realism_max"):
             print("Could not read world spawn from",level_file,ex)
     spawn_report=spawn_water_audit(world_spawn,H,surface_blocks,surface_biomes)
     river_topology=surface_water_components(river_wet_surface_positions)
+    navigation_flat=navigable_water_components(river_water_navigation_columns,0,2)
+    navigation_hovercraft=navigable_water_components(river_water_navigation_columns,1,2)
     topology=cave_components(cave_voxels)
     walkability=dry_walkable_components(cave_voxels,dry_voxels,lava_voxels,sampled_min_y)
     quality=terrain_quality_gates(chunk_border,within_chunk,four_boundary,inner,
@@ -597,6 +660,8 @@ def scan(root,preset="realism_max"):
       "river_dry_surface_block_counts":river_dry_surface_block_counts,
       "river_water_or_ice_columns":river_water_columns,
       "river_surface_connected_water":river_topology,
+      "river_navigation_flat_water":navigation_flat,
+      "river_navigation_one_block_steps":navigation_hovercraft,
       "river_surface_ice_columns":river_ice_surface_columns,
       "river_ice_with_water_beneath_columns":river_water_below_ice_columns,
       "river_snow_over_ice_with_water_columns":river_snow_over_ice_with_water_columns,
