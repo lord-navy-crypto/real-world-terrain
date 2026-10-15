@@ -10,11 +10,18 @@ checks=json.loads((ROOT/'docs/SHA256SUMS.json').read_text())
 # Check its required historic behavior, and keep all OTHER original hashes strict.
 modified_entrypoint='neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java'
 modified_preset_tag='neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json'
+modified_density='neoforge/src/main/java/org/realscale/neoforge/RealDemDensity.java'
 for name,want in checks.items():
  if name==modified_preset_tag:
   tag=json.loads((ROOT/name).read_text())
   assert 'realscale:realism_max_ecotones' in tag.get('values',[])
   print('INTENTIONAL MODIFICATION: appended opt-in ecotone preset')
+  continue
+ if name==modified_density:
+  source=(ROOT/name).read_text()
+  assert 'RealDemColumnCache' in source and 'COLUMN_CACHE' in source
+  assert 'base.compute(ctx)' in source and 'mapAll' in source and 'DISPATCH' in source
+  print('INTENTIONAL MODIFICATION: RealDemDensity optimized cache, fallback and codec checked')
   continue
  if name==modified_entrypoint:
   source=(ROOT/name).read_text()
