@@ -46,6 +46,14 @@ final class MountainReliefMath {
         return chance < 32 ? BASIN : chance < 64 ? PLATEAU : NONE;
     }
 
+    static double plateauLevel(long h, double seededSignal) {
+        // Fixed for an entire site, from world-absolute hash and world-seeded
+        // erosion noise. Never peek at the height interpolator in distant
+        // chunks (that is not safe during NoiseChunk interpolation).
+        return 2.2 + Math.floorMod(h >>> 19, 800L) * 0.0125
+                + GeoMath.clamp(seededSignal, -1, 1) * 0.5;
+    }
+
     static double basinCore(double radiusFraction) {
         return 1.0 - GeoMath.smoothstep(0.25, 0.78, radiusFraction);
     }
@@ -79,6 +87,11 @@ final class MountainReliefMath {
         // site anchor, not a quantized per-voxel value (which causes steps).
         // Existing mountain heights and caves remain intact elsewhere.
         double target = Math.max(anchorHeight, 0.9) + plateauRise;
-        return original + gate * plateauCrest(radiusFraction) * (target - original);
+        // Don't level a 1600m summit down to a 300m shelf just because it
+        // happened to occupy the same 2048m cell as a plateau site.
+        double heightFit = 1.0 - GeoMath.smoothstep(1.0, 2.4,
+                Math.abs(original - target));
+        return original + gate * heightFit * plateauCrest(radiusFraction)
+                * (target - original);
     }
 }
