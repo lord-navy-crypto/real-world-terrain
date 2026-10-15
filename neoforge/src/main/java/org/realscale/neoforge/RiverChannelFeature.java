@@ -319,6 +319,17 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
 
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+        // The common path adds only a constant false branch; no clock reads.
+        if (!WorldgenProfiler.ENABLED) return placeUnprofiled(context);
+        long started = WorldgenProfiler.begin();
+        try {
+            return placeUnprofiled(context);
+        } finally {
+            WorldgenProfiler.finish(WorldgenProfiler.Section.RIVER, started);
+        }
+    }
+
+    private boolean placeUnprofiled(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         ChunkGenerator base = context.chunkGenerator();
         if (!(base instanceof NoiseBasedChunkGenerator noise)) return false;
         // NeoForge biome modifiers are global: never touch vanilla or
