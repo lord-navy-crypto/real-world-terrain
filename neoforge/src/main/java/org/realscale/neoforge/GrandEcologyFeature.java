@@ -5,8 +5,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
-import net.minecraft.world.level.block.RotatedPillarBlock;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
@@ -40,8 +38,15 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
         RandomSource random = context.random();
+        // Tree clearance is much taller than alpine/riverbank ground cover.
+        int overhead = switch (kind) {
+            case TEMPERATE_RAINFOREST -> 32;
+            case SAVANNA_CANOPY -> 20;
+            case CHAPARRAL_SCRUB -> 6;
+            case GRASSLAND_MOSAIC, ALPINE_TUNDRA, FLOODPLAIN_BANK -> 3;
+        };
         if (origin.getY() < level.getMinBuildHeight() + 3
-                || origin.getY() >= level.getMaxBuildHeight() - 36) return false;
+                || origin.getY() >= level.getMaxBuildHeight() - overhead) return false;
         if (!level.getFluidState(origin).isEmpty()) return false;
         return switch (kind) {
             case TEMPERATE_RAINFOREST -> giantConifer(level, origin, random);
