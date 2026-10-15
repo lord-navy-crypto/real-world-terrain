@@ -88,7 +88,7 @@ jobs:
                       print("DEEP_OCEAN_BOUNDED_QUERY_UNRESPONSIVE",x,z,str(exc),flush=True)
                       continue
                   print("DEEP_OCEAN_BOUNDED_SAMPLE",x,z,repr(answer[:250]),flush=True)
-                  if re.search(r"\\b(?:time is|time:|daytime)\\b",answer,re.I):
+                  if "the time is " in answer.lower():
                       found=(x,z)
                       break
                   if any(t in answer.lower() for t in ("unknown biome", "unknown tag", "unknown command", "incorrect argument")):
