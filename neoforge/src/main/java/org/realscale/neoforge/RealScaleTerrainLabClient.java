@@ -152,6 +152,10 @@ public final class RealScaleTerrainLabClient {
         int riverGrade = 6;
         boolean inland = true;
         boolean fantasyDimensions = false;
+        // Global next-world selection for built-in structure_set datapacks.
+        // Saved world datapack choices remain owned by each world.
+        int structureDensity = 4;
+        int dimensionStructureDensity = 2;
         Map<String,FamilySettings> profiles = new LinkedHashMap<>();
 
         static Draft defaults() {
@@ -205,6 +209,9 @@ public final class RealScaleTerrainLabClient {
         }
 
         private static boolean valid(Draft d) {
+            if (!RealScaleStructurePacks.validOverworld(d.structureDensity)
+                    || !RealScaleStructurePacks.validDimensions(d.dimensionStructureDensity))
+                return false;
             return switch (d.preset) {
                 case "landscape", "alpine", "canyon" ->
                         d.blendPercent >= 0 && d.blendPercent <= 50
@@ -358,6 +365,28 @@ public final class RealScaleTerrainLabClient {
             .category(familyCategory("Natural | Landscape",d.profiles.get("landscape")))
             .category(familyCategory("Alpine | Mountains",d.profiles.get("alpine")))
             .category(familyCategory("Canyon | Plateaus",d.profiles.get("canyon")))
+            .category(ConfigCategory.createBuilder()
+                .name(Component.literal("Built-in Vanilla Structures"))
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Overworld Structures (next world)"))
+                    .description(description("Vanilla=0, Light=2x, Active=3x, Grand=4x (default), Epic=6x. "
+                        + "All six structure packs are INCLUDED in the RealScale mod JAR. "
+                        + "Save and restart Minecraft before creating a new world; selected pack is "
+                        + "enabled automatically for that new world. This is a candidate-placement "
+                        + "multiplier, NOT a guarantee of actual buildings. Existing saves keep their "
+                        + "own datapack selections; do not use this to retune existing worlds."))
+                    .binding(4, () -> d.structureDensity, v -> d.structureDensity=v)
+                    .controller(o -> CyclingListControllerBuilder.create(o).values(0,2,3,4,6)).build())
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Nether + End Structures (next world)"))
+                    .description(description("Vanilla=0, Grand=2x (default), Epic=3x. "
+                        + "Preserves fortress/bastion weights and End City placement type. "
+                        + "Save and restart before creating your next world. "
+                        + "Only NEW worlds use the updated auto-enabled pack selection."))
+                    .binding(2, () -> d.dimensionStructureDensity,
+                             v -> d.dimensionStructureDensity=v)
+                    .controller(o -> CyclingListControllerBuilder.create(o).values(0,2,3)).build())
+                .build())
             .category(ConfigCategory.createBuilder()
                 .name(Component.literal("Shared Climate & Latitude / Export"))
                 .option(Option.<String>createBuilder()
