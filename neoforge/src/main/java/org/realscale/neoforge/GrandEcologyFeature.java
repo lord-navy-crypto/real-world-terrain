@@ -32,11 +32,27 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
 
     private final Kind kind;
     private final EcologyDistributionMath.Habitat habitat;
+    private final int placementHeadroom;
+    private final boolean aquatic;
 
     public GrandEcologyFeature(Kind kind) {
         super(NoneFeatureConfiguration.CODEC);
         this.kind = kind;
         this.habitat = EcologyDistributionMath.Habitat.valueOf(kind.name());
+        // Invariant for this registered feature: resolve once on creation,
+        // not for every worldgen placement attempt.
+        this.placementHeadroom = switch (kind) {
+            case TEMPERATE_RAINFOREST, TROPICAL_RAINFOREST -> 32;
+            case TEMPERATE_SEASONAL_FOREST -> 25;
+            case SAVANNA_CANOPY -> 20;
+            case CHAPARRAL_SCRUB -> 6;
+            default -> 3;
+        };
+        this.aquatic = switch (kind) {
+            case FRESHWATER_BED, COASTAL_SEAGRASS, CORAL_REEF_FLOOR,
+                 ESTUARY_SHALLOWS -> true;
+            default -> false;
+        };
     }
 
     @Override
@@ -46,27 +62,12 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
         RandomSource random = context.random();
-        // Tree clearance is much taller than alpine/riverbank ground cover.
-        int overhead = switch (kind) {
-            case TEMPERATE_RAINFOREST, TROPICAL_RAINFOREST -> 32;
-            case TEMPERATE_SEASONAL_FOREST -> 25;
-            case SAVANNA_CANOPY -> 20;
-            case CHAPARRAL_SCRUB -> 6;
-            case GRASSLAND_MOSAIC, ALPINE_TUNDRA, FLOODPLAIN_BANK,
-                 BOREAL_TAIGA, DESERT_OUTCROPS, ARCTIC_TUNDRA,
-                 FRESHWATER_BED, COASTAL_SEAGRASS, CORAL_REEF_FLOOR,
-                 ESTUARY_SHALLOWS -> 3;
-        };
+        // Height and aquatic classifications do not depend on position.
         if (origin.getY() < level.getMinBuildHeight() + 3
-                || origin.getY() >= level.getMaxBuildHeight() - overhead) return false;
-        boolean underwater = switch (kind) {
-            case FRESHWATER_BED, COASTAL_SEAGRASS, CORAL_REEF_FLOOR,
-                 ESTUARY_SHALLOWS -> true;
-            default -> false;
-        };
-        if (underwater ? !level.getFluidState(origin).is(FluidTags.WATER)
-                : !level.getFluidState(origin).isEmpty()) return false;
-        if (underwater && !EcologyDistributionMath.aquaticDepthSuitable(
+                || origin.getY() >= level.getMaxBuildHeight() - placementHeadroom) return false;
+        var fluid = level.getFluidState(origin);
+        if (aquatic ? !fluid.is(FluidTags.WATER) : !fluid.isEmpty()) return false;
+        if (aquatic && !EcologyDistributionMath.aquaticDepthSuitable(
                 habitat, origin.getY(), level.getSeaLevel())) return false;
 
         // A continuous 768/128-block site-suitability field clusters plants
