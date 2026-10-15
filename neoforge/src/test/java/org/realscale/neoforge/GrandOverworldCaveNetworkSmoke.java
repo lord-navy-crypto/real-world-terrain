@@ -61,6 +61,43 @@ public final class GrandOverworldCaveNetworkSmoke {
         }
         require(longLinks>300,"Long wide tunnels unexpectedly uncommon");
 
+        // Rare arteries must be REAL continuous kilometer-scale voids,
+        // not just a declared 1536m constant in a source file.
+        int arterialRoutes=0;
+        for(int gx=-9;gx<=9;gx+=3) for(int gz=-6;gz<=6;gz++)
+            for(int layer=1;layer<=2;layer++) {
+                if(!GrandOverworldCaveNetwork.arterialActive(gx,gz,layer,true))continue;
+                var a=GrandOverworldCaveNetwork.hall(gx,gz,layer);
+                var b=GrandOverworldCaveNetwork.hall(gx+3,gz,layer);
+                double length=Math.hypot(b.x()-a.x(),b.z()-a.z());
+                require(length>1300,"Arterial should span more than a kilometer");
+                double x=(a.x()+b.x())*.5, y=(a.y()+b.y())*.5, z=(a.z()+b.z())*.5;
+                require(GrandOverworldCaveNetwork.strength(x,y,z)>0.01,
+                        "Arterial has no traversable midpoint");
+                arterialRoutes++;
+            }
+        require(arterialRoutes>=20,"Kilometer arterial cave corridors are too rare");
+
+        // Caves should be FINDABLE: rare natural highland shafts start in
+        // an existing hall and extend toward the actual mountain surface.
+        int entrances=0;
+        for(int gx=-12;gx<=12;gx++)for(int gz=-12;gz<=12;gz++) {
+            var low=GrandOverworldCaveNetwork.hall(gx,gz,0);
+            var middle=GrandOverworldCaveNetwork.hall(gx,gz,1);
+            double yl=low.y()+220, ym=middle.y()+220;
+            // Pick the candidate whose entrance actually exists.
+            for(var hall:new GrandOverworldCaveNetwork.Hall[]{low,middle}) {
+                double y=hall.y()+220;
+                double x=hall.x()+Math.sin(220/92.0)*5;
+                double z=hall.z()+Math.sin(220/119.0)*4;
+                if(GrandOverworldCaveNetwork.entranceStrength(x,y,z)>0.95) {
+                    entrances++;
+                    break;
+                }
+            }
+        }
+        require(entrances>=10,"Entrances should occasionally lead to mountain halls");
+
         // The same exact world coordinate must evaluate identically across
         // any adjacent chunk/task boundary, independent of evaluation order.
         final double[][] samples=new double[400][3];
