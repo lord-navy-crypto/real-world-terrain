@@ -100,3 +100,12 @@ old USGS profile available for previously created saves.
 diverged v1.3 prototype is not restored by this menu/terrain fix. Do not claim
 the GUI/config-profile work is integrated until its dependency and client
 runtime tests also pass.
+
+### USGS v2 server registry dependency repair
+
+Real worldgen CI revealed that v2's new `cave_density` graph references
+`realscale:realism_max/cave_core` from the old v1.3 implementation. The
+first port omitted that secondary density function, causing the entire
+worldgen registry to fail during data loading. The original `cave_core`
+resource has now been imported without changing existing Realism MAX
+terrain presets, and the new TVA validation asserts its presence.
