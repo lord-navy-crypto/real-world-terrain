@@ -154,7 +154,10 @@ def validate(multiplier, data):
             if field!="spacing":
                 assert modified_place[field]==original_place[field],(name,field)
         assert original_place["separation"] < modified_place["spacing"] < original_place["spacing"]
-        assert 1.4 < (original_place["spacing"]/modified_place["spacing"])**2 < 4.2
+        # 6x attempts may be clamped by immutable vanilla separation;
+        # validate a bounded increase rather than promising exact density.
+        factor=(original_place["spacing"]/modified_place["spacing"])**2
+        assert 1.4 < factor <= 6.5, (name,multiplier,factor)
         names.add(name)
     assert names.isdisjoint(OMITTED)
     assert all(key.startswith(("pack.mcmeta","data/minecraft/worldgen/structure_set/"))
