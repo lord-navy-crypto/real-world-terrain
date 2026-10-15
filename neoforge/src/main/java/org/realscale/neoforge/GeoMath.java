@@ -68,8 +68,14 @@ final class GeoMath {
      */
     static double areaBalancedRadialLatitudeDeg(int x,int z,int cx,int cz,int poleDistance) {
         double radius=Math.hypot((double)x-cx,(double)z-cz);
-        double radiusPhase=radius/(2.0*poleDistance);
-        double areaPhase=(radiusPhase*radiusPhase)%1.0;
+        double period=2.0*poleDistance;
+        double periodIndex=Math.floor(radius/period);
+        double inner=periodIndex*period;
+        double fraction=(radius-inner)/period;
+        // Normalized annulus area: (r²-inner²)/(outer²-inner²).
+        // This preserves equal area per quarter in EVERY climate cycle.
+        double areaPhase=(2.0*periodIndex*fraction+fraction*fraction)
+                /(2.0*periodIndex+1.0);
         double quarter=4.0*areaPhase;
         if(quarter<=1.0)return 90.0*quarter;
         if(quarter<=2.0)return 90.0*(2.0-quarter);
