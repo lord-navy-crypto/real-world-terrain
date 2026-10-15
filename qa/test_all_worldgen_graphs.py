@@ -90,8 +90,12 @@ class WorldgenGraphIntegrity(unittest.TestCase):
     def test_old_and_new_usgs_profiles_reference_separate_density(self):
         old=load(NOISE/"usgs_big_sur.json")["noise_router"]
         new=load(NOISE/"usgs_big_sur_v2.json")["noise_router"]
-        self.assertEqual(old["final_density"]["input"],"realscale:usgs_big_sur/terrain_density")
-        self.assertEqual(new["final_density"]["input"],"realscale:usgs_big_sur_v2/terrain_density")
+        # TVA v0.6 rebuilt noise graphs refer directly to a registry density
+        # ID; historical v1.3 had a range_choice wrapper with an input key.
+        # Require the SAME independent source-vs-v2 distinction either way.
+        source_id=lambda node:node if isinstance(node,str) else node["input"]
+        self.assertEqual(source_id(old["final_density"]),"realscale:usgs_big_sur/terrain_density")
+        self.assertEqual(source_id(new["final_density"]),"realscale:usgs_big_sur_v2/terrain_density")
         self.assertEqual(load(DENSITY/"usgs_big_sur/terrain_density.json")["type"],
                          "realscale:dem_density")
         self.assertEqual(load(DENSITY/"usgs_big_sur_v2/terrain_density.json")["type"],
