@@ -309,11 +309,10 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
      */
     private static int riverGradeForWorld(String id) {
         if (!id.startsWith("lab_")) return 6;
-        // Avoid allocating a temporary grade array per feature placement.
-        if (id.endsWith("_g0")) return 0;
-        if (id.endsWith("_g3")) return 3;
-        if (id.endsWith("_g6")) return 6;
-        if (id.endsWith("_g9")) return 9;
+        // Preserve the existing tested persistent grade parsing contract.
+        for (int grade : new int[] {0, 3, 6, 9}) {
+            if (id.endsWith("_g" + grade)) return grade;
+        }
         return -1; // Unsupported / malformed Lab id: never place fluids
     }
 
