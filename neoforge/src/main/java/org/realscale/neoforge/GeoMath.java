@@ -56,6 +56,31 @@ final class GeoMath {
         double outward=phase<=1.0?phase:2.0-phase;
         return 90.0*Math.pow(outward,1.15);
     }
+    /**
+     * Equal-area concentric climate belts. Each [2*k*Q, 2*(k+1)*Q]
+     * annulus is divided by its actual planar area, not just its width.
+     * Temperature classes defined by equal latitude intervals therefore
+     * occupy equal fractions of that annulus's area.
+     *
+     * Old radialLatitudeDeg and balancedRadialLatitudeDeg are unchanged for
+     * legacy worlds. The first polar circle moves from Q to sqrt(2)*Q;
+     * equators remain at 0, 2Q, 4Q... and function values meet exactly
+     * at ring boundaries. Designed for world-absolute X/Z, not spawn.
+     */
+    static double areaBalancedRadialLatitudeDeg(
+            int x,int z,int centerX,int centerZ,int poleDistance) {
+        double radius=Math.hypot((double)x-centerX,(double)z-centerZ);
+        double period=2.0*poleDistance;
+        double cycles=Math.floor(radius/period);
+        double inner=cycles*period;
+        double offset=radius-inner;
+        // Area quotient: (r^2 - inner^2) / (outer^2 - inner^2).
+        // Factored form avoids cancelling two enormous squares.
+        double areaFraction=offset*(2.0*inner+offset) /
+                (period*(2.0*inner+period));
+        areaFraction=clamp(areaFraction,0.0,1.0);
+        return 90.0*(1.0-Math.abs(2.0*areaFraction-1.0));
+    }
     static double balancedRadialTemperature(double original,double latitude,double strength,
                                             double altitudeCooling,int y){
         double baseline=latitudeTemperature(original,latitude,strength);
