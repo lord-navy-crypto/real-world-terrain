@@ -23,6 +23,19 @@ final class WorldgenProfiler {
             new Metrics(), new Metrics(), new Metrics()
     };
 
+    static {
+        if (ENABLED) {
+            // Short fixed-seed runs may never reach 4096 feature calls.
+            // Emit final snapshots on graceful JVM shutdown as well.
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                for (Section section : Section.values()) {
+                    if (calls(section) > 0)
+                        System.err.println("[RealScale worldgen profile] " + snapshot(section));
+                }
+            }, "realscale-worldgen-profile-summary"));
+        }
+    }
+
     static long begin() {
         return ENABLED ? System.nanoTime() : 0L;
     }
