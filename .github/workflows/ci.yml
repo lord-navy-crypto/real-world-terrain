@@ -87,6 +87,14 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/GrandDimensionMath.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandDimensionMathSmoke.java
           java -cp build/grand-dimension-smoke org.realscale.neoforge.GrandDimensionMathSmoke
+      - name: Verify newly restored giant Overworld cavern networks and their real final-density wiring
+        run: |
+          mkdir -p build/grand-overworld-cave-smoke
+          javac -d build/grand-overworld-cave-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldCaveNetworkSmoke.java
+          java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldCaveNetworkSmoke
+          python3 -m unittest discover -s qa -p 'test_grand_overworld_cave_integration.py' -v
       - name: Validate giant connected Grand Nether caverns and bit-exact optimization parity
         run: |
           mkdir -p build/grand-cave-smoke
