@@ -14,8 +14,12 @@ modified_density='neoforge/src/main/java/org/realscale/neoforge/RealDemDensity.j
 for name,want in checks.items():
  if name==modified_preset_tag:
   tag=json.loads((ROOT/name).read_text())
-  assert 'realscale:realism_max_ecotones' in tag.get('values',[])
-  print('INTENTIONAL MODIFICATION: appended opt-in ecotone preset')
+  assert tag.get('values',[]) == [
+   'realscale:tva_sacred_timeline_three_realms',
+   'realscale:tva_alpine_three_realms',
+   'realscale:tva_canyon_three_realms',
+   'realscale:tva_measured_three_realms']
+  print('INTENTIONAL MODIFICATION: restored four curated TVA world families')
   continue
  if name==modified_density:
   source=(ROOT/name).read_text()

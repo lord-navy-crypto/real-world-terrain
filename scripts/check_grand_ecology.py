@@ -63,8 +63,9 @@ def check():
         "source": old_overworld["generator"]["biome_source"]
     }
     tags = read(BASE / "neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
-    assert "realscale:grand_ecology_three_realms" in tags["values"]
-    assert "realscale:realism_max_three_realms" in tags["values"]
+    assert "realscale:tva_sacred_timeline_three_realms" in tags["values"]
+    assert (WORLD_PRESET / "grand_ecology_three_realms.json").is_file()
+    assert (WORLD_PRESET / "realism_max_three_realms.json").is_file()
     gallery = read(WORLD_PRESET / "apes_gallery_three_realms.json")
     gallery_source = gallery["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
     assert gallery_source["type"] == "minecraft:checkerboard"
@@ -84,7 +85,7 @@ def check():
     assert gallery["dimensions"]["minecraft:overworld"]["generator"]["settings"] == (
         old_overworld["generator"]["settings"]
     )
-    assert "realscale:apes_gallery_three_realms" in tags["values"]
+    assert (WORLD_PRESET / "apes_gallery_three_realms.json").is_file()
     # Deliberate: surface features cannot modify the noise router, aquifers,
     # cave density, terrain geometry, ocean biomes or live river blocks.
     assert "setBlock" in feature_java

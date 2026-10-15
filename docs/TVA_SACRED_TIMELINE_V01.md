@@ -70,3 +70,33 @@ have conclusively passed and the marine-risk review is complete.
 
 *TVA means one traceable experimental development branch, not erasing its
 independent source branches or rewriting existing world saves.*
+
+## v0.2 — restore the FOUR curated player-facing families
+
+The original `main` branch exposed eight historical world presets and the
+initial TVA merge accidentally re-expanded the world-creation menu to fourteen.
+This violated the prior approved UI design.
+
+Both `normal.json` and `extended.json` now expose exactly four new,
+unambiguous TVA three-realm presets:
+
+| User choice | Stable opt-in world preset | Overworld terrain |
+|---|---|---|
+| Natural | `tva_sacred_timeline_three_realms` | Realism MAX |
+| Alpine | `tva_alpine_three_realms` | Himalayan |
+| Canyon | `tva_canyon_three_realms` | Grand Canyon |
+| Real-World | `tva_measured_three_realms` | USGS Big Sur v2 |
+
+All four keep Grand Nether, Grand End, APES and the ocean-protecting
+sky-archipelago/ecotone source. Historical world preset JSON IDs are **not
+deleted or renamed**; they simply no longer occupy the world-creation menu.
+
+The missing `RealDemSeamlessDensity` + `RealDemSeamlessMath` pair, 2,048
+block exterior blend and USGS v2 noise/resource graph were ported from
+the former v1.3 terrain branch as a separate worldgen codec, leaving the
+old USGS profile available for previously created saves.
+
+**Remaining difference:** the YACL Terrain Lab family-profile editor from the
+diverged v1.3 prototype is not restored by this menu/terrain fix. Do not claim
+the GUI/config-profile work is integrated until its dependency and client
+runtime tests also pass.
