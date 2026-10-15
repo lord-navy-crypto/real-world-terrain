@@ -19,7 +19,7 @@ import sys
 
 PRESETS = (
     "realism_max", "georeal_ultimate", "himalayan", "grand_canyon",
-    "usgs_big_sur", "continental", "realistic_mountains", "ultimate",
+    "usgs_big_sur", "usgs_big_sur_v2", "continental", "realistic_mountains", "ultimate",
 )
 # A small public UI, with legacy algorithms still accepted for old worlds and CLI.
 # These are REAL combinations of two underlying height density signals, not UI aliases.
@@ -29,7 +29,7 @@ FAMILIES = {
     "canyon": ("grand_canyon", "continental"),
 }
 EDITABLE = tuple(FAMILIES)
-LEGACY_EDITABLE = tuple(x for x in PRESETS if x != "usgs_big_sur")
+LEGACY_EDITABLE = tuple(x for x in PRESETS if x not in ("usgs_big_sur","usgs_big_sur_v2"))
 PROFILES = {
     "natural":  (1.0, 0, 50, 6),
     "gentle":   (0.9, -12, 35, 3),
@@ -39,7 +39,8 @@ PROFILES = {
 ENGLISH = {
     "realism_max":"Realism MAX", "georeal_ultimate":"GeoReal Ultimate",
     "himalayan":"Himalayan", "grand_canyon":"Grand Canyon",
-    "usgs_big_sur":"USGS Big Sur (measured DEM; read-only)",
+    "usgs_big_sur":"USGS Big Sur (historical DEM; read-only)",
+    "usgs_big_sur_v2":"USGS Big Sur v2 (seamless DEM; measured/read-only)",
     "continental":"Continental", "realistic_mountains":"Realistic Mountains",
     "ultimate":"Ultimate",
     "landscape":"Natural Landscape (Realism + GeoReal)",
@@ -49,7 +50,8 @@ ENGLISH = {
 CHINESE = {
     "realism_max":"综合真实地形", "georeal_ultimate":"多尺度地貌",
     "himalayan":"喜马拉雅", "grand_canyon":"大峡谷",
-    "usgs_big_sur":"USGS Big Sur（实测 DEM，不允许修改）",
+    "usgs_big_sur":"USGS Big Sur（历史实测 DEM，不允许修改）",
+    "usgs_big_sur_v2":"USGS Big Sur v2（平滑过渡实测地形，不允许修改）",
     "continental":"大陆巨构", "realistic_mountains":"真实山脉",
     "ultimate":"终极地形",
     "landscape":"自然地貌（真实综合 + GeoReal）",
@@ -82,8 +84,8 @@ def replace_refs(node, replacements):
 def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False):
     if preset not in PRESETS and preset not in FAMILIES:
         raise ValueError("Unknown terrain preset")
-    if preset == "usgs_big_sur":
-        raise ValueError("USGS Big Sur is a measured DEM pilot: original preset only (no rescaling)")
+    if preset in ("usgs_big_sur","usgs_big_sur_v2"):
+        raise ValueError("USGS Big Sur DEM is measured, read-only terrain: cannot rescale sampled height")
     if type(lithostitched_blend) is not bool:
         raise ValueError("Lithostitched adaptive blending must be a boolean")
     if lithostitched_blend and preset not in FAMILIES:
@@ -719,11 +721,11 @@ def main(argv=None):
     args=parser.parse_args(argv)
     if args.list:
         print("Main merged modes:",", ".join(FAMILIES))
-        print("Measured (read-only): usgs_big_sur")
+        print("Measured (read-only): usgs_big_sur_v2; original legacy DEM: usgs_big_sur")
         print("Legacy compatible algorithms:",", ".join(LEGACY_EDITABLE))
         print("Tuning modes:",", ".join(PROFILES))
         print("Adjustable: mix 0..50%, ridge 0..40, erosion 0..30, strata 0..20, biome cooling 0..100, valley warming 0..100, latitude mode off/earth/preview/radial_earth/radial_preview/radial_balanced, latitude strength 0..100, equator-z, basin warming 0..100, relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
-        print("USGS Big Sur is a read-only measured DEM.")
+        print("USGS Big Sur v2 is the read-only measured DEM. TVA's 512-block realms remain enabled.")
         print("Optional Lithostitched terrain blending: --lithostitched-blend (merged families).")
         print("Deep geology suite: --lithostitched-geology (nonzero merged blend required).")
         return 0
