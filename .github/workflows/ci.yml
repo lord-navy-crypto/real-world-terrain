@@ -138,6 +138,10 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_tva_smoothed_families.py' -v
       - name: Ensure 2096-height Anvil heightmaps never decode using Canyon's shorter generator height
         run: python3 -m unittest discover -s qa -p 'test_tva_heightmap_decoding.py' -v
+      - name: Build and verify six optional structure density packs
+        run: |
+          python3 -m unittest discover -s qa -p 'test_grand_structure_density.py' -v
+          python3 scripts/make_structure_density_packs.py --outdir build/structure-packs
       - name: Restore cross-branch water, river, cave, spawn, and structures unit gates
         run: |
           python3 -m unittest discover -s qa -p 'test_water_connectivity.py' -v
@@ -170,4 +174,10 @@ jobs:
             neoforge/build/libs/*.jar
             build/saved-world-replay.json
             build/tva-exporter/*.pyz
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: RealScale-Grand-Exploration-Structure-Packs
+          path: build/structure-packs/*.zip
           if-no-files-found: error
