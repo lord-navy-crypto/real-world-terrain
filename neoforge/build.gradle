@@ -33,6 +33,14 @@ neoForge {
 // Lithostitched is used only when the player explicitly exports a Lab profile
 // that contains its codecs, never by the canonical TVA world presets.
 repositories {
+    // Use YACL's author-maintained Maven rather than a brittle Modrinth
+    // short-ID/version artifact endpoint. This is the exact 1.21.1 NeoForge
+    // build used by the Config GUI.
+    maven {
+        name = 'Xander Maven'
+        url = 'https://maven.isxander.dev/releases'
+        content { includeGroup 'dev.isxander' }
+    }
     exclusiveContent {
         forRepository {
             maven {
@@ -44,7 +52,7 @@ repositories {
     }
 }
 dependencies {
-    implementation 'maven.modrinth:1eAoo2KR:h8Px82QV' // YACL 3.8.1
+    implementation 'dev.isxander:yet-another-config-lib:3.8.1+1.21.1-neoforge' // YACL 3.8.1, official upstream Maven
     implementation 'maven.modrinth:XaDC71GB:u0UUKAE1' // Lithostitched 1.6.0
     testImplementation(platform('org.junit:junit-bom:5.14.1'))
     testImplementation 'org.junit.jupiter:junit-jupiter'
