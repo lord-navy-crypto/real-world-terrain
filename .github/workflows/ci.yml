@@ -95,6 +95,8 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/AreaBalancedClimateSmoke.java
           java -cp build/area-balanced-climate org.realscale.neoforge.AreaBalancedClimateSmoke
           python3 -m unittest discover -s qa -p 'test_area_balanced_default_climate.py' -v
+      - name: Validate mountain cave microhabitats, legacy features and roof safety
+        run: python3 -m unittest discover -s qa -p 'test_highland_cave_recovery.py' -v
       - name: Verify newly restored giant Overworld cavern networks and their real final-density wiring
         run: |
           mkdir -p build/grand-overworld-cave-smoke

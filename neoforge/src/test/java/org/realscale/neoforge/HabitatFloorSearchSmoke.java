@@ -28,6 +28,18 @@ public final class HabitatFloorSearchSmoke {
         });
         yes(found == -3 && visits.get() <= 7,
                 "Nearby cave support should short-circuit unnecessary world reads");
-        System.out.println("PASS: cave floor bounds, short-circuit, supported pockets and vertical ties");
+        // High-altitude RealScale mountains can hide enormous cave floors
+        // hundreds or thousands of blocks above vanilla cave Y levels.
+        yes(HabitatFloorSearch.nearest(850,-40,1776,40,y->y==821)==821,
+                "Find a large dry cave at Y821");
+        yes(HabitatFloorSearch.nearest(1590,-40,1776,40,y->y==1559)==1559,
+                "Find an upper mountain cave floor above Y1500");
+        yes(HabitatFloorSearch.nearest(800,-40,780,40,y->y==792)==missing,
+                "A cave above roof-protected maximum must not be decorated");
+        yes(HabitatFloorSearch.nearest(1300,-40,1270,40,y->y==1268)==1268,
+                "Find a safe pocket even if starting above the permitted roof depth");
+        yes(HabitatFloorSearch.nearest(1680,-40,1630,40,y->y==1615)==missing,
+                "Never breach a restricted upper roof boundary");
+        System.out.println("PASS: cave floor bounds, short-circuit, highland Y1500, roof limits and vertical ties");
     }
 }

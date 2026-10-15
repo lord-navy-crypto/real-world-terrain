@@ -3,6 +3,7 @@ package org.realscale.neoforge;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
@@ -17,13 +18,20 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
     public enum Kind { CAVE_MOSS, CAVE_DRIPSTONE, OCEAN_SEAGRASS, OCEAN_STONE }
     private final Kind kind;
     private static final int CAVE_SCAN_RADIUS_Y = 18;
+    private static final int HIGHLAND_SCAN_RADIUS_Y = 40;
+    private static final int MIN_ROOF_DEPTH = 20;
     public HabitatPatchFeature(Kind kind) {
         super(NoneFeatureConfiguration.CODEC);
         this.kind = kind;
     }
 
     private static boolean caveSupport(BlockState state, boolean requireDripstone) {
-        if (requireDripstone) return state.is(Blocks.DRIPSTONE_BLOCK);
+        // Previously stalagmites required a preexisting dripstone floor.
+        // Grand cavern halls expose stone/calcite/tuff instead, so the
+        // feature was effectively inert in newly carved mountain caves.
+        if (requireDripstone) return state.is(Blocks.DRIPSTONE_BLOCK)
+                || state.is(Blocks.STONE) || state.is(Blocks.DEEPSLATE)
+                || state.is(Blocks.CALCITE) || state.is(Blocks.TUFF);
         return state.is(Blocks.STONE) || state.is(Blocks.DEEPSLATE)
                 || state.is(Blocks.TUFF) || state.is(Blocks.DRIPSTONE_BLOCK)
                 || state.is(Blocks.MOSS_BLOCK);
@@ -43,10 +51,20 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
      * never accessing chunks far away or replacing the solid cave wall.
      */
     private static BlockPos nearbyCaveFloor(WorldGenLevel w, BlockPos origin, boolean dripstone) {
-        int min = Math.max(w.getMinBuildHeight() + 3, -58);
-        int max = Math.min(45, w.getMaxBuildHeight() - 3);
+        int min = Math.max(w.getMinBuildHeight() + 3,
+                GrandOverworldCaveNetwork.MIN_Y);
+        // Terrain is up to 2096 blocks tall; do NOT clip cave decorations
+        // at old vanilla-level Y45. But a real overhead roof is required:
+        // exposed slopes, beaches and hilltops must not get cave patches.
+        int surface = w.getHeight(Heightmap.Types.WORLD_SURFACE_WG,
+                origin.getX(), origin.getZ()) - 1;
+        int max = Math.min(Math.min(w.getMaxBuildHeight() - 3,
+                GrandOverworldCaveNetwork.MAX_Y), surface - MIN_ROOF_DEPTH);
+        if (max < min) return null;
+        int search = origin.getY() > 60
+                ? HIGHLAND_SCAN_RADIUS_Y : CAVE_SCAN_RADIUS_Y;
         int resultY = HabitatFloorSearch.nearest(origin.getY(), min, max,
-                CAVE_SCAN_RADIUS_Y, y -> dryCaveFloor(w,
+                search, y -> dryCaveFloor(w,
                     new BlockPos(origin.getX(), y, origin.getZ()), dripstone));
         return resultY == HabitatFloorSearch.NOT_FOUND
                 ? null : new BlockPos(origin.getX(), resultY, origin.getZ());
@@ -63,7 +81,8 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
         if (!cave && !(context.chunkGenerator().getBiomeSource() instanceof SkyOceanBiomeSource))
             return false;
         if (cave) {
-            if (start.getY() > 46 || start.getY() < w.getMinBuildHeight() + 3)
+            if (start.getY() > GrandOverworldCaveNetwork.MAX_Y
+                    || start.getY() < w.getMinBuildHeight() + 3)
                 return false;
             start = nearbyCaveFloor(w, start, kind == Kind.CAVE_DRIPSTONE);
             if (start == null) return false;
