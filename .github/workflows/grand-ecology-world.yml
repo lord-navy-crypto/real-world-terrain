@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 jobs:
-  ecotone-preset-world:
+  grand-ecology-preset-world:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -89,7 +89,7 @@ jobs:
           name: Grand-Ecology-worldgen-server-proof
           path: |
             neoforge/build/grand-ecology-server.log
-            neoforge/build/grand-ecology-anvil-qa.json
+            neoforge/build/ecotone-anvil-qa.json
             neoforge/run/**/grand-ecology-test/level.dat
             neoforge/run/**/grand-ecology-test/region/*.mca
           if-no-files-found: warn
