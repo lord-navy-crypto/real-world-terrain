@@ -44,15 +44,24 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
         int y=ctx.blockY();
         if(y<GrandOverworldCaveNetwork.MIN_Y
                 || y>GrandOverworldCaveNetwork.MAX_Y
-                || original<=0.24)
+                || original<=0.0)
             return original;
+        // Rare openings from existing halls let players FIND the caves.
+        // Restrict entrances to high ground, never ordinary oceans, rivers,
+        // or the exposed sea floor.
+        double entrance=y>=110
+                ? GrandOverworldCaveNetwork.entranceStrength(
+                    ctx.blockX(),y,ctx.blockZ()) : 0;
+        if(original<=0.24)
+            return entrance>0 ? Math.min(original,-2.0*entrance) : original;
         // The vanilla-seeded noise provides world-seed-dependent detail.
         // It never changes the room/corridor topology or chunk-border logic.
         double shift=Math.max(-1.0,Math.min(1.0,warp.compute(ctx)));
         double strength=GrandOverworldCaveNetwork.strength(
                 ctx.blockX()+shift*6.0, y+shift*2.0,
                 ctx.blockZ()-shift*5.0);
-        return carve(original,smallCaves.compute(ctx),strength);
+        return Math.min(carve(original,smallCaves.compute(ctx),strength),
+                entrance>0 ? -2.0*entrance : original);
     }
 
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {
