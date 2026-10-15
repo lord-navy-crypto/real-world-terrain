@@ -1,4 +1,8 @@
 {
-  "type": "minecraft:interpolated",
-  "argument": "realscale:grand_canyon/height_signal"
+  "type": "realscale:mountain_relief",
+  "base": "realscale:tva_canyon_smoothed/original_height_signal",
+  "continents": "realscale:grand_canyon/continents",
+  "selector": "realscale:grand_canyon/erosion",
+  "basin_depth": 0.78,
+  "plateau_rise": 0.56
 }
