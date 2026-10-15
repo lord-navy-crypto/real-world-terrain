@@ -13,6 +13,8 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * <p>Never edits sea levels, fluids, caves, Minecraft blocks or dimensions.
  * Samples a seed-resolved biome/erosion signal once per active 2048x2048
  * regional site, using a bounded per-density-worker thread-local cache.
+ * Never samples another chunk's interpolated height, and never depends on
+ * what neighboring chunk happened to generate first.
  */
 public final class MountainReliefDensity implements DensityFunction.SimpleFunction {
     private final DensityFunction base, continents, selector;
@@ -68,12 +70,13 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
         int centerX = Math.toIntExact(x);
         int centerZ = Math.toIntExact(z);
         var anchor = new DensityFunction.SinglePointContext(centerX, ctx.blockY(), centerZ);
-        site.type = MountainReliefMath.kind(h, selector.compute(anchor));
+        double regionalSignal = selector.compute(anchor);
+        site.type = MountainReliefMath.kind(h, regionalSignal);
         site.centerX = centerX;
         site.centerZ = centerZ;
         site.radius = MountainReliefMath.radius(h);
         site.anchorHeight = site.type == MountainReliefMath.PLATEAU
-                ? base.compute(anchor) : 0;
+                ? MountainReliefMath.plateauLevel(h, regionalSignal) : 0;
         site.gx = gx;
         site.gz = gz;
         return site;
