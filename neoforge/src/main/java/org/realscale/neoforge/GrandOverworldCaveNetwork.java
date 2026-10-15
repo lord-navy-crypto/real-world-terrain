@@ -237,6 +237,35 @@ public final class GrandOverworldCaveNetwork {
     }
 
     /**
+     * Select occasional vertical karst entrances on highland rock. These
+     * emerge from an existing underground hall instead of being independent
+     * surface holes. The final density wrapper additionally guards y>=110,
+     * positive terrain density and the world surface / aquatic boundary.
+     *
+     * About 1 in 9 cells gets one; the rest have intact geological roofs.
+     */
+    static double entranceStrength(double x,double y,double z) {
+        if(y<110 || y>MAX_Y)return 0;
+        int gx=(int)Math.floor(x/CELL),gz=(int)Math.floor(z/CELL);
+        long key=cellKey(gx,gz,0);
+        if(Math.floorMod(key,9L)!=0)return 0;
+        // Choose a low or middle fossil tier. Higher rock may remain inaccessible
+        // on very high summits; this is intentional and keeps alpine roofs.
+        int layer=(key&3L)==0 ? 1 : 0;
+        Hall anchor=hall(gx,gz,layer);
+        if(y<anchor.y())return 0;
+        double rise=y-anchor.y();
+        double centerX=anchor.x()+Math.sin(rise/92.0)*5;
+        double centerZ=anchor.z()+Math.sin(rise/119.0)*4;
+        double width=11+Math.floorMod(key>>>17,8L);
+        double dx=(x-centerX)/width;
+        if(Math.abs(dx)>=1)return 0;
+        double dz=(z-centerZ)/width;
+        double q=dx*dx+dz*dz;
+        return q>=1 ? 0 : 1-q;
+    }
+
+    /**
      * Positive values indicate a requested void. 0 leaves original noise
      * untouched. No block/biome writes and no chunk loading.
      */
