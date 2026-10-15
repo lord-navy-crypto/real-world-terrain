@@ -70,3 +70,23 @@ groups now receive **their own placed-feature aliases** pointing at the same
 existing configured features and placement predicates. This prevents implicit
 cross-biome identity/order constraints without changing the underlying plants.
 The static alias test is not proof of success; repeat real server tests.
+
+## APES Gallery: actual category-coverage QA
+
+The diagnostic-only `realscale:apes_gallery_three_realms` uses a 16-biome
+checkerboard to force all nine terrestrial climate representatives, alpine
+controls and freshwater/marine categories into a compact test world.
+
+- NOT for natural survival: artificial 32-ish-block biome interfaces are
+  deliberate and unsuitable for ecological realism.
+- Preserves Grand Nether and End settings exactly from PR #7.
+- Dedicated `.github/workflows/apes-gallery.yml` boots a real NeoForge
+  server, persists a world and invokes `qa/neoforge/check_apes_gallery.py`
+  to require all sixteen **actual saved Anvil biome palettes**. It catches
+  registration and FeatureSorter failures that a single realistic spawn may
+  never exercise.
+- Vanilla block palette signatures are informational only. They cannot
+  establish that any custom tree, shrub, snow patch or sea grass actually
+  came from the new `GrandEcologyFeature`.
+- Natural climate realism, cross-chunk visual quality and rare-feature
+  occurrence frequency remain outstanding real-player QA tasks.

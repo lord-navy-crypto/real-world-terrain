@@ -65,6 +65,26 @@ def check():
     tags = read(BASE / "neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
     assert "realscale:grand_ecology_three_realms" in tags["values"]
     assert "realscale:realism_max_three_realms" in tags["values"]
+    gallery = read(WORLD_PRESET / "apes_gallery_three_realms.json")
+    gallery_source = gallery["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+    assert gallery_source["type"] == "minecraft:checkerboard"
+    assert gallery_source["scale"] == 3
+    assert len(gallery_source["biomes"]) == 16
+    assert len(set(gallery_source["biomes"])) == 16
+    assert set(gallery_source["biomes"]) == {
+        "minecraft:jungle", "minecraft:old_growth_spruce_taiga", "minecraft:forest",
+        "minecraft:taiga", "minecraft:plains", "minecraft:savanna",
+        "minecraft:wooded_badlands", "minecraft:desert", "minecraft:snowy_plains",
+        "minecraft:stony_peaks", "minecraft:river", "minecraft:swamp",
+        "minecraft:mangrove_swamp", "minecraft:lukewarm_ocean",
+        "minecraft:warm_ocean", "minecraft:deep_ocean",
+    }
+    for dim in ("minecraft:the_nether", "minecraft:the_end"):
+        assert gallery["dimensions"][dim] == original["dimensions"][dim], dim
+    assert gallery["dimensions"]["minecraft:overworld"]["generator"]["settings"] == (
+        old_overworld["generator"]["settings"]
+    )
+    assert "realscale:apes_gallery_three_realms" in tags["values"]
     # Deliberate: surface features cannot modify the noise router, aquifers,
     # cave density, terrain geometry, ocean biomes or live river blocks.
     assert "setBlock" in feature_java
