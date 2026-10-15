@@ -103,6 +103,8 @@ jobs:
           python3 -m unittest discover -s qa -p test_radial_climate_math.py -v
           python3 -m unittest discover -s qa -p test_latitude_climate.py -v
           python3 -m unittest discover -s qa -p test_custom_geomorphology.py -v
+      - name: Ensure 2096-height Anvil heightmaps never decode using Canyon's shorter generator height
+        run: python3 -m unittest discover -s qa -p 'test_tva_heightmap_decoding.py' -v
       - name: Restore cross-branch water, river, cave, spawn, and structures unit gates
         run: |
           python3 -m unittest discover -s qa -p 'test_water_connectivity.py' -v

@@ -376,7 +376,22 @@ def scan(root,preset="realism_max"):
     settings_path=root_data/"noise_settings"/(source+".json")
     noise=json.loads(settings_path.read_text())["noise"]
     min_y=noise["min_y"]
-    world_height=noise["height"]
+    noise_height=noise["height"]
+    # Minecraft heightmaps are encoded against DIMENSION TYPE build height,
+    # not against the generator's potentially shorter vertical noise range.
+    # TVA Canyon has 1024-high noise but a 2096-high dimension: decoding with
+    # 1024 produces fake 500-block checkerboard spikes and bogus failures.
+    world_height=noise_height
+    if world_path.is_file():
+        dim_key=world["dimensions"]["minecraft:overworld"]["type"]
+        if dim_key.startswith("realscale:"):
+            dimension_file=root_data.parent/"dimension_type"/(dim_key.split(":",1)[1]+".json")
+            dimension=json.loads(dimension_file.read_text())
+            if noise["min_y"] < dimension["min_y"] or (
+                    noise["min_y"]+noise_height > dimension["min_y"]+dimension["height"]):
+                raise AssertionError("Noise range is outside overworld dimension bounds")
+            min_y=dimension["min_y"]
+            world_height=dimension["height"]
     regions=[x for x in root.glob("run/**/region/r.*.*.mca") if "DIM" not in str(x)]
     assert regions, "No actual saved overworld Anvil region found"
     H={}
@@ -563,6 +578,8 @@ def scan(root,preset="realism_max"):
         isinstance(b,str) and "ocean" in b for b in surface_biomes.values()),
       "worldgen_min_y":min_y,
       "worldgen_height":world_height,
+      "noise_generation_height":noise_height,
+      "heightmap_decode_basis":"dimension_type_height",
       "region_files":len(regions),
       "decoded_chunks":chunks,
       "actual_surface_columns":len(H),
