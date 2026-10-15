@@ -21,6 +21,19 @@ for name,want in checks.items():
    'realscale:tva_measured_three_realms']
   print('INTENTIONAL MODIFICATION: restored four curated TVA world families')
   continue
+ if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):
+  # Preserve the exact historical text for every legacy ID while allowing
+  # additive TVA family labels; the archived v1.1 JAR is immutable evidence.
+  with zipfile.ZipFile(next((ROOT/'dist/v1.1').glob('*.jar'))) as oldjar:
+   rel=name[len('neoforge/src/main/resources/'):]
+   old=json.loads(oldjar.read(rel))
+  new=json.loads((ROOT/name).read_text())
+  assert all(new.get(key)==value for key,value in old.items()),name
+  for preset in ('tva_sacred_timeline_three_realms','tva_alpine_three_realms',
+                 'tva_canyon_three_realms','tva_measured_three_realms'):
+   assert new.get('generator.realscale.'+preset), (name,preset)
+  print('INTENTIONAL MODIFICATION: additive TVA labels, historical labels unchanged')
+  continue
  if name==modified_density:
   source=(ROOT/name).read_text()
   assert 'RealDemColumnCache' in source and 'COLUMN_CACHE' in source
