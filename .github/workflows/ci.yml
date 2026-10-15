@@ -137,6 +137,14 @@ jobs:
         working-directory: neoforge
         run: |
           gradle --no-daemon tasks --all | grep -E '^[[:space:]]*runClient([[:space:]]|$)'
+      - name: Lock equal-area concentric climate and actual TVA worldgen wiring
+        run: |
+          mkdir -p build/area-balanced-climate-smoke
+          javac -d build/area-balanced-climate-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/AreaBalancedLatitudeSmoke.java
+          java -cp build/area-balanced-climate-smoke org.realscale.neoforge.AreaBalancedLatitudeSmoke
+          python3 -m unittest discover -s qa -p 'test_tva_climate_recovery.py' -v
       - name: Regress radial latitude, basin climates and scientific geomorphology
         run: |
           python3 -m unittest discover -s qa -p test_radial_climate_math.py -v
