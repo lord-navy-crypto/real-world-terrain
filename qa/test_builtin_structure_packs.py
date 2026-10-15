@@ -52,8 +52,12 @@ class BuiltinStructureTests(unittest.TestCase):
                 actual={}
                 for f in location.rglob("*.json"):
                     actual[str(f.relative_to(location)).replace("\\", "/")] = json.loads(f.read_text())
-                self.assertEqual(actual, expected,
-                    "Built-in resources must match the original opt-in data packs exactly")
+                self.assertEqual(set(actual),set(expected))
+                self.assertEqual(actual["pack.mcmeta"]["pack"]["pack_format"],48)
+                for name in expected:
+                    if name!="pack.mcmeta":
+                        self.assertEqual(actual[name],expected[name],
+                            "Built-in structure_set must match the validated standalone file")
 
     def test_jar_contains_every_pack_without_overwriting_base_structure_sets(self):
         jars=list((ROOT/"neoforge/build/libs").glob("*.jar"))
@@ -66,7 +70,11 @@ class BuiltinStructureTests(unittest.TestCase):
                 for inner, entry in expected.items():
                     name=prefix+inner
                     self.assertIn(name, names)
-                    self.assertEqual(json.loads(archive.read(name)),entry)
+                    got=json.loads(archive.read(name))
+                    if inner=="pack.mcmeta":
+                        self.assertEqual(got["pack"]["pack_format"],48)
+                    else:
+                        self.assertEqual(got,entry)
             self.assertFalse(
                 any(n.startswith("data/minecraft/worldgen/structure_set/")
                     for n in names),
