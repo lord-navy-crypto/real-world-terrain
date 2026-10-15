@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 @Mod("realscale")
 public final class RealScaleMod {
     public RealScaleMod(IEventBus bus) {
+        RealScaleVehicles.register(bus);
         bus.addListener(this::registerDensity);
     }
     private void registerDensity(RegisterEvent event) {
