@@ -169,6 +169,27 @@ class LatitudeClimateTests(unittest.TestCase):
             with self.subTest(invalid=invalid),self.assertRaises(ValueError):
                 self.make(**invalid)
 
+    def test_new_equal_area_mode_preserves_old_radial_mode(self):
+        name,opts,files=self.make(latitude="radial_equal_area",
+                                  latitude_strength=70,climate=65,
+                                  valley=25,basin=20,cold_limit=60)
+        temp=self.get_temperature(files,name)
+        self.assertEqual(temp["type"],"realscale:climate_budget")
+        radial=temp["adjusted"]["base"]["base"]
+        self.assertEqual(radial["type"],"realscale:radial_latitude_temperature")
+        self.assertTrue(radial["balanced"])
+        self.assertTrue(radial["area_balanced"])
+        self.assertEqual(radial["pole_distance"],8192)
+        self.assertEqual(radial["altitude_cooling"],.585)
+        self.assertEqual(opts["latitude"],"radial_equal_area")
+        # Existing presets explicitly keep area_balanced unset; their hashes
+        # and settings retain the pre-change radial_balanced interpretation.
+        old_name,_,old_outputs=self.make(latitude="radial_balanced",
+                                          latitude_strength=70,climate=65,
+                                          valley=25,basin=20,cold_limit=60)
+        old_profile=self.get_temperature(old_outputs,old_name)
+        self.assertNotIn("area_balanced",old_profile["adjusted"]["base"]["base"])
+
     def test_source_registration_and_yacl_controls(self):
         src=ROOT/"neoforge/src/main/java/org/realscale/neoforge"
         mod=(src/"RealScaleMod.java").read_text()
