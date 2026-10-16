@@ -47,6 +47,19 @@ class GeoEcologyTests(unittest.TestCase):
                              "minecraft:stone")
             self.assertIn(p["block"],("minecraft:calcite","minecraft:tuff"))
 
+    def test_desert_outcrops_support_non_sandy_arid_surfaces(self):
+        source=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/GrandEcologyFeature.java").read_text()
+        start=source.index("private static boolean desertOutcrop(")
+        end=source.index("private static boolean arcticStones(",start)
+        method=source[start:end]
+        for material in ("GRAVEL","STONE","TERRACOTTA","COARSE_DIRT",
+                         "SAND","RED_SAND"):
+            self.assertIn("ground.is(Blocks."+material+")",method)
+        self.assertIn("Blocks.COBBLESTONE.defaultBlockState()",method)
+        self.assertIn("Blocks.TERRACOTTA.defaultBlockState()",method)
+        self.assertIn("!level.getFluidState(base.below()).isEmpty()",method)
+        self.assertIn("!level.getBlockState(pos).isAir()",method)
+
     def test_real_ecology_zip_readable(self):
         with tempfile.TemporaryDirectory() as t:
             filename=Path(t)/"eco.zip"
