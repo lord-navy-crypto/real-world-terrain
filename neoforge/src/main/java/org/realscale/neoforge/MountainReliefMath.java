@@ -13,7 +13,7 @@ package org.realscale.neoforge;
  */
 final class MountainReliefMath {
     static final int CELL = 2048;
-    static final int NONE = 0, BASIN = 1, PLATEAU = 2;
+    static final int NONE = 0, BASIN = 1, PLATEAU = 2, MESA = 3;
     private MountainReliefMath() {}
 
     static long mix(long h) {
@@ -43,7 +43,8 @@ final class MountainReliefMath {
         // world-seeded selector shifts site classification among world seeds.
         int perturb = (int)Math.round(GeoMath.clamp(seedResolvedSignal, -1, 1) * 21);
         int chance = Math.floorMod((int)Math.floorMod(h, 100L) + perturb, 100);
-        return chance < 32 ? BASIN : chance < 64 ? PLATEAU : NONE;
+        return chance < 32 ? BASIN : chance < 64 ? PLATEAU
+                : chance < 80 ? MESA : NONE;
     }
 
     static double plateauLevel(long h, double seededSignal) {
@@ -68,6 +69,11 @@ final class MountainReliefMath {
         return 1.0 - GeoMath.smoothstep(0.52, 1.0, radiusFraction);
     }
 
+    // Isolated, flat-topped erosion remnants inspired by real caprock mesas.
+    // The shoulder tapers smoothly to preserve chunk-edge continuity.
+    static double mesaCrest(double radiusFraction) {
+        return 1.0 - GeoMath.smoothstep(0.20, 0.58, radiusFraction);
+    }
     static double inlandUplandGate(double continentalness, double baselineHeight) {
         return GeoMath.smoothstep(-0.10, 0.22, continentalness)
                 * GeoMath.smoothstep(0.65, 1.7, baselineHeight);
@@ -82,6 +88,16 @@ final class MountainReliefMath {
             double depression = basinDepth * basinCore(radiusFraction);
             double rim = basinDepth * 0.15 * raisedRim(radiusFraction);
             return original + gate * (rim - depression);
+        }
+        if (kind == MESA) {
+            // Bounded erosional remnant with a narrow flat summit and a broad
+            // smooth shoulder. No biome replacement, cross-chunk writes or
+            // changes to water, caves or the surface block palette.
+            double target = Math.max(anchorHeight, 1.4) + plateauRise * 0.65;
+            double fit = 1.0 - GeoMath.smoothstep(1.4, 3.0,
+                    Math.abs(original - target));
+            return original + gate * fit * mesaCrest(radiusFraction)
+                    * (target - original);
         }
         // Plateau's central shelf approaches one height referenced to a
         // site anchor, not a quantized per-voxel value (which causes steps).
