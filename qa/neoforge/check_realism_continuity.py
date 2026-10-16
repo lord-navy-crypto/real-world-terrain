@@ -722,7 +722,11 @@ def scan(root,preset="realism_max"):
     print(json.dumps(report,indent=2))
     assert chunks>=30 and len(H)>=500 and len(delta)>=300,"Insufficient actual saved-world sample"
     assert surface_block_missing==0,"Invalid Anvil block palette indices"
-    assert quality["pass"],"Terrain grid/flood regression: "+str(quality["issues"])
+    assert quality["pass"], (
+        "Terrain grid/flood regression: " + str(quality["issues"])
+        + "; spike surface blocks=" + str(isolated_spike_blocks)
+        + "; first spike coordinates=" + str(isolated_spike_examples[:12])
+    )
     assert spawn_report["spawn_known"],"Missing saved overworld spawn coordinates (cannot verify spawn)"
     assert spawn_report["spawn_sampled"],"Saved spawn chunk absent from inspected world (cannot verify spawn)"
     assert not spawn_report["unsafe_ocean_spawn"], (
