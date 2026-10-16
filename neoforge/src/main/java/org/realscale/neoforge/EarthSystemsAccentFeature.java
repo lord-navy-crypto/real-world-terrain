@@ -42,6 +42,16 @@ public final class EarthSystemsAccentFeature extends Feature<NoneFeatureConfigur
         if (!world.getFluidState(floorPos).isEmpty()
                 || !floor.isCollisionShapeFullBlock(world, floorPos)) return false;
 
+        // Reject inappropriate terrain before any block writes. Use local
+        // biome temperature and elevation only as conservative guards;
+        // precipitation, lithology and hydrology remain independent systems.
+        float temperature = world.getBiome(position).value()
+                .getBaseTemperature();
+        if (kind == Kind.COLD_DESERT && temperature > 0.35f) return false;
+        if (kind == Kind.GLACIAL && temperature > 0.25f) return false;
+        if (kind == Kind.CLOUD_FOREST && temperature < 0.25f) return false;
+        if (kind == Kind.SALT_PLAYA && position.getY() > 210) return false;
+
         BlockState accent = switch (kind) {
             case COLD_DESERT -> (floor.is(Blocks.GRAVEL) || floor.is(Blocks.STONE)
                     || floor.is(Blocks.SNOW_BLOCK) || floor.is(Blocks.COARSE_DIRT))
