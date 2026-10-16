@@ -263,10 +263,14 @@ public final class GrandOverworldCaveNetwork {
         int layer=(key&3L)==0 ? 1 : 0;
         Hall anchor=hall(gx,gz,layer);
         if(y<anchor.y())return 0;
+        double width=11+Math.floorMod(key>>>17,8L);
+        // With a maximum winding offset of 5/4 blocks, the vast majority
+        // of voxels can reject the shaft without trigonometry or carving.
+        if(Math.abs(x-anchor.x())>width+5 || Math.abs(z-anchor.z())>width+4)
+            return 0;
         double rise=y-anchor.y();
         double centerX=anchor.x()+Math.sin(rise/92.0)*5;
         double centerZ=anchor.z()+Math.sin(rise/119.0)*4;
-        double width=11+Math.floorMod(key>>>17,8L);
         double dx=(x-centerX)/width;
         if(Math.abs(dx)>=1)return 0;
         double dz=(z-centerZ)/width;
