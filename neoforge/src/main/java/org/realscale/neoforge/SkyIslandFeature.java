@@ -88,7 +88,8 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
         }
         for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
             double ratio = (double)(dx * dx + dz * dz) / (r * r);
-            if (ratio > 1.0) continue;
+            if (ratio > 1.0 || Math.floorDiv(site.x()+dx,16)!=chunkX
+                    || Math.floorDiv(site.z()+dz,16)!=chunkZ) continue;
             int top = surface(site, dx, dz, ratio);
             int thickness = thickness(ratio);
             int x = site.x() + dx, z = site.z() + dz;
