@@ -378,7 +378,7 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
                         || !(ground.is(Blocks.SAND) || ground.is(Blocks.RED_SAND)
                             || ground.is(Blocks.SANDSTONE) || ground.is(Blocks.RED_SANDSTONE)
                             || ground.is(Blocks.GRAVEL) || ground.is(Blocks.STONE)
-                            || ground.is(Blocks.TERRACOTTA) || ground.is(Blocks.COARSE_DIRT)))
+                            || ground.is(Blocks.TERRACOTTA) || ground.is(Blocks.COARSE_DIRT))
                         || !ground.isCollisionShapeFullBlock(level, base.below())) return false;
                 // Real deserts include bedrock pavements, gravel deflation
                 // surfaces and exposed badlands, not just sandy dune fields.
