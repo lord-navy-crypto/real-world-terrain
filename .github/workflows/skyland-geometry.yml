@@ -46,7 +46,7 @@ jobs:
           rcon.port=25575
           PROPERTIES
           done
-      - name: Generate site at X32 Z63 and flush Minecraft chunks
+      - name: Generate current deterministic sky island centers and flush Minecraft chunks
         working-directory: neoforge
         run: |
           python3 - <<'PY'
@@ -76,7 +76,8 @@ jobs:
           import sys
           sys.path.insert(0, "../qa/neoforge")
           from skyland_rcon import command
-          for x,z in ((32,63),(128,63),(-64,63),(32,159),(32,-33)):
+          from sky_island_fixture import archipelago_at_origin
+          for x,z,top in archipelago_at_origin():
               response=command(f"forceload add {x} {z}")
               if "Unknown" in response or "Incorrect" in response:
                   raise RuntimeError("Unable to force-generate island chunk: "+response)
