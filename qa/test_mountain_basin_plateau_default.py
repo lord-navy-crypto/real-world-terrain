@@ -92,6 +92,10 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertIn("ThreadLocal.withInitial",terrain)
         self.assertIn("ThreadLocal.withInitial",temp)
         self.assertIn("Math.floorDiv",terrain)
+        # The cache is keyed by horizontal region only; a Y-dependent anchor
+        # would make site selection depend on whichever vertical sample runs first.
+        self.assertIn("new DensityFunction.SinglePointContext(centerX, 0, centerZ)",terrain)
+        self.assertNotIn("new DensityFunction.SinglePointContext(centerX, ctx.blockY(), centerZ)",terrain)
         self.assertIn("Math.floorDiv",temp)
         self.assertIn("int kind(long h, double seedResolvedSignal)",pure)
         self.assertIn("inlandUplandGate",pure)
