@@ -1,5 +1,6 @@
 """Check sky-island geometry writes remain within the decorating chunk."""
 import unittest
+import json
 from pathlib import Path
 
 JAVA=Path(__file__).resolve().parents[1]/"neoforge/src/main/java/org/realscale/neoforge/SkyIslandFeature.java"
@@ -16,4 +17,15 @@ class SkyLocalChunkGeneration(unittest.TestCase):
         self.assertIn("world.setBlock(new BlockPos(x, y, z), state, 2)",source)
         self.assertIn("Math.floorDiv(beacon.getX(),16)==chunkX",source)
         self.assertIn("Math.floorDiv(beacon.getZ(),16)==chunkZ",source)
+    def test_deep_ocean_chunks_can_trigger_sky_feature(self):
+        root=Path(__file__).resolve().parents[1]
+        path=root/"neoforge/src/main/resources/data/realscale/neoforge/biome_modifier/sky_blossom_island.json"
+        modifier=json.loads(path.read_text())
+        self.assertEqual(modifier["features"],"realscale:sky_blossom_island")
+        self.assertIn("minecraft:deep_ocean",modifier["biomes"])
+        self.assertIn("realscale:sky_blossom_isles",modifier["biomes"])
+        java=JAVA.read_text()
+        self.assertIn("instanceof SkyOceanBiomeSource",java)
+        self.assertIn("world.getBiome(new BlockPos(site.x(), site.topY(), site.z())).is(SKY)",java)
+
 if __name__=="__main__":unittest.main()
