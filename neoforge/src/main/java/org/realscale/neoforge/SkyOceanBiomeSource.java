@@ -76,11 +76,19 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         int x=quartX*4,z=quartZ*4;
         SkyIslandLayout.Site base=SkyIslandLayout.at(x,z);
         // Reject most positions without computing a single remote-climate ring.
-        for(int slot=0;slot<SkyIslandLayout.SLOTS;slot++){
+        // Only the central island needs a remote-ocean eligibility scan
+        // before satellite checks. Once resolved, a tier 1/2 site skips
+        // distant slots entirely. Preserve exactly the same biome result.
+        int tier=-1;
+        int eligibleSlots=SkyIslandLayout.SLOTS;
+        for(int slot=0;slot<eligibleSlots;slot++){
             SkyIslandLayout.Site island=SkyIslandLayout.satellite(base,slot);
             if(!SkyIslandLayout.insideBiome(island,x,y,z))continue;
-            if(slot<SkyIslandLayout.countForTier(isolationTier(base,sampler)))
-                return blossomIsle;
+            if(tier<0){
+                tier=isolationTier(base,sampler);
+                eligibleSlots=SkyIslandLayout.countForTier(tier);
+            }
+            if(slot<eligibleSlots)return blossomIsle;
         }
         return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
     }
