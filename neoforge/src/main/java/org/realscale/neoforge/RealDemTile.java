@@ -63,8 +63,10 @@ public final class RealDemTile {
             if(external) {
                 if(width!=height || width<65 || width>513 || (width&1)!=1
                         || !(width==65||width==129||width==257||width==513)
-                        || originX!=-(width/2)*32 || originZ!=-(height/2)*32
-                        || cellMeters!=32.0 || seaY!=63 || offset!=0.0)
+                        || (cellMeters!=16.0 && cellMeters!=32.0)
+                        || originX!=-(int)(width/2*cellMeters)
+                        || originZ!=-(int)(height/2*cellMeters)
+                        || seaY!=63 || offset!=0.0)
                     throw new IOException("Unsupported georeferenced USGS 3DEP DEM layout");
             } else if(n!=256 || width!=16 || height!=16
                        || cellMeters!=32.0 || seaY!=63 || !Double.isFinite(offset)) {
