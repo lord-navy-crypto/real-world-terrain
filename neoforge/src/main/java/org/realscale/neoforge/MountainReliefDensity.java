@@ -69,7 +69,11 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
         // cast remains within int near playable world limits.
         int centerX = Math.toIntExact(x);
         int centerZ = Math.toIntExact(z);
-        var anchor = new DensityFunction.SinglePointContext(centerX, ctx.blockY(), centerZ);
+        // A regional site must not inherit whichever vertical density sample first
+        // happened to initialize this thread-local cache. Sampling at a fixed
+        // Y makes the site's classification deterministic across chunk order,
+        // noise interpolator Y traversal and worldgen worker scheduling.
+        var anchor = new DensityFunction.SinglePointContext(centerX, 0, centerZ);
         double regionalSignal = selector.compute(anchor);
         site.type = MountainReliefMath.kind(h, regionalSignal);
         site.centerX = centerX;
