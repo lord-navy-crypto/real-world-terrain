@@ -52,6 +52,10 @@ class RiverRegression(unittest.TestCase):
         self.assertIn('state.is(Blocks.SNOW)',java)
         self.assertIn('state.is(Blocks.SHORT_GRASS)',java)
         self.assertIn('covered ? surfaceY - 1 : surfaceY',java)
+        # Reject construction materials and other non-natural supports:
+        # motion-blocking alone is not proof of geological riverbed rock.
+        self.assertIn('!natural(foundation) || !natural(deepFoundation)',java)
+        self.assertNotIn('!deepFoundation.blocksMotion()',java)
         self.assertIn('solidBank(atWaterSurface)',java)
         self.assertIn('solidBank(atWaterBase)',java)
         self.assertIn('tryAdjacentSafeRiverPool(level, chunk, top, floor, maxGrade)',java)
