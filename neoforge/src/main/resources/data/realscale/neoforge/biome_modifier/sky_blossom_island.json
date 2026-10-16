@@ -1,7 +1,11 @@
 {
   "type": "neoforge:add_features",
   "biomes": [
-    "realscale:sky_blossom_isles"
+    "realscale:sky_blossom_isles",
+    "minecraft:deep_ocean",
+    "minecraft:deep_cold_ocean",
+    "minecraft:deep_frozen_ocean",
+    "minecraft:deep_lukewarm_ocean"
   ],
   "features": "realscale:sky_blossom_island",
   "step": "vegetal_decoration"
