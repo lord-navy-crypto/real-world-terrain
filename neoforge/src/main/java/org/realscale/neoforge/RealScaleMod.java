@@ -91,6 +91,30 @@ public final class RealScaleMod {
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.TEMPERATE_SEASONAL_FOREST));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "boreal_taiga_floor"),
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.BOREAL_TAIGA));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_cold_desert"),
+                    new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.COLD_DESERT));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_rocky_plateau"),
+                    new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.ROCKY_PLATEAU));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_salt_playa"),
+                    new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.SALT_PLAYA));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_cloud_forest"),
+                    new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.CLOUD_FOREST));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_alluvial_fan"),
+                    new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.ALLUVIAL_FAN));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_volcanic_highland"),
+                    new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.VOLCANIC_HIGHLAND));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_badlands"),
+                    new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.BADLANDS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_yardang"),
+                    new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.YARDANG));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_karst"),
+                    new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.KARST));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_glacial"),
+                    new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.GLACIAL));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_wetland"),
+                    new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.WETLAND));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_ash_field"),
+                    new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.ASH_FIELD));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "desert_outcrops"),
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.DESERT_OUTCROPS));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "arctic_tundra"),
