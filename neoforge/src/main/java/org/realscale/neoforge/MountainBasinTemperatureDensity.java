@@ -61,9 +61,12 @@ public final class MountainBasinTemperatureDensity
         s.z=(long)gz*MountainReliefMath.CELL
                 +MountainReliefMath.CELL/2+MountainReliefMath.centerOffsetZ(h);
         s.radius=MountainReliefMath.radius(h);
+        // Match mountain_relief's fixed-Y regional classifier exactly.
+        // Otherwise temperature and terrain could disagree depending on
+        // which vertical noise sample first initializes their caches.
         s.kind=MountainReliefMath.kind(h,
                 selector.compute(new DensityFunction.SinglePointContext(
-                        Math.toIntExact((long)s.x),ctx.blockY(),Math.toIntExact((long)s.z))));
+                        Math.toIntExact((long)s.x),0,Math.toIntExact((long)s.z))));
         s.gx=gx;s.gz=gz;
         return s;
     }
