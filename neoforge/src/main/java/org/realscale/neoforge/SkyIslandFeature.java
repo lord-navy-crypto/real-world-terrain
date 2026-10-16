@@ -43,12 +43,16 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
         int chunkX=Math.floorDiv(origin.getX(),16);
         int chunkZ=Math.floorDiv(origin.getZ(),16);
         boolean any=false;
-        // The same island is painted independently by each intersecting
-        // chunk. No feature touches or loads a neighboring chunk.
+        // Feature origins are placement-specific; use the actual chunk
+        // center as the lattice reference. Neighbor cells are considered
+        // because the footprint, not just an island center, may overlap.
+        // Each chunk writes only its own columns.
+        int referenceX=chunkX*16+8;
+        int referenceZ=chunkZ*16+8;
         for (int gx=-1;gx<=1;gx++) for(int gz=-1;gz<=1;gz++) {
             SkyIslandLayout.Site base=SkyIslandLayout.at(
-                origin.getX()+gx*SkyIslandLayout.GRID,
-                origin.getZ()+gz*SkyIslandLayout.GRID);
+                referenceX+gx*SkyIslandLayout.GRID,
+                referenceZ+gz*SkyIslandLayout.GRID);
             for (int slot=0;slot<SkyIslandLayout.SLOTS;slot++) {
                 SkyIslandLayout.Site island=SkyIslandLayout.satellite(base,slot);
                 int r=island.radius();
