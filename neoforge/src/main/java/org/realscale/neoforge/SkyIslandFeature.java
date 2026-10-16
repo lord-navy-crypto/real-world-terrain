@@ -40,22 +40,29 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
             return false; // Existing worlds and vanilla presets cannot create islands.
         WorldGenLevel world = context.level();
         BlockPos origin = context.origin();
-        SkyIslandLayout.Site base = SkyIslandLayout.at(origin.getX(), origin.getZ());
-        boolean any = false;
-        // A group shares the same 512-block lattice cell. Each distinct island
-        // is generated only by its own home chunk, never by the other islands'
-        // decorating chunks. Unselected far-ocean satellites do nothing.
-        for (int slot = 0; slot < SkyIslandLayout.SLOTS; slot++) {
-            SkyIslandLayout.Site site = SkyIslandLayout.satellite(base, slot);
-            if (Math.floorDiv(site.x(), 16) != Math.floorDiv(origin.getX(), 16)
-                    || Math.floorDiv(site.z(), 16) != Math.floorDiv(origin.getZ(), 16))
-                continue;
-            any |= placeIsland(world, site);
+        int chunkX=Math.floorDiv(origin.getX(),16);
+        int chunkZ=Math.floorDiv(origin.getZ(),16);
+        boolean any=false;
+        // The same island is painted independently by each intersecting
+        // chunk. No feature touches or loads a neighboring chunk.
+        for (int gx=-1;gx<=1;gx++) for(int gz=-1;gz<=1;gz++) {
+            SkyIslandLayout.Site base=SkyIslandLayout.at(
+                origin.getX()+gx*SkyIslandLayout.GRID,
+                origin.getZ()+gz*SkyIslandLayout.GRID);
+            for (int slot=0;slot<SkyIslandLayout.SLOTS;slot++) {
+                SkyIslandLayout.Site island=SkyIslandLayout.satellite(base,slot);
+                int r=island.radius();
+                if (island.x()+r<chunkX*16 || island.x()-r>=chunkX*16+16
+                        || island.z()+r<chunkZ*16 || island.z()-r>=chunkZ*16+16)
+                    continue;
+                any |= placeIsland(world,island,chunkX,chunkZ);
+            }
         }
         return any;
     }
 
-    private static boolean placeIsland(WorldGenLevel world, SkyIslandLayout.Site site) {
+    private static boolean placeIsland(WorldGenLevel world, SkyIslandLayout.Site site,
+                                       int chunkX,int chunkZ) {
         if (site.topY() + 4 >= world.getMaxBuildHeight()
                 || site.topY() - 17 <= world.getMinBuildHeight())
             return false;
@@ -69,7 +76,8 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
         // terrain, ocean water, structures, or partial islands on obstruction.
         for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
             double ratio = (double)(dx * dx + dz * dz) / (r * r);
-            if (ratio > 1.0) continue;
+            if (ratio > 1.0 || Math.floorDiv(site.x()+dx,16)!=chunkX
+                    || Math.floorDiv(site.z()+dz,16)!=chunkZ) continue;
             int top = surface(site, dx, dz, ratio);
             int thickness = thickness(ratio);
             for (int y = top - thickness; y <= top + 1; ++y) {
@@ -108,7 +116,9 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
         }
         // A glowing violet beacon makes the sky island recognizably fictional.
         BlockPos beacon = new BlockPos(site.x(), surface(site, 0, 0, 0) + 1, site.z());
-        if (world.getBlockState(beacon).isAir()) {
+        if (Math.floorDiv(beacon.getX(),16)==chunkX
+                && Math.floorDiv(beacon.getZ(),16)==chunkZ
+                && world.getBlockState(beacon).isAir()) {
             world.setBlock(beacon, Blocks.AMETHYST_BLOCK.defaultBlockState(), 2);
             world.setBlock(beacon.above(), Blocks.SEA_LANTERN.defaultBlockState(), 2);
         }
