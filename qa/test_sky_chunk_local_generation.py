@@ -1,0 +1,17 @@
+"""Check sky-island geometry writes remain within the decorating chunk."""
+import unittest
+from pathlib import Path
+
+JAVA=Path(__file__).resolve().parents[1]/"neoforge/src/main/java/org/realscale/neoforge/SkyIslandFeature.java"
+
+class SkyLocalChunkGeneration(unittest.TestCase):
+    def test_neighbor_lattice_and_local_footprint(self):
+        source=JAVA.read_text()
+        self.assertIn("for (int gx=-1;gx<=1;gx++)",source)
+        self.assertIn("for(int gz=-1;gz<=1;gz++)",source)
+        self.assertIn("placeIsland(world,island,chunkX,chunkZ)",source)
+        self.assertEqual(source.count("Math.floorDiv(site.x()+dx,16)!=chunkX"),2)
+        self.assertEqual(source.count("Math.floorDiv(site.z()+dz,16)!=chunkZ"),2)
+        self.assertIn("Math.floorDiv(beacon.getX(),16)==chunkX",source)
+        self.assertIn("Math.floorDiv(beacon.getZ(),16)==chunkZ",source)
+if __name__=="__main__":unittest.main()
