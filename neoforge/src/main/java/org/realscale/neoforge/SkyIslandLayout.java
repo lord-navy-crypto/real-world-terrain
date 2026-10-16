@@ -9,14 +9,14 @@ import java.util.function.BiPredicate;
  */
 public final class SkyIslandLayout {
     private SkyIslandLayout() {}
-    public static final int GRID = 512;
-    public static final int MIN_ISOLATION = 384;
-    public static final int MAX_ISOLATION = 896;
+    public static final int GRID = 320;
+    public static final int MIN_ISOLATION = 256;
+    public static final int MAX_ISOLATION = 640;
     public static final int SLOTS = 5;
     private static final int DIRECTIONS = 16;
-    // Four rings to qualify a sparse offshore island; two more for small
-    // groups, and two additional rings for the densest ocean archipelago.
-    private static final int[] PROBE_RADII = {96,192,288,384,512,640,768,896};
+    // More numerous small near-shore islets and denser far-ocean clusters.
+    // Ocean probes progressively increase the required offshore isolation.
+    private static final int[] PROBE_RADII = {64,128,192,256,352,448,544,640};
     private static final int[] PROBE_X = new int[PROBE_RADII.length*DIRECTIONS];
     private static final int[] PROBE_Z = new int[PROBE_X.length];
     private static final int[][] SATELLITES = {{0,0},{96,0},{-96,0},{0,96},{0,-96}};
