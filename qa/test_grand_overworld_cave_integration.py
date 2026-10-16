@@ -57,7 +57,7 @@ class OverworldCaveContracts(unittest.TestCase):
         self.assertIn("Math.floorMod(key,9L)!=0",layout)
         self.assertIn("MIN_Y = -40",layout)
         self.assertIn("MAX_Y = 1920",layout)
-        self.assertIn("CELL = 512",layout)
+        self.assertIn("CELL = 768",layout)
         self.assertIn("LAYERS = 4",layout)
         self.assertIn("new Passage(47+Math.floorMod",layout)
         self.assertIn("axis==0?3:0",layout)
