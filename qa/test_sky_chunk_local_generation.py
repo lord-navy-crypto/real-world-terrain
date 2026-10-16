@@ -12,6 +12,8 @@ class SkyLocalChunkGeneration(unittest.TestCase):
         self.assertIn("placeIsland(world,island,chunkX,chunkZ)",source)
         self.assertEqual(source.count("Math.floorDiv(site.x()+dx,16)!=chunkX"),2)
         self.assertEqual(source.count("Math.floorDiv(site.z()+dz,16)!=chunkZ"),2)
+        self.assertEqual(source.count("for (int dx = -r; dx <= r; dx++)"),2)
+        self.assertIn("world.setBlock(new BlockPos(x, y, z), state, 2)",source)
         self.assertIn("Math.floorDiv(beacon.getX(),16)==chunkX",source)
         self.assertIn("Math.floorDiv(beacon.getZ(),16)==chunkZ",source)
 if __name__=="__main__":unittest.main()
