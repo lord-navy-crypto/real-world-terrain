@@ -47,7 +47,7 @@ geologically correct lithology constraints yet.
 | Tall vadose canyon passages | Corridor width radius 24-50 and height scaled 2.25x |
 | Extraordinary avenues | Radius 61-93; significantly more room than old 7-11 block tunnels |
 | Long links | Hall-to-neighbor passages cross about 512 blocks, including chunk borders |
-| Exceptional fossil arteries | Rare 3-cell group links spanning about 1536 blocks |
+| Exceptional fossil arteries | Rare 3-cell group links spanning about 2304 blocks |
 | Vertical chimneys | Interlayer connections linking upper and lower hall networks |
 | Surface entrances | Rare, winding shafts tied to an actual low/middle hall and only opened on high ground |
 
@@ -90,7 +90,7 @@ terrain, and MUST be verified with saved-world ocean/river tests.
 1. Source check: all four public Overworld `final_density` routers use the
    registered codec; no legacy raw-world presets regress.
 2. Standalone Java: assert a spectrum of room/passage cross-sections, wide
-   512-block corridors, *real* 1536-block carved route midpoints, cave
+   768-block corridors, *real* 1536-block carved route midpoints, cave
    altitude tiers, deterministic evaluation across worldgen threads, and
    discoverable highland shafts.
 3. NeoForge Java 21 full build plus all CI dimensions, saved Anvil ocean and
