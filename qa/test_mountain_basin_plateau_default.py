@@ -104,6 +104,9 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertIn("inlandUplandGate",pure)
         self.assertIn("return original;",terrain)
         self.assertIn("return original;",temp)
+        self.assertIn("if(exposedLand<=0.0)return original;",temp)
+        self.assertIn("if(highlandGate<=0.0)return original;",temp)
+        self.assertLess(temp.index("if(highlandGate<=0.0)return original;"),temp.index("Site s=site(ctx);"))
 
 
 if __name__=="__main__":
