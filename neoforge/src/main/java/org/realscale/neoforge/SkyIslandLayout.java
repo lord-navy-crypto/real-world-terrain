@@ -19,7 +19,7 @@ public final class SkyIslandLayout {
     private static final int[] PROBE_RADII = {64,128,192,256,352,448,544,640};
     private static final int[] PROBE_X = new int[PROBE_RADII.length*DIRECTIONS];
     private static final int[] PROBE_Z = new int[PROBE_X.length];
-    private static final int[][] SATELLITES = {{0,0},{96,0},{-96,0},{0,96},{0,-96}};
+    private static final int[][] SATELLITES = {{0,0},{80,0},{-80,0},{0,80},{0,-80}};
     static {
         for (int n=0;n<PROBE_RADII.length;n++) for (int i=0;i<DIRECTIONS;i++) {
             double angle=i*2.0*Math.PI/DIRECTIONS;
@@ -38,8 +38,8 @@ public final class SkyIslandLayout {
         long gz=Math.floorDiv((long)blockZ+GRID/2,GRID);
         long hash=mix((gx*0x9e3779b97f4a7c15L)
                ^ (gz*0xc2b2ae3d27d4eb4fL) ^ 0x3bc7f54a83e1d209L);
-        int x=(int)(gx*GRID-128+Math.floorMod(hash,256L));
-        int z=(int)(gz*GRID-128+Math.floorMod(hash>>>15,256L));
+        // Keep each satellite in the same lattice cell as its parent.\n        // Previously +/-128 jitter plus +/-96 offsets escaped the cell,\n        // so home chunks selected a DIFFERENT base and many islands vanished.\n        int x=(int)(gx*GRID-48+Math.floorMod(hash,96L));
+        int z=(int)(gz*GRID-48+Math.floorMod(hash>>>15,96L));
         return new Site(x,z,183+(int)Math.floorMod(hash>>>30,21L),
                 10+(int)Math.floorMod(hash>>>47,5L));
     }
