@@ -419,10 +419,12 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                 BlockState below = level.getBlockState(top.below());
                 BlockState bed = level.getBlockState(top.below(2));
                 BlockState foundation = level.getBlockState(top.below(3));
+                // A motion-blocking layer can still belong to a structure.
+                // Never excavate rivers over non-natural foundations.
                 BlockState deepFoundation = level.getBlockState(top.below(4));
                 // Skip the overhead lookup entirely for unsuitable riverbeds.
                 if (!natural(surface) || !natural(below) || !natural(bed)
-                    || !natural(foundation) || !deepFoundation.blocksMotion())
+                    || !natural(foundation) || !natural(deepFoundation))
                     continue;
                 BlockState overhead = level.getBlockState(top.above());
                 if (!overhead.isAir()
