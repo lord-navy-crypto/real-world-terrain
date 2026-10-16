@@ -60,8 +60,18 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
         double strength=GrandOverworldCaveNetwork.strength(
                 ctx.blockX()+shift*6.0, y+shift*2.0,
                 ctx.blockZ()-shift*5.0);
-        return Math.min(carve(original,smallCaves.compute(ctx),strength),
-                entrance>0 ? -2.0*entrance : original);
+        // Within a sufficiently strong giant void, the network already
+        // wins against the documented lower bound of the small-cave noise.
+        // Skip three additional noise evaluations in those voxels without
+        // changing final density; other codecs with lower bounds still work.
+        double giantVoid = strength>0 ? -2.4*strength : original;
+        double chosen;
+        if (strength>0 && giantVoid<=smallCaves.minValue()) {
+            chosen=giantVoid;
+        } else {
+            chosen=carve(original,smallCaves.compute(ctx),strength);
+        }
+        return Math.min(chosen,entrance>0 ? -2.0*entrance : original);
     }
 
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {

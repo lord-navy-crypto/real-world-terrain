@@ -10,13 +10,16 @@ package org.realscale.neoforge;
  * Crucial invariants:
  *  - world-absolute cell hashes, NEVER chunk-local or order-dependent RNG;
  *  - all shared edges are canonicalized and visible from either cell;
- *  - rooms/satellites stay within their owning 512x512 cell;
+ *  - rooms/satellites stay within their owning 768x768 cell;
  *  - immutable parameters cached per worker; no neighboring chunk access;
  *  - density-only: never changes blocks, dimension heights or fluids itself.
  */
 public final class GrandOverworldCaveNetwork {
     private GrandOverworldCaveNetwork() {}
-    public static final int CELL = 512;
+    // The original 512-block grid over-carved some alpine volumes.
+    // A 768-block grid retains huge halls and long tunnels with fewer
+    // excavated chambers per square kilometer.
+    public static final int CELL = 768;
     public static final int MIN_Y = -40;
     public static final int MAX_Y = 1920;
     public static final int LAYERS = 4;
@@ -114,12 +117,12 @@ public final class GrandOverworldCaveNetwork {
         double y=HEIGHT_LEVELS[layer]+(int)Math.floorMod(h>>>37,(long)HEIGHT_VARIATIONS[layer])
                  -HEIGHT_VARIATIONS[layer]/2;
         int scale=(int)Math.floorMod(h>>>48,100L);
-        // Most chambers are broad; a smaller portion is truly monumental.
+        // Preserve broad and monumental halls, but place them farther apart.
         double rx=scale<13 ? 145+scale : 78+(scale%54);
         double ry=scale<13 ? 105+scale/2.0 : 44+(scale%45);
         double rz=scale<13 ? 135+scale : 75+(scale%52);
-        return new Hall((long)gx*CELL+256+jitterX,y,
-                (long)gz*CELL+256+jitterZ,rx,ry,rz);
+        return new Hall((long)gx*CELL+CELL/2+jitterX,y,
+                (long)gz*CELL+CELL/2+jitterZ,rx,ry,rz);
     }
 
     public static Hall satellite(int gx,int gz,int layer,int index) {
@@ -136,7 +139,7 @@ public final class GrandOverworldCaveNetwork {
         return new Hall(x,y,z,r,r*0.82,r*0.95);
     }
 
-    /** True for the exact 1536-block arterial segments used during density sampling. */
+    /** True for the exact 3-cell arterial segments used during density sampling. */
     static boolean arterialActive(int anchorGX,int anchorGZ,int layer,boolean xAxis) {
         if(layer!=1 && layer!=2) return false;
         long key=mix(cellKey(anchorGX,anchorGZ,layer)^
@@ -260,10 +263,14 @@ public final class GrandOverworldCaveNetwork {
         int layer=(key&3L)==0 ? 1 : 0;
         Hall anchor=hall(gx,gz,layer);
         if(y<anchor.y())return 0;
+        double width=11+Math.floorMod(key>>>17,8L);
+        // With a maximum winding offset of 5/4 blocks, the vast majority
+        // of voxels can reject the shaft without trigonometry or carving.
+        if(Math.abs(x-anchor.x())>width+5 || Math.abs(z-anchor.z())>width+4)
+            return 0;
         double rise=y-anchor.y();
         double centerX=anchor.x()+Math.sin(rise/92.0)*5;
         double centerZ=anchor.z()+Math.sin(rise/119.0)*4;
-        double width=11+Math.floorMod(key>>>17,8L);
         double dx=(x-centerX)/width;
         if(Math.abs(dx)>=1)return 0;
         double dz=(z-centerZ)/width;
