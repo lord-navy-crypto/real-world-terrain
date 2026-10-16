@@ -80,6 +80,7 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
         site.centerZ = centerZ;
         site.radius = MountainReliefMath.radius(h);
         site.anchorHeight = site.type == MountainReliefMath.PLATEAU
+                || site.type == MountainReliefMath.MESA
                 ? MountainReliefMath.plateauLevel(h, regionalSignal) : 0;
         site.gx = gx;
         site.gz = gz;
