@@ -376,11 +376,23 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
                 if (!sameChunk(origin, base)
                         || !level.getFluidState(base.below()).isEmpty()
                         || !(ground.is(Blocks.SAND) || ground.is(Blocks.RED_SAND)
-                            || ground.is(Blocks.SANDSTONE) || ground.is(Blocks.RED_SANDSTONE))
+                            || ground.is(Blocks.SANDSTONE) || ground.is(Blocks.RED_SANDSTONE)
+                            || ground.is(Blocks.GRAVEL) || ground.is(Blocks.STONE)
+                            || ground.is(Blocks.TERRACOTTA) || ground.is(Blocks.COARSE_DIRT)))
                         || !ground.isCollisionShapeFullBlock(level, base.below())) return false;
+                // Real deserts include bedrock pavements, gravel deflation
+                // surfaces and exposed badlands, not just sandy dune fields.
+                // Match the local substrate rather than replacing it with
+                // sandstone everywhere. Never clear snow or water.
                 BlockState rock = ground.is(Blocks.RED_SAND)
                         || ground.is(Blocks.RED_SANDSTONE)
                         ? Blocks.RED_SANDSTONE.defaultBlockState()
+                        : ground.is(Blocks.GRAVEL) || ground.is(Blocks.COARSE_DIRT)
+                        ? Blocks.COBBLESTONE.defaultBlockState()
+                        : ground.is(Blocks.STONE)
+                        ? Blocks.STONE.defaultBlockState()
+                        : ground.is(Blocks.TERRACOTTA)
+                        ? Blocks.TERRACOTTA.defaultBlockState()
                         : Blocks.SANDSTONE.defaultBlockState();
                 for (int y = 0; y < height; y++) {
                     if (y > 0 && random.nextBoolean()) continue;
