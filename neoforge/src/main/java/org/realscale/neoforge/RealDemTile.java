@@ -1,6 +1,8 @@
 package org.realscale.neoforge;
 
 import java.io.*;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,6 +30,7 @@ public final class RealDemTile {
             "d43f41f4343fb9606e9647bcdd1ebcd667ec5b9f0334ffc6fef007f7fef19557";
     private static final Path EXTERNAL = Path.of("config","realscale","usgs_3dep.rgt.gz");
     private static final Path CHECKSUM = Path.of("config","realscale","usgs_3dep.sha256");
+    private static final Path PROVENANCE = Path.of("config","realscale","usgs_3dep.json");
     private static final int EXTERNAL_MAX_BYTES = 10*1024*1024;
 
     /**
@@ -105,19 +108,31 @@ public final class RealDemTile {
      * or a different raster could produce broken save/chunk borders.
      */
     public static RealDemTile loadMeasured() {
-        if(!Files.exists(EXTERNAL) && !Files.exists(CHECKSUM))return load();
-        if(!Files.isRegularFile(EXTERNAL)||!Files.isRegularFile(CHECKSUM))
-            throw new IllegalStateException("USGS import must include RGT1 and matching SHA");
+        if(!Files.exists(EXTERNAL) && !Files.exists(CHECKSUM)
+                && !Files.exists(PROVENANCE))return load();
+        if(!Files.isRegularFile(EXTERNAL)||!Files.isRegularFile(CHECKSUM)
+                ||!Files.isRegularFile(PROVENANCE))
+            throw new IllegalStateException("USGS import requires data, SHA and provenance JSON");
         try {
             if(Files.size(EXTERNAL)>EXTERNAL_MAX_BYTES)
                 throw new IOException("USGS DEM too large");
             String sha=Files.readString(CHECKSUM,StandardCharsets.US_ASCII).trim();
             if(!sha.matches("[0-9a-f]{64}"))
                 throw new IOException("USGS DEM SHA-256 sidecar invalid");
+            JsonObject info;
+            try(var reader=Files.newBufferedReader(PROVENANCE,StandardCharsets.UTF_8)) {
+                info=JsonParser.parseReader(reader).getAsJsonObject();
+            }
+            if(!sha.equals(info.get("rgt1_sha256").getAsString())
+                    || !info.get("source_url").getAsString().startsWith(
+                        "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/exportImage?")
+                    || !info.get("coordinate_reference_system").getAsString().startsWith("EPSG:26910")
+                    || !info.get("elevation_units").getAsString().equals("metres"))
+                throw new IOException("USGS import provenance or checksum mismatch");
             try(InputStream in=Files.newInputStream(EXTERNAL)) {
                 return new RealDemTile(in,sha,true);
             }
-        } catch(IOException e) {
+        } catch(IOException | RuntimeException e) {
             throw new IllegalStateException("Invalid external 3DEP DEM; "
                     +"remove/correct the data before opening the world: "
                     +e.getMessage(),e);
