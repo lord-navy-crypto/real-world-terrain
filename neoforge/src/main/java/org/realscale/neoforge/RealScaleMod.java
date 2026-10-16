@@ -38,6 +38,10 @@ public final class RealScaleMod {
                     NaturalEcotoneBiomeSource.CODEC)
         );
         event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cross_realm_showcase"),
+                    CrossRealmShowcaseBiomeSource.CODEC)
+        );
+        event.register(Registries.BIOME_SOURCE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cross_realm_invasion"),
                     CrossRealmBiomeSource.CODEC)
         );
