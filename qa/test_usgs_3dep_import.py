@@ -26,7 +26,7 @@ class MeasuredUSGSImportTests(unittest.TestCase):
             "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/"))
         self.assertEqual(module.SOURCE, "USGS 3DEP bare-earth elevation dynamic image service")
         self.assertEqual(module.EPSG,26910)
-        self.assertEqual(module.CELL_METRES,32)
+        self.assertEqual(module.CELL_METRES,16)
         self.assertEqual(module.GAME_SEA_LEVEL,63)
         with self.assertRaises(ValueError):
             module.fetch_raw_tiff("https://example.org/not-a-usgs-file")
@@ -41,11 +41,11 @@ class MeasuredUSGSImportTests(unittest.TestCase):
             import rasterio
         except ImportError:
             self.skipTest("rasterio is required for live import only")
-        r=module.build_request(size=257)
+        r=module.build_request(size=513)
         self.assertEqual(r["epsg"],26910)
-        self.assertEqual(r["grid_size"],257)
-        self.assertAlmostEqual(r["bbox"][2]-r["bbox"][0],257*32,places=6)
-        self.assertAlmostEqual(r["bbox"][3]-r["bbox"][1],257*32,places=6)
+        self.assertEqual(r["grid_size"],513)
+        self.assertAlmostEqual(r["bbox"][2]-r["bbox"][0],513*16,places=6)
+        self.assertAlmostEqual(r["bbox"][3]-r["bbox"][1],513*16,places=6)
         self.assertEqual(r["url"].split("?")[0],module.SERVICE)
         self.assertIn("pixelType=F32",r["url"])
         self.assertIn("bboxSR=26910",r["url"])
@@ -59,8 +59,8 @@ class MeasuredUSGSImportTests(unittest.TestCase):
                 raw=module.build_rgt1(example,n)
                 decoded=gzip.decompress(raw)
                 h=struct.unpack_from(">6i2d",decoded)
-                self.assertEqual(h,(0x52475431,n,n,-(n//2)*32,
-                                    -(n//2)*32,63,32.0,0.0))
+                self.assertEqual(h,(0x52475431,n,n,-(n//2)*16,
+                                    -(n//2)*16,63,16.0,0.0))
                 offset=struct.calcsize(">6i2d")
                 self.assertAlmostEqual(struct.unpack_from(">f",decoded,offset)[0],
                                        example[0][0],places=3)
