@@ -77,7 +77,7 @@ def fetch_raw_tiff(url: str) -> bytes:
         raw = resp.read(MAX_TIFF_BYTES + 1)
     if len(raw) > MAX_TIFF_BYTES or len(raw) < 64:
         raise RuntimeError("Unexpected source raster size")
-    if raw[:4] not in (b"II*\\x00".replace(b"\\x00",b"\x00"), b"MM\x00*"):
+    if raw[:4] not in (bytes((0x49,0x49,0x2a,0)), bytes((0x4d,0x4d,0,0x2a))):
         raise RuntimeError("USGS response was not TIFF; refusing preview/HTML/JSON")
     return raw
 
@@ -122,21 +122,24 @@ def unpack_real_raster(data: bytes, request: dict):
 
 def build_rgt1(values, size: int) -> bytes:
     """RGT1 = big-endian source elevations + neutral optional context arrays."""
-    import numpy as np
-    if size not in GRID_CHOICES or np.shape(values) != (size, size):
+    if size not in GRID_CHOICES or len(values) != size:
         raise ValueError("Expected a square, odd USGS raster")
-    arr = np.asarray(values, dtype="float64")
-    if not np.isfinite(arr).all():
-        raise ValueError("Invalid source height")
-    if arr.min() + GAME_SEA_LEVEL < MIN_WORLD_Y or arr.max() + GAME_SEA_LEVEL > MAX_WORLD_Y:
-        raise ValueError("Elevation outside 1:1 Minecraft vertical limits")
     n = size * size
     origin = -(size // 2) * CELL_METRES
     header = struct.pack(">6i2d", 0x52475431, size, size, origin, origin,
                          GAME_SEA_LEVEL, float(CELL_METRES), 0.0)
-    heights = arr.astype(">f4", copy=False).tobytes(order="C")
-    zeros = b"\x00" * (n * 8 + n)  # rainfall + lithology (no fabricated observations)
-    return gzip.compress(header + heights + zeros, compresslevel=9, mtime=0)
+    elevations = bytearray(n * 4)
+    for z, row in enumerate(values):
+        if len(row) != size:
+            raise ValueError("Unexpected source raster width")
+        for x, elevation in enumerate(row):
+            elevation = float(elevation)
+            if not math.isfinite(elevation) or not (
+                    MIN_WORLD_Y <= elevation + GAME_SEA_LEVEL <= MAX_WORLD_Y):
+                raise ValueError("Nonfinite or out-of-bounds USGS elevation")
+            struct.pack_into(">f", elevations, (z*size+x)*4, elevation)
+    zeros = b"\x00" * (n * 8 + n)  # neutral rainfall/lithology, NOT made-up measurements
+    return gzip.compress(header + elevations + zeros, compresslevel=9, mtime=0)
 
 
 def save_import(out_dir: Path, raster: bytes, request: dict):
