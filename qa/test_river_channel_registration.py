@@ -52,11 +52,8 @@ class RiverRegression(unittest.TestCase):
         self.assertIn('state.is(Blocks.SNOW)',java)
         self.assertIn('state.is(Blocks.SHORT_GRASS)',java)
         self.assertIn('covered ? surfaceY - 1 : surfaceY',java)
-        # Unrestricted river sources should not spill off sheer local cliffs.
-        self.assertIn('boolean sheerLocalDrop = false;',java)
-        self.assertIn('int neighborSurface = originalSurface[(nx << 4) | nz];',java)
-        self.assertIn('if (y - neighborSurface > 12)',java)
-        self.assertIn('!sheerLocalDrop && tryOpenNavigableChannel(',java)
+        self.assertIn('if (tryOpenNavigableChannel(',java)
+        self.assertNotIn('sheerLocalDrop',java)
         # Reject construction materials and other non-natural supports:
         # motion-blocking alone is not proof of geological riverbed rock.
         self.assertIn('!natural(foundation) || !natural(deepFoundation)',java)
