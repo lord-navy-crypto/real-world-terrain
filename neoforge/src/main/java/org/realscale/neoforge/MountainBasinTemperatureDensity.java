@@ -76,13 +76,19 @@ public final class MountainBasinTemperatureDensity
         if(warmth==0)return original;
         double continent=continents.compute(ctx);
         if(continent<=-0.10)return original;
+        // Reject non-uplands and deep voxels BEFORE looking up a regional
+        // site. These multipliers are exactly zero here, so the early return
+        // preserves the old climate output while saving hashed site and
+        // selector work for the majority of low-altitude/no-basin samples.
+        double exposedLand=GeoMath.smoothstep(80,200,ctx.blockY());
+        if(exposedLand<=0.0)return original;
+        double highlandGate=MountainReliefMath.inlandUplandGate(
+                continent,heightSignal.compute(ctx));
+        if(highlandGate<=0.0)return original;
         Site s=site(ctx);
         if(s.kind!=MountainReliefMath.BASIN)return original;
         double r=Math.hypot(ctx.blockX()-s.x,ctx.blockZ()-s.z)/s.radius;
         if(r>=0.78)return original;
-        double highlandGate=MountainReliefMath.inlandUplandGate(
-                continent,heightSignal.compute(ctx));
-        double exposedLand=GeoMath.smoothstep(80,200,ctx.blockY());
         return original + warmth*MountainReliefMath.basinCore(r)
                 *highlandGate*exposedLand;
     }
