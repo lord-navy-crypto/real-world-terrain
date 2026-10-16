@@ -583,6 +583,14 @@ def scan(root,preset="realism_max"):
     isolated_spikes=0
     isolated_spike_examples=[]
     isolated_spike_blocks={}
+    vegetation_spikes=0
+    exposed_ground_spikes=0
+    vegetation_surface={"minecraft:bamboo", "minecraft:oak_leaves",
+                        "minecraft:birch_leaves", "minecraft:spruce_leaves",
+                        "minecraft:jungle_leaves", "minecraft:acacia_leaves",
+                        "minecraft:dark_oak_leaves", "minecraft:mangrove_leaves",
+                        "minecraft:cherry_leaves", "minecraft:short_grass",
+                        "minecraft:tall_grass", "minecraft:fern", "minecraft:large_fern"}
     for (x,z),h in H.items():
         for nx,nz in ((x+1,z),(x,z+1)):
             if (nx,nz) not in H:continue
@@ -604,6 +612,10 @@ def scan(root,preset="realism_max"):
                 isolated_spikes+=1
                 surface=surface_blocks.get((x,z)) or "UNKNOWN"
                 isolated_spike_blocks[surface]=isolated_spike_blocks.get(surface,0)+1
+                if surface in vegetation_surface:
+                    vegetation_spikes+=1
+                else:
+                    exposed_ground_spikes+=1
                 if len(isolated_spike_examples)<64:
                     isolated_spike_examples.append({
                         "x":x,"z":z,"height":h,"neighbor_heights":neighbors,
@@ -648,6 +660,8 @@ def scan(root,preset="realism_max"):
       "surface_quality_gates":quality,
       "isolated_spike_examples":isolated_spike_examples,
       "isolated_spike_surface_block_counts":isolated_spike_blocks,
+      "vegetation_surface_spike_count":vegetation_spikes,
+      "other_surface_spike_count":exposed_ground_spikes,
       "spawn_level_dat":spawn_file,
       "spawn_surface_audit":spawn_report,
       "ocean_biome_surface_columns":sum(
@@ -725,6 +739,8 @@ def scan(root,preset="realism_max"):
     assert quality["pass"], (
         "Terrain grid/flood regression: " + str(quality["issues"])
         + "; spike surface blocks=" + str(isolated_spike_blocks)
+        + "; vegetation candidates=" + str(vegetation_spikes)
+        + "; other surface candidates=" + str(exposed_ground_spikes)
         + "; first spike coordinates=" + str(isolated_spike_examples[:12])
     )
     assert spawn_report["spawn_known"],"Missing saved overworld spawn coordinates (cannot verify spawn)"
