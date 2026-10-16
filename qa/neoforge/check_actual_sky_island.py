@@ -44,32 +44,38 @@ while True:
 # Validate vertical geology at the deterministic test island center, not
 # just palette membership (palettes alone cannot prove connected structures).
 from realscale_headless_qa import iter_region_chunks, get_block
-center_chunk = None
-for chunk in iter_region_chunks(root / "region/r.0.0.mca"):
-    if chunk.get("xPos") == 2 and chunk.get("zPos") == 3:
-        center_chunk = chunk
-        break
-assert center_chunk is not None, "Island center chunk (2,3) missing"
+from sky_island_fixture import archipelago_at_origin
+candidates=archipelago_at_origin()
+center_x,center_z,center_top=candidates[0]
+center_chunk=None
+for region_path in regions:
+    for chunk in iter_region_chunks(region_path):
+        if chunk.get("xPos")==center_x//16 and chunk.get("zPos")==center_z//16:
+            center_chunk=chunk
+            break
+    if center_chunk is not None:break
+assert center_chunk is not None, ("Island center chunk missing",center_x,center_z)
 def block(y):
-    return get_block(center_chunk, 0, y, 15)  # world X=32, Z=63
+    return get_block(center_chunk,center_x%16,y,center_z%16)
 expected = {
-    174: {"minecraft:air"},
-    175: {"minecraft:stone","minecraft:end_stone"},
-    178: {"minecraft:stone","minecraft:end_stone"},
-    181: {"minecraft:dirt"},
-    182: {"minecraft:dirt"},
-    183: {"minecraft:moss_block","minecraft:grass_block"},
-    184: {"minecraft:amethyst_block"},
-    185: {"minecraft:sea_lantern"},
-    186: {"minecraft:air"},
+    -9: {"minecraft:air"},
+    -8: {"minecraft:stone","minecraft:end_stone"},
+    -5: {"minecraft:stone","minecraft:end_stone"},
+    -2: {"minecraft:dirt"},
+    -1: {"minecraft:dirt"},
+     0: {"minecraft:moss_block","minecraft:grass_block"},
+     1: {"minecraft:amethyst_block"},
+     2: {"minecraft:sea_lantern"},
+     3: {"minecraft:air"},
 }
-for y, allowed in expected.items():
-    observed = block(y)
-    assert observed in allowed, (y, observed, sorted(allowed))
-sky_sections = [section for section in center_chunk.get("sections", [])
-                if "realscale:sky_blossom_isles" in section.get("biomes", {}).get("palette", [])]
-assert any(section.get("Y") == 11 for section in sky_sections), "Sky biome missing at Y176..191"
-print("PASS: verified real floating geological column and sky-specific biome at X32/Z63")
+for dy,allowed in expected.items():
+    observed=block(center_top+dy)
+    assert observed in allowed,(center_x,center_z,center_top+dy,observed,sorted(allowed))
+sky_sections=[section for section in center_chunk.get("sections",[])
+              if "realscale:sky_blossom_isles" in section.get("biomes",{}).get("palette",[])]
+assert any(section.get("Y")==center_top//16 for section in sky_sections), (
+    "Sky biome missing at deterministic island center",center_x,center_z,center_top)
+print("PASS: real floating geological column and sky biome",candidates[0])
 
 # The forced ocean biome alone does not guarantee submerged terrain. Check the
 # actual saved ocean world independently below sea level, and forbid any sky
@@ -110,7 +116,6 @@ print("PASS: original deep ocean biome preserved below sea level, real seawater 
 # Require every member of the maximal five-island archipelago to become a
 # FULLY DECORATED chunk, not just a sky biome in a partially saved protochunk.
 # The forced-deep-ocean fixture always qualifies for isolation tier 3.
-candidates = ((32,63,183),(128,63,181),(-64,63,185),(32,159,186),(32,-33,186))
 wanted = {(x//16,z//16): (x,z,top) for x,z,top in candidates}
 found_chunks = {}
 for path in regions:
