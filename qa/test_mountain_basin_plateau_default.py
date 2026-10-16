@@ -97,6 +97,9 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertIn("new DensityFunction.SinglePointContext(centerX, 0, centerZ)",terrain)
         self.assertNotIn("new DensityFunction.SinglePointContext(centerX, ctx.blockY(), centerZ)",terrain)
         self.assertIn("Math.floorDiv",temp)
+        # Terrain and basin-climate MUST classify the same horizontal site.
+        self.assertIn("Math.toIntExact((long)s.x),0,Math.toIntExact((long)s.z)",temp)
+        self.assertNotIn("Math.toIntExact((long)s.x),ctx.blockY(),Math.toIntExact((long)s.z)",temp)
         self.assertIn("int kind(long h, double seedResolvedSignal)",pure)
         self.assertIn("inlandUplandGate",pure)
         self.assertIn("return original;",terrain)
