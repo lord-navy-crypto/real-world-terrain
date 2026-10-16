@@ -17,10 +17,10 @@ public final class SkyIslandLayoutSmoke {
                 check(site.equals(SkyIslandLayout.at(x,z)),"site determinism");
                 check(site.radius()>=10&&site.radius()<=14,"radius");
                 check(site.topY()>=183&&site.topY()<=203,"height");
-                long gx = Math.floorDiv((long)x + 256, 512);
-                long gz = Math.floorDiv((long)z + 256, 512);
-                check(site.x() >= gx*512-128 && site.x() <= gx*512+127,"x jitter bounds");
-                check(site.z() >= gz*512-128 && site.z() <= gz*512+127,"z jitter bounds");
+                long gx = Math.floorDiv((long)x + SkyIslandLayout.GRID/2, SkyIslandLayout.GRID);
+                long gz = Math.floorDiv((long)z + SkyIslandLayout.GRID/2, SkyIslandLayout.GRID);
+                check(site.x() >= gx*SkyIslandLayout.GRID-128 && site.x() <= gx*SkyIslandLayout.GRID+127,"x jitter bounds");
+                check(site.z() >= gz*SkyIslandLayout.GRID-128 && site.z() <= gz*SkyIslandLayout.GRID+127,"z jitter bounds");
                 check(!SkyIslandLayout.insideBiome(site,site.x(),64,site.z()),"never paint ocean Y64");
                 check(SkyIslandLayout.insideBiome(site,site.x(),site.topY(),site.z()),"center biome");
                 check(!SkyIslandLayout.insideBiome(site,site.x()+site.radius()+1,
@@ -33,10 +33,10 @@ public final class SkyIslandLayoutSmoke {
         check(SkyIslandLayout.remoteDeepOcean(s, (x,z)->true, (x,z)->true),"open ocean qualifies");
         check(!SkyIslandLayout.remoteDeepOcean(s, (x,z)->false, (x,z)->true),
                 "shallow open ocean cannot qualify");
-        check(!SkyIslandLayout.remoteDeepOcean(s, (x,z)->true, (x,z)->x!=s.x()+384),
+        check(!SkyIslandLayout.remoteDeepOcean(s, (x,z)->true, (x,z)->x!=s.x()+256),
                 "sampled coastline blocks island");
-        int wedgeX = (int)Math.round(384 * Math.cos(Math.PI / 8));
-        int wedgeZ = (int)Math.round(384 * Math.sin(Math.PI / 8));
+        int wedgeX = (int)Math.round(256 * Math.cos(Math.PI / 8));
+        int wedgeZ = (int)Math.round(256 * Math.sin(Math.PI / 8));
         check(!SkyIslandLayout.remoteDeepOcean(s, (x,z)->true,
                     (x,z)->x != s.x()+wedgeX || z != s.z()+wedgeZ),
                 "coastline between old compass rays must veto island");
@@ -52,13 +52,13 @@ public final class SkyIslandLayoutSmoke {
             check(tier>=0&&tier<=3,"isolation tier bounded");
         }
         check(SkyIslandLayout.oceanTier(s,(x,z)->true,
-            (x,z)->distSq(s,x,z)<350L*350)==0,"near coast rejects island");
+            (x,z)->distSq(s,x,z)<220L*220)==0,"near coast rejects island");
         check(SkyIslandLayout.oceanTier(s,(x,z)->true,
-            (x,z)->distSq(s,x,z)<450L*450)==1,"outer shelf yields single sky island");
+            (x,z)->distSq(s,x,z)<320L*320)==1,"outer shelf yields single sky island");
         check(SkyIslandLayout.oceanTier(s,(x,z)->true,
-            (x,z)->distSq(s,x,z)<700L*700)==2,"middle ocean yields three islands");
+            (x,z)->distSq(s,x,z)<520L*520)==2,"middle ocean yields three islands");
         check(SkyIslandLayout.oceanTier(s,(x,z)->true,
-            (x,z)->distSq(s,x,z)<1000L*1000)==3,"remote ocean yields five islands");
+            (x,z)->distSq(s,x,z)<800L*800)==3,"remote ocean yields five islands");
         check(SkyIslandLayout.countForTier(0)==0&&SkyIslandLayout.countForTier(1)==1
             &&SkyIslandLayout.countForTier(2)==3&&SkyIslandLayout.countForTier(3)==5,
             "archipelago density strictly increases away from coast");
