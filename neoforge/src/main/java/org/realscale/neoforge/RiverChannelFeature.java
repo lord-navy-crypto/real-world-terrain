@@ -431,29 +431,9 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
                         && !(covered && removableCover(overhead)))
                     continue;
 
-                // Avoid opening an unrestricted water source beside a sheer
-                // in-chunk cliff. Measure the ORIGINAL pre-carving surface,
-                // not a mutable heightmap altered by previous river columns.
-                // At chunk edges, omit unknown neighbors rather than read
-                // or force-load adjacent chunks during world generation.
-                boolean sheerLocalDrop = false;
-                int localX = x - chunk.getMinBlockX();
-                int localZ = z - chunk.getMinBlockZ();
-                for (Direction side : Direction.Plane.HORIZONTAL) {
-                    int nx = localX + side.getStepX();
-                    int nz = localZ + side.getStepZ();
-                    if (nx < 0 || nx >= 16 || nz < 0 || nz >= 16)
-                        continue;
-                    int neighborSurface = originalSurface[(nx << 4) | nz];
-                    if (y - neighborSurface > 12) {
-                        sheerLocalDrop = true;
-                        break;
-                    }
-                }
-
-                // Navigable river water on ordinary slopes is retained;
-                // extreme exposed cliff faces use the bank-guarded fallback.
-                if (!sheerLocalDrop && tryOpenNavigableChannel(
+                // Open channels and natural overbank flooding are intentional.
+                // Do not suppress exposed water merely due to nearby cliffs.
+                if (tryOpenNavigableChannel(
                         level, top, coverPos, covered, frozen, floor)) {
                     made = true;
                     continue;
