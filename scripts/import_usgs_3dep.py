@@ -28,7 +28,8 @@ SERVICE = "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/
 SOURCE = "USGS 3DEP bare-earth elevation dynamic image service"
 EPSG = 26910  # NAD83 / UTM zone 10N for Big Sur, California
 GRID_CHOICES = (65, 129, 257, 513)
-CELL_METRES = 32
+CELL_METRES = 16
+CELL_CHOICES = (16, 32)
 MAX_TIFF_BYTES = 32 * 1024 * 1024
 GAME_SEA_LEVEL = 63
 MIN_WORLD_Y, MAX_WORLD_Y = -64, 2031
@@ -36,11 +37,11 @@ CENTER_LAT = 36.24
 CENTER_LON = -121.81
 
 
-def build_request(latitude=CENTER_LAT, longitude=CENTER_LON, size=257,
+def build_request(latitude=CENTER_LAT, longitude=CENTER_LON, size=513,
                   spacing=CELL_METRES):
     """Construct the exact raster geometry, 1 game block = 1 DEM metre."""
-    if size not in GRID_CHOICES or spacing != CELL_METRES:
-        raise ValueError("Supported odd grid sizes 65/129/257/513 at 32m spacing")
+    if size not in GRID_CHOICES or spacing not in CELL_CHOICES:
+        raise ValueError("Supported grid sizes 65/129/257/513 at 16m or 32m spacing")
     if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
         raise ValueError("Invalid coordinates")
     if not (34.0 <= latitude <= 39.0 and -124.0 <= longitude <= -117.0):
@@ -120,14 +121,14 @@ def unpack_real_raster(data: bytes, request: dict):
             return arr
 
 
-def build_rgt1(values, size: int) -> bytes:
+def build_rgt1(values, size: int, spacing: int = CELL_METRES) -> bytes:
     """RGT1 = big-endian source elevations + neutral optional context arrays."""
-    if size not in GRID_CHOICES or len(values) != size:
-        raise ValueError("Expected a square, odd USGS raster")
+    if size not in GRID_CHOICES or spacing not in CELL_CHOICES or len(values) != size:
+        raise ValueError("Expected a square, odd USGS raster with 16/32m spacing")
     n = size * size
-    origin = -(size // 2) * CELL_METRES
+    origin = -(size // 2) * spacing
     header = struct.pack(">6i2d", 0x52475431, size, size, origin, origin,
-                         GAME_SEA_LEVEL, float(CELL_METRES), 0.0)
+                         GAME_SEA_LEVEL, float(spacing), 0.0)
     elevations = bytearray(n * 4)
     for z, row in enumerate(values):
         if len(row) != size:
@@ -144,7 +145,7 @@ def build_rgt1(values, size: int) -> bytes:
 
 def save_import(out_dir: Path, raster: bytes, request: dict):
     heights = unpack_real_raster(raster, request)
-    pack = build_rgt1(heights, request["grid_size"])
+    pack = build_rgt1(heights, request["grid_size"], request["spacing"])
     digest = hashlib.sha256(pack).hexdigest()
     manifest = {
         "format": "RealScale RGT1 3DEP extension",
@@ -157,9 +158,9 @@ def save_import(out_dir: Path, raster: bytes, request: dict):
         "vertical_reference": "USGS 3DEP; typically NAVD88 in CONUS",
         "minecraft_blocks_per_metre": 1,
         "minecraft_sea_level": GAME_SEA_LEVEL,
-        "minecraft_origin_xz": [-(request["grid_size"]//2)*CELL_METRES]*2,
+        "minecraft_origin_xz": [-(request["grid_size"]//2)*request["spacing"]]*2,
         "data_grid": [request["grid_size"]]*2,
-        "cell_size_metres": CELL_METRES,
+        "cell_size_metres": request["spacing"],
         "measured_ground_elevation_min_m": float(heights.min()),
         "measured_ground_elevation_max_m": float(heights.max()),
         "source_center_lat_lon": [request["latitude"], request["longitude"]],
@@ -186,11 +187,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--latitude", type=float, default=CENTER_LAT)
     parser.add_argument("--longitude", type=float, default=CENTER_LON)
-    parser.add_argument("--grid", type=int, default=257, choices=GRID_CHOICES)
+    parser.add_argument("--grid", type=int, default=513, choices=GRID_CHOICES)
+    parser.add_argument("--spacing", type=int, default=CELL_METRES, choices=CELL_CHOICES)
     parser.add_argument("--output", type=Path, default=Path("config/realscale"))
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    request = build_request(args.latitude, args.longitude, args.grid)
+    request = build_request(args.latitude, args.longitude, args.grid, args.spacing)
     if args.dry_run:
         print(json.dumps(request, indent=2))
         return
