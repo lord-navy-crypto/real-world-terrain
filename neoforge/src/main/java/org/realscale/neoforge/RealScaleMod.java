@@ -61,6 +61,12 @@ public final class RealScaleMod {
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.UPLAND_SCREE));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "coastal_driftwood"),
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.COASTAL_DRIFTWOOD));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_nether"),
+                    new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.NETHER));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_end"),
+                    new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.END));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_overworld"),
+                    new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.OVERWORLD));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_blossom_island"),
                     new SkyIslandFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"),
