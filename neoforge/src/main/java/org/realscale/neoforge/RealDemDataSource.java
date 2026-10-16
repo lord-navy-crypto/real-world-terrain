@@ -1,8 +1,8 @@
 package org.realscale.neoforge;
 
 import java.io.*;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -89,6 +89,17 @@ final class RealDemDataSource {
         }
     }
 
+    /** Extract only simple string metadata fields without a Minecraft or Gson dependency.
+     * The raster is separately SHA-pinned; metadata is not used to generate heights.
+     */
+    private static String jsonString(String raw,String key) throws IOException {
+        Pattern pattern=Pattern.compile("\\\"" + Pattern.quote(key)
+                + "\\\"\\s*:\\s*\\\"([^\\\"\\\\]*)\\\"");
+        Matcher match=pattern.matcher(raw);
+        if(!match.find())throw new IOException("Missing DEM provenance field: "+key);
+        return match.group(1);
+    }
+
     /** Keep the exact SHA-locked original RealDemTile code unchanged. */
     private static RealDemDataSource legacy() {
         return new RealDemDataSource(RealDemTile.load());
@@ -112,15 +123,15 @@ final class RealDemDataSource {
             String sha=Files.readString(CHECKSUM,StandardCharsets.US_ASCII).trim();
             if(!sha.matches("[0-9a-f]{64}"))
                 throw new IOException("USGS DEM SHA-256 sidecar invalid");
-            JsonObject info;
-            try(var reader=Files.newBufferedReader(PROVENANCE,StandardCharsets.UTF_8)) {
-                info=JsonParser.parseReader(reader).getAsJsonObject();
-            }
-            if(!sha.equals(info.get("rgt1_sha256").getAsString())
-                    || !info.get("source_url").getAsString().startsWith(
+            String metadata=Files.readString(PROVENANCE,StandardCharsets.UTF_8);
+            if(Files.size(PROVENANCE)>16384)
+                throw new IOException("USGS provenance is unexpectedly large");
+            if(!sha.equals(jsonString(metadata,"rgt1_sha256"))
+                    || !jsonString(metadata,"source_url").startsWith(
                         "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/exportImage?")
-                    || !info.get("coordinate_reference_system").getAsString().startsWith("EPSG:26910")
-                    || !info.get("elevation_units").getAsString().equals("metres"))
+                    || !jsonString(metadata,"coordinate_reference_system").startsWith("EPSG:26910")
+                    || !jsonString(metadata,"elevation_units").equals("metres")
+                    || !jsonString(metadata,"source_sha256").matches("[0-9a-f]{64}"))
                 throw new IOException("USGS import provenance or checksum mismatch");
             try(InputStream in=Files.newInputStream(EXTERNAL)) {
                 return new RealDemDataSource(in,sha,true);
