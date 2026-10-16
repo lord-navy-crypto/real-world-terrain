@@ -6,9 +6,9 @@ package org.realscale.neoforge;
  * Production DensityFunction delegates to exactly these same computations.
  */
 final class RealDemSeamlessMath {
-    private static final RealDemTile DEM = RealDemTile.load();
-    private static final double CELL = 32.0;
-    private static final int GRID = 16;
+    private static final RealDemDataSource DEM = RealDemDataSource.loadMeasured();
+    private static final double CELL = DEM.cellMeters();
+    private static final int GRID = DEM.width();
     private static final double[][] HEIGHTS = loadHeights();
 
     /*

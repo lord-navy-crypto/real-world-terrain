@@ -47,6 +47,8 @@ jobs:
           java -cp build/habitat-smoke org.realscale.neoforge.HabitatMathSmoke
       - name: Validate experimental navigable waterways and hovercraft assets
         run: python3 -m unittest discover -s qa -p 'test_navigable_waterway_hovercraft.py' -v
+      - name: Verify authentic USGS 3DEP import geometry and measured-only DEM contracts
+        run: python3 -m unittest discover -s qa -p 'test_usgs_3dep_import.py' -v
       - name: Verify regional drainage graph and tributary confluences
         run: |
           mkdir -p build/watershed-routing-smoke
@@ -140,6 +142,7 @@ jobs:
           mkdir -p build/usgs-v2-smoke
           javac -d build/usgs-v2-smoke \
             neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemDataSource.java \
             neoforge/src/main/java/org/realscale/neoforge/RealDemSeamlessMath.java \
             neoforge/src/test/java/org/realscale/neoforge/RealDemSeamlessMathSmoke.java
           java -cp build/usgs-v2-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemSeamlessMathSmoke
