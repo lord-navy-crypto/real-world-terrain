@@ -142,6 +142,7 @@ jobs:
           mkdir -p build/usgs-v2-smoke
           javac -d build/usgs-v2-smoke \
             neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemDataSource.java \
             neoforge/src/main/java/org/realscale/neoforge/RealDemSeamlessMath.java \
             neoforge/src/test/java/org/realscale/neoforge/RealDemSeamlessMathSmoke.java
           java -cp build/usgs-v2-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemSeamlessMathSmoke
