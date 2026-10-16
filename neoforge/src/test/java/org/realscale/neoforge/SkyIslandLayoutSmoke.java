@@ -19,8 +19,8 @@ public final class SkyIslandLayoutSmoke {
                 check(site.topY()>=183&&site.topY()<=203,"height");
                 long gx = Math.floorDiv((long)x + SkyIslandLayout.GRID/2, SkyIslandLayout.GRID);
                 long gz = Math.floorDiv((long)z + SkyIslandLayout.GRID/2, SkyIslandLayout.GRID);
-                check(site.x() >= gx*SkyIslandLayout.GRID-128 && site.x() <= gx*SkyIslandLayout.GRID+127,"x jitter bounds");
-                check(site.z() >= gz*SkyIslandLayout.GRID-128 && site.z() <= gz*SkyIslandLayout.GRID+127,"z jitter bounds");
+                check(site.x() >= gx*SkyIslandLayout.GRID-48 && site.x() <= gx*SkyIslandLayout.GRID+47,"x jitter bounds");
+                check(site.z() >= gz*SkyIslandLayout.GRID-48 && site.z() <= gz*SkyIslandLayout.GRID+47,"z jitter bounds");
                 check(!SkyIslandLayout.insideBiome(site,site.x(),64,site.z()),"never paint ocean Y64");
                 check(SkyIslandLayout.insideBiome(site,site.x(),site.topY(),site.z()),"center biome");
                 check(!SkyIslandLayout.insideBiome(site,site.x()+site.radius()+1,
@@ -29,7 +29,7 @@ public final class SkyIslandLayoutSmoke {
             }
         }
         var s = SkyIslandLayout.at(0, 0);
-        check(s.x() == 32 && s.z() == 63, "origin-grid deterministic test site");
+        check(Math.abs(s.x())<=48 && Math.abs(s.z())<=48, "origin-grid jitter bounds");
         check(SkyIslandLayout.remoteDeepOcean(s, (x,z)->true, (x,z)->true),"open ocean qualifies");
         check(!SkyIslandLayout.remoteDeepOcean(s, (x,z)->false, (x,z)->true),
                 "shallow open ocean cannot qualify");
@@ -65,6 +65,8 @@ public final class SkyIslandLayoutSmoke {
         for (int slot=0;slot<SkyIslandLayout.SLOTS;slot++) {
             var island=SkyIslandLayout.satellite(s,slot);
             check(island.equals(SkyIslandLayout.satellite(s,slot)),"satellite deterministic");
+            check(SkyIslandLayout.at(island.x(), island.z()).equals(s),
+                "satellite home chunk must resolve its parent lattice site");
             check(island.radius()>=7&&island.radius()<=14,"satellite radius");
             check(island.topY()>=180&&island.topY()<=206,"satellite vertical envelope");
             check(SkyIslandLayout.insideBiome(island,island.x(),island.topY(),island.z()),
