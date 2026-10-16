@@ -98,6 +98,26 @@ public final class GrandOverworldCaveNetworkSmoke {
         }
         require(entrances>=10,"Entrances should occasionally lead to mountain halls");
 
+        // Estimate physical excavation candidates over a representative
+        // 1536x1536 mountain block and its vertical strata. This was missing
+        // from old tests (which only checked hall existence), allowing an
+        // excessive density of simultaneously active giant caves.
+        int sampled=0, excavated=0;
+        for(int x=-768;x<768;x+=32)for(int z=-768;z<768;z+=32)
+            for(int y=256;y<=1504;y+=32) {
+                sampled++;
+                if(GrandOverworldCaveNetwork.strength(x+0.5,y+0.5,z+0.5)>0.0)
+                    excavated++;
+            }
+        double candidateFraction=excavated/(double)sampled;
+        require(candidateFraction>0.002 && candidateFraction<0.20,
+                "Giant caves must be discoverable without hollowing most of "
+                +"the mountain: "+excavated+"/"+sampled);
+        // Radius and corridor length need not shrink just to reduce
+        // coverage: chamber spacing is larger (CELL=768).
+        require(GrandOverworldCaveNetwork.CELL>=768,
+                "Grand rooms must not be densely tiled at legacy 512 spacing");
+
         // The same exact world coordinate must evaluate identically across
         // any adjacent chunk/task boundary, independent of evaluation order.
         final double[][] samples=new double[400][3];
