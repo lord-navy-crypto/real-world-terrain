@@ -149,6 +149,19 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         mutable.forEach((id, partners) -> immutable.put(id, Map.copyOf(partners)));
         return Map.copyOf(immutable);
     }
+    // Limit ray traversal to the largest boundary width this particular
+    // vanilla biome can actually participate in. A global 48-block radius
+    // needlessly samples remote climate for narrow river/coast transitions.
+    private static final Map<String, Integer> MAX_WIDTH_BY_BIOME = buildWidths();
+
+    private static Map<String, Integer> buildWidths() {
+        Map<String, Integer> widths = new HashMap<>();
+        for (Rule rule : RULES) {
+            for (String id : rule.left()) widths.merge(id, rule.widthBlocks(), Math::max);
+            for (String id : rule.right()) widths.merge(id, rule.widthBlocks(), Math::max);
+        }
+        return Map.copyOf(widths);
+    }
     private static final int MAX_SEARCH_QUARTS = RULES.stream()
             .mapToInt(rule -> rule.widthBlocks() / 8).max().orElse(0);
     // Cardinal and diagonal rays: the same Euclidean radius in all headings.
@@ -264,12 +277,13 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         // width of 32 blocks, these samples never exceed 8 quart cells.
         Rule nearest = null;
         int closestDistanceSquared = Integer.MAX_VALUE;
+        int maxLocalQuarts = (MAX_WIDTH_BY_BIOME.getOrDefault(current, 0) + 7) / 8;
         for (int[] direction : DIRECTIONS) {
-            for (int step = 1; step <= MAX_SEARCH_QUARTS; step++) {
+            for (int step = 1; step <= maxLocalQuarts; step++) {
                 int distanceSquared = EcotoneMath.quartDistanceSquared(
                         direction[0], direction[1], step);
                 // No rule can be wider than the configured global search span.
-                if (distanceSquared > 16 * MAX_SEARCH_QUARTS * MAX_SEARCH_QUARTS) break;
+                if (distanceSquared > 16 * maxLocalQuarts * maxLocalQuarts) break;
                 // Rays are visited from closest to farthest. We can safely
                 // stop once a heading cannot beat the best existing border.
                 if (distanceSquared >= closestDistanceSquared) break;
