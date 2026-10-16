@@ -581,6 +581,8 @@ def scan(root,preset="realism_max"):
     four_boundary=[];inner=[]
     chunk_border=[];within_chunk=[]
     isolated_spikes=0
+    isolated_spike_examples=[]
+    isolated_spike_blocks={}
     for (x,z),h in H.items():
         for nx,nz in ((x+1,z),(x,z+1)):
             if (nx,nz) not in H:continue
@@ -600,6 +602,15 @@ def scan(root,preset="realism_max"):
         if all(n is not None for n in neighbors):
             if all(h-n>8 for n in neighbors) or all(n-h>8 for n in neighbors):
                 isolated_spikes+=1
+                surface=surface_blocks.get((x,z)) or "UNKNOWN"
+                isolated_spike_blocks[surface]=isolated_spike_blocks.get(surface,0)+1
+                if len(isolated_spike_examples)<64:
+                    isolated_spike_examples.append({
+                        "x":x,"z":z,"height":h,"neighbor_heights":neighbors,
+                        "surface_block":surface,"surface_biome":surface_biomes.get((x,z)),
+                        "is_chunk_boundary":x%16 in (0,15) or z%16 in (0,15),
+                        "is_four_grid_boundary":x%4 in (0,3) or z%4 in (0,3)
+                    })
     world_spawn=None
     spawn_file=None
     for level_file in root.glob("run/**/level.dat"):
@@ -635,6 +646,8 @@ def scan(root,preset="realism_max"):
     report={
       "preset":preset,
       "surface_quality_gates":quality,
+      "isolated_spike_examples":isolated_spike_examples,
+      "isolated_spike_surface_block_counts":isolated_spike_blocks,
       "spawn_level_dat":spawn_file,
       "spawn_surface_audit":spawn_report,
       "ocean_biome_surface_columns":sum(
