@@ -5,7 +5,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
@@ -64,9 +63,26 @@ public final class DimensionalInvasionFeature extends Feature<NoneFeatureConfigu
             case END -> Blocks.PURPUR_BLOCK.defaultBlockState();
             case OVERWORLD -> Blocks.OAK_LOG.defaultBlockState();
         };
-        // A small three-block landmark, intentionally no lava or spawned mobs.
-        // No world reads outside this column and no excavation.
-        level.setBlock(origin, core, 2);
+        // Three-dimensional intrusion footprint, entirely within ONE chunk.
+        // Validate everything before writing so a cliff/structure does not
+        // leave a partially generated alien ruin.
+        int cx=origin.getX()>>4, cz=origin.getZ()>>4;
+        for (int dx=-1;dx<=1;dx++) for(int dz=-1;dz<=1;dz++) {
+            BlockPos p=origin.offset(dx,0,dz);
+            if ((p.getX()>>4)!=cx || (p.getZ()>>4)!=cz) return false;
+            BlockState support=level.getBlockState(p.below());
+            if (!(support.is(Blocks.STONE) || support.is(Blocks.GRASS_BLOCK)
+                    || support.is(Blocks.DIRT) || support.is(Blocks.NETHERRACK)
+                    || support.is(Blocks.END_STONE) || support.is(Blocks.BASALT)
+                    || support.is(Blocks.BLACKSTONE) || support.is(Blocks.GRAVEL))
+                    || !level.getFluidState(p.below()).isEmpty()
+                    || !level.getBlockState(p).isAir()
+                    || !level.getFluidState(p).isEmpty()) return false;
+        }
+        for (int dx=-1;dx<=1;dx++) for(int dz=-1;dz<=1;dz++) {
+            BlockPos p=origin.offset(dx,0,dz);
+            level.setBlock(p, (Math.abs(dx)+Math.abs(dz)==2) ? crest : core, 2);
+        }
         level.setBlock(origin.above(), core, 2);
         level.setBlock(origin.above(2), crest, 2);
         return true;
