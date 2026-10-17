@@ -16,7 +16,6 @@ import net.minecraft.world.level.biome.Climate;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
@@ -173,16 +172,11 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     /** Bounded per-thread climate cache, invalidated when the climate sampler changes. */
     private static final class SamplingCache {
-        private static final int LIMIT = 8192;
         Climate.Sampler sampler;
         final QuartBiomeResultCache<Holder<Biome>> resolved = new QuartBiomeResultCache<>();
-        final LinkedHashMap<Long, Holder<Biome>> positions =
-                new LinkedHashMap<>(LIMIT, 0.75f, true) {
-                    @Override
-                    protected boolean removeEldestEntry(Map.Entry<Long, Holder<Biome>> eldest) {
-                        return size() > LIMIT;
-                    }
-                };
+        // Two-way primitive-key cache avoids Long boxing and linked-map
+        // node allocations for high-altitude worldgen's frequent quart rays.
+        final QuartBiomeBaseCache<Holder<Biome>> positions = new QuartBiomeBaseCache<>();
 
         void prepare(Climate.Sampler nextSampler) {
             if (sampler == nextSampler) return;
