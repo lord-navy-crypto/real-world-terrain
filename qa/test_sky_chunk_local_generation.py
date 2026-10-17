@@ -20,6 +20,10 @@ class SkyLocalChunkGeneration(unittest.TestCase):
         self.assertIn("world.setBlock(new BlockPos(x, y, z), state, 2)",source)
         self.assertIn("if (!clear) continue;",source)
         self.assertIn("return placed;",source)
+        self.assertIn("isIslandMaterial(existing)",source)
+        self.assertIn("isIslandDecoration(overhead)",source)
+        self.assertIn("isIslandMaterial(world.getBlockState(beacon.below()))",source)
+        self.assertIn("if (placed && Math.floorDiv(beacon.getX(),16)==chunkX",source)
         self.assertIn("Math.floorDiv(beacon.getX(),16)==chunkX",source)
         self.assertIn("Math.floorDiv(beacon.getZ(),16)==chunkZ",source)
     def test_deep_ocean_chunks_can_trigger_sky_feature(self):
