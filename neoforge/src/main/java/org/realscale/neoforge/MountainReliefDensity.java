@@ -72,6 +72,13 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
     }
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
+        if(!DensityPerfSampler.ENABLED)return computeUnprofiled(ctx);
+        long started=DensityPerfSampler.begin(DensityPerfSampler.Stage.MOUNTAIN_RELIEF);
+        try{return computeUnprofiled(ctx);}
+        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.MOUNTAIN_RELIEF,started);}
+    }
+
+    private double computeUnprofiled(DensityFunction.FunctionContext ctx) {
         double original = base.compute(ctx);
         // For original <= 0.65, the upland gate's second smoothstep is
         // mathematically zero for ANY continentalness. This also avoids
