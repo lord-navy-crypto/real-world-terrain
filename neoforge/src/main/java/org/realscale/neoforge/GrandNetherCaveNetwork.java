@@ -23,6 +23,12 @@ public final class GrandNetherCaveNetwork {
     // No neighboring chunks are loaded and nothing is shared between threads.
     private static final class CellCache {
         int gx = Integer.MIN_VALUE, gz = Integer.MIN_VALUE;
+        private static final int COLUMN_SLOTS = 512;
+        final int[] columnX = new int[COLUMN_SLOTS];
+        final int[] columnZ = new int[COLUMN_SLOTS];
+        final int[] columnEpoch = new int[COLUMN_SLOTS];
+        final boolean[] columnMayContainCave = new boolean[COLUMN_SLOTS];
+        int epoch=1;
         final Hall[][] halls = new Hall[2][5];
         final Hall[][] satellites = new Hall[2][2];
         // Corridor bend seeds depend only on hall endpoints, never on voxels.
@@ -32,6 +38,10 @@ public final class GrandNetherCaveNetwork {
         void initialize(int x, int z) {
             if (gx == x && gz == z) return;
             gx = x; gz = z;
+            if (++epoch == 0) {
+                java.util.Arrays.fill(columnEpoch,0);
+                epoch=1;
+            }
             for (int layer = 0; layer < 2; layer++) {
                 halls[layer][0] = hall(x,z,layer);
                 for (int i = 0; i < 4; i++)
@@ -165,6 +175,67 @@ public final class GrandNetherCaveNetwork {
         double dx=x-cx, dy=y-cy, dz=z-cz;
         double ratio=(dx*dx+dy*dy+dz*dz)/(radius*radius);
         return ratio>=1 ? 0 : 1-ratio;
+    }
+
+
+    /**
+     * Conservative X/Z broad-phase test, independent of world seed and Y.
+     * When false, every chamber and corridor is geometrically unreachable
+     * for ALL +/-5 X and +/-4 Z seeded noise displacements.
+     *
+     * At cell edges return true without checking: a warped sample could
+     * select a neighboring 256x256 cave graph. Never use a shared cache.
+     */
+    static boolean mayContainVoidNearColumn(int x,int z) {
+        int dx=Math.floorMod(x,CELL),dz=Math.floorMod(z,CELL);
+        if(dx<=5 || dx>=CELL-6 || dz<=4 || dz>=CELL-5) return true;
+        CellCache c=CACHED_HALLS.get();
+        c.initialize(Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
+        int slot=(x*0x9e3779b9 ^ z*0x85ebca6b)&(CellCache.COLUMN_SLOTS-1);
+        if(c.columnEpoch[slot]==c.epoch && c.columnX[slot]==x
+                && c.columnZ[slot]==z)
+            return c.columnMayContainCave[slot];
+        double loX=x-5.0,hiX=x+5.0,loZ=z-4.0,hiZ=z+4.0;
+        boolean candidate=couldTouch(c,loX,hiX,loZ,hiZ);
+        c.columnEpoch[slot]=c.epoch;
+        c.columnX[slot]=x;
+        c.columnZ[slot]=z;
+        c.columnMayContainCave[slot]=candidate;
+        return candidate;
+    }
+
+    private static boolean roomCouldTouch(Hall h,
+            double loX,double hiX,double loZ,double hiZ) {
+        return loX<=h.x()+h.radiusX() && hiX>=h.x()-h.radiusX()
+            && loZ<=h.z()+h.radiusZ() && hiZ>=h.z()-h.radiusZ();
+    }
+
+    private static boolean tubeCouldTouch(Hall a,Hall b,double radius,
+            double loX,double hiX,double loZ,double hiZ) {
+        // Exactly the reach of tube(), before its projected 3D evaluation.
+        double reach=radius+4.0;
+        return loX<=Math.max(a.x(),b.x())+reach
+            && hiX>=Math.min(a.x(),b.x())-reach
+            && loZ<=Math.max(a.z(),b.z())+reach
+            && hiZ>=Math.min(a.z(),b.z())-reach;
+    }
+
+    private static boolean couldTouch(CellCache c,
+            double loX,double hiX,double loZ,double hiZ) {
+        for(int layer=0;layer<2;layer++) {
+            Hall center=c.halls[layer][0];
+            if(roomCouldTouch(center,loX,hiX,loZ,hiZ))return true;
+            for(int dir=0;dir<4;dir++)
+                if(tubeCouldTouch(center,c.halls[layer][dir+1],11,
+                        loX,hiX,loZ,hiZ))return true;
+            for(int side=0;side<2;side++)
+                if(roomCouldTouch(c.satellites[layer][side],
+                        loX,hiX,loZ,hiZ)
+                        || tubeCouldTouch(center,c.satellites[layer][side],7,
+                            loX,hiX,loZ,hiZ))return true;
+        }
+        return tubeCouldTouch(c.halls[0][0],c.halls[1][0],10,
+                loX,hiX,loZ,hiZ);
     }
 
     /** Positive strength means excavated air; zero means original density. */
