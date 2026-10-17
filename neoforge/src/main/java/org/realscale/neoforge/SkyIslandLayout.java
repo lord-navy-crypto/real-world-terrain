@@ -17,6 +17,11 @@ public final class SkyIslandLayout {
     // satellite radius is 7..11; a 94-block axis bound is conservative.
     // This rejects most sky-biome samples before allocating any satellites.
     public static final int MAX_SITE_REACH = 94;
+    // Base tops are 183..203; satellite tops add -3..+3, and
+    // insideBiome extends -13..+8 from each top. Every sky island biome
+    // sample outside this inclusive height range is impossible.
+    public static final int MIN_BIOME_Y = 167;
+    public static final int MAX_BIOME_Y = 214;
     private static final int DIRECTIONS = 16;
     // More numerous small near-shore islets and denser far-ocean clusters.
     // Ocean probes progressively increase the required offshore isolation.
