@@ -22,6 +22,13 @@ public final class GrandOverworldCaveNetwork {
     public static final int CELL = 768;
     public static final int MIN_Y = -40;
     public static final int MAX_Y = 1920;
+    // Conservative geometric upper bound for connected halls/tunnels.
+    // Highest layer-3 hall center <=1439; any passage expands its endpoint
+    // bounding box by at most 93*1.45+16 (<151). Tall canyons expand
+    // by at most 50*2.25+16 (<129). Other arches and shafts are lower.
+    // No strength can exist above 1590; 1700 retains a >110 block
+    // safety margin and does NOT affect independently sampled entrances.
+    static final int MAX_GEOMETRY_Y = 1700;
     public static final int LAYERS = 4;
     private static final int[] DIR_X = {1,-1,0,0};
     private static final int[] DIR_Z = {0,0,1,-1};
@@ -378,7 +385,7 @@ public final class GrandOverworldCaveNetwork {
      * untouched. No block/biome writes and no chunk loading.
      */
     public static double strength(double x,double y,double z) {
-        if(y<MIN_Y||y>MAX_Y)return 0;
+        if(y<MIN_Y||y>MAX_GEOMETRY_Y)return 0;
         int gx=(int)Math.floor(x/CELL),gz=(int)Math.floor(z/CELL);
         Cache cache=LOCAL.get();
         cache.load(gx,gz);
