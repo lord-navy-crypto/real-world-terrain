@@ -79,7 +79,11 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         // Explicit identity delegation for ocean, seabed, ocean structures and
         // even tall surface mountain biomes that do not contain an island.
         int y=quartY*4;
-        if(y<160||y>224)return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
+        // The widest possible island (including +/-3 satellite height
+        // offsets and the -13/+8 biome interval) lies within 167..214.
+        // Outside this proven envelope, preserve underlying biome directly.
+        if(y<SkyIslandLayout.MIN_BIOME_Y||y>SkyIslandLayout.MAX_BIOME_Y)
+            return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
         int x=quartX*4,z=quartZ*4;
         EligibilityCache state=cache.get();
         state.prepare(sampler);
