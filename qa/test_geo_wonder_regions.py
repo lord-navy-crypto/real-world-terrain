@@ -33,8 +33,8 @@ class GeoWonderRegionsTest(unittest.TestCase):
         self.assertNotIn("Blocks.WATER.defaultBlockState()",SRC)
         self.assertNotIn("Blocks.LAVA.defaultBlockState()",SRC)
     def test_regional_footprints_are_not_chunk_seeded(self):
-        self.assertIn("private Site site(int gx,int gz)",SRC)
+        self.assertIn("private GeoWonderGeometry.Site site(int gx,int gz)",SRC)
         self.assertIn("for(int sx=-1;sx<=1;sx++)",SRC)
         self.assertIn("for(int sz=-1;sz<=1;sz++)",SRC)
-        self.assertIn("Math.floorMod(hash,21L)",SRC)
+        self.assertIn("GeoWonderGeometry.surfaceSite(gx,gz,kind.ordinal())",SRC)
 if __name__=="__main__":unittest.main()

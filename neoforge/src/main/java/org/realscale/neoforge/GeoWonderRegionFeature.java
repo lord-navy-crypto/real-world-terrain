@@ -25,35 +25,16 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
         COOLED_LAVA_FIELD, GLACIAL_MORAINE_RING, DELTA_DISTRIBUTARIES,
         KARST_DOLINE_RIM
     }
-    private static final int GRID = 256;
+    private static final int GRID = GeoWonderGeometry.GRID;
     private final Kind kind;
 
     public GeoWonderRegionFeature(Kind kind) {
         super(NoneFeatureConfiguration.CODEC);
         this.kind=kind;
     }
-    private static long mix(long n) {
-        n^=n>>>30; n*=0xbf58476d1ce4e5b9L;
-        n^=n>>>27; n*=0x94d049bb133111ebL;
-        return n^(n>>>31);
-    }
-    private static final class Site {
-        final int x,z,r;
-        final long seed;
-        Site(int x,int z,int r,long seed) {
-            this.x=x;this.z=z;this.r=r;this.seed=seed;
-        }
-    }
-    private Site site(int gx,int gz) {
-        long hash=mix(((long)gx*0x9e3779b97f4a7c15L)
-                     ^ ((long)gz*0xc2b2ae3d27d4eb4fL)
-                     ^ ((long)(kind.ordinal()+1)*0x165667b19e3779f9L));
-        // Large wonders should be recognisable when encountered, yet rare.
-        if (Math.floorMod(hash,21L)!=0L) return null;
-        int x=gx*GRID+(int)Math.floorMod(hash>>>9,65L)-32;
-        int z=gz*GRID+(int)Math.floorMod(hash>>>25,65L)-32;
-        int radius=56+(int)Math.floorMod(hash>>>43,36L);
-        return new Site(x,z,radius,hash);
+    private static long mix(long n) {return GeoWonderGeometry.mix(n);}
+    private GeoWonderGeometry.Site site(int gx,int gz) {
+        return GeoWonderGeometry.surfaceSite(gx,gz,kind.ordinal());
     }
     private static boolean match(String id,String... values) {
         for(String v:values)if(id.equals("minecraft:"+v))return true;
@@ -112,7 +93,7 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
         }
         return false;
     }
-    private int heightFor(Site s,int x,int z,double u,double v,long point) {
+    private int heightFor(GeoWonderGeometry.Site s,int x,int z,double u,double v,long point) {
         double r=Math.hypot(u,v);
         switch(kind) {
             case HOODOO_AMPHITHEATER -> {
@@ -158,11 +139,11 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
                     .defaultBlockState();
         };
     }
-    private boolean paint(WorldGenLevel w,Site site,int minX,int minZ) {
+    private boolean paint(WorldGenLevel w,GeoWonderGeometry.Site site,int minX,int minZ) {
         boolean placed=false;
         for(int x=minX;x<minX+16;x++)for(int z=minZ;z<minZ+16;z++) {
             long dx=(long)x-site.x,dz=(long)z-site.z;
-            if(dx*dx+dz*dz>(long)site.r*site.r)continue;
+            if(!GeoWonderGeometry.contains(site,x,z))continue;
             long point=mix(site.seed ^ ((long)x*0x27d4eb2dL)
                     ^ ((long)z*0x165667b1L));
             if(Math.floorMod(point,7L)==0)continue;
@@ -224,14 +205,13 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
                 .equals("minecraft:overworld"))return false;
         int minX=Math.floorDiv(context.origin().getX(),16)*16;
         int minZ=Math.floorDiv(context.origin().getZ(),16)*16;
-        int gx=(int)Math.floorDiv((long)minX+8+GRID/2,GRID);
-        int gz=(int)Math.floorDiv((long)minZ+8+GRID/2,GRID);
+        int gx=GeoWonderGeometry.gridAtChunk(minX);
+        int gz=GeoWonderGeometry.gridAtChunk(minZ);
         boolean placed=false;
         for(int sx=-1;sx<=1;sx++)for(int sz=-1;sz<=1;sz++) {
-            Site candidate=site(gx+sx,gz+sz);
+            GeoWonderGeometry.Site candidate=site(gx+sx,gz+sz);
             if(candidate==null)continue;
-            if(candidate.x+candidate.r<minX||candidate.x-candidate.r>=minX+16
-                    ||candidate.z+candidate.r<minZ||candidate.z-candidate.r>=minZ+16)
+            if(!GeoWonderGeometry.intersects(candidate,minX,minZ))
                 continue;
             placed|=paint(context.level(),candidate,minX,minZ);
         }

@@ -108,6 +108,13 @@ jobs:
           python3 -m unittest discover -s qa -p 'test_area_balanced_default_climate.py' -v
       - name: Verify chunk-local lava tube and karst passages
         run: python3 -m unittest discover -s qa -p 'test_cave_wonder_networks.py' -v
+      - name: Check real large-region math at negative and chunk-border coordinates
+        run: |
+          mkdir -p build/geo-wonder-geometry
+          javac -d build/geo-wonder-geometry \
+            neoforge/src/main/java/org/realscale/neoforge/GeoWonderGeometry.java \
+            neoforge/src/test/java/org/realscale/neoforge/GeoWonderGeometrySmoke.java
+          java -cp build/geo-wonder-geometry org.realscale.neoforge.GeoWonderGeometrySmoke
       - name: Validate deterministic large-region geo wonders
         run: python3 -m unittest discover -s qa -p 'test_geo_wonder_regions.py' -v
       - name: Verify Natural Wonders and six-way invasion registrations and safety gates
