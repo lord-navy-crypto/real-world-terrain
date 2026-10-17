@@ -21,6 +21,13 @@ public record GrandNetherCaverns(DensityFunction base,DensityFunction warp)
         KeyDispatchDataCodec.of(MAP_CODEC);
 
     @Override public double compute(DensityFunction.FunctionContext context) {
+        if(!DensityPerfSampler.ENABLED)return computeUnprofiled(context);
+        long start=DensityPerfSampler.begin(DensityPerfSampler.Stage.NETHER_CAVE);
+        try{return computeUnprofiled(context);}
+        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.NETHER_CAVE,start);}
+    }
+
+    private double computeUnprofiled(DensityFunction.FunctionContext context) {
         double original=base.compute(context);
         int x=context.blockX(),y=context.blockY(),z=context.blockZ();
         // Never call extra noise functions in the protected original realm.
