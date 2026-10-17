@@ -30,7 +30,7 @@ public final class CaveWonderNetworkFeature extends Feature<NoneFeatureConfigura
         n^=n>>>27;n*=0x94d049bb133111ebL;
         return n^(n>>>31);
     }
-    private static boolean isStone(BlockState s) {
+    private static boolean isNaturalRock(BlockState s) {
         return s.is(Blocks.STONE)||s.is(Blocks.ANDESITE)||s.is(Blocks.DIORITE)
                 ||s.is(Blocks.GRANITE)||s.is(Blocks.TUFF)||s.is(Blocks.BASALT)
                 ||s.is(Blocks.CALCITE)||s.is(Blocks.DRIPSTONE_BLOCK);
@@ -39,7 +39,7 @@ public final class CaveWonderNetworkFeature extends Feature<NoneFeatureConfigura
         return kind==Kind.LAVA_TUBE
                 ? (s.is(Blocks.STONE)||s.is(Blocks.BASALT)||s.is(Blocks.TUFF)
                    ||s.is(Blocks.ANDESITE))
-                : isStone(s);
+                : isNaturalRock(s);
     }
     private static boolean dry(WorldGenLevel w,BlockPos p) {
         if(!w.getFluidState(p).isEmpty())return false;
