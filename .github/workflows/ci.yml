@@ -194,6 +194,7 @@ jobs:
       - name: Regress radial latitude, basin climates and scientific geomorphology
         run: |
           python3 -m unittest discover -s qa -p test_radial_climate_math.py -v
+          python3 -m unittest discover -s qa -p test_radial_climate_audit.py -v
           python3 -m unittest discover -s qa -p test_latitude_climate.py -v
           python3 -m unittest discover -s qa -p test_custom_geomorphology.py -v
       - name: Verify the four TVA menu presets use isolated seed-proven smoothed density graphs
