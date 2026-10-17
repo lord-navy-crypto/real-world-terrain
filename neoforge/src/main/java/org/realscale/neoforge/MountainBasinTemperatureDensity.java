@@ -88,17 +88,19 @@ public final class MountainBasinTemperatureDensity
         // sample continents/height noise in that common case.
         double exposedLand=GeoMath.smoothstep(80,200,ctx.blockY());
         if(exposedLand<=0.0)return original;
+        // The hash-only site geometry is cheaper than either the
+        // continentalness or the height noise. Outside the 0.78 basin core,
+        // basinCore() is provably zero regardless of both noise values.
+        // On 2048-block region cells this excludes most temperature samples.
+        Site s=site(ctx);
+        double dx=ctx.blockX()-s.x,dz=ctx.blockZ()-s.z;
+        double limit=s.radius*0.780000001;
+        if(dx*dx+dz*dz>=limit*limit)return original;
         double continent=continents.compute(ctx);
         if(continent<=-0.10)return original;
         double highlandGate=MountainReliefMath.inlandUplandGate(
                 continent,heightSignal.compute(ctx));
         if(highlandGate<=0.0)return original;
-        Site s=site(ctx);
-        double dx=ctx.blockX()-s.x,dz=ctx.blockZ()-s.z;
-        // Conservative squared-distance rejection of sites outside the
-        // actual r<0.78 basin core; the tiny epsilon protects edge parity.
-        double limit=s.radius*0.780000001;
-        if(dx*dx+dz*dz>=limit*limit)return original;
         classify(s);
         if(s.kind!=MountainReliefMath.BASIN)return original;
         double r=Math.hypot(dx,dz)/s.radius;

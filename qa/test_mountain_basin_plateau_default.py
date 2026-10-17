@@ -131,6 +131,11 @@ class MountainBasinPlateauTest(unittest.TestCase):
                         climate.index("double continent=continents.compute(ctx);"))
         self.assertLess(climate.index("if(dx*dx+dz*dz>=limit*limit)return original;"),
                         climate.index("classify(s);"))
+        # The basin site footprint must precede BOTH expensive noise reads.
+        self.assertLess(climate.index("if(dx*dx+dz*dz>=limit*limit)return original;"),
+                        climate.index("double continent=continents.compute(ctx);"))
+        self.assertLess(climate.index("if(dx*dx+dz*dz>=limit*limit)return original;"),
+                        climate.index("heightSignal.compute(ctx)"))
         self.assertLess(climate.index("classify(s);"),
                         climate.index("if(s.kind!=MountainReliefMath.BASIN)return original;"))
 

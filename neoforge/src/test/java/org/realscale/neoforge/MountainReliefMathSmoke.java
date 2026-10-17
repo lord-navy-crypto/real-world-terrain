@@ -20,6 +20,23 @@ public final class MountainReliefMathSmoke {
                         MountainReliefMath.BASIN,0.0,1.0,0.6),base,
                     "Lowland early rejection changes output");
             }
+        // Basin climate can also skip expensive height / continental
+        // density sampling outside the core. At exactly >=0.78, the
+        // original basinCore() is zero in every quadrant.
+        long climateOutside=0,climateInside=0;
+        for (int radius=470;radius<=701;radius+=11)
+            for(int x=-950;x<=950;x+=17)
+                for(int z=-950;z<=950;z+=23) {
+                    double limit=radius*0.780000001;
+                    if((double)x*x+(double)z*z>=limit*limit) {
+                        climateOutside++;
+                        double r=Math.hypot(x,z)/radius;
+                        yes(r>=0.78 && MountainReliefMath.basinCore(r)==0.0,
+                            "Basin core rejection alters climate at region rim");
+                    } else climateInside++;
+                }
+        yes(climateOutside>5000 && climateInside>500,
+            "Geological basin climate fast-path not exercised");
         // Invariant behind performance fast-path: it must never skip a
         // column that could receive relief. Check all quadrants, site radii
         // and close-to-rim positions, including negative coordinates.
