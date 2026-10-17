@@ -7,10 +7,14 @@
           "source": {
             "type": "realscale:sky_ocean",
             "source": {
-              "type": "realscale:natural_ecotones",
+              "type": "realscale:cross_realm_invasion",
+              "target": "overworld",
               "source": {
-                "preset": "minecraft:overworld",
-                "type": "minecraft:multi_noise"
+                "type": "realscale:natural_ecotones",
+                "source": {
+                  "preset": "minecraft:overworld",
+                  "type": "minecraft:multi_noise"
+                }
               }
             }
           }

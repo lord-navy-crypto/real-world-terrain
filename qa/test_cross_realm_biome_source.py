@@ -17,8 +17,15 @@ class CrossRealmBiomeSourceTests(unittest.TestCase):
             self.assertEqual(newgen["biome_source"]["type"],"realscale:cross_realm_invasion")
             self.assertEqual(newgen["biome_source"]["source"],original["biome_source"])
             self.assertEqual(newgen["settings"],original["settings"])
-        self.assertEqual(new["dimensions"]["minecraft:overworld"],
-                         base["dimensions"]["minecraft:overworld"])
+        self.assertEqual(new["dimensions"]["minecraft:overworld"]["generator"]["settings"],
+                         base["dimensions"]["minecraft:overworld"]["generator"]["settings"])
+        self.assertEqual(new["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]["type"],
+                         "realscale:sky_ocean")
+        wrapper=new["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]["source"]
+        self.assertEqual(wrapper["type"],"realscale:cross_realm_invasion")
+        self.assertEqual(wrapper["target"],"overworld")
+        self.assertEqual(wrapper["source"],
+                         base["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]["source"])
 
     def test_real_biomes_and_dimension_guards(self):
         source=(MAIN/"CrossRealmBiomeSource.java").read_text()
@@ -29,6 +36,9 @@ class CrossRealmBiomeSourceTests(unittest.TestCase):
         for name in ("nether_wastes","basalt_deltas","the_end","end_highlands"):
             self.assertIn("minecraft:"+name,source)
         self.assertIn("if(!nether&&!end)return original;",source)
+        self.assertIn('if("overworld".equals(target))',source)
+        self.assertIn('biome.endsWith("ocean")',source)
+        self.assertIn('biome.endsWith("river")',source)
         self.assertIn("if(Math.floorMod(hash,24L)!=0)return original;",source)
 
 if __name__=="__main__": unittest.main()

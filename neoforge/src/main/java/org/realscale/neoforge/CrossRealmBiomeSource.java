@@ -1,6 +1,7 @@
 package org.realscale.neoforge;
 
 import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
@@ -23,30 +24,36 @@ public final class CrossRealmBiomeSource extends BiomeSource {
     public static final MapCodec<CrossRealmBiomeSource> CODEC =
         RecordCodecBuilder.mapCodec(i -> i.group(
             BiomeSource.CODEC.fieldOf("source").forGetter(CrossRealmBiomeSource::source),
+            Codec.STRING.optionalFieldOf("target","auto").forGetter(CrossRealmBiomeSource::target),
             RegistryOps.retrieveGetter(Registries.BIOME)
         ).apply(i, CrossRealmBiomeSource::new));
 
     private static final int CELL=512;
     private final BiomeSource source;
-    private final Holder<Biome> forest, plains, meadow, cherry, taiga;
+    private final String target;
+    private final Holder<Biome> forest, plains, meadow, cherry, taiga, netherWastes, endHighlands;
 
-    private CrossRealmBiomeSource(BiomeSource source, HolderGetter<Biome> registry) {
+    private CrossRealmBiomeSource(BiomeSource source,String target,HolderGetter<Biome> registry) {
         this.source=source;
+        this.target=target;
         forest=get(registry,"forest");
         plains=get(registry,"plains");
         meadow=get(registry,"meadow");
         cherry=get(registry,"cherry_grove");
         taiga=get(registry,"taiga");
+        netherWastes=get(registry,"nether_wastes");
+        endHighlands=get(registry,"end_highlands");
     }
     private static Holder<Biome> get(HolderGetter<Biome> registry,String id) {
         return registry.getOrThrow(ResourceKey.create(Registries.BIOME,
             ResourceLocation.fromNamespaceAndPath("minecraft",id)));
     }
     private BiomeSource source(){return source;}
+    private String target(){return target;}
     @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),
-            Stream.of(forest,plains,meadow,cherry,taiga)).distinct();
+            Stream.of(forest,plains,meadow,cherry,taiga,netherWastes,endHighlands)).distinct();
     }
     private static long mix(long x) {
         x^=x>>>30;x*=0xbf58476d1ce4e5b9L;
@@ -60,6 +67,27 @@ public final class CrossRealmBiomeSource extends BiomeSource {
         // Only extend an actual Nether or End biome; never overwrite ocean,
         // rivers or overworld climate, even if somebody wraps the wrong source.
         String biome=original.unwrapKey().map(k->k.location().toString()).orElse("");
+        if("overworld".equals(target)) {
+            // A different site population from the Nether/End imported
+            // overworld habitats. Strictly land-only and opt-in.
+            int y=quartY*4;
+            if(y<56||y>196||!biome.startsWith("minecraft:")
+                    ||biome.endsWith("ocean")||biome.endsWith("river")
+                    ||biome.contains("beach")||biome.contains("swamp"))
+                return original;
+            long x=(long)quartX*4,z=(long)quartZ*4;
+            long gx=Math.floorDiv(x+CELL/2,CELL);
+            long gz=Math.floorDiv(z+CELL/2,CELL);
+            long hash=mix(gx*0x9e3779b97f4a7c15L
+                          ^gz*0xc2b2ae3d27d4eb4fL ^0x1257b85L);
+            if(Math.floorMod(hash,28L)!=0)return original;
+            long cx=gx*CELL+(Math.floorMod(hash>>>10,97L)-48);
+            long cz=gz*CELL+(Math.floorMod(hash>>>24,97L)-48);
+            long dx=x-cx,dz=z-cz;
+            int radius=36+(int)Math.floorMod(hash>>>42,28L);
+            if(dx*dx+dz*dz>(long)radius*radius)return original;
+            return (hash&16L)==0?netherWastes:endHighlands;
+        }
         boolean nether=biome.equals("minecraft:nether_wastes")
                 || biome.equals("minecraft:crimson_forest")
                 || biome.equals("minecraft:warped_forest")

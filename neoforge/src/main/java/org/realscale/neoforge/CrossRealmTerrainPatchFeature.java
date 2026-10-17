@@ -82,7 +82,9 @@ public final class CrossRealmTerrainPatchFeature extends Feature<NoneFeatureConf
     @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         if (!TVAWorldGuard.hasRealScaleGenerator(context))return false;
         if (!(context.chunkGenerator().getBiomeSource() instanceof CrossRealmShowcaseBiomeSource)
-                && !(context.chunkGenerator().getBiomeSource() instanceof CrossRealmBiomeSource))
+                && !(context.chunkGenerator().getBiomeSource() instanceof CrossRealmBiomeSource)
+                && !(context.chunkGenerator().getBiomeSource() instanceof SkyOceanBiomeSource sky
+                     && sky.containsCrossRealm()))
             return false;
         WorldGenLevel world=context.level();
         if (!world.getLevel().dimension().location().toString().equals(kind.target))return false;
