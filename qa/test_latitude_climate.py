@@ -208,7 +208,13 @@ class LatitudeClimateTests(unittest.TestCase):
         name,opts,out=self.make(latitude="radial_equal_area_single_pole",
                                 latitude_strength=70)
         profile=self.get_temperature(out,name)
-        self.assertEqual(profile["type"],"realscale:radial_latitude_temperature")
+        # Terrain Lab may nest the radial node under its existing climate
+        # budget/valley/basin decorators. Follow the actual exported graph.
+        while profile["type"]!="realscale:radial_latitude_temperature":
+            self.assertIn(profile["type"],(
+                "realscale:climate_budget","realscale:valley_temperature",
+                "realscale:basin_temperature","realscale:mountain_basin_temperature"))
+            profile=profile["adjusted"] if "adjusted" in profile else profile["base"]
         self.assertTrue(profile["single_pole_area"])
         self.assertTrue(profile["area_balanced"])
         self.assertTrue(profile["balanced"])
@@ -217,6 +223,8 @@ class LatitudeClimateTests(unittest.TestCase):
         old_name,_,old_out=self.make(latitude="radial_equal_area",
                                     latitude_strength=70,cold_limit=0)
         old=self.get_temperature(old_out,old_name)
+        while old["type"]!="realscale:radial_latitude_temperature":
+            old=old["adjusted"] if "adjusted" in old else old["base"]
         self.assertTrue(old["area_balanced"])
         self.assertNotIn("single_pole_area",old)
         from pathlib import Path
