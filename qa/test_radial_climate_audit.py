@@ -45,7 +45,7 @@ class RadialClimateAuditTest(unittest.TestCase):
             radial=radial_profile_from_noise(settings)
             self.assertIsNotNone(radial)
             self.assertTrue(radial["single_pole_area"])
-            result=radial_biome_audit({(0,0):80},{"(0,0):"minecraft:plains"},radial)
+            result=radial_biome_audit({(0,0):80},{(0,0):"minecraft:plains"},radial)
             self.assertEqual(result["mode"],"radial_equal_area_single_pole")
 
     def test_two_crest_equal_area_geometry(self):
