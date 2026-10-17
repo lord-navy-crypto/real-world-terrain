@@ -90,6 +90,13 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/QuartBiomeResultCache.java \
             neoforge/src/test/java/org/realscale/neoforge/QuartBiomeResultCacheSmoke.java
           java -cp build/ecotone-result-cache-smoke org.realscale.neoforge.QuartBiomeResultCacheSmoke
+      - name: Verify allocation-free underlying ecotone climate lookup cache
+        run: |
+          mkdir -p build/ecotone-base-cache-smoke
+          javac -d build/ecotone-base-cache-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/QuartBiomeBaseCache.java \
+            neoforge/src/test/java/org/realscale/neoforge/QuartBiomeBaseCacheSmoke.java
+          java -cp build/ecotone-base-cache-smoke org.realscale.neoforge.QuartBiomeBaseCacheSmoke
       - name: Measure DEM grid continuity and tile boundary blend
         run: |
           mkdir -p build/terrain-continuity
