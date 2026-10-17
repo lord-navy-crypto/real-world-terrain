@@ -40,6 +40,13 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
     }
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
+        if(!DensityPerfSampler.ENABLED)return computeUnprofiled(ctx);
+        long start=DensityPerfSampler.begin(DensityPerfSampler.Stage.OVERWORLD_CAVE);
+        try{return computeUnprofiled(ctx);}
+        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.OVERWORLD_CAVE,start);}
+    }
+
+    private double computeUnprofiled(DensityFunction.FunctionContext ctx) {
         double original=base.compute(ctx);
         int y=ctx.blockY();
         if(y<GrandOverworldCaveNetwork.MIN_Y
