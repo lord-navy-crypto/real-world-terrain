@@ -1,0 +1,73 @@
+name: TVA multi-seed 4-family real terrain and cave quality QA
+on:
+  pull_request:
+    paths: ['neoforge/**', 'qa/**', '.github/workflows/multi-seed-server.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  neoforge-worldgen:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        preset: [tva_sacred_timeline_three_realms, tva_alpine_three_realms, tva_canyon_three_realms, tva_measured_three_realms]
+        seed: [2, 42]
+    name: Multi-seed QA / ${{ matrix.preset }} / ${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Prepare EULA and actual world type
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=world
+          level-type=realscale:${{ matrix.preset }}
+          level-seed=${{ matrix.seed }}
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Boot real NeoForge and load distant chunks with authenticated RCON
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . 'realscale:${{ matrix.preset }}' distant
+      - name: Inspect ACTUAL saved terrain columns, abrupt cliffs and underground voids
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/check_realism_continuity.py . '${{ matrix.preset }}'
+      - name: Validate dry-air cave traversal graph logic
+        run: python3 -m unittest discover -s qa -p 'test_cave_walkability.py' -v
+      - name: Upload server diagnostics and generated world metadata
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: TVA-${{ matrix.preset }}-Seed-${{ matrix.seed }}-SavedWorld-QA
+          path: |
+            neoforge/realism_continuity_qa.json
+            neoforge/build/rcon_distant_server.log
+            neoforge/build/rcon_distant_thread_dump.txt
+            neoforge/run/**/level.dat
+            neoforge/run/**/region/*.mca
+            neoforge/run/**/logs/latest.log
+          if-no-files-found: warn

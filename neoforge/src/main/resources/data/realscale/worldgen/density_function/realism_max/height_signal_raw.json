@@ -1,0 +1,991 @@
+{
+  "type": "minecraft:flat_cache",
+  "argument": {
+    "argument1": {
+      "argument1": {
+        "argument1": {
+          "argument1": {
+            "argument1": {
+              "argument1": {
+                "argument1": {
+                  "argument1": {
+                    "argument1": 0.0078125,
+                    "argument2": {
+                      "spline": {
+                        "coordinate": "realscale:realism_max/continental_field",
+                        "points": [
+                          {
+                            "derivative": 0,
+                            "location": -1,
+                            "value": -97
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.75,
+                            "value": -92
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.52,
+                            "value": -76
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.36,
+                            "value": -55
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.23,
+                            "value": -27
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.13,
+                            "value": -6
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.055,
+                            "value": 4
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.05,
+                            "value": 26
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.2,
+                            "value": 55
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.43,
+                            "value": 90
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 1,
+                            "value": 135
+                          }
+                        ]
+                      },
+                      "type": "minecraft:spline"
+                    },
+                    "type": "minecraft:mul"
+                  },
+                  "argument2": {
+                    "argument1": 0.390625,
+                    "argument2": {
+                      "argument1": {
+                        "spline": {
+                          "coordinate": "realscale:realism_max/continental_field",
+                          "points": [
+                            {
+                              "derivative": 0,
+                              "location": -1,
+                              "value": 0
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.32,
+                              "value": 0
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.19,
+                              "value": 0
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.07,
+                              "value": 0.04
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.04,
+                              "value": 0.3
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.16,
+                              "value": 0.7
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.28,
+                              "value": 1
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.55,
+                              "value": 1
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 1,
+                              "value": 1
+                            }
+                          ]
+                        },
+                        "type": "minecraft:spline"
+                      },
+                      "argument2": "realscale:realism_max/regional_field",
+                      "type": "minecraft:mul"
+                    },
+                    "type": "minecraft:mul"
+                  },
+                  "type": "minecraft:add"
+                },
+                "argument2": {
+                  "argument1": 10.3125,
+                  "argument2": {
+                    "argument1": {
+                      "argument1": {
+                        "spline": {
+                          "coordinate": "realscale:realism_max/continental_field",
+                          "points": [
+                            {
+                              "derivative": 0,
+                              "location": -1,
+                              "value": 0
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.32,
+                              "value": 0
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.19,
+                              "value": 0
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.07,
+                              "value": 0.04
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.04,
+                              "value": 0.3
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.16,
+                              "value": 0.7
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.28,
+                              "value": 1
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.55,
+                              "value": 1
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 1,
+                              "value": 1
+                            }
+                          ]
+                        },
+                        "type": "minecraft:spline"
+                      },
+                      "argument2": {
+                        "spline": {
+                          "coordinate": "realscale:realism_max/erosion_field",
+                          "points": [
+                            {
+                              "derivative": 0,
+                              "location": -1,
+                              "value": 1
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.7,
+                              "value": 1
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.35,
+                              "value": 0.93
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.03,
+                              "value": 0.65
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.23,
+                              "value": 0.3
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.4,
+                              "value": 0.12
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.6,
+                              "value": 0
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 1,
+                              "value": 0
+                            }
+                          ]
+                        },
+                        "type": "minecraft:spline"
+                      },
+                      "type": "minecraft:mul"
+                    },
+                    "argument2": {
+                      "spline": {
+                        "coordinate": "realscale:realism_max/mountain_axis",
+                        "points": [
+                          {
+                            "derivative": 0,
+                            "location": -1,
+                            "value": 0
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.75,
+                            "value": 0.03
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.49,
+                            "value": 0.12
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.22,
+                            "value": 0.36
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.03,
+                            "value": 0.63
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.24,
+                            "value": 0.85
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.54,
+                            "value": 0.98
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 1,
+                            "value": 1
+                          }
+                        ]
+                      },
+                      "type": "minecraft:spline"
+                    },
+                    "type": "minecraft:mul"
+                  },
+                  "type": "minecraft:mul"
+                },
+                "type": "minecraft:add"
+              },
+              "argument2": {
+                "argument1": 1.8359375,
+                "argument2": {
+                  "argument1": {
+                    "argument1": {
+                      "argument1": {
+                        "spline": {
+                          "coordinate": "realscale:realism_max/continental_field",
+                          "points": [
+                            {
+                              "derivative": 0,
+                              "location": -1,
+                              "value": 0
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.32,
+                              "value": 0
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.19,
+                              "value": 0
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.07,
+                              "value": 0.04
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.04,
+                              "value": 0.3
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.16,
+                              "value": 0.7
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.28,
+                              "value": 1
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.55,
+                              "value": 1
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 1,
+                              "value": 1
+                            }
+                          ]
+                        },
+                        "type": "minecraft:spline"
+                      },
+                      "argument2": {
+                        "spline": {
+                          "coordinate": "realscale:realism_max/erosion_field",
+                          "points": [
+                            {
+                              "derivative": 0,
+                              "location": -1,
+                              "value": 1
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.7,
+                              "value": 1
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.35,
+                              "value": 0.93
+                            },
+                            {
+                              "derivative": 0,
+                              "location": -0.03,
+                              "value": 0.65
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.23,
+                              "value": 0.3
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.4,
+                              "value": 0.12
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 0.6,
+                              "value": 0
+                            },
+                            {
+                              "derivative": 0,
+                              "location": 1,
+                              "value": 0
+                            }
+                          ]
+                        },
+                        "type": "minecraft:spline"
+                      },
+                      "type": "minecraft:mul"
+                    },
+                    "argument2": {
+                      "spline": {
+                        "coordinate": "realscale:realism_max/mountain_axis",
+                        "points": [
+                          {
+                            "derivative": 0,
+                            "location": -1,
+                            "value": 0
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.75,
+                            "value": 0.03
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.49,
+                            "value": 0.12
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.22,
+                            "value": 0.36
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.03,
+                            "value": 0.63
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.24,
+                            "value": 0.85
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.54,
+                            "value": 0.98
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 1,
+                            "value": 1
+                          }
+                        ]
+                      },
+                      "type": "minecraft:spline"
+                    },
+                    "type": "minecraft:mul"
+                  },
+                  "argument2": {
+                    "spline": {
+                      "coordinate": "realscale:realism_max/secondary_axis",
+                      "points": [
+                        {
+                          "derivative": 0,
+                          "location": -1,
+                          "value": 0
+                        },
+                        {
+                          "derivative": 0,
+                          "location": -0.8,
+                          "value": 0.08
+                        },
+                        {
+                          "derivative": 0,
+                          "location": -0.45,
+                          "value": 0.2
+                        },
+                        {
+                          "derivative": 0,
+                          "location": -0.07,
+                          "value": 0.45
+                        },
+                        {
+                          "derivative": 0,
+                          "location": 0.22,
+                          "value": 0.7
+                        },
+                        {
+                          "derivative": 0,
+                          "location": 0.52,
+                          "value": 0.92
+                        },
+                        {
+                          "derivative": 0,
+                          "location": 1,
+                          "value": 1
+                        }
+                      ]
+                    },
+                    "type": "minecraft:spline"
+                  },
+                  "type": "minecraft:mul"
+                },
+                "type": "minecraft:mul"
+              },
+              "type": "minecraft:add"
+            },
+            "argument2": {
+              "argument1": -1.2109375,
+              "argument2": {
+                "argument1": {
+                  "argument1": {
+                    "argument1": {
+                      "spline": {
+                        "coordinate": "realscale:realism_max/continental_field",
+                        "points": [
+                          {
+                            "derivative": 0,
+                            "location": -1,
+                            "value": 0
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.32,
+                            "value": 0
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.19,
+                            "value": 0
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.07,
+                            "value": 0.04
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.04,
+                            "value": 0.3
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.16,
+                            "value": 0.7
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.28,
+                            "value": 1
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.55,
+                            "value": 1
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 1,
+                            "value": 1
+                          }
+                        ]
+                      },
+                      "type": "minecraft:spline"
+                    },
+                    "argument2": {
+                      "spline": {
+                        "coordinate": "realscale:realism_max/erosion_field",
+                        "points": [
+                          {
+                            "derivative": 0,
+                            "location": -1,
+                            "value": 1
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.7,
+                            "value": 1
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.35,
+                            "value": 0.93
+                          },
+                          {
+                            "derivative": 0,
+                            "location": -0.03,
+                            "value": 0.65
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.23,
+                            "value": 0.3
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.4,
+                            "value": 0.12
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 0.6,
+                            "value": 0
+                          },
+                          {
+                            "derivative": 0,
+                            "location": 1,
+                            "value": 0
+                          }
+                        ]
+                      },
+                      "type": "minecraft:spline"
+                    },
+                    "type": "minecraft:mul"
+                  },
+                  "argument2": {
+                    "spline": {
+                      "coordinate": "realscale:realism_max/mountain_axis",
+                      "points": [
+                        {
+                          "derivative": 0,
+                          "location": -1,
+                          "value": 0
+                        },
+                        {
+                          "derivative": 0,
+                          "location": -0.75,
+                          "value": 0.03
+                        },
+                        {
+                          "derivative": 0,
+                          "location": -0.49,
+                          "value": 0.12
+                        },
+                        {
+                          "derivative": 0,
+                          "location": -0.22,
+                          "value": 0.36
+                        },
+                        {
+                          "derivative": 0,
+                          "location": 0.03,
+                          "value": 0.63
+                        },
+                        {
+                          "derivative": 0,
+                          "location": 0.24,
+                          "value": 0.85
+                        },
+                        {
+                          "derivative": 0,
+                          "location": 0.54,
+                          "value": 0.98
+                        },
+                        {
+                          "derivative": 0,
+                          "location": 1,
+                          "value": 1
+                        }
+                      ]
+                    },
+                    "type": "minecraft:spline"
+                  },
+                  "type": "minecraft:mul"
+                },
+                "argument2": {
+                  "spline": {
+                    "coordinate": {
+                      "argument": "realscale:realism_max/alpine_valley_axis",
+                      "type": "minecraft:abs"
+                    },
+                    "points": [
+                      {
+                        "derivative": 0,
+                        "location": 0,
+                        "value": 1
+                      },
+                      {
+                        "derivative": 0,
+                        "location": 0.055,
+                        "value": 1
+                      },
+                      {
+                        "derivative": 0,
+                        "location": 0.13,
+                        "value": 0.83
+                      },
+                      {
+                        "derivative": 0,
+                        "location": 0.23,
+                        "value": 0.38
+                      },
+                      {
+                        "derivative": 0,
+                        "location": 0.39,
+                        "value": 0.04
+                      },
+                      {
+                        "derivative": 0,
+                        "location": 0.54,
+                        "value": 0
+                      },
+                      {
+                        "derivative": 0,
+                        "location": 1,
+                        "value": 0
+                      }
+                    ]
+                  },
+                  "type": "minecraft:spline"
+                },
+                "type": "minecraft:mul"
+              },
+              "type": "minecraft:mul"
+            },
+            "type": "minecraft:add"
+          },
+          "argument2": {
+            "argument1": 0.5078125,
+            "argument2": {
+              "argument1": {
+                "spline": {
+                  "coordinate": "realscale:realism_max/continental_field",
+                  "points": [
+                    {
+                      "derivative": 0,
+                      "location": -1,
+                      "value": 0
+                    },
+                    {
+                      "derivative": 0,
+                      "location": -0.23,
+                      "value": 0
+                    },
+                    {
+                      "derivative": 0,
+                      "location": -0.13,
+                      "value": 0.18
+                    },
+                    {
+                      "derivative": 0,
+                      "location": -0.05,
+                      "value": 0.56
+                    },
+                    {
+                      "derivative": 0,
+                      "location": 0.09,
+                      "value": 1
+                    },
+                    {
+                      "derivative": 0,
+                      "location": 0.25,
+                      "value": 0.85
+                    },
+                    {
+                      "derivative": 0,
+                      "location": 0.6,
+                      "value": 0.62
+                    },
+                    {
+                      "derivative": 0,
+                      "location": 1,
+                      "value": 0.6
+                    }
+                  ]
+                },
+                "type": "minecraft:spline"
+              },
+              "argument2": "realscale:realism_max/foothill_field",
+              "type": "minecraft:mul"
+            },
+            "type": "minecraft:mul"
+          },
+          "type": "minecraft:add"
+        },
+        "argument2": {
+          "argument1": 0.1171875,
+          "argument2": {
+            "argument1": {
+              "spline": {
+                "coordinate": "realscale:realism_max/continental_field",
+                "points": [
+                  {
+                    "derivative": 0,
+                    "location": -1,
+                    "value": 0
+                  },
+                  {
+                    "derivative": 0,
+                    "location": -0.23,
+                    "value": 0
+                  },
+                  {
+                    "derivative": 0,
+                    "location": -0.13,
+                    "value": 0.18
+                  },
+                  {
+                    "derivative": 0,
+                    "location": -0.05,
+                    "value": 0.56
+                  },
+                  {
+                    "derivative": 0,
+                    "location": 0.09,
+                    "value": 1
+                  },
+                  {
+                    "derivative": 0,
+                    "location": 0.25,
+                    "value": 0.85
+                  },
+                  {
+                    "derivative": 0,
+                    "location": 0.6,
+                    "value": 0.62
+                  },
+                  {
+                    "derivative": 0,
+                    "location": 1,
+                    "value": 0.6
+                  }
+                ]
+              },
+              "type": "minecraft:spline"
+            },
+            "argument2": "realscale:realism_max/mid_detail_field",
+            "type": "minecraft:mul"
+          },
+          "type": "minecraft:mul"
+        },
+        "type": "minecraft:add"
+      },
+      "argument2": {
+        "argument1": 0.0234375,
+        "argument2": {
+          "argument1": {
+            "spline": {
+              "coordinate": "realscale:realism_max/continental_field",
+              "points": [
+                {
+                  "derivative": 0,
+                  "location": -1,
+                  "value": 0
+                },
+                {
+                  "derivative": 0,
+                  "location": -0.23,
+                  "value": 0
+                },
+                {
+                  "derivative": 0,
+                  "location": -0.13,
+                  "value": 0.18
+                },
+                {
+                  "derivative": 0,
+                  "location": -0.05,
+                  "value": 0.56
+                },
+                {
+                  "derivative": 0,
+                  "location": 0.09,
+                  "value": 1
+                },
+                {
+                  "derivative": 0,
+                  "location": 0.25,
+                  "value": 0.85
+                },
+                {
+                  "derivative": 0,
+                  "location": 0.6,
+                  "value": 0.62
+                },
+                {
+                  "derivative": 0,
+                  "location": 1,
+                  "value": 0.6
+                }
+              ]
+            },
+            "type": "minecraft:spline"
+          },
+          "argument2": "realscale:realism_max/micro_detail_field",
+          "type": "minecraft:mul"
+        },
+        "type": "minecraft:mul"
+      },
+      "type": "minecraft:add"
+    },
+    "argument2": {
+      "argument1": -0.2109375,
+      "argument2": {
+        "argument1": {
+          "spline": {
+            "coordinate": "realscale:realism_max/continental_field",
+            "points": [
+              {
+                "derivative": 0,
+                "location": -1,
+                "value": 0
+              },
+              {
+                "derivative": 0,
+                "location": -0.22,
+                "value": 0
+              },
+              {
+                "derivative": 0,
+                "location": -0.12,
+                "value": 0.38
+              },
+              {
+                "derivative": 0,
+                "location": -0.045,
+                "value": 0.75
+              },
+              {
+                "derivative": 0,
+                "location": 0.12,
+                "value": 1
+              },
+              {
+                "derivative": 0,
+                "location": 0.35,
+                "value": 0.4
+              },
+              {
+                "derivative": 0,
+                "location": 0.6,
+                "value": 0.13
+              },
+              {
+                "derivative": 0,
+                "location": 1,
+                "value": 0
+              }
+            ]
+          },
+          "type": "minecraft:spline"
+        },
+        "argument2": {
+          "spline": {
+            "coordinate": {
+              "argument": "realscale:realism_max/lowland_valley_axis",
+              "type": "minecraft:abs"
+            },
+            "points": [
+              {
+                "derivative": 0,
+                "location": 0,
+                "value": 1
+              },
+              {
+                "derivative": 0,
+                "location": 0.05,
+                "value": 0.93
+              },
+              {
+                "derivative": 0,
+                "location": 0.13,
+                "value": 0.4
+              },
+              {
+                "derivative": 0,
+                "location": 0.22,
+                "value": 0.07
+              },
+              {
+                "derivative": 0,
+                "location": 0.35,
+                "value": 0
+              },
+              {
+                "derivative": 0,
+                "location": 1,
+                "value": 0
+              }
+            ]
+          },
+          "type": "minecraft:spline"
+        },
+        "type": "minecraft:mul"
+      },
+      "type": "minecraft:mul"
+    },
+    "type": "minecraft:add"
+  }
+}

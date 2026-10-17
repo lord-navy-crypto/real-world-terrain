@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:snowy_plains",
+    "minecraft:snowy_slopes",
+    "minecraft:stony_peaks",
+    "minecraft:windswept_gravelly_hills"
+  ],
+  "features": "realscale:geo_region_cold_desert_pavement",
+  "step": "vegetal_decoration"
+}

@@ -62,6 +62,29 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     /** Declared in priority order for three-way border corners. */
     private static final List<Rule> RULES = List.of(
+            // Narrow, geographically distinct v0.6 climate boundaries.
+            rule("cherry_oak_woodland",32,"cherry_grove","forest"),
+            rule("cherry_meadow_fringe",24,"cherry_grove","meadow"),
+            rule("birch_snowline_scrub",24,"birch_forest","snowy_slopes"),
+            rule("spruce_snowdrift_edge",24,"grove","snowy_slopes"),
+            rule("mangrove_freshwater_margin",16,"mangrove_swamp","river"),
+            rule("coastal_marsh_woodland",24,"swamp","beach"),
+            rule("dune_pine_woodland",24,"taiga","beach"),
+            rule("montane_oak_foothills",32,"forest","windswept_forest"),
+            rule("rocky_savanna_foothills",32,"savanna","stony_peaks"),
+            rule("badlands_peak_scree",24,"badlands","stony_peaks"),
+            rule("bamboo_meadow_fringe",24,"bamboo_jungle","meadow"),
+            rule("snowy_spruce_riverbank",16,"snowy_taiga","frozen_river"),
+            // Real geographic micro-habitats are matched before broad forest/plains
+            // ecotones so narrow birch glades are not painted as generic woodland.
+            rule("birch_parkland",24,"birch_forest,old_growth_birch_forest",PLAINS),
+            rule("boreal_parkland",32,"taiga,old_growth_pine_taiga,old_growth_spruce_taiga",PLAINS),
+            rule("peat_bog_taiga",24,TAIGA,"swamp"),
+            rule("seasonal_savanna_wetland",24,SAVANNA,"swamp"),
+            rule("tropical_littoral_forest",24,"jungle,sparse_jungle","beach"),
+            rule("frost_riparian_banks",16,"snowy_plains","frozen_river"),
+            rule("montane_spruce_meadow",24,TAIGA,"meadow"),
+            rule("dry_grass_dunes",32,"desert",PLAINS),
             rule("woodland_meadow",32,FOREST,"meadow,"+PLAINS),
             rule("forest_steppe",40,FOREST,SAVANNA),
             rule("marshy_woodland",24,"forest,birch_forest,old_growth_birch_forest","swamp,mangrove_swamp"),
@@ -107,13 +130,52 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     private static final Set<String> CANDIDATE_IDS = RULES.stream()
             .flatMap(rule -> Stream.concat(rule.left().stream(), rule.right().stream()))
             .collect(Collectors.toUnmodifiableSet());
+    /**
+     * Ordered pair lookup: builds all compatible vanilla biome combinations
+     * exactly once instead of scanning 60 rules for every quart boundary.
+     * putIfAbsent retains the original RULES priority at overlapping pairs.
+     */
+    private static final Map<String, Map<String, Rule>> RULE_BY_BIOME = indexRules();
+
+    private static Map<String, Map<String, Rule>> indexRules() {
+        Map<String, Map<String, Rule>> mutable = new HashMap<>();
+        for (Rule rule : RULES) {
+            for (String a : rule.left()) for (String b : rule.right()) {
+                mutable.computeIfAbsent(a, key -> new HashMap<>()).putIfAbsent(b, rule);
+                mutable.computeIfAbsent(b, key -> new HashMap<>()).putIfAbsent(a, rule);
+            }
+        }
+        Map<String, Map<String, Rule>> immutable = new HashMap<>();
+        mutable.forEach((id, partners) -> immutable.put(id, Map.copyOf(partners)));
+        return Map.copyOf(immutable);
+    }
+    // Limit ray traversal to the largest boundary width this particular
+    // vanilla biome can actually participate in. A global 48-block radius
+    // needlessly samples remote climate for narrow river/coast transitions.
+    private static final Map<String, Integer> MAX_WIDTH_BY_BIOME = buildWidths();
+
+    private static Map<String, Integer> buildWidths() {
+        Map<String, Integer> widths = new HashMap<>();
+        for (Rule rule : RULES) {
+            for (String id : rule.left()) widths.merge(id, rule.widthBlocks(), Math::max);
+            for (String id : rule.right()) widths.merge(id, rule.widthBlocks(), Math::max);
+        }
+        return Map.copyOf(widths);
+    }
     private static final int MAX_SEARCH_QUARTS = RULES.stream()
             .mapToInt(rule -> rule.widthBlocks() / 8).max().orElse(0);
+    // Cardinal and diagonal rays: the same Euclidean radius in all headings.
+    // Cardinals first preserve deterministic precedence for equal distances.
+    private static final int[][] DIRECTIONS = {
+            {1,0},{-1,0},{0,1},{0,-1},
+            {1,1},{1,-1},{-1,1},{-1,-1}
+    };
 
     /** Bounded per-thread climate cache, invalidated when the climate sampler changes. */
     private static final class SamplingCache {
         private static final int LIMIT = 8192;
         Climate.Sampler sampler;
+        final QuartBiomeResultCache<Holder<Biome>> resolved = new QuartBiomeResultCache<>();
         final LinkedHashMap<Long, Holder<Biome>> positions =
                 new LinkedHashMap<>(LIMIT, 0.75f, true) {
                     @Override
@@ -121,6 +183,14 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
                         return size() > LIMIT;
                     }
                 };
+
+        void prepare(Climate.Sampler nextSampler) {
+            if (sampler == nextSampler) return;
+            sampler = nextSampler;
+            positions.clear();
+            // A new sampler may resolve the same quart coordinate differently.
+            resolved.clear();
+        }
     }
 
     private final BiomeSource source;
@@ -138,10 +208,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     private Holder<Biome> sampleBase(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
         SamplingCache cache = cached.get();
-        if (cache.sampler != sampler) {
-            cache.sampler = sampler;
-            cache.positions.clear();
-        }
+        cache.prepare(sampler);
         long key = BlockPos.asLong(quartX, quartY, quartZ);
         Holder<Biome> existing = cache.positions.get(key);
         if (existing != null) return existing;
@@ -176,14 +243,29 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     }
 
     private static Rule findPair(String first, String second) {
-        for (Rule rule : RULES) {
-            if (rule.matches(first, second)) return rule;
-        }
-        return null;
+        Map<String, Rule> partners = RULE_BY_BIOME.get(first);
+        return partners == null ? null : partners.get(second);
     }
 
     @Override
     public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
+        SamplingCache cache = cached.get();
+        cache.prepare(sampler);
+        long key = BlockPos.asLong(quartX, quartY, quartZ);
+        Holder<Biome> previous = cache.resolved.get(key);
+        if (previous != null) return previous;
+
+        Holder<Biome> result = resolveUncached(quartX, quartY, quartZ, sampler);
+        cache.resolved.put(key, result);
+        return result;
+    }
+
+    /**
+     * Original ecotone algorithm: unchanged priority, boundary search, water
+     * preservation and final holder resolution. Only callers memoize output.
+     */
+    private Holder<Biome> resolveUncached(
+            int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
         Holder<Biome> original = sampleBase(quartX, quartY, quartZ, sampler);
         // Surface ecotones must not be painted across caves or deep aquifers.
         if (quartY < 12) return original;
@@ -194,20 +276,28 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         // underlying biome boundary in each direction. With a maximum half
         // width of 32 blocks, these samples never exceed 8 quart cells.
         Rule nearest = null;
-        int closest = Integer.MAX_VALUE;
-        final int[][] directions = {{1,0},{-1,0},{0,1},{0,-1}};
-        for (int[] direction : directions) {
-            for (int step = 1; step <= MAX_SEARCH_QUARTS; step++) {
+        int closestDistanceSquared = Integer.MAX_VALUE;
+        int maxLocalQuarts = (MAX_WIDTH_BY_BIOME.getOrDefault(current, 0) + 7) / 8;
+        for (int[] direction : DIRECTIONS) {
+            for (int step = 1; step <= maxLocalQuarts; step++) {
+                int distanceSquared = EcotoneMath.quartDistanceSquared(
+                        direction[0], direction[1], step);
+                // No rule can be wider than the configured global search span.
+                if (distanceSquared > 16 * maxLocalQuarts * maxLocalQuarts) break;
+                // Rays are visited from closest to farthest. We can safely
+                // stop once a heading cannot beat the best existing border.
+                if (distanceSquared >= closestDistanceSquared) break;
                 String next = vanillaId(sampleBase(quartX + direction[0] * step,
                         quartY, quartZ + direction[1] * step, sampler));
                 if (current.equals(next)) continue;
                 Rule rule = findPair(current, next);
-                if (rule != null && step * 4 <= rule.widthBlocks() / 2
-                        && step < closest) {
+                if (rule != null && EcotoneMath.withinRadialBand(
+                        direction[0], direction[1], step, rule.widthBlocks())) {
                     nearest = rule;
-                    closest = step;
+                    closestDistanceSquared = distanceSquared;
                 }
-                // Do not skip across an incompatible third biome.
+                // The very first adjacent nonmatching biome is the physical
+                // interface; never search through an unrelated third biome.
                 break;
             }
         }

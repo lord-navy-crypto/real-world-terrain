@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:desert",
+    "minecraft:badlands",
+    "minecraft:savanna",
+    "minecraft:stony_peaks"
+  ],
+  "features": "realscale:geo_region_alluvial_fan",
+  "step": "vegetal_decoration"
+}

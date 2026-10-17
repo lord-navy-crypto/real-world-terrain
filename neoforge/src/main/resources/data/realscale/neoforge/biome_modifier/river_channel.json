@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:river",
+    "minecraft:frozen_river"
+  ],
+  "features": "realscale:river_channel",
+  "step": "local_modifications"
+}

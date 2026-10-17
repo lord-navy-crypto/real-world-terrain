@@ -1,0 +1,5 @@
+{
+  "type": "realscale:dem_density_seamless",
+  "base": "realscale:realism_max/terrain_density",
+  "blend_meters": 2048
+}

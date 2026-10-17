@@ -43,6 +43,38 @@ def test_modifier_references():
         if ref.startswith("realscale:"):
             assert (FEATURES / (ref.split(":", 1)[1] + ".json")).exists(), f
 
+def test_ecotone_feature_order_isolation():
+    """The same PlacedFeature holder in conflicting relative order causes a
+    FeatureSorter cycle, e.g. swamp vs seasonal_floodforest. Alias the placed
+    features, not the configured blocks, for ecotone-only decoration.
+    """
+    groups = {
+        "arid": "dry_scrub_patch",
+        "coastal": "meadow_wildflower_patch",
+        "forest": "birch_understory_ferns",
+        "highlands": "stony_highland_sparse_grass",
+        "wetland": "wetland_moss_patch",
+    }
+    for group, original_name in groups.items():
+        modifier = load(MODIFIERS / ("ecotone_" + group + "_undergrowth.json"))
+        custom_id = "ecotone_" + group + "_undergrowth"
+        assert modifier["features"] == "realscale:" + custom_id
+        assert all(b.startswith("realscale:") for b in modifier["biomes"])
+        clone = load(PLACED / (custom_id + ".json"))
+        original = load(PLACED / (original_name + ".json"))
+        assert clone == original, "Ecotone features must preserve placement: " + group
+        assert clone["feature"].startswith("realscale:")
+    vanilla_features = set()
+    for path in MODIFIERS.glob("*.json"):
+        d = load(path)
+        if d.get("type") != "neoforge:add_features":
+            continue
+        if any(b.startswith("minecraft:") for b in d["biomes"]):
+            fs = d["features"] if isinstance(d["features"], list) else [d["features"]]
+            vanilla_features.update(fs)
+    for group in groups:
+        assert ("realscale:ecotone_" + group + "_undergrowth") not in vanilla_features
+
 def test_natural_ecotone_undergrowth():
     seen = set()
     for modifier_path in MODIFIERS.glob("ecotone_*_undergrowth.json"):
@@ -67,7 +99,8 @@ def test_natural_ecotone_preset():
     assert generator["biome_source"]["source"] == baseline["biome_source"]
     assert load(PRESETS / "realism_max.json") == original
     tag = load(ROOT.parent / "minecraft/tags/worldgen/world_preset/normal.json")
-    assert "realscale:realism_max_ecotones" in tag["values"]
+    assert (PRESETS / "realism_max_ecotones.json").is_file()  # historical preset remains available
+    assert "realscale:tva_sacred_timeline_three_realms" in tag["values"]
 
 def test_biome_lab():
     d = load(PRESETS / "biome_lab.json")
@@ -102,7 +135,7 @@ def test_supported_microstructures():
 def test_all_custom_biome_carvers():
     # Minecraft 1.21.1 expects a carving-stage map, not the later-version list.
     all_biomes = list(BIOMES.glob("*.json"))
-    assert len(all_biomes) == 46, len(all_biomes)
+    assert len(all_biomes) == 67, len(all_biomes)
     for path in all_biomes:
         biome = load(path)
         assert isinstance(biome.get("carvers"), dict), path
@@ -121,9 +154,9 @@ def test_ecotone_gallery():
 def test_ecotone_catalog():
     catalog = load(Path(__file__).resolve().parents[1] / "neoforge/ecotones/catalog.json")
     entries = catalog["entries"]
-    assert len(entries) == 40
+    assert len(entries) == 60
     ids = [entry["id"] for entry in entries]
-    assert len(set(ids)) == 40
+    assert len(set(ids)) == 60
     priority = [entry for entry in entries if entry["phase"] == "priority-10"]
     assert len(priority) == 10
     for entry in entries:
@@ -135,12 +168,69 @@ def test_ecotone_catalog():
         assert entry["from"] != entry["to"]
         assert 8 <= entry["target_width_blocks"] <= 64
 
+def test_grand_dimensions():
+    """Dimensions use full-size noise, not only taller empty dimension types."""
+    preset = load(PRESETS / "realism_max_three_realms.json")
+    old = load(PRESETS / "realism_max.json")
+    assert preset["dimensions"]["minecraft:overworld"] == old["dimensions"]["minecraft:overworld"]
+    for dimension, type_id, settings, sea in (
+        ("minecraft:the_nether", "realscale:grand_nether","grand_nether",32),
+        ("minecraft:the_end", "realscale:grand_end","grand_end",0)):
+        d = preset["dimensions"][dimension]
+        prior = old["dimensions"][dimension]
+        assert d["type"] == type_id
+        assert d["generator"]["type"] == "minecraft:noise"
+        assert d["generator"]["settings"] == "realscale:"+settings
+        assert d["generator"]["biome_source"] == prior["generator"]["biome_source"]
+        dim_type = load(ROOT / "dimension_type" / (settings+".json"))
+        noise = load(ROOT / "worldgen/noise_settings" / (settings+".json"))
+        assert dim_type["min_y"] == noise["noise"]["min_y"] == 0
+        assert dim_type["height"] == dim_type["logical_height"] == noise["noise"]["height"] == 512
+        assert noise["sea_level"] == sea
+    nether = load(ROOT / "worldgen/noise_settings/grand_nether.json")
+    assert nether["noise_router"]["final_density"]["type"] == "realscale:grand_nether_caverns"
+    assert nether["noise_router"]["final_density"]["base"]["type"] == "minecraft:squeeze"
+    assert nether["noise_router"]["final_density"]["warp"]["type"] == "minecraft:noise"
+    assert nether["noise_router"]["final_density"]["warp"]["noise"] == "minecraft:continentalness"
+    assert '"grand_nether_caverns"' in (ROOT.parents[2] /
+        "java/org/realscale/neoforge/RealScaleMod.java").read_text()
+    assert nether["default_fluid"]["Name"] == "minecraft:lava"
+    assert nether["default_block"]["Name"] == "minecraft:netherrack"
+    assert nether["surface_rule"]["sequence"][0]["if_true"]["random_name"] == "minecraft:bedrock_floor"
+    assert nether["surface_rule"]["sequence"][1]["if_true"]["invert"]["random_name"] == "minecraft:bedrock_roof"
+    def gradients(node):
+        if isinstance(node, dict):
+            if node.get("type") == "minecraft:y_clamped_gradient":
+                yield (node["from_y"], node["to_y"])
+            for value in node.values():
+                yield from gradients(value)
+        elif isinstance(node, list):
+            for value in node:
+                yield from gradients(value)
+    assert (448,496) in list(gradients(nether["noise_router"]["final_density"]))
+    assert load(ROOT/"dimension_type/grand_nether.json")["coordinate_scale"] == 8
+    end = load(ROOT/"worldgen/noise_settings/grand_end.json")
+    assert end["default_block"]["Name"] == "minecraft:end_stone"
+    assert end["noise_router"]["final_density"]["type"] == "realscale:grand_end_density"
+    assert end["noise_router"]["initial_density_without_jaggedness"]["type"] == "realscale:grand_end_density"
+    assert load(ROOT/"dimension_type/grand_end.json")["coordinate_scale"] == 1
+    mod_java = (ROOT.parents[2] / "java/org/realscale/neoforge/RealScaleMod.java").read_text()
+    assert '"grand_end_density"' in mod_java
+    tag = load(ROOT.parent/"minecraft/tags/worldgen/world_preset/normal.json")
+    assert "realscale:tva_sacred_timeline_three_realms" in tag["values"]
+    assert (PRESETS/"realism_max_three_realms.json").exists()
+    for file in ("realism_max.json","realism_max_ecotones.json"):
+        assert load(PRESETS/file)["dimensions"]["minecraft:the_nether"]["generator"]["settings"] == "minecraft:nether"
+        assert load(PRESETS/file)["dimensions"]["minecraft:the_end"]["generator"]["settings"] == "minecraft:end"
+
 if __name__ == "__main__":
     test_biomes()
+    test_grand_dimensions()
     test_modifier_references()
     test_biome_lab()
     test_natural_ecotone_preset()
     test_natural_ecotone_undergrowth()
+    test_ecotone_feature_order_isolation()
     test_ecotone_catalog()
     test_ecotone_gallery()
     test_all_custom_biome_carvers()

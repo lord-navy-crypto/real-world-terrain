@@ -1,4 +1,9 @@
 name: Source integrity, tests and NeoForge build
+# Keep only the newest PR validation; old experimental commits must not
+# monopolize expensive high-ceiling Minecraft server runners.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
   push:
     branches: [main]
@@ -23,6 +28,15 @@ jobs:
         run: python3 qa/verify_repository.py
       - name: Validate custom biome registry resources (static)
         run: python3 scripts/check_custom_biomes.py
+      - name: Validate Grand Ecology registrations and preserved dimensions
+        run: python3 scripts/check_grand_ecology.py
+      - name: Deterministic macro-ecology density and elevation smoke
+        run: |
+          mkdir -p build/ecology-math-smoke
+          javac -d build/ecology-math-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/EcologyDistributionMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/EcologyDistributionMathSmoke.java
+          java -cp build/ecology-math-smoke org.realscale.neoforge.EcologyDistributionMathSmoke
       - name: Compile and execute ecotone and cave classifier smoke tests
         run: |
           mkdir -p build/habitat-smoke
@@ -31,6 +45,51 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/CaveHabitatMath.java \
             neoforge/src/test/java/org/realscale/neoforge/HabitatMathSmoke.java
           java -cp build/habitat-smoke org.realscale.neoforge.HabitatMathSmoke
+      - name: Validate experimental navigable waterways and hovercraft assets
+        run: python3 -m unittest discover -s qa -p 'test_navigable_waterway_hovercraft.py' -v
+      - name: Verify authentic USGS 3DEP import geometry and measured-only DEM contracts
+        run: python3 -m unittest discover -s qa -p 'test_usgs_3dep_import.py' -v
+      - name: Verify regional drainage graph and tributary confluences
+        run: |
+          mkdir -p build/watershed-routing-smoke
+          javac -d build/watershed-routing-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/WatershedRoutingMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/WatershedRoutingMathSmoke.java
+          java -cp build/watershed-routing-smoke org.realscale.neoforge.WatershedRoutingMathSmoke
+      - name: Validate navigable river water geometry and vertical steps
+        run: python3 -m unittest discover -s qa -p 'test_river_navigation_audit.py' -v
+      - name: Validate saved ground heightmaps and reject real terrain spikes
+        run: python3 -m unittest discover -s qa -p 'test_ground_heightmap_spikes.py' -v
+      - name: Verify worldgen timing is disabled by default and opt-in is bounded
+        run: |
+          mkdir -p build/worldgen-profiler-smoke
+          javac -d build/worldgen-profiler-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/WorldgenProfiler.java \
+            neoforge/src/test/java/org/realscale/neoforge/WorldgenProfilerSmoke.java
+          java -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
+          java -Drealscale.worldgen.profile=true -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
+      - name: Validate restored climate world's RCON+Anvil acceptance test
+        run: python3 -m unittest discover -s qa -p 'test_pr25_live_world_boot.py' -v
+      - name: Check all four restored PR25 historical climate world families
+        run: python3 -m unittest discover -s qa -p 'test_pr25_climate_profiles.py' -v
+      - name: Prevent loss of historical TVA worldgen subsystems during branch consolidation
+        run: python3 -m unittest discover -s qa -p 'test_tva_branch_unification.py' -v
+      - name: Verify restored PR25 single-pole annular climate without changing old math
+        run: |
+          mkdir -p build/pr25-single-pole-climate
+          javac -d build/pr25-single-pole-climate \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/SinglePoleAreaLatitudeSmoke.java
+          java -cp build/pr25-single-pole-climate org.realscale.neoforge.SinglePoleAreaLatitudeSmoke
+      - name: Test RealScale feature-profile log comparison
+        run: python3 -m unittest discover -s qa -p 'test_worldgen_profile_compare.py' -v
+      - name: Verify bounded ecotone resolution cache and parallel sampler isolation
+        run: |
+          mkdir -p build/ecotone-result-cache-smoke
+          javac -d build/ecotone-result-cache-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/QuartBiomeResultCache.java \
+            neoforge/src/test/java/org/realscale/neoforge/QuartBiomeResultCacheSmoke.java
+          java -cp build/ecotone-result-cache-smoke org.realscale.neoforge.QuartBiomeResultCacheSmoke
       - name: Measure DEM grid continuity and tile boundary blend
         run: |
           mkdir -p build/terrain-continuity
@@ -38,12 +97,144 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
             neoforge/src/test/java/org/realscale/neoforge/TerrainContinuitySmoke.java
           java -cp build/terrain-continuity:neoforge/src/main/resources org.realscale.neoforge.TerrainContinuitySmoke
+      - name: Grand Nether / End math determinism and dragon island protection
+        run: |
+          mkdir -p build/grand-dimension-smoke
+          javac -d build/grand-dimension-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/GrandDimensionMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandDimensionMathSmoke.java
+          java -cp build/grand-dimension-smoke org.realscale.neoforge.GrandDimensionMathSmoke
+      - name: Verify restored alpine basins, flat plateaus, rims and coast protection
+        run: |
+          mkdir -p build/mountain-relief-smoke
+          javac -d build/mountain-relief-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/MountainReliefMathSmoke.java
+          java -cp build/mountain-relief-smoke org.realscale.neoforge.MountainReliefMathSmoke
+          python3 -m unittest discover -s qa -p 'test_mountain_basin_plateau_default.py' -v
+      - name: Verify equal-area concentric latitude math and default climate wiring
+        run: |
+          mkdir -p build/area-balanced-climate
+          javac -d build/area-balanced-climate \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/AreaBalancedClimateSmoke.java
+          java -cp build/area-balanced-climate org.realscale.neoforge.AreaBalancedClimateSmoke
+          python3 -m unittest discover -s qa -p 'test_area_balanced_default_climate.py' -v
+      - name: Verify chunk-local lava tube and karst passages
+        run: python3 -m unittest discover -s qa -p 'test_cave_wonder_networks.py' -v
+      - name: Check real large-region math at negative and chunk-border coordinates
+        run: |
+          mkdir -p build/geo-wonder-geometry
+          javac -d build/geo-wonder-geometry \
+            neoforge/src/main/java/org/realscale/neoforge/GeoWonderGeometry.java \
+            neoforge/src/test/java/org/realscale/neoforge/GeoWonderGeometrySmoke.java
+          java -cp build/geo-wonder-geometry org.realscale.neoforge.GeoWonderGeometrySmoke
+      - name: Validate deterministic large-region geo wonders
+        run: python3 -m unittest discover -s qa -p 'test_geo_wonder_regions.py' -v
+      - name: Verify NeoForge experimental world uses authenticated save and stop
+        run: python3 -m unittest discover -s qa -p 'test_geo_wonders_rcon_shutdown.py' -v
+      - name: Ensure canonical sacred timeline excludes experimental geology and invasion
+        run: python3 -m unittest discover -s qa -p 'test_sacred_timeline_promotions.py' -v
+      - name: Verify woven opt-in Wonders + invasion and preserved performance cache
+        run: python3 -m unittest discover -s qa -p 'test_tva_woven_optional_features.py' -v
+      - name: Verify Natural Wonders and six-way invasion registrations and safety gates
+        run: python3 -m unittest discover -s qa -p 'test_natural_wonders*.py' -v
+      - name: Validate mountain cave microhabitats, legacy features and roof safety
+        run: python3 -m unittest discover -s qa -p 'test_highland_cave_recovery.py' -v
+      - name: Verify newly restored giant Overworld cavern networks and their real final-density wiring
+        run: |
+          mkdir -p build/grand-overworld-cave-smoke
+          javac -d build/grand-overworld-cave-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldCaveNetworkSmoke.java
+          java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldCaveNetworkSmoke
+          python3 -m unittest discover -s qa -p 'test_grand_overworld_cave_integration.py' -v
+      - name: Validate giant connected Grand Nether caverns and bit-exact optimization parity
+        run: |
+          mkdir -p build/grand-cave-smoke
+          javac -d build/grand-cave-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/GrandNetherCaveNetwork.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkReference.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkParitySmoke.java
+          java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkSmoke
+          java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkParitySmoke
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
+      - name: Prove DEM column locality cache equivalence under all tile edges
+        run: |
+          mkdir -p build/dem-cache-smoke
+          javac -d build/dem-cache-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java \
+            neoforge/src/test/java/org/realscale/neoforge/RealDemColumnCacheSmoke.java
+          java -cp build/dem-cache-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemColumnCacheSmoke
+      - name: Regress USGS v2 DEM grid fidelity and exterior continuity
+        run: |
+          mkdir -p build/usgs-v2-smoke
+          javac -d build/usgs-v2-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemDataSource.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealDemSeamlessMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/RealDemSeamlessMathSmoke.java
+          java -cp build/usgs-v2-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemSeamlessMathSmoke
+      - name: TVA multi-branch integration contract
+        run: python3 scripts/check_tva_sacred_timeline.py
+      - name: Verify Java/Python sky-island hash and five-island coordinate parity
+        run: python3 -m unittest discover -s qa -p 'test_sky_island_fixture_parity.py' -v
+      - name: Validate concentric offshore sky island geometry
+        run: |
+          mkdir -p build/tva-sky
+          javac -d build/tva-sky \
+            neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
+            neoforge/src/test/java/org/realscale/neoforge/SkyIslandLayoutSmoke.java
+          java -cp build/tva-sky org.realscale.neoforge.SkyIslandLayoutSmoke
+      - name: Verify NeoForge runClient task is registered
+        working-directory: neoforge
+        run: |
+          gradle --no-daemon tasks --all | grep -E '^[[:space:]]*runClient([[:space:]]|$)'
+      - name: Regress radial latitude, basin climates and scientific geomorphology
+        run: |
+          python3 -m unittest discover -s qa -p test_radial_climate_math.py -v
+          python3 -m unittest discover -s qa -p test_radial_climate_audit.py -v
+          python3 -m unittest discover -s qa -p test_latitude_climate.py -v
+          python3 -m unittest discover -s qa -p test_custom_geomorphology.py -v
+      - name: Verify the four TVA menu presets use isolated seed-proven smoothed density graphs
+        run: python3 -m unittest discover -s qa -p 'test_tva_smoothed_families.py' -v
+      - name: Ensure 2096-height Anvil heightmaps never decode using Canyon's shorter generator height
+        run: python3 -m unittest discover -s qa -p 'test_tva_heightmap_decoding.py' -v
+      - name: Build and verify six optional structure density packs
+        run: |
+          python3 -m unittest discover -s qa -p 'test_grand_structure_density.py' -v
+          python3 scripts/make_structure_density_packs.py --outdir build/structure-packs
+      - name: Restore cross-branch water, river, cave, spawn, and structures unit gates
+        run: |
+          python3 -m unittest discover -s qa -p 'test_water_connectivity.py' -v
+          python3 -m unittest discover -s qa -p 'test_spawn_safety.py' -v
+          python3 -m unittest discover -s qa -p 'test_cave_walkability.py' -v
+          python3 -m unittest discover -s qa -p 'test_surface_quality_gates.py' -v
+          python3 -m unittest discover -s qa -p 'test_spawn_chunk_probe.py' -v
+          python3 -m unittest discover -s qa -p 'test_structure_and_geoecology.py' -v
+          python3 -m unittest discover -s qa -p 'test_river_channel_registration.py' -v
+      - name: Prove ALL inherited worldgen density reference graphs resolve
+        run: python3 -m unittest discover -s qa -p test_all_worldgen_graphs.py -v
+      - name: Verify TVA Terrain Lab independent families, Grand realms and saved-world menu stability
+        run: python3 -m unittest discover -s qa -p test_tva_terrain_lab.py -v
       - name: Build readable NeoForge project
         working-directory: neoforge
         run: gradle --no-daemon --stacktrace build
+      - name: Verify RealScale JAR contains selectable structure packs and Config integration
+        run: python3 -m unittest discover -s qa -p 'test_builtin_structure_packs.py' -v
+      - name: Export real TVA YACL Terrain Lab datapack from compiled JAR
+        run: |
+          python3 qa/test_tva_exporter_end_to_end.py
+          mkdir -p build/tva-exporter
+          python3 -m zipapp scripts \
+            --main export_terrain_lab_datapack:main \
+            --python '/usr/bin/env python3' \
+            --output build/tva-exporter/RealScale-TVA-Config-Exporter.pyz
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -51,4 +242,11 @@ jobs:
           path: |
             neoforge/build/libs/*.jar
             build/saved-world-replay.json
+            build/tva-exporter/*.pyz
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: RealScale-Grand-Exploration-Structure-Packs
+          path: build/structure-packs/*.zip
           if-no-files-found: error

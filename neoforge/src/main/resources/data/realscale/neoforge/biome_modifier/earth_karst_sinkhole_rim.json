@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:stony_peaks",
+    "minecraft:windswept_hills",
+    "minecraft:meadow"
+  ],
+  "features": "realscale:earth_karst_sinkhole_rim",
+  "step": "vegetal_decoration"
+}

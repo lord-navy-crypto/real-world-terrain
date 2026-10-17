@@ -10,11 +10,46 @@ checks=json.loads((ROOT/'docs/SHA256SUMS.json').read_text())
 # Check its required historic behavior, and keep all OTHER original hashes strict.
 modified_entrypoint='neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java'
 modified_preset_tag='neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json'
+modified_density='neoforge/src/main/java/org/realscale/neoforge/RealDemDensity.java'
 for name,want in checks.items():
  if name==modified_preset_tag:
   tag=json.loads((ROOT/name).read_text())
-  assert 'realscale:realism_max_ecotones' in tag.get('values',[])
-  print('INTENTIONAL MODIFICATION: appended opt-in ecotone preset')
+  assert tag.get('values',[]) == [
+   'realscale:tva_sacred_timeline_three_realms',
+   'realscale:tva_alpine_three_realms',
+   'realscale:tva_canyon_three_realms',
+   'realscale:tva_measured_three_realms',
+   'realscale:tva_wonders_invasion_three_realms']
+  print('INTENTIONAL MODIFICATION: four curated TVA families plus opt-in woven features')
+  continue
+ if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):
+  # Preserve the exact historical text for every legacy ID while allowing
+  # additive TVA family labels; the archived v1.1 JAR is immutable evidence.
+  with zipfile.ZipFile(next((ROOT/'dist/v1.1').glob('*.jar'))) as oldjar:
+   rel=name[len('neoforge/src/main/resources/'):]
+   old=json.loads(oldjar.read(rel))
+  new=json.loads((ROOT/name).read_text())
+  assert all(new.get(key)==value for key,value in old.items()),name
+  for preset in ('tva_sacred_timeline_three_realms','tva_alpine_three_realms',
+                 'tva_canyon_three_realms','tva_measured_three_realms'):
+   assert new.get('generator.realscale.'+preset), (name,preset)
+  print('INTENTIONAL MODIFICATION: additive TVA labels, historical labels unchanged')
+  continue
+ if name=='neoforge/src/main/resources/META-INF/neoforge.mods.toml':
+  descriptor=(ROOT/name).read_text()
+  for required in ('modLoader="javafml"','modId="realscale"',
+                   'version="2.0.0-tva-preview.1"',
+                   'versionRange="[21.1.0,)"',
+                   'versionRange="[1.21.1,1.21.2)"',
+                   'modId="yet_another_config_lib_v3"'):
+   assert required in descriptor,(name,required)
+  print('INTENTIONAL MODIFICATION: TVA preview metadata with intact mod/dependency IDs')
+  continue
+ if name==modified_density:
+  source=(ROOT/name).read_text()
+  assert 'RealDemColumnCache' in source and 'COLUMN_CACHE' in source
+  assert 'base.compute(ctx)' in source and 'mapAll' in source and 'DISPATCH' in source
+  print('INTENTIONAL MODIFICATION: RealDemDensity optimized cache, fallback and codec checked')
   continue
  if name==modified_entrypoint:
   source=(ROOT/name).read_text()
@@ -61,7 +96,14 @@ with tempfile.TemporaryDirectory() as tmp:
     relative=p.relative_to(ROOT/'neoforge/src/main/resources').as_posix()
     # The archived v1.1 JAR is a historical baseline; new experimental
     # resources must be validated separately and need not exist in that JAR.
-    if relative=='data/minecraft/tags/worldgen/world_preset/normal.json':
+    if relative in (
+        'data/minecraft/tags/worldgen/world_preset/normal.json',
+        'assets/minecraft/lang/en_us.json',
+        'assets/minecraft/lang/zh_cn.json',
+        'META-INF/neoforge.mods.toml',
+    ):
+     # World menu and additive translation labels were verified against the
+     # original archived keys in the SHA loop above; keep the JAR immutable.
      continue
     if relative in z.namelist():
      assert z.read(relative)==p.read_bytes(),str(p)

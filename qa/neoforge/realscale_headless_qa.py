@@ -73,9 +73,15 @@ def unpack_palette_index(data,index,bits):
     if n>=len(data):return 0
     return ((data[n]&MASK)>>((index%entries_per_long)*bits))&((1<<bits)-1)
 
-def surface_height(chunk,x,z,min_y=-64,height=2096):
+def surface_height(chunk,x,z,min_y=-64,height=2096,heightmap='WORLD_SURFACE'):
+    """Read a named persisted Minecraft heightmap, without silently substituting.
+
+    WORLD_SURFACE measures canopy and vegetation; MOTION_BLOCKING_NO_LEAVES
+    measures a different geometry. Missing requested heightmaps return None
+    so the real-world QA cannot accidentally mark unknown terrain as passing.
+    """
     heights=chunk.get('Heightmaps',chunk.get('heightmaps',{}))
-    longs=heights.get('WORLD_SURFACE',heights.get('world_surface',[]))
+    longs=heights.get(heightmap,heights.get(heightmap.lower(),[]))
     if not longs:return None
     bits=max(1,(height+1).bit_length())
     idx=z*16+x

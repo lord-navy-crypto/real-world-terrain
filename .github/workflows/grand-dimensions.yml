@@ -1,0 +1,139 @@
+name: Grand Nether and End real server worldgen proof
+# Keep only the newest PR validation; old experimental commits must not
+# monopolize expensive high-ceiling Minecraft server runners.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+on:
+  pull_request:
+    paths:
+      - 'neoforge/**'
+      - 'qa/neoforge/grand_rcon.py'
+      - 'qa/neoforge/check_grand_realm_world.py'
+      - '.github/workflows/grand-dimensions.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  grand-nether-and-end:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Configure isolated Grand Dimensions server
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=grand-realm-proof
+          level-type=realscale:realism_max_three_realms
+          level-seed=785312
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-tick-time=-1
+          online-mode=true
+          enable-rcon=true
+          rcon.password=realscale-ci-only
+          rcon.port=25575
+          PROPERTIES
+          done
+      - name: Generate both secondary dimensions and persist actual blocks
+        working-directory: neoforge
+        run: |
+          python3 - <<'PY'
+          import pathlib,subprocess,threading,time,os,signal,sys
+          sys.path.insert(0,"../qa/neoforge")
+          from grand_rcon import command
+          output=pathlib.Path("build/grand-dimension-server.log")
+          output.parent.mkdir(parents=True,exist_ok=True)
+          p=subprocess.Popen(["gradle","--no-daemon","runServer","--stacktrace"],
+              stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,
+              text=True,bufsize=1,start_new_session=True)
+          ready=threading.Event();lines=[]
+          def drain():
+              for line in p.stdout:
+                  lines.append(line)
+                  if "Done (" in line and "For help" in line:ready.set()
+          t=threading.Thread(target=drain,daemon=True);t.start()
+          try:
+              deadline=time.time()+480
+              while time.time()<deadline and p.poll() is None and not ready.is_set():
+                  time.sleep(1)
+              if not ready.is_set():raise RuntimeError("Grand Dimensions world failed to boot")
+              for query in (
+                    "execute in minecraft:the_nether run forceload add 0 0",
+                    "execute in minecraft:the_nether run forceload add 126 114",
+                    "execute in minecraft:the_nether run forceload add 118 158",
+                    "execute in minecraft:the_nether run forceload add 155 115",
+                    "execute in minecraft:the_nether run forceload add 184 117",
+                    "execute in minecraft:the_nether run forceload add 214 118",
+                    "execute in minecraft:the_nether run forceload add 243 120",
+                    "execute in minecraft:the_nether run forceload add 272 121",
+                    "execute in minecraft:the_nether run forceload add 302 122",
+                    "execute in minecraft:the_nether run forceload add 331 124",
+                    "execute in minecraft:the_nether run forceload add 122 136",
+                    "execute in minecraft:the_nether run forceload add 360 125",
+                    "execute in minecraft:the_nether run forceload add 182 169",
+                    "execute in minecraft:the_nether run forceload add 70 59",
+                    "execute in minecraft:the_nether run forceload add 67 102",
+                    "execute in minecraft:the_nether run forceload add 169 214",
+                    "execute in minecraft:the_nether run forceload add 154 142",
+                    "execute in minecraft:the_nether run forceload add 98 87",
+                    "execute in minecraft:the_nether run forceload add 93 130",
+                    "execute in minecraft:the_nether run forceload add 144 186",
+                    "execute in minecraft:the_end run forceload add 0 0",
+                    "execute in minecraft:the_end run forceload add 2208 0",
+                    "execute in minecraft:the_end run forceload add 2592 256",
+                    "execute in minecraft:the_end run forceload add 2816 -192"):
+                  result=command(query)
+                  if "Unknown" in result or "Incorrect" in result or "Failed" in result:
+                      raise RuntimeError("Dimension load command failed: "+result)
+              time.sleep(80)
+              command("save-all flush")
+              time.sleep(8)
+              try:command("stop")
+              except Exception as exc:print("RCON stop disconnected:",exc)
+              p.wait(timeout=75)
+          finally:
+              if p.poll() is None:
+                  os.killpg(p.pid,signal.SIGINT)
+                  try:p.wait(timeout=15)
+                  except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGKILL);p.wait()
+              t.join(timeout=5)
+              output.write_text("".join(lines))
+              print("GRAND_SERVER_LOG_TAIL",output.read_text()[-6500:],flush=True)
+          PY
+      - name: Verify 512-block Nether and End from actual Anvil regions
+        working-directory: neoforge
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          worlds=list(Path("run").glob("**/grand-realm-proof/level.dat"))
+          assert worlds, "Grand Dimensions world did not save level.dat"
+          path=worlds[0].parent
+          subprocess.run(["python3","../qa/neoforge/check_grand_realm_world.py",str(path)],check=True)
+          PY
+      - name: Upload original Nether and End verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Grand-Dimensions-NeoForge-world-proof
+          path: |
+            neoforge/build/grand-dimension-server.log
+            neoforge/build/grand-dimension-anvil-report.json
+            neoforge/run/**/grand-realm-proof/level.dat
+            neoforge/run/**/grand-realm-proof/DIM-1/region/*.mca
+            neoforge/run/**/grand-realm-proof/DIM1/region/*.mca
+            neoforge/run/**/logs/latest.log
+          if-no-files-found: warn

@@ -1,14 +1,10 @@
 {
   "replace": false,
   "values": [
-    "realscale:ultimate",
-    "realscale:realistic_mountains",
-    "realscale:himalayan",
-    "realscale:grand_canyon",
-    "realscale:continental",
-    "realscale:georeal_ultimate",
-    "realscale:realism_max",
-    "realscale:usgs_big_sur",
-    "realscale:realism_max_ecotones"
+    "realscale:tva_sacred_timeline_three_realms",
+    "realscale:tva_alpine_three_realms",
+    "realscale:tva_canyon_three_realms",
+    "realscale:tva_measured_three_realms",
+    "realscale:tva_wonders_invasion_three_realms"
   ]
 }

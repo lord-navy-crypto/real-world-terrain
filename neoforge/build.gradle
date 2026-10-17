@@ -2,13 +2,16 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.146'
 }
-version='1.1.0'
+version='2.0.0-tva-preview.1'
 group='org.realscale'
-base { archivesName = 'RealScaleTerrain-NeoForge-1.21.1-USGS-FINAL-CANDIDATE' }
+base { archivesName = 'RealScale-TVA-Ultimate-NeoForge-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 neoForge {
     version = '21.1.249'
     runs {
+        client {
+            client()
+        }
         server {
             server()
             programArgument '--nogui'
@@ -22,4 +25,138 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+}
+
+
+// Dedicated original v1.3 Terrain Lab dependencies. YACL is CLIENT-ONLY in
+// metadata; the server must remain playable without any YACL installation.
+// Lithostitched is used only when the player explicitly exports a Lab profile
+// that contains its codecs, never by the canonical TVA world presets.
+repositories {
+    // Use YACL's author-maintained Maven rather than a brittle Modrinth
+    // short-ID/version artifact endpoint. This is the exact 1.21.1 NeoForge
+    // build used by the Config GUI.
+    maven {
+        name = 'Xander Maven'
+        url = 'https://maven.isxander.dev/releases'
+        content { includeGroup 'dev.isxander' }
+    }
+    // YACL uses Quilt's JSON/Gson parser artifacts. Make Quilt Maven the
+    // exclusive source of this group: otherwise Gradle may probe NeoForged
+    // Releases for the same module and fail on a needless TLS handshake.
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Quilt Parsers Releases'
+                url = 'https://maven.quiltmc.org/repository/release/'
+            }
+        }
+        filter { includeGroup 'org.quiltmc.parsers' }
+    }
+    // TwelveMonkeys 3.12.0 and its parent/common POMs are on Maven Central.
+    // Restrict this complete group tree to Maven Central, not NeoForged Maven.
+    exclusiveContent {
+        forRepository {
+            mavenCentral()
+        }
+        filter { includeGroupByRegex 'com\\.twelvemonkeys(\\..*)?' }
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = 'https://api.modrinth.com/maven'
+            }
+        }
+        filter { includeGroup 'maven.modrinth' }
+    }
+}
+dependencies {
+    implementation 'dev.isxander:yet-another-config-lib:3.8.1+1.21.1-neoforge' // YACL 3.8.1, official upstream Maven
+    implementation 'maven.modrinth:XaDC71GB:u0UUKAE1' // Lithostitched 1.6.0
+    testImplementation(platform('org.junit:junit-bom:5.14.1'))
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    testLogging { events 'passed', 'skipped', 'failed' }
+}
+
+// YACL stores 3 independent profiles. Converting one selected draft is an
+// explicit export operation, never an automatic edit to the FOUR core presets.
+// See scripts/export_terrain_lab_datapack.py.
+
+
+// Embed every selectable structure preset inside the RealScale JAR itself.
+// No Python or external structure ZIPs are needed to play or build the mod.
+def generatedStructureResources = layout.buildDirectory.dir("generated/realscale-structure-packs")
+tasks.register("generateBuiltInStructurePacks") {
+    outputs.dir(generatedStructureResources)
+    doLast {
+        def root = generatedStructureResources.get().asFile
+        project.delete(root)
+
+        // Exact Minecraft 1.21.1 structure-set placement baselines.
+        // Keep in sync with scripts/make_structure_density_packs.py; CI compares
+        // all generated resources to that independently tested implementation.
+        def overworld = [
+            ancient_cities: [24, 8, 20083232, [ancient_city:1]],
+            desert_pyramids: [32, 8, 14357617, [desert_pyramid:1]],
+            igloos: [32, 8, 14357618, [igloo:1]],
+            jungle_temples: [32, 8, 14357619, [jungle_pyramid:1]],
+            ocean_monuments: [32, 5, 10387313, [monument:1]],
+            ocean_ruins: [20, 8, 14357621, [ocean_ruin_cold:1, ocean_ruin_warm:1]],
+            shipwrecks: [24, 4, 165745295, [shipwreck:1, shipwreck_beached:1]],
+            swamp_huts: [32, 8, 14357620, [swamp_hut:1]],
+            trail_ruins: [34, 8, 83469867, [trail_ruins:1]],
+            trial_chambers: [34, 12, 94251327, [trial_chambers:1]],
+            villages: [34, 8, 10387312, [village_plains:1, village_desert:1,
+                                         village_savanna:1, village_snowy:1, village_taiga:1]],
+            woodland_mansions: [80, 20, 10387319, [mansion:1]]
+        ]
+        def realms = [
+            nether_complexes: [27, 4, 30084232, [fortress:2, bastion_remnant:3]],
+            end_cities: [20, 11, 10387313, [end_city:1]]
+        ]
+        def definitions = []
+        [2,3,4,6].each { ratio -> definitions.add(["overworld_" + ratio, ratio, overworld]) }
+        [2,3].each { ratio -> definitions.add(["dimensions_" + ratio, ratio, realms]) }
+
+        definitions.each { definition ->
+            def (id, ratio, catalog) = definition
+            def target = new File(root, "resourcepacks/realscale_structures_" + id)
+            target.mkdirs()
+            new File(target, "pack.mcmeta").setText(
+                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                    pack:[pack_format:48, description:
+                        "RealScale built-in optional structures " + id + " — candidate density only"]
+                ])) + "\n", "UTF-8")
+
+            catalog.each { name, values ->
+                def (spacing, separation, salt, structures) = values
+                def newSpacing = Math.max((int)separation + 2,
+                        (int)Math.round(((double)spacing) / Math.sqrt((double)ratio)))
+                def placement = [type:"minecraft:random_spread", salt:salt,
+                                 separation:separation, spacing:newSpacing]
+                if (name in ["ocean_monuments", "woodland_mansions", "end_cities"])
+                    placement.spread_type = "triangular"
+                def data = [
+                    placement:placement,
+                    structures:structures.collect { key, weight ->
+                        [structure:"minecraft:" + key, weight:weight]
+                    }
+                ]
+                def file = new File(target,
+                        "data/minecraft/worldgen/structure_set/" + name + ".json")
+                file.parentFile.mkdirs()
+                file.setText(groovy.json.JsonOutput.prettyPrint(
+                        groovy.json.JsonOutput.toJson(data)) + "\n", "UTF-8")
+            }
+        }
+    }
+}
+sourceSets.main.resources.srcDir(generatedStructureResources)
+tasks.named("processResources") {
+    dependsOn("generateBuiltInStructurePacks")
 }
