@@ -66,6 +66,8 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/WorldgenProfilerSmoke.java
           java -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
           java -Drealscale.worldgen.profile=true -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
+      - name: Validate restored climate world's RCON+Anvil acceptance test
+        run: python3 -m unittest discover -s qa -p 'test_pr25_live_world_boot.py' -v
       - name: Check all four restored PR25 historical climate world families
         run: python3 -m unittest discover -s qa -p 'test_pr25_climate_profiles.py' -v
       - name: Prevent loss of historical TVA worldgen subsystems during branch consolidation
