@@ -201,7 +201,7 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertNotIn("area_balanced",old)
         self.assertTrue(old["balanced"])
         java=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RadialLatitudeTemperatureDensity.java").read_text()
-        self.assertIn("return (balanced || areaBalanced)",java)
+        self.assertIn("return (balanced || areaBalanced || singlePoleArea)",java)
 
 
     def test_pr25_single_pole_annulus_mode_is_opt_in(self):
@@ -215,7 +215,7 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertEqual(profile["pole_distance"],8192)
         self.assertEqual(opts["latitude"],"radial_equal_area_single_pole")
         old_name,_,old_out=self.make(latitude="radial_equal_area",
-                                    latitude_strength=70)
+                                    latitude_strength=70,cold_limit=0)
         old=self.get_temperature(old_out,old_name)
         self.assertTrue(old["area_balanced"])
         self.assertNotIn("single_pole_area",old)
