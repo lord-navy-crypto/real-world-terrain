@@ -46,7 +46,8 @@ public final class GrandOverworldCaveNetwork {
         final int[] columnX=new int[COLUMN_SLOTS];
         final int[] columnZ=new int[COLUMN_SLOTS];
         final int[] columnEpoch=new int[COLUMN_SLOTS];
-        final boolean[] columnCandidate=new boolean[COLUMN_SLOTS];
+        // 47 independently masked chambers and tunnels fit into one long.
+        final long[] columnComponents=new long[COLUMN_SLOTS];
         int epoch=1;
         final Hall[][] halls=new Hall[LAYERS][5];
         final Hall[][] galleries=new Hall[LAYERS][2];
@@ -313,23 +314,96 @@ public final class GrandOverworldCaveNetwork {
      * unchanged. A true result leaves the original computation untouched.
      */
     static boolean mayContainVoidNearColumn(int x,int z) {
-        int localX=Math.floorMod(x,CELL);
-        int localZ=Math.floorMod(z,CELL);
+        return componentMaskForColumn(x,z)!=0;
+    }
+
+    private static long componentMaskForColumn(int x,int z) {
+        int localX=Math.floorMod(x,CELL),localZ=Math.floorMod(z,CELL);
+        // A displaced coordinate may select another cell's distinct
+        // tunnels. Never prune at those edges; retain the original path.
         if(localX<=6 || localX>=CELL-7 || localZ<=5 || localZ>=CELL-6)
-            return true;
+            return -1L;
         Cache c=LOCAL.get();
         c.load(Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
-        int slot=(x*0x9e3779b9 ^ z*0x85ebca6b) & (Cache.COLUMN_SLOTS-1);
+        int slot=(x*0x9e3779b9 ^ z*0x85ebca6b)&(Cache.COLUMN_SLOTS-1);
         if(c.columnEpoch[slot]==c.epoch
                 && c.columnX[slot]==x && c.columnZ[slot]==z)
-            return c.columnCandidate[slot];
-        double loX=x-6.0,hiX=x+6.0,loZ=z-5.0,hiZ=z+5.0;
-        boolean result=columnTouchesNetwork(c,loX,hiX,loZ,hiZ);
+            return c.columnComponents[slot];
+        long mask=columnComponentMask(c,x-6.0,x+6.0,z-5.0,z+5.0);
         c.columnEpoch[slot]=c.epoch;
         c.columnX[slot]=x;
         c.columnZ[slot]=z;
-        c.columnCandidate[slot]=result;
-        return result;
+        c.columnComponents[slot]=mask;
+        return mask;
+    }
+
+    /**
+     * Evaluate the SAME cave network as strength(), but only after excluding
+     * components whose horizontal axis-aligned bounds cannot intersect this
+     * full +/-6 X and +/-5 Z seed-warped column. A skipped component must
+     * have returned precisely zero in the original function at EVERY Y.
+     *
+     * Each mask is immutable for a site cell; collisions evict data but
+     * never change output. Near 768-cell edges use the original evaluator.
+     */
+    static double strengthFromColumn(int sourceX,int sourceZ,
+                                     double x,double y,double z) {
+        if(y<MIN_Y || y>MAX_GEOMETRY_Y)return 0;
+        long mask=componentMaskForColumn(sourceX,sourceZ);
+        if(mask==-1L)return strength(x,y,z);
+        if(mask==0L)return 0;
+        // The original density warp never exceeds the advertised margins.
+        // If called with other inputs, fall back rather than risk a false
+        // component rejection or a different cell cache.
+        if(x<sourceX-6.0 || x>sourceX+6.0
+                || z<sourceZ-5.0 || z>sourceZ+5.0
+                || Math.floorDiv(sourceX,CELL)!=(int)Math.floor(x/CELL)
+                || Math.floorDiv(sourceZ,CELL)!=(int)Math.floor(z/CELL))
+            return strength(x,y,z);
+        Cache c=LOCAL.get();
+        double value=0;
+        for(int layer=0;layer<LAYERS;layer++) {
+            Hall center=c.halls[layer][0];
+            if(Math.abs(y-center.y())>235 && layer<3)continue;
+            if(Math.abs(y-center.y())>350 && layer==3)continue;
+            int shift=layer*9;
+            if((mask&(1L<<shift))!=0)
+                value=Math.max(value,hallStrength(x,y,z,center));
+            for(int direction=0;direction<4;direction++) {
+                if((mask&(1L<<(shift+1+direction)))!=0)
+                    value=Math.max(value,tunnelStrength(x,y,z,center,
+                            c.halls[layer][direction+1],c.widths[layer][direction],
+                            c.corridorKeys[layer][direction]));
+            }
+            if(Math.abs(x-center.x())<225&&Math.abs(z-center.z())<225&&
+                    Math.abs(y-center.y())<150) {
+                for(int g=0;g<2;g++) {
+                    if((mask&(1L<<(shift+5+g*2)))!=0)
+                        value=Math.max(value,hallStrength(x,y,z,c.galleries[layer][g]));
+                    if((mask&(1L<<(shift+6+g*2)))!=0)
+                        value=Math.max(value,tunnelStrength(x,y,z,center,
+                                c.galleries[layer][g],c.sideWidths[layer][g],
+                                c.sideKeys[layer][g]));
+                }
+            }
+        }
+        for(int layer=0;layer<LAYERS-1;layer++) {
+            if((mask&(1L<<(36+layer)))!=0)
+                value=Math.max(value,tunnelStrength(x,y,z,c.halls[layer][0],
+                        c.halls[layer+1][0],c.shafts[layer],c.shaftKeys[layer]));
+        }
+        for(int tier=0;tier<2;tier++) for(int axis=0;axis<2;axis++)
+            for(int group=0;group<2;group++) {
+                int shift=39+tier*4+axis*2+group;
+                if((mask&(1L<<shift))==0)continue;
+                Hall a=c.arteryA[tier][axis][group];
+                if(a!=null)
+                    value=Math.max(value,tunnelStrength(x,y,z,a,
+                            c.arteryB[tier][axis][group],
+                            c.arteryWidth[tier][axis][group],
+                            c.arteryKey[tier][axis][group]));
+            }
+        return value;
     }
 
     private static boolean hallCouldTouch(Hall hall,
@@ -349,35 +423,42 @@ public final class GrandOverworldCaveNetwork {
             && hiZ>=Math.min(a.z(),b.z())-reach;
     }
 
-    private static boolean columnTouchesNetwork(Cache c,
+    private static long columnComponentMask(Cache c,
             double loX,double hiX,double loZ,double hiZ) {
+        long mask=0L;
         for(int layer=0;layer<LAYERS;layer++) {
+            int shift=layer*9;
             Hall center=c.halls[layer][0];
-            if(hallCouldTouch(center,loX,hiX,loZ,hiZ)) return true;
+            if(hallCouldTouch(center,loX,hiX,loZ,hiZ))
+                mask|=1L<<shift;
             for(int dir=0;dir<4;dir++) {
                 if(tunnelCouldTouch(center,c.halls[layer][dir+1],
-                        c.widths[layer][dir],loX,hiX,loZ,hiZ)) return true;
+                        c.widths[layer][dir],loX,hiX,loZ,hiZ))
+                    mask|=1L<<(shift+1+dir);
             }
             for(int i=0;i<2;i++) {
                 Hall satellite=c.galleries[layer][i];
-                if(hallCouldTouch(satellite,loX,hiX,loZ,hiZ)
-                        || tunnelCouldTouch(center,satellite,
-                            c.sideWidths[layer][i],loX,hiX,loZ,hiZ))
-                    return true;
+                if(hallCouldTouch(satellite,loX,hiX,loZ,hiZ))
+                    mask|=1L<<(shift+5+2*i);
+                if(tunnelCouldTouch(center,satellite,
+                        c.sideWidths[layer][i],loX,hiX,loZ,hiZ))
+                    mask|=1L<<(shift+6+2*i);
             }
         }
         for(int layer=0;layer<LAYERS-1;layer++) {
             if(tunnelCouldTouch(c.halls[layer][0],c.halls[layer+1][0],
-                    c.shafts[layer],loX,hiX,loZ,hiZ)) return true;
+                    c.shafts[layer],loX,hiX,loZ,hiZ))
+                mask|=1L<<(36+layer);
         }
         for(int tier=0;tier<2;tier++) for(int axis=0;axis<2;axis++)
             for(int group=0;group<2;group++) {
                 Hall a=c.arteryA[tier][axis][group];
                 if(a!=null && tunnelCouldTouch(a,c.arteryB[tier][axis][group],
                         c.arteryWidth[tier][axis][group],
-                        loX,hiX,loZ,hiZ)) return true;
+                        loX,hiX,loZ,hiZ))
+                    mask|=1L<<(39+tier*4+axis*2+group);
             }
-        return false;
+        return mask;
     }
 
     /**
