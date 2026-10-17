@@ -80,6 +80,23 @@ public final class SkyIslandLayoutSmoke {
                     *(prev.radius()+island.radius()+8),"cluster islands cannot intersect");
             }
         }
+        // Conservative sky-biome broad phase must keep every island
+        // footprint, including fringe satellites, negative coordinates and
+        // quart-height sampling. It may only skip distant non-island columns.
+        int farCandidates=0;
+        for(int x=-1860;x<=1860;x+=7)for(int z=-1860;z<=1860;z+=11) {
+            var parent=SkyIslandLayout.at(x,z);
+            boolean near=SkyIslandLayout.mayIntersectIslands(parent,x,z);
+            boolean candidate=false;
+            for(int slot=0;slot<SkyIslandLayout.SLOTS;slot++) {
+                var child=SkyIslandLayout.satellite(parent,slot);
+                if(SkyIslandLayout.insideBiome(child,x,child.topY(),z))
+                    candidate=true;
+            }
+            check(!candidate || near,"Sky fast path hid an island biome");
+            if(!near)farCandidates++;
+        }
+        check(farCandidates>1000,"Sky short-circuit never rejects distant biomes");
         // Verify chunk-clipped iteration yields exactly the same ordered
         // (dx,dz) candidates as the original full-radius square scan.
         // This protects sky-island geometry and seeded foliage random calls.
