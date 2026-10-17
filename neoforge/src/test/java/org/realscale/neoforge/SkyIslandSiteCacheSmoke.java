@@ -24,6 +24,14 @@ public final class SkyIslandSiteCacheSmoke {
                             "Satellite changed at "+x+","+z+" slot "+slot);
                     check(entry.satellite(slot)==satellite,
                             "Same worker should reuse candidate site object");
+                    check(satellite.topY()-13>=SkyIslandLayout.MIN_BIOME_Y
+                            && satellite.topY()+8<=SkyIslandLayout.MAX_BIOME_Y,
+                            "Sky biome height gate would hide an existing island");
+                    for(int y:new int[]{160,164,216,220,224}) {
+                        check(!SkyIslandLayout.insideBiome(satellite,
+                                satellite.x(),y,satellite.z()),
+                                "Sky biome early-out changed vertical geometry");
+                    }
                 }
                 check(cache.at(x,z)==entry,"Last accessed cell must hit cache");
                 checked++;
