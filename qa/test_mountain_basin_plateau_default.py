@@ -103,6 +103,15 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertIn("int kind(long h, double seedResolvedSignal)",pure)
         self.assertIn("inlandUplandGate",pure)
         self.assertIn("return original;",terrain)
+        # Expensive continental-noise evaluation must occur after every
+        # mathematically safe exclusion in the 2096-block structure height path.
+        self.assertIn("if (original <= 0.65) return original;",terrain)
+        self.assertLess(terrain.index("if (original <= 0.65) return original;"),
+                        terrain.index("Site s = site(ctx);"))
+        self.assertLess(terrain.index("MountainReliefMath.definitelyOutsideEnvelope(dx,dz,s.radius)"),
+                        terrain.index("double continent = continents.compute(ctx);"))
+        self.assertLess(terrain.index("if (s.type == MountainReliefMath.NONE) return original;"),
+                        terrain.index("double continent = continents.compute(ctx);"))
         self.assertIn("return original;",temp)
         self.assertIn("if(exposedLand<=0.0)return original;",temp)
         self.assertIn("if(highlandGate<=0.0)return original;",temp)

@@ -89,20 +89,21 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
         double original = base.compute(ctx);
-        // Most coastal and lowland voxels use their original, untouched height
-        // signals. Gating before site lookups avoids unnecessary sampling.
-        double continent = continents.compute(ctx);
-        if (MountainReliefMath.inlandUplandGate(continent, original) <= 0.0)
-            return original;
+        // For original <= 0.65, the upland gate's second smoothstep is
+        // mathematically zero for ANY continentalness. This also avoids
+        // expensive continent noise reads in the ocean and lowlands.
+        if (original <= 0.65) return original;
         Site s = site(ctx);
         if (s.type == MountainReliefMath.NONE) return original;
         double dx = ctx.blockX() - s.centerX;
         double dz = ctx.blockZ() - s.centerZ;
-        // Guaranteed zero outside this radius. This fast rejection avoids
-        // expensive hypot/sqrt calls during repeated 2096-high height probes
-        // (notably Lithostitched jigsaw structure height sampling). The
-        // conservative margin keeps output bit-identical near the rim.
+        // Most of a 2048x2048 relief cell is outside its <=701-block
+        // radius. Skip continent noise entirely there; do not alter the
+        // original/interpolated height signal or rim geometry.
         if (MountainReliefMath.definitelyOutsideEnvelope(dx,dz,s.radius))
+            return original;
+        double continent = continents.compute(ctx);
+        if (MountainReliefMath.inlandUplandGate(continent, original) <= 0.0)
             return original;
         double radiusFraction = Math.hypot(dx, dz) / s.radius;
         return MountainReliefMath.relief(original, s.anchorHeight,

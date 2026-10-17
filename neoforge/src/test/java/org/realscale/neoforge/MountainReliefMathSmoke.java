@@ -10,6 +10,16 @@ public final class MountainReliefMathSmoke {
         yes(Math.abs(a-b)<1e-9,reason+" ("+a+" vs "+b+")");
     }
     public static void main(String[] ignored) {
+        // Lowlands: in any continental setting this path must be identical
+        // to the pre-optimization mountain function.
+        for (double base=-5.0;base<=0.65;base+=0.125)
+            for (double cont=-2.0;cont<=2.0;cont+=0.125) {
+                yes(MountainReliefMath.inlandUplandGate(cont,base)==0.0,
+                    "Lowland gate unexpectedly requires continent noise");
+                close(MountainReliefMath.relief(base,2.3,cont,
+                        MountainReliefMath.BASIN,0.0,1.0,0.6),base,
+                    "Lowland early rejection changes output");
+            }
         // Invariant behind performance fast-path: it must never skip a
         // column that could receive relief. Check all quadrants, site radii
         // and close-to-rim positions, including negative coordinates.
