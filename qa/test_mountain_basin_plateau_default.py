@@ -123,7 +123,7 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertIn("site.classified=true;",terrain)
         self.assertIn("private void classify(Site site)",terrain)
 
-        climate=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/MountainBasinTemperatureDensity.java").read_text()
+        climate=temp  # Source already loaded from the canonical JAVA path above.
         self.assertIn("private void classify(Site site)",climate)
         self.assertIn("boolean classified;",climate)
         self.assertIn("site.classified=true;",climate)
