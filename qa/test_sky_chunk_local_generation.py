@@ -35,6 +35,9 @@ class SkyLocalChunkGeneration(unittest.TestCase):
         self.assertIn("realscale:sky_blossom_isles",modifier["biomes"])
         java=JAVA.read_text()
         self.assertIn("instanceof SkyOceanBiomeSource",java)
-        self.assertIn("world.getBiome(new BlockPos(site.x(), site.topY(), site.z())).is(SKY)",java)
+        self.assertIn("world.getBiome(new BlockPos(localX, site.topY(), localZ)).is(SKY)",java)
+        self.assertIn("int localX = Math.max(chunkX * 16",java)
+        self.assertIn("int localZ = Math.max(chunkZ * 16",java)
+        self.assertNotIn("world.getBiome(new BlockPos(site.x(), site.topY(), site.z()))",java)
 
 if __name__=="__main__":unittest.main()

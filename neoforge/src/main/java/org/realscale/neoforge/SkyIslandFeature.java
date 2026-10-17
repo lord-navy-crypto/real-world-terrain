@@ -73,7 +73,12 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
         // Biome selection enforces the sampled ocean isolation tier, so an
         // inactive island slot cannot write a real landmass.
         // Must be selected by the actual high-altitude climate sampler.
-        if (!world.getBiome(new BlockPos(site.x(), site.topY(), site.z())).is(SKY))
+        // Query the biome INSIDE the decorating chunk. The island center
+        // usually belongs to another chunk; asking WorldGenRegion for a
+        // remote center biome can trigger unsafe neighbor chunk access.
+        int localX = Math.max(chunkX * 16, Math.min(site.x(), chunkX * 16 + 15));
+        int localZ = Math.max(chunkZ * 16, Math.min(site.z(), chunkZ * 16 + 15));
+        if (!world.getBiome(new BlockPos(localX, site.topY(), localZ)).is(SKY))
             return false;
         final int r = site.radius();
         // Validate each column independently. One obstructed edge column must
