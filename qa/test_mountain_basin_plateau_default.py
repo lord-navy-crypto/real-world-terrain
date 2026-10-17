@@ -112,6 +112,17 @@ class MountainBasinPlateauTest(unittest.TestCase):
                         terrain.index("double continent = continents.compute(ctx);"))
         self.assertLess(terrain.index("if (s.type == MountainReliefMath.NONE) return original;"),
                         terrain.index("double continent = continents.compute(ctx);"))
+        # The seeded selector must be evaluated only INSIDE the hash-defined
+        # influence radius, and only once per worldgen worker/site.
+        self.assertIn("boolean classified;",terrain)
+        self.assertIn("site.classified = false;",terrain)
+        self.assertIn("site.classified=true;",terrain)
+        self.assertIn("private void classify(Site site)",terrain)
+        self.assertLess(terrain.index("if (MountainReliefMath.definitelyOutsideEnvelope(dx,dz,s.radius))"),
+                        terrain.index("classify(s);"))
+        self.assertLess(terrain.index("classify(s);"),
+                        terrain.index("double continent = continents.compute(ctx);"))
+
         self.assertIn("return original;",temp)
         self.assertIn("if(exposedLand<=0.0)return original;",temp)
         self.assertIn("if(highlandGate<=0.0)return original;",temp)

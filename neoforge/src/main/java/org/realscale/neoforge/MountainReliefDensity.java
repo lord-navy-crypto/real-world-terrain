@@ -23,6 +23,8 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
 
     private static final class Site {
         int gx = Integer.MIN_VALUE, gz = Integer.MIN_VALUE, type;
+        long hash;
+        boolean classified;
         double centerX, centerZ, radius, anchorHeight;
     }
 
@@ -69,22 +71,33 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
         // cast remains within int near playable world limits.
         int centerX = Math.toIntExact(x);
         int centerZ = Math.toIntExact(z);
-        // A regional site must not inherit whichever vertical density sample first
-        // happened to initialize this thread-local cache. Sampling at a fixed
-        // Y makes the site's classification deterministic across chunk order,
-        // noise interpolator Y traversal and worldgen worker scheduling.
-        var anchor = new DensityFunction.SinglePointContext(centerX, 0, centerZ);
-        double regionalSignal = selector.compute(anchor);
-        site.type = MountainReliefMath.kind(h, regionalSignal);
+        // Hash geometry does not need to sample the expensive world-seeded
+        // selector. Most voxels lie beyond the regional relief footprint.
+        // Sample the classifier lazily only on first geometrically eligible
+        // column in this cell, always at the same fixed world Y=0.
+        site.hash = h;
         site.centerX = centerX;
         site.centerZ = centerZ;
         site.radius = MountainReliefMath.radius(h);
-        site.anchorHeight = site.type == MountainReliefMath.PLATEAU
-                || site.type == MountainReliefMath.MESA
-                ? MountainReliefMath.plateauLevel(h, regionalSignal) : 0;
+        site.type = MountainReliefMath.NONE;
+        site.anchorHeight = 0;
+        site.classified = false;
         site.gx = gx;
         site.gz = gz;
         return site;
+    }
+
+    private void classify(Site site) {
+        if (site.classified) return;
+        var anchor=new DensityFunction.SinglePointContext(
+                Math.toIntExact((long)site.centerX),0,
+                Math.toIntExact((long)site.centerZ));
+        double regionalSignal=selector.compute(anchor);
+        site.type=MountainReliefMath.kind(site.hash,regionalSignal);
+        site.anchorHeight=site.type==MountainReliefMath.PLATEAU
+                ||site.type==MountainReliefMath.MESA
+                ?MountainReliefMath.plateauLevel(site.hash,regionalSignal):0;
+        site.classified=true;
     }
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
@@ -94,14 +107,14 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
         // expensive continent noise reads in the ocean and lowlands.
         if (original <= 0.65) return original;
         Site s = site(ctx);
-        if (s.type == MountainReliefMath.NONE) return original;
         double dx = ctx.blockX() - s.centerX;
         double dz = ctx.blockZ() - s.centerZ;
-        // Most of a 2048x2048 relief cell is outside its <=701-block
-        // radius. Skip continent noise entirely there; do not alter the
-        // original/interpolated height signal or rim geometry.
+        // Site footprint is hash-defined, independent of its expensive
+        // seed-resolved selector. Faraway columns never need that sample.
         if (MountainReliefMath.definitelyOutsideEnvelope(dx,dz,s.radius))
             return original;
+        classify(s);
+        if (s.type == MountainReliefMath.NONE) return original;
         double continent = continents.compute(ctx);
         if (MountainReliefMath.inlandUplandGate(continent, original) <= 0.0)
             return original;
