@@ -181,5 +181,28 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertIn('radial_preview',screen)
         self.assertIn('Radial Cold Climate Limit',screen)
 
+
+    def test_pr25_equal_area_custom_lab_mode_and_legacy_stability(self):
+        name,options,outputs=self.make(
+            latitude="radial_equal_area",latitude_strength=70,
+            climate=65,valley=25,basin=20,cold_limit=60)
+        temperature=self.get_temperature(outputs,name)
+        radial=temperature["adjusted"]["base"]["base"]
+        self.assertEqual(radial["type"],"realscale:radial_latitude_temperature")
+        self.assertTrue(radial["balanced"])
+        self.assertTrue(radial["area_balanced"])
+        self.assertEqual(radial["pole_distance"],8192)
+        self.assertEqual(radial["altitude_cooling"],.585)
+        self.assertEqual(options["latitude"],"radial_equal_area")
+        old_name,old_options,old_files=self.make(
+            latitude="radial_balanced",latitude_strength=70,
+            climate=65,valley=25,basin=20,cold_limit=60)
+        old=self.get_temperature(old_files,old_name)["adjusted"]["base"]["base"]
+        self.assertNotIn("area_balanced",old)
+        self.assertTrue(old["balanced"])
+        java=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RadialLatitudeTemperatureDensity.java").read_text()
+        self.assertIn("return (balanced || areaBalanced)",java)
+
+
 if __name__=="__main__":
     unittest.main()

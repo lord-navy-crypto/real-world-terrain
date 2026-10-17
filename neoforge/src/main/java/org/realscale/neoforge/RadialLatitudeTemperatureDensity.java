@@ -39,7 +39,7 @@ public record RadialLatitudeTemperatureDensity(DensityFunction base,int centerX,
             :balanced
               ?GeoMath.balancedRadialLatitudeDeg(ctx.blockX(),ctx.blockZ(),centerX,centerZ,poleDistance)
               :GeoMath.radialLatitudeDeg(ctx.blockX(),ctx.blockZ(),centerX,centerZ,poleDistance);
-        return balanced
+        return (balanced || areaBalanced)
             ?GeoMath.balancedRadialTemperature(base.compute(ctx),latitude,strength,altitudeCooling,ctx.blockY())
             :GeoMath.latitudeTemperature(base.compute(ctx),latitude,strength);
     }
