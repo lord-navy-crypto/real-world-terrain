@@ -18,12 +18,15 @@ import java.util.concurrent.atomic.LongAdder;
 final class DensityPerfSampler {
     static final boolean ENABLED=Boolean.getBoolean("realscale.density.profile");
     static final int STRIDE=1024;
-    enum Stage { OVERWORLD_CAVE, NETHER_CAVE, ECOTONE_BIOME, SKY_BIOME }
+    enum Stage { OVERWORLD_CAVE, NETHER_CAVE, ECOTONE_BIOME, SKY_BIOME,
+        MOUNTAIN_RELIEF }
     private static final ThreadLocal<int[]> CALLS=ThreadLocal.withInitial(
             ()->new int[Stage.values().length]);
-    private static final Measurement[] METRICS={
-            new Measurement(),new Measurement(),new Measurement(),new Measurement()
-    };
+    // Keep metric-array cardinality coupled to Stage so adding a new
+    // sampler cannot accidentally create an out-of-bounds profile access.
+    private static final Measurement[] METRICS=
+            java.util.Arrays.stream(Stage.values()).map(x->new Measurement())
+                    .toArray(Measurement[]::new);
 
     static {
         if(ENABLED)Runtime.getRuntime().addShutdownHook(new Thread(()->{
