@@ -87,13 +87,26 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
             int thickness = thickness(ratio);
             int x = site.x() + dx, z = site.z() + dz;
             boolean clear=true;
-            for (int y=top-thickness;y<=top+1;y++) {
+            for (int y=top-thickness;y<=top;y++) {
                 BlockPos check=new BlockPos(x,y,z);
-                if (!world.getBlockState(check).isAir() || !world.getFluidState(check).isEmpty()) {
+                BlockState existing=world.getBlockState(check);
+                // Complete partially generated islands without overwriting
+                // anything other than our own known stone/soil palette.
+                if (!existing.isAir() && !isIslandMaterial(existing)) {
+                    clear=false;
+                    break;
+                }
+                if (!world.getFluidState(check).isEmpty()) {
                     clear=false;
                     break;
                 }
             }
+            BlockPos above=new BlockPos(x,top+1,z);
+            BlockState overhead=world.getBlockState(above);
+            // Existing island beacons and flowers are legitimate; all other
+            // solid obstacles prevent replacing their support columns.
+            if (!overhead.isAir() && !isIslandDecoration(overhead)) clear=false;
+            if (!world.getFluidState(above).isEmpty()) clear=false;
             if (!clear) continue;
             for (int y = top - thickness; y <= top; ++y) {
                 int depth = top - y;
@@ -120,13 +133,24 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
         }
         // A glowing violet beacon makes the sky island recognizably fictional.
         BlockPos beacon = new BlockPos(site.x(), surface(site, 0, 0, 0) + 1, site.z());
-        if (Math.floorDiv(beacon.getX(),16)==chunkX
+        if (placed && Math.floorDiv(beacon.getX(),16)==chunkX
                 && Math.floorDiv(beacon.getZ(),16)==chunkZ
-                && world.getBlockState(beacon).isAir()) {
+                && world.getBlockState(beacon).isAir()
+                && isIslandMaterial(world.getBlockState(beacon.below()))) {
             world.setBlock(beacon, Blocks.AMETHYST_BLOCK.defaultBlockState(), 2);
             world.setBlock(beacon.above(), Blocks.SEA_LANTERN.defaultBlockState(), 2);
         }
         return placed;
+    }
+
+    private static boolean isIslandMaterial(BlockState state) {
+        return state.is(Blocks.STONE) || state.is(Blocks.END_STONE)
+                || state.is(Blocks.DIRT) || state.is(Blocks.GRASS_BLOCK)
+                || state.is(Blocks.MOSS_BLOCK);
+    }
+    private static boolean isIslandDecoration(BlockState state) {
+        return state.is(Blocks.AMETHYST_BLOCK) || state.is(Blocks.SEA_LANTERN)
+                || state.is(Blocks.ALLIUM) || state.is(Blocks.BLUE_ORCHID);
     }
 
     private static int surface(SkyIslandLayout.Site site, int dx, int dz, double ratio) {
