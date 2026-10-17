@@ -82,6 +82,24 @@ final class GeoMath {
         if(quarter<=3.0)return 90.0*(quarter-2.0);
         return 90.0*(4.0-quarter);
     }
+    /**
+     * Restore PR #25's independent single-polar-crest equal-area annuli.
+     * Existing areaBalancedRadialLatitudeDeg retains its two-crest geometry
+     * for existing worldgen settings; this is strictly opt-in.
+     * The factored area ratio is stable even at remote world coordinates.
+     */
+    static double singlePoleAreaRadialLatitudeDeg(
+            int x,int z,int cx,int cz,int poleDistance) {
+        double radius=Math.hypot((double)x-cx,(double)z-cz);
+        double period=2.0*poleDistance;
+        double cycle=Math.floor(radius/period);
+        double inner=cycle*period;
+        double offset=radius-inner;
+        double fraction=offset*(2.0*inner+offset)/(period*(2.0*inner+period));
+        fraction=clamp(fraction,0.0,1.0);
+        return 90.0*(1.0-Math.abs(2.0*fraction-1.0));
+    }
+
     static double balancedRadialTemperature(double original,double latitude,double strength,
                                             double altitudeCooling,int y){
         double baseline=latitudeTemperature(original,latitude,strength);

@@ -226,7 +226,8 @@ public final class RealScaleTerrainLabClient {
                             || d.latitudeMode.equals("preview")
                             || d.latitudeMode.equals("radial_earth")
                             || d.latitudeMode.equals("radial_preview") || d.latitudeMode.equals("radial_balanced")
-                            || d.latitudeMode.equals("radial_equal_area"))
+                            || d.latitudeMode.equals("radial_equal_area")
+                            || d.latitudeMode.equals("radial_equal_area_single_pole"))
                         && d.latitudeStrength >= 0 && d.latitudeStrength <= 100
                         && d.equatorZ >= -4096 && d.equatorZ <= 4096
                         && d.radialCenterX >= -4096 && d.radialCenterX <= 4096
@@ -392,11 +393,11 @@ public final class RealScaleTerrainLabClient {
                 .name(Component.literal("Shared Climate & Latitude / Export"))
                 .option(Option.<String>createBuilder()
                     .name(Component.literal("Latitude Climate Cycle"))
-                    .description(description("Shared latitude controls; radial_equal_area balances climate zones across equal-area concentric rings."))
+                    .description(description("Shared latitude controls; equal-area supports legacy two-crest and PR25 single-pole ring geometry."))
                     .binding("off", () -> d.latitudeMode, v -> d.latitudeMode=v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(
                         "off","earth","preview","radial_earth","radial_preview","radial_balanced",
-                        "radial_equal_area")).build())
+                        "radial_equal_area","radial_equal_area_single_pole")).build())
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Latitude Strength"))
                     .description(description("0-100; regional pole/equator temperature differences."))

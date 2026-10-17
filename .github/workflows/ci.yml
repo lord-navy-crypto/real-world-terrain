@@ -66,6 +66,13 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/WorldgenProfilerSmoke.java
           java -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
           java -Drealscale.worldgen.profile=true -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
+      - name: Verify restored PR25 single-pole annular climate without changing old math
+        run: |
+          mkdir -p build/pr25-single-pole-climate
+          javac -d build/pr25-single-pole-climate \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/SinglePoleAreaLatitudeSmoke.java
+          java -cp build/pr25-single-pole-climate org.realscale.neoforge.SinglePoleAreaLatitudeSmoke
       - name: Test RealScale feature-profile log comparison
         run: python3 -m unittest discover -s qa -p 'test_worldgen_profile_compare.py' -v
       - name: Verify bounded ecotone resolution cache and parallel sampler isolation

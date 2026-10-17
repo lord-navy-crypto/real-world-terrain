@@ -106,8 +106,8 @@ def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ri
         raise ValueError("Altitude biome cooling applies only to merged Lab families")
     if preset not in FAMILIES and valley:
         raise ValueError("Valley warming applies only to merged Lab families")
-    if latitude not in ("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area"):
-        raise ValueError("Latitude mode must be off, earth, preview, radial_earth, radial_preview, radial_balanced or radial_equal_area")
+    if latitude not in ("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area","radial_equal_area_single_pole"):
+        raise ValueError("Latitude mode must be off, earth, preview, radial_earth, radial_preview, radial_balanced, radial_equal_area or radial_equal_area_single_pole")
     if type(latitude_strength) is not int or not 0 <= latitude_strength <= 100:
         raise ValueError("Latitude strength must be 0..100")
     if type(equator_z) is not int or not -29_000_000 <= equator_z <= 29_000_000:
@@ -483,10 +483,11 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                     "base":temp_value,
                     "center_x":center_x,
                     "center_z":equator_z,
-                    "pole_distance":10_001_966 if latitude=="radial_earth" else (8_192 if latitude in ("radial_balanced","radial_equal_area") else 16_384),
+                    "pole_distance":10_001_966 if latitude=="radial_earth" else (8_192 if latitude in ("radial_balanced","radial_equal_area","radial_equal_area_single_pole") else 16_384),
                     "strength":round(latitude_strength/100.0,5),
-                    **({"balanced":True,"altitude_cooling":cool} if latitude in ("radial_balanced","radial_equal_area") else {}),
-                    **({"area_balanced":True} if latitude=="radial_equal_area" else {})
+                    **({"balanced":True,"altitude_cooling":cool} if latitude in ("radial_balanced","radial_equal_area","radial_equal_area_single_pole") else {}),
+                    **({"area_balanced":True} if latitude in ("radial_equal_area","radial_equal_area_single_pole") else {}),
+                    **({"single_pole_area":True} if latitude=="radial_equal_area_single_pole" else {})
                 }
             else:
                 # Preserve old North/South latitude semantics AND bytes.
@@ -644,7 +645,7 @@ def gui(root, launch):
     slider("Warped vertical strata solidity (0..20)",strata,0,20,1)
     slider("Altitude-aware biome cooling (0..100)",climate,0,100,1)
     slider("Optional valley-floor warming (0..100)",valley,0,100,5)
-    chooser("Latitude climate cycle",latitude,("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area"))
+    chooser("Latitude climate cycle",latitude,("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area","radial_equal_area_single_pole"))
     slider("Latitude temperature strength (0..100)",latitude_strength,0,100,5)
     slider("Equator origin Z / ring center Z",equator_z,-4096,4096,128)
     slider("Concentric ring center X",center_x,-4096,4096,128)
@@ -698,7 +699,7 @@ def main(argv=None):
                         help="Opt-in height-aware temperature biome signal (0..100)")
     parser.add_argument("--valley-warming",type=int,default=0,
                         help="Opt-in bounded relative-valley temperature boost (0..100)")
-    parser.add_argument("--latitude-mode",choices=("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area"),default="off",
+    parser.add_argument("--latitude-mode",choices=("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area","radial_equal_area_single_pole"),default="off",
                         help="meridional or concentric latitude; Earth = 1m/block, preview = pole at radius 16,384 blocks")
     parser.add_argument("--latitude-strength",type=int,default=70,help="Latitude climate strength 0..100")
     parser.add_argument("--equator-z",type=int,default=0,
@@ -725,7 +726,7 @@ def main(argv=None):
         print("Measured (read-only): usgs_big_sur_v2; original legacy DEM: usgs_big_sur")
         print("Legacy compatible algorithms:",", ".join(LEGACY_EDITABLE))
         print("Tuning modes:",", ".join(PROFILES))
-        print("Adjustable: mix 0..50%, ridge 0..40, erosion 0..30, strata 0..20, biome cooling 0..100, valley warming 0..100, latitude mode off/earth/preview/radial_earth/radial_preview/radial_balanced, latitude strength 0..100, equator-z, basin warming 0..100, relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
+        print("Adjustable: mix 0..50%, ridge 0..40, erosion 0..30, strata 0..20, biome cooling 0..100, valley warming 0..100, latitude mode off/earth/preview/radial_earth/radial_preview/radial_balanced/radial_equal_area/radial_equal_area_single_pole, latitude strength 0..100, equator-z, basin warming 0..100, relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
         print("USGS Big Sur v2 is the read-only measured DEM. TVA's 512-block realms remain enabled.")
         print("Optional Lithostitched terrain blending: --lithostitched-blend (merged families).")
         print("Deep geology suite: --lithostitched-geology (nonzero merged blend required).")

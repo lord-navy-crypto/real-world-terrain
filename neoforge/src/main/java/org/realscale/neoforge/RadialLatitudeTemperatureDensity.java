@@ -16,7 +16,7 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  */
 public record RadialLatitudeTemperatureDensity(DensityFunction base,int centerX,
            int centerZ,int poleDistance,double strength,boolean balanced,double altitudeCooling,
-           boolean areaBalanced)
+           boolean areaBalanced, boolean singlePoleArea)
         implements DensityFunction.SimpleFunction {
     public static final MapCodec<RadialLatitudeTemperatureDensity> MAP_CODEC =
         RecordCodecBuilder.mapCodec(i->i.group(
@@ -27,25 +27,28 @@ public record RadialLatitudeTemperatureDensity(DensityFunction base,int centerX,
             Codec.doubleRange(0.0,1.0).fieldOf("strength").forGetter(RadialLatitudeTemperatureDensity::strength),
             Codec.BOOL.optionalFieldOf("balanced",false).forGetter(RadialLatitudeTemperatureDensity::balanced),
             Codec.doubleRange(0.0,0.9).optionalFieldOf("altitude_cooling",0.0).forGetter(RadialLatitudeTemperatureDensity::altitudeCooling),
-            Codec.BOOL.optionalFieldOf("area_balanced",false).forGetter(RadialLatitudeTemperatureDensity::areaBalanced)
+            Codec.BOOL.optionalFieldOf("area_balanced",false).forGetter(RadialLatitudeTemperatureDensity::areaBalanced),
+            Codec.BOOL.optionalFieldOf("single_pole_area",false).forGetter(RadialLatitudeTemperatureDensity::singlePoleArea)
         ).apply(i,RadialLatitudeTemperatureDensity::new));
 
     private static final KeyDispatchDataCodec<RadialLatitudeTemperatureDensity> DISPATCH =
         KeyDispatchDataCodec.of(MAP_CODEC);
 
     @Override public double compute(DensityFunction.FunctionContext ctx){
-        double latitude=areaBalanced
-            ?GeoMath.areaBalancedRadialLatitudeDeg(ctx.blockX(),ctx.blockZ(),centerX,centerZ,poleDistance)
+        double latitude=singlePoleArea
+            ?GeoMath.singlePoleAreaRadialLatitudeDeg(ctx.blockX(),ctx.blockZ(),centerX,centerZ,poleDistance)
+            :areaBalanced
+              ?GeoMath.areaBalancedRadialLatitudeDeg(ctx.blockX(),ctx.blockZ(),centerX,centerZ,poleDistance)
             :balanced
               ?GeoMath.balancedRadialLatitudeDeg(ctx.blockX(),ctx.blockZ(),centerX,centerZ,poleDistance)
               :GeoMath.radialLatitudeDeg(ctx.blockX(),ctx.blockZ(),centerX,centerZ,poleDistance);
-        return (balanced || areaBalanced)
+        return (balanced || areaBalanced || singlePoleArea)
             ?GeoMath.balancedRadialTemperature(base.compute(ctx),latitude,strength,altitudeCooling,ctx.blockY())
             :GeoMath.latitudeTemperature(base.compute(ctx),latitude,strength);
     }
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor){
         return visitor.apply(new RadialLatitudeTemperatureDensity(base.mapAll(visitor),
-            centerX,centerZ,poleDistance,strength,balanced,altitudeCooling,areaBalanced));
+            centerX,centerZ,poleDistance,strength,balanced,altitudeCooling,areaBalanced,singlePoleArea));
     }
     @Override public double minValue(){return base.minValue()-.68*strength;}
     @Override public double maxValue(){return base.maxValue()+.35*strength+altitudeCooling*.75;}
