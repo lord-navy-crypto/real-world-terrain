@@ -153,10 +153,50 @@ public final class GrandOverworldCaveNetworkSmoke {
                 "Bedrock protection failed");
         require(GrandOverworldCaveNetwork.strength(0,1980,0)==0,
                 "High world ceiling protection failed");
+        // Performance fast path must NEVER reject a real voxel, even when
+        // the caller's +/-6 X, +/-5 Z and +/-2 Y noise warp is at an extreme.
+        // Across negative and positive cells, test vertical shafts, halls,
+        // inter-layer galleries and kilometer-scale arterial routes together.
+        int negativeColumns=0, checkedFastPath=0;
+        final int[] probeY={128,340,700,1200,1520,1780};
+        final double[] warpSamples={-1.0,0.0,1.0};
+        for(int x=-2250;x<=2250;x+=47)for(int z=-2100;z<=2100;z+=53) {
+            boolean may=GrandOverworldCaveNetwork.mayContainVoidNearColumn(x,z);
+            if(!may) {
+                negativeColumns++;
+                for(int y:probeY)for(double warp:warpSamples) {
+                    double result=GrandOverworldCaveNetwork.strength(
+                            x+warp*6.0,y+warp*2.0,z-warp*5.0);
+                    require(result==0.0,
+                            "Conservative cave column fast path hid geometry at "
+                            +x+","+y+","+z+" warp="+warp+" strength="+result);
+                    checkedFastPath++;
+                }
+            }
+        }
+        require(negativeColumns>0 && checkedFastPath>0,
+                "Cave fast path must prune at least some truly empty columns");
+        for(int gx=-3;gx<=3;gx++)for(int gz=-3;gz<=3;gz++)
+            for(int layer=0;layer<GrandOverworldCaveNetwork.LAYERS;layer++) {
+                var room=GrandOverworldCaveNetwork.hall(gx,gz,layer);
+                require(GrandOverworldCaveNetwork.mayContainVoidNearColumn(
+                        (int)room.x(),(int)room.z()),
+                        "Giant room column erroneously rejected");
+            }
+        // Probe exact boundary margins where a bounded warp can switch the
+        // active cell. These must never reject without checking both cells.
+        for(int k=-2;k<=2;k++) {
+            require(GrandOverworldCaveNetwork.mayContainVoidNearColumn(
+                    k*GrandOverworldCaveNetwork.CELL+2,100),
+                    "Cross-cell X warp protection missing");
+            require(GrandOverworldCaveNetwork.mayContainVoidNearColumn(
+                    100,k*GrandOverworldCaveNetwork.CELL+3),
+                    "Cross-cell Z warp protection missing");
+        }
         System.out.println("TVA_GRAND_OVERWORLD_CAVE_PASS halls="+halls+
                 " large_or_wide_tunnels="+longLinks+
                 " high_halls="+highAltitudeHalls+
                 " rare_epic_or_chamber_count="+giant+
-                " threads="+threads.length);
+                " threads="+threads.length+" fast_path_empty_columns="+negativeColumns);
     }
 }
