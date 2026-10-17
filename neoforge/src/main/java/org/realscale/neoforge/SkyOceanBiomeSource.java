@@ -47,7 +47,9 @@ public final class SkyOceanBiomeSource extends BiomeSource {
     }
     public boolean containsCrossRealm() {
         return source instanceof CrossRealmBiomeSource
-                || source instanceof CrossRealmShowcaseBiomeSource;
+                || source instanceof CrossRealmShowcaseBiomeSource
+                || source instanceof GeoWondersBiomeSource wonders
+                   && wonders.containsCrossRealm();
     }
     @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
