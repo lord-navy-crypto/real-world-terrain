@@ -243,6 +243,15 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     @Override
     public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
+        if(!DensityPerfSampler.ENABLED)
+            return getNoiseBiomeUnprofiled(quartX,quartY,quartZ,sampler);
+        long start=DensityPerfSampler.begin(DensityPerfSampler.Stage.ECOTONE_BIOME);
+        try{return getNoiseBiomeUnprofiled(quartX,quartY,quartZ,sampler);}
+        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.ECOTONE_BIOME,start);}
+    }
+
+    private Holder<Biome> getNoiseBiomeUnprofiled(
+            int quartX,int quartY,int quartZ,Climate.Sampler sampler) {
         SamplingCache cache = cached.get();
         cache.prepare(sampler);
         long key = BlockPos.asLong(quartX, quartY, quartZ);
