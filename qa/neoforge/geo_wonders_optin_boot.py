@@ -3,6 +3,8 @@
 import gzip
 import pathlib
 import signal
+import os
+from rcon_worldgen_smoke import Rcon
 import subprocess
 import threading
 import time
@@ -22,6 +24,9 @@ for folder in ("run","run/server","run/gametestserver"):
         "spawn-protection=0\n"
         "max-tick-time=-1\n"
         "online-mode=true\n"
+        "enable-rcon=true\n"
+        "rcon.password=realscale_ci_probe_only\n"
+        "rcon.port=25575\n"
     )
 p=subprocess.Popen(["gradle","--no-daemon","runServer","--stacktrace"],
     cwd=ROOT,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,
@@ -40,24 +45,28 @@ try:
     while time.monotonic()<deadline and not ready.is_set() and p.poll() is None:
         time.sleep(1)
     if not ready.is_set(): raise RuntimeError("Experimental Geo Wonders server boot failed")
-    time.sleep(12)
-    p.stdin.write("stop\n")
-    p.stdin.flush()
-    p.wait(timeout=75)
+    # Gradle runServer does not reliably forward stdin to the actual server.
+    # Save via authenticated Minecraft RCON, then request a clean shutdown.
+    rcon=Rcon(timeout=90)
+    try:
+        result=rcon.send("save-all flush")
+        if "Saved" not in result:
+            raise AssertionError("Minecraft did not acknowledge the world save: "+result)
+        print("GEO_WONDERS_RCON_SAVE_ACK",repr(result),flush=True)
+        try:
+            rcon.send("stop")
+        except (EOFError,ConnectionResetError,BrokenPipeError):
+            print("GEO_WONDERS_RCON_STOP_DISCONNECTED",flush=True)
+    finally:
+        rcon.close()
+    p.wait(timeout=100)
 finally:
     if p.poll() is None:
-        try:
-            p.stdin.write("stop\n")
-            p.stdin.flush()
-            p.wait(timeout=20)
-        except (OSError,subprocess.TimeoutExpired):
-            if p.poll() is None:
-                import os
-                os.killpg(p.pid,signal.SIGINT)
-                try:p.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    os.killpg(p.pid,signal.SIGKILL)
-                    p.wait()
+        os.killpg(p.pid,signal.SIGINT)
+        try:p.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            os.killpg(p.pid,signal.SIGKILL)
+            p.wait()
     t.join(timeout=4)
     dest=ROOT/"build/geo-wonders-optin-server.log"
     dest.parent.mkdir(parents=True,exist_ok=True)

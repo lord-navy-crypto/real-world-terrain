@@ -117,6 +117,8 @@ jobs:
           java -cp build/geo-wonder-geometry org.realscale.neoforge.GeoWonderGeometrySmoke
       - name: Validate deterministic large-region geo wonders
         run: python3 -m unittest discover -s qa -p 'test_geo_wonder_regions.py' -v
+      - name: Verify NeoForge experimental world uses authenticated save and stop
+        run: python3 -m unittest discover -s qa -p 'test_geo_wonders_rcon_shutdown.py' -v
       - name: Ensure canonical sacred timeline excludes experimental geology and invasion
         run: python3 -m unittest discover -s qa -p 'test_sacred_timeline_promotions.py' -v
       - name: Verify Natural Wonders and six-way invasion registrations and safety gates
