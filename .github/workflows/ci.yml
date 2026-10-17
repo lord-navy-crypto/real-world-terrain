@@ -68,6 +68,14 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/WorldgenProfilerSmoke.java
           java -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
           java -Drealscale.worldgen.profile=true -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
+      - name: Verify low-frequency density and biome profiler (disabled and opt-in)
+        run: |
+          mkdir -p build/density-profiler-smoke
+          javac -d build/density-profiler-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/DensityPerfSampler.java \
+            neoforge/src/test/java/org/realscale/neoforge/DensityPerfSamplerSmoke.java
+          java -cp build/density-profiler-smoke org.realscale.neoforge.DensityPerfSamplerSmoke
+          java -Drealscale.density.profile=true -cp build/density-profiler-smoke org.realscale.neoforge.DensityPerfSamplerSmoke
       - name: Validate restored climate world's RCON+Anvil acceptance test
         run: python3 -m unittest discover -s qa -p 'test_pr25_live_world_boot.py' -v
       - name: Check all four restored PR25 historical climate world families
