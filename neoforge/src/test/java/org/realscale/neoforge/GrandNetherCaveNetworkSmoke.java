@@ -84,6 +84,24 @@ public final class GrandNetherCaveNetworkSmoke {
             yes(Math.abs(a-b)<0.05,"Sub-block cave sampling discontinuity at "+x);
             samples++;
         }
+        // Verify that the density-wrapper fast path is bit-exact when the
+        // original terrain density already dominates all possible cavities.
+        // A network strength >1 would invalidate the -1.8 threshold.
+        for(int x=-900;x<=900;x+=43)for(int z=-900;z<=900;z+=47)
+            for(int y=144;y<=440;y+=23) {
+                for(double warp:new double[]{-1.0,0.0,1.0}) {
+                    double strength=GrandNetherCaveNetwork.strength(
+                            x+warp*5.0,y+warp*2.0,z-warp*4.0);
+                    yes(strength>=0.0&&strength<=1.0,
+                            "Nether cave strength exceeded proven [0,1] bounds");
+                    for(double base:new double[]{-1.8,-2.1,-20.0}) {
+                        double oldDensity=Math.min(base,-1.8*strength);
+                        yes(Double.doubleToRawLongBits(oldDensity)==
+                                Double.doubleToRawLongBits(base),
+                                "Already-empty Nether terrain must remain unchanged");
+                    }
+                }
+            }
         verifyConcurrentCellCache();
         System.out.println("PASS: connected 3D Grand Nether cave network, "+samples
                 +" signed-coordinate and vanilla-protection samples");
