@@ -54,13 +54,16 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
                     ctx.blockX(),y,ctx.blockZ()) : 0;
         if(original<=0.24)
             return entrance>0 ? Math.min(original,-2.0*entrance) : original;
-        // Most X/Z columns cannot intersect any giant cave passage.
+        // Giant cave geometry cannot reach this high even after the +/-2 Y
+        // warp. In lower layers, most X/Z columns likewise cannot intersect
+        // any giant cave passage.
         // The network's conservative bounds account for every possible
         // +/-6 X and +/-5 Z displacement from the seeded warp. When they
         // prove no cave can exist here, skip both warp noise and the 3D
         // corridor graph. Keep small caves and rare entrances unchanged.
-        if (!GrandOverworldCaveNetwork.mayContainVoidNearColumn(
-                ctx.blockX(), ctx.blockZ())) {
+        if (y > GrandOverworldCaveNetwork.MAX_GEOMETRY_Y + 2
+                || !GrandOverworldCaveNetwork.mayContainVoidNearColumn(
+                    ctx.blockX(), ctx.blockZ())) {
             double chosen=carve(original,smallCaves.compute(ctx),0.0);
             return Math.min(chosen,entrance>0 ? -2.0*entrance : original);
         }
