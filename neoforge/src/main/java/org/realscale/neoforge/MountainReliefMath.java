@@ -55,6 +55,16 @@ final class MountainReliefMath {
                 + GeoMath.clamp(seededSignal, -1, 1) * 0.5;
     }
 
+    /**
+     * Squared-distance reject used only where existing relief() is guaranteed
+     * to return the unmodified baseline (radiusFraction >= 1.10).
+     * A positive epsilon avoids any borderline floating-point parity risk.
+     */
+    static boolean definitelyOutsideEnvelope(double dx,double dz,double radius) {
+        double conservative=radius*1.100000001;
+        return dx*dx+dz*dz>=conservative*conservative;
+    }
+
     static double basinCore(double radiusFraction) {
         return 1.0 - GeoMath.smoothstep(0.25, 0.78, radiusFraction);
     }

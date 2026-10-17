@@ -10,6 +10,22 @@ public final class MountainReliefMathSmoke {
         yes(Math.abs(a-b)<1e-9,reason+" ("+a+" vs "+b+")");
     }
     public static void main(String[] ignored) {
+        // Invariant behind performance fast-path: it must never skip a
+        // column that could receive relief. Check all quadrants, site radii
+        // and close-to-rim positions, including negative coordinates.
+        int rejected=0,kept=0;
+        for (int radius=470;radius<=701;radius+=11)
+            for(int x=-1000;x<=1000;x+=13)
+                for(int z=-1000;z<=1000;z+=17) {
+                    boolean reject=MountainReliefMath.definitelyOutsideEnvelope(x,z,radius);
+                    if(reject) {
+                        rejected++;
+                        yes(Math.hypot(x,z)/radius>=1.10,
+                            "Fast reject erased a potentially nonzero rim");
+                    } else kept++;
+                }
+        yes(rejected>1000&&kept>1000,"Radial fast-path is inactive");
+
         int basins=0,plateaus=0,mesas=0,unchanged=0;
         for(int gx=-24;gx<=24;gx++)for(int gz=-24;gz<=24;gz++) {
             long hash=MountainReliefMath.siteHash(gx,gz);

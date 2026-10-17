@@ -98,6 +98,12 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
         if (s.type == MountainReliefMath.NONE) return original;
         double dx = ctx.blockX() - s.centerX;
         double dz = ctx.blockZ() - s.centerZ;
+        // Guaranteed zero outside this radius. This fast rejection avoids
+        // expensive hypot/sqrt calls during repeated 2096-high height probes
+        // (notably Lithostitched jigsaw structure height sampling). The
+        // conservative margin keeps output bit-identical near the rim.
+        if (MountainReliefMath.definitelyOutsideEnvelope(dx,dz,s.radius))
+            return original;
         double radiusFraction = Math.hypot(dx, dz) / s.radius;
         return MountainReliefMath.relief(original, s.anchorHeight,
                 continent, s.type, radiusFraction, basinDepth, plateauRise);
