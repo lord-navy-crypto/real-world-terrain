@@ -147,7 +147,10 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertIn("return original;",temp)
         self.assertIn("if(exposedLand<=0.0)return original;",temp)
         self.assertIn("if(highlandGate<=0.0)return original;",temp)
-        self.assertLess(temp.index("if(highlandGate<=0.0)return original;"),temp.index("Site s=site(ctx);"))
+        # Basin-core geometry must now reject cheap non-candidates BEFORE
+        # costly highland height and continentalness sampling.
+        self.assertLess(temp.index("Site s=site(ctx);"),
+                        temp.index("if(highlandGate<=0.0)return original;"))
 
 
 if __name__=="__main__":
