@@ -1,0 +1,38 @@
+name: Opt-in Natural Wonders real NeoForge world boot
+on:
+  pull_request:
+    paths:
+      - 'neoforge/**'
+      - 'qa/neoforge/geo_wonders_optin_boot.py'
+      - '.github/workflows/geo-wonders-optin-world.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  natural-wonders-opt-in:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Boot experimental wonder world and check persisted source codec
+        run: python3 qa/neoforge/geo_wonders_optin_boot.py
+      - name: Preserve experimental world and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TVA-Geo-Wonders-OptIn-World-Proof
+          path: |
+            neoforge/build/geo-wonders-optin-server.log
+            neoforge/run/**/geo-wonders-lab/level.dat
+            neoforge/run/**/geo-wonders-lab/region/*.mca
+          if-no-files-found: warn
