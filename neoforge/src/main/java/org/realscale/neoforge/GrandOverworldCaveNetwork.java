@@ -33,6 +33,14 @@ public final class GrandOverworldCaveNetwork {
     public record Passage(double radius, double verticalScale, int kind) {}
     private static final class Cache {
         int gx=Integer.MIN_VALUE,gz=Integer.MIN_VALUE;
+        // Direct-mapped, epoch-tagged per-worker X/Z reject cache. An entry
+        // only says that a column MAY contain a cave, never that it must.
+        private static final int COLUMN_SLOTS = 512;
+        final int[] columnX=new int[COLUMN_SLOTS];
+        final int[] columnZ=new int[COLUMN_SLOTS];
+        final int[] columnEpoch=new int[COLUMN_SLOTS];
+        final boolean[] columnCandidate=new boolean[COLUMN_SLOTS];
+        int epoch=1;
         final Hall[][] halls=new Hall[LAYERS][5];
         final Hall[][] galleries=new Hall[LAYERS][2];
         final long[][] corridorKeys=new long[LAYERS][4];
@@ -49,6 +57,12 @@ public final class GrandOverworldCaveNetwork {
         void load(int x,int z) {
             if(gx==x && gz==z)return;
             gx=x;gz=z;
+            // Entries for a different 768x768 network cell are invalid.
+            // No cross-thread access or world-wide unbounded state.
+            if (++epoch == 0) {
+                java.util.Arrays.fill(columnEpoch,0);
+                epoch=1;
+            }
             for(int layer=0;layer<LAYERS;layer++) {
                 Hall center=hall(x,z,layer);
                 halls[layer][0]=center;
@@ -276,6 +290,87 @@ public final class GrandOverworldCaveNetwork {
         double dz=(z-centerZ)/width;
         double q=dx*dx+dz*dz;
         return q>=1 ? 0 : 1-q;
+    }
+
+
+    /**
+     * Conservative X/Z broad phase for the giant cave density network.
+     *
+     * The caller's density warp shifts X by <=6 and Z by <=5 blocks.
+     * If either shifted point could cross a 768-block cell boundary, do
+     * not reject it: the neighboring cell has different cached corridors.
+     *
+     * A false result PROVES strength(x+warpX,y,z+warpZ)==0 for every Y and
+     * every allowed shift. It therefore permits skipping the noise warp
+     * and the full cave graph while keeping the original density bitwise
+     * unchanged. A true result leaves the original computation untouched.
+     */
+    static boolean mayContainVoidNearColumn(int x,int z) {
+        int localX=Math.floorMod(x,CELL);
+        int localZ=Math.floorMod(z,CELL);
+        if(localX<=6 || localX>=CELL-7 || localZ<=5 || localZ>=CELL-6)
+            return true;
+        Cache c=LOCAL.get();
+        c.load(Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
+        int slot=(x*0x9e3779b9 ^ z*0x85ebca6b) & (Cache.COLUMN_SLOTS-1);
+        if(c.columnEpoch[slot]==c.epoch
+                && c.columnX[slot]==x && c.columnZ[slot]==z)
+            return c.columnCandidate[slot];
+        double loX=x-6.0,hiX=x+6.0,loZ=z-5.0,hiZ=z+5.0;
+        boolean result=columnTouchesNetwork(c,loX,hiX,loZ,hiZ);
+        c.columnEpoch[slot]=c.epoch;
+        c.columnX[slot]=x;
+        c.columnZ[slot]=z;
+        c.columnCandidate[slot]=result;
+        return result;
+    }
+
+    private static boolean hallCouldTouch(Hall hall,
+            double loX,double hiX,double loZ,double hiZ) {
+        return loX<=hall.x()+hall.radiusX() && hiX>=hall.x()-hall.radiusX()
+            && loZ<=hall.z()+hall.radiusZ() && hiZ>=hall.z()-hall.radiusZ();
+    }
+
+    private static boolean tunnelCouldTouch(Hall a,Hall b,Passage section,
+            double loX,double hiX,double loZ,double hiZ) {
+        // tunnelStrength uses exactly this conservative horizontal reach,
+        // including both seeded centerline offsets and all cross-sections.
+        double reach=section.radius()+17.0;
+        return loX<=Math.max(a.x(),b.x())+reach
+            && hiX>=Math.min(a.x(),b.x())-reach
+            && loZ<=Math.max(a.z(),b.z())+reach
+            && hiZ>=Math.min(a.z(),b.z())-reach;
+    }
+
+    private static boolean columnTouchesNetwork(Cache c,
+            double loX,double hiX,double loZ,double hiZ) {
+        for(int layer=0;layer<LAYERS;layer++) {
+            Hall center=c.halls[layer][0];
+            if(hallCouldTouch(center,loX,hiX,loZ,hiZ)) return true;
+            for(int dir=0;dir<4;dir++) {
+                if(tunnelCouldTouch(center,c.halls[layer][dir+1],
+                        c.widths[layer][dir],loX,hiX,loZ,hiZ)) return true;
+            }
+            for(int i=0;i<2;i++) {
+                Hall satellite=c.galleries[layer][i];
+                if(hallCouldTouch(satellite,loX,hiX,loZ,hiZ)
+                        || tunnelCouldTouch(center,satellite,
+                            c.sideWidths[layer][i],loX,hiX,loZ,hiZ))
+                    return true;
+            }
+        }
+        for(int layer=0;layer<LAYERS-1;layer++) {
+            if(tunnelCouldTouch(c.halls[layer][0],c.halls[layer+1][0],
+                    c.shafts[layer],loX,hiX,loZ,hiZ)) return true;
+        }
+        for(int tier=0;tier<2;tier++) for(int axis=0;axis<2;axis++)
+            for(int group=0;group<2;group++) {
+                Hall a=c.arteryA[tier][axis][group];
+                if(a!=null && tunnelCouldTouch(a,c.arteryB[tier][axis][group],
+                        c.arteryWidth[tier][axis][group],
+                        loX,hiX,loZ,hiZ)) return true;
+            }
+        return false;
     }
 
     /**
