@@ -280,6 +280,43 @@ def navigable_water_components(water_columns, max_surface_step=0, min_depth=2):
     }
 
 
+def underlying_ground_below_stem(chunk, dx, dz, top_y, min_y):
+    """Resolve a saved tree trunk/bamboo tip to the actual supporting ground.
+
+    MOTION_BLOCKING_NO_LEAVES intentionally ignores foliage, but it DOES
+    include vertical logs and bamboo. On a dense jungle this yields many
+    artificial 10-25-block "ground" spikes. Only those explicit vegetation
+    stems may be traversed, with gaps of air/leaves between branches.
+
+    Never reject a geological spike: stone, soil, structures, water, lava,
+    unknown palette entries and every other block terminate the descent.
+    If no real support is found within 160 blocks, keep the original sample
+    so an unsupported floating structure is still flagged by terrain QA.
+    """
+    def stem(name):
+        if name == "minecraft:bamboo" or name == "minecraft:bamboo_block":
+            return True
+        if not name.startswith("minecraft:"):
+            return False
+        return name.endswith(("_log", "_wood", "_stem", "_hyphae")) or (
+            name.startswith("minecraft:stripped_") and
+            name.endswith(("_log", "_wood", "_stem", "_hyphae")))
+
+    current = get_block(chunk, dx, top_y, dz)
+    if not stem(current):
+        return top_y, current, False
+    scan_floor = max(min_y, top_y - 160)
+    for y in range(top_y - 1, scan_floor - 1, -1):
+        below = get_block(chunk, dx, y, dz)
+        if stem(below) or below in ("minecraft:air", "minecraft:cave_air",
+                                    "minecraft:void_air") or below.endswith("_leaves"):
+            continue
+        if below in ("UNKNOWN", "INVALID_PALETTE_INDEX"):
+            return top_y, current, False
+        return y, below, True
+    return top_y, current, False
+
+
 def isolated_height_impulses(heights, surface_blocks, surface_biomes):
     """Detect >8m one-column peaks and pits on a SELECTED saved heightmap.
 
@@ -572,6 +609,7 @@ def scan(root,preset="realism_max"):
     river_snow_over_ice_with_water_columns=0
     river_snow_beneath_block_counts={}
     river_snow_deep_block_counts={}
+    stem_corrected_columns=0
     high_elevation_river_water_columns=0
     high_elevation_nonriver_water_columns=0
     for region in regions:
@@ -590,8 +628,11 @@ def scan(root,preset="realism_max"):
                     terrain_h=surface_height(
                         chunk,dx,dz,min_y,world_height,"MOTION_BLOCKING_NO_LEAVES")
                     if terrain_h is not None:
-                        terrain_heights[(x,z)]=terrain_h
-                        terrain_surface_blocks[(x,z)]=get_block(chunk,dx,terrain_h,dz)
+                        ground_h, ground_block, corrected = underlying_ground_below_stem(
+                            chunk, dx, dz, terrain_h, min_y)
+                        terrain_heights[(x,z)]=ground_h
+                        terrain_surface_blocks[(x,z)]=ground_block
+                        stem_corrected_columns+=corrected
                     if h>=384:mountain_columns+=1
                     surface_under_sea+=h<=62
                     upper_block=get_block(chunk,dx,h,dz)
@@ -742,6 +783,8 @@ def scan(root,preset="realism_max"):
       "preset":preset,
       "surface_quality_gates":quality,
       "terrain_heightmap":"MOTION_BLOCKING_NO_LEAVES",
+      "stem_corrected_ground_columns":stem_corrected_columns,
+      "stem_correction_note":"Only logged/bamboo columns are traced to persisted supporting material; stone/soil/spikes remain tested.",
       "ground_heightmap_columns":len(terrain_heights),
       "world_surface_raw_spike_count":raw_impulses["count"],
       "world_surface_raw_spike_examples":raw_impulses["examples"],
