@@ -76,20 +76,9 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
         if (!world.getBiome(new BlockPos(site.x(), site.topY(), site.z())).is(SKY))
             return false;
         final int r = site.radius();
-        // First validate the entire footprint; no accidental edits to pre-existing
-        // terrain, ocean water, structures, or partial islands on obstruction.
-        for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
-            double ratio = (double)(dx * dx + dz * dz) / (r * r);
-            if (ratio > 1.0 || Math.floorDiv(site.x()+dx,16)!=chunkX
-                    || Math.floorDiv(site.z()+dz,16)!=chunkZ) continue;
-            int top = surface(site, dx, dz, ratio);
-            int thickness = thickness(ratio);
-            for (int y = top - thickness; y <= top + 1; ++y) {
-                BlockPos p = new BlockPos(site.x() + dx, y, site.z() + dz);
-                if (!world.getBlockState(p).isAir() || !world.getFluidState(p).isEmpty())
-                    return false;
-            }
-        }
+        // Validate each column independently. One obstructed edge column must
+        // not cancel the entire chunk (or leave the island center hollow).
+        boolean placed=false;
         for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
             double ratio = (double)(dx * dx + dz * dz) / (r * r);
             if (ratio > 1.0 || Math.floorDiv(site.x()+dx,16)!=chunkX
@@ -97,6 +86,15 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
             int top = surface(site, dx, dz, ratio);
             int thickness = thickness(ratio);
             int x = site.x() + dx, z = site.z() + dz;
+            boolean clear=true;
+            for (int y=top-thickness;y<=top+1;y++) {
+                BlockPos check=new BlockPos(x,y,z);
+                if (!world.getBlockState(check).isAir() || !world.getFluidState(check).isEmpty()) {
+                    clear=false;
+                    break;
+                }
+            }
+            if (!clear) continue;
             for (int y = top - thickness; y <= top; ++y) {
                 int depth = top - y;
                 BlockState state = depth == 0
@@ -108,6 +106,7 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
                                 ? Blocks.END_STONE.defaultBlockState()
                                 : Blocks.STONE.defaultBlockState();
                 world.setBlock(new BlockPos(x, y, z), state, 2);
+                placed=true;
             }
             // Fantastical flowering meadow, solely using vanilla blocks.
             if (ratio < .70 && ((x * 31 ^ z * 17) & 15) == 3) {
@@ -127,7 +126,7 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
             world.setBlock(beacon, Blocks.AMETHYST_BLOCK.defaultBlockState(), 2);
             world.setBlock(beacon.above(), Blocks.SEA_LANTERN.defaultBlockState(), 2);
         }
-        return true;
+        return placed;
     }
 
     private static int surface(SkyIslandLayout.Site site, int dx, int dz, double ratio) {
