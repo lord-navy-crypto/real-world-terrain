@@ -76,6 +76,15 @@ public final class SkyOceanBiomeSource extends BiomeSource {
     }
     @Override public Holder<Biome> getNoiseBiome(int quartX,int quartY,int quartZ,
                                                   Climate.Sampler sampler) {
+        if(!DensityPerfSampler.ENABLED)
+            return getNoiseBiomeUnprofiled(quartX,quartY,quartZ,sampler);
+        long start=DensityPerfSampler.begin(DensityPerfSampler.Stage.SKY_BIOME);
+        try{return getNoiseBiomeUnprofiled(quartX,quartY,quartZ,sampler);}
+        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.SKY_BIOME,start);}
+    }
+
+    private Holder<Biome> getNoiseBiomeUnprofiled(
+            int quartX,int quartY,int quartZ,Climate.Sampler sampler) {
         // Explicit identity delegation for ocean, seabed, ocean structures and
         // even tall surface mountain biomes that do not contain an island.
         int y=quartY*4;
