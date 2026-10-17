@@ -254,6 +254,27 @@ def main(root,expected_preset,profile):
     except Exception as exc:
         failed=exc
         print("RCON WORLDGEN FAILURE:",repr(exc),flush=True)
+        # An unanswered RCON request can mean a worldgen deadlock or simply
+        # a very expensive chunk. Preserve the running JVM thread stacks
+        # BEFORE teardown so we can fix the actual hotspot.
+        if isinstance(exc,TimeoutError) and proc.poll() is None:
+            try:
+                dump=subprocess.run(
+                    ["jcmd","-l"],capture_output=True,text=True,timeout=8)
+                print("JVM_PROCESS_LIST:",dump.stdout[-3000:],flush=True)
+                for entry in dump.stdout.splitlines():
+                    if "net.neoforged" not in entry and "minecraft" not in entry.lower():
+                        continue
+                    pid=entry.split()[0]
+                    if not pid.isdigit():continue
+                    threads=subprocess.run(
+                        ["jcmd",pid,"Thread.print"],capture_output=True,
+                        text=True,timeout=12)
+                    diagnostic=root/"build"/("rcon_"+profile+"_thread_dump.txt")
+                    diagnostic.write_text(threads.stdout+threads.stderr)
+                    print("RCON_TIMEOUT_THREAD_DUMP:",diagnostic,flush=True)
+            except (OSError,subprocess.TimeoutExpired) as dump_error:
+                print("RCON_TIMEOUT_DIAGNOSTIC_UNAVAILABLE:",repr(dump_error),flush=True)
     finally:
         if proc.poll() is None:
             try:
