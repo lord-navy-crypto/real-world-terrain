@@ -137,6 +137,37 @@ public final class GrandNetherCaveNetworkSmoke {
                     }
                 }
             }
+        // 19-bit column component masks must produce bit-exact original
+        // network density for full seeded X/Z/Y displacement. No visual
+        // tolerance: even one changed cave voxel means a failed optimization.
+        long maskSamples=0,positiveColumns=0,emptyColumnsMasked=0;
+        for(int x=-1050;x<=1050;x+=29)for(int z=-1050;z<=1050;z+=31) {
+            if(GrandNetherCaveNetwork.mayContainVoidNearColumn(x,z))
+                positiveColumns++;
+            else emptyColumnsMasked++;
+            for(int y:new int[]{144,205,280,348,399,441})
+                for(double warp:new double[]{-1.0,-0.5,0,0.5,1.0}) {
+                    double wx=x+warp*5.0,wy=y+warp*2.0,wz=z-warp*4.0;
+                    long expected=Double.doubleToRawLongBits(
+                            GrandNetherCaveNetwork.strength(wx,wy,wz));
+                    long actual=Double.doubleToRawLongBits(
+                            GrandNetherCaveNetwork.strengthFromColumn(x,z,wx,wy,wz));
+                    yes(expected==actual,
+                            "Masked Nether cave differs at "+x+","+y+","+z
+                            +" warp="+warp);
+                    maskSamples++;
+                }
+        }
+        yes(maskSamples>100000 && positiveColumns>0 && emptyColumnsMasked>0,
+                "19-bit mask parity must cover cave-rich and cave-empty columns");
+        for(int x=-500;x<=500;x+=47)for(int z=-500;z<=500;z+=51) {
+            double shiftedX=x+42.0,shiftedZ=z-32.0;
+            yes(Double.doubleToRawLongBits(
+                    GrandNetherCaveNetwork.strengthFromColumn(x,z,shiftedX,205,shiftedZ))
+                == Double.doubleToRawLongBits(
+                    GrandNetherCaveNetwork.strength(shiftedX,205,shiftedZ)),
+                    "Nether out-of-bounds noise warp must fall back to original graph");
+        }
         verifyConcurrentCellCache();
         System.out.println("PASS: connected 3D Grand Nether cave network, "+samples
                 +" signed-coordinate and vanilla-protection samples");
