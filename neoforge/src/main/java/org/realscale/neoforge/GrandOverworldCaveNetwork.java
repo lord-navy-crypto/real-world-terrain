@@ -349,17 +349,16 @@ public final class GrandOverworldCaveNetwork {
     static double strengthFromColumn(int sourceX,int sourceZ,
                                      double x,double y,double z) {
         if(y<MIN_Y || y>MAX_GEOMETRY_Y)return 0;
-        long mask=componentMaskForColumn(sourceX,sourceZ);
-        if(mask==-1L)return strength(x,y,z);
-        if(mask==0L)return 0;
-        // The original density warp never exceeds the advertised margins.
-        // If called with other inputs, fall back rather than risk a false
-        // component rejection or a different cell cache.
+        // Do not trust a source-column mask if any caller supplies an
+        // unsupported warp. Validate BEFORE zero-mask early returns.
         if(x<sourceX-6.0 || x>sourceX+6.0
                 || z<sourceZ-5.0 || z>sourceZ+5.0
                 || Math.floorDiv(sourceX,CELL)!=(int)Math.floor(x/CELL)
                 || Math.floorDiv(sourceZ,CELL)!=(int)Math.floor(z/CELL))
             return strength(x,y,z);
+        long mask=componentMaskForColumn(sourceX,sourceZ);
+        if(mask==-1L)return strength(x,y,z);
+        if(mask==0L)return 0;
         Cache c=LOCAL.get();
         double value=0;
         for(int layer=0;layer<LAYERS;layer++) {
