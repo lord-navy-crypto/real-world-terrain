@@ -41,12 +41,25 @@ repositories {
         url = 'https://maven.isxander.dev/releases'
         content { includeGroup 'dev.isxander' }
     }
-    // YACL 3.8.1 requires Quilt's JSON/Gson parser libraries at runtime.
-    // These transitive dependencies are hosted on the Quilt releases Maven.
-    maven {
-        name = 'Quilt Maven'
-        url = 'https://maven.quiltmc.org/repository/release/'
-        content { includeGroup 'org.quiltmc.parsers' }
+    // YACL uses Quilt's JSON/Gson parser artifacts. Make Quilt Maven the
+    // exclusive source of this group: otherwise Gradle may probe NeoForged
+    // Releases for the same module and fail on a needless TLS handshake.
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Quilt Parsers Releases'
+                url = 'https://maven.quiltmc.org/repository/release/'
+            }
+        }
+        filter { includeGroup 'org.quiltmc.parsers' }
+    }
+    // TwelveMonkeys 3.12.0 and its parent/common POMs are on Maven Central.
+    // Restrict this complete group tree to Maven Central, not NeoForged Maven.
+    exclusiveContent {
+        forRepository {
+            mavenCentral()
+        }
+        filter { includeGroupByRegex 'com\\.twelvemonkeys(\\..*)?' }
     }
     exclusiveContent {
         forRepository {
