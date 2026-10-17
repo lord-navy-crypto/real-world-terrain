@@ -43,9 +43,11 @@ class CoreSmoothing(unittest.TestCase):
       "realscale:"+smoothed+"/terrain_density")
     self.assertTrue((R/"noise_settings"/(legacy+".json")).is_file())
     self.assertTrue((R/"density_function"/legacy/"height_signal.json").is_file())
- def test_only_four_public_families(self):
-  expected=["realscale:"+x for x,_,_ in FAMILIES]+["realscale:tva_measured_three_realms"]
+ def test_four_curated_families_and_separate_combined_opt_in(self):
+  stable=["realscale:"+x for x,_,_ in FAMILIES]+["realscale:tva_measured_three_realms"]
+  optional="realscale:tva_wonders_invasion_three_realms"
   for tag in ("normal","extended"):
    path=ROOT/"minecraft/tags/worldgen/world_preset"/(tag+".json")
-   self.assertEqual(read(path)["values"],expected)
+   self.assertEqual(read(path)["values"],stable+[optional])
+   self.assertEqual(len(read(path)["values"]),len(set(read(path)["values"])))
 if __name__=="__main__": unittest.main()
