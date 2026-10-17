@@ -85,6 +85,11 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         if(y<160||y>224)return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
         int x=quartX*4,z=quartZ*4;
         SkyIslandLayout.Site base=SkyIslandLayout.at(x,z);
+        // Every island is within +/-94 X/Z of its deterministic parent.
+        // Reject the overwhelming majority of distant quart queries before
+        // hashing/allocating the five candidate island Site records.
+        if(!SkyIslandLayout.mayIntersectIslands(base,x,z))
+            return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
         // Reject most positions without computing a single remote-climate ring.
         // Only the central island needs a remote-ocean eligibility scan
         // before satellite checks. Once resolved, a tier 1/2 site skips
