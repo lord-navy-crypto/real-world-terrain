@@ -66,6 +66,8 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/WorldgenProfilerSmoke.java
           java -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
           java -Drealscale.worldgen.profile=true -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
+      - name: Prevent loss of historical TVA worldgen subsystems during branch consolidation
+        run: python3 -m unittest discover -s qa -p 'test_tva_branch_unification.py' -v
       - name: Verify restored PR25 single-pole annular climate without changing old math
         run: |
           mkdir -p build/pr25-single-pole-climate
