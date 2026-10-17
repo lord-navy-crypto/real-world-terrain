@@ -127,6 +127,15 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
             neoforge/src/test/java/org/realscale/neoforge/MountainReliefMathSmoke.java
           java -cp build/mountain-relief-smoke org.realscale.neoforge.MountainReliefMathSmoke
+      - name: Verify mountain relief site cache and jigsaw query-order parity
+        run: |
+          mkdir -p build/mountain-site-cache-smoke
+          javac -d build/mountain-site-cache-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/MountainReliefSiteCache.java \
+            neoforge/src/test/java/org/realscale/neoforge/MountainReliefSiteCacheSmoke.java
+          java -cp build/mountain-site-cache-smoke org.realscale.neoforge.MountainReliefSiteCacheSmoke
           python3 -m unittest discover -s qa -p 'test_mountain_basin_plateau_default.py' -v
       - name: Verify equal-area concentric latitude math and default climate wiring
         run: |
