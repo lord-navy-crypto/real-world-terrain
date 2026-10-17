@@ -8,34 +8,81 @@ from realscale_headless_qa import iter_region_chunks,surface_height,get_block,un
 import gzip
 
 def radial_profile_from_noise(settings_path):
-    """Discover the currently selected concentric latitude only.
+    """Follow the actual temperature density graph, including nested inline nodes.
 
-    This inspects the *new world's* actual registered noise settings and
-    follows the generated density function reference, not default menu state.
+    Sacred worlds currently use climate_budget -> mountain_basin_temperature ->
+    radial_latitude_temperature. Checking only a string root silently reported
+    'not_radial' for worlds where radial latitude is active.
     """
-    setting=json.loads(settings_path.read_text(encoding="utf-8"))
-    temperature=setting.get("noise_router",{}).get("temperature")
-    if not isinstance(temperature,str) or not temperature.startswith("realscale:"):
+    settings=json.loads(settings_path.read_text(encoding="utf-8"))
+    temperature=settings.get("noise_router",{}).get("temperature")
+    resources=settings_path.parent.parent/"density_function"
+    seen=set()
+
+    def find(node):
+        if isinstance(node,str) and node.startswith("realscale:"):
+            ref=node.split(":",1)[1]
+            if ref in seen:
+                return None
+            seen.add(ref)
+            density_file=resources/(ref+".json")
+            if density_file.is_file():
+                return find(json.loads(density_file.read_text(encoding="utf-8")))
+        elif isinstance(node,dict):
+            if node.get("type")=="realscale:radial_latitude_temperature":
+                return {
+                    **{k:node[k] for k in ("center_x","center_z","pole_distance","strength")},
+                    "balanced":node.get("balanced",False),
+                    "area_balanced":node.get("area_balanced",False),
+                    "single_pole_area":node.get("single_pole_area",False)
+                }
+            for child in node.values():
+                match=find(child)
+                if match is not None:
+                    return match
+        elif isinstance(node,list):
+            for child in node:
+                match=find(child)
+                if match is not None:
+                    return match
         return None
-    resource=temperature.split(":",1)[1]
-    density_file=settings_path.parent.parent/"density_function"/(resource+".json")
-    if not density_file.is_file():
-        return None
-    node=json.loads(density_file.read_text(encoding="utf-8"))
-    def find(o):
-        if isinstance(o,dict):
-            if o.get("type")=="realscale:radial_latitude_temperature":
-                return {**{k:o[k] for k in ("center_x","center_z","pole_distance","strength")},
-                        "balanced":o.get("balanced",False)}
-            for sub in o.values():
-                found=find(sub)
-                if found is not None:return found
-        elif isinstance(o,list):
-            for sub in o:
-                found=find(sub)
-                if found is not None:return found
-        return None
-    return find(node)
+
+    return find(temperature)
+
+
+def radial_latitude_degrees(x,z,radial):
+    """Python parity with GeoMath: legacy, balanced, two-crest, PR25 one-crest.
+
+    This calculates latitude only; biome counts still come from saved Anvil
+    data. Never infer real global area fractions from sampled spawn chunks.
+    """
+    distance=radial["pole_distance"]
+    radius=math.hypot(x-radial["center_x"],z-radial["center_z"])
+    if radial.get("single_pole_area",False):
+        period=2.0*distance
+        cycle=math.floor(radius/period)
+        inner=cycle*period
+        offset=radius-inner
+        fraction=offset*(2.0*inner+offset)/(period*(2.0*inner+period))
+        fraction=max(0.0,min(1.0,fraction))
+        return 90.0*(1.0-abs(2.0*fraction-1.0))
+    if radial.get("area_balanced",False):
+        period=2.0*distance
+        cycle=math.floor(radius/period)
+        inner=cycle*period
+        fraction=(radius-inner)/period
+        area_phase=(2.0*cycle*fraction+fraction*fraction)/(2.0*cycle+1.0)
+        quarter=4.0*area_phase
+        if quarter<=1.0:
+            return 90.0*quarter
+        if quarter<=2.0:
+            return 90.0*(2.0-quarter)
+        if quarter<=3.0:
+            return 90.0*(quarter-2.0)
+        return 90.0*(4.0-quarter)
+    phase=(radius/distance)%2.0
+    outward=phase if phase<=1.0 else 2.0-phase
+    return 90.0*(outward**1.15 if radial.get("balanced",False) else outward)
 
 
 def radial_biome_audit(heights,surface_biomes,radial):
@@ -55,9 +102,7 @@ def radial_biome_audit(heights,surface_biomes,radial):
         b=surface_biomes.get((x,z))
         if not isinstance(b,str):continue
         r=math.hypot(x-cx,z-cz)
-        t=(r/distance)%2.0
-        fraction=t if t<=1 else 2-t
-        lat=90.0*(fraction**1.15 if radial.get("balanced",False) else fraction)
+        lat=radial_latitude_degrees(x,z,radial)
         if lat<23.5:
             tropical_all.append(b)
             if y>=240:tropical_high.append(b)
@@ -91,7 +136,10 @@ def radial_biome_audit(heights,surface_biomes,radial):
                    if len(tropical_high)>=64 and plateau_cold>0.25 else None),
         "note":"Y>=240 is a diagnostic height band, not proof of a plateau. Sampled chunks only."
     }
-    result["mode"]="radial_balanced" if radial.get("balanced",False) else "radial_legacy"
+    result["mode"]=("radial_equal_area_single_pole" if radial.get("single_pole_area",False)
+        else "radial_equal_area" if radial.get("area_balanced",False)
+        else "radial_balanced" if radial.get("balanced",False)
+        else "radial_legacy")
     result["range_blocks"]=[round(min(radii)),round(max(radii))] if radii else None
     result["pole_distance_blocks"]=distance
     result["center_world_xz"]=[cx,cz]
