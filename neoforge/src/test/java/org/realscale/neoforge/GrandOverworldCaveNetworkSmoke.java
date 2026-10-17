@@ -247,10 +247,50 @@ public final class GrandOverworldCaveNetworkSmoke {
                     100,k*GrandOverworldCaveNetwork.CELL+3),
                     "Cross-cell Z warp protection missing");
         }
+        // Verify all 47 masked components against the unmodified 3D graph.
+        // Equal raw bits, not just equivalent cave shapes, are required.
+        // This covers signed cell edges, three-dimensional altitude changes,
+        // extreme +/-6 X +/-5 Z warps and arterial bridges.
+        long maskParitySamples=0,maskedEmpty=0,maskedPresent=0;
+        final int[] compareY={-40,135,395,790,1330,1540,1700,1703};
+        final double[] compareWarp={-1.0,-0.55,0.0,0.55,1.0};
+        for(int x=-2570;x<=2570;x+=57)
+            for(int z=-2440;z<=2440;z+=63) {
+                boolean near=GrandOverworldCaveNetwork.mayContainVoidNearColumn(x,z);
+                if(near)maskedPresent++;else maskedEmpty++;
+                for(int y:compareY)for(double warp:compareWarp) {
+                    double wx=x+warp*6.0,wy=y+warp*2.0,wz=z-warp*5.0;
+                    long normal=Double.doubleToRawLongBits(
+                            GrandOverworldCaveNetwork.strength(wx,wy,wz));
+                    long optimized=Double.doubleToRawLongBits(
+                            GrandOverworldCaveNetwork.strengthFromColumn(
+                                    x,z,wx,wy,wz));
+                    require(normal==optimized,
+                            "Masked cave components changed density at "+
+                            x+","+y+","+z+" warp="+warp+
+                            " expected="+Double.longBitsToDouble(normal)+
+                            " actual="+Double.longBitsToDouble(optimized));
+                    maskParitySamples++;
+                }
+            }
+        require(maskParitySamples>150000 && maskedEmpty>0 && maskedPresent>0,
+                "Masked cave regression failed to test diverse real columns");
+        // Deliberately feed shifts larger than the supported warp: this must
+        // fall back to the original graph, never trust a stale cached mask.
+        for(int x=-1300;x<=1300;x+=103)for(int z=-900;z<=900;z+=109)
+            for(int y:new int[]{140,410,800,1360}) {
+                double wx=x+31.0,wz=z-26.0;
+                require(Double.doubleToRawLongBits(
+                        GrandOverworldCaveNetwork.strengthFromColumn(
+                                x,z,wx,y,wz))==Double.doubleToRawLongBits(
+                        GrandOverworldCaveNetwork.strength(wx,y,wz)),
+                        "Unsupported displacement must fall back to full cave graph");
+            }
         System.out.println("TVA_GRAND_OVERWORLD_CAVE_PASS halls="+halls+
                 " large_or_wide_tunnels="+longLinks+
                 " high_halls="+highAltitudeHalls+
                 " rare_epic_or_chamber_count="+giant+
-                " threads="+threads.length+" fast_path_empty_columns="+negativeColumns);
+                " threads="+threads.length+" fast_path_empty_columns="+negativeColumns+
+                " exact_mask_parity_samples="+maskParitySamples);
     }
 }
