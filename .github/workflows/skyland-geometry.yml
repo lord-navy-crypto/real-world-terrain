@@ -27,6 +27,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
+      - name: Cross-check Anvil fixture against Java's signed 64-bit lattice
+        run: python3 -m unittest discover -s qa -p 'test_sky_island_fixture_parity.py' -v
       - name: Configure isolated deep-ocean world for deterministic island test
         working-directory: neoforge
         run: |
