@@ -105,6 +105,22 @@ public final class RealScaleMod {
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.TEMPERATE_SEASONAL_FOREST));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "boreal_taiga_floor"),
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.BOREAL_TAIGA));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_hoodoo_spires"),
+                    new EarthWonderFeature(EarthWonderFeature.Kind.HOODOO_SPIRES));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_travertine_terraces"),
+                    new EarthWonderFeature(EarthWonderFeature.Kind.TRAVERTINE_TERRACES));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_mangrove_tidal_roots"),
+                    new EarthWonderFeature(EarthWonderFeature.Kind.MANGROVE_TIDAL_ROOTS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_cooled_lava_field"),
+                    new EarthWonderFeature(EarthWonderFeature.Kind.COOLED_LAVA_FIELD));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_lava_tube_lining"),
+                    new EarthWonderFeature(EarthWonderFeature.Kind.LAVA_TUBE_LINING));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_glacial_moraine"),
+                    new EarthWonderFeature(EarthWonderFeature.Kind.GLACIAL_MORAINE));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_delta_sediment"),
+                    new EarthWonderFeature(EarthWonderFeature.Kind.DELTA_SEDIMENT));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_karst_sinkhole_rim"),
+                    new EarthWonderFeature(EarthWonderFeature.Kind.KARST_SINKHOLE_RIM));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_cold_desert"),
                     new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.COLD_DESERT));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_rocky_plateau"),
