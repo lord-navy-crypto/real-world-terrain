@@ -153,10 +153,144 @@ public final class GrandOverworldCaveNetworkSmoke {
                 "Bedrock protection failed");
         require(GrandOverworldCaveNetwork.strength(0,1980,0)==0,
                 "High world ceiling protection failed");
+        // The upper-cavern fast path is supported by the actual immutable
+        // hall, satellite and passage geometry, not merely by strength()
+        // returning zero after its new early exit. Test the highest possible
+        // endpoint + vertical tube allowance for every generated path kind.
+        int altitudeProofs=0;
+        for(int gx=-20;gx<=20;gx++)for(int gz=-20;gz<=20;gz++)
+            for(int layer=0;layer<GrandOverworldCaveNetwork.LAYERS;layer++) {
+                var a=GrandOverworldCaveNetwork.hall(gx,gz,layer);
+                require(a.y()+a.radiusY()<GrandOverworldCaveNetwork.MAX_GEOMETRY_Y,
+                        "Upper cave chamber unexpectedly exceeds geometry bound");
+                altitudeProofs++;
+                for(int direction=0;direction<4;direction++) {
+                    int dx=direction==0?1:direction==1?-1:0;
+                    int dz=direction==2?1:direction==3?-1:0;
+                    var b=GrandOverworldCaveNetwork.hall(
+                            gx+dx,gz+dz,layer);
+                    var passage=GrandOverworldCaveNetwork.corridor(
+                            gx,gz,layer,direction);
+                    double reach=passage.radius()*passage.verticalScale()+16;
+                    require(Math.max(a.y(),b.y())+reach
+                                    <GrandOverworldCaveNetwork.MAX_GEOMETRY_Y,
+                            "Upper cave passage unexpectedly exceeds geometry bound");
+                    altitudeProofs++;
+                }
+                for(int gallery=0;gallery<2;gallery++) {
+                    var side=GrandOverworldCaveNetwork.satellite(
+                            gx,gz,layer,gallery);
+                    require(side.y()+side.radiusY()
+                                    <GrandOverworldCaveNetwork.MAX_GEOMETRY_Y,
+                            "Upper cave satellite exceeds geometry bound");
+                    altitudeProofs++;
+                }
+            }
+        // Shaft maximum: radius 20..36 with verticalScale 1, plus reach
+        // 16. Artery upper bound (tier 2 max altitude 879) is far lower.
+        require(1439+36+16<GrandOverworldCaveNetwork.MAX_GEOMETRY_Y,
+                "Inter-layer vertical shaft exceeds upper cave bound");
+        require(879+(47+36)*1.65+16<GrandOverworldCaveNetwork.MAX_GEOMETRY_Y,
+                "Kilometer arterial passage exceeds upper cave bound");
+        // Cave entrances are independent and may extend toward Y1920:
+        // the high-altitude optimization must NEVER hide these shafts.
+        int highEntrances=0;
+        for(int gx=-18;gx<=18;gx++)for(int gz=-18;gz<=18;gz++) {
+            var low=GrandOverworldCaveNetwork.hall(gx,gz,0);
+            double y=1750;
+            double rise=y-low.y();
+            double x=low.x()+Math.sin(rise/92.0)*5;
+            double z=low.z()+Math.sin(rise/119.0)*4;
+            if(GrandOverworldCaveNetwork.entranceStrength(x,y,z)>0.9)
+                highEntrances++;
+            require(GrandOverworldCaveNetwork.strength(x,y,z)==0.0,
+                    "Upper altitude must be free of giant cave network");
+        }
+        require(highEntrances>0,"Highland entrances must remain above cave graph ceiling");
+        // Performance fast path must NEVER reject a real voxel, even when
+        // the caller's +/-6 X, +/-5 Z and +/-2 Y noise warp is at an extreme.
+        // Across negative and positive cells, test vertical shafts, halls,
+        // inter-layer galleries and kilometer-scale arterial routes together.
+        int negativeColumns=0, checkedFastPath=0;
+        final int[] probeY={128,340,700,1200,1520,1780};
+        final double[] warpSamples={-1.0,0.0,1.0};
+        for(int x=-2250;x<=2250;x+=47)for(int z=-2100;z<=2100;z+=53) {
+            boolean may=GrandOverworldCaveNetwork.mayContainVoidNearColumn(x,z);
+            if(!may) {
+                negativeColumns++;
+                for(int y:probeY)for(double warp:warpSamples) {
+                    double result=GrandOverworldCaveNetwork.strength(
+                            x+warp*6.0,y+warp*2.0,z-warp*5.0);
+                    require(result==0.0,
+                            "Conservative cave column fast path hid geometry at "
+                            +x+","+y+","+z+" warp="+warp+" strength="+result);
+                    checkedFastPath++;
+                }
+            }
+        }
+        require(negativeColumns>0 && checkedFastPath>0,
+                "Cave fast path must prune at least some truly empty columns");
+        for(int gx=-3;gx<=3;gx++)for(int gz=-3;gz<=3;gz++)
+            for(int layer=0;layer<GrandOverworldCaveNetwork.LAYERS;layer++) {
+                var room=GrandOverworldCaveNetwork.hall(gx,gz,layer);
+                require(GrandOverworldCaveNetwork.mayContainVoidNearColumn(
+                        (int)room.x(),(int)room.z()),
+                        "Giant room column erroneously rejected");
+            }
+        // Probe exact boundary margins where a bounded warp can switch the
+        // active cell. These must never reject without checking both cells.
+        for(int k=-2;k<=2;k++) {
+            require(GrandOverworldCaveNetwork.mayContainVoidNearColumn(
+                    k*GrandOverworldCaveNetwork.CELL+2,100),
+                    "Cross-cell X warp protection missing");
+            require(GrandOverworldCaveNetwork.mayContainVoidNearColumn(
+                    100,k*GrandOverworldCaveNetwork.CELL+3),
+                    "Cross-cell Z warp protection missing");
+        }
+        // Verify all 47 masked components against the unmodified 3D graph.
+        // Equal raw bits, not just equivalent cave shapes, are required.
+        // This covers signed cell edges, three-dimensional altitude changes,
+        // extreme +/-6 X +/-5 Z warps and arterial bridges.
+        long maskParitySamples=0,maskedEmpty=0,maskedPresent=0;
+        final int[] compareY={-40,135,395,790,1330,1540,1700,1703};
+        final double[] compareWarp={-1.0,-0.55,0.0,0.55,1.0};
+        for(int x=-2570;x<=2570;x+=57)
+            for(int z=-2440;z<=2440;z+=63) {
+                boolean near=GrandOverworldCaveNetwork.mayContainVoidNearColumn(x,z);
+                if(near)maskedPresent++;else maskedEmpty++;
+                for(int y:compareY)for(double warp:compareWarp) {
+                    double wx=x+warp*6.0,wy=y+warp*2.0,wz=z-warp*5.0;
+                    long normal=Double.doubleToRawLongBits(
+                            GrandOverworldCaveNetwork.strength(wx,wy,wz));
+                    long optimized=Double.doubleToRawLongBits(
+                            GrandOverworldCaveNetwork.strengthFromColumn(
+                                    x,z,wx,wy,wz));
+                    require(normal==optimized,
+                            "Masked cave components changed density at "+
+                            x+","+y+","+z+" warp="+warp+
+                            " expected="+Double.longBitsToDouble(normal)+
+                            " actual="+Double.longBitsToDouble(optimized));
+                    maskParitySamples++;
+                }
+            }
+        require(maskParitySamples>150000 && maskedEmpty>0 && maskedPresent>0,
+                "Masked cave regression failed to test diverse real columns");
+        // Deliberately feed shifts larger than the supported warp: this must
+        // fall back to the original graph, never trust a stale cached mask.
+        for(int x=-1300;x<=1300;x+=103)for(int z=-900;z<=900;z+=109)
+            for(int y:new int[]{140,410,800,1360}) {
+                double wx=x+31.0,wz=z-26.0;
+                require(Double.doubleToRawLongBits(
+                        GrandOverworldCaveNetwork.strengthFromColumn(
+                                x,z,wx,y,wz))==Double.doubleToRawLongBits(
+                        GrandOverworldCaveNetwork.strength(wx,y,wz)),
+                        "Unsupported displacement must fall back to full cave graph");
+            }
         System.out.println("TVA_GRAND_OVERWORLD_CAVE_PASS halls="+halls+
                 " large_or_wide_tunnels="+longLinks+
                 " high_halls="+highAltitudeHalls+
                 " rare_epic_or_chamber_count="+giant+
-                " threads="+threads.length);
+                " threads="+threads.length+" fast_path_empty_columns="+negativeColumns+
+                " exact_mask_parity_samples="+maskParitySamples);
     }
 }

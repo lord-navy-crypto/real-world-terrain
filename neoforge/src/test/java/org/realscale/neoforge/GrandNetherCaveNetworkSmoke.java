@@ -84,6 +84,90 @@ public final class GrandNetherCaveNetworkSmoke {
             yes(Math.abs(a-b)<0.05,"Sub-block cave sampling discontinuity at "+x);
             samples++;
         }
+        // For all allowed X/Z noise-warp displacements, the conservative
+        // column test may reject only points with exactly zero 3D cave strength.
+        int emptyColumns=0,verifiedWarpedSamples=0;
+        final int[] probeHeights={145,190,225,280,342,400,440};
+        for(int x=-850;x<=850;x+=23)for(int z=-850;z<=850;z+=29) {
+            boolean possible=GrandNetherCaveNetwork.mayContainVoidNearColumn(x,z);
+            if(!possible) {
+                emptyColumns++;
+                for(int y:probeHeights)
+                    for(double warp:new double[]{-1.0,-0.5,0.0,0.5,1.0}) {
+                        double found=GrandNetherCaveNetwork.strength(
+                                x+warp*5.0,y+warp*2.0,z-warp*4.0);
+                        yes(found==0.0,"Nether broad phase hid cave at "
+                                +x+","+y+","+z+" warp="+warp);
+                        verifiedWarpedSamples++;
+                    }
+            }
+        }
+        yes(emptyColumns>0&&verifiedWarpedSamples>0,
+                "Nether broad phase must skip some known empty columns");
+        for(int gx=-5;gx<=5;gx++)for(int gz=-5;gz<=5;gz++)
+            for(int layer=0;layer<2;layer++) {
+                var h=GrandNetherCaveNetwork.hall(gx,gz,layer);
+                yes(GrandNetherCaveNetwork.mayContainVoidNearColumn(
+                        (int)h.x(),(int)h.z()),
+                        "Real Nether chamber missing from broad phase");
+            }
+        for(int k=-2;k<=2;k++) {
+            yes(GrandNetherCaveNetwork.mayContainVoidNearColumn(
+                    k*GrandNetherCaveNetwork.CELL+2,70),
+                    "Nether warp-crossing X edge must remain evaluable");
+            yes(GrandNetherCaveNetwork.mayContainVoidNearColumn(
+                    70,k*GrandNetherCaveNetwork.CELL+2),
+                    "Nether warp-crossing Z edge must remain evaluable");
+        }
+        // Verify that the density-wrapper fast path is bit-exact when the
+        // original terrain density already dominates all possible cavities.
+        // A network strength >1 would invalidate the -1.8 threshold.
+        for(int x=-900;x<=900;x+=43)for(int z=-900;z<=900;z+=47)
+            for(int y=144;y<=440;y+=23) {
+                for(double warp:new double[]{-1.0,0.0,1.0}) {
+                    double strength=GrandNetherCaveNetwork.strength(
+                            x+warp*5.0,y+warp*2.0,z-warp*4.0);
+                    yes(strength>=0.0&&strength<=1.0,
+                            "Nether cave strength exceeded proven [0,1] bounds");
+                    for(double base:new double[]{-1.8,-2.1,-20.0}) {
+                        double oldDensity=Math.min(base,-1.8*strength);
+                        yes(Double.doubleToRawLongBits(oldDensity)==
+                                Double.doubleToRawLongBits(base),
+                                "Already-empty Nether terrain must remain unchanged");
+                    }
+                }
+            }
+        // 19-bit column component masks must produce bit-exact original
+        // network density for full seeded X/Z/Y displacement. No visual
+        // tolerance: even one changed cave voxel means a failed optimization.
+        long maskSamples=0,positiveColumns=0,emptyColumnsMasked=0;
+        for(int x=-1050;x<=1050;x+=29)for(int z=-1050;z<=1050;z+=31) {
+            if(GrandNetherCaveNetwork.mayContainVoidNearColumn(x,z))
+                positiveColumns++;
+            else emptyColumnsMasked++;
+            for(int y:new int[]{144,205,280,348,399,441})
+                for(double warp:new double[]{-1.0,-0.5,0,0.5,1.0}) {
+                    double wx=x+warp*5.0,wy=y+warp*2.0,wz=z-warp*4.0;
+                    long expected=Double.doubleToRawLongBits(
+                            GrandNetherCaveNetwork.strength(wx,wy,wz));
+                    long actual=Double.doubleToRawLongBits(
+                            GrandNetherCaveNetwork.strengthFromColumn(x,z,wx,wy,wz));
+                    yes(expected==actual,
+                            "Masked Nether cave differs at "+x+","+y+","+z
+                            +" warp="+warp);
+                    maskSamples++;
+                }
+        }
+        yes(maskSamples>100000 && positiveColumns>0 && emptyColumnsMasked>0,
+                "19-bit mask parity must cover cave-rich and cave-empty columns");
+        for(int x=-500;x<=500;x+=47)for(int z=-500;z<=500;z+=51) {
+            double shiftedX=x+42.0,shiftedZ=z-32.0;
+            yes(Double.doubleToRawLongBits(
+                    GrandNetherCaveNetwork.strengthFromColumn(x,z,shiftedX,205,shiftedZ))
+                == Double.doubleToRawLongBits(
+                    GrandNetherCaveNetwork.strength(shiftedX,205,shiftedZ)),
+                    "Nether out-of-bounds noise warp must fall back to original graph");
+        }
         verifyConcurrentCellCache();
         System.out.println("PASS: connected 3D Grand Nether cave network, "+samples
                 +" signed-coordinate and vanilla-protection samples");

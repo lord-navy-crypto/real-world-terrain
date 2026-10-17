@@ -22,6 +22,13 @@ public final class GrandOverworldCaveNetwork {
     public static final int CELL = 768;
     public static final int MIN_Y = -40;
     public static final int MAX_Y = 1920;
+    // Conservative geometric upper bound for connected halls/tunnels.
+    // Highest layer-3 hall center <=1439; any passage expands its endpoint
+    // bounding box by at most 93*1.45+16 (<151). Tall canyons expand
+    // by at most 50*2.25+16 (<129). Other arches and shafts are lower.
+    // No strength can exist above 1590; 1700 retains a >110 block
+    // safety margin and does NOT affect independently sampled entrances.
+    static final int MAX_GEOMETRY_Y = 1700;
     public static final int LAYERS = 4;
     private static final int[] DIR_X = {1,-1,0,0};
     private static final int[] DIR_Z = {0,0,1,-1};
@@ -33,6 +40,15 @@ public final class GrandOverworldCaveNetwork {
     public record Passage(double radius, double verticalScale, int kind) {}
     private static final class Cache {
         int gx=Integer.MIN_VALUE,gz=Integer.MIN_VALUE;
+        // Direct-mapped, epoch-tagged per-worker X/Z reject cache. An entry
+        // only says that a column MAY contain a cave, never that it must.
+        private static final int COLUMN_SLOTS = 512;
+        final int[] columnX=new int[COLUMN_SLOTS];
+        final int[] columnZ=new int[COLUMN_SLOTS];
+        final int[] columnEpoch=new int[COLUMN_SLOTS];
+        // 47 independently masked chambers and tunnels fit into one long.
+        final long[] columnComponents=new long[COLUMN_SLOTS];
+        int epoch=1;
         final Hall[][] halls=new Hall[LAYERS][5];
         final Hall[][] galleries=new Hall[LAYERS][2];
         final long[][] corridorKeys=new long[LAYERS][4];
@@ -49,6 +65,12 @@ public final class GrandOverworldCaveNetwork {
         void load(int x,int z) {
             if(gx==x && gz==z)return;
             gx=x;gz=z;
+            // Entries for a different 768x768 network cell are invalid.
+            // No cross-thread access or world-wide unbounded state.
+            if (++epoch == 0) {
+                java.util.Arrays.fill(columnEpoch,0);
+                epoch=1;
+            }
             for(int layer=0;layer<LAYERS;layer++) {
                 Hall center=hall(x,z,layer);
                 halls[layer][0]=center;
@@ -278,12 +300,172 @@ public final class GrandOverworldCaveNetwork {
         return q>=1 ? 0 : 1-q;
     }
 
+
+    /**
+     * Conservative X/Z broad phase for the giant cave density network.
+     *
+     * The caller's density warp shifts X by <=6 and Z by <=5 blocks.
+     * If either shifted point could cross a 768-block cell boundary, do
+     * not reject it: the neighboring cell has different cached corridors.
+     *
+     * A false result PROVES strength(x+warpX,y,z+warpZ)==0 for every Y and
+     * every allowed shift. It therefore permits skipping the noise warp
+     * and the full cave graph while keeping the original density bitwise
+     * unchanged. A true result leaves the original computation untouched.
+     */
+    static boolean mayContainVoidNearColumn(int x,int z) {
+        return componentMaskForColumn(x,z)!=0;
+    }
+
+    private static long componentMaskForColumn(int x,int z) {
+        int localX=Math.floorMod(x,CELL),localZ=Math.floorMod(z,CELL);
+        // A displaced coordinate may select another cell's distinct
+        // tunnels. Never prune at those edges; retain the original path.
+        if(localX<=6 || localX>=CELL-7 || localZ<=5 || localZ>=CELL-6)
+            return -1L;
+        Cache c=LOCAL.get();
+        c.load(Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
+        int slot=(x*0x9e3779b9 ^ z*0x85ebca6b)&(Cache.COLUMN_SLOTS-1);
+        if(c.columnEpoch[slot]==c.epoch
+                && c.columnX[slot]==x && c.columnZ[slot]==z)
+            return c.columnComponents[slot];
+        long mask=columnComponentMask(c,x-6.0,x+6.0,z-5.0,z+5.0);
+        c.columnEpoch[slot]=c.epoch;
+        c.columnX[slot]=x;
+        c.columnZ[slot]=z;
+        c.columnComponents[slot]=mask;
+        return mask;
+    }
+
+    /**
+     * Evaluate the SAME cave network as strength(), but only after excluding
+     * components whose horizontal axis-aligned bounds cannot intersect this
+     * full +/-6 X and +/-5 Z seed-warped column. A skipped component must
+     * have returned precisely zero in the original function at EVERY Y.
+     *
+     * Each mask is immutable for a site cell; collisions evict data but
+     * never change output. Near 768-cell edges use the original evaluator.
+     */
+    static double strengthFromColumn(int sourceX,int sourceZ,
+                                     double x,double y,double z) {
+        if(y<MIN_Y || y>MAX_GEOMETRY_Y)return 0;
+        // Do not trust a source-column mask if any caller supplies an
+        // unsupported warp. Validate BEFORE zero-mask early returns.
+        if(x<sourceX-6.0 || x>sourceX+6.0
+                || z<sourceZ-5.0 || z>sourceZ+5.0
+                || Math.floorDiv(sourceX,CELL)!=(int)Math.floor(x/CELL)
+                || Math.floorDiv(sourceZ,CELL)!=(int)Math.floor(z/CELL))
+            return strength(x,y,z);
+        long mask=componentMaskForColumn(sourceX,sourceZ);
+        if(mask==-1L)return strength(x,y,z);
+        if(mask==0L)return 0;
+        Cache c=LOCAL.get();
+        double value=0;
+        for(int layer=0;layer<LAYERS;layer++) {
+            Hall center=c.halls[layer][0];
+            if(Math.abs(y-center.y())>235 && layer<3)continue;
+            if(Math.abs(y-center.y())>350 && layer==3)continue;
+            int shift=layer*9;
+            if((mask&(1L<<shift))!=0)
+                value=Math.max(value,hallStrength(x,y,z,center));
+            for(int direction=0;direction<4;direction++) {
+                if((mask&(1L<<(shift+1+direction)))!=0)
+                    value=Math.max(value,tunnelStrength(x,y,z,center,
+                            c.halls[layer][direction+1],c.widths[layer][direction],
+                            c.corridorKeys[layer][direction]));
+            }
+            if(Math.abs(x-center.x())<225&&Math.abs(z-center.z())<225&&
+                    Math.abs(y-center.y())<150) {
+                for(int g=0;g<2;g++) {
+                    if((mask&(1L<<(shift+5+g*2)))!=0)
+                        value=Math.max(value,hallStrength(x,y,z,c.galleries[layer][g]));
+                    if((mask&(1L<<(shift+6+g*2)))!=0)
+                        value=Math.max(value,tunnelStrength(x,y,z,center,
+                                c.galleries[layer][g],c.sideWidths[layer][g],
+                                c.sideKeys[layer][g]));
+                }
+            }
+        }
+        for(int layer=0;layer<LAYERS-1;layer++) {
+            if((mask&(1L<<(36+layer)))!=0)
+                value=Math.max(value,tunnelStrength(x,y,z,c.halls[layer][0],
+                        c.halls[layer+1][0],c.shafts[layer],c.shaftKeys[layer]));
+        }
+        for(int tier=0;tier<2;tier++) for(int axis=0;axis<2;axis++)
+            for(int group=0;group<2;group++) {
+                int shift=39+tier*4+axis*2+group;
+                if((mask&(1L<<shift))==0)continue;
+                Hall a=c.arteryA[tier][axis][group];
+                if(a!=null)
+                    value=Math.max(value,tunnelStrength(x,y,z,a,
+                            c.arteryB[tier][axis][group],
+                            c.arteryWidth[tier][axis][group],
+                            c.arteryKey[tier][axis][group]));
+            }
+        return value;
+    }
+
+    private static boolean hallCouldTouch(Hall hall,
+            double loX,double hiX,double loZ,double hiZ) {
+        return loX<=hall.x()+hall.radiusX() && hiX>=hall.x()-hall.radiusX()
+            && loZ<=hall.z()+hall.radiusZ() && hiZ>=hall.z()-hall.radiusZ();
+    }
+
+    private static boolean tunnelCouldTouch(Hall a,Hall b,Passage section,
+            double loX,double hiX,double loZ,double hiZ) {
+        // tunnelStrength uses exactly this conservative horizontal reach,
+        // including both seeded centerline offsets and all cross-sections.
+        double reach=section.radius()+17.0;
+        return loX<=Math.max(a.x(),b.x())+reach
+            && hiX>=Math.min(a.x(),b.x())-reach
+            && loZ<=Math.max(a.z(),b.z())+reach
+            && hiZ>=Math.min(a.z(),b.z())-reach;
+    }
+
+    private static long columnComponentMask(Cache c,
+            double loX,double hiX,double loZ,double hiZ) {
+        long mask=0L;
+        for(int layer=0;layer<LAYERS;layer++) {
+            int shift=layer*9;
+            Hall center=c.halls[layer][0];
+            if(hallCouldTouch(center,loX,hiX,loZ,hiZ))
+                mask|=1L<<shift;
+            for(int dir=0;dir<4;dir++) {
+                if(tunnelCouldTouch(center,c.halls[layer][dir+1],
+                        c.widths[layer][dir],loX,hiX,loZ,hiZ))
+                    mask|=1L<<(shift+1+dir);
+            }
+            for(int i=0;i<2;i++) {
+                Hall satellite=c.galleries[layer][i];
+                if(hallCouldTouch(satellite,loX,hiX,loZ,hiZ))
+                    mask|=1L<<(shift+5+2*i);
+                if(tunnelCouldTouch(center,satellite,
+                        c.sideWidths[layer][i],loX,hiX,loZ,hiZ))
+                    mask|=1L<<(shift+6+2*i);
+            }
+        }
+        for(int layer=0;layer<LAYERS-1;layer++) {
+            if(tunnelCouldTouch(c.halls[layer][0],c.halls[layer+1][0],
+                    c.shafts[layer],loX,hiX,loZ,hiZ))
+                mask|=1L<<(36+layer);
+        }
+        for(int tier=0;tier<2;tier++) for(int axis=0;axis<2;axis++)
+            for(int group=0;group<2;group++) {
+                Hall a=c.arteryA[tier][axis][group];
+                if(a!=null && tunnelCouldTouch(a,c.arteryB[tier][axis][group],
+                        c.arteryWidth[tier][axis][group],
+                        loX,hiX,loZ,hiZ))
+                    mask|=1L<<(39+tier*4+axis*2+group);
+            }
+        return mask;
+    }
+
     /**
      * Positive values indicate a requested void. 0 leaves original noise
      * untouched. No block/biome writes and no chunk loading.
      */
     public static double strength(double x,double y,double z) {
-        if(y<MIN_Y||y>MAX_Y)return 0;
+        if(y<MIN_Y||y>MAX_GEOMETRY_Y)return 0;
         int gx=(int)Math.floor(x/CELL),gz=(int)Math.floor(z/CELL);
         Cache cache=LOCAL.get();
         cache.load(gx,gz);

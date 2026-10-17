@@ -40,6 +40,13 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
     }
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
+        if(!DensityPerfSampler.ENABLED)return computeUnprofiled(ctx);
+        long start=DensityPerfSampler.begin(DensityPerfSampler.Stage.OVERWORLD_CAVE);
+        try{return computeUnprofiled(ctx);}
+        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.OVERWORLD_CAVE,start);}
+    }
+
+    private double computeUnprofiled(DensityFunction.FunctionContext ctx) {
         double original=base.compute(ctx);
         int y=ctx.blockY();
         if(y<GrandOverworldCaveNetwork.MIN_Y
@@ -54,10 +61,24 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
                     ctx.blockX(),y,ctx.blockZ()) : 0;
         if(original<=0.24)
             return entrance>0 ? Math.min(original,-2.0*entrance) : original;
+        // Giant cave geometry cannot reach this high even after the +/-2 Y
+        // warp. In lower layers, most X/Z columns likewise cannot intersect
+        // any giant cave passage.
+        // The network's conservative bounds account for every possible
+        // +/-6 X and +/-5 Z displacement from the seeded warp. When they
+        // prove no cave can exist here, skip both warp noise and the 3D
+        // corridor graph. Keep small caves and rare entrances unchanged.
+        if (y > GrandOverworldCaveNetwork.MAX_GEOMETRY_Y + 2
+                || !GrandOverworldCaveNetwork.mayContainVoidNearColumn(
+                    ctx.blockX(), ctx.blockZ())) {
+            double chosen=carve(original,smallCaves.compute(ctx),0.0);
+            return Math.min(chosen,entrance>0 ? -2.0*entrance : original);
+        }
         // The vanilla-seeded noise provides world-seed-dependent detail.
         // It never changes the room/corridor topology or chunk-border logic.
         double shift=Math.max(-1.0,Math.min(1.0,warp.compute(ctx)));
-        double strength=GrandOverworldCaveNetwork.strength(
+        double strength=GrandOverworldCaveNetwork.strengthFromColumn(
+                ctx.blockX(),ctx.blockZ(),
                 ctx.blockX()+shift*6.0, y+shift*2.0,
                 ctx.blockZ()-shift*5.0);
         // Within a sufficiently strong giant void, the network already

@@ -68,6 +68,14 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/WorldgenProfilerSmoke.java
           java -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
           java -Drealscale.worldgen.profile=true -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
+      - name: Verify low-frequency density and biome profiler (disabled and opt-in)
+        run: |
+          mkdir -p build/density-profiler-smoke
+          javac -d build/density-profiler-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/DensityPerfSampler.java \
+            neoforge/src/test/java/org/realscale/neoforge/DensityPerfSamplerSmoke.java
+          java -cp build/density-profiler-smoke org.realscale.neoforge.DensityPerfSamplerSmoke
+          java -Drealscale.density.profile=true -cp build/density-profiler-smoke org.realscale.neoforge.DensityPerfSamplerSmoke
       - name: Validate restored climate world's RCON+Anvil acceptance test
         run: python3 -m unittest discover -s qa -p 'test_pr25_live_world_boot.py' -v
       - name: Check all four restored PR25 historical climate world families
@@ -90,6 +98,13 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/QuartBiomeResultCache.java \
             neoforge/src/test/java/org/realscale/neoforge/QuartBiomeResultCacheSmoke.java
           java -cp build/ecotone-result-cache-smoke org.realscale.neoforge.QuartBiomeResultCacheSmoke
+      - name: Verify allocation-free underlying ecotone climate lookup cache
+        run: |
+          mkdir -p build/ecotone-base-cache-smoke
+          javac -d build/ecotone-base-cache-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/QuartBiomeBaseCache.java \
+            neoforge/src/test/java/org/realscale/neoforge/QuartBiomeBaseCacheSmoke.java
+          java -cp build/ecotone-base-cache-smoke org.realscale.neoforge.QuartBiomeBaseCacheSmoke
       - name: Measure DEM grid continuity and tile boundary blend
         run: |
           mkdir -p build/terrain-continuity
@@ -112,6 +127,15 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
             neoforge/src/test/java/org/realscale/neoforge/MountainReliefMathSmoke.java
           java -cp build/mountain-relief-smoke org.realscale.neoforge.MountainReliefMathSmoke
+      - name: Verify mountain relief site cache and jigsaw query-order parity
+        run: |
+          mkdir -p build/mountain-site-cache-smoke
+          javac -d build/mountain-site-cache-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/MountainReliefSiteCache.java \
+            neoforge/src/test/java/org/realscale/neoforge/MountainReliefSiteCacheSmoke.java
+          java -cp build/mountain-site-cache-smoke org.realscale.neoforge.MountainReliefSiteCacheSmoke
           python3 -m unittest discover -s qa -p 'test_mountain_basin_plateau_default.py' -v
       - name: Verify equal-area concentric latitude math and default climate wiring
         run: |
@@ -191,6 +215,14 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
             neoforge/src/test/java/org/realscale/neoforge/SkyIslandLayoutSmoke.java
           java -cp build/tva-sky org.realscale.neoforge.SkyIslandLayoutSmoke
+      - name: Verify cached sky archipelago cell and tier isolation
+        run: |
+          mkdir -p build/tva-sky-cache
+          javac -d build/tva-sky-cache \
+            neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
+            neoforge/src/main/java/org/realscale/neoforge/SkyIslandSiteCache.java \
+            neoforge/src/test/java/org/realscale/neoforge/SkyIslandSiteCacheSmoke.java
+          java -cp build/tva-sky-cache org.realscale.neoforge.SkyIslandSiteCacheSmoke
       - name: Verify NeoForge runClient task is registered
         working-directory: neoforge
         run: |

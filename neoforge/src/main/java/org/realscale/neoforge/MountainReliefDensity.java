@@ -19,14 +19,11 @@ import net.minecraft.world.level.levelgen.DensityFunction;
 public final class MountainReliefDensity implements DensityFunction.SimpleFunction {
     private final DensityFunction base, continents, selector;
     private final double basinDepth, plateauRise;
-    private final ThreadLocal<Site> current = ThreadLocal.withInitial(Site::new);
-
-    private static final class Site {
-        int gx = Integer.MIN_VALUE, gz = Integer.MIN_VALUE, type;
-        long hash;
-        boolean classified;
-        double centerX, centerZ, radius, anchorHeight;
-    }
+    // One bounded site memo per density function and worker. Revisit a region
+    // while jigsaw structures sample other distant columns without
+    // re-hashing the geometry or recomputing its seeded classification.
+    private final ThreadLocal<MountainReliefSiteCache> current =
+            ThreadLocal.withInitial(MountainReliefSiteCache::new);
 
     public MountainReliefDensity(DensityFunction base, DensityFunction continents,
                                  DensityFunction selector, double basinDepth,
@@ -55,39 +52,13 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
     private static final KeyDispatchDataCodec<MountainReliefDensity> DISPATCH =
             KeyDispatchDataCodec.of(MAP_CODEC);
 
-    private Site site(DensityFunction.FunctionContext ctx) {
-        int gx = Math.floorDiv(ctx.blockX(), MountainReliefMath.CELL);
-        int gz = Math.floorDiv(ctx.blockZ(), MountainReliefMath.CELL);
-        Site site = current.get();
-        if (site.gx == gx && site.gz == gz) return site;
-        long h = MountainReliefMath.siteHash(gx, gz);
-        long x = (long)gx * MountainReliefMath.CELL
-                + MountainReliefMath.CELL / 2
-                + MountainReliefMath.centerOffsetX(h);
-        long z = (long)gz * MountainReliefMath.CELL
-                + MountainReliefMath.CELL / 2
-                + MountainReliefMath.centerOffsetZ(h);
-        // All legal Minecraft coordinates are in signed 30M range. The
-        // cast remains within int near playable world limits.
-        int centerX = Math.toIntExact(x);
-        int centerZ = Math.toIntExact(z);
-        // Hash geometry does not need to sample the expensive world-seeded
-        // selector. Most voxels lie beyond the regional relief footprint.
-        // Sample the classifier lazily only on first geometrically eligible
-        // column in this cell, always at the same fixed world Y=0.
-        site.hash = h;
-        site.centerX = centerX;
-        site.centerZ = centerZ;
-        site.radius = MountainReliefMath.radius(h);
-        site.type = MountainReliefMath.NONE;
-        site.anchorHeight = 0;
-        site.classified = false;
-        site.gx = gx;
-        site.gz = gz;
-        return site;
+    private MountainReliefSiteCache.Site site(DensityFunction.FunctionContext ctx) {
+        int gx=Math.floorDiv(ctx.blockX(),MountainReliefMath.CELL);
+        int gz=Math.floorDiv(ctx.blockZ(),MountainReliefMath.CELL);
+        return current.get().get(gx,gz);
     }
 
-    private void classify(Site site) {
+    private void classify(MountainReliefSiteCache.Site site) {
         if (site.classified) return;
         var anchor=new DensityFunction.SinglePointContext(
                 Math.toIntExact((long)site.centerX),0,
@@ -101,17 +72,24 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
     }
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
+        if(!DensityPerfSampler.ENABLED)return computeUnprofiled(ctx);
+        long started=DensityPerfSampler.begin(DensityPerfSampler.Stage.MOUNTAIN_RELIEF);
+        try{return computeUnprofiled(ctx);}
+        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.MOUNTAIN_RELIEF,started);}
+    }
+
+    private double computeUnprofiled(DensityFunction.FunctionContext ctx) {
         double original = base.compute(ctx);
         // For original <= 0.65, the upland gate's second smoothstep is
         // mathematically zero for ANY continentalness. This also avoids
         // expensive continent noise reads in the ocean and lowlands.
         if (original <= 0.65) return original;
-        Site s = site(ctx);
+        MountainReliefSiteCache.Site s = site(ctx);
         double dx = ctx.blockX() - s.centerX;
         double dz = ctx.blockZ() - s.centerZ;
         // Site footprint is hash-defined, independent of its expensive
         // seed-resolved selector. Faraway columns never need that sample.
-        if (MountainReliefMath.definitelyOutsideEnvelope(dx,dz,s.radius))
+        if (s.definitelyOutside(dx,dz))
             return original;
         classify(s);
         if (s.type == MountainReliefMath.NONE) return original;
