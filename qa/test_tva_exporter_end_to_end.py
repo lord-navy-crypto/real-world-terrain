@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exercise real compiled TVA .jar -> YACL draft -> self-contained new-world pack.
 
-Must never replace the four original menu choices or downgrade Grand dimensions.
+Must preserve four original menu choices plus additive experiments and Grand dimensions.
 """
 import json
 from pathlib import Path
@@ -26,7 +26,15 @@ def main():
             "data/realscale/worldgen/world_preset/tva_sacred_timeline_three_realms.json"))
         core=json.loads(source.read(
             "data/minecraft/tags/worldgen/world_preset/normal.json"))
-    require(len(core["values"])==4,"TVA built mod must have exactly four core menu choices")
+    original=[
+        "realscale:tva_sacred_timeline_three_realms",
+        "realscale:tva_alpine_three_realms",
+        "realscale:tva_canyon_three_realms",
+        "realscale:tva_measured_three_realms",
+    ]
+    require(core["replace"] is False and core["values"]==
+            original+["realscale:tva_wonders_invasion_three_realms"],
+            "TVA built mod must keep the four core choices and additive opt-in")
     with tempfile.TemporaryDirectory(prefix="tva-lab-export-") as temporary:
         directory=Path(temporary)
         draft=directory/"profile.json"
@@ -57,7 +65,7 @@ def main():
             custom_tag=json.loads(archive.read(
                 "data/minecraft/tags/worldgen/world_preset/normal.json"))
             require(custom_tag["values"]==[profile],
-                    "Portable datapack should add one custom ID, not duplicate the four core choices")
+                    "Portable datapack should add one custom ID, not duplicate stable or experimental choices")
         with zipfile.ZipFile(resource_pack) as lang_archive:
             labels=json.loads(lang_archive.read("assets/minecraft/lang/en_us.json"))
             require("generator.realscale."+key in labels,
@@ -68,7 +76,7 @@ def main():
             pass
         else:
             raise AssertionError("Exporter unexpectedly overwrote a pre-existing pack")
-    print("TVA_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, 4-core menu and immutable export")
+    print("TVA_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, 4 stable + 1 opt-in menu and immutable export")
 
 if __name__=="__main__":
     main()
