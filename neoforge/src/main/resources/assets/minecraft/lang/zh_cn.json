@@ -11,5 +11,6 @@
   "generator.realscale.tva_alpine_three_realms": "TVA 神圣时间线 · 高山巨构",
   "generator.realscale.tva_canyon_three_realms": "TVA 神圣时间线 · 峡谷与河谷",
   "generator.realscale.tva_measured_three_realms": "TVA 神圣时间线 · 实测地形 USGS v2",
-  "generator.realscale.usgs_big_sur_v2": "RealScale | USGS Big Sur v2（实测地形兼容）"
+  "generator.realscale.usgs_big_sur_v2": "RealScale | USGS Big Sur v2（实测地形兼容）",
+  "generator.realscale.tva_wonders_invasion_three_realms": "TVA 神圣时间线 · 自然奇观与维度入侵（完整实验版）"
 }
