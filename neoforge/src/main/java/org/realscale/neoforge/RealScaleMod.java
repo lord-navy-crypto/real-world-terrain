@@ -69,6 +69,18 @@ public final class RealScaleMod {
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.UPLAND_SCREE));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "coastal_driftwood"),
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.COASTAL_DRIFTWOOD));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_nether_overworld"),
+                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.NETHER_IN_OVERWORLD));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_end_overworld"),
+                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.END_IN_OVERWORLD));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_overworld_nether"),
+                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.OVERWORLD_IN_NETHER));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_end_nether"),
+                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.END_IN_NETHER));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_overworld_end"),
+                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.OVERWORLD_IN_END));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_nether_end"),
+                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.NETHER_IN_END));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_nether"),
                     new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.NETHER));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_end"),
