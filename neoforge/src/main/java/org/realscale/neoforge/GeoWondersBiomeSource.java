@@ -18,6 +18,13 @@ public final class GeoWondersBiomeSource extends BiomeSource {
     private final BiomeSource source;
     private GeoWondersBiomeSource(BiomeSource source){this.source=source;}
     private BiomeSource source(){return source;}
+    /** Allow the outer sky-island biome source to recognize a nested
+     * cross-realm experiment without relaxing either feature's opt-in guard.
+     */
+    public boolean containsCrossRealm() {
+        return source instanceof CrossRealmBiomeSource
+                || source instanceof CrossRealmShowcaseBiomeSource;
+    }
     @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes(){
         return source.possibleBiomes().stream();
