@@ -26,7 +26,7 @@ class InvasionRegistrationTest(unittest.TestCase):
 
     def test_realm_guard_and_atomic_same_chunk_placement(self):
         source=(SOURCE/"DimensionalInvasionFeature.java").read_text()
-        self.assertIn("TVAWorldGuard.hasRealScaleGenerator(context)",source)
+        self.assertIn("TVAWorldGuard.hasCrossRealmInvasion(context)",source)
         self.assertIn('!"minecraft".equals(realm.getNamespace())',source)
         self.assertIn('!"overworld".equals(home)',source)
         self.assertIn('!"the_nether".equals(home)',source)

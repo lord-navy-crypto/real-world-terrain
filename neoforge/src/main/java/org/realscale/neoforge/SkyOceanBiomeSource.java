@@ -42,6 +42,9 @@ public final class SkyOceanBiomeSource extends BiomeSource {
     }
     private BiomeSource source(){return source;}
     /** Preserve sky island placement for nested optional invasion presets. */
+    public boolean containsGeoWonders() {
+        return source instanceof GeoWondersBiomeSource;
+    }
     public boolean containsCrossRealm() {
         return source instanceof CrossRealmBiomeSource
                 || source instanceof CrossRealmShowcaseBiomeSource;

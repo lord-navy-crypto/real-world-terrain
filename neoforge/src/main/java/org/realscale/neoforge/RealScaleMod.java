@@ -34,6 +34,10 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "fantasy_end_archipelago"), FantasyEndArchipelagoDensity.MAP_CODEC);
         });
         event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_wonders_opt_in"),
+                    GeoWondersBiomeSource.CODEC)
+        );
+        event.register(Registries.BIOME_SOURCE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones"),
                     NaturalEcotoneBiomeSource.CODEC)
         );

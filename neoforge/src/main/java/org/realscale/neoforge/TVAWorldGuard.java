@@ -1,6 +1,7 @@
 package org.realscale.neoforge;
 
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
+import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 
 /** Restrict global NeoForge biome-modifier decorations to RealScale worlds.
@@ -15,5 +16,21 @@ public final class TVAWorldGuard {
         return generator.generatorSettings().unwrapKey()
                 .map(key -> "realscale".equals(key.location().getNamespace()))
                 .orElse(false);
+    }
+    /** Opt-in wonder experiments, never enabled on the sacred timeline. */
+    public static boolean hasExperimentalWonders(FeaturePlaceContext<?> context) {
+        if (!hasRealScaleGenerator(context)) return false;
+        BiomeSource source=context.chunkGenerator().getBiomeSource();
+        return source instanceof GeoWondersBiomeSource
+            || source instanceof SkyOceanBiomeSource sky && sky.containsGeoWonders();
+    }
+
+    /** Opt-in cross-realm invasion, not an implicit effect of any RealScale preset. */
+    public static boolean hasCrossRealmInvasion(FeaturePlaceContext<?> context) {
+        if (!hasRealScaleGenerator(context)) return false;
+        BiomeSource source=context.chunkGenerator().getBiomeSource();
+        return source instanceof CrossRealmBiomeSource
+            || source instanceof CrossRealmShowcaseBiomeSource
+            || source instanceof SkyOceanBiomeSource sky && sky.containsCrossRealm();
     }
 }

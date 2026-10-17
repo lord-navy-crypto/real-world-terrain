@@ -200,7 +200,7 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
     }
 
     @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        if(!TVAWorldGuard.hasRealScaleGenerator(context))return false;
+        if(!TVAWorldGuard.hasExperimentalWonders(context))return false;
         if(!context.level().getLevel().dimension().location().toString()
                 .equals("minecraft:overworld"))return false;
         int minX=Math.floorDiv(context.origin().getX(),16)*16;

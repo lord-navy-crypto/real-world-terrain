@@ -51,7 +51,7 @@ class ManufacturingRegistrationTest(unittest.TestCase):
                 self.assertTrue(m["biomes"])
     def test_safe_overworld_wonders(self):
         s=(JAVA/"EarthWonderFeature.java").read_text()
-        for guard in ("TVAWorldGuard.hasRealScaleGenerator",
+        for guard in ("TVAWorldGuard.hasExperimentalWonders",
                       'equals("minecraft:overworld")',
                       "Math.floorDiv(x,16)==cx","Math.floorDiv(z,16)==cz",
                       "world.getFluidState(under).isEmpty()",

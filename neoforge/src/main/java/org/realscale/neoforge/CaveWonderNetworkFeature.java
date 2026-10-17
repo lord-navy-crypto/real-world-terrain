@@ -51,7 +51,7 @@ public final class CaveWonderNetworkFeature extends Feature<NoneFeatureConfigura
         return true;
     }
     @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        if(!TVAWorldGuard.hasRealScaleGenerator(context))return false;
+        if(!TVAWorldGuard.hasExperimentalWonders(context))return false;
         WorldGenLevel w=context.level();
         if(!w.getLevel().dimension().location().toString().equals("minecraft:overworld"))
             return false;

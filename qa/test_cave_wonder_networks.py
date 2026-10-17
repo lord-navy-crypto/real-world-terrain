@@ -21,7 +21,7 @@ class CaveWonderAcceptance(unittest.TestCase):
         for needle in ("Math.floorDiv(context.origin().getX(),16)*16",
                        "for(int x=minX;x<minX+16;x++)",
                        "for(int z=minZ;z<minZ+16;z++)",
-                       "TVAWorldGuard.hasRealScaleGenerator(context)",
+                       "TVAWorldGuard.hasExperimentalWonders(context)",
                        "Blocks.CAVE_AIR.defaultBlockState()",
                        "if(!dry(w,foot)||!dry(w,head))continue;",
                        "if(!acceptable(w.getBlockState(roof)))continue;"):

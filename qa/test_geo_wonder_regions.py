@@ -23,7 +23,7 @@ class GeoWonderRegionsTest(unittest.TestCase):
                 self.assertIn({"type":"minecraft:biome"},pf["placement"])
                 self.assertFalse(any(e["type"]=="minecraft:rarity_filter" for e in pf["placement"]))
     def test_world_and_chunk_guards(self):
-        self.assertIn("TVAWorldGuard.hasRealScaleGenerator(context)",SRC)
+        self.assertIn("TVAWorldGuard.hasExperimentalWonders(context)",SRC)
         self.assertIn('equals("minecraft:overworld")',SRC)
         self.assertIn("int minX=Math.floorDiv(context.origin().getX(),16)*16;",SRC)
         self.assertIn("for(int x=minX;x<minX+16;x++)",SRC)

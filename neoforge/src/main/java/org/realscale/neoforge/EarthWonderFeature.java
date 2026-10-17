@@ -88,7 +88,7 @@ public final class EarthWonderFeature extends Feature<NoneFeatureConfiguration> 
     }
 
     @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
+        if (!TVAWorldGuard.hasExperimentalWonders(context)) return false;
         WorldGenLevel world=context.level();
         if (!world.getLevel().dimension().location().toString().equals("minecraft:overworld"))
             return false;

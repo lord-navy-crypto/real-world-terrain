@@ -95,8 +95,9 @@ public final class EarthSystemsAccentFeature extends Feature<NoneFeatureConfigur
         // Natural Wonders batch A: a tiny, deterministic deposit around an
         // existing valid accent. Each column is checked independently and
         // strictly constrained to the current chunk; waterways stay intact.
-        if (kind == Kind.SALT_PLAYA || kind == Kind.ALLUVIAL_FAN
-                || kind == Kind.COLD_DESERT) {
+        if (TVAWorldGuard.hasExperimentalWonders(context)
+                && (kind == Kind.SALT_PLAYA || kind == Kind.ALLUVIAL_FAN
+                || kind == Kind.COLD_DESERT)) {
             int cx = Math.floorDiv(position.getX(), 16);
             int cz = Math.floorDiv(position.getZ(), 16);
             for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++) {

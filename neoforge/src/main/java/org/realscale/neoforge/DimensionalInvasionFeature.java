@@ -26,7 +26,7 @@ public final class DimensionalInvasionFeature extends Feature<NoneFeatureConfigu
 
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
+        if (!TVAWorldGuard.hasCrossRealmInvasion(context)) return false;
         WorldGenLevel level = context.level();
         ResourceLocation realm = level.getLevel().dimension().location();
         String home = realm.getPath();
