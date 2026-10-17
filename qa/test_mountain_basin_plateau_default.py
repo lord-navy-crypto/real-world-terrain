@@ -118,6 +118,18 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertIn("site.classified = false;",terrain)
         self.assertIn("site.classified=true;",terrain)
         self.assertIn("private void classify(Site site)",terrain)
+
+        climate=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/MountainBasinTemperatureDensity.java").read_text()
+        self.assertIn("private void classify(Site site)",climate)
+        self.assertIn("boolean classified;",climate)
+        self.assertIn("site.classified=true;",climate)
+        self.assertLess(climate.index("if(exposedLand<=0.0)return original;"),
+                        climate.index("double continent=continents.compute(ctx);"))
+        self.assertLess(climate.index("if(dx*dx+dz*dz>=limit*limit)return original;"),
+                        climate.index("classify(s);"))
+        self.assertLess(climate.index("classify(s);"),
+                        climate.index("if(s.kind!=MountainReliefMath.BASIN)return original;"))
+
         self.assertLess(terrain.index("if (MountainReliefMath.definitelyOutsideEnvelope(dx,dz,s.radius))"),
                         terrain.index("classify(s);"))
         self.assertLess(terrain.index("classify(s);"),

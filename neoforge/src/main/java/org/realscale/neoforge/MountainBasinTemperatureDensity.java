@@ -22,6 +22,8 @@ public final class MountainBasinTemperatureDensity
 
     private static final class Site {
         int gx = Integer.MIN_VALUE, gz = Integer.MIN_VALUE, kind;
+        long hash;
+        boolean classified;
         double x, z, radius;
     }
 
@@ -61,33 +63,45 @@ public final class MountainBasinTemperatureDensity
         s.z=(long)gz*MountainReliefMath.CELL
                 +MountainReliefMath.CELL/2+MountainReliefMath.centerOffsetZ(h);
         s.radius=MountainReliefMath.radius(h);
-        // Match mountain_relief's fixed-Y regional classifier exactly.
-        // Otherwise temperature and terrain could disagree depending on
-        // which vertical noise sample first initializes their caches.
-        s.kind=MountainReliefMath.kind(h,
-                selector.compute(new DensityFunction.SinglePointContext(
-                        Math.toIntExact((long)s.x),0,Math.toIntExact((long)s.z))));
+        // Region footprint is seed/hash-only. The classifier is expensive,
+        // and only a small share of quart positions lie within basin cores.
+        // Defer it until a point qualifies geometrically, preserving Y=0.
+        s.hash=h;
+        s.kind=MountainReliefMath.NONE;
+        s.classified=false;
         s.gx=gx;s.gz=gz;
         return s;
+    }
+
+    private void classify(Site site) {
+        if(site.classified)return;
+        double region=selector.compute(new DensityFunction.SinglePointContext(
+                Math.toIntExact((long)site.x),0,Math.toIntExact((long)site.z)));
+        site.kind=MountainReliefMath.kind(site.hash,region);
+        site.classified=true;
     }
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
         double original=base.compute(ctx);
         if(warmth==0)return original;
-        double continent=continents.compute(ctx);
-        if(continent<=-0.10)return original;
-        // Reject non-uplands and deep voxels BEFORE looking up a regional
-        // site. These multipliers are exactly zero here, so the early return
-        // preserves the old climate output while saving hashed site and
-        // selector work for the majority of low-altitude/no-basin samples.
+        // The altitude multiplier vanishes completely at Y<=80. Do not
+        // sample continents/height noise in that common case.
         double exposedLand=GeoMath.smoothstep(80,200,ctx.blockY());
         if(exposedLand<=0.0)return original;
+        double continent=continents.compute(ctx);
+        if(continent<=-0.10)return original;
         double highlandGate=MountainReliefMath.inlandUplandGate(
                 continent,heightSignal.compute(ctx));
         if(highlandGate<=0.0)return original;
         Site s=site(ctx);
+        double dx=ctx.blockX()-s.x,dz=ctx.blockZ()-s.z;
+        // Conservative squared-distance rejection of sites outside the
+        // actual r<0.78 basin core; the tiny epsilon protects edge parity.
+        double limit=s.radius*0.780000001;
+        if(dx*dx+dz*dz>=limit*limit)return original;
+        classify(s);
         if(s.kind!=MountainReliefMath.BASIN)return original;
-        double r=Math.hypot(ctx.blockX()-s.x,ctx.blockZ()-s.z)/s.radius;
+        double r=Math.hypot(dx,dz)/s.radius;
         if(r>=0.78)return original;
         return original + warmth*MountainReliefMath.basinCore(r)
                 *highlandGate*exposedLand;
