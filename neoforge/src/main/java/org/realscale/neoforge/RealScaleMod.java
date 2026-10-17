@@ -117,6 +117,10 @@ public final class RealScaleMod {
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.TEMPERATE_SEASONAL_FOREST));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "boreal_taiga_floor"),
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.BOREAL_TAIGA));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_cave_lava_tube"),
+                    new CaveWonderNetworkFeature(CaveWonderNetworkFeature.Kind.LAVA_TUBE));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_cave_karst_passage"),
+                    new CaveWonderNetworkFeature(CaveWonderNetworkFeature.Kind.KARST_PASSAGE));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_playa_basin"),
                     new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.PLAYA_BASIN));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_alluvial_fan"),

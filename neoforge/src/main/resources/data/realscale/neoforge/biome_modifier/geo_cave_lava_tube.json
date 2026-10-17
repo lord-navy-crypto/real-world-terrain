@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:stony_peaks",
+    "minecraft:badlands",
+    "minecraft:windswept_hills"
+  ],
+  "features": "realscale:geo_cave_lava_tube",
+  "step": "underground_decoration"
+}
