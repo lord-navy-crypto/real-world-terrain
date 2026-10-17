@@ -27,7 +27,8 @@ public final class GrandNetherCaveNetwork {
         final int[] columnX = new int[COLUMN_SLOTS];
         final int[] columnZ = new int[COLUMN_SLOTS];
         final int[] columnEpoch = new int[COLUMN_SLOTS];
-        final boolean[] columnMayContainCave = new boolean[COLUMN_SLOTS];
+        // Up to 19 individual rooms and connectors fit in one bit mask.
+        final int[] columnComponents = new int[COLUMN_SLOTS];
         int epoch=1;
         final Hall[][] halls = new Hall[2][5];
         final Hall[][] satellites = new Hall[2][2];
@@ -187,21 +188,75 @@ public final class GrandNetherCaveNetwork {
      * select a neighboring 256x256 cave graph. Never use a shared cache.
      */
     static boolean mayContainVoidNearColumn(int x,int z) {
+        return componentMaskForColumn(x,z)!=0;
+    }
+
+    private static int componentMaskForColumn(int x,int z) {
         int dx=Math.floorMod(x,CELL),dz=Math.floorMod(z,CELL);
-        if(dx<=5 || dx>=CELL-6 || dz<=4 || dz>=CELL-5) return true;
+        // A +/-5 or +/-4 seeded warp can choose a different cave cell.
+        if(dx<=5 || dx>=CELL-6 || dz<=4 || dz>=CELL-5)return -1;
         CellCache c=CACHED_HALLS.get();
         c.initialize(Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
         int slot=(x*0x9e3779b9 ^ z*0x85ebca6b)&(CellCache.COLUMN_SLOTS-1);
         if(c.columnEpoch[slot]==c.epoch && c.columnX[slot]==x
-                && c.columnZ[slot]==z)
-            return c.columnMayContainCave[slot];
-        double loX=x-5.0,hiX=x+5.0,loZ=z-4.0,hiZ=z+4.0;
-        boolean candidate=couldTouch(c,loX,hiX,loZ,hiZ);
+                && c.columnZ[slot]==z)return c.columnComponents[slot];
+        int mask=componentMask(c,x-5.0,x+5.0,z-4.0,z+4.0);
         c.columnEpoch[slot]=c.epoch;
         c.columnX[slot]=x;
         c.columnZ[slot]=z;
-        c.columnMayContainCave[slot]=candidate;
-        return candidate;
+        c.columnComponents[slot]=mask;
+        return mask;
+    }
+
+    /**
+     * Re-evaluates the original 3D network in its exact component order,
+     * but only for the 19 chambers and tubes whose broad-phase bounds
+     * can intersect the seeded-warped X/Z source column. Original strength()
+     * remains the canonical fallback for warp overflow and cell edges.
+     */
+    static double strengthFromColumn(int originalX,int originalZ,
+                                     double x,double y,double z) {
+        if(y<MIN_Y||y>MAX_Y)return 0;
+        if(x<originalX-5.0||x>originalX+5.0
+                ||z<originalZ-4.0||z>originalZ+4.0
+                ||Math.floorDiv(originalX,CELL)!=(int)Math.floor(x/CELL)
+                ||Math.floorDiv(originalZ,CELL)!=(int)Math.floor(z/CELL))
+            return strength(x,y,z);
+        int mask=componentMaskForColumn(originalX,originalZ);
+        if(mask==-1)return strength(x,y,z);
+        if(mask==0)return 0;
+        CellCache cache=CACHED_HALLS.get();
+        double answer=0;
+        for(int layer=0;layer<2;layer++) {
+            int shift=layer*9;
+            Hall center=cache.halls[layer][0];
+            if((mask&(1<<shift))!=0
+                    && Math.abs(y-center.y())<center.radiusY()+1)
+                answer=Math.max(answer,chamber(x,y,z,center));
+            if(answer>=1)return 1;
+            for(int edge=0;edge<4;edge++) {
+                if((mask&(1<<(shift+1+edge)))!=0)
+                    answer=Math.max(answer,tube(x,y,z,center,
+                            cache.halls[layer][edge+1],11,
+                            cache.corridorKeys[layer][edge]));
+            }
+            if(Math.abs(x-center.x())<=80&&Math.abs(z-center.z())<=80
+                    && Math.abs(y-center.y())<=30) {
+                for(int gallery=0;gallery<2;gallery++) {
+                    Hall side=cache.satellites[layer][gallery];
+                    if((mask&(1<<(shift+5+gallery*2)))!=0
+                            && Math.abs(y-side.y())<side.radiusY()+1)
+                        answer=Math.max(answer,chamber(x,y,z,side));
+                    if((mask&(1<<(shift+6+gallery*2)))!=0)
+                        answer=Math.max(answer,tube(x,y,z,center,side,7,
+                                cache.satelliteKeys[layer][gallery]));
+                }
+            }
+        }
+        if((mask&(1<<18))!=0)
+            answer=Math.max(answer,tube(x,y,z,cache.halls[0][0],
+                    cache.halls[1][0],10,cache.interlayerKey));
+        return answer;
     }
 
     private static boolean roomCouldTouch(Hall h,
@@ -220,22 +275,27 @@ public final class GrandNetherCaveNetwork {
             && hiZ>=Math.min(a.z(),b.z())-reach;
     }
 
-    private static boolean couldTouch(CellCache c,
+    private static int componentMask(CellCache c,
             double loX,double hiX,double loZ,double hiZ) {
+        int bits=0;
         for(int layer=0;layer<2;layer++) {
+            int shift=layer*9;
             Hall center=c.halls[layer][0];
-            if(roomCouldTouch(center,loX,hiX,loZ,hiZ))return true;
+            if(roomCouldTouch(center,loX,hiX,loZ,hiZ))bits|=1<<shift;
             for(int dir=0;dir<4;dir++)
                 if(tubeCouldTouch(center,c.halls[layer][dir+1],11,
-                        loX,hiX,loZ,hiZ))return true;
-            for(int side=0;side<2;side++)
-                if(roomCouldTouch(c.satellites[layer][side],
-                        loX,hiX,loZ,hiZ)
-                        || tubeCouldTouch(center,c.satellites[layer][side],7,
-                            loX,hiX,loZ,hiZ))return true;
+                        loX,hiX,loZ,hiZ))bits|=1<<(shift+1+dir);
+            for(int gallery=0;gallery<2;gallery++) {
+                Hall satellite=c.satellites[layer][gallery];
+                if(roomCouldTouch(satellite,loX,hiX,loZ,hiZ))
+                    bits|=1<<(shift+5+gallery*2);
+                if(tubeCouldTouch(center,satellite,7,loX,hiX,loZ,hiZ))
+                    bits|=1<<(shift+6+gallery*2);
+            }
         }
-        return tubeCouldTouch(c.halls[0][0],c.halls[1][0],10,
-                loX,hiX,loZ,hiZ);
+        if(tubeCouldTouch(c.halls[0][0],c.halls[1][0],10,
+                loX,hiX,loZ,hiZ))bits|=1<<18;
+        return bits;
     }
 
     /** Positive strength means excavated air; zero means original density. */
