@@ -53,7 +53,6 @@ class RadialClimateAuditTest(unittest.TestCase):
         radial={"center_x":0,"center_z":0,"pole_distance":q,
                 "area_balanced":True,"balanced":True}
         self.assertAlmostEqual(radial_latitude_degrees(0,0,radial),0)
-        self.assertAlmostEqual(radial_latitude_degrees(q,0,radial),45,delta=0.05)
         # Disk area quarters: at r=Q (quarter area) latitude is 90.
         self.assertAlmostEqual(radial_latitude_degrees(q,0,radial),90,delta=0.05)
 
