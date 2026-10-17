@@ -153,6 +153,60 @@ public final class GrandOverworldCaveNetworkSmoke {
                 "Bedrock protection failed");
         require(GrandOverworldCaveNetwork.strength(0,1980,0)==0,
                 "High world ceiling protection failed");
+        // The upper-cavern fast path is supported by the actual immutable
+        // hall, satellite and passage geometry, not merely by strength()
+        // returning zero after its new early exit. Test the highest possible
+        // endpoint + vertical tube allowance for every generated path kind.
+        int altitudeProofs=0;
+        for(int gx=-20;gx<=20;gx++)for(int gz=-20;gz<=20;gz++)
+            for(int layer=0;layer<GrandOverworldCaveNetwork.LAYERS;layer++) {
+                var a=GrandOverworldCaveNetwork.hall(gx,gz,layer);
+                require(a.y()+a.radiusY()<GrandOverworldCaveNetwork.MAX_GEOMETRY_Y,
+                        "Upper cave chamber unexpectedly exceeds geometry bound");
+                altitudeProofs++;
+                for(int direction=0;direction<4;direction++) {
+                    int dx=direction==0?1:direction==1?-1:0;
+                    int dz=direction==2?1:direction==3?-1:0;
+                    var b=GrandOverworldCaveNetwork.hall(
+                            gx+dx,gz+dz,layer);
+                    var passage=GrandOverworldCaveNetwork.corridor(
+                            gx,gz,layer,direction);
+                    double reach=passage.radius()*passage.verticalScale()+16;
+                    require(Math.max(a.y(),b.y())+reach
+                                    <GrandOverworldCaveNetwork.MAX_GEOMETRY_Y,
+                            "Upper cave passage unexpectedly exceeds geometry bound");
+                    altitudeProofs++;
+                }
+                for(int gallery=0;gallery<2;gallery++) {
+                    var side=GrandOverworldCaveNetwork.satellite(
+                            gx,gz,layer,gallery);
+                    require(side.y()+side.radiusY()
+                                    <GrandOverworldCaveNetwork.MAX_GEOMETRY_Y,
+                            "Upper cave satellite exceeds geometry bound");
+                    altitudeProofs++;
+                }
+            }
+        // Shaft maximum: radius 20..36 with verticalScale 1, plus reach
+        // 16. Artery upper bound (tier 2 max altitude 879) is far lower.
+        require(1439+36+16<GrandOverworldCaveNetwork.MAX_GEOMETRY_Y,
+                "Inter-layer vertical shaft exceeds upper cave bound");
+        require(879+(47+36)*1.65+16<GrandOverworldCaveNetwork.MAX_GEOMETRY_Y,
+                "Kilometer arterial passage exceeds upper cave bound");
+        // Cave entrances are independent and may extend toward Y1920:
+        // the high-altitude optimization must NEVER hide these shafts.
+        int highEntrances=0;
+        for(int gx=-18;gx<=18;gx++)for(int gz=-18;gz<=18;gz++) {
+            var low=GrandOverworldCaveNetwork.hall(gx,gz,0);
+            double y=1750;
+            double rise=y-low.y();
+            double x=low.x()+Math.sin(rise/92.0)*5;
+            double z=low.z()+Math.sin(rise/119.0)*4;
+            if(GrandOverworldCaveNetwork.entranceStrength(x,y,z)>0.9)
+                highEntrances++;
+            require(GrandOverworldCaveNetwork.strength(x,y,z)==0.0,
+                    "Upper altitude must be free of giant cave network");
+        }
+        require(highEntrances>0,"Highland entrances must remain above cave graph ceiling");
         // Performance fast path must NEVER reject a real voxel, even when
         // the caller's +/-6 X, +/-5 Z and +/-2 Y noise warp is at an extreme.
         // Across negative and positive cells, test vertical shafts, halls,
