@@ -1,6 +1,15 @@
 # RealScale TVA — Natural Wonders Manufacturing Queue
 
-Status: **PLANNED / NOT YET IMPLEMENTED**. Created 2026-10-17. This is a production backlog, not a claim of existing worldgen.
+Status: **PROTOTYPE CODE COMMITTED; FULL GEOMORPHOLOGY & IN-GAME QA INCOMPLETE**. Created 2026-10-17, implementation inventory updated 2026-10-17.
+
+## Implemented prototype inventory (2026-10-17)
+**Code merged into integration branch, not `main`. CI/Anvil validation pending.**
+- P0 small surface-deposit prototypes: `earth_salt_playa`, `earth_alluvial_fan`, `earth_cold_desert` (existing features expanded).
+- P1/P2 opt-in accents: `earth_hoodoo_spires`, `earth_travertine_terraces`, `earth_mangrove_tidal_roots`, `earth_cooled_lava_field`, `earth_lava_tube_lining`, `earth_glacial_moraine`, `earth_delta_sediment`, `earth_karst_sinkhole_rim`. Each registered in Java plus configured feature, placed feature and biome modifier.
+- Six directional authentic-biome companion terrain patches: `invasion_patch_nether_overworld`, `invasion_patch_end_overworld`, `invasion_patch_overworld_nether`, `invasion_patch_end_nether`, `invasion_patch_overworld_end`, `invasion_patch_nether_end`. Only apply inside opt-in cross-realm presets.
+- Safety and registration checks: `qa/test_natural_wonders_batch_a.py`, `qa/test_natural_wonders_manufacturing.py` (source/resource assertions, **not** live worldgen proof).
+
+**Important remaining engineering gaps:** large physically accurate closed-drainage lake hydrology, mountain-mouth fan routing, hoodoo-scale amphitheaters, flowing travertine hot springs, mangrove tree stands, cave-carving lava tubes and sinkholes, glacier-scale cirque erosion, connected delta waterway networks, and climate/dimension biome transitions. The implemented versions are chunk-local, mostly single-layer or small-column prototypes; do not call them complete large landforms. Live world tests still required.
 
 ## Non-regression gate
 Keep PR #30 sky-island real Anvil verification and four-family multiseed worldgen QA running independently. Preserve normal ocean floor, rivers, caves, sky islands, climate and latitude, both enlarged dimensions, structures and old save compatibility. No merge to main without required QA. No background worker is implied by this document.
