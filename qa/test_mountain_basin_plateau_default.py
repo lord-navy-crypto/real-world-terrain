@@ -94,11 +94,15 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertIn("Math.floorDiv",terrain)
         # The cache is keyed by horizontal region only; a Y-dependent anchor
         # would make site selection depend on whichever vertical sample runs first.
-        self.assertIn("new DensityFunction.SinglePointContext(centerX, 0, centerZ)",terrain)
+        self.assertIn("new DensityFunction.SinglePointContext(",terrain)
+        self.assertIn("Math.toIntExact((long)site.centerX),0,",terrain)
+        self.assertIn("Math.toIntExact((long)site.centerZ)",terrain)
+        self.assertIn("double regionalSignal=selector.compute(anchor);",terrain)
         self.assertNotIn("new DensityFunction.SinglePointContext(centerX, ctx.blockY(), centerZ)",terrain)
         self.assertIn("Math.floorDiv",temp)
         # Terrain and basin-climate MUST classify the same horizontal site.
-        self.assertIn("Math.toIntExact((long)s.x),0,Math.toIntExact((long)s.z)",temp)
+        self.assertIn("Math.toIntExact((long)site.x),0,Math.toIntExact((long)site.z)",temp)
+        self.assertIn("site.kind=MountainReliefMath.kind(site.hash,region);",temp)
         self.assertNotIn("Math.toIntExact((long)s.x),ctx.blockY(),Math.toIntExact((long)s.z)",temp)
         self.assertIn("int kind(long h, double seedResolvedSignal)",pure)
         self.assertIn("inlandUplandGate",pure)
