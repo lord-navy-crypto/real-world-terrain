@@ -1,2 +1,16 @@
-pluginManagement { repositories { mavenLocal(); gradlePluginPortal(); maven { url = 'https://maven.neoforged.net/releases' } } }
+pluginManagement {
+    repositories {
+        mavenLocal()
+        // Probe the publisher before Gradle Plugin Portal for NeoForge modules.
+        maven {
+            name = 'NeoForged Plugin Artifacts'
+            url = 'https://maven.neoforged.net/releases'
+            content { includeGroupByRegex 'net\\.neoforged(\\..*)?' }
+        }
+        // Third-party plugin dependencies, including Gson, belong on Maven Central.
+        // Do not route them through the plugin portal unless necessary.
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
 rootProject.name = 'realscale-geoterrain-1_21_1'
