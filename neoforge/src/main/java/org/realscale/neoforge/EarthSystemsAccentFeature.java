@@ -91,6 +91,53 @@ public final class EarthSystemsAccentFeature extends Feature<NoneFeatureConfigur
         if (accent == null) return false;
         // Only commit above the existing surface; never modify groundwater,
         // active river sources, the substrate, or other structures.
-        return world.setBlock(position, accent, 2);
+        if (!world.setBlock(position, accent, 2)) return false;
+        // Natural Wonders batch A: a tiny, deterministic deposit around an
+        // existing valid accent. Each column is checked independently and
+        // strictly constrained to the current chunk; waterways stay intact.
+        if (kind == Kind.SALT_PLAYA || kind == Kind.ALLUVIAL_FAN
+                || kind == Kind.COLD_DESERT) {
+            int cx = Math.floorDiv(position.getX(), 16);
+            int cz = Math.floorDiv(position.getZ(), 16);
+            for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++) {
+                if (dx == 0 && dz == 0) continue;
+                if (dx*dx + dz*dz > 10) continue;
+                int x=position.getX()+dx,z=position.getZ()+dz;
+                if (Math.floorDiv(x,16)!=cx || Math.floorDiv(z,16)!=cz) continue;
+                // Ragged, reproducible edge without depending on feature order.
+                if (Math.floorMod(x*31+z*17,7)==0) continue;
+                BlockPos target=new BlockPos(x,position.getY(),z);
+                BlockPos under=target.below();
+                if (!world.getBlockState(target).isAir()
+                        || !world.getFluidState(target).isEmpty()
+                        || !world.getBlockState(target.above()).isAir()
+                        || !world.getFluidState(under).isEmpty()) continue;
+                BlockState base=world.getBlockState(under);
+                if (!base.isCollisionShapeFullBlock(world,under)) continue;
+                BlockState material=null;
+                if (kind==Kind.SALT_PLAYA
+                        && (base.is(Blocks.SAND) || base.is(Blocks.CLAY)
+                            || base.is(Blocks.TERRACOTTA))) {
+                    material=Math.floorMod(x+z,5)==0
+                            ? Blocks.WHITE_TERRACOTTA.defaultBlockState()
+                            : Blocks.CALCITE.defaultBlockState();
+                } else if (kind==Kind.ALLUVIAL_FAN
+                        && (base.is(Blocks.GRAVEL) || base.is(Blocks.SAND)
+                            || base.is(Blocks.CLAY))) {
+                    material=Math.floorMod(x*13+z,4)==0
+                            ? Blocks.COARSE_DIRT.defaultBlockState()
+                            : Blocks.GRAVEL.defaultBlockState();
+                } else if (kind==Kind.COLD_DESERT
+                        && (base.is(Blocks.GRAVEL) || base.is(Blocks.STONE)
+                            || base.is(Blocks.SNOW_BLOCK)
+                            || base.is(Blocks.COARSE_DIRT))) {
+                    material=Math.floorMod(x-z,3)==0
+                            ? Blocks.ANDESITE.defaultBlockState()
+                            : Blocks.COBBLESTONE.defaultBlockState();
+                }
+                if (material!=null) world.setBlock(target,material,2);
+            }
+        }
+        return true;
     }
 }
