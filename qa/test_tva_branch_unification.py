@@ -48,9 +48,14 @@ class BranchFamilyUnificationTest(unittest.TestCase):
                 config=json.loads((DATA/"noise_settings"/(preset+".json")).read_text())
                 temp=config["noise_router"]["temperature"]
                 self.assertEqual(temp["type"],"realscale:climate_budget")
-                self.assertEqual(temp["adjusted"]["type"],
-                                 "realscale:mountain_basin_temperature")
-                radial=temp["adjusted"]["base"]
+                if preset=="usgs_big_sur_v2":
+                    # DEM mode deliberately preserves its independent relief
+                    # climate rather than borrowing procedural basin sites.
+                    radial=temp["adjusted"]
+                else:
+                    self.assertEqual(temp["adjusted"]["type"],
+                                     "realscale:mountain_basin_temperature")
+                    radial=temp["adjusted"]["base"]
                 self.assertEqual(radial["type"],
                                  "realscale:radial_latitude_temperature")
                 self.assertTrue(radial["area_balanced"])
