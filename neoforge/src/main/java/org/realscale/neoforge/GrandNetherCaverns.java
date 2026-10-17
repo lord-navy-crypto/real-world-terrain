@@ -32,6 +32,11 @@ public record GrandNetherCaverns(DensityFunction base,DensityFunction warp)
         // exactly original for ANY warp/noise/corridor. Skip this expensive
         // path in existing air volumes without changing density values.
         if(original<=-1.8) return original;
+        // If the worker-local, warp-inclusive X/Z bounds exclude every
+        // chamber and corridor, strength is exactly zero at any altitude.
+        // Keep original vanilla noise and all old cave geometries intact.
+        if(!GrandNetherCaveNetwork.mayContainVoidNearColumn(x,z))
+            return original;
         // Gently distort ideal ellipsoids and straight corridors using a
         // smooth world-seeded 3D noise field. Less than the radius of a
         // connector, preserving walkable links across all chunk borders.
