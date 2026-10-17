@@ -13,6 +13,10 @@ public final class SkyIslandLayout {
     public static final int MIN_ISOLATION = 256;
     public static final int MAX_ISOLATION = 640;
     public static final int SLOTS = 5;
+    // Five island footprints lie at the base center or +/-80 X/Z. Every
+    // satellite radius is 7..11; a 94-block axis bound is conservative.
+    // This rejects most sky-biome samples before allocating any satellites.
+    public static final int MAX_SITE_REACH = 94;
     private static final int DIRECTIONS = 16;
     // More numerous small near-shore islets and denser far-ocean clusters.
     // Ocean probes progressively increase the required offshore isolation.
@@ -47,6 +51,11 @@ public final class SkyIslandLayout {
                 10+(int)Math.floorMod(hash>>>47,5L));
     }
     /** The main island plus four distant, independently shaped satellites. */
+    /** Conservative per-axis reject; never hides a valid sky island. */
+    public static boolean mayIntersectIslands(Site base,int x,int z) {
+        return Math.abs((long)x-base.x())<=MAX_SITE_REACH
+                && Math.abs((long)z-base.z())<=MAX_SITE_REACH;
+    }
     public static Site satellite(Site base,int slot) {
         if(slot<0||slot>=SLOTS) throw new IllegalArgumentException("invalid sky slot");
         if(slot==0)return base;
