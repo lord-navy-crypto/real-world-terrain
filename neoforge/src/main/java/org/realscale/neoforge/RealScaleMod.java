@@ -117,6 +117,26 @@ public final class RealScaleMod {
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.TEMPERATE_SEASONAL_FOREST));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "boreal_taiga_floor"),
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.BOREAL_TAIGA));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_playa_basin"),
+                    new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.PLAYA_BASIN));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_alluvial_fan"),
+                    new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.ALLUVIAL_FAN));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_cold_desert_pavement"),
+                    new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.COLD_DESERT_PAVEMENT));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_hoodoo_amphitheater"),
+                    new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.HOODOO_AMPHITHEATER));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_travertine_steps"),
+                    new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.TRAVERTINE_STEPS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_mangrove_estuary"),
+                    new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.MANGROVE_ESTUARY));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_cooled_lava_field"),
+                    new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.COOLED_LAVA_FIELD));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_glacial_moraine_ring"),
+                    new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.GLACIAL_MORAINE_RING));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_delta_distributaries"),
+                    new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.DELTA_DISTRIBUTARIES));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_karst_doline_rim"),
+                    new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.KARST_DOLINE_RIM));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_hoodoo_spires"),
                     new EarthWonderFeature(EarthWonderFeature.Kind.HOODOO_SPIRES));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_travertine_terraces"),
