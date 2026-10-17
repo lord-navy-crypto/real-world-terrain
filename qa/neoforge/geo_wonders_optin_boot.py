@@ -10,13 +10,23 @@ import threading
 import time
 
 ROOT=pathlib.Path(__file__).resolve().parents[2]/"neoforge"
-PRESET="realscale:tva_natural_wonders_experimental_three_realms"
+# Both opt-ins must pass actual server codec, RCON save and Anvil checks.
+# A dedicated world directory prevents mixed evidence between matrix jobs.
+PROFILE=os.environ.get("REALSCALE_WONDERS_PROFILE","natural-wonders")
+PRESETS={
+    "natural-wonders":("tva_natural_wonders_experimental_three_realms","geo-wonders-lab"),
+    "woven-wonders-invasion":("tva_wonders_invasion_three_realms","tva-wonders-invasion-lab"),
+}
+if PROFILE not in PRESETS:
+    raise SystemExit("Unknown opt-in world QA profile: "+PROFILE)
+preset_name,world_name=PRESETS[PROFILE]
+PRESET="realscale:"+preset_name
 for folder in ("run","run/server","run/gametestserver"):
     directory=ROOT/folder
     directory.mkdir(parents=True,exist_ok=True)
     (directory/"eula.txt").write_text("eula=true\n")
     (directory/"server.properties").write_text(
-        "level-name=geo-wonders-lab\n"
+        "level-name="+world_name+"\n"
         "level-type="+PRESET+"\n"
         "level-seed=785312\n"
         "view-distance=3\n"
@@ -68,14 +78,22 @@ finally:
             os.killpg(p.pid,signal.SIGKILL)
             p.wait()
     t.join(timeout=4)
-    dest=ROOT/"build/geo-wonders-optin-server.log"
+    dest=ROOT/"build"/("geo-wonders-optin-"+PROFILE+"-server.log")
     dest.parent.mkdir(parents=True,exist_ok=True)
     dest.write_text("".join(log))
     print("GEO_WONDERS_LOG_TAIL:",dest.read_text()[-5000:],flush=True)
-worlds=list((ROOT/"run").glob("**/geo-wonders-lab/level.dat"))
+worlds=list((ROOT/"run").glob("**/"+world_name+"/level.dat"))
 if not worlds: raise AssertionError("No persisted Geo Wonders world")
 text=gzip.decompress(worlds[0].read_bytes())
-for expected in (b"realscale:geo_wonders_opt_in",b"realscale:sky_ocean",
-                 b"realscale:grand_nether",b"realscale:grand_end"):
-    if expected not in text:raise AssertionError("Experimental source missing from persisted world: "+expected.decode())
-print("PASS: experimental geological world preset decoded, booted and persisted",worlds[0])
+required=[b"realscale:geo_wonders_opt_in",b"realscale:sky_ocean",
+          b"realscale:grand_nether",b"realscale:grand_end"]
+if PROFILE=="woven-wonders-invasion":
+    required.append(b"realscale:cross_realm_invasion")
+for expected in required:
+    if expected not in text:
+        raise AssertionError("Experimental source missing from persisted world: "+expected.decode())
+regions=list(worlds[0].parent.glob("region/*.mca"))
+if not regions or not any(p.stat().st_size>=8192 for p in regions):
+    raise AssertionError("Experimental world has no persisted real Anvil chunks")
+print("PASS: opt-in world persisted and source codecs verified",
+      PROFILE,worlds[0],len(regions),flush=True)
