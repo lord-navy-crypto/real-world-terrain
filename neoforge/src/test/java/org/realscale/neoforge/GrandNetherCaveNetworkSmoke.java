@@ -84,6 +84,41 @@ public final class GrandNetherCaveNetworkSmoke {
             yes(Math.abs(a-b)<0.05,"Sub-block cave sampling discontinuity at "+x);
             samples++;
         }
+        // For all allowed X/Z noise-warp displacements, the conservative
+        // column test may reject only points with exactly zero 3D cave strength.
+        int emptyColumns=0,verifiedWarpedSamples=0;
+        final int[] probeHeights={145,190,225,280,342,400,440};
+        for(int x=-850;x<=850;x+=23)for(int z=-850;z<=850;z+=29) {
+            boolean possible=GrandNetherCaveNetwork.mayContainVoidNearColumn(x,z);
+            if(!possible) {
+                emptyColumns++;
+                for(int y:probeHeights)
+                    for(double warp:new double[]{-1.0,-0.5,0.0,0.5,1.0}) {
+                        double found=GrandNetherCaveNetwork.strength(
+                                x+warp*5.0,y+warp*2.0,z-warp*4.0);
+                        yes(found==0.0,"Nether broad phase hid cave at "
+                                +x+","+y+","+z+" warp="+warp);
+                        verifiedWarpedSamples++;
+                    }
+            }
+        }
+        yes(emptyColumns>0&&verifiedWarpedSamples>0,
+                "Nether broad phase must skip some known empty columns");
+        for(int gx=-5;gx<=5;gx++)for(int gz=-5;gz<=5;gz++)
+            for(int layer=0;layer<2;layer++) {
+                var h=GrandNetherCaveNetwork.hall(gx,gz,layer);
+                yes(GrandNetherCaveNetwork.mayContainVoidNearColumn(
+                        (int)h.x(),(int)h.z()),
+                        "Real Nether chamber missing from broad phase");
+            }
+        for(int k=-2;k<=2;k++) {
+            yes(GrandNetherCaveNetwork.mayContainVoidNearColumn(
+                    k*GrandNetherCaveNetwork.CELL+2,70),
+                    "Nether warp-crossing X edge must remain evaluable");
+            yes(GrandNetherCaveNetwork.mayContainVoidNearColumn(
+                    70,k*GrandNetherCaveNetwork.CELL+2),
+                    "Nether warp-crossing Z edge must remain evaluable");
+        }
         // Verify that the density-wrapper fast path is bit-exact when the
         // original terrain density already dominates all possible cavities.
         // A network strength >1 would invalidate the -1.8 threshold.
