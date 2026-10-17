@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Actual cross-branch regression: former YACL Lab exports must inherit TVA's
-four-choice menu and all three enlarged dimensions without mutating old IDs.
+four stable choices plus an opt-in fifth, and three enlarged dimensions without old-ID changes.
 """
 import importlib.util
 import json
@@ -23,6 +23,7 @@ CORE=("realscale:tva_sacred_timeline_three_realms",
       "realscale:tva_alpine_three_realms",
       "realscale:tva_canyon_three_realms",
       "realscale:tva_measured_three_realms")
+MENU=CORE+("realscale:tva_wonders_invasion_three_realms",)
 
 def read(path):
     return json.loads(path.read_text(encoding="utf-8"))
@@ -37,10 +38,10 @@ class TVARecoveredTerrainLab(unittest.TestCase):
                        "assets/minecraft/lang"):
             shutil.copytree(SOURCES/folder,self.root/folder)
 
-    def test_exactly_four_core_menu_items_unchanged(self):
+    def test_four_original_menu_items_and_additive_opt_in(self):
         for key in ("normal","extended"):
             j=read(self.root/"data/minecraft/tags/worldgen/world_preset"/(key+".json"))
-            self.assertEqual(tuple(j["values"]),CORE)
+            self.assertEqual(tuple(j["values"]),MENU)
 
     def test_three_family_exports_keep_512_grand_dimensions_and_biome_sources(self):
         canonical={k:read(self.root/"data/realscale/worldgen/world_preset"/(v+".json"))
@@ -71,7 +72,7 @@ class TVARecoveredTerrainLab(unittest.TestCase):
                          "realscale:grand_nether")
         self.assertEqual(j["dimensions"]["minecraft:the_end"]["generator"]["settings"],
                          "realscale:grand_end")
-        self.assertEqual(tuple(read(SOURCES/"data/minecraft/tags/worldgen/world_preset/normal.json")["values"]),CORE)
+        self.assertEqual(tuple(read(SOURCES/"data/minecraft/tags/worldgen/world_preset/normal.json")["values"]),MENU)
 
 if __name__=="__main__":
     unittest.main()
