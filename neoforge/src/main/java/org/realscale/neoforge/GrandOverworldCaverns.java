@@ -77,7 +77,8 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
         // The vanilla-seeded noise provides world-seed-dependent detail.
         // It never changes the room/corridor topology or chunk-border logic.
         double shift=Math.max(-1.0,Math.min(1.0,warp.compute(ctx)));
-        double strength=GrandOverworldCaveNetwork.strength(
+        double strength=GrandOverworldCaveNetwork.strengthFromColumn(
+                ctx.blockX(),ctx.blockZ(),
                 ctx.blockX()+shift*6.0, y+shift*2.0,
                 ctx.blockZ()-shift*5.0);
         // Within a sufficiently strong giant void, the network already
