@@ -280,6 +280,48 @@ def navigable_water_components(water_columns, max_surface_step=0, min_depth=2):
     }
 
 
+def isolated_height_impulses(heights, surface_blocks, surface_biomes):
+    """Detect >8m one-column peaks and pits on a SELECTED saved heightmap.
+
+    Ground relief uses MOTION_BLOCKING_NO_LEAVES. Raw WORLD_SURFACE reports
+    stay separate so foliage-induced false positives remain observable.
+    """
+    vegetation_surface={"minecraft:bamboo", "minecraft:oak_leaves",
+                        "minecraft:birch_leaves", "minecraft:spruce_leaves",
+                        "minecraft:jungle_leaves", "minecraft:acacia_leaves",
+                        "minecraft:dark_oak_leaves", "minecraft:mangrove_leaves",
+                        "minecraft:cherry_leaves", "minecraft:short_grass",
+                        "minecraft:tall_grass", "minecraft:fern", "minecraft:large_fern"}
+    count=0
+    examples=[]
+    block_counts={}
+    vegetation=0
+    other=0
+    for (x,z),h in heights.items():
+        neighbors=[heights.get((x-1,z)),heights.get((x+1,z)),
+                   heights.get((x,z-1)),heights.get((x,z+1))]
+        if not all(n is not None for n in neighbors):
+            continue
+        if not (all(h-n>8 for n in neighbors) or all(n-h>8 for n in neighbors)):
+            continue
+        count+=1
+        block=surface_blocks.get((x,z)) or "UNKNOWN"
+        block_counts[block]=block_counts.get(block,0)+1
+        if block in vegetation_surface:
+            vegetation+=1
+        else:
+            other+=1
+        if len(examples)<64:
+            examples.append({
+                "x":x,"z":z,"height":h,"neighbor_heights":neighbors,
+                "surface_block":block,"surface_biome":surface_biomes.get((x,z)),
+                "is_chunk_boundary":x%16 in (0,15) or z%16 in (0,15),
+                "is_four_grid_boundary":x%4 in (0,3) or z%4 in (0,3)
+            })
+    return {"count":count, "examples":examples, "blocks":block_counts,
+            "vegetation":vegetation, "other":other}
+
+
 def terrain_quality_gates(chunk_border_deltas, within_chunk_deltas,
                           grid_boundary_deltas, inner_grid_deltas,
                           isolated_spikes, sample_columns, high_nonriver_water):
@@ -494,6 +536,9 @@ def scan(root,preset="realism_max"):
     regions=[x for x in root.glob("run/**/region/r.*.*.mca") if "DIM" not in str(x)]
     assert regions, "No actual saved overworld Anvil region found"
     H={}
+    # Persisted relief without tree canopy, alongside the full surface metric.
+    terrain_heights={}
+    terrain_surface_blocks={}
     surface_blocks={}
     surface_biomes={}
     chunks=0
@@ -542,6 +587,11 @@ def scan(root,preset="realism_max"):
                     if h is None:continue
                     x=cx*16+dx;z=cz*16+dz
                     H[(x,z)]=h
+                    terrain_h=surface_height(
+                        chunk,dx,dz,min_y,world_height,"MOTION_BLOCKING_NO_LEAVES")
+                    if terrain_h is not None:
+                        terrain_heights[(x,z)]=terrain_h
+                        terrain_surface_blocks[(x,z)]=get_block(chunk,dx,terrain_h,dz)
                     if h>=384:mountain_columns+=1
                     surface_under_sea+=h<=62
                     upper_block=get_block(chunk,dx,h,dz)
@@ -628,17 +678,6 @@ def scan(root,preset="realism_max"):
     delta=[]
     four_boundary=[];inner=[]
     chunk_border=[];within_chunk=[]
-    isolated_spikes=0
-    isolated_spike_examples=[]
-    isolated_spike_blocks={}
-    vegetation_spikes=0
-    exposed_ground_spikes=0
-    vegetation_surface={"minecraft:bamboo", "minecraft:oak_leaves",
-                        "minecraft:birch_leaves", "minecraft:spruce_leaves",
-                        "minecraft:jungle_leaves", "minecraft:acacia_leaves",
-                        "minecraft:dark_oak_leaves", "minecraft:mangrove_leaves",
-                        "minecraft:cherry_leaves", "minecraft:short_grass",
-                        "minecraft:tall_grass", "minecraft:fern", "minecraft:large_fern"}
     for (x,z),h in H.items():
         for nx,nz in ((x+1,z),(x,z+1)):
             if (nx,nz) not in H:continue
@@ -651,26 +690,16 @@ def scan(root,preset="realism_max"):
             if (nx%4==0 and nz==z) or (nz%4==0 and nx==x):
                 four_boundary.append(d)
             else:inner.append(d)
-    # A single-block impulse surrounded on four sides is unlike an extended ridge.
-    for (x,z),h in H.items():
-        neighbors=[H.get((x-1,z)),H.get((x+1,z)),
-                   H.get((x,z-1)),H.get((x,z+1))]
-        if all(n is not None for n in neighbors):
-            if all(h-n>8 for n in neighbors) or all(n-h>8 for n in neighbors):
-                isolated_spikes+=1
-                surface=surface_blocks.get((x,z)) or "UNKNOWN"
-                isolated_spike_blocks[surface]=isolated_spike_blocks.get(surface,0)+1
-                if surface in vegetation_surface:
-                    vegetation_spikes+=1
-                else:
-                    exposed_ground_spikes+=1
-                if len(isolated_spike_examples)<64:
-                    isolated_spike_examples.append({
-                        "x":x,"z":z,"height":h,"neighbor_heights":neighbors,
-                        "surface_block":surface,"surface_biome":surface_biomes.get((x,z)),
-                        "is_chunk_boundary":x%16 in (0,15) or z%16 in (0,15),
-                        "is_four_grid_boundary":x%4 in (0,3) or z%4 in (0,3)
-                    })
+    # Preserve the original WORLD_SURFACE anomalies for diagnosis, but
+    # evaluate real ground-height artifacts with the same 8m threshold.
+    raw_impulses=isolated_height_impulses(H,surface_blocks,surface_biomes)
+    ground_impulses=isolated_height_impulses(
+        terrain_heights,terrain_surface_blocks,surface_biomes)
+    isolated_spikes=ground_impulses["count"]
+    isolated_spike_examples=ground_impulses["examples"]
+    isolated_spike_blocks=ground_impulses["blocks"]
+    vegetation_spikes=ground_impulses["vegetation"]
+    exposed_ground_spikes=ground_impulses["other"]
     world_spawn=None
     spawn_file=None
     for level_file in root.glob("run/**/level.dat"):
@@ -700,12 +729,23 @@ def scan(root,preset="realism_max"):
     walkability=dry_walkable_components(cave_voxels,dry_voxels,lava_voxels,sampled_min_y)
     quality=terrain_quality_gates(chunk_border,within_chunk,four_boundary,inner,
                                   isolated_spikes,len(H),high_elevation_nonriver_water_columns)
+    # Missing ground heightmaps are an error: never silently skip bad columns.
+    if len(terrain_heights)!=len(H):
+        quality["issues"].append(
+            f"Missing saved MOTION_BLOCKING_NO_LEAVES heights for "
+            f"{len(H)-len(terrain_heights)} of {len(H)} surface columns")
+        quality["pass"]=False
     def pct(values,q):
         a=sorted(values)
         return a[int((len(a)-1)*q)] if a else None
     report={
       "preset":preset,
       "surface_quality_gates":quality,
+      "terrain_heightmap":"MOTION_BLOCKING_NO_LEAVES",
+      "ground_heightmap_columns":len(terrain_heights),
+      "world_surface_raw_spike_count":raw_impulses["count"],
+      "world_surface_raw_spike_examples":raw_impulses["examples"],
+      "world_surface_raw_spike_block_counts":raw_impulses["blocks"],
       "isolated_spike_examples":isolated_spike_examples,
       "isolated_spike_surface_block_counts":isolated_spike_blocks,
       "vegetation_surface_spike_count":vegetation_spikes,
