@@ -11,8 +11,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.stream.Stream;
 
 /** Opt-in offshore archipelago on top of the unchanged vanilla/ecotone
@@ -29,11 +27,14 @@ public final class SkyOceanBiomeSource extends BiomeSource {
 
     private static final class EligibilityCache {
         Climate.Sampler sampler;
-        final LinkedHashMap<Long,Integer> tiers=new LinkedHashMap<>(256,.75f,true) {
-            @Override protected boolean removeEldestEntry(Map.Entry<Long,Integer> eldest) {
-                return size()>256;
-            }
-        };
+        final SkyIslandSiteCache sites = new SkyIslandSiteCache();
+        void prepare(Climate.Sampler next) {
+            if(sampler==next)return;
+            sampler=next;
+            // Every site carries its ocean tier. A new climate sampler can
+            // return different oceans for the exact same lattice cell.
+            sites.clear();
+        }
     }
     private SkyOceanBiomeSource(BiomeSource source,HolderGetter<Biome> biomes) {
         this.source=source;
@@ -62,19 +63,15 @@ public final class SkyOceanBiomeSource extends BiomeSource {
                     return "minecraft".equals(id.getNamespace())?id.getPath():"";
                 }).orElse("");
     }
-    private int isolationTier(SkyIslandLayout.Site base,Climate.Sampler sampler) {
-        EligibilityCache c=cache.get();
-        if(c.sampler!=sampler){c.sampler=sampler;c.tiers.clear();}
-        long key=((long)base.x()<<32)|(base.z()&0xffffffffL);
-        Integer previous=c.tiers.get(key);
-        if(previous!=null)return previous;
-        int value=SkyIslandLayout.oceanTier(base,
+    private int isolationTier(SkyIslandSiteCache.Entry site,Climate.Sampler sampler) {
+        if(site.tier>=0)return site.tier;
+        int value=SkyIslandLayout.oceanTier(site.base(),
                 (x,z)->{
                     String id=underlying(x,z,sampler);
                     return id.startsWith("deep_")&&id.endsWith("ocean");
                 },
                 (x,z)->underlying(x,z,sampler).endsWith("ocean"));
-        c.tiers.put(key,value);
+        site.tier=value;
         return value;
     }
     @Override public Holder<Biome> getNoiseBiome(int quartX,int quartY,int quartZ,
@@ -84,7 +81,10 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         int y=quartY*4;
         if(y<160||y>224)return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
         int x=quartX*4,z=quartZ*4;
-        SkyIslandLayout.Site base=SkyIslandLayout.at(x,z);
+        EligibilityCache state=cache.get();
+        state.prepare(sampler);
+        SkyIslandSiteCache.Entry site=state.sites.at(x,z);
+        SkyIslandLayout.Site base=site.base();
         // Every island is within +/-94 X/Z of its deterministic parent.
         // Reject the overwhelming majority of distant quart queries before
         // hashing/allocating the five candidate island Site records.
@@ -97,10 +97,10 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         int tier=-1;
         int eligibleSlots=SkyIslandLayout.SLOTS;
         for(int slot=0;slot<eligibleSlots;slot++){
-            SkyIslandLayout.Site island=SkyIslandLayout.satellite(base,slot);
+            SkyIslandLayout.Site island=site.satellite(slot);
             if(!SkyIslandLayout.insideBiome(island,x,y,z))continue;
             if(tier<0){
-                tier=isolationTier(base,sampler);
+                tier=isolationTier(site,sampler);
                 eligibleSlots=SkyIslandLayout.countForTier(tier);
             }
             if(slot<eligibleSlots)return blossomIsle;
