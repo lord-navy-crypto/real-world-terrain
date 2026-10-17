@@ -80,6 +80,46 @@ public final class SkyIslandLayoutSmoke {
                     *(prev.radius()+island.radius()+8),"cluster islands cannot intersect");
             }
         }
+        // Verify chunk-clipped iteration yields exactly the same ordered
+        // (dx,dz) candidates as the original full-radius square scan.
+        // This protects sky-island geometry and seeded foliage random calls.
+        int clippedColumns=0;
+        for(int ox=-620;ox<=620;ox+=83)for(int oz=-610;oz<=610;oz+=91) {
+            var base=SkyIslandLayout.at(ox,oz);
+            for(int slot=0;slot<SkyIslandLayout.SLOTS;slot++) {
+                var island=SkyIslandLayout.satellite(base,slot);
+                int r=island.radius();
+                for(int chunkX=Math.floorDiv(island.x()-r,16);
+                        chunkX<=Math.floorDiv(island.x()+r,16);chunkX++)
+                    for(int chunkZ=Math.floorDiv(island.z()-r,16);
+                            chunkZ<=Math.floorDiv(island.z()+r,16);chunkZ++) {
+                        java.util.List<Long> oldScan=new java.util.ArrayList<>();
+                        java.util.List<Long> clippedScan=new java.util.ArrayList<>();
+                        for(int dx=-r;dx<=r;dx++)for(int dz=-r;dz<=r;dz++) {
+                            double ratio=(double)(dx*dx+dz*dz)/(r*r);
+                            if(ratio>1.0
+                                    || Math.floorDiv(island.x()+dx,16)!=chunkX
+                                    || Math.floorDiv(island.z()+dz,16)!=chunkZ)
+                                continue;
+                            oldScan.add(((long)dx<<32) | ((long)dz&0xffffffffL));
+                        }
+                        int minDx=Math.max(-r,chunkX*16-island.x());
+                        int maxDx=Math.min(r,chunkX*16+15-island.x());
+                        int minDz=Math.max(-r,chunkZ*16-island.z());
+                        int maxDz=Math.min(r,chunkZ*16+15-island.z());
+                        for(int dx=minDx;dx<=maxDx;dx++)
+                            for(int dz=minDz;dz<=maxDz;dz++) {
+                                double ratio=(double)(dx*dx+dz*dz)/(r*r);
+                                if(ratio>1.0)continue;
+                                clippedScan.add(((long)dx<<32)|((long)dz&0xffffffffL));
+                            }
+                        check(oldScan.equals(clippedScan),
+                                "Chunk clipping changed ordered sky-island column selection");
+                        clippedColumns+=clippedScan.size();
+                    }
+            }
+        }
+        check(clippedColumns>100,"Sky island clip parity exercised no world columns");
         System.out.println("PASS: "+visited+" deterministic sky island layout samples, ocean Y64 protected");
     }
 }
