@@ -26,6 +26,12 @@ public record GrandNetherCaverns(DensityFunction base,DensityFunction warp)
         // Never call extra noise functions in the protected original realm.
         if(y<GrandNetherCaveNetwork.MIN_Y || y>GrandNetherCaveNetwork.MAX_Y)
             return original;
+        // Both room and corridor strengths are max(0,1-normalizedDistance),
+        // so the entire cave network is bounded by [0,1]. If the original
+        // density is already <= -1.8, min(original,-1.8*strength) is
+        // exactly original for ANY warp/noise/corridor. Skip this expensive
+        // path in existing air volumes without changing density values.
+        if(original<=-1.8) return original;
         // Gently distort ideal ellipsoids and straight corridors using a
         // smooth world-seeded 3D noise field. Less than the radius of a
         // connector, preserving walkable links across all chunk borders.
