@@ -36,3 +36,18 @@ PR #25 also used **one polar crest per full equal-area annulus**, at approximate
 4. Main merge must preserve existing-world IDs, sea level 63, original oceans, cave networks and opt-in safety.
 
 **Main remains unchanged until required gates pass.** Historical draft PRs should be retained rather than closed/deleted prematurely.
+
+
+## 2026-10-17 feature-first reconciliation: USGS enhancement explicitly deferred
+
+**Request:** keep working functions from other branches in TVA now, without force-merging older implementations; *defer* ordinary-world USGS feature integration.
+
+- Compared the full Git **trees by path** of all **12 diverged branch heads** against the integrated candidate, rather than interpreting the GitHub compare endpoint's merge-base `added` status as missing on the actual target. The full-tree audit found **zero missing paths** in `feature/terrain-generation-optimization`, `feature/caves-ocean-sky-islands`, both Grand-dimensions phase branches, ecology v0.4/v0.5/v0.6/v0.7, with all associated source/resource/test/doc paths present in the candidate.
+- The PR25 climate branch's seven missing historical paths consist of four obsolete-path `biome_temperature.json` sources, one old Java smoke test, one old Python test and one old document. The earlier single-pole equal-area algorithm and PR25 weather variants have been restored under **separate opt-in IDs**; the old same-path temperature router must not replace the improved default mountain/basin temperature graph.
+- The remaining v1.2, v1.3 and archived pre-consolidation heads had missing **historical** test/workflow/doc files, but not missing actively needed production Java/resources in this tree inventory. This establishes source-path coverage, **not** runtime behavioral equivalence.
+- The new `tva_wonders_invasion_three_realms` preselected **opt-in combined world** composes SkyOcean → GeoWonders → CrossRealm → NaturalEcotones; Nether and End also opt into CrossRealm. Vanilla-safe world IDs and all noise settings are inherited from `tva_sacred_timeline_three_realms`. `SkyOceanBiomeSource` and `GeoWondersBiomeSource` now propagate the cross-realm guard safely through nested wrappers, enabling both feature families while preserving independent guards.
+- The opt-in combined world is available as the **fifth** named creation preset in `normal` and `extended` tags, with English and Chinese menu names. The original four menu entries remain unchanged and retain their positions. No experiment leaks into the default Sacred preset.
+- Grounded performance enhancements `RealDemColumnCache`, `QuartBiomeResultCache`, `WorldgenProfiler` remain in the integrated source; the combined world preserves the same production biome source and generator settings, thus inherits these where relevant. This is **not** evidence the 180-second distant-forceload issue is fixed.
+- Static integration test `qa/test_tva_woven_optional_features.py` and a two-profile **real NeoForge** world-boot matrix are now required. A successful boot/codec/Anvil check does **not** yet establish that rare natural wonders or invasions spawned in sampled terrain; separate in-world proof remains necessary.
+
+**Promotion rule:** preserve experimental choice and every modern feature; never merge PR #30 to `main` until fresh CI on the exact final head passes including the existing strict 4×2 distant Anvil suite and the new combined world-boot gate.
