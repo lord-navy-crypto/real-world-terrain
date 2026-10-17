@@ -85,6 +85,7 @@ class MountainBasinPlateauTest(unittest.TestCase):
     def test_mod_codec_and_bounded_site_cache(self):
         main=(JAVA/"RealScaleMod.java").read_text()
         terrain=(JAVA/"MountainReliefDensity.java").read_text()
+        site_cache=(JAVA/"MountainReliefSiteCache.java").read_text()
         temp=(JAVA/"MountainBasinTemperatureDensity.java").read_text()
         pure=(JAVA/"MountainReliefMath.java").read_text()
         self.assertIn('"mountain_relief"',main)
@@ -111,17 +112,24 @@ class MountainBasinPlateauTest(unittest.TestCase):
         # mathematically safe exclusion in the 2096-block structure height path.
         self.assertIn("if (original <= 0.65) return original;",terrain)
         self.assertLess(terrain.index("if (original <= 0.65) return original;"),
-                        terrain.index("Site s = site(ctx);"))
-        self.assertLess(terrain.index("MountainReliefMath.definitelyOutsideEnvelope(dx,dz,s.radius)"),
+                        terrain.index("MountainReliefSiteCache.Site s = site(ctx);"))
+        self.assertLess(terrain.index("if (s.definitelyOutside(dx,dz))"),
                         terrain.index("double continent = continents.compute(ctx);"))
+        self.assertIn("double conservative=radius*1.100000001;",site_cache)
+        self.assertIn("return dx*dx+dz*dz>=envelopeSquared;",site_cache)
+        self.assertIn("new Site(gx,gz);",site_cache)
+        self.assertIn("private final Site[] sites=new Site[SLOTS];",site_cache)
         self.assertLess(terrain.index("if (s.type == MountainReliefMath.NONE) return original;"),
                         terrain.index("double continent = continents.compute(ctx);"))
         # The seeded selector must be evaluated only INSIDE the hash-defined
         # influence radius, and only once per worldgen worker/site.
-        self.assertIn("boolean classified;",terrain)
-        self.assertIn("site.classified = false;",terrain)
+        self.assertIn("boolean classified;",site_cache)
+        self.assertIn("private final ThreadLocal<MountainReliefSiteCache> current",terrain)
+        self.assertIn("ThreadLocal.withInitial(MountainReliefSiteCache::new)",terrain)
         self.assertIn("site.classified=true;",terrain)
-        self.assertIn("private void classify(Site site)",terrain)
+        self.assertIn("private void classify(MountainReliefSiteCache.Site site)",terrain)
+        self.assertIn("site.type=MountainReliefMath.kind(site.hash,regionalSignal);",terrain)
+        self.assertIn("return current.get().get(gx,gz);",terrain)
 
         climate=temp  # Source already loaded from the canonical JAVA path above.
         self.assertIn("private void classify(Site site)",climate)
@@ -139,7 +147,7 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertLess(climate.index("classify(s);"),
                         climate.index("if(s.kind!=MountainReliefMath.BASIN)return original;"))
 
-        self.assertLess(terrain.index("if (MountainReliefMath.definitelyOutsideEnvelope(dx,dz,s.radius))"),
+        self.assertLess(terrain.index("if (s.definitelyOutside(dx,dz))"),
                         terrain.index("classify(s);"))
         self.assertLess(terrain.index("classify(s);"),
                         terrain.index("double continent = continents.compute(ctx);"))
