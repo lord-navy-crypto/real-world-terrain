@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        preset: [tva_measured_three_realms, tva_sacred_timeline_three_realms]
+        preset: [tva_measured_three_realms, tva_sacred_timeline_three_realms, tva_natural_smoothing_probe]
         structures: ['true', 'false']
     name: ${{ matrix.preset }} / seed2 / structures=${{ matrix.structures }}
     runs-on: ubuntu-latest
@@ -83,3 +83,11 @@ jobs:
             neoforge/run/**/level.dat
             neoforge/run/**/region/*.mca
           if-no-files-found: warn
+
+      # continue-on-error above exists ONLY to keep thread dumps/artifacts.
+      # It must never turn a timed-out forceload into a green diagnostic job.
+      - name: Enforce real worldgen result after artifact upload
+        if: always() && steps.test.outcome != 'success'
+        run: |
+          echo "::error::Far-chunk experiment failed with structures=${{ matrix.structures }}. See saved RCON and thread evidence."
+          exit 1

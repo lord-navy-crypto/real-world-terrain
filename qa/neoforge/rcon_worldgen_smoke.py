@@ -89,15 +89,31 @@ def await_full_chunk(rcon,x,z,timeout_seconds=240):
     command=(f"execute in minecraft:overworld if loaded {x} 128 {z} "
              "run seed")
     attempts=0
-    while time.monotonic()<deadline:
-        attempts+=1
-        reply=rcon.send(command)
-        if "Seed:" in reply:
-            print("QA_CHUNK_GENERATED:",x,z,"attempts",attempts,flush=True)
-            return
-        time.sleep(3)
+    # The deadline must also cap each SOCKET receive. Otherwise the first
+    # check after a 170s forceload ACK may wait an ADDITIONAL 180 seconds,
+    # silently defeating the strict overall 180-second distant-world gate.
+    sock=getattr(rcon,"sock",None)
+    previous_timeout=sock.gettimeout() if sock is not None else None
+    try:
+        while True:
+            remaining=deadline-time.monotonic()
+            if remaining<=0:
+                break
+            if sock is not None:
+                sock.settimeout(min(previous_timeout,remaining)
+                    if previous_timeout is not None else remaining)
+            attempts+=1
+            reply=rcon.send(command)
+            if "Seed:" in reply:
+                print("QA_CHUNK_GENERATED:",x,z,"attempts",attempts,
+                      flush=True)
+                return
+            time.sleep(min(3.0,max(0.0,deadline-time.monotonic())))
+    finally:
+        if sock is not None:
+            sock.settimeout(previous_timeout)
     raise TimeoutError(
-        f"Chunk at {x},{z} not fully loaded within {timeout_seconds}s "
+        f"Chunk at {x},{z} not fully loaded within {timeout_seconds:.1f}s "
         "despite forceload ACK; inspect RCON and Minecraft server logs")
 
 
@@ -238,6 +254,24 @@ def main(root,expected_preset,profile):
                     await_full_chunk(rcon,x,z)
                     rcon.send("save-all flush")
                     rcon.send(f"execute in minecraft:overworld run forceload remove {x} {z}")
+            elif profile=="distant":
+                # A successful /forceload response means "ticket added",
+                # NOT "2096-high target chunk is finished." This false green
+                # was masking incomplete remote worldgen for some seeds.
+                # Keep ONE overall 180s budget covering both the command
+                # and the loaded-block acknowledgement: no timeout raising.
+                budget_start=time.monotonic()
+                for command in commands:
+                    rcon.send(command)
+                    remaining=180.0-(time.monotonic()-budget_start)
+                    if remaining<=0:
+                        raise TimeoutError(
+                            "Distant 180s budget exhausted after forceload ACK"
+                            " but before fully-loaded chunk verification")
+                    await_full_chunk(rcon,1024,1024,
+                                     timeout_seconds=remaining)
+                print("QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS: PASS",
+                      flush=True)
             else:
                 for command in commands:
                     rcon.send(command)
