@@ -29,7 +29,6 @@ public final class WorldAtlasMapScreen extends Screen {
     private String message="";
     private boolean chunkyLoaded;
     private Button pauseDrawButton;
-    private int offlinePollTicks;
 
     public WorldAtlasMapScreen(Screen parent,Path save) {
         super(Component.translatable("realscale.atlas.title"));
@@ -73,19 +72,23 @@ public final class WorldAtlasMapScreen extends Screen {
                 .bounds(mid+79,pregenY,78,20).build());
         int drawingY=height-106;
         addRenderableWidget(Button.builder(
+                Component.translatable("realscale.atlas.warmup_start"),
+                b -> startOfflineWarmup())
+                .bounds(mid-148,drawingY,76,20).build());
+        addRenderableWidget(Button.builder(
                 Component.translatable("realscale.atlas.draw_start"),
                 b -> startDrawing())
-                .bounds(mid-126,drawingY,92,20).build());
+                .bounds(mid-68,drawingY,88,20).build());
         pauseDrawButton=Button.builder(
                 Component.translatable("realscale.atlas.draw_pause"),
                 b -> togglePause())
-                .bounds(mid-29,drawingY,80,20).build();
+                .bounds(mid+24,drawingY,60,20).build();
         addRenderableWidget(pauseDrawButton);
         addRenderableWidget(Button.builder(
                 Component.translatable("realscale.atlas.draw_cancel"),
                 b -> {if(!WorldAtlasBackgroundPainter.cancel())
                     message=Component.translatable("realscale.atlas.draw_idle").getString();})
-                .bounds(mid+56,drawingY,72,20).build());
+                .bounds(mid+88,drawingY,60,20).build());
         int y=height-79;
         addRenderableWidget(Button.builder(Component.literal("X -"),
                 b -> {centerX-=512;requestScan();})
@@ -131,7 +134,23 @@ public final class WorldAtlasMapScreen extends Screen {
         message=Component.translatable("realscale.atlas.copied").getString();
     }
 
+    private boolean hasActivePainting() {
+        var job=WorldAtlasBackgroundPainter.current();
+        return job!=null && !job.state().equals("DONE")
+                && !job.state().equals("CANCELLED")
+                && !job.state().equals("FAILED");
+    }
+
+    private boolean hasActiveGeneration() {
+        var job=visibleGeneration();
+        return job!=null && !job.terminal();
+    }
+
     private void startOfflinePregeneration() {
+        if(hasActivePainting()) {
+            message=Component.translatable("realscale.atlas.busy_shared_io").getString();
+            return;
+        }
         try {
             boolean started=WorldAtlasOfflinePregenerator.start(
                     Minecraft.getInstance().gameDirectory.toPath(),
@@ -147,11 +166,36 @@ public final class WorldAtlasMapScreen extends Screen {
     }
 
     private WorldAtlasOfflinePregenerator.Status visibleGeneration() {
-        var status=WorldAtlasOfflinePregenerator.status();
-        return status!=null && status.world().equals(save)?status:null;
+        // Offline generation is process-global, not tied to the currently
+        // selected Atlas page. Keep the real job visible after navigating
+        // away so the user can safely pause or stop the save writer.
+        return WorldAtlasOfflinePregenerator.status();
+    }
+
+    private void startOfflineWarmup() {
+        if(hasActivePainting()) {
+            message=Component.translatable("realscale.atlas.busy_shared_io").getString();
+            return;
+        }
+        try {
+            boolean started=WorldAtlasOfflinePregenerator.startWarmup(
+                    Minecraft.getInstance().gameDirectory.toPath(),
+                    save,centerX,centerZ);
+            message=Component.translatable(started
+                    ?"realscale.atlas.warmup_starting"
+                    :"realscale.atlas.warmup_busy").getString();
+        } catch(java.io.IOException ex) {
+            message=ex.getMessage()==null
+                    ?"Offline NeoForge server is not configured"
+                    :ex.getMessage();
+        }
     }
 
     private void startDrawing() {
+        if(hasActiveGeneration()) {
+            message=Component.translatable("realscale.atlas.busy_shared_io").getString();
+            return;
+        }
         try {
             boolean started=WorldAtlasBackgroundPainter.start(save,
                     centerX,centerZ,RADII[radiusIndex]);
@@ -187,11 +231,13 @@ public final class WorldAtlasMapScreen extends Screen {
                     ?"realscale.atlas.draw_resume"
                     :"realscale.atlas.draw_pause"));
         }
-        // Query Chunky status without joining its worker or the server thread.
-        if(++offlinePollTicks>=400) {
-            offlinePollTicks=0;
-            WorldAtlasOfflinePregenerator.pollProgress();
-        }
+        var serverStatus=visibleGeneration();
+        if(serverStatus!=null && serverStatus.terminal() &&
+                (message.equals(Component.translatable(
+                        "realscale.atlas.pregen_starting").getString()) ||
+                 message.equals(Component.translatable(
+                        "realscale.atlas.warmup_starting").getString())))
+            message="";
         if(pending==null || !pending.isDone())return;
         try {
             current=pending.join();
@@ -224,6 +270,11 @@ public final class WorldAtlasMapScreen extends Screen {
         int size=grid*step,left=(width-size)/2,top=49;
         gfx.fill(left-2,top-2,left+size+2,top+size+2,0xff19252a);
         var drawing=visiblePainting();
+        var drawingTask=WorldAtlasBackgroundPainter.current();
+        boolean drawingTaskActive=drawingTask!=null
+                && !drawingTask.state().equals("DONE")
+                && !drawingTask.state().equals("CANCELLED")
+                && !drawingTask.state().equals("FAILED");
         if(current!=null || drawing!=null) {
             for(int z=0;z<grid;z++)for(int x=0;x<grid;x++) {
                 int coverage=current==null?0:current.cellCoverage(x,z);
@@ -249,13 +300,31 @@ public final class WorldAtlasMapScreen extends Screen {
             // These statistics are parsed from Chunky's real console.
             // A sent start command or scheduled radius is NOT progress.
             var progress=WorldAtlasOfflinePregenerator.progress();
-            String observed=progress==null?"":String.format(
+            boolean finalizing=serverJob.state().equals("DRAINING")
+                    ||serverJob.state().equals("WARMUP_DRAINING")
+                    ||serverJob.state().equals("STOPPING");
+            String observed=progress==null || finalizing?"":String.format(
                     java.util.Locale.ROOT,"%.2f%% | %.1f cps | ",
                     progress.percent(),progress.chunksPerSecond());
-            String status=observed+serverJob.state()+": "+serverJob.detail();
+            String owner=serverJob.world().equals(save)?""
+                    :"["+serverJob.world().getFileName()+"] ";
+            String status=owner+observed+serverJob.state()+": "+serverJob.detail();
             gfx.drawCenteredString(font,Component.literal(
                     font.plainSubstrByWidth(status,Math.max(130,width-16))),
                     width/2,statusY,0xffe2d698);
+        } else if(drawing==null && drawingTaskActive) {
+            // Panning changes the displayed map, not the running task's
+            // immutable target. Keep its progress visible without painting
+            // samples from the old center over the newly selected map.
+            String progress=drawingTask.state()+" | target XZ "
+                    +drawingTask.centerX()+","+drawingTask.centerZ()
+                    +" radius "+drawingTask.radius()+" | "
+                    +drawingTask.finished()+"/"+WorldAtlasBackgroundPainter.PIXELS
+                    +" cells | "+String.format(java.util.Locale.ROOT,
+                        "%.1f",drawingTask.percent())+"%";
+            gfx.drawCenteredString(font,Component.literal(
+                    font.plainSubstrByWidth(progress,Math.max(130,width-16))),
+                    width/2,statusY,0xffc5e6d0);
         } else if(drawing!=null) {
             String progress=drawing.state()+" | "
                     +drawing.finished()+"/"+WorldAtlasBackgroundPainter.PIXELS
@@ -270,6 +339,15 @@ public final class WorldAtlasMapScreen extends Screen {
             gfx.drawCenteredString(font,Component.literal(
                     font.plainSubstrByWidth(message,Math.max(130,width-16))),
                     width/2,statusY,0xffffff99);
+        } else if(serverJob!=null) {
+            String owner=serverJob.world().equals(save)?""
+                    :"["+serverJob.world().getFileName()+"] ";
+            String status=owner+serverJob.state()+": "+serverJob.detail();
+            if(current!=null)
+                status+=" | "+current.savedChunks()+"/"+current.targetChunks()+" saved";
+            gfx.drawCenteredString(font,Component.literal(
+                    font.plainSubstrByWidth(status,Math.max(130,width-16))),
+                    width/2,statusY,0xffe2d698);
         } else if(current!=null) {
             String stats=current.savedChunks()+"/"+current.targetChunks()
                     +" saved ("+String.format(java.util.Locale.ROOT,

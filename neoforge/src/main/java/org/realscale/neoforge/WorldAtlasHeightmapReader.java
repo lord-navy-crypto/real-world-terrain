@@ -10,6 +10,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -26,20 +29,38 @@ public final class WorldAtlasHeightmapReader {
     private static final int MAX_CHUNK_NBT = 4*1024*1024;
     private static final int MAX_COMPRESSED = 255*4096;
     private static final int MAX_DEPTH = 32;
+    // Keep region handles bounded while drawing raster rows. Without this
+    // cache, a 48x48 map can reopen the same few .mca files hundreds of times.
+    private static final int MAX_OPEN_REGIONS = 32;
 
     public record Sample(int surfaceY, int oceanFloorY) {
         // Conservative coastal-water hint: tree canopies must not turn alpine forests blue.
         public boolean water() { return surfaceY<=67 && surfaceY-oceanFloorY>=2; }
     }
 
-    public static Sample read(Path world,int chunkX,int chunkZ) throws IOException {
-        Path dir=world.resolve("region");
-        Path file=dir.resolve("r."+Math.floorDiv(chunkX,32)+"."
-                +Math.floorDiv(chunkZ,32)+".mca");
-        if(!Files.isRegularFile(file,LinkOption.NOFOLLOW_LINKS))return null;
-        int rx=Math.floorMod(chunkX,32),rz=Math.floorMod(chunkZ,32);
-        int header=4*(rx+32*rz);
-        try(RandomAccessFile in=new RandomAccessFile(file.toFile(),"r")) {
+    /** One task-scoped sampler; close it to release all cached region handles. */
+    public static final class Sampler implements AutoCloseable {
+        private final Path world;
+        private final LinkedHashMap<Path,RandomAccessFile> regions =
+                new LinkedHashMap<>(16,0.75f,true);
+        private boolean closed;
+
+        private Sampler(Path world) { this.world=world; }
+
+        public Sample read(int chunkX,int chunkZ) throws IOException {
+            if(closed)throw new IOException("Heightmap sampler is closed");
+            Path file=world.resolve("region").resolve("r."
+                    +Math.floorDiv(chunkX,32)+"."
+                    +Math.floorDiv(chunkZ,32)+".mca");
+            if(!Files.isRegularFile(file,LinkOption.NOFOLLOW_LINKS))return null;
+            RandomAccessFile in=regions.get(file);
+            if(in==null) {
+                in=new RandomAccessFile(file.toFile(),"r");
+                regions.put(file,in);
+                trimRegions();
+            }
+            int rx=Math.floorMod(chunkX,32),rz=Math.floorMod(chunkZ,32);
+            int header=4*(rx+32*rz);
             long total=in.length();
             if(total<8192)return null;
             in.seek(header);
@@ -59,6 +80,42 @@ public final class WorldAtlasHeightmapReader {
             byte[] packed=new byte[n-1];
             in.readFully(packed);
             return decode(packed,compression);
+        }
+
+        private void trimRegions() {
+            Iterator<Map.Entry<Path,RandomAccessFile>> iterator =
+                    regions.entrySet().iterator();
+            while(regions.size()>MAX_OPEN_REGIONS && iterator.hasNext()) {
+                RandomAccessFile old=iterator.next().getValue();
+                iterator.remove();
+                try { old.close(); } catch(IOException ignored) { }
+            }
+        }
+
+        @Override public void close() throws IOException {
+            if(closed)return;
+            closed=true;
+            IOException failure=null;
+            for(RandomAccessFile region:regions.values()) {
+                try { region.close(); }
+                catch(IOException ex) {
+                    if(failure==null)failure=ex;
+                    else failure.addSuppressed(ex);
+                }
+            }
+            regions.clear();
+            if(failure!=null)throw failure;
+        }
+    }
+
+    public static Sampler openSampler(Path world) {
+        return new Sampler(world);
+    }
+
+    /** Convenience API for isolated reads and existing smoke tests. */
+    public static Sample read(Path world,int chunkX,int chunkZ) throws IOException {
+        try(Sampler sampler=openSampler(world)) {
+            return sampler.read(chunkX,chunkZ);
         }
     }
 

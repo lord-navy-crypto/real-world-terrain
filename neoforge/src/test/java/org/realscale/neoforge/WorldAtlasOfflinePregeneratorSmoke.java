@@ -68,11 +68,12 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
                     + "printf '%s\\n' \"$@\" > atlas-argv.txt\n"
                     + "printf '[Server thread/INFO]: Done (0.1s)! For help, type help\\n'\n"
                     + "active=0\n"
+                    + "warmup=0\n"
                     + "checks=0\n"
                     + "while IFS= read -r cmd; do\n"
                     + "  printf '%s\\n' \"$cmd\" >> atlas-commands.txt\n"
                     + "  case \"$cmd\" in\n"
-                    + "    'chunky start'*) active=1; printf 'Task started in minecraft:overworld for square\\n';;\n"
+                    + "    'chunky start'*) active=1; case \"$cmd\" in *\" 128\") warmup=1;; *) warmup=0;; esac; printf 'Task started in minecraft:overworld for square\\n';;\n"
                     + "    'chunky continue'*) active=1; printf 'Task continuing for minecraft:overworld.\\n';;\n"
                     + "    'chunky pause'*)\n"
                     + "      if [ \"$active\" -eq 0 ]; then printf 'No tasks to pause.\\n';\n"
@@ -82,6 +83,7 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
                     + "        checks=$((checks+1))\n"
                     + "        if [ \"$checks\" -lt 2 ]; then printf 'Task running for minecraft:overworld. Processed: 5 chunks (2.00%%), ETA: 00:00:30, Rate: 1.5 cps, Current: 0, 0\\n';\n"
                     + "        else active=0; printf 'saved\\n' > chunky-task.saved; printf 'No tasks running.\\n'; fi\n"
+                    + "      elif [ \"$active\" -eq 1 ] && [ \"$warmup\" -eq 1 ]; then active=0; warmup=0; printf 'Task finished for minecraft:overworld. Processed: 256 chunks (100.00%%), Total time: 00:00:01\\n'; printf 'No tasks running.\\n';\n"
                     + "      elif [ \"$active\" -eq 1 ]; then printf 'Task running for minecraft:overworld. Processed: 1,500 chunks (12.50%%), ETA: 00:01:20, Rate: 13.6 cps, Current: 3, 5\\n';\n"
                     + "      else printf 'No tasks running.\\n'; fi;;\n"
                     + "    stop) exit 0;;\n"
@@ -134,6 +136,16 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
             },"Server log ready marker must start Chunky generation");
             require(WorldAtlasOfflinePregenerator.pause(),
                     "Running Chunky task should support pause");
+            await(() -> WorldAtlasOfflinePregenerator.status().state()
+                    .equals("PAUSE_DRAINING"),
+                    "Pause must remain pending until the saved task drains");
+            await(() -> {
+                var observed=WorldAtlasOfflinePregenerator.progress();
+                return observed!=null && observed.percent()==2.0;
+            },"Fake Chunky should emit progress while the pause is draining");
+            require(WorldAtlasOfflinePregenerator.status().state()
+                    .equals("PAUSE_DRAINING"),
+                    "A stale running-progress line must not re-enable Continue");
             await(() -> WorldAtlasOfflinePregenerator.status().state().equals("PAUSED"),
                     "Pause acknowledgement should precede continue");
             require(WorldAtlasOfflinePregenerator.resume(),
@@ -182,9 +194,40 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
                     "Server must start headlessly against EXACT world folder");
             require(Arrays.equals(original,Files.readAllBytes(level)),
                     "Supervisor itself must not overwrite world metadata");
+
+            // Warm-up is a small REAL chunk task. Its JVM stays alive and the
+            // next full radius reuses that same process instead of starting
+            // a second world writer or discarding the warmed runtime.
+            require(WorldAtlasOfflinePregenerator.startWarmup(root,world,0,0),
+                    "Warm-up task should start on the same supervised path");
+            await(() -> {
+                var status=WorldAtlasOfflinePregenerator.status();
+                return status!=null && status.state().equals("WARMUP_READY");
+            },"Warm-up should finish, flush, and leave the server ready");
+            require(WorldAtlasOfflinePregenerator.status().radius()==128,
+                    "Warm-up must use a bounded 128-block radius");
+            require(WorldAtlasOfflinePregenerator.start(root,world,0,0,512),
+                    "Full pregeneration should reuse the warmed server");
+            await(() -> WorldAtlasOfflinePregenerator.status().state().equals("RUNNING"),
+                    "Full pregeneration did not resume on the warmed server");
+            require(WorldAtlasOfflinePregenerator.stopAndSave(),
+                    "Reused warm server must still support safe stop");
+            await(() -> WorldAtlasOfflinePregenerator.status().state().equals("STOPPED"),
+                    "Reused warm server did not safely stop");
+
+            String allCommands=Files.readString(home.resolve("atlas-commands.txt"));
+            int warmStart=allCommands.indexOf(
+                    "chunky start minecraft:overworld square 0 0 128\n");
+            int warmFlush=allCommands.indexOf("save-all flush\n",warmStart);
+            int fullStart=allCommands.indexOf(
+                    "chunky start minecraft:overworld square 0 0 512\n",warmStart);
+            require(warmStart>=0 && warmFlush>warmStart && fullStart>warmFlush,
+                    "Warm-up must flush before full pre-generation reuses the same server");
+            require(allCommands.endsWith("stop\n"),
+                    "Final warm-server stop must flush and release the save");
             System.out.println("TVA_ATLAS_OFFLINE_SERVER_SAFE_PASS: exclusive save lock, "+
-                    "localhost, actual Chunky overworld CLI, pause/save/stop, "+
-                    "no duplicate generator, no overwriting level.dat");
+                    "localhost, truthful progress, pause/resume, save-safe stop, "+
+                    "same-process warm-up continuation, no level.dat overwrite");
         }finally {
             try(var paths=Files.walk(root)) {
                 paths.sorted(Comparator.reverseOrder()).forEach(p->{

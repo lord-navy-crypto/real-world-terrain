@@ -91,23 +91,29 @@ public final class WorldAtlasOfflinePregenerator {
     }
     private static final class Session {
         final Path world,serverHome;
-        final int x,z,radius;
+        volatile int x,z,radius;
+        volatile boolean warmup;
         final AtomicBoolean stopping=new AtomicBoolean(false);
         volatile Status status;
         volatile Progress progress;
         volatile boolean waitingForTaskRemoval;
         volatile boolean pausedAwaitingTaskSave;
+        volatile boolean awaitingWarmupDrain;
         volatile boolean saveStopIssued;
         volatile boolean cleanStopRequested;
         volatile ScheduledFuture<?> pendingChecks;
         volatile Process process;
         volatile BufferedWriter input;
-        Session(Path world,Path serverHome,int x,int z,int radius) {
+        Session(Path world,Path serverHome,int x,int z,int radius,
+                boolean warmup) {
             this.world=world;
             this.serverHome=serverHome;
             this.x=x;this.z=z;this.radius=radius;
+            this.warmup=warmup;
             this.status=new Status(world,x,z,radius,"QUEUED",
-                    "Dedicated server scheduled",System.currentTimeMillis());
+                    warmup?"Small warm-up region scheduled":
+                            "Dedicated server scheduled",
+                    System.currentTimeMillis());
         }
         void state(String name,String detail) {
             status=new Status(world,x,z,radius,name,limit(detail),
@@ -124,12 +130,25 @@ public final class WorldAtlasOfflinePregenerator {
         return gameDirectory.resolve("realscale-atlas-server");
     }
 
-    public static synchronized boolean start(Path gameDirectory,Path world,
-                                             int centerX,int centerZ,int radius)
-            throws IOException {
-        Session old=active;
-        if(old!=null && !old.status.terminal())return false;
-        if(old!=null && old.process!=null && old.process.isAlive())return false;
+    /** Start the selected radius, or continue from a completed warm-up server. */
+    public static boolean start(Path gameDirectory,Path world,int centerX,
+                                int centerZ,int radius) throws IOException {
+        return startInternal(gameDirectory,world,centerX,centerZ,radius,false);
+    }
+
+    /**
+     * Warm-up means a small real chunk pass in the same supervised server JVM.
+     * The server stays alive when that pass completes so the user can continue
+     * with a larger pregeneration radius without throwing away its warmed JVM.
+     */
+    public static boolean startWarmup(Path gameDirectory,Path world,
+                                      int centerX,int centerZ) throws IOException {
+        return startInternal(gameDirectory,world,centerX,centerZ,128,true);
+    }
+
+    private static synchronized boolean startInternal(
+            Path gameDirectory,Path world,int centerX,int centerZ,int radius,
+            boolean warmup) throws IOException {
         if(radius<128 || radius>4096 ||
                 Math.abs((long)centerX)+radius>29_995_000L ||
                 Math.abs((long)centerZ)+radius>29_995_000L)
@@ -140,6 +159,47 @@ public final class WorldAtlasOfflinePregenerator {
                 !Files.isRegularFile(target.resolve("level.dat"),
                     LinkOption.NOFOLLOW_LINKS))
             throw new IOException("Atlas only starts an existing local, non-symlink save");
+
+        Session old=active;
+        if(old!=null && !old.status.terminal()) {
+            if(!"WARMUP_READY".equals(old.status.state()))return false;
+            if(warmup)return false;
+            if(!old.world.equals(target))
+                throw new IOException("Stop the warm-up server for the other world first");
+            if(old.process==null || !old.process.isAlive()) {
+                old.state("FAILED","Warmed server is no longer running; inspect the save lock");
+                throw new IOException("Warmed server is no longer running; restart the warm-up");
+            }
+            // Serialize with Save + stop: a start command must never be
+            // queued after a concurrent shutdown request.
+            synchronized(old) {
+                if(old.stopping.get() ||
+                        !"WARMUP_READY".equals(old.status.state()))return false;
+                if(old.process==null || !old.process.isAlive()) {
+                    old.state("FAILED",
+                            "Warmed server is no longer running; inspect the save lock");
+                    throw new IOException(
+                            "Warmed server is no longer running; restart the warm-up");
+                }
+                // Reuse the SAME server process and save lock. This keeps the
+                // JVM warm and avoids launching a second writer for this world.
+                old.x=centerX;old.z=centerZ;old.radius=radius;
+                old.warmup=false;old.awaitingWarmupDrain=false;old.progress=null;
+                old.state("START_REQUESTED",
+                        "Continuing pregeneration on the warmed server");
+                try {
+                    old.command("chunky start minecraft:overworld square "+
+                            centerX+" "+centerZ+" "+radius);
+                }catch(IOException ex) {
+                    old.state("NEEDS_ATTENTION",ex.getMessage());
+                    throw ex;
+                }
+            }
+            armChecks(old);
+            return true;
+        }
+        if(old!=null && old.process!=null && old.process.isAlive())return false;
+
         // A different Minecraft instance may already have this save open.
         // Checking MUST NOT create session.lock or alter the saved world.
         Path lock=target.resolve("session.lock");
@@ -167,8 +227,6 @@ public final class WorldAtlasOfflinePregenerator {
                     "RealScale and Chunky JARs in its mods folder");
         // Do NOT risk writing an existing 2096-high world with a different
         // RealScale build. Exact binary equality matters, not JAR filenames.
-        // Client-only mods may legitimately differ; full dependency
-        // compatibility still requires explicit real-server validation.
         requireMatchingRealScaleBinary(gameDirectory.resolve("mods"),mods);
         Properties properties=new Properties();
         Path config=server.resolve("server.properties");
@@ -192,7 +250,7 @@ public final class WorldAtlasOfflinePregenerator {
         if(!"true".equals(eulaProps.getProperty("eula")))
             throw new IOException("Read and accept Minecraft EULA in "+
                     "server eula.txt before starting");
-        Session task=new Session(target,server,centerX,centerZ,radius);
+        Session task=new Session(target,server,centerX,centerZ,radius,warmup);
         active=task;
         SUPERVISOR.execute(()->supervise(task,launcher,base,
                 target.getFileName().toString()));
@@ -265,7 +323,9 @@ public final class WorldAtlasOfflinePregenerator {
                 s.state("STOPPED","Task stopped before launch");
                 return;
             }
-            s.state("STARTING","Launching local NeoForge (no player joins)");
+            s.state("STARTING",s.warmup
+                    ?"Launching local NeoForge for a small warm-up pass"
+                    :"Launching local NeoForge for offline pregeneration");
             // Use an exact filesystem path, no shell-interpolated world names
             // or remote endpoints. Dedicated server keeps its own world lock.
             ProcessBuilder pb=new ProcessBuilder("/bin/bash",
@@ -283,7 +343,14 @@ public final class WorldAtlasOfflinePregenerator {
             }
             // If the user pressed Stop while the server was starting, do
             // not leave a detached world writer holding session.lock.
-            if(s.stopping.get())s.command("stop");
+            if(s.stopping.get()) {
+                // A stop requested during server startup still gets an
+                // explicit world flush; never start Chunky in this path.
+                s.state("STOPPING","Stop requested during server startup");
+                s.command("save-all flush");
+                s.command("stop");
+                s.cleanStopRequested=true;
+            }
             try(BufferedReader output=new BufferedReader(new InputStreamReader(
                     process.getInputStream(),
                     java.nio.charset.StandardCharsets.UTF_8))) {
@@ -292,21 +359,22 @@ public final class WorldAtlasOfflinePregenerator {
                     String safe=limit(line.replaceAll("\\u001b\\[[;\\d]*m",""));
                     Progress observed=parseChunkyProgress(line);
                     if(observed!=null)s.progress=observed;
-                    if(!startedChunky && !s.stopping.get()
-                            && line.contains("Done (")) {
-                        // Underlying NeoForge world may auto-create on bad
-                        // '--world' argument; startup has prevalidated save.
-                        // Explicitly use the OVERWORLD key, not world folder,
-                        // as Chunky's NeoForgeWorld.getName() returns a
-                        // dimension identifier such as minecraft:overworld.
-                        // The subprocess may ACK before the console write
-                        // returns. Mark REQUESTED *before* sending, otherwise
-                        // a confirmed RUNNING can be overwritten by REQUESTED.
-                        startedChunky=true;
-                        s.state("START_REQUESTED",
-                                "Awaiting Chunky task-start acknowledgement");
-                        s.command("chunky start minecraft:overworld square "+
-                                s.x+" "+s.z+" "+s.radius);
+                    if(!startedChunky && line.contains("Done (")) {
+                        // Serialize task start with Save + stop. If stop won
+                        // the race, never enqueue a new generator task.
+                        synchronized(s) {
+                            if(!startedChunky && !s.stopping.get()) {
+                                // Use the OVERWORLD dimension key, not the
+                                // save-folder name: Chunky expects
+                                // minecraft:overworld for this NeoForge world.
+                                startedChunky=true;
+                                s.state("START_REQUESTED",s.warmup
+                                        ?"Awaiting warm-up task-start acknowledgement"
+                                        :"Awaiting Chunky task-start acknowledgement");
+                                s.command("chunky start minecraft:overworld square "+
+                                        s.x+" "+s.z+" "+s.radius);
+                            }
+                        }
                     } else if(startedChunky && !s.stopping.get() &&
                             safe.contains("Task started in ")) {
                         s.state("RUNNING",safe);
@@ -363,12 +431,17 @@ public final class WorldAtlasOfflinePregenerator {
                                 }
                             }
                         }
+                    }else if(!s.stopping.get() &&
+                            s.awaitingWarmupDrain &&
+                            safe.contains("No tasks running.")) {
+                        // This progress response is emitted only after Chunky
+                        // removed its completed task from the active task map.
+                        finishWarmup(s);
                     }else if(!s.stopping.get() && startedChunky &&
                             s.status.state().equals("RUNNING") &&
                             safe.contains("No tasks running.")) {
-                        // Chunky naturally finished all work: same safe
-                        // task-map drained save/stop handshake as manual stop.
-                        requestDrain(s);
+                        if(s.warmup)beginWarmupDrain(s);
+                        else beginNaturalDrain(s);
                     }else if(line.toLowerCase(Locale.ROOT).contains("confirm") &&
                             startedChunky && !s.stopping.get()) {
                         s.state("NEEDS_ATTENTION",
@@ -380,17 +453,19 @@ public final class WorldAtlasOfflinePregenerator {
                                 "Chunky not active on server; stop and verify mods");
                     }else if(!s.stopping.get() && startedChunky &&
                             (safe.contains("chunk") || safe.contains("%"))) {
-                        if(observed!=null) {
+                        // Telemetry must never overwrite command-transition
+                        // states such as PAUSE_REQUESTED or PAUSE_DRAINING.
+                        // Otherwise an in-flight progress line could re-enable
+                        // Continue before Chunky has persisted the paused task.
+                        if(s.status.state().equals("RUNNING"))
                             s.state("RUNNING",safe);
-                        }else {
-                            s.state(s.status.state(),safe);
-                        }
                     }
                     if(!s.stopping.get() &&
                             safe.contains("Task finished for minecraft:overworld")) {
-                        // Natural completion is also asynchronous: wait for
-                        // the task to be removed/saved before stopping the server.
-                        requestDrain(s);
+                        // The 100% message can arrive before Chunky finishes
+                        // saveTask() and removes its task. Verify via progress.
+                        if(s.warmup)beginWarmupDrain(s);
+                        else beginNaturalDrain(s);
                     }
                 }
             }
@@ -409,6 +484,56 @@ public final class WorldAtlasOfflinePregenerator {
             if(p!=null && p.isAlive()) {
                 try{s.command("stop");}catch(IOException ignored){}
             }
+        }
+    }
+
+    private static void beginWarmupDrain(Session s) {
+        synchronized(s) {
+            if(s.stopping.get() || !s.warmup)return;
+            s.awaitingWarmupDrain=true;
+            s.state("WARMUP_DRAINING",
+                    "Warm-up reached its target; verifying Chunky task save");
+        }
+        armChecks(s);
+        synchronized(s) {
+            if(s.stopping.get() || !s.awaitingWarmupDrain)return;
+            try{s.command("chunky progress");}
+            catch(IOException ex){s.state("NEEDS_ATTENTION",ex.getMessage());}
+        }
+    }
+
+    private static void finishWarmup(Session s) {
+        synchronized(s) {
+            if(s.stopping.get() || !s.warmup)return;
+            try {
+                // Persist the warm-up chunks while keeping this same JVM alive.
+                // The next Pre-generate click reuses this process and lock.
+                s.command("save-all flush");
+                s.awaitingWarmupDrain=false;
+                s.progress=null; // Do not display the completed warm-up's stale rate.
+                if(!s.stopping.get())
+                    s.state("WARMUP_READY",
+                            "Warm-up saved; server remains open. Continue with Pre-generate or Save + stop.");
+            }catch(IOException ex) {
+                s.awaitingWarmupDrain=false;
+                s.state("NEEDS_ATTENTION",
+                        "Warm-up task ended but world flush failed: "+ex.getMessage());
+            }
+        }
+    }
+
+    private static void beginNaturalDrain(Session s) {
+        synchronized(s) {
+            if(!s.stopping.compareAndSet(false,true))return;
+            s.waitingForTaskRemoval=true;
+            s.state("DRAINING",
+                    "Chunky reached its target; verifying durable task save before shutdown");
+        }
+        armChecks(s);
+        synchronized(s) {
+            if(s.saveStopIssued || s.status.terminal())return;
+            try{s.command("chunky progress");}
+            catch(IOException ex){s.state("NEEDS_ATTENTION",ex.getMessage());}
         }
     }
 
@@ -434,7 +559,7 @@ public final class WorldAtlasOfflinePregenerator {
             // from Chunky's task map AFTER saveTask() returns.
             if((s.stopping.get() && s.waitingForTaskRemoval) ||
                     (!s.stopping.get() &&
-                     (s.pausedAwaitingTaskSave ||
+                     (s.pausedAwaitingTaskSave || s.awaitingWarmupDrain ||
                       s.status.state().equals("RUNNING")))) {
                 synchronized(s) {
                     // Serialize telemetry with save-all/stop: the periodic
@@ -454,37 +579,51 @@ public final class WorldAtlasOfflinePregenerator {
     }
 
     private static boolean requestDrain(Session s) {
-        if(!s.stopping.compareAndSet(false,true))return false;
-        s.state("DRAINING","Waiting for Chunky durable task save...");
+        synchronized(s) {
+            if(s.status.terminal() || s.saveStopIssued)return false;
+            if(!s.stopping.get()) {
+                s.stopping.set(true);
+                s.state("DRAINING","Waiting for Chunky durable task save...");
+            } else if(s.status.state().equals("NEEDS_ATTENTION")) {
+                // A failed console write is recoverable: allow the user to
+                // retry Save + stop rather than permanently wedging the lock.
+                s.state("DRAINING","Retrying the safe-save handshake...");
+            } else {
+                return false;
+            }
+        }
         // When stop occurs before the child process starts, the supervisor
         // handles it without ever loading or modifying the save.
         if(s.process==null || s.input==null)return true;
         try {
-            s.command("chunky pause minecraft:overworld");
+            if(s.waitingForTaskRemoval)s.command("chunky progress");
+            else s.command("chunky pause minecraft:overworld");
             // The worker may still be finishing an expensive 2096-high
             // chunk. Poll only Chunky's own task map (never create chunks).
             armChecks(s);
             return true;
         }catch(IOException e) {
             s.state("NEEDS_ATTENTION",
-                    "Server console unavailable; check save lock and process");
+                    "Server console unavailable; retry Save + stop and inspect the save lock");
             return false;
         }
     }
     private static boolean send(String command,String state) {
         Session s=active;
-        if(s==null||s.status.terminal()||s.stopping.get() ||
-                s.process==null||!s.process.isAlive() ||
-                (!s.status.state().equals("RUNNING") &&
-                 !s.status.state().equals("PAUSED") &&
-                 !(s.status.state().equals("NEEDS_ATTENTION") &&
-                   command.startsWith("chunky continue"))))return false;
-        // Set REQUESTED before subprocess I/O: the reply reader can receive
-        // Chunky's ACK concurrently, and must be able to transition to
-        // PAUSED/RUNNING without this caller overwriting it afterward.
-        s.state(state,command+" requested");
-        try {s.command(command);return true;}
-        catch(IOException e){s.state("NEEDS_ATTENTION",e.getMessage());return false;}
+        if(s==null)return false;
+        synchronized(s) {
+            if(s.status.terminal()||s.stopping.get() ||
+                    s.process==null||!s.process.isAlive())return false;
+            String current=s.status.state();
+            boolean allowed=command.startsWith("chunky pause")
+                    ?current.equals("RUNNING"):current.equals("PAUSED");
+            if(!allowed)return false;
+            // Set REQUESTED before subprocess I/O. The session lock prevents
+            // a concurrent completion transition from being overwritten.
+            s.state(state,command+" requested");
+            try {s.command(command);return true;}
+            catch(IOException e){s.state("NEEDS_ATTENTION",e.getMessage());return false;}
+        }
     }
     private static String limit(String input) {
         if(input==null)return "";

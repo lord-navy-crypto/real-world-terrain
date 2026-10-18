@@ -31,17 +31,24 @@ class WorldAtlasBackgroundPainterTests(unittest.TestCase):
         self.assertIn("AtomicBoolean cancelled",source)
         self.assertIn('task.publish("DONE"',source)
         self.assertIn('task.publish("CANCELLED"',source)
-        self.assertIn("WorldAtlasHeightmapReader.read(task.world,cx,cz)",source)
+        self.assertIn("WorldAtlasHeightmapReader.openSampler(task.world)",source)
+        self.assertIn("sampler.read(cx,cz)",source)
+        reader=(SRC/"WorldAtlasHeightmapReader.java").read_text()
+        self.assertIn("MAX_OPEN_REGIONS = 32",reader)
+        self.assertIn("implements AutoCloseable",reader)
+        self.assertIn("regions.clear()",reader)
         self.assertNotIn("ProcessBuilder(",source)
         self.assertNotIn("new FileOutputStream(",source)
         self.assertNotIn("ServerChunkCache",source)
 
     def test_gui_has_live_progress_and_controls_but_no_hidden_chunky_copy(self):
         source=(SRC/"WorldAtlasMapScreen.java").read_text()
-        for name in ("draw_start","draw_pause","draw_resume",
+        for name in ("warmup_start","draw_start","draw_pause","draw_resume",
                      "draw_cancel","draw_busy","draw_real_legend"):
             self.assertIn("realscale.atlas."+name,source)
         self.assertIn("WorldAtlasBackgroundPainter.start(",source)
+        self.assertIn("WorldAtlasOfflinePregenerator.startWarmup(",source)
+        self.assertIn("if(serverJob!=null)",source)
         self.assertIn("WorldAtlasBackgroundPainter.cancel()",source)
         self.assertIn("WorldAtlasBackgroundPainter.pause()",source)
         self.assertIn("WorldAtlasBackgroundPainter.resume()",source)
@@ -52,7 +59,8 @@ class WorldAtlasBackgroundPainterTests(unittest.TestCase):
             self.assertNotIn(forbidden,source)
 
     def test_bilingual_ui(self):
-        keys=("draw_start","draw_pause","draw_resume","draw_cancel",
+        keys=("warmup_start","warmup_starting","warmup_busy","busy_shared_io",
+              "draw_start","draw_pause","draw_resume","draw_cancel",
               "draw_started","draw_busy","draw_idle","draw_real_legend")
         for filename in ("en_us.json","zh_cn.json"):
             lang=json.loads((LANG/filename).read_text())
