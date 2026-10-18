@@ -136,6 +136,16 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
             },"Server log ready marker must start Chunky generation");
             require(WorldAtlasOfflinePregenerator.pause(),
                     "Running Chunky task should support pause");
+            await(() -> WorldAtlasOfflinePregenerator.status().state()
+                    .equals("PAUSE_DRAINING"),
+                    "Pause must remain pending until the saved task drains");
+            await(() -> {
+                var observed=WorldAtlasOfflinePregenerator.progress();
+                return observed!=null && observed.percent()==2.0;
+            },"Fake Chunky should emit progress while the pause is draining");
+            require(WorldAtlasOfflinePregenerator.status().state()
+                    .equals("PAUSE_DRAINING"),
+                    "A stale running-progress line must not re-enable Continue");
             await(() -> WorldAtlasOfflinePregenerator.status().state().equals("PAUSED"),
                     "Pause acknowledgement should precede continue");
             require(WorldAtlasOfflinePregenerator.resume(),
