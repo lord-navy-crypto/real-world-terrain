@@ -29,12 +29,21 @@ public final class AdaptiveVisibilityBudget {
             boolean nearbySkyAccess,
             boolean solidRoofEvidence,
             boolean openingOrRavine,
-            boolean rapidlyMoving) {
+            boolean rapidlyMoving,
+            boolean exteriorSightline) {
+        /** Preserve Stage-1 source compatibility for existing callers. */
+        public Observation(boolean known, boolean skyAtCamera,
+                boolean nearbySkyAccess, boolean solidRoofEvidence,
+                boolean openingOrRavine, boolean rapidlyMoving) {
+            this(known, skyAtCamera, nearbySkyAccess, solidRoofEvidence,
+                    openingOrRavine, rapidlyMoving, false);
+        }
     }
 
     /** Observational interpretation; no vision ray may be skipped. */
     public static Mode classify(Observation o) {
-        if (o == null || !o.known() || o.openingOrRavine() || o.rapidlyMoving())
+        if (o == null || !o.known() || o.openingOrRavine()
+                || o.rapidlyMoving() || o.exteriorSightline())
             return Mode.TRANSITION;
         if (o.skyAtCamera() && o.nearbySkyAccess() && !o.solidRoofEvidence())
             return Mode.OPEN_SURFACE;
@@ -71,6 +80,22 @@ public final class AdaptiveVisibilityBudget {
                 default -> 100;
             };
         };
+    }
+
+    /**
+     * Low-CPU adaptive cadence. The output is only an observation interval:
+     * it never controls what Minecraft draws, sends, meshes, or unloads.
+     * Stable stationary scenes can sample less often; a moving player or
+     * an exposed/uncertain exit is resampled at least once per half-second.
+     *
+     * squaredBlockDisplacement is measured from the LAST known observation,
+     * not camera Y. Teleports are separately fail-open invalidated by client.
+     */
+    public static int samplingIntervalTicks(Mode mode,
+            double squaredBlockDisplacement) {
+        if (mode == Mode.TRANSITION || squaredBlockDisplacement > 16.0)
+            return 10;
+        return 40; // at 20 TPS, 2s when stable and stationary
     }
 
     /** Three consecutive confident observations; usually sampled once/sec. */

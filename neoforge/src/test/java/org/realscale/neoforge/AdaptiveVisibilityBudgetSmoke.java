@@ -86,6 +86,34 @@ public final class AdaptiveVisibilityBudgetSmoke {
                 AdaptiveVisibilityBudget.Task.NEAR_CAVE_MESH),
              "A cave mouth must preserve both work classes");
 
+        // A long horizontal view through a cave mouth must remain
+        // conservative even when a thick overhead mountain exists.
+        var visibleHorizon=new AdaptiveVisibilityBudget.Observation(
+                true,false,false,true,false,false,true);
+        yes(AdaptiveVisibilityBudget.classify(visibleHorizon)==T,
+                "Visible far exit must override apparent cave enclosure");
+        tracker.observe(cave());
+        tracker.observe(cave());
+        tracker.observe(cave());
+        yes(tracker.mode()==C,"Re-enter sealed cave for portal test");
+        yes(tracker.observe(visibleHorizon)==T,
+                "Seeing exterior instantly cancels cave scheduling advice");
+
+        // Less sampling overhead when stationary; moving/transition means
+        // fast rechecks, but sampling rate does not itself change rendering.
+        yes(AdaptiveVisibilityBudget.samplingIntervalTicks(T,0)==10,
+                "Unknown/portal sampling must be responsive");
+        yes(AdaptiveVisibilityBudget.samplingIntervalTicks(S,0)==40,
+                "Stationary surface should throttle safe diagnostic probes");
+        yes(AdaptiveVisibilityBudget.samplingIntervalTicks(C,0)==40,
+                "Stationary cave should throttle safe diagnostic probes");
+        yes(AdaptiveVisibilityBudget.samplingIntervalTicks(C,17)==10,
+                "Movement toward cave mouth must accelerate probing");
+        yes(AdaptiveVisibilityBudget.samplingIntervalTicks(S,16)==40,
+                "Displacement threshold changed unexpectedly");
+        yes(AdaptiveVisibilityBudget.samplingIntervalTicks(S,1024)==10,
+                "Fast travel should not retain a slow sampling interval");
+
         tracker.reset();
         yes(tracker.mode()==T && tracker.transitions()==0 && tracker.samples()==0,
             "World switch must reset prior visibility state");
