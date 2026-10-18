@@ -57,17 +57,17 @@ public final class WorldAtlasMapScreen extends Screen {
         addRenderableWidget(Button.builder(
                 Component.translatable("realscale.atlas.draw_start"),
                 b -> startDrawing())
-                .bounds(mid-146,drawingY,126,20).build());
+                .bounds(mid-126,drawingY,92,20).build());
         pauseDrawButton=Button.builder(
                 Component.translatable("realscale.atlas.draw_pause"),
                 b -> togglePause())
-                .bounds(mid-15,drawingY,94,20).build();
+                .bounds(mid-29,drawingY,80,20).build();
         addRenderableWidget(pauseDrawButton);
         addRenderableWidget(Button.builder(
                 Component.translatable("realscale.atlas.draw_cancel"),
                 b -> {if(!WorldAtlasBackgroundPainter.cancel())
                     message=Component.translatable("realscale.atlas.draw_idle").getString();})
-                .bounds(mid+84,drawingY,79,20).build());
+                .bounds(mid+56,drawingY,72,20).build());
         int y=height-79;
         addRenderableWidget(Button.builder(Component.literal("X -"),
                 b -> {centerX-=512;requestScan();})
