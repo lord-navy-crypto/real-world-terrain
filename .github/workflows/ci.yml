@@ -68,6 +68,29 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_distant_rcon_completion.py' -v
       - name: Verify far-distance JVM stall fingerprint parser
         run: python3 -m unittest discover -s qa -p 'test_diagnose_worldgen_threads.py' -v
+      - name: Verify adaptive visibility classification and conservative budget parity
+        run: |
+          mkdir -p build/visibility-budget-smoke
+          javac -d build/visibility-budget-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/AdaptiveVisibilityBudget.java \
+            neoforge/src/main/java/org/realscale/neoforge/AdaptiveVisibilityTelemetry.java \
+            neoforge/src/test/java/org/realscale/neoforge/AdaptiveVisibilityBudgetSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/AdaptiveVisibilityTelemetrySmoke.java
+          java -cp build/visibility-budget-smoke org.realscale.neoforge.AdaptiveVisibilityBudgetSmoke
+          java -cp build/visibility-budget-smoke org.realscale.neoforge.AdaptiveVisibilityTelemetrySmoke
+      - name: Verify opt-in FPS/frame-time sampling without GPU
+        run: |
+          mkdir -p build/fps-interval-smoke
+          javac -d build/fps-interval-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/ClientFrameIntervalStats.java \
+            neoforge/src/test/java/org/realscale/neoforge/ClientFrameIntervalStatsSmoke.java
+          java -cp build/fps-interval-smoke org.realscale.neoforge.ClientFrameIntervalStatsSmoke
+      - name: Verify reproducible client FPS log comparisons
+        run: python3 -m unittest discover -s qa -p 'test_compare_client_fps.py' -v
+      - name: Verify read-only tall-world Section inventory (not GPU visibility)
+        run: python3 -m unittest discover -s qa -p 'test_vertical_section_budget.py' -v
+      - name: Verify unified TVA source, cave and client opt-in release invariants
+        run: python3 -m unittest discover -s qa -p 'test_tva_unified_timeline.py' -v
       - name: Verify worldgen timing is disabled by default and opt-in is bounded
         run: |
           mkdir -p build/worldgen-profiler-smoke
