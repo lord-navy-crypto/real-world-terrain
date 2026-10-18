@@ -78,6 +78,43 @@ Visual acceptance: no floor/roof holes, cave popping, disappearing ravine
 walls, distant terrain seams, transparent fluids/glass leakage, missing
 sky-island geometry, or stale visibility after mining/placing blocks.
 
+## Implemented proof-of-concept: opt-in client environment telemetry
+
+This experimental branch now contains:
+- `AdaptiveVisibilityBudget.java` — **implemented** three-state, fail-open
+  hysteresis classifier and advisory, starvation-free work-priority values.
+  This class has no Minecraft imports and is tested independently.
+- `RealScaleAdaptiveVisibilityClient.java` — real NeoForge 1.21.1
+  `ClientTickEvent.Post` subscriber restricted to the physical client:
+  one bounded sample per **20 ticks**, maximum five local loaded-chunk
+  sky probes, one saved heightmap sample. Unloaded data, rapid camera jumps,
+  other dimensions, underwater viewpoints and ambiguous cave mouths fall
+  back to `TRANSITION`.
+- `AdaptiveVisibilityBudgetSmoke.java` — mode, transition/hysteresis,
+  urgent-work and positive/negative altitude independence tests,
+  checked in GitHub CI.
+
+**It is disabled by default.** To enable diagnostic tracking in a *client*
+JVM, include:
+
+```text
+-Drealscale.client.visibility.profile=true
+```
+
+Look for `[RealScale adaptive visibility]` client logs (transitions
+and periodic summaries). They show classification evidence, **not** FPS
+improvement, GPU culling or render-Section queue timing.
+
+**Honesty boundary:** The priority numbers are an ADVISORY policy.
+No vanilla/Sodium/Embeddium render queue is currently modified because a
+stable compatible priority injection API for the pinned NeoForge/Sodium
+combination has not been established. No future mod should pretend these
+numbers alone speed up rendering. There are **zero extra sky queries**
+when the flag is off, and the client-only subscriber is not loaded on
+dedicated servers. No render distance, server tickets or chunk generation
+changes. Actual priority-queue integration remains blocked on supported
+API discovery and a reproducible client A/B proving an uncovered hot path.
+
 ## Proposed D: Adaptive Visibility & Rendering Budget (DESIGN ONLY)
 
 This proposal assigns **priorities to optional/asynchronous render work**
