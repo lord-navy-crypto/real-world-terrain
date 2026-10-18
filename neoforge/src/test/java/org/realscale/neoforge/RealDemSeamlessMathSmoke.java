@@ -3,6 +3,7 @@ package org.realscale.neoforge;
 /** Check the restored measured DEM source and continuous 2048-block transition. */
 public final class RealDemSeamlessMathSmoke {
     private RealDemSeamlessMathSmoke() {}
+    private static final RealDemDataSource FROZEN_TILE=RealDemDataSource.loadMeasured();
     private static void require(boolean ok, String message) {
         if (!ok) throw new AssertionError(message);
     }
@@ -14,7 +15,7 @@ public final class RealDemSeamlessMathSmoke {
         return Math.max(low,Math.min(high,value));
     }
     private static double uncachedExtendedHeight(double x,double z) {
-        RealDemDataSource tile=RealDemDataSource.loadMeasured();
+        RealDemDataSource tile=FROZEN_TILE;
         double cx=clamp(x,tile.originX(),tile.maxX());
         double cz=clamp(z,tile.originZ(),tile.maxZ());
         double cell=tile.cellMeters();
@@ -52,10 +53,10 @@ public final class RealDemSeamlessMathSmoke {
                 double before=uncachedExtendedHeight(x,z);
                 assertBitExact(before,RealDemSeamlessMath.extendedHeight(x,z),x,z);
                 assertBitExact(before,RealDemSeamlessMath.cachedExtendedHeight(x,z),x,z);
-                double cx=clamp(x,RealDemDataSource.loadMeasured().originX(),
-                                 RealDemDataSource.loadMeasured().maxX());
-                double cz=clamp(z,RealDemDataSource.loadMeasured().originZ(),
-                                 RealDemDataSource.loadMeasured().maxZ());
+                double cx=clamp(x,FROZEN_TILE.originX(),
+                                 FROZEN_TILE.maxX());
+                double cz=clamp(z,FROZEN_TILE.originZ(),
+                                 FROZEN_TILE.maxZ());
                 assertBitExact(RealDemSeamlessMath.measuredHeight(cx,cz),
                         RealDemSeamlessMath.cachedMeasuredHeight(cx,cz),x,z);
                 samples++;
