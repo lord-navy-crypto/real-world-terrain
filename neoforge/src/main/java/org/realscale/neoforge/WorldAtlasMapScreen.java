@@ -343,6 +343,8 @@ public final class WorldAtlasMapScreen extends Screen {
             String owner=serverJob.world().equals(save)?""
                     :"["+serverJob.world().getFileName()+"] ";
             String status=owner+serverJob.state()+": "+serverJob.detail();
+            if(current!=null)
+                status+=" | "+current.savedChunks()+"/"+current.targetChunks()+" saved";
             gfx.drawCenteredString(font,Component.literal(
                     font.plainSubstrByWidth(status,Math.max(130,width-16))),
                     width/2,statusY,0xffe2d698);
