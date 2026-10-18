@@ -40,10 +40,22 @@ class WorldAtlasFeatureTest(unittest.TestCase):
             self.assertNotIn(unsafe,screen)
         self.assertIn('realscale.atlas.coverage_only',screen)
 
+    def test_warmup_reuses_server_and_waits_for_chunky_task_drain(self):
+        source=(SRC/"WorldAtlasOfflinePregenerator.java").read_text()
+        self.assertIn("startWarmup(",source)
+        self.assertIn('"WARMUP_READY"',source)
+        self.assertIn("beginWarmupDrain(s)",source)
+        self.assertIn("beginNaturalDrain(s)",source)
+        self.assertIn('safe.contains("No tasks running.")',source)
+        self.assertIn('s.command("save-all flush")',source)
+        self.assertIn('old.command("chunky start minecraft:overworld square "',source)
+        self.assertNotIn('command.startsWith("chunky continue")',source)
+
     def test_english_chinese_atlas_labels(self):
         keys=("entry","title","empty","back","refresh","scanning",
               "coverage_only","chunky_found","chunky_missing",
-              "copy_chunky","copied")
+              "copy_chunky","copied","warmup_start","warmup_starting",
+              "warmup_busy")
         for name in ("en_us","zh_cn"):
             data=json.loads((RES/(name+".json")).read_text())
             for key in keys:
