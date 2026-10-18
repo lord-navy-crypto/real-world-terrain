@@ -331,7 +331,14 @@ public final class WorldAtlasOfflinePregenerator {
             }
             // If the user pressed Stop while the server was starting, do
             // not leave a detached world writer holding session.lock.
-            if(s.stopping.get())s.command("stop");
+            if(s.stopping.get()) {
+                // A stop requested during server startup still gets an
+                // explicit world flush; never start Chunky in this path.
+                s.state("STOPPING","Stop requested during server startup");
+                s.command("save-all flush");
+                s.command("stop");
+                s.cleanStopRequested=true;
+            }
             try(BufferedReader output=new BufferedReader(new InputStreamReader(
                     process.getInputStream(),
                     java.nio.charset.StandardCharsets.UTF_8))) {
@@ -560,21 +567,31 @@ public final class WorldAtlasOfflinePregenerator {
 
     private static boolean requestDrain(Session s) {
         synchronized(s) {
-            if(!s.stopping.compareAndSet(false,true))return false;
-            s.state("DRAINING","Waiting for Chunky durable task save...");
+            if(s.status.terminal() || s.saveStopIssued)return false;
+            if(!s.stopping.get()) {
+                s.stopping.set(true);
+                s.state("DRAINING","Waiting for Chunky durable task save...");
+            } else if(s.status.state().equals("NEEDS_ATTENTION")) {
+                // A failed console write is recoverable: allow the user to
+                // retry Save + stop rather than permanently wedging the lock.
+                s.state("DRAINING","Retrying the safe-save handshake...");
+            } else {
+                return false;
+            }
         }
         // When stop occurs before the child process starts, the supervisor
         // handles it without ever loading or modifying the save.
         if(s.process==null || s.input==null)return true;
         try {
-            s.command("chunky pause minecraft:overworld");
+            if(s.waitingForTaskRemoval)s.command("chunky progress");
+            else s.command("chunky pause minecraft:overworld");
             // The worker may still be finishing an expensive 2096-high
             // chunk. Poll only Chunky's own task map (never create chunks).
             armChecks(s);
             return true;
         }catch(IOException e) {
             s.state("NEEDS_ATTENTION",
-                    "Server console unavailable; check save lock and process");
+                    "Server console unavailable; retry Save + stop and inspect the save lock");
             return false;
         }
     }
