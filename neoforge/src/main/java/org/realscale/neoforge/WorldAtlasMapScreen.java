@@ -28,6 +28,7 @@ public final class WorldAtlasMapScreen extends Screen {
     private CompletableFuture<WorldAtlasRegionIndex.Snapshot> pending;
     private String message="";
     private boolean chunkyLoaded;
+    private Button pauseDrawButton;
 
     public WorldAtlasMapScreen(Screen parent,Path save) {
         super(Component.translatable("realscale.atlas.title"));
@@ -52,6 +53,21 @@ public final class WorldAtlasMapScreen extends Screen {
     @Override protected void init() {
         chunkyLoaded=ModList.get().isLoaded("chunky");
         int mid=width/2;
+        int drawingY=height-106;
+        addRenderableWidget(Button.builder(
+                Component.translatable("realscale.atlas.draw_start"),
+                b -> startDrawing())
+                .bounds(mid-126,drawingY,92,20).build());
+        pauseDrawButton=Button.builder(
+                Component.translatable("realscale.atlas.draw_pause"),
+                b -> togglePause())
+                .bounds(mid-29,drawingY,80,20).build();
+        addRenderableWidget(pauseDrawButton);
+        addRenderableWidget(Button.builder(
+                Component.translatable("realscale.atlas.draw_cancel"),
+                b -> {if(!WorldAtlasBackgroundPainter.cancel())
+                    message=Component.translatable("realscale.atlas.draw_idle").getString();})
+                .bounds(mid+56,drawingY,72,20).build());
         int y=height-79;
         addRenderableWidget(Button.builder(Component.literal("X -"),
                 b -> {centerX-=512;requestScan();})
@@ -97,8 +113,42 @@ public final class WorldAtlasMapScreen extends Screen {
         message=Component.translatable("realscale.atlas.copied").getString();
     }
 
+    private void startDrawing() {
+        try {
+            boolean started=WorldAtlasBackgroundPainter.start(save,
+                    centerX,centerZ,RADII[radiusIndex]);
+            message=Component.translatable(started
+                    ?"realscale.atlas.draw_started"
+                    :"realscale.atlas.draw_busy").getString();
+        } catch(IllegalArgumentException ex) {
+            // Repeated panning near the world border must not crash the GUI.
+            message=ex.getMessage()==null?"Map center is out of bounds":
+                    ex.getMessage();
+        }
+    }
+
+    private void togglePause() {
+        var job=WorldAtlasBackgroundPainter.current();
+        if(job!=null && "PAUSED".equals(job.state()))
+            WorldAtlasBackgroundPainter.resume();
+        else WorldAtlasBackgroundPainter.pause();
+    }
+
+    private WorldAtlasBackgroundPainter.View visiblePainting() {
+        var job=WorldAtlasBackgroundPainter.current();
+        return job!=null && job.matches(save,centerX,centerZ,
+                RADII[radiusIndex])?job:null;
+    }
+
     @Override public void tick() {
         super.tick();
+        if(pauseDrawButton!=null) {
+            var job=WorldAtlasBackgroundPainter.current();
+            boolean paused=job!=null && "PAUSED".equals(job.state());
+            pauseDrawButton.setMessage(Component.translatable(paused
+                    ?"realscale.atlas.draw_resume"
+                    :"realscale.atlas.draw_pause"));
+        }
         if(pending==null || !pending.isDone())return;
         try {
             current=pending.join();
@@ -127,14 +177,19 @@ public final class WorldAtlasMapScreen extends Screen {
 
         int grid=WorldAtlasRegionIndex.MAP_CELLS;
         int step=Math.max(1,Math.min(5,
-                Math.min((width-26)/grid,(height-140)/grid)));
+                Math.min((width-26)/grid,(height-172)/grid)));
         int size=grid*step,left=(width-size)/2,top=49;
         gfx.fill(left-2,top-2,left+size+2,top+size+2,0xff19252a);
-        if(current!=null) {
+        var drawing=visiblePainting();
+        if(current!=null || drawing!=null) {
             for(int z=0;z<grid;z++)for(int x=0;x<grid;x++) {
-                int coverage=current.cellCoverage(x,z);
+                int coverage=current==null?0:current.cellCoverage(x,z);
                 int color=(coverage==0)?0xff47545c:
                         (coverage==255?0xff67ad87:0xffb5a46a);
+                if(drawing!=null) {
+                    int sampled=drawing.color(x,z);
+                    if(sampled!=0)color=sampled; // Real persisted heightmaps only
+                }
                 int px=left+x*step,pz=top+z*step;
                 gfx.fill(px,pz,px+step,pz+step,color);
             }
@@ -145,8 +200,18 @@ public final class WorldAtlasMapScreen extends Screen {
         }
         // One bounded status row stays ABOVE the first footer button at
         // height-79. Do not overpaint navigation on 240px GUI-scaled windows.
-        int statusY=Math.min(top+size+5,height-91);
-        if(!message.isEmpty()) {
+        int statusY=Math.min(top+size+5,height-120);
+        if(drawing!=null) {
+            String progress=drawing.state()+" | "
+                    +drawing.finished()+"/"+WorldAtlasBackgroundPainter.PIXELS
+                    +" cells | "+drawing.available()+" height samples"
+                    +" | "+String.format(java.util.Locale.ROOT,
+                        "%.1f",drawing.percent())+"%"
+                    +(drawing.errors()>0?" | "+drawing.errors()+" unreadable":"");
+            gfx.drawCenteredString(font,Component.literal(
+                    font.plainSubstrByWidth(progress,Math.max(130,width-16))),
+                    width/2,statusY,0xffc5e6d0);
+        } else if(!message.isEmpty()) {
             gfx.drawCenteredString(font,Component.literal(
                     font.plainSubstrByWidth(message,Math.max(130,width-16))),
                     width/2,statusY,0xffffff99);
@@ -161,8 +226,9 @@ public final class WorldAtlasMapScreen extends Screen {
         }
         // Clip the legend into the LEFT margin of the map; no overlap
         // with the coverage pixels or bottom navigation at GUI scale 2/3.
-        String legend=Component.translatable(
-                "realscale.atlas.coverage_only").getString();
+        String legend=Component.translatable(drawing!=null
+                ?"realscale.atlas.draw_real_legend"
+                :"realscale.atlas.coverage_only").getString();
         gfx.drawString(font,Component.literal(
                 font.plainSubstrByWidth(legend,Math.max(35,left-16))),
                 8,49,0xffbcbcbc);

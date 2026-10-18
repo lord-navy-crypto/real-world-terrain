@@ -12,5 +12,13 @@
   "realscale.atlas.chunky_found": "已安装 Chunky：进入该世界后逐条执行命令",
   "realscale.atlas.chunky_missing": "可选安装 Chunky，在游戏内进行区块预生成",
   "realscale.atlas.copy_chunky": "复制 Chunky 命令",
-  "realscale.atlas.copied": "命令已复制；请进入世界后逐条执行"
+  "realscale.atlas.copied": "命令已复制；请进入世界后逐条执行",
+  "realscale.atlas.draw_start": "后台绘图",
+  "realscale.atlas.draw_pause": "暂停",
+  "realscale.atlas.draw_resume": "继续",
+  "realscale.atlas.draw_cancel": "取消",
+  "realscale.atlas.draw_idle": "当前没有正在运行的绘图任务",
+  "realscale.atlas.draw_started": "已开始后台绘图",
+  "realscale.atlas.draw_busy": "已经有绘图任务正在运行",
+  "realscale.atlas.draw_real_legend": "已保存区块的抽样高度图"
 }
