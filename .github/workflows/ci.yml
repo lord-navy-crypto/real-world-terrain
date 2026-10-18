@@ -45,6 +45,14 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/CaveHabitatMath.java \
             neoforge/src/test/java/org/realscale/neoforge/HabitatMathSmoke.java
           java -cp build/habitat-smoke org.realscale.neoforge.HabitatMathSmoke
+      - name: Test read-only World Atlas region indexing and GUI integration
+        run: |
+          python3 -m unittest discover -s qa -p 'test_world_atlas_feature.py' -v
+          mkdir -p build/world-atlas-smoke
+          javac -d build/world-atlas-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/WorldAtlasRegionIndex.java \
+            neoforge/src/test/java/org/realscale/neoforge/WorldAtlasRegionIndexSmoke.java
+          java -cp build/world-atlas-smoke org.realscale.neoforge.WorldAtlasRegionIndexSmoke
       - name: Validate experimental navigable waterways and hovercraft assets
         run: python3 -m unittest discover -s qa -p 'test_navigable_waterway_hovercraft.py' -v
       - name: Verify authentic USGS 3DEP import geometry and measured-only DEM contracts

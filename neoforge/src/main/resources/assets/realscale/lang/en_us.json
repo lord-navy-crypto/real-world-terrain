@@ -1,5 +1,16 @@
 {
   "generator.realscale.realism_max_three_realms": "RealScale Grand Dimensions — Overworld, Nether & End (Experimental)",
   "item.realscale.hovercraft": "Hovercraft",
-  "entity.realscale.hovercraft": "Hovercraft"
+  "entity.realscale.hovercraft": "Hovercraft",
+  "realscale.atlas.entry": "World Atlas",
+  "realscale.atlas.title": "RealScale World Atlas",
+  "realscale.atlas.empty": "No local saved worlds found",
+  "realscale.atlas.back": "Back",
+  "realscale.atlas.refresh": "Refresh map",
+  "realscale.atlas.scanning": "Reading saved regions...",
+  "realscale.atlas.coverage_only": "Saved chunk coverage — not a terrain image",
+  "realscale.atlas.chunky_found": "Chunky installed: run copied commands after entering this world",
+  "realscale.atlas.chunky_missing": "Chunky optional: install it to pre-generate in game",
+  "realscale.atlas.copy_chunky": "Copy Chunky steps",
+  "realscale.atlas.copied": "Commands copied; run them one by one in the world"
 }
