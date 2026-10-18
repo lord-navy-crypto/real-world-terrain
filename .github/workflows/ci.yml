@@ -223,6 +223,19 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/SkyIslandSiteCache.java \
             neoforge/src/test/java/org/realscale/neoforge/SkyIslandSiteCacheSmoke.java
           java -cp build/tva-sky-cache org.realscale.neoforge.SkyIslandSiteCacheSmoke
+      - name: Verify far-distance cave, mountain and sky worldgen parity
+        run: |
+          mkdir -p build/far-worldgen-smoke
+          javac -d build/far-worldgen-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/MountainReliefSiteCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java \
+            neoforge/src/main/java/org/realscale/neoforge/GrandNetherCaveNetwork.java \
+            neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
+            neoforge/src/main/java/org/realscale/neoforge/SkyIslandSiteCache.java \
+            neoforge/src/test/java/org/realscale/neoforge/FarDistanceWorldgenSmoke.java
+          java -cp build/far-worldgen-smoke org.realscale.neoforge.FarDistanceWorldgenSmoke
       - name: Verify NeoForge runClient task is registered
         working-directory: neoforge
         run: |
