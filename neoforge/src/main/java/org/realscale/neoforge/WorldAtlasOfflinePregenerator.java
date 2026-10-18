@@ -243,12 +243,14 @@ public final class WorldAtlasOfflinePregenerator {
                         // Explicitly use the OVERWORLD key, not world folder,
                         // as Chunky's NeoForgeWorld.getName() returns a
                         // dimension identifier such as minecraft:overworld.
-                        s.command("chunky start minecraft:overworld square "+
-                                s.x+" "+s.z+" "+s.radius);
+                        // The subprocess may ACK before the console write
+                        // returns. Mark REQUESTED *before* sending, otherwise
+                        // a confirmed RUNNING can be overwritten by REQUESTED.
                         startedChunky=true;
-                        // A console request is not proof that Chunky accepted it.
                         s.state("START_REQUESTED",
                                 "Awaiting Chunky task-start acknowledgement");
+                        s.command("chunky start minecraft:overworld square "+
+                                s.x+" "+s.z+" "+s.radius);
                     } else if(startedChunky && !s.stopping.get() &&
                             safe.contains("Task started in ")) {
                         s.state("RUNNING",safe);
@@ -397,7 +399,11 @@ public final class WorldAtlasOfflinePregenerator {
                  !s.status.state().equals("PAUSED") &&
                  !(s.status.state().equals("NEEDS_ATTENTION") &&
                    command.startsWith("chunky continue"))))return false;
-        try {s.command(command);s.state(state,command+" requested");return true;}
+        // Set REQUESTED before subprocess I/O: the reply reader can receive
+        // Chunky's ACK concurrently, and must be able to transition to
+        // PAUSED/RUNNING without this caller overwriting it afterward.
+        s.state(state,command+" requested");
+        try {s.command(command);return true;}
         catch(IOException e){s.state("NEEDS_ATTENTION",e.getMessage());return false;}
     }
     private static String limit(String input) {
