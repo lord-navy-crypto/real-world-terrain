@@ -12,6 +12,10 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.stream.Stream;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -160,6 +164,11 @@ public final class WorldAtlasOfflinePregenerator {
         if(!hasMod(mods,"chunky") || !hasMod(mods,"realscale"))
             throw new IOException("Offline NeoForge server needs matching "+
                     "RealScale and Chunky JARs in its mods folder");
+        // Do NOT risk writing an existing 2096-high world with a different
+        // RealScale build. Exact binary equality matters, not JAR filenames.
+        // Client-only mods may legitimately differ; full dependency
+        // compatibility still requires explicit real-server validation.
+        requireMatchingRealScaleBinary(gameDirectory.resolve("mods"),mods);
         Properties properties=new Properties();
         Path config=server.resolve("server.properties");
         if(!Files.isRegularFile(config,LinkOption.NOFOLLOW_LINKS))
@@ -187,6 +196,52 @@ public final class WorldAtlasOfflinePregenerator {
         SUPERVISOR.execute(()->supervise(task,launcher,base,
                 target.getFileName().toString()));
         return true;
+    }
+
+    private static void requireMatchingRealScaleBinary(
+            Path clientMods,Path serverMods) throws IOException {
+        Path client=uniqueMod(clientMods,"realscale");
+        Path server=uniqueMod(serverMods,"realscale");
+        if(client==null || server==null)
+            throw new IOException("Cannot verify installed RealScale JAR "+
+                    "in both client and offline server mods; "+
+                    "copy the exact same mod build before starting");
+        byte[] a=digest(client),b=digest(server);
+        if(!MessageDigest.isEqual(a,b))
+            throw new IOException("RealScale client/server JAR bytes differ; "+
+                    "refusing to write this existing world with "+
+                    "a different generator version");
+    }
+
+    private static Path uniqueMod(Path folder,String prefix) throws IOException {
+        if(!Files.isDirectory(folder,LinkOption.NOFOLLOW_LINKS))return null;
+        try(Stream<Path> list=Files.list(folder)) {
+            List<Path> matches=list.filter(p ->
+                    Files.isRegularFile(p,LinkOption.NOFOLLOW_LINKS) &&
+                    p.getFileName().toString().toLowerCase(Locale.ROOT)
+                      .startsWith(prefix) &&
+                    p.getFileName().toString().toLowerCase(Locale.ROOT)
+                      .endsWith(".jar")).limit(2).toList();
+            if(matches.size()>1)
+                throw new IOException("Multiple "+prefix+" JARs in "+folder+
+                        "; remove duplicates before opening any world");
+            return matches.isEmpty()?null:matches.get(0);
+        }
+    }
+
+    private static byte[] digest(Path path) throws IOException {
+        try {
+            MessageDigest sha=MessageDigest.getInstance("SHA-256");
+            try(var input=Files.newInputStream(path)) {
+                byte[] buffer=new byte[16384];
+                int n;
+                while((n=input.read(buffer))!=-1)
+                    sha.update(buffer,0,n);
+            }
+            return sha.digest();
+        }catch(NoSuchAlgorithmException ex) {
+            throw new IOException("JVM does not support SHA-256",ex);
+        }
     }
 
     private static boolean hasMod(Path folder,String prefix) throws IOException {
