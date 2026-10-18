@@ -238,6 +238,24 @@ def main(root,expected_preset,profile):
                     await_full_chunk(rcon,x,z)
                     rcon.send("save-all flush")
                     rcon.send(f"execute in minecraft:overworld run forceload remove {x} {z}")
+            elif profile=="distant":
+                # A successful /forceload response means "ticket added",
+                # NOT "2096-high target chunk is finished." This false green
+                # was masking incomplete remote worldgen for some seeds.
+                # Keep ONE overall 180s budget covering both the command
+                # and the loaded-block acknowledgement: no timeout raising.
+                budget_start=time.monotonic()
+                for command in commands:
+                    rcon.send(command)
+                    remaining=180.0-(time.monotonic()-budget_start)
+                    if remaining<=0:
+                        raise TimeoutError(
+                            "Distant 180s budget exhausted after forceload ACK"
+                            " but before fully-loaded chunk verification")
+                    await_full_chunk(rcon,1024,1024,
+                                     timeout_seconds=remaining)
+                print("QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS: PASS",
+                      flush=True)
             else:
                 for command in commands:
                     rcon.send(command)
