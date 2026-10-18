@@ -45,8 +45,14 @@ using the official NeoForge installer, in:
 
 Copy every additional worldgen dependency you intentionally use in your
 normal RealScale world into this server's `mods` directory too, with
-compatible versions. The launcher checks the two core mod filenames exist;
-**it cannot automatically prove all optional mod versions match**.
+compatible versions. The launcher checks that Chunky is present and that
+the RealScale server JAR is **SHA-256 binary-identical** to the RealScale
+JAR in the current Minecraft instance's `mods` folder. If the client
+runs RealScale from an unusual launcher path, the button refuses to start
+until the exact locally installed JAR can be verified. It also refuses
+duplicate RealScale JARs. **It cannot yet automatically prove all optional
+worldgen mod versions or datapacks match**, so back up your save and
+verify other dependencies before running the server.
 Back up the save before ever switching an existing world between differing
 server/client modpacks. Never start a world with unknown missing biome or
 block registries merely to test performance.
@@ -80,13 +86,21 @@ this button does not repair those automatically.
    Minecraft saves folder and `--world` pointed at the selected existing
    save name. After the server reports ready, Atlas submits the one
    explicit Chunky selection. The screen displays status/log messages.
-6. Use **暂停生成 / 继续生成** to delegate to Chunky.
-7. **保存停止 / Save + stop** first requests `chunky pause`, waits for
-   Chunky's actual task-stop confirmation (the worker writes resumable
-   state), then asks the server to `save-all flush` and `stop`. Wait
-   until **STOPPED** and the process is gone before opening this world
-   normally. If acknowledgement is missing, the server remains running
-   to protect task progress; resolve it via its own console.
+6. Use **暂停生成 / 继续生成** to delegate to Chunky. The
+   controller treats `Task paused` only as an **initial acknowledgement**;
+   the UI remains in PAUSE_DRAINING until `chunky progress` confirms
+   there are no active tasks (after Chunky saves the resume state).
+   **Continue stays unavailable until that confirmed pause is complete**.
+7. **保存停止 / Save + stop** requests `chunky pause`. **Chunky prints
+   "Task stopped" BEFORE `GenerationTask.saveTask(...)`**, so the
+   controller must NOT shut the server down immediately. Instead it polls
+   Chunky's own `chunky progress` until `No tasks running.` confirms
+   that the task has been saved and removed from Chunky's active map.
+   Only then does it send `save-all flush` and `stop`. Wait until
+   **STOPPED** and the process is gone before opening the world.
+   If confirmation never arrives, the server stays active and the
+   task reports DRAINING/NEEDS_ATTENTION; investigate the console before
+   attempting to open the save elsewhere.
 8. The Atlas saved-region map and background saved-heightmap painter
    can be refreshed after the dedicated server has stopped.
 
@@ -111,9 +125,17 @@ that its saved selection is the intended one.
 - This does not remove the previously observed 180-second Measured/USGS
   generator hotspot or guarantee FPS improvement. Instead it moves
   heavy generation out of the interactive playing session.
-- Chunky may take many minutes or hours for a large radius; the UI does
-  not fabricate progress percentages. Any percentage shown must come from
-  Chunky's actual console output.
+- Chunky may take many minutes or hours for a large radius; the
+  controller polls Chunky's real console status even if the Atlas screen is
+  closed. Reported **completion percent and chunks per second** come only
+  from actual `Task running for minecraft:overworld. Processed: ...`
+  output, never from estimated coverage, command dispatch or a timer.
+- If Chunky finishes naturally, the controller waits for the same
+  persisted-task removal acknowledgement before stopping the server.
+- If the Minecraft app quits while a long chunk remains in flight, the
+  shutdown hook can only *request* saving and wait briefly. There is no
+  guarantee that a hung child exits; check the save lock and maintain
+  backups. This is still an experimental feature.
 
 ## Tests and release gates
 

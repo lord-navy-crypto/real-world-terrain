@@ -246,7 +246,13 @@ public final class WorldAtlasMapScreen extends Screen {
         int statusY=Math.min(top+size+2,height-140);
         var serverJob=visibleGeneration();
         if(serverJob!=null && !serverJob.terminal()) {
-            String status=serverJob.state()+": "+serverJob.detail();
+            // These statistics are parsed from Chunky's real console.
+            // A sent start command or scheduled radius is NOT progress.
+            var progress=WorldAtlasOfflinePregenerator.progress();
+            String observed=progress==null?"":String.format(
+                    java.util.Locale.ROOT,"%.2f%% | %.1f cps | ",
+                    progress.percent(),progress.chunksPerSecond());
+            String status=observed+serverJob.state()+": "+serverJob.detail();
             gfx.drawCenteredString(font,Component.literal(
                     font.plainSubstrByWidth(status,Math.max(130,width-16))),
                     width/2,statusY,0xffe2d698);
