@@ -281,10 +281,10 @@ def navigable_water_components(water_columns, max_surface_step=0, min_depth=2):
 
 
 def underlying_ground_below_stem(chunk, dx, dz, top_y, min_y):
-    """Resolve a saved tree trunk/bamboo tip to the actual supporting ground.
+    """Resolve saved tall jungle vegetation to the actual supporting ground.
 
     MOTION_BLOCKING_NO_LEAVES intentionally ignores foliage, but it DOES
-    include vertical logs and bamboo. On a dense jungle this yields many
+    include vertical logs, bamboo and hanging vines. On a dense jungle these yield many
     artificial 10-25-block "ground" spikes. Only those explicit vegetation
     stems may be traversed, with gaps of air/leaves between branches.
 
@@ -294,7 +294,7 @@ def underlying_ground_below_stem(chunk, dx, dz, top_y, min_y):
     so an unsupported floating structure is still flagged by terrain QA.
     """
     def stem(name):
-        if name == "minecraft:bamboo" or name == "minecraft:bamboo_block":
+        if name in ("minecraft:vine", "minecraft:bamboo", "minecraft:bamboo_block"):
             return True
         if not name.startswith("minecraft:"):
             return False
@@ -784,7 +784,7 @@ def scan(root,preset="realism_max"):
       "surface_quality_gates":quality,
       "terrain_heightmap":"MOTION_BLOCKING_NO_LEAVES",
       "stem_corrected_ground_columns":stem_corrected_columns,
-      "stem_correction_note":"Only logged/bamboo columns are traced to persisted supporting material; stone/soil/spikes remain tested.",
+      "stem_correction_note":"Only logged/bamboo/vine columns are traced to persisted supporting material; stone/soil/spikes remain tested.",
       "ground_heightmap_columns":len(terrain_heights),
       "world_surface_raw_spike_count":raw_impulses["count"],
       "world_surface_raw_spike_examples":raw_impulses["examples"],
