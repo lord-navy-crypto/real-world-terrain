@@ -577,9 +577,11 @@ public final class WorldAtlasOfflinePregenerator {
     private static boolean send(String command,String state) {
         Session s=active;
         if(s==null||s.status.terminal()||s.stopping.get() ||
-                s.process==null||!s.process.isAlive() ||
-                (!s.status.state().equals("RUNNING") &&
-                 !s.status.state().equals("PAUSED")))return false;
+                s.process==null||!s.process.isAlive())return false;
+        String current=s.status.state();
+        boolean allowed=command.startsWith("chunky pause")
+                ?current.equals("RUNNING"):current.equals("PAUSED");
+        if(!allowed)return false;
         // Set REQUESTED before subprocess I/O: the reply reader can receive
         // Chunky's ACK concurrently, and must be able to transition to
         // PAUSED/RUNNING without this caller overwriting it afterward.
