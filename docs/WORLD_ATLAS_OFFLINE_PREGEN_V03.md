@@ -45,8 +45,14 @@ using the official NeoForge installer, in:
 
 Copy every additional worldgen dependency you intentionally use in your
 normal RealScale world into this server's `mods` directory too, with
-compatible versions. The launcher checks the two core mod filenames exist;
-**it cannot automatically prove all optional mod versions match**.
+compatible versions. The launcher checks that Chunky is present and that
+the RealScale server JAR is **SHA-256 binary-identical** to the RealScale
+JAR in the current Minecraft instance's `mods` folder. If the client
+runs RealScale from an unusual launcher path, the button refuses to start
+until the exact locally installed JAR can be verified. It also refuses
+duplicate RealScale JARs. **It cannot yet automatically prove all optional
+worldgen mod versions or datapacks match**, so back up your save and
+verify other dependencies before running the server.
 Back up the save before ever switching an existing world between differing
 server/client modpacks. Never start a world with unknown missing biome or
 block registries merely to test performance.
