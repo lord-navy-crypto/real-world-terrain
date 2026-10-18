@@ -97,7 +97,11 @@ class WorldgenGraphIntegrity(unittest.TestCase):
         self.assertEqual(source_id(old["final_density"]),"realscale:usgs_big_sur/terrain_density")
         wrapped=new["final_density"]
         self.assertEqual(wrapped["type"],"realscale:grand_overworld_caverns")
-        self.assertEqual(wrapped["base"]["input"],"realscale:usgs_big_sur_v2/terrain_density")
+        self.assertEqual(wrapped["base"]["type"],"realscale:range_min_exact")
+        self.assertEqual(wrapped["base"]["base"],"realscale:usgs_big_sur_v2/terrain_density")
+        self.assertEqual(wrapped["base"]["cave"],"realscale:usgs_big_sur_v2/cave_density")
+        self.assertEqual((wrapped["base"]["min_inclusive"],
+                          wrapped["base"]["max_exclusive"]),(0.25,4))
         self.assertEqual(wrapped["small_caves"],"realscale:realism_max/cave_core")
         self.assertEqual(load(DENSITY/"usgs_big_sur/terrain_density.json")["type"],
                          "realscale:dem_density")

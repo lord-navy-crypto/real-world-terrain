@@ -33,10 +33,16 @@ class OverworldCaveContracts(unittest.TestCase):
                     self.assertEqual(noise["noise_router"]["depth"],
                                      f"realscale:{preset}/terrain_density")
                 else:
-                    self.assertEqual(node["base"]["type"],"minecraft:range_choice")
-                    self.assertEqual(node["base"]["input"],
+                    # The original range_choice(min(T, caves), T) is fused
+                    # to compute identical T once, preserving both cave
+                    # and DEM inputs and the exact inclusive/exclusive gate.
+                    self.assertEqual(node["base"]["type"],"realscale:range_min_exact")
+                    self.assertEqual(node["base"]["base"],
                                      "realscale:usgs_big_sur_v2/terrain_density")
-                    self.assertEqual(node["base"]["when_in_range"]["type"],"minecraft:min")
+                    self.assertEqual(node["base"]["cave"],
+                                     "realscale:usgs_big_sur_v2/cave_density")
+                    self.assertEqual(node["base"]["min_inclusive"],0.25)
+                    self.assertEqual(node["base"]["max_exclusive"],4)
 
     def test_old_legacy_worldgen_remains_unmodified(self):
         for name in ("realism_max","himalayan","grand_canyon",

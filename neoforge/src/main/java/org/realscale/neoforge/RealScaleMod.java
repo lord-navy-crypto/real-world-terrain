@@ -20,6 +20,7 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "grand_end_density"), GrandEndDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "grand_nether_caverns"), GrandNetherCaverns.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "grand_overworld_caverns"), GrandOverworldCaverns.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "range_min_exact"), RangeMinDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "mountain_relief"), MountainReliefDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "ridge_erosion"), RidgeErosionDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "strata"), StrataDensity.MAP_CODEC);
