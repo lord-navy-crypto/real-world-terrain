@@ -434,11 +434,12 @@ public final class WorldAtlasOfflinePregenerator {
                                 "Chunky not active on server; stop and verify mods");
                     }else if(!s.stopping.get() && startedChunky &&
                             (safe.contains("chunk") || safe.contains("%"))) {
-                        if(observed!=null) {
+                        // Telemetry must never overwrite command-transition
+                        // states such as PAUSE_REQUESTED or PAUSE_DRAINING.
+                        // Otherwise an in-flight progress line could re-enable
+                        // Continue before Chunky has persisted the paused task.
+                        if(s.status.state().equals("RUNNING"))
                             s.state("RUNNING",safe);
-                        }else {
-                            s.state(s.status.state(),safe);
-                        }
                     }
                     if(!s.stopping.get() &&
                             safe.contains("Task finished for minecraft:overworld")) {
