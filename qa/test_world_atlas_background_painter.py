@@ -59,8 +59,8 @@ class WorldAtlasBackgroundPainterTests(unittest.TestCase):
             self.assertNotIn(forbidden,source)
 
     def test_bilingual_ui(self):
-        keys=("warmup_start","warmup_starting","warmup_busy",
-              "draw_start","draw_pause","draw_resume","draw_cancel",
+        keys=("warmup_start","warmup_starting","warmup_busy","busy_shared_io",
+              "draw_start,"draw_pause","draw_resume","draw_cancel",
               "draw_started","draw_busy","draw_idle","draw_real_legend")
         for filename in ("en_us.json","zh_cn.json"):
             lang=json.loads((LANG/filename).read_text())
