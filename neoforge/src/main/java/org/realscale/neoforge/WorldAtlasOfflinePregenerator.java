@@ -96,6 +96,7 @@ public final class WorldAtlasOfflinePregenerator {
         volatile Status status;
         volatile Progress progress;
         volatile boolean waitingForTaskRemoval;
+        volatile boolean pausedAwaitingTaskSave;
         volatile boolean saveStopIssued;
         volatile boolean cleanStopRequested;
         volatile ScheduledFuture<?> pendingChecks;
@@ -312,7 +313,20 @@ public final class WorldAtlasOfflinePregenerator {
                         armChecks(s);
                     } else if(!s.stopping.get() &&
                             safe.contains("Task paused for minecraft:overworld")) {
-                        s.state("PAUSED",safe);
+                        // Chunky's 'Task paused' is emitted by the command
+                        // handler BEFORE its worker writes the resume task.
+                        // Do not let 'Continue' race that asynchronous save.
+                        s.pausedAwaitingTaskSave=true;
+                        s.state("PAUSE_DRAINING",
+                                "Waiting for paused Chunky task to persist");
+                        armChecks(s);
+                    } else if(!s.stopping.get() &&
+                            s.pausedAwaitingTaskSave &&
+                            safe.contains("No tasks running.")) {
+                        // GenerationTask.saveTask -> map.remove -> Progress.
+                        s.pausedAwaitingTaskSave=false;
+                        s.state("PAUSED",
+                                "Chunky progress saved; safe to continue");
                     } else if(!s.stopping.get() &&
                             safe.contains("Task continuing for minecraft:overworld")) {
                         s.state("RUNNING",safe);
@@ -420,7 +434,8 @@ public final class WorldAtlasOfflinePregenerator {
             // from Chunky's task map AFTER saveTask() returns.
             if((s.stopping.get() && s.waitingForTaskRemoval) ||
                     (!s.stopping.get() &&
-                     s.status.state().equals("RUNNING"))) {
+                     (s.pausedAwaitingTaskSave ||
+                      s.status.state().equals("RUNNING")))) {
                 synchronized(s) {
                     // Serialize telemetry with save-all/stop: the periodic
                     // watcher must never enqueue another Chunky command
