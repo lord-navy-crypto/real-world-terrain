@@ -30,16 +30,11 @@
     "final_density": {
       "type": "realscale:grand_overworld_caverns",
       "base": {
-        "type": "minecraft:range_choice",
-        "input": "realscale:usgs_big_sur_v2/terrain_density",
+        "type": "realscale:range_min_exact",
+        "base": "realscale:usgs_big_sur_v2/terrain_density",
+        "cave": "realscale:usgs_big_sur_v2/cave_density",
         "min_inclusive": 0.25,
-        "max_exclusive": 4,
-        "when_in_range": {
-          "type": "minecraft:min",
-          "argument1": "realscale:usgs_big_sur_v2/terrain_density",
-          "argument2": "realscale:usgs_big_sur_v2/cave_density"
-        },
-        "when_out_of_range": "realscale:usgs_big_sur_v2/terrain_density"
+        "max_exclusive": 4
       },
       "warp": {
         "type": "minecraft:noise",
