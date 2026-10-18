@@ -142,7 +142,7 @@ class SavedGroundHeightmapTest(unittest.TestCase):
         # At x=8192, height discontinuity crosses a real chunk boundary
         # in every z row. A high mean seam ratio must remain a failure.
         heights={(x,z):(240 if x>=8192 else 75)
-                 for x in range(8180,8205) for z in range(-130,-90)}
+                 for x in range(8180,8205) for z in range(-350,351)}
         delta,grid_edge,grid_inner,edge,inner=adjacent_height_deltas(heights)
         quality=terrain_quality_gates(edge,inner,grid_edge,grid_inner,
                                       0,len(heights),0)
