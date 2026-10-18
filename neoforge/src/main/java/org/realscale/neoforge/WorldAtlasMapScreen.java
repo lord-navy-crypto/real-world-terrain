@@ -29,7 +29,6 @@ public final class WorldAtlasMapScreen extends Screen {
     private String message="";
     private boolean chunkyLoaded;
     private Button pauseDrawButton;
-    private int offlinePollTicks;
 
     public WorldAtlasMapScreen(Screen parent,Path save) {
         super(Component.translatable("realscale.atlas.title"));
@@ -239,11 +238,6 @@ public final class WorldAtlasMapScreen extends Screen {
                  message.equals(Component.translatable(
                         "realscale.atlas.warmup_starting").getString())))
             message="";
-        // Query Chunky status without joining its worker or the server thread.
-        if(++offlinePollTicks>=400) {
-            offlinePollTicks=0;
-            WorldAtlasOfflinePregenerator.pollProgress();
-        }
         if(pending==null || !pending.isDone())return;
         try {
             current=pending.join();
