@@ -159,11 +159,13 @@ public final class WorldAtlasMapScreen extends Screen {
                     font.plainSubstrByWidth(stats,Math.max(130,width-16))),
                     width/2,statusY,0xffc5e6d0);
         }
-        // A dedicated legend in the upper-right avoids colliding with
-        // bottom-row Back/Refresh controls in scaled Minecraft windows.
-        gfx.drawString(font,
-                Component.translatable("realscale.atlas.coverage_only"),
-                Math.max(8,width-260),49,0xffbcbcbc);
+        // Clip the legend into the LEFT margin of the map; no overlap
+        // with the coverage pixels or bottom navigation at GUI scale 2/3.
+        String legend=Component.translatable(
+                "realscale.atlas.coverage_only").getString();
+        gfx.drawString(font,Component.literal(
+                font.plainSubstrByWidth(legend,Math.max(35,left-16))),
+                8,49,0xffbcbcbc);
     }
 
     @Override public void onClose() {
