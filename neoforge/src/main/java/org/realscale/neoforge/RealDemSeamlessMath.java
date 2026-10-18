@@ -115,6 +115,58 @@ final class RealDemSeamlessMath {
         return result;
     }
 
+    /*
+     * A jigsaw height search samples many different X/Z columns across the
+     * same small USGS tile boundary. Although extendedHeight(x,z) is cached
+     * per FULL world column, each new exterior column can still re-evaluate
+     * the SAME clamped DEM edge or corner 2-3 times with bicubic splines.
+     *
+     * Memoize the pure measuredHeight(x,z) input itself, not a density value,
+     * and key by the exact DOUBLE bits. This reuses source samples across
+     * distinct exterior columns while retaining identical floating-point
+     * operations and preserving the 2048m DEM transition. Fixed bounded
+     * per-worker memory, no cross-world seed or generated chunk dependency.
+     */
+    private static final int EDGE_SAMPLE_CACHE_SIZE = 4096;
+    private static final class EdgeSampleCache {
+        final long[] xBits = new long[EDGE_SAMPLE_CACHE_SIZE];
+        final long[] zBits = new long[EDGE_SAMPLE_CACHE_SIZE];
+        final double[] values = new double[EDGE_SAMPLE_CACHE_SIZE];
+        final boolean[] valid = new boolean[EDGE_SAMPLE_CACHE_SIZE];
+        boolean lastValid;
+        long lastX, lastZ;
+        double lastValue;
+    }
+    private static final ThreadLocal<EdgeSampleCache> EDGE_SAMPLE_CACHE =
+            ThreadLocal.withInitial(EdgeSampleCache::new);
+
+    static double cachedMeasuredHeight(double x, double z) {
+        final long xb=Double.doubleToRawLongBits(x);
+        final long zb=Double.doubleToRawLongBits(z);
+        EdgeSampleCache cache=EDGE_SAMPLE_CACHE.get();
+        if(cache.lastValid && cache.lastX==xb && cache.lastZ==zb)
+            return cache.lastValue;
+        int hash=(int)(xb ^ (xb >>> 32));
+        hash ^= Integer.rotateLeft((int)(zb ^ (zb >>> 32)), 15);
+        hash ^= hash >>> 16;
+        int slot=hash & (EDGE_SAMPLE_CACHE_SIZE-1);
+        double result;
+        if(cache.valid[slot] && cache.xBits[slot]==xb && cache.zBits[slot]==zb) {
+            result=cache.values[slot];
+        } else {
+            result=measuredHeight(x,z);
+            cache.valid[slot]=true;
+            cache.xBits[slot]=xb;
+            cache.zBits[slot]=zb;
+            cache.values[slot]=result;
+        }
+        cache.lastValid=true;
+        cache.lastX=xb;
+        cache.lastZ=zb;
+        cache.lastValue=result;
+        return result;
+    }
+
     private RealDemSeamlessMath() {}
 
     private static double[][] loadHeights() {
@@ -192,16 +244,16 @@ final class RealDemSeamlessMath {
     static double extendedHeight(double x,double z) {
         double cx=limit(x,DEM.originX(),DEM.maxX());
         double cz=limit(z,DEM.originZ(),DEM.maxZ());
-        double center=measuredHeight(cx,cz);
+        double center=cachedMeasuredHeight(cx,cz);
         double originalCenter=center;
         double dx=x-cx,dz=z-cz;
         if(dx!=0.0) {
-            double neighbor=measuredHeight(cx+(dx<0?CELL:-CELL),cz);
+            double neighbor=cachedMeasuredHeight(cx+(dx<0?CELL:-CELL),cz);
             double slope=(neighbor-center)/(dx<0?CELL:-CELL);
             center+=limit(slope,-1.25,1.25)*taperedOutsideDisplacement(dx);
         }
         if(dz!=0.0) {
-            double neighbor=measuredHeight(cx,cz+(dz<0?CELL:-CELL));
+            double neighbor=cachedMeasuredHeight(cx,cz+(dz<0?CELL:-CELL));
             // Keep Z gradient independent of the X-axis extrapolation.
             double slope=(neighbor-originalCenter)/(dz<0?CELL:-CELL);
             center+=limit(slope,-1.25,1.25)*taperedOutsideDisplacement(dz);
