@@ -23,7 +23,8 @@ CORE=("realscale:tva_sacred_timeline_three_realms",
       "realscale:tva_alpine_three_realms",
       "realscale:tva_canyon_three_realms",
       "realscale:tva_measured_three_realms")
-MENU=CORE+("realscale:tva_wonders_invasion_three_realms",)
+MENU=CORE+("realscale:tva_wonders_invasion_three_realms",
+           "realscale:special_chongqing_sky_city")
 
 def read(path):
     return json.loads(path.read_text(encoding="utf-8"))
