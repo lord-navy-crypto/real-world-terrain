@@ -49,7 +49,10 @@ def inspect(mod_root):
             # Sample only a bounded spread, without treating an un-generated
             # JSON preset as evidence of real saved voxel content.
             inspected+=1
-            if len(samples)>=140 or (cx%5 or cz%5):continue
+            # Saved region may contain only a narrow band around the
+            # requested chunk; modulo-five sampling can MISS ALL samples.
+            # Instead inspect the first 140 genuine persisted columns.
+            if len(samples)>=140:continue
             observed=surface_height(chunk,8,8,min_y=-64,height=1024)
             if observed is None:continue
             top=get_block(chunk,8,observed,8)
@@ -61,7 +64,10 @@ def inspect(mod_root):
                             "observed_y":observed,
                             "top":top,"below":below,"deep":deep})
     if inspected<4 or len(samples)<3:
-        raise AssertionError("Insufficient genuinely saved Chunqing surface chunks")
+        raise AssertionError(
+            f"Insufficient genuine Chongqing Anvil samples: "
+            f"{inspected} region chunks in mapped area, "
+            f"{len(samples)} saved WORLD_SURFACE columns")
     bad=[s for s in samples
          if abs(s["observed_y"]-s["expected_y"])>12 or
             s["below"]!="minecraft:air" or
