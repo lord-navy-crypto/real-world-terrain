@@ -59,13 +59,18 @@ class AtlasOfflineTests(unittest.TestCase):
         self.assertIn("WorldAtlasOfflinePregenerator.pause()",src)
         self.assertIn("WorldAtlasOfflinePregenerator.resume()",src)
         self.assertIn("WorldAtlasOfflinePregenerator.stopAndSave()",src)
-        self.assertIn("WorldAtlasOfflinePregenerator.pollProgress()",src)
+        self.assertIn("WorldAtlasOfflinePregenerator.startWarmup(",src)
         self.assertIn("WorldAtlasOfflinePregenerator.status()",src)
+        self.assertNotIn("WorldAtlasOfflinePregenerator.pollProgress()",src)
+        backend=(SRC/"WorldAtlasOfflinePregenerator.java").read_text()
+        self.assertIn("scheduleAtFixedRate",backend)
+        self.assertIn("armChecks(s)",backend)
         self.assertNotIn("new ServerChunkCache",src)
 
     def test_localizations(self):
         keys=("pregen_start","pregen_pause","pregen_resume",
-              "pregen_stop","pregen_starting","pregen_busy")
+              "pregen_stop","pregen_starting","pregen_busy",
+              "warmup_start","warmup_starting","warmup_busy","busy_shared_io")
         for name in ("en_us","zh_cn"):
             src=json.loads((LANG/(name+".json")).read_text())
             for key in keys:
