@@ -34,7 +34,9 @@ class FarChunkCompletionGate(unittest.TestCase):
 
     def test_distant_profile_requires_full_loaded_and_shared_180s_budget(self):
         src=(ROOT/"qa/neoforge/rcon_worldgen_smoke.py").read_text()
-        distant=src.split('elif profile=="distant":',1)[-1]
+        # Two branches use this label: the earlier branch selects
+        # commands and the LAST branch verifies their completion.
+        distant=src.rsplit('elif profile=="distant":',1)[-1]
         self.assertIn('await_full_chunk(rcon,1024,1024,',distant)
         self.assertIn('remaining=180.0-(time.monotonic()-budget_start)',distant)
         self.assertIn("QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS",distant)
