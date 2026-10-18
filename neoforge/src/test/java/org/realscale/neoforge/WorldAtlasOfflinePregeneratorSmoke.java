@@ -64,7 +64,9 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
                     + "while IFS= read -r cmd; do\n"
                     + "  printf '%s\\n' \"$cmd\" >> atlas-commands.txt\n"
                     + "  case \"$cmd\" in\n"
-                    + "    *'chunky progress'*) printf 'Chunky progress 5%%\\n';;\n"
+                    + "    'chunky start'*) printf 'Task started in minecraft:overworld for square\\n';;\n"
+                    + "    'chunky pause'*) printf 'Task stopped for minecraft:overworld.\\n';;\n"
+                    + "    'chunky progress'*) printf 'Chunky progress 5%%\\n';;\n"
                     + "    stop) exit 0;;\n"
                     + "  esac\n"
                     + "done\n";
