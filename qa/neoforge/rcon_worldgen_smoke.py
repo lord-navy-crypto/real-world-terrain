@@ -267,12 +267,56 @@ def main(root,expected_preset,profile):
                         continue
                     pid=entry.split()[0]
                     if not pid.isdigit():continue
-                    threads=subprocess.run(
-                        ["jcmd",pid,"Thread.print"],capture_output=True,
-                        text=True,timeout=12)
-                    diagnostic=root/"build"/("rcon_"+profile+"_thread_dump.txt")
-                    diagnostic.write_text(threads.stdout+threads.stderr)
-                    print("RCON_TIMEOUT_THREAD_DUMP:",diagnostic,flush=True)
+                    # A single end-of-timeout dump is ambiguous: a worker
+                    # can be RUNNABLE inside a height probe, or WAITING on
+                    # another chunk's future. Compare three short snapshots
+                    # and print a bounded summary directly to Actions logs.
+                    # Preserve all raw JVM frames as artifacts for review.
+                    snapshots=[]
+                    dump_paths=[]
+                    for sample in range(3):
+                        threads=subprocess.run(
+                            ["jcmd",pid,"Thread.print"],capture_output=True,
+                            text=True,timeout=12)
+                        if threads.returncode!=0:
+                            print("RCON_JCMD_FAILED:",threads.stderr[-500:],
+                                  flush=True)
+                            break
+                        dump_path=root/"build"/(
+                            "rcon_"+profile+"_thread_dump_"+str(sample)+".txt")
+                        dump_path.write_text(threads.stdout+threads.stderr,
+                                             encoding="utf-8")
+                        dump_paths.append(dump_path)
+                        snapshots.append(threads.stdout)
+                        print("RCON_TIMEOUT_THREAD_DUMP:",dump_path,flush=True)
+                        if sample<2:
+                            time.sleep(1)
+                    if snapshots:
+                        from diagnose_worldgen_threads import diagnose_dumps
+                        report=diagnose_dumps(snapshots)
+                        report_path=root/"build"/(
+                            "rcon_"+profile+"_stall_fingerprint.json")
+                        report_path.write_text(json.dumps(report,indent=2),
+                                               encoding="utf-8")
+                        print("RCON_STALL_FINGERPRINT:",
+                              json.dumps({
+                                "samples":report["samples"],
+                                "thread_states":report["thread_states"],
+                                "marker_observations":report["marker_observations"],
+                                "top_leaf_frames":report["top_leaf_frames"],
+                                "hypotheses_not_proven_causes":
+                                    report["hypotheses_not_proven_causes"]
+                              },sort_keys=True),flush=True)
+                        for thread in report["sampled_threads"][:8]:
+                            print("RCON_STALL_THREAD:",json.dumps({
+                                "sample":thread["sample"],
+                                "name":thread["thread"],
+                                "state":thread["state"],
+                                "markers":thread["markers"],
+                                "frames":thread["frames"][:7]
+                            }),flush=True)
+                        print("RCON_STALL_FINGERPRINT_FILE:",report_path,
+                              flush=True)
             except (OSError,subprocess.TimeoutExpired) as dump_error:
                 print("RCON_TIMEOUT_DIAGNOSTIC_UNAVAILABLE:",repr(dump_error),flush=True)
     finally:
