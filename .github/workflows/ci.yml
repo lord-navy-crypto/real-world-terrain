@@ -85,6 +85,8 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/ClientFrameIntervalStats.java \
             neoforge/src/test/java/org/realscale/neoforge/ClientFrameIntervalStatsSmoke.java
           java -cp build/fps-interval-smoke org.realscale.neoforge.ClientFrameIntervalStatsSmoke
+      - name: Verify real-client GPU and cave/surface FPS A/B evidence gates
+        run: python3 -m unittest discover -s qa -p 'test_assess_real_client_render_ab.py' -v
       - name: Verify reproducible client FPS log comparisons
         run: python3 -m unittest discover -s qa -p 'test_compare_client_fps.py' -v
       - name: Verify read-only tall-world Section inventory (not GPU visibility)
