@@ -126,7 +126,7 @@ public final class WorldAtlasMapScreen extends Screen {
                 width/2,36,0xffaaaacc);
 
         int grid=WorldAtlasRegionIndex.MAP_CELLS;
-        int step=Math.max(2,Math.min(5,
+        int step=Math.max(1,Math.min(5,
                 Math.min((width-26)/grid,(height-140)/grid)));
         int size=grid*step,left=(width-size)/2,top=49;
         gfx.fill(left-2,top-2,left+size+2,top+size+2,0xff19252a);
@@ -143,25 +143,27 @@ public final class WorldAtlasMapScreen extends Screen {
                     Component.translatable("realscale.atlas.scanning"),
                     width/2,top+size/2,0xffffffff);
         }
-        int below=top+size+6;
-        if(current!=null) {
-            String stats=current.savedChunks()+" / "+current.targetChunks()
-                    +" saved slots ("+String.format(java.util.Locale.ROOT,
-                        "%.1f",current.percentSaved())+"%)";
-            gfx.drawCenteredString(font,Component.literal(stats),
-                    width/2,below,0xffc5e6d0);
+        // One bounded status row stays ABOVE the first footer button at
+        // height-79. Do not overpaint navigation on 240px GUI-scaled windows.
+        int statusY=Math.min(top+size+5,height-91);
+        if(!message.isEmpty()) {
+            gfx.drawCenteredString(font,Component.literal(
+                    font.plainSubstrByWidth(message,Math.max(130,width-16))),
+                    width/2,statusY,0xffffff99);
+        } else if(current!=null) {
+            String stats=current.savedChunks()+"/"+current.targetChunks()
+                    +" saved ("+String.format(java.util.Locale.ROOT,
+                        "%.1f",current.percentSaved())+"%)"
+                    +(chunkyLoaded?" | Chunky available":" | Chunky optional");
+            gfx.drawCenteredString(font,Component.literal(
+                    font.plainSubstrByWidth(stats,Math.max(130,width-16))),
+                    width/2,statusY,0xffc5e6d0);
         }
+        // Region location headers are NOT a heightmap/terrain rendering.
+        // The localized footer states that limitation explicitly.
         gfx.drawCenteredString(font,
                 Component.translatable("realscale.atlas.coverage_only"),
-                width/2,below+11,0xffbcbcbc);
-        if(!message.isEmpty())
-            gfx.drawCenteredString(font,Component.literal(
-                    font.plainSubstrByWidth(message,Math.max(160,width-20))),
-                    width/2,height-100,0xffffff99);
-        gfx.drawCenteredString(font,
-                Component.translatable(chunkyLoaded?
-                    "realscale.atlas.chunky_found":"realscale.atlas.chunky_missing"),
-                width/2,height-92,0xffaaaacc);
+                width/2,height-13,0xffbcbcbc);
     }
 
     @Override public void onClose() {
