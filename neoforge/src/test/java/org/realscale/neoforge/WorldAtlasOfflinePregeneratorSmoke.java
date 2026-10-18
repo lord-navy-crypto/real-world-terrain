@@ -72,7 +72,7 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
                     + "    'chunky continue'*) active=1; printf 'Task continuing for minecraft:overworld.\\n';;\n"
                     + "    'chunky pause'*)\n"
                     + "      if [ \"$active\" -eq 0 ]; then printf 'No tasks to pause.\\n';\n"
-                    + "      else active=2; checks=0; printf 'Task stopped for minecraft:overworld.\\n'; fi;;\n"
+                    + "      else active=2; checks=0; printf 'Task paused for minecraft:overworld.\\n'; printf 'Task stopped for minecraft:overworld.\\n'; fi;;\n"
                     + "    'chunky progress'*)\n"
                     + "      if [ \"$active\" -eq 2 ]; then\n"
                     + "        checks=$((checks+1))\n"
@@ -118,8 +118,12 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
             },"Server log ready marker must start Chunky generation");
             require(WorldAtlasOfflinePregenerator.pause(),
                     "Running Chunky task should support pause");
+            await(() -> WorldAtlasOfflinePregenerator.status().state().equals("PAUSED"),
+                    "Pause acknowledgement should precede continue");
             require(WorldAtlasOfflinePregenerator.resume(),
                     "Paused Chunky task should support continue");
+            await(() -> WorldAtlasOfflinePregenerator.status().state().equals("RUNNING"),
+                    "Continue acknowledgement should precede progress");
             require(WorldAtlasOfflinePregenerator.pollProgress(),
                     "Running task should have progress command");
             var progress=WorldAtlasOfflinePregenerator.parseChunkyProgress(
