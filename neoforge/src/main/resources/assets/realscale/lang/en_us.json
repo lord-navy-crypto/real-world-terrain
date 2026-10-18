@@ -29,5 +29,6 @@
   "realscale.atlas.pregen_busy": "Another offline pregeneration task is already active",
   "realscale.atlas.warmup_start": "Warm up",
   "realscale.atlas.warmup_starting": "Starting a 128-block warm-up pass...",
-  "realscale.atlas.warmup_busy": "A warm-up or pre-generation task is already active"
+  "realscale.atlas.warmup_busy": "A warm-up or pre-generation task is already active",
+  "realscale.atlas.busy_shared_io": "Finish or cancel the current task before starting another Atlas task"
 }
