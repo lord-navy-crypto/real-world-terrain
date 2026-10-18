@@ -200,8 +200,26 @@ public final class WorldAtlasOfflinePregenerator {
                         s.command("chunky start minecraft:overworld square "+
                                 s.x+" "+s.z+" "+s.radius);
                         startedChunky=true;
-                        s.state("RUNNING","Chunky requested for overworld: "+s.radius+
-                                " block radius; see live console status");
+                        // A console request is not proof that Chunky accepted it.
+                        s.state("START_REQUESTED",
+                                "Awaiting Chunky task-start acknowledgement");
+                    } else if(startedChunky && !s.stopping.get() &&
+                            safe.contains("Task started in ")) {
+                        s.state("RUNNING",safe);
+                    } else if(s.stopping.get() &&
+                            (safe.contains("Task stopped for ") ||
+                             safe.contains("No tasks to pause.") ||
+                             safe.contains("Task finished for "))) {
+                        // Chunky GenerationTask.run() writes resumable
+                        // saved task state AFTER the worker exits; merely
+                        // issuing 'pause' is NOT a durable-save guarantee.
+                        try {
+                            s.command("save-all flush");
+                            s.command("stop");
+                            s.state("STOPPING","Chunky stop confirmed; saving world");
+                        } catch(IOException ex) {
+                            s.state("NEEDS_ATTENTION",ex.getMessage());
+                        }
                     }else if(line.toLowerCase(Locale.ROOT).contains("confirm") &&
                             startedChunky && !s.stopping.get()) {
                         s.state("NEEDS_ATTENTION",
@@ -252,9 +270,10 @@ public final class WorldAtlasOfflinePregenerator {
         // either cancel launch or send stop immediately after attaching stdin.
         if(s.process==null || s.input==null)return true;
         try {
+            // Do NOT send 'stop' immediately: Chunky's pause is asynchronous.
+            // Wait for the actual "Task stopped" console acknowledgement
+            // after the generation worker saves its resumable task.
             s.command("chunky pause minecraft:overworld");
-            s.command("save-all flush");
-            s.command("stop");
             return true;
         } catch(IOException e) {
             s.state("NEEDS_ATTENTION",
