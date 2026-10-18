@@ -74,6 +74,31 @@ class SavedGroundHeightmapTest(unittest.TestCase):
             self.assertEqual(underlying_ground_below_stem({},0,0,95,-64),
                              (77,"minecraft:grass_block",True))
 
+    def test_hanging_vines_are_not_mistaken_for_ground_spikes(self):
+        # Vanilla vines can enter MOTION_BLOCKING_NO_LEAVES. Descend through
+        # persisted vegetation and air, stopping at the first true support.
+        blocks={y:"minecraft:vine" for y in range(80,94)}
+        blocks.update({79:"minecraft:air",78:"minecraft:jungle_leaves",
+                       71:"minecraft:grass_block",70:"minecraft:dirt"})
+        with patch("check_realism_continuity.get_block",
+                   side_effect=lambda chunk,dx,y,dz:blocks.get(y,"minecraft:air")):
+            self.assertEqual(underlying_ground_below_stem({},0,0,93,-64),
+                             (71,"minecraft:grass_block",True))
+
+    def test_vine_over_real_stone_spike_remains_a_real_cliff(self):
+        # Fix the measurement, not the threshold: a vine over a genuine
+        # isolated stone tower must still be counted as a geological spike.
+        blocks={100:"minecraft:vine",99:"minecraft:air",98:"minecraft:stone",
+                97:"minecraft:stone"}
+        with patch("check_realism_continuity.get_block",
+                   side_effect=lambda chunk,dx,y,dz:blocks.get(y,"minecraft:air")):
+            h,material,corrected=underlying_ground_below_stem({},0,0,100,-64)
+        self.assertEqual((h,material,corrected),(98,"minecraft:stone",True))
+        heights={(0,0):h,(-1,0):72,(1,0):72,(0,-1):72,(0,1):72}
+        surfaces={p:"minecraft:grass_block" for p in heights}
+        surfaces[(0,0)]=material
+        self.assertEqual(isolated_height_impulses(heights,surfaces,{})["count"],1)
+
     def test_stone_spike_never_removed_by_vegetation_normalization(self):
         blocks={92:"minecraft:stone",91:"minecraft:stone"}
         with patch("check_realism_continuity.get_block",
