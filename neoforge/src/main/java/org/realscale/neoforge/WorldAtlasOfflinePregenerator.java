@@ -278,16 +278,20 @@ public final class WorldAtlasOfflinePregenerator {
                             safe.contains("No tasks running.")) {
                         // ProgressCommand checks generationTasks AFTER
                         // GenerationTask.saveTask(...) and map.remove(...).
-                        if(!s.saveStopIssued) {
-                            s.saveStopIssued=true;
-                            try {
-                                s.command("save-all flush");
-                                s.command("stop");
-                                s.cleanStopRequested=true;
+                        synchronized(s) {
+                            if(!s.saveStopIssued) {
+                                s.saveStopIssued=true;
+                                if(s.pendingChecks!=null)
+                                    s.pendingChecks.cancel(false);
+                                try {
+                                    s.command("save-all flush");
+                                    s.command("stop");
+                                    s.cleanStopRequested=true;
                                 s.state("STOPPING",
                                         "Chunky task saved; flushing world and stopping");
-                            }catch(IOException ex){
-                                s.state("NEEDS_ATTENTION",ex.getMessage());
+                                }catch(IOException ex){
+                                    s.state("NEEDS_ATTENTION",ex.getMessage());
+                                }
                             }
                         }
                     }else if(!s.stopping.get() && startedChunky &&
@@ -362,8 +366,14 @@ public final class WorldAtlasOfflinePregenerator {
             if((s.stopping.get() && s.waitingForTaskRemoval) ||
                     (!s.stopping.get() &&
                      s.status.state().equals("RUNNING"))) {
-                try{s.command("chunky progress");}
-                catch(IOException e){s.state("NEEDS_ATTENTION",e.getMessage());}
+                synchronized(s) {
+                    // Serialize telemetry with save-all/stop: the periodic
+                    // watcher must never enqueue another Chunky command
+                    // *after* the final world-save handshake begins.
+                    if(s.saveStopIssued || s.status.terminal())return;
+                    try{s.command("chunky progress");}
+                    catch(IOException e){s.state("NEEDS_ATTENTION",e.getMessage());}
+                }
             }
         },2,4,TimeUnit.SECONDS);
     }
