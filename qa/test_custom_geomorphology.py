@@ -131,7 +131,9 @@ class CustomGeoTests(unittest.TestCase):
         gradle=(ROOT/"neoforge/build.gradle").read_text()
         meta=(base/"resources/META-INF/neoforge.mods.toml").read_text()
         entry=(base/"java/org/realscale/neoforge/RealScaleMod.java").read_text()
-        self.assertIn("maven.modrinth:XaDC71GB:u0UUKAE1",gradle)
+        # Exact official Lithostitched 1.8.0 NeoForge 21.1 test pin.
+        # Do not accept arbitrary versions: compatibility must be explicit.
+        self.assertIn("maven.modrinth:XaDC71GB:sPmtDq1X",gradle)
         # TVA canonical worlds intentionally DO NOT require Lithostitched.
         # Only exported opt-in Deep Geology profiles reference its codecs.
         self.assertNotIn('modId="lithostitched"',meta)
