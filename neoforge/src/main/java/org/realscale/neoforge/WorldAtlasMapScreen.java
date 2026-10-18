@@ -167,8 +167,10 @@ public final class WorldAtlasMapScreen extends Screen {
     }
 
     private WorldAtlasOfflinePregenerator.Status visibleGeneration() {
-        var status=WorldAtlasOfflinePregenerator.status();
-        return status!=null && status.world().equals(save)?status:null;
+        // Offline generation is process-global, not tied to the currently
+        // selected Atlas page. Keep the real job visible after navigating
+        // away so the user can safely pause or stop the save writer.
+        return WorldAtlasOfflinePregenerator.status();
     }
 
     private void startOfflineWarmup() {
@@ -302,7 +304,9 @@ public final class WorldAtlasMapScreen extends Screen {
             String observed=progress==null?"":String.format(
                     java.util.Locale.ROOT,"%.2f%% | %.1f cps | ",
                     progress.percent(),progress.chunksPerSecond());
-            String status=observed+serverJob.state()+": "+serverJob.detail();
+            String owner=serverJob.world().equals(save)?""
+                    :"["+serverJob.world().getFileName()+"] ";
+            String status=owner+observed+serverJob.state()+": "+serverJob.detail();
             gfx.drawCenteredString(font,Component.literal(
                     font.plainSubstrByWidth(status,Math.max(130,width-16))),
                     width/2,statusY,0xffe2d698);
@@ -321,7 +325,9 @@ public final class WorldAtlasMapScreen extends Screen {
                     font.plainSubstrByWidth(message,Math.max(130,width-16))),
                     width/2,statusY,0xffffff99);
         } else if(serverJob!=null) {
-            String status=serverJob.state()+": "+serverJob.detail();
+            String owner=serverJob.world().equals(save)?""
+                    :"["+serverJob.world().getFileName()+"] ";
+            String status=owner+serverJob.state()+": "+serverJob.detail();
             gfx.drawCenteredString(font,Component.literal(
                     font.plainSubstrByWidth(status,Math.max(130,width-16))),
                     width/2,statusY,0xffe2d698);
