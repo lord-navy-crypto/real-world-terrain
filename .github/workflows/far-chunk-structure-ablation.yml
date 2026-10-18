@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        preset: [tva_measured_three_realms, tva_sacred_timeline_three_realms]
+        preset: [tva_measured_three_realms, tva_sacred_timeline_three_realms, tva_natural_smoothing_probe]
         structures: ['true', 'false']
     name: ${{ matrix.preset }} / seed2 / structures=${{ matrix.structures }}
     runs-on: ubuntu-latest
