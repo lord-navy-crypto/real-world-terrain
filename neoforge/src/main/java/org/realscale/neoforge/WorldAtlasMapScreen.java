@@ -114,11 +114,17 @@ public final class WorldAtlasMapScreen extends Screen {
     }
 
     private void startDrawing() {
-        boolean started=WorldAtlasBackgroundPainter.start(save,
-                centerX,centerZ,RADII[radiusIndex]);
-        message=Component.translatable(started
-                ?"realscale.atlas.draw_started"
-                :"realscale.atlas.draw_busy").getString();
+        try {
+            boolean started=WorldAtlasBackgroundPainter.start(save,
+                    centerX,centerZ,RADII[radiusIndex]);
+            message=Component.translatable(started
+                    ?"realscale.atlas.draw_started"
+                    :"realscale.atlas.draw_busy").getString();
+        } catch(IllegalArgumentException ex) {
+            // Repeated panning near the world border must not crash the GUI.
+            message=ex.getMessage()==null?"Map center is out of bounds":
+                    ex.getMessage();
+        }
     }
 
     private void togglePause() {
@@ -200,7 +206,8 @@ public final class WorldAtlasMapScreen extends Screen {
                     +drawing.finished()+"/"+WorldAtlasBackgroundPainter.PIXELS
                     +" cells | "+drawing.available()+" height samples"
                     +" | "+String.format(java.util.Locale.ROOT,
-                        "%.1f",drawing.percent())+"%";
+                        "%.1f",drawing.percent())+"%"
+                    +(drawing.errors()>0?" | "+drawing.errors()+" unreadable":"");
             gfx.drawCenteredString(font,Component.literal(
                     font.plainSubstrByWidth(progress,Math.max(130,width-16))),
                     width/2,statusY,0xffc5e6d0);
