@@ -492,6 +492,7 @@ public final class WorldAtlasOfflinePregenerator {
                     s.state("WARMUP_READY",
                             "Warm-up saved; server remains open. Continue with Pre-generate or Save + stop.");
             }catch(IOException ex) {
+                s.awaitingWarmupDrain=false;
                 s.state("NEEDS_ATTENTION",
                         "Warm-up task ended but world flush failed: "+ex.getMessage());
             }
@@ -553,8 +554,10 @@ public final class WorldAtlasOfflinePregenerator {
     }
 
     private static boolean requestDrain(Session s) {
-        if(!s.stopping.compareAndSet(false,true))return false;
-        s.state("DRAINING","Waiting for Chunky durable task save...");
+        synchronized(s) {
+            if(!s.stopping.compareAndSet(false,true))return false;
+            s.state("DRAINING","Waiting for Chunky durable task save...");
+        }
         // When stop occurs before the child process starts, the supervisor
         // handles it without ever loading or modifying the save.
         if(s.process==null || s.input==null)return true;
