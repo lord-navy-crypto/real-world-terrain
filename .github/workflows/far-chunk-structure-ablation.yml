@@ -1,0 +1,85 @@
+name: RealScale far-chunk structure ablation (diagnostic only)
+on:
+  pull_request:
+    paths:
+      - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'qa/neoforge/diagnose_worldgen_threads.py'
+      - '.github/workflows/far-chunk-structure-ablation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: far-chunk-ablation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  matched-world-structure-ablation:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        preset: [tva_measured_three_realms, tva_sacred_timeline_three_realms]
+        structures: ['true', 'false']
+    name: ${{ matrix.preset }} / seed2 / structures=${{ matrix.structures }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Prepare identical height and seed with structures-only toggle
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=world
+          level-type=realscale:${{ matrix.preset }}
+          level-seed=2
+          generate-structures=${{ matrix.structures }}
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Timed virgin-chunk test (180s unchanged; failures retained)
+        id: test
+        continue-on-error: true
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . 'realscale:${{ matrix.preset }}' distant
+      - name: Write explicit ablation result
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p neoforge/build
+          printf 'preset=%s\nseed=2\ngenerate_structures=%s\nrcon_step_result=%s\n' \
+            '${{ matrix.preset }}' '${{ matrix.structures }}' \
+            '${{ steps.test.outcome }}' > neoforge/build/structure_ablation_result.txt
+          cat neoforge/build/structure_ablation_result.txt
+          echo 'Diagnostic ablation ONLY; normal release worlds still generate all structures.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload comparable worldgen thread dumps, logs and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FarChunk-Ablation-${{ matrix.preset }}-structures-${{ matrix.structures }}
+          path: |
+            neoforge/build/structure_ablation_result.txt
+            neoforge/build/rcon_distant_server.log
+            neoforge/build/rcon_distant_thread_dump_*.txt
+            neoforge/build/rcon_distant_stall_fingerprint.json
+            neoforge/run/**/level.dat
+            neoforge/run/**/region/*.mca
+          if-no-files-found: warn

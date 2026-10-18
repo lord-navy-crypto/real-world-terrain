@@ -54,7 +54,13 @@ class OverworldCaveContracts(unittest.TestCase):
         self.assertIn("if(original<=0.24)",codec)
         self.assertIn("entranceStrength(",codec)
         self.assertIn("if(y<110 || y>MAX_Y)return 0",layout)
-        self.assertIn("Math.floorMod(key,9L)!=0",layout)
+        # Entrance geometry is now cached per worldgen worker to avoid
+        # recomputing the SAME 768-cell key over 2096 vertical samples.
+        # Check the preserved 1-in-9 selection mathematically, regardless
+        # of whether the cache writes it as != 0 or == 0.
+        self.assertIn("active=Math.floorMod(key,9L)==0",layout)
+        self.assertIn("if(!e.active)return 0",layout)
+        self.assertIn("ThreadLocal<EntranceSite>",layout)
         self.assertIn("MIN_Y = -40",layout)
         self.assertIn("MAX_Y = 1920",layout)
         self.assertIn("CELL = 768",layout)

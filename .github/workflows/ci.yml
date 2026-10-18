@@ -60,6 +60,8 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_river_navigation_audit.py' -v
       - name: Validate saved ground heightmaps and reject real terrain spikes
         run: python3 -m unittest discover -s qa -p 'test_ground_heightmap_spikes.py' -v
+      - name: Verify far-distance JVM stall fingerprint parser
+        run: python3 -m unittest discover -s qa -p 'test_diagnose_worldgen_threads.py' -v
       - name: Verify worldgen timing is disabled by default and opt-in is bounded
         run: |
           mkdir -p build/worldgen-profiler-smoke
@@ -171,8 +173,10 @@ jobs:
           mkdir -p build/grand-overworld-cave-smoke
           javac -d build/grand-overworld-cave-smoke \
             neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java \
-            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldCaveNetworkSmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldCaveNetworkSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldEntranceCacheParitySmoke.java
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldCaveNetworkSmoke
+          java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldEntranceCacheParitySmoke
           python3 -m unittest discover -s qa -p 'test_grand_overworld_cave_integration.py' -v
       - name: Validate giant connected Grand Nether caverns and bit-exact optimization parity
         run: |

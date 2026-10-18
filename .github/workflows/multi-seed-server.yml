@@ -67,6 +67,8 @@ jobs:
             neoforge/realism_continuity_qa.json
             neoforge/build/rcon_distant_server.log
             neoforge/build/rcon_distant_thread_dump.txt
+            neoforge/build/rcon_distant_thread_dump_*.txt
+            neoforge/build/rcon_distant_stall_fingerprint.json
             neoforge/run/**/level.dat
             neoforge/run/**/region/*.mca
             neoforge/run/**/logs/latest.log

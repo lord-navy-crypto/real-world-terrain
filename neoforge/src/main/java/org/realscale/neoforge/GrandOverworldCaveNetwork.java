@@ -115,6 +115,37 @@ public final class GrandOverworldCaveNetwork {
         }
     }
     private static final ThreadLocal<Cache> LOCAL=ThreadLocal.withInitial(Cache::new);
+    /**
+     * Last-site-only, thread-confined memo for the rare cave entrance.
+     * This is a much cheaper lookup than repeatedly hashing the same cell
+     * and reconstructing its Hall during every Y sample of getBaseHeight.
+     * Key and hall never depend on world seed, chunk order, dimension state
+     * or current player location; cache eviction only affects CPU work.
+     */
+    private static final class EntranceSite {
+        int gx, gz;
+        boolean valid, active;
+        Hall anchor;
+        double width;
+
+        void load(int x,int z) {
+            if(valid && gx==x && gz==z)return;
+            gx=x; gz=z; valid=true;
+            long key=cellKey(x,z,0);
+            active=Math.floorMod(key,9L)==0;
+            if(!active) {
+                anchor=null;
+                width=0;
+                return;
+            }
+            int layer=(key&3L)==0 ? 1 : 0;
+            anchor=hall(x,z,layer);
+            width=11+Math.floorMod(key>>>17,8L);
+        }
+    }
+    private static final ThreadLocal<EntranceSite> ENTRANCES=
+            ThreadLocal.withInitial(EntranceSite::new);
+
 
     private static long mix(long value) {
         value^=value>>>30;value*=0xbf58476d1ce4e5b9L;
@@ -278,14 +309,15 @@ public final class GrandOverworldCaveNetwork {
     static double entranceStrength(double x,double y,double z) {
         if(y<110 || y>MAX_Y)return 0;
         int gx=(int)Math.floor(x/CELL),gz=(int)Math.floor(z/CELL);
-        long key=cellKey(gx,gz,0);
-        if(Math.floorMod(key,9L)!=0)return 0;
-        // Choose a low or middle fossil tier. Higher rock may remain inaccessible
-        // on very high summits; this is intentional and keeps alpine roofs.
-        int layer=(key&3L)==0 ? 1 : 0;
-        Hall anchor=hall(gx,gz,layer);
+        // A 2096-high height query re-enters this same horizontal cell
+        // hundreds of times. Cache ONLY immutable entrance parameters per
+        // worker; the original sin/winding and voxel density remain exact.
+        EntranceSite e=ENTRANCES.get();
+        e.load(gx,gz);
+        if(!e.active)return 0;
+        Hall anchor=e.anchor;
         if(y<anchor.y())return 0;
-        double width=11+Math.floorMod(key>>>17,8L);
+        double width=e.width;
         // With a maximum winding offset of 5/4 blocks, the vast majority
         // of voxels can reject the shaft without trigonometry or carving.
         if(Math.abs(x-anchor.x())>width+5 || Math.abs(z-anchor.z())>width+4)
