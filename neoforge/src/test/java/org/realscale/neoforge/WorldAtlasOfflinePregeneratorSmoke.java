@@ -58,15 +58,28 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
             Files.writeString(home.resolve("eula.txt"),"eula=true\n");
             Files.writeString(home.resolve("server.properties"),
                     "server-ip=127.0.0.1\nenable-rcon=false\n");
+            // Chunky's TASK_STOPPED arrives before its saveTask(); mimic
+            // a full drain, then create a durable saved-task marker.
             String fakeServer = "#!/bin/sh\n"
                     + "printf '%s\\n' \"$@\" > atlas-argv.txt\n"
                     + "printf '[Server thread/INFO]: Done (0.1s)! For help, type help\\n'\n"
+                    + "active=0\n"
+                    + "checks=0\n"
                     + "while IFS= read -r cmd; do\n"
                     + "  printf '%s\\n' \"$cmd\" >> atlas-commands.txt\n"
                     + "  case \"$cmd\" in\n"
-                    + "    'chunky start'*) printf 'Task started in minecraft:overworld for square\\n';;\n"
-                    + "    'chunky pause'*) printf 'Task stopped for minecraft:overworld.\\n';;\n"
-                    + "    'chunky progress'*) printf 'Chunky progress 5%%\\n';;\n"
+                    + "    'chunky start'*) active=1; printf 'Task started in minecraft:overworld for square\\n';;\n"
+                    + "    'chunky continue'*) active=1; printf 'Task continuing for minecraft:overworld.\\n';;\n"
+                    + "    'chunky pause'*)\n"
+                    + "      if [ \"$active\" -eq 0 ]; then printf 'No tasks to pause.\\n';\n"
+                    + "      else active=2; checks=0; printf 'Task stopped for minecraft:overworld.\\n'; fi;;\n"
+                    + "    'chunky progress'*)\n"
+                    + "      if [ \"$active\" -eq 2 ]; then\n"
+                    + "        checks=$((checks+1))\n"
+                    + "        if [ \"$checks\" -lt 2 ]; then printf 'Task running for minecraft:overworld. Processed: 5 chunks (2.00%%), ETA: 00:00:30, Rate: 1.5 cps, Current: 0, 0\\n';\n"
+                    + "        else active=0; printf 'saved\\n' > chunky-task.saved; printf 'No tasks running.\\n'; fi\n"
+                    + "      elif [ \"$active\" -eq 1 ]; then printf 'Task running for minecraft:overworld. Processed: 1,500 chunks (12.50%%), ETA: 00:01:20, Rate: 13.6 cps, Current: 3, 5\\n';\n"
+                    + "      else printf 'No tasks running.\\n'; fi;;\n"
                     + "    stop) exit 0;;\n"
                     + "  esac\n"
                     + "done\n";
@@ -109,13 +122,28 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
                     "Paused Chunky task should support continue");
             require(WorldAtlasOfflinePregenerator.pollProgress(),
                     "Running task should have progress command");
+            var progress=WorldAtlasOfflinePregenerator.parseChunkyProgress(
+                    "[Chunky] Task running for minecraft:overworld. Processed: "+
+                    "1,500 chunks (12.50%), ETA: 00:01:20, Rate: 13.6 cps, "+
+                    "Current: 3, 5");
+            require(progress!=null && progress.processedChunks()==1500 &&
+                    progress.percent()==12.5 && progress.chunksPerSecond()==13.6,
+                    "Actual Chunky console percentage must parse without guessing");
+            require(WorldAtlasOfflinePregenerator.parseChunkyProgress(
+                    "Invented completion: 91%") == null,
+                    "Do not accept invented completion data");
             require(WorldAtlasOfflinePregenerator.stopAndSave(),
                     "Stop must pause task then save server");
             await(() -> {
                 var status=WorldAtlasOfflinePregenerator.status();
                 return status!=null && status.state().equals("STOPPED");
             },"Server did not gracefully shut down");
+            require(Files.isRegularFile(home.resolve("chunky-task.saved")),
+                    "Stopping must wait for saved Chunky task marker");
             String commands=Files.readString(home.resolve("atlas-commands.txt"));
+            require(commands.lastIndexOf("chunky progress\\n")<
+                    commands.indexOf("save-all flush\\n"),
+                    "World save flush MUST wait for Chunky task-map removal");
             require(commands.contains("chunky start minecraft:overworld square 32 64 512\n"),
                     "Must use Chunky NeoForge's actual world key");
             require(commands.contains("chunky pause minecraft:overworld\n"),
