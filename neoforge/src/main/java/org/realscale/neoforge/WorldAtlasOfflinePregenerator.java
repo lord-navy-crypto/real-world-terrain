@@ -161,6 +161,10 @@ public final class WorldAtlasOfflinePregenerator {
                                   String worldName) {
         boolean startedChunky=false;
         try {
+            if(s.stopping.get()) {
+                s.state("STOPPED","Task stopped before launch");
+                return;
+            }
             s.state("STARTING","Launching local NeoForge (no player joins)");
             // Use an exact filesystem path, no shell-interpolated world names
             // or remote endpoints. Dedicated server keeps its own world lock.
@@ -177,6 +181,9 @@ public final class WorldAtlasOfflinePregenerator {
                         process.getOutputStream(),
                         java.nio.charset.StandardCharsets.UTF_8));
             }
+            // If the user pressed Stop while the server was starting, do
+            // not leave a detached world writer holding session.lock.
+            if(s.stopping.get())s.command("stop");
             try(BufferedReader output=new BufferedReader(new InputStreamReader(
                     process.getInputStream(),
                     java.nio.charset.StandardCharsets.UTF_8))) {
@@ -241,6 +248,9 @@ public final class WorldAtlasOfflinePregenerator {
         if(s==null || s.status.terminal())return false;
         if(!s.stopping.compareAndSet(false,true))return false;
         s.state("STOPPING","Pausing Chunky and saving the world...");
+        // The supervisor will see stopping=true before/during spawn and
+        // either cancel launch or send stop immediately after attaching stdin.
+        if(s.process==null || s.input==null)return true;
         try {
             s.command("chunky pause minecraft:overworld");
             s.command("save-all flush");
