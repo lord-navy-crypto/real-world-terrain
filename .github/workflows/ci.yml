@@ -173,8 +173,10 @@ jobs:
           mkdir -p build/grand-overworld-cave-smoke
           javac -d build/grand-overworld-cave-smoke \
             neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java \
-            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldCaveNetworkSmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldCaveNetworkSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldEntranceCacheParitySmoke.java
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldCaveNetworkSmoke
+          java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldEntranceCacheParitySmoke
           python3 -m unittest discover -s qa -p 'test_grand_overworld_cave_integration.py' -v
       - name: Validate giant connected Grand Nether caverns and bit-exact optimization parity
         run: |
