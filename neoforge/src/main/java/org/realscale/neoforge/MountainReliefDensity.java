@@ -94,11 +94,11 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
         classify(s);
         if (s.type == MountainReliefMath.NONE) return original;
         double continent = continents.compute(ctx);
-        if (MountainReliefMath.inlandUplandGate(continent, original) <= 0.0)
-            return original;
+        double gate = MountainReliefMath.inlandUplandGate(continent, original);
+        if (gate <= 0.0) return original;
         double radiusFraction = Math.hypot(dx, dz) / s.radius;
-        return MountainReliefMath.relief(original, s.anchorHeight,
-                continent, s.type, radiusFraction, basinDepth, plateauRise);
+        return MountainReliefMath.reliefWithGate(original, s.anchorHeight,
+                continent, s.type, radiusFraction, basinDepth, plateauRise, gate);
     }
 
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {

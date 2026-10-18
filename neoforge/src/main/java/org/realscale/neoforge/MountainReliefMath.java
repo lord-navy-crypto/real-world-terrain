@@ -93,6 +93,20 @@ final class MountainReliefMath {
                          int kind, double radiusFraction, double basinDepth,
                          double plateauRise) {
         double gate = inlandUplandGate(continent, original);
+        return reliefWithGate(original,anchorHeight,continent,kind,
+                radiusFraction,basinDepth,plateauRise,gate);
+    }
+
+    /**
+     * Preserve the exact original arithmetic while reusing an already
+     * evaluated continental/upland gate. MountainReliefDensity has to check
+     * that gate before this call anyway; recomputing both smoothsteps in
+     * the same voxel was avoidable. No changes to terrain or seed behavior.
+     */
+    static double reliefWithGate(double original, double anchorHeight,
+                                 double continent, int kind,
+                                 double radiusFraction, double basinDepth,
+                                 double plateauRise, double gate) {
         if (gate <= 0.0 || radiusFraction >= 1.10 || kind == NONE) return original;
         if (kind == BASIN) {
             double depression = basinDepth * basinCore(radiusFraction);

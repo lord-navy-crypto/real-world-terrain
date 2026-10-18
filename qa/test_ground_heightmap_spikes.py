@@ -12,7 +12,8 @@ sys.path.insert(0,str(Path(__file__).resolve().parent/"neoforge"))
 from realscale_headless_qa import surface_height
 from unittest.mock import patch
 from check_realism_continuity import (
-    isolated_height_impulses, terrain_quality_gates, underlying_ground_below_stem
+    adjacent_height_deltas, isolated_height_impulses, terrain_quality_gates,
+    underlying_ground_below_stem
 )
 
 
@@ -121,6 +122,45 @@ class SavedGroundHeightmapTest(unittest.TestCase):
                        "minecraft:oak_log" if y==200 else "minecraft:air")):
             self.assertEqual(underlying_ground_below_stem({},0,0,200,-64),
                              (200,"minecraft:oak_log",False))
+
+    def test_distant_canopy_must_not_trigger_chunk_seam(self):
+        # Negative coordinates are deliberate. A 16-block seam at -8192
+        # is exactly as real as the same seam near spawn.
+        ground={(x,z):72 for x in range(-8209,-8175)
+                          for z in range(1024,1058)}
+        visible=dict(ground)
+        for z in range(1024,1058):
+            visible[(-8192,z)]=117  # canopy/log/long hanging vine
+        raw=adjacent_height_deltas(visible)
+        actual=adjacent_height_deltas(ground)
+        self.assertTrue(raw[3] and max(raw[3])==45)
+        self.assertTrue(actual[3] and max(actual[3])==0)
+        self.assertTrue(terrain_quality_gates(
+            actual[3],actual[4],actual[1],actual[2],0,len(ground),0)["pass"])
+
+    def test_actual_distant_chunk_wall_still_fails_without_weakening_gate(self):
+        # At x=8192, height discontinuity crosses a real chunk boundary
+        # in every z row. A high mean seam ratio must remain a failure.
+        heights={(x,z):(240 if x>=8192 else 75)
+                 for x in range(8180,8205) for z in range(-350,351)}
+        delta,grid_edge,grid_inner,edge,inner=adjacent_height_deltas(heights)
+        quality=terrain_quality_gates(edge,inner,grid_edge,grid_inner,
+                                      0,len(heights),0)
+        self.assertTrue(edge)
+        self.assertGreater(max(edge),160)
+        self.assertFalse(quality["pass"])
+        self.assertIn("Systematic 16-block chunk-border height seam",
+                      quality["issues"])
+
+    def test_unloaded_far_chunks_are_not_fabricated_into_seams(self):
+        # A sparse Anvil snapshot may contain independent islands of chunks.
+        # Do not compare unrelated x/z columns across empty space.
+        values={(0,0):70,(1,0):72,(32768,-32768):151,
+                (32769,-32768):153,(-32768,32768):90}
+        delta,grid_edge,grid_inner,chunk_edge,chunk_inner=(
+            adjacent_height_deltas(values))
+        self.assertEqual(sorted(delta),[2,2])
+        self.assertEqual(sum(len(v) for v in (chunk_edge,chunk_inner)),2)
 
     def test_original_terrain_impulse_threshold_is_preserved(self):
         # The existing acceptance threshold must not be relaxed to get green CI.

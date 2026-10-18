@@ -359,6 +359,36 @@ def isolated_height_impulses(heights, surface_blocks, surface_biomes):
             "vegetation":vegetation, "other":other}
 
 
+
+def adjacent_height_deltas(heights):
+    """Measure REAL adjacent ground columns, with signed world-coordinate seams.
+
+    A visible canopy/vine/stem surface can be 20+ blocks above the underlying
+    earth. Keep WORLD_SURFACE data for diagnosis, but feed the quality gate
+    persisted ground heights so vertical vegetation never appears to be a
+    Minecraft chunk/4-grid terrain seam. Do not interpolate missing neighbors:
+    unloaded far chunks must not be mistaken for sampled continuity.
+    """
+    adjacent=[]
+    grid_edge=[];grid_inner=[]
+    chunk_edge=[];chunk_inner=[]
+    for (x,z),h in heights.items():
+        for nx,nz in ((x+1,z),(x,z+1)):
+            neighbor=heights.get((nx,nz))
+            if neighbor is None:continue
+            delta=abs(h-neighbor)
+            adjacent.append(delta)
+            if (nx%16==0 and nz==z) or (nz%16==0 and nx==x):
+                chunk_edge.append(delta)
+            else:
+                chunk_inner.append(delta)
+            if (nx%4==0 and nz==z) or (nz%4==0 and nx==x):
+                grid_edge.append(delta)
+            else:
+                grid_inner.append(delta)
+    return adjacent,grid_edge,grid_inner,chunk_edge,chunk_inner
+
+
 def terrain_quality_gates(chunk_border_deltas, within_chunk_deltas,
                           grid_boundary_deltas, inner_grid_deltas,
                           isolated_spikes, sample_columns, high_nonriver_water):
@@ -716,21 +746,12 @@ def scan(root,preset="realism_max"):
                             cave_voxels.add((x,y,z))
                             cave_air_voxels+=block in ("minecraft:air","minecraft:cave_air")
                             cave_water_voxels+=block=="minecraft:water"
-    delta=[]
-    four_boundary=[];inner=[]
-    chunk_border=[];within_chunk=[]
-    for (x,z),h in H.items():
-        for nx,nz in ((x+1,z),(x,z+1)):
-            if (nx,nz) not in H:continue
-            d=abs(h-H[(nx,nz)])
-            delta.append(d)
-            if (nx%16==0 and nz==z) or (nz%16==0 and nx==x):
-                chunk_border.append(d)
-            else:
-                within_chunk.append(d)
-            if (nx%4==0 and nz==z) or (nz%4==0 and nx==x):
-                four_boundary.append(d)
-            else:inner.append(d)
+    # Preserve raw foliage-bearing surface deltas as diagnostics, but pass
+    # only physically supported ground heights to chunk/4-grid seam gates.
+    raw_delta,raw_four_boundary,raw_inner,raw_chunk_border,raw_within_chunk = (
+        adjacent_height_deltas(H))
+    delta,four_boundary,inner,chunk_border,within_chunk = (
+        adjacent_height_deltas(terrain_heights))
     # Preserve the original WORLD_SURFACE anomalies for diagnosis, but
     # evaluate real ground-height artifacts with the same 8m threshold.
     raw_impulses=isolated_height_impulses(H,surface_blocks,surface_biomes)
@@ -786,6 +807,18 @@ def scan(root,preset="realism_max"):
       "stem_corrected_ground_columns":stem_corrected_columns,
       "stem_correction_note":"Only logged/bamboo/vine columns are traced to persisted supporting material; stone/soil/spikes remain tested.",
       "ground_heightmap_columns":len(terrain_heights),
+      "ground_coordinate_bounds":({
+          "min_x":min(x for x,z in terrain_heights),
+          "max_x":max(x for x,z in terrain_heights),
+          "min_z":min(z for x,z in terrain_heights),
+          "max_z":max(z for x,z in terrain_heights),
+      } if terrain_heights else None),
+      "ground_seam_measurement":"persisted supported MOTION_BLOCKING_NO_LEAVES",
+      "world_surface_raw_adjacent_p95":pct(raw_delta,.95),
+      "world_surface_raw_chunk_border_p95":pct(raw_chunk_border,.95),
+      "world_surface_raw_within_chunk_p95":pct(raw_within_chunk,.95),
+      "world_surface_raw_four_grid_p95":pct(raw_four_boundary,.95),
+      "world_surface_raw_within_four_grid_p95":pct(raw_inner,.95),
       "world_surface_raw_spike_count":raw_impulses["count"],
       "world_surface_raw_spike_examples":raw_impulses["examples"],
       "world_surface_raw_spike_block_counts":raw_impulses["blocks"],
