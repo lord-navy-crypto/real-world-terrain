@@ -32,6 +32,24 @@ class FarChunkCompletionGate(unittest.TestCase):
                 await_full_chunk(fake,1024,1024,timeout_seconds=0.25)
         self.assertFalse(fake.calls)
 
+    def test_status_rcon_receive_is_capped_by_remaining_budget(self):
+        class FakeSock:
+            def __init__(self):
+                self.timeout=180.0
+                self.changes=[]
+            def gettimeout(self):
+                return self.timeout
+            def settimeout(self,seconds):
+                self.timeout=seconds
+                self.changes.append(seconds)
+        fake=FakeRcon(["Seed: [2]"])
+        fake.sock=FakeSock()
+        await_full_chunk(fake,1024,1024,timeout_seconds=1)
+        self.assertGreater(len(fake.sock.changes),1)
+        self.assertGreater(fake.sock.changes[0],0)
+        self.assertLessEqual(fake.sock.changes[0],1)
+        self.assertEqual(fake.sock.changes[-1],180.0)
+
     def test_distant_profile_requires_full_loaded_and_shared_180s_budget(self):
         src=(ROOT/"qa/neoforge/rcon_worldgen_smoke.py").read_text()
         # Two branches use this label: the earlier branch selects
