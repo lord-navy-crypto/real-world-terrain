@@ -60,6 +60,8 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_river_navigation_audit.py' -v
       - name: Validate saved ground heightmaps and reject real terrain spikes
         run: python3 -m unittest discover -s qa -p 'test_ground_heightmap_spikes.py' -v
+      - name: Verify read-only tall-world Section inventory (not GPU visibility)
+        run: python3 -m unittest discover -s qa -p 'test_vertical_section_budget.py' -v
       - name: Verify worldgen timing is disabled by default and opt-in is bounded
         run: |
           mkdir -p build/worldgen-profiler-smoke
