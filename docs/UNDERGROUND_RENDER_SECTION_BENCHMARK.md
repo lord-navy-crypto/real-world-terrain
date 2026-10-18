@@ -78,6 +78,74 @@ Visual acceptance: no floor/roof holes, cave popping, disappearing ravine
 walls, distant terrain seams, transparent fluids/glass leakage, missing
 sky-island geometry, or stale visibility after mining/placing blocks.
 
+## Proposed D: Adaptive Visibility & Rendering Budget (DESIGN ONLY)
+
+This proposal assigns **priorities to optional/asynchronous render work**
+rather than forcing already visible scenery to disappear. There is no
+independent RealScale renderer or Sodium patch in this branch.
+
+### Environment state machine (observational, client only)
+
+| State | Conservative indicators | Work *preference* |
+| --- | --- | --- |
+| `OPEN_SURFACE` | Direct or nearby sky/horizon exposures, unobstructed surface surroundings, or current camera can see exterior terrain | After all currently visible/urgent geometry, favor distant surface scenery and *supported* optional LOD updates. Buried and proven-occluded mesh *rebuilds* receive lower **background** priority. |
+| `SEALED_CAVE` | Sustained nearby enclosure with a roof, no sampled sky exposure, enclosed camera neighborhood; sight corridor checks do not show the exterior | After all currently visible/urgent geometry, favor nearby and forward cave Sections and tunnel-adjacent geometry. Background updates for safely occluded distant surface/horizon geometry receive lower priority. |
+| `TRANSITION_OR_UNKNOWN` | Cave mouth, skylight, open shaft, deep ravine, vast cavern with visible exit, near-surface ambiguity, incomplete chunk data, rapid camera motion, or mixed samples | Keep conservative normal visibility and mesh-work priorities; both surface and cave remain eligible. |
+
+The player **Y coordinate is context, never the determinant**. A cave at
+Y=1200 can still be sealed; Y=70 behind a mountain wall can be sheltered.
+A skylight or canyon can expose substantial vertical distance. A cave
+opening with transparent panes/fluids needs normal transparent rendering.
+
+Possible **low-rate inputs**, subject to API compatibility and benchmarks:
+- Camera-adjacent block and sky exposure from a small, bounded sample set.
+- A few capped line-of-sight probes toward exterior horizons and shaft mouths.
+- Camera motion/direction, saved surface height in the already loaded area.
+- Renderer-visible Section list, if exposed by supported upstream APIs.
+  Never re-run an expensive full raycast for each Section or every frame.
+- Do not touch unloaded chunks to classify the environment; insufficient
+  evidence always means `TRANSITION_OR_UNKNOWN`.
+
+### Non-negotiable scheduling invariants
+
+1. **Visible first**: camera-visible, newly opened, block-changed and
+   immediately adjacent Sections always retain normal/urgent priority,
+   independent of classification, world height or geometric layer.
+2. **Never delete/delay indefinitely**: background work retains a bounded
+   starvation-free share of the existing renderer's budget. Unknown or
+   newly visible geometry immediately promotes to normal priority.
+3. **No hard Y clipping**: underground caves, surface cliffs, sky islands,
+   water and cross-height apertures must not pop or vanish.
+4. **No automatic render-distance or server view-distance toggles**:
+   these can force repeated unload/reload and cannot exceed server's sent
+   chunk range. Do not force-load distant chunks or change server simulation.
+5. **Avoid mode oscillation**: only enter a confident surface/cave mode after
+   multiple consistent low-frequency samples (prototype idea: >=2 seconds).
+   Switch to conservative transition immediately on missing visibility
+   data, new opening or ambiguous geometry. Cooldown/hysteresis thresholds
+   should be measured; not yet performance-validated.
+6. **Upstream-first**: without a supported Sodium/other renderer API to
+   reprioritize work safely, this stays a **telemetry and compatibility
+   feature**, not a fragile client mixin. Use Distant Horizons when
+   supported for optional horizon LOD; never recreate it.
+7. **No worldgen changes**: client mesh/occlusion work cannot resolve
+   dedicated-server 180-second virgin-chunk generation stalls.
+
+### Required future proof before code integration
+
+- Record mode decisions vs verified sky/exterior sightlines across
+  lowland, alpine plateau, sealed mid-height cave, kilometer cavern,
+  cave entrance, shaft, skylight, deep canyon and offshore sky archipelago.
+- Baseline Sodium and optional Distant Horizons with the *same fully
+  pregenerated worlds*, seed, camera path, graphics settings and hardware.
+- Record p50/p95 frametime, mesh build queue and Section counts by mode;
+  do not extrapolate gains from palette-only disk inventory.
+- Test quick mode switching, camera teleport, missing chunks, block mining,
+  water transparency, cave exits and >8,192-block distant scenery. Require
+  **zero new holes/popping** and no additional stuttering.
+- Only prioritize *identified redundant work* after evidence that the
+  current renderer leaves a meaningful uncovered RealScale-specific gap.
+
 ## C: RealScale-specific fixes ONLY after objective evidence
 
 If Sodium already culls the hidden sections and FPS/frametime recovers,
