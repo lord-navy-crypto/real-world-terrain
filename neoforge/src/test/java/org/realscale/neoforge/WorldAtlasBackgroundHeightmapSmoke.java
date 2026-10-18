@@ -89,9 +89,9 @@ public final class WorldAtlasBackgroundHeightmapSmoke {
             Path world=temp.resolve("RealScale2096");
             Files.createDirectories(world.resolve("region"));
             Files.write(world.resolve("level.dat"),new byte[]{10,0,0,0});
-            place(world,0,0,1577,1568,2,false); // modern zlib NBT
+            place(world,0,0,1577,1577,2,false); // modern zlib NBT
             place(world,-1,-1,63,42,1,true); // older gzip Level wrapper
-            place(world,1,1,210,210,3,false); // uncompressed NBT
+            place(world,32,32,210,210,3,false); // uncompressed NBT
 
             check(WorldAtlasHeightmapReader.bitsFor(52)==12,
                     "2096-tall heightmap needs 12 packed bits");
@@ -102,13 +102,13 @@ public final class WorldAtlasBackgroundHeightmapSmoke {
 
             var peak=WorldAtlasHeightmapReader.read(world,0,0);
             check(peak!=null && peak.surfaceY()==1577
-                    && peak.oceanFloorY()==1568
-                    && peak.water(),"Lost exact high-terrain NBT sample");
+                    && peak.oceanFloorY()==1577
+                    && !peak.water(),"Lost exact high-terrain NBT sample");
             var ocean=WorldAtlasHeightmapReader.read(world,-1,-1);
             check(ocean!=null && ocean.surfaceY()==63
                     && ocean.oceanFloorY()==42 && ocean.water(),
                     "Negative-coordinate gzip ocean sample failed");
-            var plain=WorldAtlasHeightmapReader.read(world,1,1);
+            var plain=WorldAtlasHeightmapReader.read(world,32,32);
             check(plain!=null && plain.surfaceY()==210 && !plain.water(),
                     "Uncompressed Anvil surface failed");
             check(WorldAtlasHeightmapReader.read(world,9,9)==null,
