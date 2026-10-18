@@ -20,5 +20,11 @@
   "realscale.atlas.draw_idle": "当前没有正在运行的绘图任务",
   "realscale.atlas.draw_started": "已开始后台绘图",
   "realscale.atlas.draw_busy": "已经有绘图任务正在运行",
-  "realscale.atlas.draw_real_legend": "已保存区块的抽样高度图"
+  "realscale.atlas.draw_real_legend": "已保存区块的抽样高度图",
+  "realscale.atlas.pregen_start": "后台预生成",
+  "realscale.atlas.pregen_pause": "暂停生成",
+  "realscale.atlas.pregen_resume": "继续生成",
+  "realscale.atlas.pregen_stop": "保存停止",
+  "realscale.atlas.pregen_starting": "正在启动离线 NeoForge 服务器...",
+  "realscale.atlas.pregen_busy": "已有后台预生成任务正在运行"
 }
