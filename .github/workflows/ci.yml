@@ -65,8 +65,11 @@ jobs:
           mkdir -p build/visibility-budget-smoke
           javac -d build/visibility-budget-smoke \
             neoforge/src/main/java/org/realscale/neoforge/AdaptiveVisibilityBudget.java \
-            neoforge/src/test/java/org/realscale/neoforge/AdaptiveVisibilityBudgetSmoke.java
+            neoforge/src/main/java/org/realscale/neoforge/AdaptiveVisibilityTelemetry.java \
+            neoforge/src/test/java/org/realscale/neoforge/AdaptiveVisibilityBudgetSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/AdaptiveVisibilityTelemetrySmoke.java
           java -cp build/visibility-budget-smoke org.realscale.neoforge.AdaptiveVisibilityBudgetSmoke
+          java -cp build/visibility-budget-smoke org.realscale.neoforge.AdaptiveVisibilityTelemetrySmoke
       - name: Verify read-only tall-world Section inventory (not GPU visibility)
         run: python3 -m unittest discover -s qa -p 'test_vertical_section_budget.py' -v
       - name: Verify worldgen timing is disabled by default and opt-in is bounded
