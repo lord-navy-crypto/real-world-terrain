@@ -265,7 +265,11 @@ public final class WorldAtlasOfflinePregenerator {
     private static boolean send(String command,String state) {
         Session s=active;
         if(s==null||s.status.terminal()||s.stopping.get() ||
-                s.process==null||!s.process.isAlive())return false;
+                s.process==null||!s.process.isAlive() ||
+                (!s.status.state().equals("RUNNING") &&
+                 !s.status.state().equals("PAUSED") &&
+                 !(s.status.state().equals("NEEDS_ATTENTION") &&
+                   command.startsWith("chunky continue"))))return false;
         try {s.command(command);s.state(state,command+" requested");return true;}
         catch(IOException e){s.state("NEEDS_ATTENTION",e.getMessage());return false;}
     }
