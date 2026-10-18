@@ -170,21 +170,33 @@ public final class WorldAtlasOfflinePregenerator {
                 old.state("FAILED","Warmed server is no longer running; inspect the save lock");
                 throw new IOException("Warmed server is no longer running; restart the warm-up");
             }
-            // Reuse the SAME server process and save lock. This keeps the
-            // JVM warm and avoids launching a second writer for this world.
-            old.x=centerX;old.z=centerZ;old.radius=radius;
-            old.warmup=false;old.awaitingWarmupDrain=false;old.progress=null;
-            old.state("START_REQUESTED",
-                    "Continuing pregeneration on the warmed server");
-            try {
-                old.command("chunky start minecraft:overworld square "+
-                        centerX+" "+centerZ+" "+radius);
-                armChecks(old);
-                return true;
-            }catch(IOException ex) {
-                old.state("NEEDS_ATTENTION",ex.getMessage());
-                throw ex;
+            // Serialize with Save + stop: a start command must never be
+            // queued after a concurrent shutdown request.
+            synchronized(old) {
+                if(old.stopping.get() ||
+                        !"WARMUP_READY".equals(old.status.state()))return false;
+                if(old.process==null || !old.process.isAlive()) {
+                    old.state("FAILED",
+                            "Warmed server is no longer running; inspect the save lock");
+                    throw new IOException(
+                            "Warmed server is no longer running; restart the warm-up");
+                }
+                // Reuse the SAME server process and save lock. This keeps the
+                // JVM warm and avoids launching a second writer for this world.
+                old.x=centerX;old.z=centerZ;old.radius=radius;
+                old.warmup=false;old.awaitingWarmupDrain=false;old.progress=null;
+                old.state("START_REQUESTED",
+                        "Continuing pregeneration on the warmed server");
+                try {
+                    old.command("chunky start minecraft:overworld square "+
+                            centerX+" "+centerZ+" "+radius);
+                }catch(IOException ex) {
+                    old.state("NEEDS_ATTENTION",ex.getMessage());
+                    throw ex;
+                }
             }
+            armChecks(old);
+            return true;
         }
         if(old!=null && old.process!=null && old.process.isAlive())return false;
 
@@ -347,22 +359,22 @@ public final class WorldAtlasOfflinePregenerator {
                     String safe=limit(line.replaceAll("\\u001b\\[[;\\d]*m",""));
                     Progress observed=parseChunkyProgress(line);
                     if(observed!=null)s.progress=observed;
-                    if(!startedChunky && !s.stopping.get()
-                            && line.contains("Done (")) {
-                        // Underlying NeoForge world may auto-create on bad
-                        // '--world' argument; startup has prevalidated save.
-                        // Explicitly use the OVERWORLD key, not world folder,
-                        // as Chunky's NeoForgeWorld.getName() returns a
-                        // dimension identifier such as minecraft:overworld.
-                        // The subprocess may ACK before the console write
-                        // returns. Mark REQUESTED *before* sending, otherwise
-                        // a confirmed RUNNING can be overwritten by REQUESTED.
-                        startedChunky=true;
-                        s.state("START_REQUESTED",s.warmup
-                                ?"Awaiting warm-up task-start acknowledgement"
-                                :"Awaiting Chunky task-start acknowledgement");
-                        s.command("chunky start minecraft:overworld square "+
-                                s.x+" "+s.z+" "+s.radius);
+                    if(!startedChunky && line.contains("Done (")) {
+                        // Serialize task start with Save + stop. If stop won
+                        // the race, never enqueue a new generator task.
+                        synchronized(s) {
+                            if(!startedChunky && !s.stopping.get()) {
+                                // Use the OVERWORLD dimension key, not the
+                                // save-folder name: Chunky expects
+                                // minecraft:overworld for this NeoForge world.
+                                startedChunky=true;
+                                s.state("START_REQUESTED",s.warmup
+                                        ?"Awaiting warm-up task-start acknowledgement"
+                                        :"Awaiting Chunky task-start acknowledgement");
+                                s.command("chunky start minecraft:overworld square "+
+                                        s.x+" "+s.z+" "+s.radius);
+                            }
+                        }
                     } else if(startedChunky && !s.stopping.get() &&
                             safe.contains("Task started in ")) {
                         s.state("RUNNING",safe);
