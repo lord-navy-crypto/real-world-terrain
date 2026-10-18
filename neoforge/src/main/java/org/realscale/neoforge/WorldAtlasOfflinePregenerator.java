@@ -469,13 +469,15 @@ public final class WorldAtlasOfflinePregenerator {
     }
 
     private static void beginWarmupDrain(Session s) {
-        if(s.stopping.get())return;
-        s.awaitingWarmupDrain=true;
-        s.state("WARMUP_DRAINING",
-                "Warm-up reached its target; verifying Chunky task save");
+        synchronized(s) {
+            if(s.stopping.get() || !s.warmup)return;
+            s.awaitingWarmupDrain=true;
+            s.state("WARMUP_DRAINING",
+                    "Warm-up reached its target; verifying Chunky task save");
+        }
         armChecks(s);
         synchronized(s) {
-            if(s.stopping.get())return;
+            if(s.stopping.get() || !s.awaitingWarmupDrain)return;
             try{s.command("chunky progress");}
             catch(IOException ex){s.state("NEEDS_ATTENTION",ex.getMessage());}
         }
@@ -501,10 +503,12 @@ public final class WorldAtlasOfflinePregenerator {
     }
 
     private static void beginNaturalDrain(Session s) {
-        if(!s.stopping.compareAndSet(false,true))return;
-        s.waitingForTaskRemoval=true;
-        s.state("DRAINING",
-                "Chunky reached its target; verifying durable task save before shutdown");
+        synchronized(s) {
+            if(!s.stopping.compareAndSet(false,true))return;
+            s.waitingForTaskRemoval=true;
+            s.state("DRAINING",
+                    "Chunky reached its target; verifying durable task save before shutdown");
+        }
         armChecks(s);
         synchronized(s) {
             if(s.saveStopIssued || s.status.terminal())return;
@@ -576,18 +580,20 @@ public final class WorldAtlasOfflinePregenerator {
     }
     private static boolean send(String command,String state) {
         Session s=active;
-        if(s==null||s.status.terminal()||s.stopping.get() ||
-                s.process==null||!s.process.isAlive())return false;
-        String current=s.status.state();
-        boolean allowed=command.startsWith("chunky pause")
-                ?current.equals("RUNNING"):current.equals("PAUSED");
-        if(!allowed)return false;
-        // Set REQUESTED before subprocess I/O: the reply reader can receive
-        // Chunky's ACK concurrently, and must be able to transition to
-        // PAUSED/RUNNING without this caller overwriting it afterward.
-        s.state(state,command+" requested");
-        try {s.command(command);return true;}
-        catch(IOException e){s.state("NEEDS_ATTENTION",e.getMessage());return false;}
+        if(s==null)return false;
+        synchronized(s) {
+            if(s.status.terminal()||s.stopping.get() ||
+                    s.process==null||!s.process.isAlive())return false;
+            String current=s.status.state();
+            boolean allowed=command.startsWith("chunky pause")
+                    ?current.equals("RUNNING"):current.equals("PAUSED");
+            if(!allowed)return false;
+            // Set REQUESTED before subprocess I/O. The session lock prevents
+            // a concurrent completion transition from being overwritten.
+            s.state(state,command+" requested");
+            try {s.command(command);return true;}
+            catch(IOException e){s.state("NEEDS_ATTENTION",e.getMessage());return false;}
+        }
     }
     private static String limit(String input) {
         if(input==null)return "";
