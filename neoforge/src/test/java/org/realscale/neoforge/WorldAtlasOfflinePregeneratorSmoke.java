@@ -53,8 +53,12 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
 
             Path home=WorldAtlasOfflinePregenerator.installDirectory(root);
             Path mods=Files.createDirectories(home.resolve("mods"));
+            Path clientMods=Files.createDirectories(root.resolve("mods"));
             Files.write(mods.resolve("chunky-test.jar"),new byte[]{1});
-            Files.write(mods.resolve("realscale-test.jar"),new byte[]{1});
+            Path realScaleServer=mods.resolve("realscale-test.jar");
+            Files.write(realScaleServer,new byte[]{1,2,3});
+            Files.write(clientMods.resolve("realscale-test.jar"),
+                    new byte[]{1,2,3});
             Files.writeString(home.resolve("eula.txt"),"eula=true\n");
             Files.writeString(home.resolve("server.properties"),
                     "server-ip=127.0.0.1\nenable-rcon=false\n");
@@ -107,6 +111,18 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
             }
             Files.writeString(home.resolve("server.properties"),
                     "server-ip=127.0.0.1\nenable-rcon=false\n");
+
+            // A valid filename is not sufficient to ensure a worldgen-safe
+            // modpack. A binary mismatch must never launch the writer.
+            Files.write(realScaleServer,new byte[]{1,2,4});
+            try {
+                WorldAtlasOfflinePregenerator.start(root,world,32,64,512);
+                throw new AssertionError("Mismatched RealScale JAR was accepted");
+            } catch(IOException expected) {
+                require(expected.getMessage().contains("JAR bytes differ"),
+                        "Incorrect mod build needs a clear fail-closed error");
+            }
+            Files.write(realScaleServer,new byte[]{1,2,3});
 
             require(WorldAtlasOfflinePregenerator.start(root,world,32,64,512),
                     "Valid fake server did not start");
