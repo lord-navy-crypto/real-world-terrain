@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * One low-priority, daemon worker for the REAL saved-chunk sampled heightmap.
+ * One low-priority daemon worker with bounded region-handle reuse for the REAL saved-chunk sampled heightmap.
  *
  * Drawing continues if the Atlas screen closes while Minecraft stays open.
  * It NEVER starts a Minecraft server, imports Chunky or touches the save.
@@ -109,7 +109,8 @@ public final class WorldAtlasBackgroundPainter {
     private static void paint(Task task) {
         int[] output=new int[PIXELS];
         int seen=0,done=0,errors=0;
-        try {
+        try (WorldAtlasHeightmapReader.Sampler sampler =
+                     WorldAtlasHeightmapReader.openSampler(task.world)) {
             for(int z=0;z<CELLS;z++) {
                 for(int x=0;x<CELLS;x++) {
                     if(task.cancelled.get()) {
@@ -133,7 +134,7 @@ public final class WorldAtlasBackgroundPainter {
                     int cx=Math.toIntExact(Math.floorDiv(bx,16));
                     int cz=Math.toIntExact(Math.floorDiv(bz,16));
                     try {
-                        var sample=WorldAtlasHeightmapReader.read(task.world,cx,cz);
+                        var sample=sampler.read(cx,cz);
                         if(sample!=null) {
                             output[z*CELLS+x]=heightColor(sample);
                             seen++;
