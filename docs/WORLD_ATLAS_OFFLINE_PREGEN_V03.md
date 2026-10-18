@@ -86,7 +86,11 @@ this button does not repair those automatically.
    Minecraft saves folder and `--world` pointed at the selected existing
    save name. After the server reports ready, Atlas submits the one
    explicit Chunky selection. The screen displays status/log messages.
-6. Use **暂停生成 / 继续生成** to delegate to Chunky.
+6. Use **暂停生成 / 继续生成** to delegate to Chunky. The
+   controller treats `Task paused` only as an **initial acknowledgement**;
+   the UI remains in PAUSE_DRAINING until `chunky progress` confirms
+   there are no active tasks (after Chunky saves the resume state).
+   **Continue stays unavailable until that confirmed pause is complete**.
 7. **保存停止 / Save + stop** requests `chunky pause`. **Chunky prints
    "Task stopped" BEFORE `GenerationTask.saveTask(...)`**, so the
    controller must NOT shut the server down immediately. Instead it polls
