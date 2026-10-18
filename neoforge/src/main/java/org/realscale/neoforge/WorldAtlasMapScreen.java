@@ -270,6 +270,11 @@ public final class WorldAtlasMapScreen extends Screen {
         int size=grid*step,left=(width-size)/2,top=49;
         gfx.fill(left-2,top-2,left+size+2,top+size+2,0xff19252a);
         var drawing=visiblePainting();
+        var drawingTask=WorldAtlasBackgroundPainter.current();
+        boolean drawingTaskActive=drawingTask!=null
+                && !drawingTask.state().equals("DONE")
+                && !drawingTask.state().equals("CANCELLED")
+                && !drawingTask.state().equals("FAILED");
         if(current!=null || drawing!=null) {
             for(int z=0;z<grid;z++)for(int x=0;x<grid;x++) {
                 int coverage=current==null?0:current.cellCoverage(x,z);
@@ -304,6 +309,19 @@ public final class WorldAtlasMapScreen extends Screen {
             gfx.drawCenteredString(font,Component.literal(
                     font.plainSubstrByWidth(status,Math.max(130,width-16))),
                     width/2,statusY,0xffe2d698);
+        } else if(drawing==null && drawingTaskActive) {
+            // Panning changes the displayed map, not the running task's
+            // immutable target. Keep its progress visible without painting
+            // samples from the old center over the newly selected map.
+            String progress=drawingTask.state()+" | target XZ "
+                    +drawingTask.centerX()+","+drawingTask.centerZ()
+                    +" radius "+drawingTask.radius()+" | "
+                    +drawingTask.finished()+"/"+WorldAtlasBackgroundPainter.PIXELS
+                    +" cells | "+String.format(java.util.Locale.ROOT,
+                        "%.1f",drawingTask.percent())+"%";
+            gfx.drawCenteredString(font,Component.literal(
+                    font.plainSubstrByWidth(progress,Math.max(130,width-16))),
+                    width/2,statusY,0xffc5e6d0);
         } else if(drawing!=null) {
             String progress=drawing.state()+" | "
                     +drawing.finished()+"/"+WorldAtlasBackgroundPainter.PIXELS
