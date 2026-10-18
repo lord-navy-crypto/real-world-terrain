@@ -300,7 +300,10 @@ public final class WorldAtlasMapScreen extends Screen {
             // These statistics are parsed from Chunky's real console.
             // A sent start command or scheduled radius is NOT progress.
             var progress=WorldAtlasOfflinePregenerator.progress();
-            String observed=progress==null?"":String.format(
+            boolean finalizing=serverJob.state().equals("DRAINING")
+                    ||serverJob.state().equals("WARMUP_DRAINING")
+                    ||serverJob.state().equals("STOPPING");
+            String observed=progress==null || finalizing?"":String.format(
                     java.util.Locale.ROOT,"%.2f%% | %.1f cps | ",
                     progress.percent(),progress.chunksPerSecond());
             String owner=serverJob.world().equals(save)?""
