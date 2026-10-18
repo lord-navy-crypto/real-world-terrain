@@ -1,0 +1,75 @@
+name: Special Chongqing REAL DEM sky-island dedicated server QA
+on:
+  pull_request:
+    paths:
+      - 'neoforge/**'
+      - 'qa/**'
+      - '.github/workflows/chongqing-realworld-server.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  chongqing-real-anvil:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        seed: [2, 42]
+    name: Chongqing actual saved surface / seed ${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Configure real Special Chongqing world on dedicated NeoForge
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=world
+          level-type=realscale:special_chongqing_sky_city
+          level-seed=${{ matrix.seed }}
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_chongqing_ci_only
+          PROPERTIES
+          done
+      - name: Boot REAL server and require FULL loaded distant chunk within 180 seconds
+        working-directory: neoforge
+        # Same RCON password must match the shared strict smoke harness.
+        run: |
+          sed -i s/realscale_chongqing_ci_only/realscale_ci_probe_only/g run/server.properties run/gametestserver/server.properties run/server.properties
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . realscale:special_chongqing_sky_city distant
+      - name: Inspect ACTUAL saved sky-island Anvil blocks vs source DEM
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/check_chongqing_actual_anvil.py .
+      - name: Archive real Chongqing saved-block evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Chongqing-Sky-City-Seed-${{ matrix.seed }}-Real-Anvil-QA
+          path: |
+            neoforge/chongqing_actual_anvil_qa.json
+            neoforge/build/rcon_distant_server.log
+            neoforge/build/rcon_distant_thread_dump_*.txt
+            neoforge/run/**/level.dat
+            neoforge/run/**/region/*.mca
+          if-no-files-found: warn

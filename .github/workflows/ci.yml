@@ -89,6 +89,15 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_compare_client_fps.py' -v
       - name: Verify read-only tall-world Section inventory (not GPU visibility)
         run: python3 -m unittest discover -s qa -p 'test_vertical_section_budget.py' -v
+      - name: Verify real Chongqing DEM floating preset, license and geography
+        run: |
+          python3 -m unittest discover -s qa -p 'test_special_chongqing_worldgen.py' -v
+          mkdir -p build/chongqing-dem-smoke
+          javac -d build/chongqing-dem-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/ChongqingDemTile.java \
+            neoforge/src/test/java/org/realscale/neoforge/ChongqingDemTileSmoke.java
+          java -cp build/chongqing-dem-smoke:neoforge/src/main/resources \
+            org.realscale.neoforge.ChongqingDemTileSmoke
       - name: Verify unified TVA source, cave and client opt-in release invariants
         run: python3 -m unittest discover -s qa -p 'test_tva_unified_timeline.py' -v
       - name: Verify worldgen timing is disabled by default and opt-in is bounded

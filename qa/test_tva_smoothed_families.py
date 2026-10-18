@@ -49,8 +49,11 @@ class CoreSmoothing(unittest.TestCase):
  def test_four_curated_families_and_separate_combined_opt_in(self):
   stable=["realscale:"+x for x,_,_ in FAMILIES]+["realscale:tva_measured_three_realms"]
   optional="realscale:tva_wonders_invasion_three_realms"
+  chongqing="realscale:special_chongqing_sky_city"
   for tag in ("normal","extended"):
    path=ROOT/"minecraft/tags/worldgen/world_preset"/(tag+".json")
-   self.assertEqual(read(path)["values"],stable+[optional])
+   # Preserve the four TVA families and woven fifth as-is. The sixth
+   # is a separately selectable real DEM world, not a family overwrite.
+   self.assertEqual(read(path)["values"],stable+[optional,chongqing])
    self.assertEqual(len(read(path)["values"]),len(set(read(path)["values"])))
 if __name__=="__main__": unittest.main()
