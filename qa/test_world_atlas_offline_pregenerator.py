@@ -45,7 +45,7 @@ class AtlasOfflineTests(unittest.TestCase):
         self.assertIn("requireMatchingRealScaleBinary(",src)
         self.assertIn("MessageDigest.isEqual(a,b)",src)
         self.assertIn('MessageDigest.getInstance("SHA-256")',src)
-        self.assertIn("Multiple "+'"'+" not "+"'",src)
+        self.assertIn('throw new IOException("Multiple "+prefix',src)
         self.assertIn("ProcessBuilder(\"/bin/bash\"",src)
         self.assertIn('"--universe",saves.toString()',src)
         self.assertIn('"--world",worldName,"--port","0","nogui"',src)
