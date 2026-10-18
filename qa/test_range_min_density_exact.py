@@ -104,7 +104,8 @@ class RangeMinExactTests(unittest.TestCase):
             node=json.loads((DIR/name).read_text())[
                 "noise_router"]["final_density"]
             self.assertEqual(node["type"],"realscale:grand_overworld_caverns")
-            self.assertNotEqual(node["base"].get("type",""),
+            self.assertNotEqual(node["base"] if isinstance(node["base"],str)
+                                else node["base"].get("type",""),
                                 "realscale:range_min_exact")
 
 if __name__=="__main__":
