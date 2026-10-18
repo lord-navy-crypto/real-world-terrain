@@ -252,6 +252,14 @@ public final class WorldAtlasOfflinePregenerator {
                     } else if(startedChunky && !s.stopping.get() &&
                             safe.contains("Task started in ")) {
                         s.state("RUNNING",safe);
+                        armChecks(s);
+                    } else if(!s.stopping.get() &&
+                            safe.contains("Task paused for minecraft:overworld")) {
+                        s.state("PAUSED",safe);
+                    } else if(!s.stopping.get() &&
+                            safe.contains("Task continuing for minecraft:overworld")) {
+                        s.state("RUNNING",safe);
+                        armChecks(s);
                     } else if(s.stopping.get() &&
                             (safe.contains("Task stopped for minecraft:overworld") ||
                              safe.contains("No tasks to pause.") ||
@@ -280,6 +288,12 @@ public final class WorldAtlasOfflinePregenerator {
                                 s.state("NEEDS_ATTENTION",ex.getMessage());
                             }
                         }
+                    }else if(!s.stopping.get() && startedChunky &&
+                            s.status.state().equals("RUNNING") &&
+                            safe.contains("No tasks running.")) {
+                        // Chunky naturally finished all work: same safe
+                        // task-map drained save/stop handshake as manual stop.
+                        requestDrain(s);
                     }else if(line.toLowerCase(Locale.ROOT).contains("confirm") &&
                             startedChunky && !s.stopping.get()) {
                         s.state("NEEDS_ATTENTION",
@@ -327,14 +341,31 @@ public final class WorldAtlasOfflinePregenerator {
         Session s=active;
         return s==null?null:s.status;
     }
-    public static boolean pause() { return send("chunky pause minecraft:overworld","PAUSED"); }
-    public static boolean resume() { return send("chunky continue minecraft:overworld","RUNNING"); }
+    public static boolean pause() { return send("chunky pause minecraft:overworld","PAUSE_REQUESTED"); }
+    public static boolean resume() { return send("chunky continue minecraft:overworld","CONTINUE_REQUESTED"); }
     public static boolean pollProgress() {
         Session s=active;
         if(s==null || s.status.terminal() || s.stopping.get())return false;
         try{s.command("chunky progress");return true;}
         catch(IOException e){return false;}
     }
+    private static synchronized void armChecks(Session s) {
+        if(s.pendingChecks!=null)return;
+        s.pendingChecks=CHECKS.scheduleAtFixedRate(()-> {
+            if(s.saveStopIssued || s.status.terminal() ||
+                    s.process==null || !s.process.isAlive())return;
+            // Draw real Chunky telemetry even when the Atlas screen closes.
+            // During stop, keep checking until the task has been removed
+            // from Chunky's task map AFTER saveTask() returns.
+            if((s.stopping.get() && s.waitingForTaskRemoval) ||
+                    (!s.stopping.get() &&
+                     s.status.state().equals("RUNNING"))) {
+                try{s.command("chunky progress");}
+                catch(IOException e){s.state("NEEDS_ATTENTION",e.getMessage());}
+            }
+        },2,4,TimeUnit.SECONDS);
+    }
+
     public static boolean stopAndSave() {
         Session s=active;
         return s!=null && !s.status.terminal() && requestDrain(s);
@@ -350,16 +381,7 @@ public final class WorldAtlasOfflinePregenerator {
             s.command("chunky pause minecraft:overworld");
             // The worker may still be finishing an expensive 2096-high
             // chunk. Poll only Chunky's own task map (never create chunks).
-            s.pendingChecks=CHECKS.scheduleAtFixedRate(()-> {
-                if(s.saveStopIssued || s.status.terminal() ||
-                        s.process==null || !s.process.isAlive())return;
-                if(s.waitingForTaskRemoval) {
-                    try{s.command("chunky progress");}
-                    catch(IOException e){
-                        s.state("NEEDS_ATTENTION",e.getMessage());
-                    }
-                }
-            },2,2,TimeUnit.SECONDS);
+            armChecks(s);
             return true;
         }catch(IOException e) {
             s.state("NEEDS_ATTENTION",
