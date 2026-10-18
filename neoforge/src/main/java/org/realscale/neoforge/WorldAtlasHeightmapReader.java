@@ -28,7 +28,8 @@ public final class WorldAtlasHeightmapReader {
     private static final int MAX_DEPTH = 32;
 
     public record Sample(int surfaceY, int oceanFloorY) {
-        public boolean water() { return surfaceY-oceanFloorY>=2; }
+        // Conservative coastal-water hint: tree canopies must not turn alpine forests blue.
+        public boolean water() { return surfaceY<=67 && surfaceY-oceanFloorY>=2; }
     }
 
     public static Sample read(Path world,int chunkX,int chunkZ) throws IOException {
