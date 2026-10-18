@@ -510,6 +510,7 @@ public final class WorldAtlasOfflinePregenerator {
                 // The next Pre-generate click reuses this process and lock.
                 s.command("save-all flush");
                 s.awaitingWarmupDrain=false;
+                s.progress=null; // Do not display the completed warm-up's stale rate.
                 if(!s.stopping.get())
                     s.state("WARMUP_READY",
                             "Warm-up saved; server remains open. Continue with Pre-generate or Save + stop.");
