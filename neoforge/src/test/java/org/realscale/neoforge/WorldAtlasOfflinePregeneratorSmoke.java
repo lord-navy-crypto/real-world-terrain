@@ -145,8 +145,8 @@ public final class WorldAtlasOfflinePregeneratorSmoke {
             require(Files.isRegularFile(home.resolve("chunky-task.saved")),
                     "Stopping must wait for saved Chunky task marker");
             String commands=Files.readString(home.resolve("atlas-commands.txt"));
-            require(commands.lastIndexOf("chunky progress\\n")<
-                    commands.indexOf("save-all flush\\n"),
+            require(commands.lastIndexOf("chunky progress\n")<
+                    commands.indexOf("save-all flush\n"),
                     "World save flush MUST wait for Chunky task-map removal");
             require(commands.contains("chunky start minecraft:overworld square 32 64 512\n"),
                     "Must use Chunky NeoForge's actual world key");
