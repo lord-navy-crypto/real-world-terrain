@@ -29,5 +29,6 @@
   "realscale.atlas.pregen_busy": "已有后台预生成任务正在运行",
   "realscale.atlas.warmup_start": "预热",
   "realscale.atlas.warmup_starting": "正在生成 128 格预热区域...",
-  "realscale.atlas.warmup_busy": "已有预热或预生成任务正在运行"
+  "realscale.atlas.warmup_busy": "已有预热或预生成任务正在运行",
+  "realscale.atlas.busy_shared_io": "请先完成或取消当前任务，再启动其他地图任务"
 }
