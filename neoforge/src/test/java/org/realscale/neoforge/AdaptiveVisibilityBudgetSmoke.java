@@ -48,7 +48,7 @@ public final class AdaptiveVisibilityBudgetSmoke {
         yes(tracker.observe(new AdaptiveVisibilityBudget.Observation(
                 true,false,false,false,false,false))==T,
                 "Open cavern without positive roof evidence is ambiguous");
-        yes(tracker.samples()==14,"Unexpected sampling");
+        yes(tracker.samples()==13,"Unexpected sampling");
         yes(tracker.transitions()==6,"No extra mode oscillations");
 
         // Pure observation classification does not use camera or surface Y.
