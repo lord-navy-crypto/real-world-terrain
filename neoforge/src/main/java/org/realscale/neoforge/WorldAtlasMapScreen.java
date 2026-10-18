@@ -73,19 +73,23 @@ public final class WorldAtlasMapScreen extends Screen {
                 .bounds(mid+79,pregenY,78,20).build());
         int drawingY=height-106;
         addRenderableWidget(Button.builder(
+                Component.translatable("realscale.atlas.warmup_start"),
+                b -> startOfflineWarmup())
+                .bounds(mid-145,drawingY,70,20).build());
+        addRenderableWidget(Button.builder(
                 Component.translatable("realscale.atlas.draw_start"),
                 b -> startDrawing())
-                .bounds(mid-126,drawingY,92,20).build());
+                .bounds(mid-71,drawingY,88,20).build());
         pauseDrawButton=Button.builder(
                 Component.translatable("realscale.atlas.draw_pause"),
                 b -> togglePause())
-                .bounds(mid-29,drawingY,80,20).build();
+                .bounds(mid+21,drawingY,60,20).build();
         addRenderableWidget(pauseDrawButton);
         addRenderableWidget(Button.builder(
                 Component.translatable("realscale.atlas.draw_cancel"),
                 b -> {if(!WorldAtlasBackgroundPainter.cancel())
                     message=Component.translatable("realscale.atlas.draw_idle").getString();})
-                .bounds(mid+56,drawingY,72,20).build());
+                .bounds(mid+85,drawingY,60,20).build());
         int y=height-79;
         addRenderableWidget(Button.builder(Component.literal("X -"),
                 b -> {centerX-=512;requestScan();})
@@ -149,6 +153,21 @@ public final class WorldAtlasMapScreen extends Screen {
     private WorldAtlasOfflinePregenerator.Status visibleGeneration() {
         var status=WorldAtlasOfflinePregenerator.status();
         return status!=null && status.world().equals(save)?status:null;
+    }
+
+    private void startOfflineWarmup() {
+        try {
+            boolean started=WorldAtlasOfflinePregenerator.startWarmup(
+                    Minecraft.getInstance().gameDirectory.toPath(),
+                    save,centerX,centerZ);
+            message=Component.translatable(started
+                    ?"realscale.atlas.warmup_starting"
+                    :"realscale.atlas.warmup_busy").getString();
+        } catch(java.io.IOException ex) {
+            message=ex.getMessage()==null
+                    ?"Offline NeoForge server is not configured"
+                    :ex.getMessage();
+        }
     }
 
     private void startDrawing() {
@@ -245,7 +264,7 @@ public final class WorldAtlasMapScreen extends Screen {
         // height-79. Do not overpaint navigation on 240px GUI-scaled windows.
         int statusY=Math.min(top+size+2,height-140);
         var serverJob=visibleGeneration();
-        if(serverJob!=null && !serverJob.terminal()) {
+        if(serverJob!=null) {
             // These statistics are parsed from Chunky's real console.
             // A sent start command or scheduled radius is NOT progress.
             var progress=WorldAtlasOfflinePregenerator.progress();
