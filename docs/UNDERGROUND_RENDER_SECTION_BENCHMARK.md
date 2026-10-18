@@ -115,6 +115,44 @@ dedicated servers. No render distance, server tickets or chunk generation
 changes. Actual priority-queue integration remains blocked on supported
 API discovery and a reproducible client A/B proving an uncovered hot path.
 
+## Stage 2: bounded cave-exit probes, motion-aware sampling and diagnostics
+
+**Implemented in the separate Stage 2 draft branch** (without touching
+Sodium, Embeddium, vanilla rendering queues, saves or real worldgen):
+
+- Opt-in client sampler still defaults OFF. The observational cadence now
+  adapts to state: `TRANSITION` or a player moving >4 blocks from the previous
+  sample gets a probe every **10 ticks**; stable, stationary open-surface or
+  sealed-cave states probe every **40 ticks**. Teleport-like jumps of >24
+  blocks immediately reset policy to conservative transition.
+- Five local loaded-chunk sky probes distinguish open sky, covered cave and
+  mixed entrance. A solid-roof candidate uses the existing heightmap once;
+  mixed exposure or thin cover bypasses extra calls and stays transition.
+- For a potential sealed cave, test at most **four 24-block cardinal sightlines**
+  toward sky-exposed, already-loaded endpoints; a clear view of the outside
+  causes `TRANSITION`, not `SEALED_CAVE`. Unknown chunks and non-occluding
+  obstructing material (e.g. glass) must revert to transition. This is
+  bounded *heuristic exposure detection*, **not guaranteed full visibility
+  or a legitimate terrain-culling criterion**.
+- Fixed-size `AdaptiveVisibilityTelemetry` counts observations, unknown
+  samples, mode distribution and **probe-only** mean/p95-bucket/max cost;
+  it is not a frame-time/GPU/drawcall profiler. It allocates no per-sample
+  histogram nodes; logging is rate-limited to every 20 observations.
+- Pure-Java parity tests verify the mode machine, fail-open tunnel behavior,
+  cadence, and bounded telemetry. NeoForge build is required independently.
+
+To enable in a testing client only:
+
+```text
+-Drealscale.client.visibility.profile=true
+```
+
+**Still not implemented:** actual section queue reprioritization, reducing
+underground GPU submissions, or proven FPS gains. A stable public renderer
+integration and measured client A/B are mandatory before those changes.
+A tunnel opening beyond the 24-block horizon cannot be disproven by this
+heuristic; keep standard Sodium/vanilla occlusion even in `SEALED_CAVE`.
+
 ## Proposed D: Adaptive Visibility & Rendering Budget (DESIGN ONLY)
 
 This proposal assigns **priorities to optional/asynchronous render work**
