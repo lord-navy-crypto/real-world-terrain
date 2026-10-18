@@ -29,6 +29,7 @@ public final class WorldAtlasMapScreen extends Screen {
     private String message="";
     private boolean chunkyLoaded;
     private Button pauseDrawButton;
+    private int offlinePollTicks;
 
     public WorldAtlasMapScreen(Screen parent,Path save) {
         super(Component.translatable("realscale.atlas.title"));
@@ -53,6 +54,23 @@ public final class WorldAtlasMapScreen extends Screen {
     @Override protected void init() {
         chunkyLoaded=ModList.get().isLoaded("chunky");
         int mid=width/2;
+        int pregenY=height-133;
+        addRenderableWidget(Button.builder(
+                Component.translatable("realscale.atlas.pregen_start"),
+                b -> startOfflinePregeneration())
+                .bounds(mid-156,pregenY,83,20).build());
+        addRenderableWidget(Button.builder(
+                Component.translatable("realscale.atlas.pregen_pause"),
+                b -> WorldAtlasOfflinePregenerator.pause())
+                .bounds(mid-69,pregenY,68,20).build());
+        addRenderableWidget(Button.builder(
+                Component.translatable("realscale.atlas.pregen_resume"),
+                b -> WorldAtlasOfflinePregenerator.resume())
+                .bounds(mid+3,pregenY,72,20).build());
+        addRenderableWidget(Button.builder(
+                Component.translatable("realscale.atlas.pregen_stop"),
+                b -> WorldAtlasOfflinePregenerator.stopAndSave())
+                .bounds(mid+79,pregenY,78,20).build());
         int drawingY=height-106;
         addRenderableWidget(Button.builder(
                 Component.translatable("realscale.atlas.draw_start"),
@@ -113,6 +131,26 @@ public final class WorldAtlasMapScreen extends Screen {
         message=Component.translatable("realscale.atlas.copied").getString();
     }
 
+    private void startOfflinePregeneration() {
+        try {
+            boolean started=WorldAtlasOfflinePregenerator.start(
+                    Minecraft.getInstance().gameDirectory.toPath(),
+                    save,centerX,centerZ,RADII[radiusIndex]);
+            message=Component.translatable(started
+                    ?"realscale.atlas.pregen_starting"
+                    :"realscale.atlas.pregen_busy").getString();
+        } catch(java.io.IOException ex) {
+            message=ex.getMessage()==null
+                    ?"Offline NeoForge server is not configured"
+                    :ex.getMessage();
+        }
+    }
+
+    private WorldAtlasOfflinePregenerator.Status visibleGeneration() {
+        var status=WorldAtlasOfflinePregenerator.status();
+        return status!=null && status.world().equals(save)?status:null;
+    }
+
     private void startDrawing() {
         try {
             boolean started=WorldAtlasBackgroundPainter.start(save,
@@ -149,6 +187,11 @@ public final class WorldAtlasMapScreen extends Screen {
                     ?"realscale.atlas.draw_resume"
                     :"realscale.atlas.draw_pause"));
         }
+        // Query Chunky status without joining its worker or the server thread.
+        if(++offlinePollTicks>=400) {
+            offlinePollTicks=0;
+            WorldAtlasOfflinePregenerator.pollProgress();
+        }
         if(pending==null || !pending.isDone())return;
         try {
             current=pending.join();
@@ -177,7 +220,7 @@ public final class WorldAtlasMapScreen extends Screen {
 
         int grid=WorldAtlasRegionIndex.MAP_CELLS;
         int step=Math.max(1,Math.min(5,
-                Math.min((width-26)/grid,(height-172)/grid)));
+                Math.min((width-26)/grid,(height-195)/grid)));
         int size=grid*step,left=(width-size)/2,top=49;
         gfx.fill(left-2,top-2,left+size+2,top+size+2,0xff19252a);
         var drawing=visiblePainting();
@@ -200,8 +243,14 @@ public final class WorldAtlasMapScreen extends Screen {
         }
         // One bounded status row stays ABOVE the first footer button at
         // height-79. Do not overpaint navigation on 240px GUI-scaled windows.
-        int statusY=Math.min(top+size+5,height-120);
-        if(drawing!=null) {
+        int statusY=Math.min(top+size+2,height-140);
+        var serverJob=visibleGeneration();
+        if(serverJob!=null && !serverJob.terminal()) {
+            String status=serverJob.state()+": "+serverJob.detail();
+            gfx.drawCenteredString(font,Component.literal(
+                    font.plainSubstrByWidth(status,Math.max(130,width-16))),
+                    width/2,statusY,0xffe2d698);
+        } else if(drawing!=null) {
             String progress=drawing.state()+" | "
                     +drawing.finished()+"/"+WorldAtlasBackgroundPainter.PIXELS
                     +" cells | "+drawing.available()+" height samples"
