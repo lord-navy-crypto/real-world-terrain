@@ -31,15 +31,17 @@ public final class RealScaleClientFrameProfiler {
             Boolean.getBoolean("realscale.client.fps.profile");
     private static final long WARMUP_NANOS=10_000_000_000L;
     private static final long REPORT_NANOS=30_000_000_000L;
-    private static final String SCENE = System.getProperty(
-            "realscale.client.fps.scene","unspecified")
-            .replaceAll("[^A-Za-z0-9_-]","_").substring(0,
-                    Math.min(48,System.getProperty(
-                            "realscale.client.fps.scene","unspecified").length()));
+    private static final String SCENE = safeLabel(System.getProperty(
+            "realscale.client.fps.scene","unspecified"));
+    private static String safeLabel(String raw) {
+        String normalized=raw.replaceAll("[^A-Za-z0-9_-]", "_");
+        return normalized.substring(0,Math.min(48,normalized.length()));
+    }
 
     private static ClientLevel lastLevel;
     private static long warmupUntil,previousFrameNanos,windowStarted;
     private static int reportIndex;
+    private static AdaptiveVisibilityBudget.Mode lastMode;
     private static ClientFrameIntervalStats window = new ClientFrameIntervalStats();
 
     @SubscribeEvent
@@ -50,11 +52,21 @@ public final class RealScaleClientFrameProfiler {
         long now=System.nanoTime();
         // Do not include menu/loading-screen intervals in active-world FPS.
         if(world==null || client.player==null || client.screen!=null) {
-            reset(world,now);
+            // Do not allocate a fresh histogram on every menu frame.
+            if(world!=lastLevel || previousFrameNanos!=0L || window.frames()>0)
+                reset(world,now);
             return;
         }
         if(world!=lastLevel){
             reset(world,now);
+            return;
+        }
+        AdaptiveVisibilityBudget.Mode mode =
+                RealScaleAdaptiveVisibilityClient.currentMode();
+        if(lastMode!=mode){
+            // Mixing surface/cave observations contaminates scene metrics.
+            reset(world,now);
+            lastMode=mode;
             return;
         }
         if(previousFrameNanos==0) {
@@ -72,9 +84,8 @@ public final class RealScaleClientFrameProfiler {
         if(now<warmupUntil)return;
         window.add(delta);
         if(now-windowStarted>=REPORT_NANOS && window.frames()>=30) {
-            String mode=RealScaleAdaptiveVisibilityClient.currentMode().name();
             System.err.println("[RealScale fps profile] interval="+(++reportIndex)+
-                    " "+window.report(SCENE,mode));
+                    " "+window.report(SCENE,mode.name()));
             window=new ClientFrameIntervalStats();
             windowStarted=now;
         }
@@ -86,5 +97,6 @@ public final class RealScaleClientFrameProfiler {
         previousFrameNanos=0L;
         windowStarted=warmupUntil;
         window=new ClientFrameIntervalStats();
+        lastMode=null;
     }
 }
