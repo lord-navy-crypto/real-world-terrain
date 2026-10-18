@@ -153,6 +153,84 @@ integration and measured client A/B are mandatory before those changes.
 A tunnel opening beyond the 24-block horizon cannot be disproven by this
 heuristic; keep standard Sodium/vanilla occlusion even in `SEALED_CAVE`.
 
+## Stage 3: real client FPS/frame-interval measurement (opt-in)
+
+**Implemented measurement and parser, NOT proven FPS improvement.** NeoForge
+1.21.1's supported `RenderFrameEvent.Post` fires once after each rendered
+frame. `RealScaleClientFrameProfiler` measures consecutive Post-to-Post
+`System.nanoTime()` intervals, a useful client responsiveness sample
+that **includes VSync/frame limiting, render scheduling and pacing**.
+It is **not** a GPU query or exact CPU shader/render time.
+
+Use these two JVM switches on both benchmark candidates:
+
+```text
+-Drealscale.client.fps.profile=true
+-Drealscale.client.fps.scene=enclosed_cave
+```
+
+Optional additional scene mode telemetry:
+
+```text
+-Drealscale.client.visibility.profile=true
+```
+
+Leave `visibility.profile` identical in both candidates. FPS profiling
+is disabled by default and adds **no frame-event nanoTime cost while off**.
+When ON it ignores menus/world loads, resets on pauses or >2s gaps,
+warms up 10 seconds after the scene changes, and prints one readout for
+each complete ~30-second *uninterrupted, steady-mode* window:
+
+```text
+[RealScale fps profile] interval=... scene=enclosed_cave mode=SEALED_CAVE frames=... mean_fps=... p50_interval_ms=... p95_interval_ms=... p99_interval_ms=... low1pct_fps_lower=... slow_over_50ms=... max_interval_ms=... method=post_to_post_including_frame_pacing_not_gpu
+```
+
+- `mean_fps` uses total frame count / total observed seconds.
+- `p50/p95/p99_interval_ms` are **coarse 0.5ms upper bucket bounds**,
+  not measured GPU times; `256+` denotes percentile overflow.
+- `low1pct_fps_lower` is a **conservative inverse-p99 proxy** rather
+  than a precisely measured industry-standard 1% low.
+- `slow_over_50ms` counts long observed frame intervals.
+- The classifier resets the window after surface/cave/transition changes,
+  avoiding mixed-mode "surface" results.
+
+**Controlled A/B steps (actual GPU hardware required):**
+1. Use the SAME machine, RealScale generation preset/seed, completed
+   pregenerated disposable world, Java/NeoForge, RAM allotment, resolution,
+   render distance, simulation distance, quality flags, driver and window size.
+   For a renderer mod benchmark, test supported Sodium separately; never
+   use Sodium and Embeddium simultaneously.
+2. Use a fixed viewpoint and view direction; do not move or open menus
+   during each 30-second window. Set VSync and FPS cap consistently,
+   preferably off for both if seeking GPU throughput. Turn off shaders
+   for first-pass analysis.
+3. Run at least three full recorded windows **per scene per candidate**
+   (>=100 seconds including warmup), alternate run order A/B/A/B across
+   conditions, and repeat surface, cave, skylight/exit, alpine and far
+   pre-generated terrain. Do not force new chunks mid-FPS measurement.
+4. Save each candidate's logs. **Do not** compare old RealScale builds
+   lacking equivalent telemetry instrumentation to a new build with
+   instrumentation and assume an apples-to-apples result.
+5. Compare logs (use matching `--scene` AND `--mode`):
+
+```sh
+python3 qa/compare_client_fps.py baseline.log optimized.log \
+  --scene enclosed_cave --mode SEALED_CAVE \
+  --output build/fps-cave-comparison.json
+```
+
+The comparison script refuses incomplete, mixed or overflowing
+observations. It reports the *median of per-window* FPS/p95 values,
+not an incorrectly pooled global percentile. Positive differences
+remain **descriptive** until hardware/thermal variation, repeatability
+and build compatibility are assessed.
+
+**Current scope:** Stage-1/2 mode and probe optimizations alone only
+reduce *optional telemetry* overhead. They do **not** reprioritize
+Sodium's actual mesh builds, GPU submissions or chunk drawing; therefore
+they must not be advertised as increasing FPS. The known 180s distant
+virgin-chunk worldgen failures are unrelated release blockers.
+
 ## Proposed D: Adaptive Visibility & Rendering Budget (DESIGN ONLY)
 
 This proposal assigns **priorities to optional/asynchronous render work**
