@@ -45,6 +45,16 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/CaveHabitatMath.java \
             neoforge/src/test/java/org/realscale/neoforge/HabitatMathSmoke.java
           java -cp build/habitat-smoke org.realscale.neoforge.HabitatMathSmoke
+      - name: Test asynchronous REAL saved-chunk World Atlas heightmap drawing
+        run: |
+          python3 -m unittest discover -s qa -p 'test_world_atlas_background_painter.py' -v
+          mkdir -p build/atlas-background-smoke
+          javac -d build/atlas-background-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/WorldAtlasRegionIndex.java \
+            neoforge/src/main/java/org/realscale/neoforge/WorldAtlasHeightmapReader.java \
+            neoforge/src/main/java/org/realscale/neoforge/WorldAtlasBackgroundPainter.java \
+            neoforge/src/test/java/org/realscale/neoforge/WorldAtlasBackgroundHeightmapSmoke.java
+          java -cp build/atlas-background-smoke org.realscale.neoforge.WorldAtlasBackgroundHeightmapSmoke
       - name: Test read-only World Atlas region indexing and GUI integration
         run: |
           python3 -m unittest discover -s qa -p 'test_world_atlas_feature.py' -v
