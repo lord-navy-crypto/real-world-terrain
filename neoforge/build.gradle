@@ -73,7 +73,15 @@ repositories {
 }
 dependencies {
     implementation 'dev.isxander:yet-another-config-lib:3.8.1+1.21.1-neoforge' // YACL 3.8.1, official upstream Maven
-    implementation 'maven.modrinth:XaDC71GB:sPmtDq1X' // Lithostitched 1.8.0 NeoForge 21.1: upstream density cache optimization; EXPERIMENTAL A/B, not release-approved
+    // The default RealScale presets do NOT use Lithostitched codecs.
+    // IMPORTANT: Lithostitched's JigsawStructureMixin redirects ALL vanilla
+    // JigsawStructure placement to AlternateJigsawGenerator. Loading it in
+    // every real-server worldgen test defeats our intended vanilla baseline
+    // and greatly amplifies getBaseHeight() on 2096-tall worlds.
+    // Keep the optional addon available for compiling Terrain Lab support,
+    // but not installed in baseline client/server runs. Users of EXPLICIT
+    // Lithostitched Terrain Lab exports must install the library separately.
+    compileOnly 'maven.modrinth:XaDC71GB:sPmtDq1X'
     testImplementation(platform('org.junit:junit-bom:5.14.1'))
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
