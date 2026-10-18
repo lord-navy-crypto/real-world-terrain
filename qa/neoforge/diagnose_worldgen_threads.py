@@ -59,8 +59,11 @@ def parse_threads(raw):
 
 def related(t):
     name=t["name"]
+    # Minecraft 1.21.1 may name its actual generation worker simply
+    # "worldgen"; omitting that thread hides the expensive CPU stack!
     return any(token in name for token in
-               ("Server thread","Worker-Main","ForkJoinPool","RCON"))
+               ("Server thread","Worker-Main","ForkJoinPool","RCON",
+                "worldgen", "WorldGen", "Chunk Worker"))
 
 def diagnose_dumps(texts):
     if not texts:
