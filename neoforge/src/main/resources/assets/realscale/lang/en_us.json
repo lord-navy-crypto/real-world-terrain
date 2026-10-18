@@ -20,5 +20,11 @@
   "realscale.atlas.draw_idle": "No active map task",
   "realscale.atlas.draw_started": "Background map drawing started",
   "realscale.atlas.draw_busy": "A map task is already running",
-  "realscale.atlas.draw_real_legend": "Sampled saved heightmap"
+  "realscale.atlas.draw_real_legend": "Sampled saved heightmap",
+  "realscale.atlas.pregen_start": "Pre-generate",
+  "realscale.atlas.pregen_pause": "Pause task",
+  "realscale.atlas.pregen_resume": "Resume task",
+  "realscale.atlas.pregen_stop": "Save + stop",
+  "realscale.atlas.pregen_starting": "Launching offline NeoForge server...",
+  "realscale.atlas.pregen_busy": "Another offline pregeneration task is already active"
 }
