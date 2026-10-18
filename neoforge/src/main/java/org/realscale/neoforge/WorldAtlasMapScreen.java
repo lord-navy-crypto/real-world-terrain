@@ -159,11 +159,11 @@ public final class WorldAtlasMapScreen extends Screen {
                     font.plainSubstrByWidth(stats,Math.max(130,width-16))),
                     width/2,statusY,0xffc5e6d0);
         }
-        // Region location headers are NOT a heightmap/terrain rendering.
-        // The localized footer states that limitation explicitly.
-        gfx.drawCenteredString(font,
+        // A dedicated legend in the upper-right avoids colliding with
+        // bottom-row Back/Refresh controls in scaled Minecraft windows.
+        gfx.drawString(font,
                 Component.translatable("realscale.atlas.coverage_only"),
-                width/2,height-13,0xffbcbcbc);
+                Math.max(8,width-260),49,0xffbcbcbc);
     }
 
     @Override public void onClose() {
