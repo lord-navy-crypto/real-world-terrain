@@ -27,6 +27,11 @@ class MountainBasinPlateauTest(unittest.TestCase):
                     "type":"minecraft:interpolated",
                     "argument":f"realscale:{family}/height_signal"})
                 shape=read(root/"height_signal.json")
+                if preset=="tva_natural_smoothed":
+                    # Native 2D cache is only an outer wrapper; every basin
+                    # and plateau parameter remains exactly as before.
+                    self.assertEqual(shape["type"],"minecraft:cache_2d")
+                    shape=shape["argument"]
                 self.assertEqual(shape["type"],"realscale:mountain_relief")
                 self.assertEqual(shape["base"],f"realscale:{preset}/original_height_signal")
                 self.assertEqual(shape["continents"],f"realscale:{continental}")
@@ -63,6 +68,9 @@ class MountainBasinPlateauTest(unittest.TestCase):
             self.assertTrue(base["balanced"])
             self.assertGreater(base["altitude_cooling"],0)
             landform=read(DATA/"density_function"/preset/"height_signal.json")
+            if preset=="tva_natural_smoothed":
+                self.assertEqual(landform["type"],"minecraft:cache_2d")
+                landform=landform["argument"]
             self.assertEqual(adjusted["selector"],landform["selector"])
             self.assertEqual(adjusted["continents"],landform["continents"])
             self.assertGreater(adjusted["warmth"],0)
