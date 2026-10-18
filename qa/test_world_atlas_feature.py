@@ -55,7 +55,7 @@ class WorldAtlasFeatureTest(unittest.TestCase):
         keys=("entry","title","empty","back","refresh","scanning",
               "coverage_only","chunky_found","chunky_missing",
               "copy_chunky","copied","warmup_start","warmup_starting",
-              "warmup_busy")
+              "warmup_busy","busy_shared_io")
         for name in ("en_us","zh_cn"):
             data=json.loads((RES/(name+".json")).read_text())
             for key in keys:
