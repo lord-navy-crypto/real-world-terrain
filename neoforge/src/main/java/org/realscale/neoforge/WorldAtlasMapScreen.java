@@ -135,7 +135,23 @@ public final class WorldAtlasMapScreen extends Screen {
         message=Component.translatable("realscale.atlas.copied").getString();
     }
 
+    private boolean hasActivePainting() {
+        var job=WorldAtlasBackgroundPainter.current();
+        return job!=null && !job.state().equals("DONE")
+                && !job.state().equals("CANCELLED")
+                && !job.state().equals("FAILED");
+    }
+
+    private boolean hasActiveGeneration() {
+        var job=visibleGeneration();
+        return job!=null && !job.terminal();
+    }
+
     private void startOfflinePregeneration() {
+        if(hasActivePainting()) {
+            message=Component.translatable("realscale.atlas.busy_shared_io").getString();
+            return;
+        }
         try {
             boolean started=WorldAtlasOfflinePregenerator.start(
                     Minecraft.getInstance().gameDirectory.toPath(),
@@ -156,6 +172,10 @@ public final class WorldAtlasMapScreen extends Screen {
     }
 
     private void startOfflineWarmup() {
+        if(hasActivePainting()) {
+            message=Component.translatable("realscale.atlas.busy_shared_io").getString();
+            return;
+        }
         try {
             boolean started=WorldAtlasOfflinePregenerator.startWarmup(
                     Minecraft.getInstance().gameDirectory.toPath(),
@@ -171,6 +191,10 @@ public final class WorldAtlasMapScreen extends Screen {
     }
 
     private void startDrawing() {
+        if(hasActiveGeneration()) {
+            message=Component.translatable("realscale.atlas.busy_shared_io").getString();
+            return;
+        }
         try {
             boolean started=WorldAtlasBackgroundPainter.start(save,
                     centerX,centerZ,RADII[radiusIndex]);
@@ -206,6 +230,13 @@ public final class WorldAtlasMapScreen extends Screen {
                     ?"realscale.atlas.draw_resume"
                     :"realscale.atlas.draw_pause"));
         }
+        var serverStatus=visibleGeneration();
+        if(serverStatus!=null && serverStatus.terminal() &&
+                (message.equals(Component.translatable(
+                        "realscale.atlas.pregen_starting").getString()) ||
+                 message.equals(Component.translatable(
+                        "realscale.atlas.warmup_starting").getString())))
+            message="";
         // Query Chunky status without joining its worker or the server thread.
         if(++offlinePollTicks>=400) {
             offlinePollTicks=0;
@@ -264,7 +295,7 @@ public final class WorldAtlasMapScreen extends Screen {
         // height-79. Do not overpaint navigation on 240px GUI-scaled windows.
         int statusY=Math.min(top+size+2,height-140);
         var serverJob=visibleGeneration();
-        if(serverJob!=null) {
+        if(serverJob!=null && !serverJob.terminal()) {
             // These statistics are parsed from Chunky's real console.
             // A sent start command or scheduled radius is NOT progress.
             var progress=WorldAtlasOfflinePregenerator.progress();
@@ -289,6 +320,11 @@ public final class WorldAtlasMapScreen extends Screen {
             gfx.drawCenteredString(font,Component.literal(
                     font.plainSubstrByWidth(message,Math.max(130,width-16))),
                     width/2,statusY,0xffffff99);
+        } else if(serverJob!=null) {
+            String status=serverJob.state()+": "+serverJob.detail();
+            gfx.drawCenteredString(font,Component.literal(
+                    font.plainSubstrByWidth(status,Math.max(130,width-16))),
+                    width/2,statusY,0xffe2d698);
         } else if(current!=null) {
             String stats=current.savedChunks()+"/"+current.targetChunks()
                     +" saved ("+String.format(java.util.Locale.ROOT,
