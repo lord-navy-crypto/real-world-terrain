@@ -77,8 +77,14 @@ final class RealDemSeamlessMath {
         final int minZ = DEM.originZ(), maxZ = DEM.maxZ();
         if (x >= minX && x <= maxX && z >= minZ && z <= maxZ)
             return 1.0;
-        if (x <= minX - fadeMeters || x >= maxX + fadeMeters
-                || z <= minZ - fadeMeters || z >= maxZ + fadeMeters)
+        // Use 64-bit bounds: Java int addition can overflow in very distant
+        // exploration, incorrectly turning an out-of-DEM world column into
+        // a transition-ring candidate (or vice versa). This is an exact,
+        // allocation-free far-field reject with unchanged in-range results.
+        if ((long)x <= (long)minX - fadeMeters
+                || (long)x >= (long)maxX + fadeMeters
+                || (long)z <= (long)minZ - fadeMeters
+                || (long)z >= (long)maxZ + fadeMeters)
             return 0.0;
 
         final long coordinate = ((long) x << 32) | (z & 0xffffffffL);
