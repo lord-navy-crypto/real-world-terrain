@@ -152,6 +152,8 @@ public final class WorldAtlasBackgroundPainter {
         }catch(InterruptedException ex) {
             Thread.currentThread().interrupt();
             task.publish("CANCELLED",done,seen,errors,output);
+        }catch(java.io.IOException ex) {
+            task.publish("FAILED",done,seen,errors+1,output);
         }catch(RuntimeException ex) {
             task.publish("FAILED",done,seen,errors+1,output);
         }
