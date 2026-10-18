@@ -53,6 +53,26 @@ public final class RealDemSeamlessMathSmoke {
                 }
             }
         }
+        // Far-away exploration never pulls the small USGS pilot tile into
+        // distant procedural regions. These signed and near-world-border
+        // samples also protect overflow-safe arithmetic in the fade cache.
+        for (int fade : new int[]{256,768,2048,4096}) {
+            for (int x : new int[]{-30_000_000,-1_048_576,-65_536,-8192,
+                                    8192,65_536,1_048_576,30_000_000,
+                                    Integer.MIN_VALUE,Integer.MAX_VALUE}) {
+                for (int z : new int[]{-30_000_000,-8192,0,8192,
+                                        30_000_000,Integer.MAX_VALUE}) {
+                    long original=Double.doubleToRawLongBits(
+                            RealDemSeamlessMath.weightOutside(x,z,fade));
+                    long optimized=Double.doubleToRawLongBits(
+                            RealDemSeamlessMath.cachedWeightOutside(x,z,fade));
+                    require(original==optimized,
+                            "Far-distance USGS fade regression at "+x+","+z);
+                    require(original==Double.doubleToRawLongBits(0.0),
+                            "Distant procedural chunk mistakenly influenced by DEM");
+                }
+            }
+        }
         System.out.println("TVA_USGS_V2_SMOKE_PASS: 256 measured elevations, four 2048m fade sides, cache fidelity");
     }
 }
