@@ -22,11 +22,11 @@ expected=["realscale:"+k for k in FAMILIES]
 # Preserve the exact four stable entries and expose experimental weaving only
 # as a separately selected fifth world, never by mutating a canonical preset.
 opt_in="realscale:tva_wonders_invasion_three_realms"
-menu=expected+[opt_in]
+menu=expected+[opt_in,'realscale:special_chongqing_sky_city']
 for name in ("normal","extended"):
     tag=read(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset"/(name+".json"))
     assert tag["replace"] is False and tag["values"]==menu,(name,tag)
-    assert len(tag["values"])==len(set(tag["values"]))==5
+    assert len(tag["values"])==len(set(tag["values"]))==6
 for name,settings in FAMILIES.items():
     world=read(D/"worldgen/world_preset"/(name+".json"))
     assert world["dimensions"]["minecraft:overworld"]["generator"]["settings"]==settings,name
@@ -72,4 +72,4 @@ for p in (D/"neoforge/biome_modifier").glob("*.json"):
     if m.get("type")!="neoforge:add_features":continue
     features=m["features"] if isinstance(m["features"],list) else [m["features"]]
     assert "realscale:ocean_sediment_stones" not in features,p
-print("TVA_STATIC_PASS: FOUR unchanged canonical families + one opt-in woven world, legacy-safe IDs, 60 ecotones, APES, Grand Nether/End and skylands")
+print("TVA_STATIC_PASS: FOUR unchanged canonical families + opt-in woven/real-Chongqing worlds, legacy-safe IDs, 60 ecotones, APES, Grand Nether/End and skylands")
