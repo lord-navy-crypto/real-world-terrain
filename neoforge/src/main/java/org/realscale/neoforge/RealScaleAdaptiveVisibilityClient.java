@@ -190,6 +190,12 @@ public final class RealScaleAdaptiveVisibilityClient {
         return Exterior.NONE;
     }
 
+    /** Read-only context for opt-in FPS attribution, never a renderer hook. */
+    public static AdaptiveVisibilityBudget.Mode currentMode() {
+        return PROFILE ? TRACKER.mode() :
+                AdaptiveVisibilityBudget.Mode.TRANSITION;
+    }
+
     private static AdaptiveVisibilityBudget.Observation unknown() {
         return new AdaptiveVisibilityBudget.Observation(
                 false,false,false,false,true,false);
