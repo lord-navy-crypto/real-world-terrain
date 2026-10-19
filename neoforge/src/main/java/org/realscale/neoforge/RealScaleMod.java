@@ -124,6 +124,8 @@ public final class RealScaleMod {
                     new EndAccentFeature(EndAccentFeature.Kind.SHATTERED_GLADES));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_blossom_island"),
                     new SkyIslandFeature());
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_geology_accents"),
+                    new CaveGeologyAccentFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"),
                     new HabitatPatchFeature(HabitatPatchFeature.Kind.CAVE_MOSS));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_stalagmites"),
