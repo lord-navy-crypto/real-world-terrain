@@ -34,6 +34,8 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_biodiversity_v2.py' -v
       - name: Verify eight additional versioned v3 habitats and historical world isolation
         run: python3 -m unittest discover -s qa -p 'test_biodiversity_v3.py' -v
+      - name: Reject biome decoration FeatureSorter order cycles before world boot
+        run: python3 -m unittest discover -s qa -p 'test_biome_feature_order_dag.py' -v
       - name: Verify three opt-in Grand End biomes preserve foreign biome IDs and existing generators
         run: python3 -m unittest discover -s qa -p 'test_grand_end_three_biomes.py' -v
       - name: Validate Grand Ecology registrations and preserved dimensions
