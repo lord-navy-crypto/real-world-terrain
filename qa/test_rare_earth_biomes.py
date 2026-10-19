@@ -7,7 +7,8 @@ SRC=ROOT/"neoforge/src/main/java/org/realscale/neoforge"
 IDS=("geothermal_sulfur_basin","socotra_dragonblood_woodland",
 "white_dune_lagoon","sundarbans_tidal_mangrove","congo_peat_swamp_forest",
 "steppe_saline_lake","acidic_geothermal_mudflat","montane_mist_forest",
-"permafrost_fen","limestone_island_scrub")
+"permafrost_fen","limestone_island_scrub",
+"namib_fog_desert","serpentine_barrens","socotra_endemic_scrub")
 class RareEarthBiomes(unittest.TestCase):
     def test_all_biomes_have_data(self):
         for name in IDS:
