@@ -54,7 +54,10 @@ public final class ChongqingGisPlan {
     public static final String FORMAT = "REALSCALE_CHAOTIANMEN_PLACEMENT_V1";
     private static final long MAX_SOURCE_BYTES = 40L * 1024 * 1024;
     private static final int MAX_ROWS = 250_000;
-    private static final long MAX_WRITES = 2_000_000L;
+    // Real 500m OSM snapshot produces 4,033,166 planned writes.
+    // Still hard-cap at 5m; all writes must be deliberately paced by the
+    // integrated server on >=256-block-per-tick budget gates.
+    private static final long MAX_WRITES = 5_000_000L;
 
     static String installedDemHash() throws IOException {
         Properties props = new Properties();
@@ -149,7 +152,7 @@ public final class ChongqingGisPlan {
                 Row row = new Row(x0,x1,y,z,kind,height);
                 writes += row.writes();
                 if (writes > MAX_WRITES)
-                    throw new IOException("Placement exceeds 2m-block pilot cap");
+                    throw new IOException("Placement exceeds 5m-block pilot cap");
                 rows.add(row);
                 lastZ = z; lastX = x1;
             }
