@@ -128,6 +128,10 @@ def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
         assert report["sentinel_source_stac_item"]==satellite_meta["source_stac_item"]
         assert report["sentinel_classified_columns"]==len(satellite_surface)
         assert report["sentinel_resolution_m"]==10
+        assert report["satellite_classified_extent_radius_m"]==satellite_meta["radius_m"]
+        if radius==600:
+            assert satellite_meta["radius_m"]==600,(
+                "No pretending the 500m satellite mask covers 600m world")
         assert report["satellite_evidence_used_after_exact_osm_precedence"]>1000
     if surface_mask is not None:
         ground_surface,surface_meta=exporter.read_surface_mask(
@@ -165,7 +169,8 @@ def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
                for z in (r["z"],)}
     verified_ground=0
     for x,z in ((0,0),(64,64),(-64,64),(192,-128),(-500,-500),(500,500),
-                (401,401),(-401,401),(401,-401),(-401,-401)):
+                (401,401),(-401,401),(401,-401),(-401,-401),
+                *(((-580,0),(580,0),(0,-580),(0,580)) if radius==600 else ())):
         y=math.ceil(exporter.elevation(grid,x,z))-1
         if (x,z) not in footprint:
             expected=exporter.NAME[ground_surface.get(
