@@ -282,8 +282,10 @@ def prepare_server(root):
         "min_y":MIN_Y,"height":HEIGHT,"logical_height":HEIGHT,
         "infiniburn":"#minecraft:infiniburn_overworld",
         "effects":"minecraft:overworld",
-        "monster_spawn_light_level":{"type":"minecraft:uniform",
-            "value":{"min_inclusive":0,"max_inclusive":7}},
+        # Vanilla 1.21.1 accepts a literal integer. A nested provider
+        # with "value" is invalid for this dimension codec; verified by
+        # booting the OFFICIAL Mojang 1.21.1 dedicated server.
+        "monster_spawn_light_level":7,
         "monster_spawn_block_light_limit":0
     },indent=2)+"\n")
     (root/"eula.txt").write_text("eula=true\n")
