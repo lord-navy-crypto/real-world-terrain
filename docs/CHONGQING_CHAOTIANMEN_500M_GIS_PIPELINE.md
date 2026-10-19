@@ -77,6 +77,39 @@ not imply the Yangtze/Jialing rivers or plaza have been fully surveyed.
 No vector snapshot is bundled in this PR until such a real export is
 successfully fetched and verified.
 
+## Step A.5 — Audit the actual imported GIS before Minecraft placement
+
+After obtaining an **actual** Overpass JSON / Overpass Turbo GeoJSON file,
+run the new source-only audit. This needs no Minecraft client or extra Python
+packages and makes NO network request:
+
+    python3 tools/chongqing_gis_audit.py \\
+      --input chongqing/data/chaotianmen_500m_2026.osm.json \\
+      --radius 500 \\
+      --output build/chaotianmen-gis-audit
+
+The output directory must be new/empty. Outputs:
+
+- `plan.svg`: north-up **1m-to-1-block** local X/Z vector map from the
+  supplied source only; blue=water polygons, grey=building footprints,
+  orange=roads, purple=rail. Hover over paths in an SVG-capable browser
+  to see their source identifiers/names. It does not use Google basemap
+  imagery or infer any missing street/building outlines.
+- `audit.json`: source SHA-256, GIS feature IDs, projected bounding boxes,
+  coverage counts, missing building-height tags, vertical transport that
+  still needs a real surveyed Y coordinate, and candidate IDs matching
+  named points of interest. All named matches are **candidate OSM tags**,
+  NOT proof that the real structure is accurately modelled.
+- Missing name matches (e.g., 来福士 / 朝天门广场) are recorded as
+  **missing in supplied source tags**. They are NOT claims that the real
+  landmark does not exist. Some landmarks may fall outside the pilot.
+
+For field validation, compare the SVG geometry with a licensed real-world
+reference and record manually measured coordinates, height datums and
+observed visibility; **do not scrape or redistribute copyrighted 3D maps**.
+Until source acquisition succeeds, no audit PNG/SVG generated from a synthetic
+unit-test fixture is evidence of Chongqing geometry.
+
 ## Step B. Convert to vanilla Minecraft datapack
 
 After obtaining a REAL Overpass JSON/GeoJSON file:
@@ -111,6 +144,14 @@ All geometry is projected at **1 horizontal metre = 1 MC block**.
   never arbitrary flowing Minecraft water that could flood the whole
   floating island. Do not mistake the blue reference color for finished
   Yangtze/Jialing channel hydrodynamics.
+- Closed highway/railway OSM ways remain **lines** rather than filling
+  their interiors, unless explicitly `area=yes` and valid area geometry.
+- The exporter run-compresses DEM-aligned horizontal rows into `fill` where
+  every cell shares the same **real source feature / height / material / Y**.
+  Every command touches at most 2,048 blocks, and every staged function
+  at most **20,000 block writes**. `manifest.json` records
+  `stage_block_writes` and `staged_block_writes` for load budgeting.
+  This is a performance safety improvement, **not new geographic data**.
 - Incomplete multipolygon relations, exact structural elevations, bridge
   clearance, tunnel geometry, vegetation and real 3D facades remain
   explicitly unknown. We do NOT auto-invent Raffles City or Hongyadong.
