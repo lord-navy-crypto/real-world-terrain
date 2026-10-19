@@ -32,13 +32,13 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
 
     public MarineEcologyFeature(){super(NoneFeatureConfiguration.CODEC);}
 
-    private static boolean hard(BlockState s){
+    static boolean isHardSeafloor(BlockState s){
         return s.is(Blocks.STONE)||s.is(Blocks.DEEPSLATE)||s.is(Blocks.TUFF)
             ||s.is(Blocks.ANDESITE)||s.is(Blocks.DIORITE)||s.is(Blocks.GRANITE)
             ||s.is(Blocks.BASALT)||s.is(Blocks.CALCITE)||s.is(Blocks.TERRACOTTA);
     }
     private static boolean natural(BlockState s){
-        return hard(s)||s.is(Blocks.SAND)||s.is(Blocks.GRAVEL)
+        return isHardSeafloor(s)||s.is(Blocks.SAND)||s.is(Blocks.GRAVEL)
                 ||s.is(Blocks.CLAY)||s.is(Blocks.DIRT)||s.is(Blocks.MUD);
     }
     private static BlockState coral(RandomSource r,boolean fan){
@@ -119,7 +119,7 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
         if(!MarineEcologyZonationMath.ocean(biome))return false;
         double patch=MarineEcologyZonationMath.patch(x,z,w.getSeed());
         MarineEcologyZonationMath.Habitat h=MarineEcologyZonationMath.classify(
-                biome,depth,hard(support),patch);
+                biome,depth,isHardSeafloor(support),patch);
         // NOAA habitat surveys: deep coral/sponge hotspots commonly occupy
         // stable exposed hard substrate on slopes, ridges and canyon walls.
         // Local bathymetric relief is a cheap proxy for flow-exposed terrain,
