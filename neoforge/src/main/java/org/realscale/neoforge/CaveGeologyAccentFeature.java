@@ -82,6 +82,19 @@ public final class CaveGeologyAccentFeature extends Feature<NoneFeatureConfigura
             if(previous.equals(accent))continue;
             w.setBlock(rock,accent,2);
             changed++;
+            // Very small wall-adjacent mineral streak, not a new ore vein.
+            // Same chunk and same naturally exposed cave pocket.
+            if(changed<3 && context.random().nextInt(3)==0){
+                BlockPos adjacent=rock.offset(context.random().nextBoolean()?1:-1,0,0);
+                if(adjacent.getX()>=chunk.getMinBlockX()
+                        && adjacent.getX()<=chunk.getMaxBlockX()
+                        && replaceable(w.getBlockState(adjacent))
+                        && dry(w,adjacent.above())
+                        && !adjacent.equals(rock)){
+                    w.setBlock(adjacent,accent,2);
+                    changed++;
+                }
+            }
             if(changed>=3)break;
         }
         return changed>0;
