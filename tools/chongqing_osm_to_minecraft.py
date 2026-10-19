@@ -437,6 +437,7 @@ def export_datapack(layers: dict, stats: dict, source: Path,
     # no single function can attempt millions of placements in one tick.
     ordered = sorted(layers.items(), key=lambda e: (e[0][1], e[0][0]))
     output = []  # list of (Minecraft command, affected block count)
+    native_rows = []  # safe, bounded, command-free native in-game UI plan
     used = collections.Counter()
     i = 0
     while i < len(ordered):
@@ -453,6 +454,10 @@ def export_datapack(layers: dict, stats: dict, source: Path,
             x0 = ordered[start][0][0]
             x1 = ordered[stop - 1][0][0]
             width = x1 - x0 + 1
+            native_rows.append({
+                "x0": x0, "x1": x1, "z": z, "y": y,
+                "kind": type_name, "height": height if height is not None else 0
+            })
             block = VALID_BLOCKS[type_name]
             if width == 1:
                 output.append((f"setblock {x0} {y} {z} {block} replace", 1))
@@ -468,8 +473,8 @@ def export_datapack(layers: dict, stats: dict, source: Path,
                     width * height))
                 used["building_mass_columns"] += width
         i = j
-    if len(output) > MAX_COMMANDS:
-        raise ValueError("Too many commands for conservative staging cap")
+    if len(output) > MAX_COMMANDS or len(native_rows) > MAX_COMMANDS:
+        raise ValueError("Too many commands/rows for conservative staging cap")
     chunks = []
     current, volume = [], 0
     volumes = []
@@ -508,6 +513,30 @@ def export_datapack(layers: dict, stats: dict, source: Path,
             for i in range(len(chunks))],
         "safety_note":"Back up the generated Special Chongqing world; run only after chunk pregeneration. NEVER run on your primary TVA world. Water uses blue-concrete reference, NOT navigable fluid; unknown building heights are footprints only.",
     }
+    (destination/"manifest.json").write_text(json.dumps(
+        manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    # An opt-in native UI can read this plan directly in a singleplayer
+    # Special Chongqing world. No chat /function or console commands.
+    # Each row is a deterministic, DEM-aligned horizontal segment.
+    # This file is not itself an installer and never edits a save.
+    native = {
+        "format": "REALSCALE_CHAOTIANMEN_PLACEMENT_V1",
+        "center_lat": dem.lat, "center_lon": dem.lon, "radius_m": radius,
+        "dem_source_raw_sha256": dem.sha256,
+        "vector_source_sha256": manifest["vector_source_sha256"],
+        "vector_attribution": attribution,
+        "source_unverified": True,
+        "placement_requires": "singleplayer creative NEW realscale:special_chongqing_sky world, saved-world backup, player confirmation",
+        "row_count": len(native_rows),
+        "planned_block_writes": sum(
+            (r["x1"] - r["x0"] + 1) * (r["height"] + 1) for r in native_rows),
+        "rows": native_rows,
+    }
+    (destination/"chongqing-gis-plan.json").write_text(
+        json.dumps(native,ensure_ascii=False,separators=(",",":"))+"\n",
+        encoding="utf-8")
+    manifest["native_ui_plan"] = "chongqing-gis-plan.json"
+    # Keep on-disk manifest in sync with the new UI export.
     (destination/"manifest.json").write_text(json.dumps(
         manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     return manifest
