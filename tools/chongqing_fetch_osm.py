@@ -17,7 +17,10 @@ from chongqing_osm_to_minecraft import DEFAULT_DEM, Dem, osm_features
 DEFAULT_ENDPOINT = "https://overpass.kumi.systems/api/interpreter"
 TAGS = ('way["building"]', 'way["highway"]',
         'way["railway"]', 'way["natural"="water"]',
-        'way["waterway"="riverbank"]')
+        'way["waterway"="riverbank"]',
+        'relation["natural"="water"]["type"="multipolygon"]',
+        'relation["waterway"="riverbank"]["type"="multipolygon"]',
+        'relation["building"]["type"="multipolygon"]')
 
 def query(dem, radius, buffer_m=100):
     if radius<32 or radius>512:
@@ -80,7 +83,7 @@ def main(argv=None):
         "queried_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "query_sha256":hashlib.sha256(q.encode("utf-8")).hexdigest(),
         "ways_with_complete_geometry":len(osm_features(data)),
-        "limitation":"Way-only geometry; relations, bridge heights and water planes are incomplete."
+        "limitation":"Complete multipolygon relations supported; broken relation members are skipped. Exact bridge heights and water planes remain unknown."
     }
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(data,ensure_ascii=False,
