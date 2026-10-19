@@ -96,3 +96,51 @@ so upgrading a JAR never automatically changes the old End biome map.
 
 Until 4 and 5 are complete, mark compatibility **designed for additive
 behavior, not certified**.
+
+## 2026-10-19 enhancement: exclusive own-End invasion at first spawn
+
+The ALWAYS-ON unified cross-realm invasion continues in all six directions.
+**Only the newly created OVERWORLD first spawn is special:**
+within the existing small 192-block starting radius at world origin the
+`CrossRealmBiomeSource` now reports exactly ONE of the three custom habitats,
+`realscale:end_chorus_gardens`, `realscale:end_crystal_barrens` or
+`realscale:end_shattered_glades`. A fixed climate-biome sample at the origin
+selects it consistently for the entire horizontal area AND all Y values,
+including high-altitude Measured terrain. This overwrites the previous
+Nether-wastes/vanilla-End-highlands first-spawn choice. The optional
+Invasion Showcase delegates these custom IDs unchanged.
+
+The initial spawn event **still only runs when creating a NEW opt-in world**.
+Its 9×9, illuminated arrival platform uses the selected biome's palette,
+end-stone brick guardrails and four sea-lantern corner lights. It creates an
+accessible, level, bounded survival arrival pad even at sea or on a cliff;
+it does not build a large fortress or rewrite remote chunks.
+
+Elsewhere, Nether/End/Overworld cross-realm patches continue using their
+prior rare spatial placement. No new rules globally replace all Overworld
+biomes, no forced seed, and no retroactive migration of an existing save.
+
+### Visual biome pass
+
+1. **Chorus Gardens:** living 2–4-block chorus shoots with real flowers;
+   sparse purpur/end-brick ground mosaic.
+2. **Crystal Barrens:** calcite/amethyst ground crusts, 1–3-block amethyst
+   spires, supported upward clusters.
+3. **Shattered Glades:** fragmented brick/purpur floor, irregular purpur
+   remnants and occasional capped end rods.
+
+Two bounded feature attempts per decorating chunk, limited to tiny 9×9
+origin patches and natural unobstructed End Stone. No new block registration,
+no copied BetterEnd assets, no destructive terrain shaping.
+
+### Recommended acceptance
+
+- CI: verify first-spawn biome is exactly one of the **three own IDs** at
+  Y=64/100/160/320; reject vanilla `nether_wastes` and `end_highlands`.
+- In a fresh Sacred and fresh Measured world, F3 confirms the same custom
+  biome at initial spawn. Check the real 9×9 starter pad, railings and lights.
+- Use `/locate biome realscale:end_chorus_gardens` and analogous commands in
+  the End, then actually load those chunks and inspect the surface decoration.
+- Ensure legacy saves, Grand End dragon island, End City generation and
+  foreign-modded biome IDs are unchanged. Compatibility with the real
+  NeoForge BetterEnd port remains provisional until an integrated test.
