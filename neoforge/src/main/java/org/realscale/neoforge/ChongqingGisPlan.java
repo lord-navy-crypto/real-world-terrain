@@ -71,7 +71,7 @@ public final class ChongqingGisPlan {
             "04a380b144d3f002c0157d841edefb68d5a5bfacf6ca07149c43e8f03a858980";
     private static final String BUNDLED_VECTOR_SHA256 =
             "9816d76beb4579e8c7289cce52fdd3f216e323c2e2a320562654005717494657";
-    private static final long MAX_SOURCE_BYTES = 40L * 1024 * 1024;
+    private static final int MAX_SOURCE_BYTES = 40 * 1024 * 1024;
     private static final int MAX_ROWS = 250_000;
     // Real 500m OSM snapshot produces 4,033,166 planned writes.
     // Still hard-cap at 5m; all writes must be deliberately paced by the
