@@ -26,6 +26,16 @@ class RareEarthBiomes(unittest.TestCase):
         self.assertEqual(cfg["type"],"realscale:rare_earth_surface")
         self.assertEqual(placed["feature"],"realscale:rare_earth_surface")
         self.assertEqual(set(modifier["biomes"]),{"realscale:"+x for x in IDS})
+    def test_opt_in_biome_source(self):
+        source=(SRC/"RareEarthBiomeSource.java").read_text()
+        mod=(SRC/"RealScaleMod.java").read_text()
+        self.assertIn('"rare_earth_biomes_v1"',mod)
+        self.assertIn("RareEarthBiomeSource.CODEC",mod)
+        for name in IDS:self.assertIn('"'+name+'"',source)
+        self.assertIn("if(qy<16)return original",source)
+        self.assertIn("id.contains(\"ocean\")",source)
+        self.assertIn("Math.floorDiv(qx,64)",source)
+
     def test_safe_surface_only(self):
         src=(SRC/"RareEarthSurfaceFeature.java").read_text()
         for rule in ("i<48 && count<20", "Level.OVERWORLD",
