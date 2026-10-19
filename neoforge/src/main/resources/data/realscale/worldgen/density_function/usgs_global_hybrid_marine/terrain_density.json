@@ -8,7 +8,7 @@
   },
   "selector": {
     "type": "minecraft:noise",
-    "noise": "minecraft:ridges",
+    "noise": "minecraft:erosion",
     "xz_scale": 0.003,
     "y_scale": 0
   },
