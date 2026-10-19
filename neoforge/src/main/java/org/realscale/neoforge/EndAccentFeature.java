@@ -59,7 +59,12 @@ public final class EndAccentFeature extends Feature<NoneFeatureConfiguration> {
     @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
         WorldGenLevel world=context.level();
-        if (!world.getLevel().dimension().equals(Level.END)) return false;
+        boolean end = world.getLevel().dimension().equals(Level.END);
+        boolean overworldSpawn = world.getLevel().dimension().equals(Level.OVERWORLD)
+                && TVAWorldGuard.hasCrossRealmInvasion(context);
+        // Overworld custom End biomes are limited to the immutable spawn
+        // invasion circle. Never decorate normal vanilla/foreign overworlds.
+        if (!end && !overworldSpawn) return false;
 
         BlockPos origin=context.origin();
         int chunkX=Math.floorDiv(origin.getX(),16),chunkZ=Math.floorDiv(origin.getZ(),16);
@@ -73,10 +78,22 @@ public final class EndAccentFeature extends Feature<NoneFeatureConfiguration> {
                     || Math.floorDiv(above.getZ(),16)!=chunkZ) continue;
             if (above.getY() < world.getMinBuildHeight()+3
                     || above.getY()+5 >= world.getMaxBuildHeight()) continue;
-            // The biome predicate is required even though the placed
-            // feature's minecraft:biome modifier also tests its origin.
+            // A custom RealScale End biome can also invade the *Overworld*
+            // at first spawn. Allow decorating only within the dedicated
+            // 192-block spawn circle; surrounding foreign biome IDs are safe.
+            if(overworldSpawn && !CrossRealmBiomeSource.isSpawnInvasionZone(
+                    Math.floorDiv(above.getX(),4), Math.floorDiv(above.getZ(),4)))
+                continue;
+            BlockPos floor=above.below();
+            BlockState ground=world.getBlockState(floor);
+            boolean originalEndStone=ground.is(Blocks.END_STONE);
+            boolean dryNaturalSpawn=overworldSpawn &&
+                    (ground.is(Blocks.STONE) || ground.is(Blocks.DIRT)
+                    || ground.is(Blocks.GRASS_BLOCK) || ground.is(Blocks.GRAVEL)
+                    || ground.is(Blocks.COARSE_DIRT) || ground.is(Blocks.TUFF))
+                    && world.getFluidState(floor).isEmpty();
             if(!world.getBiome(above).is(kind.biome)
-                    || !world.getBlockState(above.below()).is(Blocks.END_STONE)
+                    || !(originalEndStone || dryNaturalSpawn)
                     || !world.getFluidState(above).isEmpty()
                     || !world.getBlockState(above).isAir()) continue;
 
@@ -84,13 +101,16 @@ public final class EndAccentFeature extends Feature<NoneFeatureConfiguration> {
                   ^ ((long)above.getZ()&0xffffffffL)
                   ^ 0x7e1a30c5L ^ kind.ordinal()*0x9e3779b97f4a7c15L);
             int variant=(int)Math.floorMod(h,16L);
-            BlockPos floor=above.below();
             // All height/decor checks complete BEFORE the first write.
             // Every tree/spire is naturally supported by original End Stone.
             if(kind==Kind.CHORUS_GARDENS) {
                 if(variant<=3) {
                     if(!clearColumn(world,above,4))continue;
-                    // Leave an End Stone root beneath the living chorus plant.
+                    // Imported Overworld chorus can only survive when its
+                    // root is natural End Stone. Keep the transplant strictly
+                    // within the original biome and dry ground.
+                    if(dryNaturalSpawn)
+                        world.setBlock(floor,Blocks.END_STONE.defaultBlockState(),2);
                     world.setBlock(above,Blocks.CHORUS_PLANT.defaultBlockState(),2);
                     world.setBlock(above.above(),Blocks.CHORUS_PLANT.defaultBlockState(),2);
                     if(variant==0) {
@@ -110,6 +130,10 @@ public final class EndAccentFeature extends Feature<NoneFeatureConfiguration> {
                 if(variant<=3) {
                     int height=variant==0?3:variant==1?2:1;
                     if(!clearColumn(world,above,height+1))continue;
+                    // Imported crystalline outcrops establish a pale
+                    // End-stone root without changing the terrain height.
+                    if(dryNaturalSpawn)
+                        world.setBlock(floor,Blocks.END_STONE.defaultBlockState(),2);
                     // Amethyst spires are self-supported; cap with a
                     // physically supported upward-pointing crystal bud.
                     for(int dy=0;dy<height;dy++)
@@ -128,6 +152,8 @@ public final class EndAccentFeature extends Feature<NoneFeatureConfiguration> {
                 // Broken masonry and illuminated ruins, never tall towers.
                 if(variant<=2) {
                     if(!clearColumn(world,above,3))continue;
+                    if(dryNaturalSpawn)
+                        world.setBlock(floor,Blocks.END_STONE.defaultBlockState(),2);
                     world.setBlock(above,Blocks.PURPUR_PILLAR.defaultBlockState(),2);
                     if(variant==0) {
                         world.setBlock(above.above(),Blocks.PURPUR_PILLAR.defaultBlockState(),2);
