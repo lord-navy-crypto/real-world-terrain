@@ -156,5 +156,4 @@ public final class ChongqingGisPlan {
             throw new IOException("Malformed GIS placement schema",ex);
         }
     }
-    private ChongqingGisPlan() {}
 }
