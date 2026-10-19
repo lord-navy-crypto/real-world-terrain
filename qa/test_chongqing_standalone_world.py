@@ -112,8 +112,11 @@ def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
     report=json.loads((world/"realscale-standalone-export-metrics.json").read_text())
     assert report["actual_overlay_writes"]==494988
     assert report["chunks"]>=3900
-    assert report["regions"]==4  # 64×64 chunks over [-500,500] = 2×2 Anvil regions
-    assert report["dem_terrain_columns"]==1001*1001
+    radius=report["world_xz_range"][1]
+    assert report["world_xz_range"]==[-radius,radius]
+    assert radius in (500,600)
+    assert report["regions"]==(4 if radius==500 else 16)
+    assert report["dem_terrain_columns"]==(2*radius+1)**2
 
     # Inspect actual NBT saved chunks, not a manifest or PNG stand-in.
     grid,plan=exporter.read_inputs()
@@ -186,6 +189,18 @@ def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
                 x,y,z,material)
             crystal_verified+=1
         assert crystal_verified>=20
+    extra_tower_checked=0
+    if radius==600:
+        from chongqing_extended_tower1 import build_real_outer_t1
+        extra,source=build_real_outer_t1(radius=600)
+        assert report["expanded_real_t1_evidence"]==source
+        assert report["extra_t1_source_building_writes"]==len(extra)
+        assert all(abs(x)>500 or abs(z)>500 for x,y,z,b in extra)
+        for x,y,z,material in extra[::max(1,len(extra)//40)]:
+            assert get_block(world,x,y,z)==exporter.NAME[material],(
+                "REAL Raffles Tower 1 missing from expanded saved-world",x,y,z)
+            extra_tower_checked+=1
+        assert extra_tower_checked>=20
     geometry_rows=plan["rows"]
     tested=0
     for row in geometry_rows[::max(1,len(geometry_rows)//20)]:
@@ -206,6 +221,7 @@ def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
               "satellite_ground_evidence_columns":len(satellite_surface),
               "road_corridor_actual_blocks_checked":verified_roads,
               "crystal_3d_real_anvil_samples":crystal_verified,
+              "actual_outer_t1_anvil_samples":extra_tower_checked,
               "spawn_y":int(data["SpawnY"])}))
 
 
