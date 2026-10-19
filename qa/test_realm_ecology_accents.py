@@ -32,7 +32,7 @@ class RealmQA(unittest.TestCase):
 
     def test_no_carving_and_chunk_bounds(self):
         source=(JAVA/"RealmEcologyAccentFeature.java").read_text()
-        for v in ("TVAWorldGuard.hasRealScaleGenerator", "count<4", "i<10",
+        for v in ("TVAWorldGuard.hasRealScaleGenerator", "placed<28", "i<64",
                   "chunk.getMinBlockX()", "chunk.getMinBlockZ()",
                   "accent.canSurvive(w,p)", "Level.NETHER", "Level.END"):
             self.assertIn(v,source)
