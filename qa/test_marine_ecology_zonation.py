@@ -90,6 +90,18 @@ class MarineZonationQA(unittest.TestCase):
         self.assertNotIn("EntityType.GLOW_SQUID",event)
         self.assertIn("return 1.0;",math)
 
+    def test_kelp_canopy_and_live_coral_support_are_protected(self):
+        code=(JAVA/"MarineEcologyFeature.java").read_text()
+        self.assertIn("int height=2+random.nextInt(4)+random.nextInt(4)",code)
+        self.assertIn("!natural(w.getBlockState(pos.below()))",code)
+        self.assertIn("if(!target.canSurvive(w,p))return false",code)
+        # Decorations may recolor unoccupied sediment but should never
+        # recolor support underneath newly placed coral or live kelp.
+        tail=code.split("w.setBlock(p,target,2);",1)[1].split("return true;",1)[0]
+        self.assertNotIn("seabedAccent",tail)
+        kelp=code.split("if(h==MarineEcologyZonationMath.Habitat.TEMPERATE_KELP)",1)[1]
+        self.assertNotIn("seabedAccent",kelp.split("if(target==null)",1)[0])
+
     def test_no_new_world_mode_or_mutation_to_measured_noise_graph(self):
         preset=read(WG/"world_preset/tva_measured_global_landforms_three_realms.json")
         settings=preset["dimensions"]["minecraft:overworld"]["generator"]["settings"]
