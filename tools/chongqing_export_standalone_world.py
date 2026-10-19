@@ -38,6 +38,8 @@ HEIGHT=1024
 DATA_VERSION=3955
 SHELL=40
 RADIUS=500
+SOURCE_MASK_RADIUS=500
+ORIGINAL_GIS_RADIUS=500
 NAME={0:"minecraft:air",1:"minecraft:stone",2:"minecraft:dirt",
       3:"minecraft:grass_block",4:"minecraft:light_gray_concrete",
       5:"minecraft:gray_concrete",6:"minecraft:polished_andesite",
@@ -70,7 +72,7 @@ def read_surface_mask(file: Path, dem_sha: str) -> tuple[dict,dict]:
         raise ValueError("OSM surface decompression exceeds safety cap")
     data=json.loads(raw)
     if (data["format"]!=SURFACE_FORMAT or
-            data["radius_m"]!=RADIUS or data["resolution_m"]!=1 or
+            data["radius_m"]!=SOURCE_MASK_RADIUS or data["resolution_m"]!=1 or
             data["dem_source_raw_sha256"]!=dem_sha or
             data["origin_lat"]!=29.5667 or data["origin_lon"]!=106.5874 or
             data["license"]!="ODbL-1.0" or
@@ -82,7 +84,8 @@ def read_surface_mask(file: Path, dem_sha: str) -> tuple[dict,dict]:
     for item in data["rows"]:
         z,x0,x1,material,confidence,source_id=item
         if (not all(isinstance(v,int) for v in (z,x0,x1)) or
-                min(z,x0,x1)<-RADIUS or max(z,x0,x1)>RADIUS or
+                min(z,x0,x1)<-SOURCE_MASK_RADIUS or
+                max(z,x0,x1)>SOURCE_MASK_RADIUS or
                 x1<x0 or material not in SURFACE_BLOCK or
                 confidence not in ("low","medium","high") or
                 not (source_id.startswith("way/") or source_id.startswith("relation/"))):
@@ -106,7 +109,7 @@ def read_copernicus_mask(path: Path, dem_sha: str) -> tuple[dict,dict]:
         raise ValueError("Oversized Sentinel-2 ground mask")
     data=json.loads(raw)
     if (data.get("format")!="REALSCALE_CHAOTIANMEN_S2_LANDCOVER_V1"
-            or data.get("radius_m")!=RADIUS
+            or data.get("radius_m")!=SOURCE_MASK_RADIUS
             or data.get("resolution_m")!=10
             or data.get("dem_source_raw_sha256")!=dem_sha
             or data.get("origin_lat")!=29.5667
@@ -120,7 +123,8 @@ def read_copernicus_mask(path: Path, dem_sha: str) -> tuple[dict,dict]:
     for row in data["rows"]:
         z,x0,x1,material,confidence,source=row
         if (not all(type(n) is int for n in (z,x0,x1))
-                or not(-RADIUS<=z<=RADIUS and -RADIUS<=x0<=x1<=RADIUS)
+                or not(-SOURCE_MASK_RADIUS<=z<=SOURCE_MASK_RADIUS
+                        and -SOURCE_MASK_RADIUS<=x0<=x1<=SOURCE_MASK_RADIUS)
                 or material not in ("grass","urban_inferred")
                 or confidence not in ("low","medium")
                 or source!="sentinel-2-l2a/"+item):
@@ -146,7 +150,7 @@ def read_road_corridors(path: Path, dem_sha: str):
         raise ValueError("OSM road footprint archive unbounded")
     src=json.loads(raw)
     if (src.get("format")!=ROAD_FORMAT
-            or src.get("radius_m")!=RADIUS
+            or src.get("radius_m")!=SOURCE_MASK_RADIUS
             or src.get("resolution_m")!=1
             or src.get("origin_lat")!=29.5667
             or src.get("origin_lon")!=106.5874
@@ -162,7 +166,8 @@ def read_road_corridors(path: Path, dem_sha: str):
         if len(r)!=7:raise ValueError("Invalid road provenance row size")
         z,x0,x1,material,confidence,source_id,evidence=r
         if (not all(type(n)==int for n in (z,x0,x1))
-                or not(-RADIUS<=z<=RADIUS and -RADIUS<=x0<=x1<=RADIUS)
+                or not(-SOURCE_MASK_RADIUS<=z<=SOURCE_MASK_RADIUS
+                        and -SOURCE_MASK_RADIUS<=x0<=x1<=SOURCE_MASK_RADIUS)
                 or confidence not in ("low","medium","high")
                 or not source_id.startswith("way/")
                 or evidence not in (
@@ -364,6 +369,13 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None,
     # Do NOT insert a random 3D bridge across the river.
     crystal_by_chunk=defaultdict(list)
     crystal_metrics=None
+    extra_tower_by_chunk=defaultdict(list)
+    extra_tower_metrics=None
+    if RADIUS>ORIGINAL_GIS_RADIUS:
+        from chongqing_extended_tower1 import build_real_outer_t1
+        extra_writes,extra_tower_metrics=build_real_outer_t1(radius=RADIUS)
+        for x,y,z,material in extra_writes:
+            extra_tower_by_chunk[(x//16,z//16)].append((x,y,z,material))
     if add_crystal:
         from chongqing_crystal_3d import build_crystal
         placements,crystal_metrics=build_crystal()
@@ -374,8 +386,8 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None,
     stats["road_corridor_cells_source"]=len(roads_lookup)
     stats["road_corridor_cells_protected"]=len(roads_lookup)-sum(
         len(rows) for rows in road_by_chunk.values())
-    for cz in range(-32,32):
-        for cx in range(-32,32):
+    for cz in range(-math.ceil(RADIUS/16),RADIUS//16+1):
+        for cx in range(-math.ceil(RADIUS/16),RADIUS//16+1):
             sections={}
             highest=[MIN_Y-1]*256
             def set_block(lx,y,lz,block):
@@ -436,6 +448,9 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None,
             for x,y,z,material in crystal_by_chunk.get((cx,cz),()):
                 set_block(x&15,y,z&15,material)
                 stats["crystal_schematic_block_writes"]+=1
+            for x,y,z,material in extra_tower_by_chunk.get((cx,cz),()):
+                set_block(x&15,y,z&15,material)
+                stats["extra_t1_source_building_writes"]+=1
             if not sections:continue
             region_key=(cx//32,cz//32)
             reg=regions.get(region_key)
@@ -458,6 +473,10 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None,
     stats["building_policy"]="Source-footprint-based hollow facade and roof; schematic"
     stats["world_y_range"]=[MIN_Y,MIN_Y+HEIGHT-1]
     stats["world_xz_range"]=[-RADIUS,RADIUS]
+    stats["gis_source_overlay_radius_m"]=SOURCE_MASK_RADIUS
+    if extra_tower_metrics is not None:
+        stats["expanded_real_t1_evidence"]=extra_tower_metrics
+        stats["expanded_extra_landcover_note"]="500m OSM/satellite source masks remain; 500..600m ring uses DEM with UNKNOWN ground cover except source-verified T1 polygon"
     if crystal_metrics is not None:
         stats["crystal_3d_evidence"]=crystal_metrics
         stats["crystal_standalone_building_mode"]="real OSM polygon/min_height/height + LOW-confidence vertical anchor + schematic glass enclosure"
@@ -565,7 +584,10 @@ def package_world(root,out,surface_file=None,satellite_file=None,road_file=None,
       "Buildings are source-footprint schematics with hollow interior, NOT full facades.\n"
       "The Crystal elevated deck, road bridges, river heights and unknown structures\n"
       "are deliberately NOT fabricated. Blue concrete is a WATER REFERENCE only.\n"
-      "Experimental 500m halfwidth square, outside = void. Use CREATIVE only.\n"
+      "Experimental "+str(RADIUS)+"m halfwidth square, outside = void. Use CREATIVE only.\n"
+      "Source limitation: true OSM/Sentinel ground-material masks still end\n"
+      "at original +/-500m; the outer ring preserves authentic DEM Y but\n"
+      "has UNKNOWN ground material except the true pinned OSM T1 tower.\n"
       "World and original template level.dat were created with official vanilla server.\n"
       "No mods, command blocks, cheats or external GIS files required to VIEW the map.\n"
       "Do not remove the included custom-height datapack from this world.\n"
@@ -591,6 +613,8 @@ def package_world(root,out,surface_file=None,satellite_file=None,road_file=None,
 def main():
     cli=argparse.ArgumentParser(description=__doc__)
     cli.add_argument("--mode",choices=["prepare","package"],required=True)
+    cli.add_argument("--extent-radius",type=int,choices=[500,600],
+                     default=500,help="500m original or 600m map containing true OSM T1")
     cli.add_argument("--server-root",type=Path,required=True)
     cli.add_argument("--zip",type=Path)
     cli.add_argument("--osm-surface-mask",type=Path)
@@ -598,6 +622,10 @@ def main():
     cli.add_argument("--osm-road-corridors",type=Path)
     cli.add_argument("--enable-crystal-schematic",action="store_true")
     args=cli.parse_args()
+    global RADIUS,WORLD
+    RADIUS=args.extent_radius
+    WORLD=("Chaotianmen_600m_Standalone" if RADIUS==600
+           else "Chaotianmen_500m_Standalone")
     root=args.server_root.resolve()
     root.mkdir(parents=True,exist_ok=True)
     if args.mode=="prepare":prepare_server(root)
