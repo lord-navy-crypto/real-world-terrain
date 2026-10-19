@@ -6,6 +6,9 @@ on:
     paths:
       - 'tools/chongqing_export_standalone_world.py'
       - 'tools/chongqing_osm_surface.py'
+      - 'tools/chongqing_copernicus_landcover.py'
+      - 'tools/chongqing_fetch_copernicus.py'
+      - 'qa/test_chongqing_copernicus.py'
       - 'qa/test_chongqing_osm_surface.py'
       - 'neoforge/src/main/resources/assets/realscale/terrain/chaotianmen_authentic_osm_ui_plan_v2.json.gz.b64'
       - 'neoforge/src/main/resources/assets/realscale/terrain/chongqing_chaotianmen_dem_v1.properties'
@@ -33,6 +36,14 @@ jobs:
         run: python3 -m pip install 'nbtlib==2.0.4'
       - name: Test actual Anvil block serialization and independent world rules
         run: python3 -m unittest discover -s qa -p 'test_chongqing_standalone_world.py' -v
+      - name: Install public Copernicus georeferenced satellite band readers
+        run: python3 -m pip install 'numpy>=1.26,<3' 'rasterio>=1.3,<2' 'pystac-client>=0.8,<1' 'planetary-computer>=1.0,<2'
+      - name: Verify 10m satellite classification, water/cloud safety rules
+        run: python3 -m unittest discover -s qa -p 'test_chongqing_copernicus.py' -v
+      - name: Fetch REAL OPEN Copernicus Sentinel-2 imagery and classify vegetation/hard surface
+        run: |
+          python3 tools/chongqing_fetch_copernicus.py \
+            --output build/chaotianmen-copernicus-10m-surface-v1.json.gz
       - name: Verify real OSM material classifier and source licensing regression
         run: python3 -m unittest discover -s qa -p 'test_chongqing_osm_surface.py' -v
       - name: Fetch ODbL official OSM surfaces, squares and land-use areas
@@ -101,12 +112,14 @@ jobs:
           python3 tools/chongqing_export_standalone_world.py \
             --mode package --server-root build/vanilla-chaotianmen \
             --osm-surface-mask build/chaotianmen-osm-surface-v1.json.gz \
+            --satellite-mask build/chaotianmen-copernicus-10m-surface-v1.json.gz \
             --zip build/Chaotianmen-Chongqing-500m-Standalone-Vanilla-1.21.1.zip
       - name: Verify saved 1.21.1 region block palette, height and pinned GIS count
         run: |
           python3 qa/test_chongqing_standalone_world.py \
             build/vanilla-chaotianmen/Chaotianmen_500m_Standalone \
-            build/chaotianmen-osm-surface-v1.json.gz
+            build/chaotianmen-osm-surface-v1.json.gz \
+            build/chaotianmen-copernicus-10m-surface-v1.json.gz
       - name: Boot the REAL exported vanilla map and verify it reaches Done
         run: |
           python3 - <<'PY'
@@ -159,3 +172,4 @@ jobs:
             build/vanilla-chaotianmen/actual_standalone_world_reload.log
             build/vanilla-chaotianmen/Chaotianmen_500m_Standalone/realscale-standalone-export-metrics.json
             build/chaotianmen-osm-surface-v1.json.gz
+            build/chaotianmen-copernicus-10m-surface-v1.json.gz
