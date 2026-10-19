@@ -194,6 +194,47 @@ class ChongqingGISTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"empty"):
                 gis.export_datapack(blocks,stats,source,dem,out,100,"OSM ODbL")
 
+    def test_authentic_official_osm_snapshot_towers_and_provenance(self):
+        # REAL public OSM data, not QA-created synthetic geometry.
+        source = (ROOT/"chongqing/data/"
+                  "chaotianmen_osm_api_20261019_r500_b100.json.gz.b64")
+        data = gis.load_gis_source(source)
+        origin=data["realscale_source"]
+        self.assertTrue(origin["url"].startswith(
+            "https://api.openstreetmap.org/api/0.6/map?bbox="))
+        self.assertEqual(origin["license"],"ODbL-1.0")
+        self.assertEqual(
+            origin["raw_xml_sha256"],
+            "7a2e4d777de05efe5fc46b889fca3d86ff47981d6d9bab2cf940188790022d31")
+        self.assertGreaterEqual(origin["total_nodes"],4000)
+        self.assertGreaterEqual(origin["included_elements"],300)
+        items={f["id"]:f for f in gis.osm_features(data)}
+        self.assertEqual(items["way/661717188"]["tags"]["name"],"水晶连廊")
+        self.assertEqual(items["way/661717188"]["tags"]["min_height"],"250")
+        self.assertEqual(items["way/748910916"]["tags"]["height"],"350")
+        self.assertEqual(items["way/748910917"]["tags"]["height"],"350")
+        self.assertEqual(items["way/661717190"]["tags"]["name"],"T2塔楼")
+        self.assertGreater(len(items["way/661717188"]["coordinates"][0]),10)
+        self.assertGreater(len(items),280)
+
+    def test_real_crystal_and_underground_plaza_are_never_flattened(self):
+        source=(ROOT/"chongqing/data/"
+                "chaotianmen_osm_api_20261019_r500_b100.json.gz.b64")
+        features={f["id"]:f for f in gis.osm_features(
+            gis.load_gis_source(source))}
+        self.assertEqual(features["way/661717188"]["tags"]["layer"],"1")
+        self.assertEqual(features["way/230583762"]["tags"]["layer"],"-1")
+        with self.assertRaisesRegex(ValueError,"No real geometries"):
+            gis.prepare(self.dem,
+                [features["way/661717188"],features["way/230583762"]],500)
+
+    def test_corrupted_base64_and_unbounded_source_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp)/"bad.json.gz.b64"
+            path.write_text("a!broken!base64",encoding="ascii")
+            with self.assertRaises(ValueError):
+                gis.load_gis_source(path)
+
     def test_overpass_turbo_incomplete_geojson_is_not_rasterized(self):
         dem=self.dem
         geometry=[ll(dem,0,0),ll(dem,10,0)]
