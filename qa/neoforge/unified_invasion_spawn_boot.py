@@ -88,16 +88,30 @@ try:
     rcon=Rcon(timeout=120,password="realscale_unified_spawn_ci_only")
     try:
         hits=[]
-        for biome in ("nether_wastes","end_highlands"):
+        for biome in ("end_chorus_gardens","end_crystal_barrens","end_shattered_glades"):
             response=rcon.send("execute in minecraft:overworld "
-                "positioned 0 100 0 if biome ~ ~ ~ minecraft:"+biome+
+                "positioned 0 100 0 if biome ~ ~ ~ realscale:"+biome+
                 " run seed")
             if "Seed:" in response:
                 hits.append(biome)
         if len(hits)!=1:
-            raise AssertionError("Expected exactly one genuine Nether/End biome "
-                                 "at x=0,z=0: "+str(hits))
-        print("UNIFIED_INVASION_SPAWN_BIOME_PASS",SOURCE,hits[0],flush=True)
+            raise AssertionError("Spawn MUST belong to exactly one of our THREE "
+                                 "End biome IDs, not vanilla Nether/End: "+str(hits))
+        print("UNIFIED_OWN_END_SPAWN_BIOME_PASS",SOURCE,hits[0],flush=True)
+        # Check the entire starter biome column for Measured's tall heights:
+        # the biome name must be identical at low/mid/high test altitudes.
+        for height in (64,160,320):
+            reply=rcon.send("execute in minecraft:overworld "
+                f"positioned 0 {height} 0 if biome ~ ~ ~ realscale:{hits[0]} run seed")
+            if "Seed:" not in reply:
+                raise AssertionError(f"Spawn biome changed at Y={height}")
+        # No ancient vanilla Nether spawn biome can appear at center.
+        for old in ("minecraft:nether_wastes","minecraft:end_highlands"):
+            reply=rcon.send("execute in minecraft:overworld "
+                f"positioned 0 100 0 if biome ~ ~ ~ {old} run seed")
+            if "Seed:" in reply:
+                raise AssertionError("Vanilla biome overrode own End spawn: "+old)
+
         # /execute if biome reads only LOADED End chunks; this test world
         # has not yet visited the End. Locate via the generator's BiomeSource
         # instead, so we can verify ungenerated locations without forcing
