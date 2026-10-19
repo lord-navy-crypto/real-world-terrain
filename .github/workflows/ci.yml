@@ -93,6 +93,7 @@ jobs:
         run: |
           python3 -m unittest discover -s qa -p 'test_chongqing_osm_to_minecraft.py' -v
           python3 -m unittest discover -s qa -p 'test_chongqing_osm_fetch.py' -v
+          python3 -m unittest discover -s qa -p 'test_chongqing_gis_audit.py' -v
           python3 tools/chongqing_fetch_osm.py --radius 500 --dry-run --output build/chaotianmen-unfetched.json
 
       - name: Verify real Chongqing DEM floating preset, license and geography
