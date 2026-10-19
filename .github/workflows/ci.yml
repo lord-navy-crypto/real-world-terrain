@@ -216,7 +216,13 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/GeoWonderGeometrySmoke.java
           java -cp build/geo-wonder-geometry org.realscale.neoforge.GeoWonderGeometrySmoke
       - name: Validate deterministic large-region geo wonders
-        run: python3 -m unittest discover -s qa -p 'test_geo_wonder_regions.py' -v
+        run: |
+          python3 -m unittest discover -s qa -p 'test_geo_wonder_regions.py' -v
+          mkdir -p build/permafrost-polygon-smoke
+          javac -d build/permafrost-polygon-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/PermafrostPolygonMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/PermafrostPolygonMathSmoke.java
+          java -cp build/permafrost-polygon-smoke org.realscale.neoforge.PermafrostPolygonMathSmoke
       - name: Verify NeoForge experimental world uses authenticated save and stop
         run: python3 -m unittest discover -s qa -p 'test_geo_wonders_rcon_shutdown.py' -v
       - name: Ensure canonical sacred timeline excludes experimental geology and invasion

@@ -23,7 +23,7 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
         PLAYA_BASIN, ALLUVIAL_FAN, COLD_DESERT_PAVEMENT,
         HOODOO_AMPHITHEATER, TRAVERTINE_STEPS, MANGROVE_ESTUARY,
         COOLED_LAVA_FIELD, GLACIAL_MORAINE_RING, DELTA_DISTRIBUTARIES,
-        KARST_DOLINE_RIM
+        KARST_DOLINE_RIM, PERMAFROST_POLYGONS
     }
     private static final int GRID = GeoWonderGeometry.GRID;
     private final Kind kind;
@@ -56,6 +56,11 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
                     "frozen_peaks");
             case DELTA_DISTRIBUTARIES -> match(id,"swamp","mangrove_swamp","beach");
             case KARST_DOLINE_RIM -> match(id,"stony_peaks","meadow","windswept_hills");
+            case PERMAFROST_POLYGONS -> match(id,"snowy_plains","ice_spikes",
+                    "snowy_slopes","frozen_peaks")
+                    || id.equals("realscale:frost_shrub_tundra")
+                    || id.equals("realscale:taiga_to_tundra")
+                    || id.equals("realscale:lichen_rockland");
         };
     }
     private boolean naturalFloor(BlockState b) {
@@ -79,6 +84,10 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
             case DELTA_DISTRIBUTARIES -> b.is(Blocks.MUD)||b.is(Blocks.CLAY)
                     ||b.is(Blocks.SAND)||b.is(Blocks.GRAVEL);
             case KARST_DOLINE_RIM -> b.is(Blocks.STONE)||b.is(Blocks.CALCITE);
+            case PERMAFROST_POLYGONS -> b.is(Blocks.STONE)||b.is(Blocks.GRAVEL)
+                    ||b.is(Blocks.COARSE_DIRT)||b.is(Blocks.SNOW_BLOCK)
+                    ||b.is(Blocks.DIRT)||b.is(Blocks.PODZOL)
+                    ||b.is(Blocks.GRASS_BLOCK);
         };
     }
     private static boolean nearWater(WorldGenLevel w,int x,int y,int z,
@@ -137,6 +146,8 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
                     .defaultBlockState();
             case KARST_DOLINE_RIM -> (n<7?Blocks.CALCITE:Blocks.TUFF)
                     .defaultBlockState();
+            case PERMAFROST_POLYGONS -> (n<8?Blocks.GRAVEL:Blocks.ANDESITE)
+                    .defaultBlockState();
         };
     }
     private boolean paint(WorldGenLevel w,GeoWonderGeometry.Site site,int minX,int minZ) {
@@ -144,6 +155,10 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
         for(int x=minX;x<minX+16;x++)for(int z=minZ;z<minZ+16;z++) {
             long dx=(long)x-site.x,dz=(long)z-site.z;
             if(!GeoWonderGeometry.contains(site,x,z))continue;
+            // Climate-restricted polygon rims are in world coordinates, so
+            // adjacent chunks share a single continuous Voronoi pattern.
+            if(kind==Kind.PERMAFROST_POLYGONS
+                    && !PermafrostPolygonMath.isRim(x,z))continue;
             long point=mix(site.seed ^ ((long)x*0x27d4eb2dL)
                     ^ ((long)z*0x165667b1L));
             if(Math.floorMod(point,7L)==0)continue;
@@ -183,6 +198,8 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
                     && w.getBiome(p).value().getBaseTemperature()>0.35f)continue;
             if(kind==Kind.GLACIAL_MORAINE_RING
                     && w.getBiome(p).value().getBaseTemperature()>0.25f)continue;
+            if(kind==Kind.PERMAFROST_POLYGONS
+                    && w.getBiome(p).value().getBaseTemperature()>0.15f)continue;
             int height=heightFor(site,x,z,u,v,point);
             if(height==0)continue;
             boolean clear=true;

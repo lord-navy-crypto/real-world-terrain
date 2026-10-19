@@ -6,9 +6,9 @@ R=Path(__file__).resolve().parents[1]
 SRC=(R/"neoforge/src/main/java/org/realscale/neoforge/GeoWonderRegionFeature.java").read_text()
 MOD=(R/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
 DATA=R/"neoforge/src/main/resources/data/realscale"
-IDS=["playa_basin","alluvial_fan","cold_desert_pavement","hoodoo_amphitheater","travertine_steps","mangrove_estuary","cooled_lava_field","glacial_moraine_ring","delta_distributaries","karst_doline_rim"]
+IDS=["playa_basin","alluvial_fan","cold_desert_pavement","hoodoo_amphitheater","travertine_steps","mangrove_estuary","cooled_lava_field","glacial_moraine_ring","delta_distributaries","karst_doline_rim","permafrost_polygons"]
 class GeoWonderRegionsTest(unittest.TestCase):
-    def test_all_ten_features_have_complete_registry_wiring(self):
+    def test_all_regional_features_have_complete_registry_wiring(self):
         for id in IDS:
             key="geo_region_"+id
             with self.subTest(key=key):
