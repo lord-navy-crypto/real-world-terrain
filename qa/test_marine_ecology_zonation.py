@@ -102,6 +102,18 @@ class MarineZonationQA(unittest.TestCase):
         kelp=code.split("if(h==MarineEcologyZonationMath.Habitat.TEMPERATE_KELP)",1)[1]
         self.assertNotIn("seabedAccent",kelp.split("if(target==null)",1)[0])
 
+    def test_clustered_reef_and_meadow_are_chunk_bound_and_water_safe(self):
+        code=(JAVA/"MarineEcologyFeature.java").read_text()
+        self.assertIn("private static int colony(",code)
+        self.assertIn("x<chunk.getMinBlockX()||x>chunk.getMaxBlockX()",code)
+        self.assertIn("z<chunk.getMinBlockZ()||z>chunk.getMaxBlockZ()",code)
+        self.assertIn("count>=9",code)
+        self.assertIn("!w.getBlockState(p).is(Blocks.WATER)",code)
+        self.assertIn("!natural(w.getBlockState(p.below()))",code)
+        self.assertIn("if(!plant.canSurvive(w,p))continue",code)
+        self.assertIn("colony(w,p,chunk,random,sea,",code)
+        self.assertIn("Blocks.SEAGRASS.defaultBlockState()",code)
+
     def test_no_new_world_mode_or_mutation_to_measured_noise_graph(self):
         preset=read(WG/"world_preset/tva_measured_global_landforms_three_realms.json")
         settings=preset["dimensions"]["minecraft:overworld"]["generator"]["settings"]
