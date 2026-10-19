@@ -3,12 +3,15 @@
     "minecraft:overworld": {
       "generator": {
         "biome_source": {
-          "type": "realscale:sky_ocean",
+          "type": "realscale:rare_earth_biomes_v1",
           "source": {
-            "type": "realscale:natural_ecotones",
+            "type": "realscale:sky_ocean",
             "source": {
-              "preset": "minecraft:overworld",
-              "type": "minecraft:multi_noise"
+              "type": "realscale:natural_ecotones",
+              "source": {
+                "preset": "minecraft:overworld",
+                "type": "minecraft:multi_noise"
+              }
             }
           }
         },
