@@ -572,7 +572,7 @@ def package_world(root,out,surface_file=None,satellite_file=None,road_file=None,
     data["GameType"]=nbtlib.Int(1)
     data["hardcore"]=nbtlib.Byte(0)
     data["allowCommands"]=nbtlib.Byte(1)
-    data["LevelName"]=nbtlib.String("Chaotianmen Chongqing 500m - TRUE OSM Prototype")
+    data["LevelName"]=nbtlib.String("Chaotianmen Chongqing "+str(RADIUS)+"m - TRUE OSM Prototype")
     file.save(world/"level.dat",gzipped=True)
     # Do not package Mojang runtime, server settings or private debug files.
     notice=(
@@ -600,8 +600,10 @@ def package_world(root,out,surface_file=None,satellite_file=None,road_file=None,
       "Buildings are source-footprint schematics with hollow interior, NOT full facades.\n"
       "Source-height towers now use LOW-confidence generic white-framed blue\n"
       "glass facades: these are NOT surveyed window sizes or real elevations.\n"
-      "The Crystal elevated deck, road bridges, river heights and unknown structures\n"
-      "are deliberately NOT fabricated. Blue concrete is a WATER REFERENCE only.\n"
+      "The Crystal is NOW a 3D schematic: original real OSM XY/height tags,\n"
+      "but absolute Y and curved glass facade remain estimated. All other\n"
+      "multilevel road bridges, true river water heights and unknown structures\n"
+      "are DEFERRED. Blue concrete is a WATER REFERENCE, not a river.\n"
       "Experimental "+str(RADIUS)+"m halfwidth square, outside = void. Use CREATIVE only.\n"
       "Source limitation: true OSM/Sentinel ground-material masks still end\n"
       "at original +/-500m; the outer ring preserves authentic DEM Y but\n"
