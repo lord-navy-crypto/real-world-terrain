@@ -48,8 +48,10 @@ def build_real_outer_t1(dem=None, radius=NEW_RADIUS):
         surface=dem.block_y(x,z)
         writes.append((x,surface,z,4))
         if (x,z) in perimeter:
+            from chongqing_export_standalone_world import schematic_facade_block
             for y in range(surface+1,surface+250):
-                writes.append((x,y,z,4))
+                writes.append((x,y,z,schematic_facade_block(
+                    x,z,y-surface,250)))
         writes.append((x,surface+250,z,5))
     meta={
         "osm_source":"way/748910920",
@@ -61,7 +63,7 @@ def build_real_outer_t1(dem=None, radius=NEW_RADIUS):
         "original_export_limit_m":ORIGINAL_RADIUS,
         "bbox_xz":[min(x for x,z in cells),min(z for x,z in cells),
                     max(x for x,z in cells),max(z for x,z in cells)],
-        "status":"true OSM footprint and tagged height; low-detail neutral 3D block shell",
+        "status":"true OSM footprint and tagged height; schematic glass/white vertical facade (not surveyed windows)",
         "source_json_hash":"c666afaf7e8455acd3c565e9a8921950af0b555d1d6a38285c01c7d64bfc603b",
         "vertical_anchor":"DEM-based local foundation per column, not architectural foundation survey"
     }
