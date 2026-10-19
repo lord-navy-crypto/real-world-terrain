@@ -32,6 +32,19 @@ public final class CrossRealmBiomeSource extends BiomeSource {
             RegistryOps.retrieveGetter(Registries.BIOME)
         ).apply(i, CrossRealmBiomeSource::new));
 
+    // A distinct, persistent codec discriminator for NEW spawn3 worlds.
+    // Unlike an optional flag, this type survives save/reload visibly in
+    // level.dat and cannot be mistaken for historical invasion generators.
+    // The legacy CODEC above still decodes old saves with missing=false.
+    public static final MapCodec<CrossRealmBiomeSource> SPAWN3_CODEC =
+        RecordCodecBuilder.mapCodec(i -> i.group(
+            BiomeSource.CODEC.fieldOf("source").forGetter(CrossRealmBiomeSource::source),
+            Codec.STRING.optionalFieldOf("target","overworld")
+                .forGetter(CrossRealmBiomeSource::target),
+            RegistryOps.retrieveGetter(Registries.BIOME)
+        ).apply(i, (source, target, registry) ->
+            new CrossRealmBiomeSource(source, target, true, registry)));
+
     private static final int CELL=512;
     // A 192-block radius covers the origin spawn platform and vanilla
     // randomized 1st-spawn offsets. It deliberately does NOT turn the whole
@@ -74,7 +87,7 @@ public final class CrossRealmBiomeSource extends BiomeSource {
     private BiomeSource source(){return source;}
     private String target(){return target;}
     private boolean spawnEndHabitats(){return spawnEndHabitats;}
-    @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
+    @Override protected MapCodec<? extends BiomeSource> codec(){return spawnEndHabitats ? SPAWN3_CODEC : CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),
             Stream.of(forest,plains,meadow,cherry,taiga,netherWastes,endHighlands,
