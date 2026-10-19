@@ -99,8 +99,12 @@ public final class RegionalLandformDensity implements DensityFunction.SimpleFunc
         return visitor.apply(new RegionalLandformDensity(
                 base.mapAll(visitor),continents.mapAll(visitor),selector.mapAll(visitor),diverseV2));
     }
-    @Override public double minValue(){return base.minValue()-3.0;}
-    @Override public double maxValue(){return base.maxValue()+5.0;}
+    @Override public double minValue(){
+        return base.minValue()-(diverseV2 ? 5.0 : 3.0);
+    }
+    @Override public double maxValue(){
+        return base.maxValue()+(diverseV2 ? 9.0 : 5.0);
+    }
     @Override public KeyDispatchDataCodec<? extends DensityFunction> codec(){
         return diverseV2 ? V2_DISPATCH : DISPATCH;
     }
