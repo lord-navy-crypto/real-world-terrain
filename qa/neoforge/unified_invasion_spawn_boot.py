@@ -123,7 +123,7 @@ try:
         if not saved_files:
             raise AssertionError("No saved level.dat to inspect initial spawn Y")
         nbt=gzip.decompress(saved_files[0].read_bytes())
-        marker=b"\\x03\\x00\\x06SpawnY"
+        marker=bytes((3,0,6))+b"SpawnY"
         index=nbt.find(marker)
         if index<0:
             raise AssertionError("Missing SpawnY NBT Int tag")
