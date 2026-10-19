@@ -49,6 +49,7 @@ jobs:
       - name: Fetch REAL OPEN Copernicus Sentinel-2 imagery and classify vegetation/hard surface
         run: |
           python3 tools/chongqing_fetch_copernicus.py \
+            --extent-radius 600 \
             --output build/chaotianmen-copernicus-10m-surface-v1.json.gz
       - name: Verify real OSM material classifier and source licensing regression
         run: python3 -m unittest discover -s qa -p 'test_chongqing_osm_surface.py' -v
