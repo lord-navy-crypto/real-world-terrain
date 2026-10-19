@@ -91,6 +91,7 @@ def _raster_way(dem, nodes, way, radius):
         return set()
 
 def classify_osm_xml(xml: bytes, dem: Dem, radius=RADIUS) -> dict:
+    if radius not in (500,600):raise ValueError("Unverified OSM raster radius")
     if len(xml)>MAX_XML:raise ValueError("OSM source >8MiB")
     root=ET.fromstring(xml)
     if root.tag!="osm" or root.get("version")!="0.6":
@@ -155,7 +156,8 @@ def main():
     ap.add_argument("--output",required=True,type=Path)
     ap.add_argument("--radius",type=int,default=500)
     args=ap.parse_args()
-    if args.radius!=500:ap.error("pinned 500m source only")
+    if args.radius not in (500,600):
+        ap.error("Only verified 500m/600m world bounds are supported")
     dem=Dem(DEFAULT_DEM)
     bbox,url=bounds(dem,args.radius,100)
     if args.input_xml:
