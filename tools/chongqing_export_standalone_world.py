@@ -84,12 +84,15 @@ def read_surface_mask(file: Path, dem_sha: str) -> tuple[dict,dict]:
     if len(raw)>35*1024*1024:
         raise ValueError("OSM surface decompression exceeds safety cap")
     data=json.loads(raw)
+    source_radius=data.get("radius_m")
     if (data["format"]!=SURFACE_FORMAT or
-            data["radius_m"]!=SOURCE_MASK_RADIUS or data["resolution_m"]!=1 or
+            source_radius not in (500,600) or source_radius>RADIUS
+            or data["resolution_m"]!=1 or
             data["dem_source_raw_sha256"]!=dem_sha or
             data["origin_lat"]!=29.5667 or data["origin_lon"]!=106.5874 or
             data["license"]!="ODbL-1.0" or
-            not data["raw_osm_api_sha256"].startswith(tuple("0123456789abcdef"))):
+            not __import__("re").fullmatch(
+                r"[0-9a-f]{64}",data.get("raw_osm_api_sha256",""))):
         raise ValueError("Misaligned or unlicensed surface overlay")
     if not (0<len(data["rows"])<=1000000):
         raise ValueError("Surface rows missing or beyond pilot cap")
@@ -97,8 +100,8 @@ def read_surface_mask(file: Path, dem_sha: str) -> tuple[dict,dict]:
     for item in data["rows"]:
         z,x0,x1,material,confidence,source_id=item
         if (not all(isinstance(v,int) for v in (z,x0,x1)) or
-                min(z,x0,x1)<-SOURCE_MASK_RADIUS or
-                max(z,x0,x1)>SOURCE_MASK_RADIUS or
+                min(z,x0,x1)<-source_radius or
+                max(z,x0,x1)>source_radius or
                 x1<x0 or material not in SURFACE_BLOCK or
                 confidence not in ("low","medium","high") or
                 not (source_id.startswith("way/") or source_id.startswith("relation/"))):
@@ -164,8 +167,9 @@ def read_road_corridors(path: Path, dem_sha: str):
     if len(raw)>35*1024*1024:
         raise ValueError("OSM road footprint archive unbounded")
     src=json.loads(raw)
+    road_radius=src.get("radius_m")
     if (src.get("format")!=ROAD_FORMAT
-            or src.get("radius_m")!=SOURCE_MASK_RADIUS
+            or road_radius not in (500,600) or road_radius>RADIUS
             or src.get("resolution_m")!=1
             or src.get("origin_lat")!=29.5667
             or src.get("origin_lon")!=106.5874
@@ -181,8 +185,8 @@ def read_road_corridors(path: Path, dem_sha: str):
         if len(r)!=7:raise ValueError("Invalid road provenance row size")
         z,x0,x1,material,confidence,source_id,evidence=r
         if (not all(type(n)==int for n in (z,x0,x1))
-                or not(-SOURCE_MASK_RADIUS<=z<=SOURCE_MASK_RADIUS
-                        and -SOURCE_MASK_RADIUS<=x0<=x1<=SOURCE_MASK_RADIUS)
+                or not(-road_radius<=z<=road_radius
+                       and -road_radius<=x0<=x1<=road_radius)
                 or confidence not in ("low","medium","high")
                 or not source_id.startswith("way/")
                 or evidence not in (
@@ -366,6 +370,14 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None,
     region_dir.mkdir(parents=True,exist_ok=True)
     for old in region_dir.glob("r.*.*.mca"):old.unlink()
     index=overlay_index(plan)
+    # T1 was outside the original 500m V2 plan. Resolve genuine outer
+    # tower geometry BEFORE buffering all 600m roads so new roads never
+    # paint over its entrance/base or contradict the source tower mask.
+    extra_writes=[]
+    extra_tower_metrics=None
+    if RADIUS>ORIGINAL_GIS_RADIUS:
+        from chongqing_extended_tower1 import build_real_outer_t1
+        extra_writes,extra_tower_metrics=build_real_outer_t1(radius=RADIUS)
     # Do not accidentally pave through OSM building footprints, genuine
     # water reference locations or tracks. Streets with known road tags
     # never mutate this original 494,988-operation GIS source plan.
@@ -374,6 +386,7 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None,
         if row["kind"]!="road":
             protected.update((x,row["z"]) for x in
                              range(row["x0"],row["x1"]+1))
+    protected.update((x,z) for x,y,z,material in extra_writes)
     road_by_chunk=defaultdict(list)
     for (x,z),material in roads_lookup.items():
         if (x,z) not in protected:
@@ -385,12 +398,8 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None,
     crystal_by_chunk=defaultdict(list)
     crystal_metrics=None
     extra_tower_by_chunk=defaultdict(list)
-    extra_tower_metrics=None
-    if RADIUS>ORIGINAL_GIS_RADIUS:
-        from chongqing_extended_tower1 import build_real_outer_t1
-        extra_writes,extra_tower_metrics=build_real_outer_t1(radius=RADIUS)
-        for x,y,z,material in extra_writes:
-            extra_tower_by_chunk[(x//16,z//16)].append((x,y,z,material))
+    for x,y,z,material in extra_writes:
+        extra_tower_by_chunk[(x//16,z//16)].append((x,y,z,material))
     if add_crystal:
         from chongqing_crystal_3d import build_crystal
         placements,crystal_metrics=build_crystal()
@@ -494,12 +503,13 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None,
     stats["gis_source_overlay_radius_m"]=SOURCE_MASK_RADIUS
     if extra_tower_metrics is not None:
         stats["expanded_real_t1_evidence"]=extra_tower_metrics
-        stats["expanded_extra_landcover_note"]="source OSM polygons and road widths 500m; Copernicus 10m satellite georeferenced across 600m; other outer-ring source GIS coverage incomplete"
+        stats["expanded_extra_landcover_note"]="full 600m official OSM road and surface tags if supplied; 600m satellite georeference; pinned 500m primary building GIS + verified extra T1"
     if crystal_metrics is not None:
         stats["crystal_3d_evidence"]=crystal_metrics
         stats["crystal_standalone_building_mode"]="real OSM polygon/min_height/height + LOW-confidence vertical anchor + schematic glass enclosure"
     if roads_meta is not None:
         stats["osm_road_corridor_sha256"]=roads_meta["raw_osm_api_sha256"]
+        stats["osm_road_corridor_radius_m"]=roads_meta["radius_m"]
         stats["osm_road_corridor_width_note"]=roads_meta["width_note"]
         stats["osm_road_corridor_deferred"]=roads_meta["deferred_road_types"]
         stats["osm_road_corridor_feature_count"]=roads_meta["osm_road_type_count"]
@@ -514,6 +524,7 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None,
         stats["satellite_warning"]="10m broad vegetation vs bare ground, NOT exact 1m surface or 3D geometry; OSM supersedes pixels"
     if surface_meta is not None:
         stats["surface_source_sha256"]=surface_meta["raw_osm_api_sha256"]
+        stats["osm_surface_radius_m"]=surface_meta["radius_m"]
         stats["ground_surface_osm_source_url"]=surface_meta.get("source_url")
         stats["source_classified_ground_columns"]=surface_meta["known_surface_columns"]
         stats["surface_class_count"]=surface_meta["materials"]
@@ -609,8 +620,11 @@ def package_world(root,out,surface_file=None,satellite_file=None,road_file=None,
       "are DEFERRED. Blue concrete is a WATER REFERENCE, not a river.\n"
       "Experimental "+str(RADIUS)+"m halfwidth square, outside = void. Use CREATIVE only.\n"
       "The real Copernicus 10m landcover mask covers full +/-"+str(RADIUS)+"m.\n"
-      "Original official OSM material/road GIS is pinned at +/-500m;\n"
-      "outer ring OSM source details remain incomplete, T1 is sourced.\n"
+      "Official OSM surface and road sources cover +/-"+
+      str(stats.get("osm_surface_radius_m",500))+"m and +/-"+
+      str(stats.get("osm_road_corridor_radius_m",500))+"m respectively.\n"
+      "Core building polygons are from 500m archival OSM; verified T1\n"
+      "added from real 600m extra geometry. Other building massing incomplete.\n"
       "World and original template level.dat were created with official vanilla server.\n"
       "No mods, command blocks, cheats or external GIS files required to VIEW the map.\n"
       "Do not remove the included custom-height datapack from this world.\n"
