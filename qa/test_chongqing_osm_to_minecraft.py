@@ -119,6 +119,45 @@ class ChongqingGISTests(unittest.TestCase):
         self.assertRaisesRegex(ValueError,"no complete",
             gis.osm_features,{"elements":[{"type":"relation","id":1}]})
 
+    def test_real_osm_relation_fragments_and_holes_are_stitched_without_guessing(self):
+        dem=self.dem
+        def points(*coords):
+            return [{"lon":lon,"lat":lat} for lon,lat in
+                    [ll(dem,x,z) for x,z in coords]]
+        part1=points((0,0),(10,0),(10,10))
+        part2=points((10,10),(0,10),(0,0))
+        inner=points((3,3),(7,3),(7,7),(3,7),(3,3))
+        rel={"type":"relation","id":994,"tags":{
+            "type":"multipolygon","natural":"water"},
+            "members":[
+                {"type":"way","role":"outer","geometry":part1},
+                {"type":"way","role":"outer","geometry":part2},
+                {"type":"way","role":"inner","geometry":inner}
+            ]}
+        shapes=gis.osm_features({"elements":[rel]})
+        self.assertEqual(shapes[0]["kind"],"MultiPolygon")
+        pixels,_=gis.prepare(dem,shapes,100)
+        self.assertEqual(pixels[(1,1)][0],"water_reference")
+        self.assertNotIn((5,5),pixels)
+        # An incomplete riverside polygon must NOT be closed by inventing
+        # a shoreline across the Yangtze/Jialing intersection.
+        broken=dict(rel,members=[rel["members"][0]])
+        with self.assertRaisesRegex(ValueError,"no complete"):
+            gis.osm_features({"elements":[broken]})
+
+    def test_3d_chongqing_bridges_tunnels_skipped_without_real_deck_y(self):
+        dem=self.dem
+        line=[ll(dem,0,0),ll(dem,20,0)]
+        raw={"type":"FeatureCollection","features":[
+            feature("osm/bridge",{"highway":"primary","bridge":"yes"},
+                    "LineString",line),
+            feature("osm/ground",{"highway":"path"},"LineString",
+                    [ll(dem,0,3),ll(dem,20,3)])]}
+        blocks,stat=gis.prepare(dem,gis.osm_features(raw),100)
+        self.assertEqual(stat["multilevel_lines_deferred_no_3d_y"],1)
+        self.assertIn((10,3),blocks)
+        self.assertNotIn((10,0),blocks)
+
     def test_datapack_staged_bounded_and_has_immutable_source_hash(self):
         dem=self.dem
         with tempfile.TemporaryDirectory() as temp:
