@@ -75,7 +75,9 @@ public final class RealmEcologyAccentFeature extends Feature<NoneFeatureConfigur
                     if(!empty)continue;
                     for(int j=0;j<height-1;j++)
                         w.setBlock(p.above(j),Blocks.CHORUS_PLANT.defaultBlockState(),2);
-                    w.setBlock(p.above(height-1),Blocks.CHORUS_FLOWER.defaultBlockState(),2);
+                    BlockPos tip=p.above(height-1);
+                    BlockState flower=Blocks.CHORUS_FLOWER.defaultBlockState();
+                    if(flower.canSurvive(w,tip))w.setBlock(tip,flower,2);
                     placed++;
                 }else{
                     // Pale crystal barrens vs fractured purpur plains: coherent
@@ -111,7 +113,7 @@ public final class RealmEcologyAccentFeature extends Feature<NoneFeatureConfigur
                 continue;
             }else if(biome.equals("minecraft:nether_wastes") && floor.is(Blocks.NETHERRACK)){
                 if(region==0){
-                    w.setBlock(ground,Blocks.MAGMA_BLOCK.defaultBlockState(),2);
+                    w.setBlock(ground,Blocks.BASALT.defaultBlockState(),2);
                     placed++;
                 }else if(region==1){
                     w.setBlock(ground,Blocks.BLACKSTONE.defaultBlockState(),2);
