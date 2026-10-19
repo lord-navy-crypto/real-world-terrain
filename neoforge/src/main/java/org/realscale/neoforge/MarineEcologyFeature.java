@@ -120,6 +120,17 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
         double patch=MarineEcologyZonationMath.patch(x,z,w.getSeed());
         MarineEcologyZonationMath.Habitat h=MarineEcologyZonationMath.classify(
                 biome,depth,hard(support),patch);
+        // NOAA habitat surveys: deep coral/sponge hotspots commonly occupy
+        // stable exposed hard substrate on slopes, ridges and canyon walls.
+        // Local bathymetric relief is a cheap proxy for flow-exposed terrain,
+        // not a literal current or nutrient simulation.
+        int relief=Math.max(
+                Math.abs(y-w.getHeight(Heightmap.Types.OCEAN_FLOOR_WG,x+3,z)),
+                Math.abs(y-w.getHeight(Heightmap.Types.OCEAN_FLOOR_WG,x,z+3)));
+        if(h==MarineEcologyZonationMath.Habitat.COLD_CORAL_GARDEN
+                && relief<2 && patch<0.77){
+            h=MarineEcologyZonationMath.Habitat.DEEP_SILTY_FLOOR;
+        }
         // Deep-sea communities are scattered oases, not uniform seafloor carpets.
         BlockState target=switch(h){
             case TROPICAL_REEF -> random.nextInt(5)==0 ? pickle(random)
