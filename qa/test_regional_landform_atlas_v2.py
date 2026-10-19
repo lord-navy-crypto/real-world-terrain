@@ -74,8 +74,8 @@ class GlobalHighlandAtlasV2(unittest.TestCase):
         self.assertEqual(after["generator"]["biome_source"]["type"],"realscale:sky_ocean")
         self.assertEqual(after["generator"]["biome_source"]["source"]["type"],"realscale:cross_realm_spawn3")
         menu=read(ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
-        self.assertEqual(menu["values"][-1],"realscale:tva_regional_landform_expedition_v2_three_realms")
-        self.assertEqual(len(menu["values"]),11)
-        self.assertEqual(len(set(menu["values"])),11)
+        self.assertEqual(menu["values"][-2],"realscale:tva_regional_landform_expedition_v2_three_realms")
+        self.assertEqual(len(menu["values"]),12)
+        self.assertEqual(len(set(menu["values"])),12)
 
 if __name__=="__main__":unittest.main()
