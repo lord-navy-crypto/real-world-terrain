@@ -19,8 +19,7 @@ import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
  * buckets, commands, structures and vanilla population mechanics.
  */
 public final class MarineSpawnHabitats {
-    private static final ResourceLocation ENABLED =
-            ResourceLocation.fromNamespaceAndPath("realscale","usgs_global_hybrid_marine");
+    // Share habitat-aware spawning between RealScale world presets.
     private MarineSpawnHabitats() {}
 
     public static void register() {
@@ -37,7 +36,10 @@ public final class MarineSpawnHabitats {
         ServerLevel level=event.getLevel().getLevel();
         if(!(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator noise))return;
         if(!noise.generatorSettings().unwrapKey()
-                .map(k->k.location().equals(ENABLED)).orElse(false))return;
+                .map(k->k.location().getNamespace().equals("realscale")
+                        && !k.location().getPath().equals("grand_nether")
+                        && !k.location().getPath().equals("grand_end"))
+                .orElse(false))return;
         BlockPos pos=mob.blockPosition();
         String biome=level.getBiome(pos).unwrapKey()
                 .map(k->k.location().toString()).orElse("");
