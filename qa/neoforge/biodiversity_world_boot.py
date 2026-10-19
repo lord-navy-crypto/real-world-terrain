@@ -49,7 +49,7 @@ if world_preset["dimensions"]["minecraft:the_end"]["generator"]["biome_source"][
 server_dir=MOD/"run"
 for candidate in (server_dir,server_dir/"server",server_dir/"gametestserver"):
     candidate.mkdir(parents=True,exist_ok=True)
-    (candidate/"eula.txt").write_text("eula=true\n".replace("\\\n","\n"))
+    (candidate/"eula.txt").write_text("eula=true\n")
     (candidate/"server.properties").write_text(
         "level-name="+WORLD+"\n"
         "level-type="+PROFILE+"\n"
