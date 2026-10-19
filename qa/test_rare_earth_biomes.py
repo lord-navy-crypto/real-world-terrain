@@ -36,6 +36,15 @@ class RareEarthBiomes(unittest.TestCase):
         self.assertIn("id.contains(\"ocean\")",source)
         self.assertIn("Math.floorDiv(qx,64)",source)
 
+    def test_opt_in_preset_selects_new_biomes(self):
+        path=DATA/"worldgen/world_preset/tva_rare_earth_ecosystems_three_realms.json"
+        preset=json.loads(path.read_text())
+        source=preset["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+        self.assertEqual(source["type"],"realscale:rare_earth_biomes_v1")
+        self.assertEqual(source["source"]["type"],"realscale:sky_ocean")
+        normal=json.loads((ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json").read_text())
+        self.assertIn("realscale:tva_rare_earth_ecosystems_three_realms",normal["values"])
+
     def test_safe_surface_only(self):
         src=(SRC/"RareEarthSurfaceFeature.java").read_text()
         for rule in ("i<48 && count<20", "Level.OVERWORLD",
