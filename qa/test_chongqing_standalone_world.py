@@ -96,7 +96,7 @@ class StandaloneVanillaWorldTests(unittest.TestCase):
         self.assertEqual(counts,494988)
 
 
-def verify_world(world):
+def verify_world(world,surface_mask=None):
     import nbtlib
     if not (world/"level.dat").is_file():
         raise AssertionError("Missing independent vanilla level.dat")
@@ -117,6 +117,13 @@ def verify_world(world):
 
     # Inspect actual NBT saved chunks, not a manifest or PNG stand-in.
     grid,plan=exporter.read_inputs()
+    ground_surface={}
+    if surface_mask is not None:
+        ground_surface,surface_meta=exporter.read_surface_mask(
+            Path(surface_mask),plan["dem_source_raw_sha256"])
+        assert report["source_classified_ground_columns"]==len(ground_surface)
+        assert report["surface_source_sha256"]==surface_meta["raw_osm_api_sha256"]
+        assert report["source_qualified_non_grass_ground_columns"]>0
     footprint={(x,z) for r in plan["rows"] for x in range(r["x0"],r["x1"]+1)
                for z in (r["z"],)}
     verified_ground=0
@@ -124,7 +131,8 @@ def verify_world(world):
                 (401,401),(-401,401),(401,-401),(-401,-401)):
         y=math.ceil(exporter.elevation(grid,x,z))-1
         if (x,z) not in footprint:
-            assert get_block(world,x,y,z)=="minecraft:grass_block",(x,y,z)
+            expected=exporter.NAME[ground_surface.get((x,z),3)]
+            assert get_block(world,x,y,z)==expected,(x,y,z,expected)
             verified_ground+=1
         assert get_block(world,x,y-4,z) in ("minecraft:stone","minecraft:dirt")
     assert verified_ground>=4
@@ -145,11 +153,13 @@ def verify_world(world):
               "1m_dem_terrain_columns":report["dem_terrain_columns"],
               "genuine_osm_block_writes":report["actual_overlay_writes"],
               "actual_NBT_blocks_checked":tested+12,
+              "classified_surface_columns":len(ground_surface),
               "spawn_y":int(data["SpawnY"])}))
 
 
 if __name__=="__main__":
-    if len(sys.argv)==2:
-        verify_world(Path(sys.argv[1]).resolve())
+    if len(sys.argv) in (2,3):
+        verify_world(Path(sys.argv[1]).resolve(),
+                     Path(sys.argv[2]).resolve() if len(sys.argv)==3 else None)
     else:
         unittest.main()
