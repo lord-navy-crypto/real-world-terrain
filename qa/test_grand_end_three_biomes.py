@@ -127,6 +127,28 @@ class GrandEndThreeBiomeTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 _end_biome_choices(p)
 
+    def test_versioned_three_end_spawn_preserves_old_saved_generator_codecs(self):
+        from unified_world_settings import create_preset
+        java=(JAVA/"CrossRealmBiomeSource.java").read_text()
+        self.assertIn('Codec.BOOL.optionalFieldOf("spawn_end_habitats",false)',java)
+        self.assertIn("if (!spawnEndHabitats)",java)
+        self.assertIn("chorusGardens",java)
+        self.assertIn("crystalBarrens",java)
+        self.assertIn("shatteredGlades",java)
+        for family in ("sacred","measured"):
+            before_id,before,_=create_preset(RES,family,True,end_biomes=True)
+            next_id,nxt,_=create_preset(
+                RES,family,True,end_biomes=True,spawn_end_habitats=True)
+            self.assertEqual(next_id,before_id+"_spawn3")
+            a=before["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+            b=nxt["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+            self.assertEqual(a["type"],b["type"])
+            self.assertNotIn("spawn_end_habitats",a["source"])
+            self.assertTrue(b["source"]["spawn_end_habitats"])
+            self.assertEqual(a["source"]["source"],b["source"]["source"])
+            for realm in ("minecraft:the_nether","minecraft:the_end"):
+                self.assertEqual(before["dimensions"][realm],nxt["dimensions"][realm])
+
     def test_full_zip_export(self):
         with tempfile.TemporaryDirectory() as td:
             root=Path(td)
