@@ -52,6 +52,10 @@ public final class RealScaleMod {
                     CrossRealmBiomeSource.CODEC)
         );
         event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "end_accents"),
+                    EndAccentBiomeSource.CODEC)
+        );
+        event.register(Registries.BIOME_SOURCE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_ocean"),
                     SkyOceanBiomeSource.CODEC)
         );
@@ -93,6 +97,12 @@ public final class RealScaleMod {
                     new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.END));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_overworld"),
                     new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.OVERWORLD));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "end_chorus_gardens"),
+                    new EndAccentFeature(EndAccentFeature.Kind.CHORUS_GARDENS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "end_crystal_barrens"),
+                    new EndAccentFeature(EndAccentFeature.Kind.CRYSTAL_BARRENS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "end_shattered_glades"),
+                    new EndAccentFeature(EndAccentFeature.Kind.SHATTERED_GLADES));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_blossom_island"),
                     new SkyIslandFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"),
