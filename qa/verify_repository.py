@@ -24,7 +24,8 @@ for name,want in checks.items():
    'realscale:tva_measured_biodiversity_end3_spawn3_v2',
    'realscale:tva_sacred_biodiversity_end3_spawn3_v3',
    'realscale:tva_measured_biodiversity_end3_spawn3_v3',
-    'realscale:tva_regional_landform_expedition_three_realms']
+    'realscale:tva_regional_landform_expedition_three_realms',
+    'realscale:tva_regional_landform_expedition_v2_three_realms']
   print('INTENTIONAL MODIFICATION: original five presets plus only two explicit biodiversity-v2 additions')
   continue
  if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):

@@ -16,6 +16,17 @@ final class RegionalLandformMath {
     static final int YUNGUI_KARST = 6;
     static final int YUNGUI_BAZI = 7;
     static final int KINDS = 8;
+    // V2 is an opt-in regional atlas; original eight ID values never change.
+    static final int CELL_V2 = 8192;
+    static final int TIBETAN_GLACIAL_TROUGH = 8;
+    static final int TIBETAN_ENDORHEIC_BASIN = 9;
+    static final int ANDEAN_SALT_PAN = 10;
+    static final int ANDEAN_BOFEDEL_SHELF = 11;
+    static final int ECUADOR_VOLCANIC_CHAIN = 12;
+    static final int YUNGUI_FENGLIN = 13;
+    static final int WULONG_TIAN_KENG = 14;
+    static final int SICHUAN_ESCARPMENT = 15;
+    static final int KINDS_V2 = 16;
 
     private RegionalLandformMath() {}
     static long mix(long x) {
@@ -42,6 +53,28 @@ final class RegionalLandformMath {
     static int kind(long h, double seededSelector) {
         return Math.floorMod((int) Math.floorMod(h, KINDS)
                 + (int) Math.round(GeoMath.clamp(seededSelector,-1,1)*3), KINDS);
+    }
+    /** New 8-km atlas sites; separate hash and sizing preserve all v1 seeds. */
+    static long hashV2(int cx,int cz) {
+        return mix((long)cx*0x9e3779b97f4a7c15L
+                 ^ (long)cz*0xc2b2ae3d27d4eb4fL
+                 ^ 0x1078ed49ab529c03L);
+    }
+    static int centerXV2(int cx,long h) {
+        return Math.toIntExact((long)cx*CELL_V2+CELL_V2/2
+                +Math.floorMod(h>>>17,561L)-280);
+    }
+    static int centerZV2(int cz,long h) {
+        return Math.toIntExact((long)cz*CELL_V2+CELL_V2/2
+                +Math.floorMod(h>>>37,561L)-280);
+    }
+    static double radiusV2(long h) {
+        return 2450.0 + Math.floorMod(h>>>11,651L);
+    }
+    static int kindV2(long h,double seededSelector) {
+        int candidate=Math.floorMod((int)Math.floorMod(h,KINDS_V2)
+                +(int)Math.round(GeoMath.clamp(seededSelector,-1,1)*5),KINDS_V2);
+        return candidate;
     }
     static double gate(double continent,double baseline) {
         // Inland surface ONLY. Preserves ocean floors and low sea-level land.
@@ -98,6 +131,53 @@ final class RegionalLandformMath {
             // Flat 'bazi'/polje floor surrounded by discontinuous uplands.
             case YUNGUI_BAZI ->
                     core*(-0.70+0.08*Math.cos(u/230.0)) +1.2*rim;
+            // Qinghai–Tibet: glacially widened U trough flanked by benches.
+            case TIBETAN_GLACIAL_TROUGH ->
+                    core*(-0.28+2.25*GeoMath.smoothstep(150,850,Math.abs(v)));
+            // High plateau internally drained basin, not a generated lake.
+            case TIBETAN_ENDORHEIC_BASIN ->
+                    core*(-1.10+0.16*rr*rr)+1.15*rim;
+            // Peru–Bolivia Altiplano: smooth salt-pan FLOOR only, not salt water.
+            case ANDEAN_SALT_PAN ->
+                    core*(-0.90+0.06*Math.sin(u/460.0)*Math.cos(v/420.0))
+                    +0.82*rim;
+            // Andean bofedal-like wetland bench; no artificial aquifer edits.
+            case ANDEAN_BOFEDEL_SHELF ->
+                    core*(-0.42+0.45*GeoMath.smoothstep(290,880,Math.abs(v)));
+            // Equatorial Andean volcanic arc, three raised cones with craters.
+            case ECUADOR_VOLCANIC_CHAIN -> {
+                double result=0;
+                for(int n=-1;n<=1;n++) {
+                    double coneU=(u-n*730.0)/320.0;
+                    double coneV=(v-n*115.0)/340.0;
+                    double d2=coneU*coneU+coneV*coneV;
+                    result+=2.8*Math.exp(-d2*1.45)
+                            -0.65*Math.exp(-d2*24.0);
+                }
+                yield core*result;
+            }
+            // Guizhou Wanfenglin: separated limestone tower peaks on valley floor.
+            case YUNGUI_FENGLIN -> {
+                double peaks=Math.pow(Math.max(0,Math.cos(u/195.0)),6.0)
+                        *Math.pow(Math.max(0,Math.cos(v/225.0)),6.0);
+                yield core*(-0.20+2.65*peaks);
+            }
+            // Chongqing Wulong: clustered limestone collapse-doline bowls.
+            case WULONG_TIAN_KENG -> {
+                double bowls=0;
+                for(int n=-1;n<=1;n++) {
+                    double px=(u-n*590.0)/195.0;
+                    double pz=(v-180*Math.cos(n*2.0))/210.0;
+                    bowls+=Math.exp(-(px*px+pz*pz)*1.9);
+                }
+                yield core*(0.35-1.75*bowls)+0.28*rim;
+            }
+            // Sichuan Basin margin: broad low floor with rising stepped hills.
+            case SICHUAN_ESCARPMENT -> {
+                double slope=GeoMath.smoothstep(280,1050,Math.abs(v));
+                double terrace=0.13*Math.cos(v/160.0)*slope;
+                yield core*(-0.42+1.8*slope+terrace);
+            }
             default -> 0;
         };
     }

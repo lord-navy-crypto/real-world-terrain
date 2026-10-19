@@ -37,7 +37,8 @@ def main():
               "realscale:tva_measured_biodiversity_end3_spawn3_v2",
               "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
               "realscale:tva_measured_biodiversity_end3_spawn3_v3",
-              "realscale:tva_regional_landform_expedition_three_realms"]
+              "realscale:tva_regional_landform_expedition_three_realms",
+              "realscale:tva_regional_landform_expedition_v2_three_realms"]
     require(core["replace"] is False and core["values"]==original+additive,
             "TVA built mod must preserve original five and four explicit additive biomes world choices")
     with tempfile.TemporaryDirectory(prefix="tva-lab-export-") as temporary:

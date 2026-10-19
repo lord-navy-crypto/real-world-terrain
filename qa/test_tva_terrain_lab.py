@@ -30,6 +30,7 @@ DIVERSE_MENU=MENU+(
  "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
  "realscale:tva_measured_biodiversity_end3_spawn3_v3",
  "realscale:tva_regional_landform_expedition_three_realms",
+ "realscale:tva_regional_landform_expedition_v2_three_realms",
 )
 
 def read(path):

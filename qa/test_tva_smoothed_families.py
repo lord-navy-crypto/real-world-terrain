@@ -53,7 +53,8 @@ class CoreSmoothing(unittest.TestCase):
                 "realscale:tva_measured_biodiversity_end3_spawn3_v2",
                 "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
                 "realscale:tva_measured_biodiversity_end3_spawn3_v3",
-                "realscale:tva_regional_landform_expedition_three_realms"]
+                "realscale:tva_regional_landform_expedition_three_realms",
+                "realscale:tva_regional_landform_expedition_v2_three_realms"]
   for tag in ("normal","extended"):
    path=ROOT/"minecraft/tags/worldgen/world_preset"/(tag+".json")
    expected=stable+[optional]+(biodiversity if tag=="normal" else [])
