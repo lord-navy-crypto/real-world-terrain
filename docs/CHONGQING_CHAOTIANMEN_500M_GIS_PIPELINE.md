@@ -289,3 +289,46 @@ source licensing review and 3D landmark / river bank acceptance tests.
 **Open:** full game-client G-key survey + actual save block-placement test,
 OSM facade heights and eighth tower, 3D skybridge, riverbank heights,
 client FPS and world re-entry. Draft only; never merge to main prematurely.
+
+## Phase 7 — proximity-aware, chunk-safe GUI construction
+
+The older GIS executor advanced only from the first row, immediately
+stopping whenever that far-away `(X,Z)` belonged to an unloaded chunk.
+The official authentic 500m map contains many distant roads and towers:
+this made the built-in G-key UI difficult to use with ordinary Minecraft
+render distances. The new design fixes the issue without generating or
+force-loading additional chunks.
+
+- New deterministic `ChongqingGisChunkQueue` divides the unchanged
+  V2 OSM row runs at **actual 16×16 Minecraft chunk boundaries**.
+  Negative X/Z coordinates use floor division, not truncated division.
+  All rows remain attributed to the exact existing OSM geometry; each
+  planned block-write operation belongs to **one and only one** chunk.
+- The integrated-server executor automatically chooses **already loaded**
+  unfinished GIS work within five chunks of the player, favoring the
+  nearest and keeping a cached chunk cursor to minimize per-tick overhead.
+  The same **256 operations/tick** cap, collision gate, actual
+  `WORLD_SURFACE` check, backup acknowledgment and persistent
+  non-replay save lock are retained.
+- The player can stay in the same location while nearby buildings and
+  roads are filled; **unloaded distant chunks remain untouched**.
+  Once no loaded nearby work remains, construction PAUSES, gives
+  coordinates of the **nearest still-unfinished GIS chunk** and asks the
+  player to fly/walk there, re-run a **NO-WRITE terrain survey** and
+  manually press Start again. No automatic teleport and no chat commands.
+- The G-key vector minimap now shows an **actual player-position marker**
+  when the player is inside the ±500m source square. Building/road/rail/
+  water layer filters continue to use the pinned real OSM data only.
+- New `ChongqingGisChunkQueueTest` consumes the entire 494,988-operation
+  real V2 source plan through correct chunk cursors, enforcing exact
+  totals, first/last write, negative coordinates and hollow tower roof
+  skipping, **without claiming a real Minecraft saved-block write**.
+- Actual Chongqing Anvil CI already confirmed **130/130 exact overlay Y
+  matches on seed 2** and **130/130 on seed 42**, both with 1,570 actual
+  generated chunks inspected. That tests real terrain alignment but
+  is NOT yet a built-structure acceptance test.
+
+**Release blockers still stand:** graphical game-client GUI clicks, real
+NeoForge block placement and reopening a backed-up save, robust FPS
+measurements, ODbL legal handling, The Crystal's measured 3D deck,
+rivers and complex over/underpasses. **Only the isolated Draft PR changes.**
