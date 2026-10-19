@@ -41,8 +41,57 @@ RADIUS=500
 NAME={0:"minecraft:air",1:"minecraft:stone",2:"minecraft:dirt",
       3:"minecraft:grass_block",4:"minecraft:light_gray_concrete",
       5:"minecraft:gray_concrete",6:"minecraft:polished_andesite",
-      7:"minecraft:blue_concrete"}
+      7:"minecraft:blue_concrete",
+      8:"minecraft:smooth_stone",9:"minecraft:stone_bricks",
+      10:"minecraft:cobblestone",11:"minecraft:gravel",
+      12:"minecraft:coarse_dirt",13:"minecraft:oak_planks",
+      14:"minecraft:sand",15:"minecraft:mud"}
 MATERIAL={"building_footprint":4,"road":5,"railway":6,"water_reference":7}
+SURFACE_BLOCK={
+    "asphalt":5,"paving":8,"concrete":4,
+    "cobble":10,"gravel":11,"dirt":12,"grass":3,
+    "wooden_paving":13,"sand":14,"mud":15,
+    # LOW confidence: the OSM category is commercial/residential land-use;
+    # this surface is a clearly documented visual approximation, not a
+    # surveyed real paving-stone material.
+    "urban_inferred":8,
+}
+SURFACE_FORMAT="REALSCALE_CHAOTIANMEN_OSM_SURFACE_V1"
+
+def read_surface_mask(file: Path, dem_sha: str) -> tuple[dict,dict]:
+    if not file.is_file() or file.stat().st_size>12*1024*1024:
+        raise ValueError("Missing/oversize attributed real OSM surface overlay")
+    with gzip.open(file,"rb") as f:
+        raw=f.read(35*1024*1024+1)
+    if len(raw)>35*1024*1024:
+        raise ValueError("OSM surface decompression exceeds safety cap")
+    data=json.loads(raw)
+    if (data["format"]!=SURFACE_FORMAT or
+            data["radius_m"]!=RADIUS or data["resolution_m"]!=1 or
+            data["dem_source_raw_sha256"]!=dem_sha or
+            data["origin_lat"]!=29.5667 or data["origin_lon"]!=106.5874 or
+            data["license"]!="ODbL-1.0" or
+            not data["raw_osm_api_sha256"].startswith(tuple("0123456789abcdef"))):
+        raise ValueError("Misaligned or unlicensed surface overlay")
+    if not (0<len(data["rows"])<=1000000):
+        raise ValueError("Surface rows missing or beyond pilot cap")
+    lookup={}
+    for item in data["rows"]:
+        z,x0,x1,material,confidence,source_id=item
+        if (not all(isinstance(v,int) for v in (z,x0,x1)) or
+                min(z,x0,x1)<-RADIUS or max(z,x0,x1)>RADIUS or
+                x1<x0 or material not in SURFACE_BLOCK or
+                confidence not in ("low","medium","high") or
+                not (source_id.startswith("way/") or source_id.startswith("relation/"))):
+            raise ValueError("Invalid surface OSM raster row")
+        for x in range(x0,x1+1):
+            if (x,z) in lookup:
+                raise ValueError("Duplicated OSM surface cell")
+            lookup[(x,z)]=SURFACE_BLOCK[material]
+    if len(lookup)!=data["known_surface_columns"]:
+        raise ValueError("OSM surface count integrity mismatch")
+    return lookup,data
+
 
 def read_inputs():
     props={}
@@ -189,8 +238,15 @@ def overlay_index(plan):
             x=end+1
     return output
 
-def generate(world):
+def generate(world, surface_file=None):
     grid,plan=read_inputs()
+    surface_lookup,surface_meta=({},None)
+    if surface_file is not None:
+        surface_lookup,surface_meta=read_surface_mask(
+            Path(surface_file),plan["dem_source_raw_sha256"])
+    # A real OSM material marker is written BEFORE roads and buildings.
+    # Existing pinned OSM V2 structure blocks retain priority.
+
     region_dir=world/"region"
     region_dir.mkdir(parents=True,exist_ok=True)
     for old in region_dir.glob("r.*.*.mca"):old.unlink()
@@ -222,7 +278,10 @@ def generate(world):
                         set_block(lx,y,lz,1)
                     for y in range(max(bottom,top-3),top):
                         set_block(lx,y,lz,2)
-                    set_block(lx,top,lz,3)
+                    ground=surface_lookup.get((x,z),3)
+                    set_block(lx,top,lz,ground)
+                    if ground!=3:
+                        stats["source_qualified_non_grass_ground_columns"]+=1
                     stats["dem_terrain_columns"]+=1
             for row,x0,x1 in index.get((cx,cz),()):
                 y=row["y"];z=row["z"];localz=z&15
@@ -263,6 +322,13 @@ def generate(world):
     stats["building_policy"]="Source-footprint-based hollow facade and roof; schematic"
     stats["world_y_range"]=[MIN_Y,MIN_Y+HEIGHT-1]
     stats["world_xz_range"]=[-RADIUS,RADIUS]
+    if surface_meta is not None:
+        stats["surface_source_sha256"]=surface_meta["raw_osm_api_sha256"]
+        stats["ground_surface_osm_source_url"]=surface_meta.get("source_url")
+        stats["source_classified_ground_columns"]=surface_meta["known_surface_columns"]
+        stats["surface_class_count"]=surface_meta["materials"]
+        stats["unknown_ground_columns"]=surface_meta["unmapped_surface_columns"]
+        stats["surface_accuracy_note"]="Exact OSM tagged materials where available; LOW confidence urban landuse schematic elsewhere; no satellite photo pixels embedded."
     return stats
 
 def prepare_server(root):
@@ -302,11 +368,11 @@ def prepare_server(root):
         "motd=RealScale Chaotianmen standalone experimental map\n")
     print("PREPARED empty official-vanilla server world and datapack",world)
 
-def package_world(root,out):
+def package_world(root,out,surface_file=None):
     world=root/WORLD
     if not (world/"level.dat").is_file():
         raise RuntimeError("No vanilla 1.21.1 generated level.dat. Bootstrap the server first.")
-    stats=generate(world)
+    stats=generate(world,surface_file)
     import nbtlib
     file=nbtlib.load(world/"level.dat")
     data=file["Data"]
@@ -359,12 +425,13 @@ def main():
     cli.add_argument("--mode",choices=["prepare","package"],required=True)
     cli.add_argument("--server-root",type=Path,required=True)
     cli.add_argument("--zip",type=Path)
+    cli.add_argument("--osm-surface-mask",type=Path)
     args=cli.parse_args()
     root=args.server_root.resolve()
     root.mkdir(parents=True,exist_ok=True)
     if args.mode=="prepare":prepare_server(root)
     else:
         if args.zip is None:cli.error("--zip is required for packaging")
-        package_world(root,args.zip.resolve())
+        package_world(root,args.zip.resolve(),args.osm_surface_mask)
 
 if __name__=="__main__":main()
