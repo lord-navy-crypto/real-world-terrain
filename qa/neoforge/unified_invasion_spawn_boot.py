@@ -114,6 +114,40 @@ try:
             if "Seed:" in response:
                 raise AssertionError("Old Nether/vanilla End spawn regression: "+old)
         print("UNIFIED_INVASION_SPAWN_BIOME_PASS",SOURCE,hits[0],flush=True)
+        # Verify the physical 9x9 arrival pad, not only a biome label.
+        # Its spawn altitude is recorded in level.dat as an Int TAG_SpawnY.
+        precheck=rcon.send("save-all flush")
+        if "Saved" not in precheck:
+            raise AssertionError("Could not save arrival platform: "+repr(precheck))
+        saved_files=list((MOD/"run").glob("**/"+WORLD+"/level.dat"))
+        if not saved_files:
+            raise AssertionError("No saved level.dat to inspect initial spawn Y")
+        nbt=gzip.decompress(saved_files[0].read_bytes())
+        marker=b"\\x03\\x00\\x06SpawnY"
+        index=nbt.find(marker)
+        if index<0:
+            raise AssertionError("Missing SpawnY NBT Int tag")
+        spawn_y=int.from_bytes(nbt[index+len(marker):index+len(marker)+4],
+                               byteorder="big",signed=True)
+        if spawn_y<60:
+            raise AssertionError("Arrival platform event did not set a safe SpawnY: "+str(spawn_y))
+        inlay={"end_chorus_gardens":"purpur_block",
+               "end_crystal_barrens":"amethyst_block",
+               "end_shattered_glades":"end_stone_bricks"}[hits[0]]
+        check_blocks=[(0,spawn_y-1,0,inlay),
+                      (0,spawn_y,0,"air"),
+                      (4,spawn_y,0,"end_stone_brick_wall")]
+        for dx in (-4,4):
+            for dz in (-4,4):
+                check_blocks.append((dx,spawn_y+1,dz,"sea_lantern"))
+        for x,y,z,block in check_blocks:
+            command=(f"execute in minecraft:overworld positioned {x} {y} {z} "
+                     f"if block ~ ~ ~ minecraft:{block} run seed")
+            reply=rcon.send(command)
+            if "Seed:" not in reply:
+                raise AssertionError(f"Starter platform missing {block} at "
+                                     f"{x},{y},{z}: {reply!r}")
+        print("UNIFIED_INVASION_9X9_SPAWN_PAD_PASS",SOURCE,spawn_y,flush=True)
         # /execute if biome reads only LOADED End chunks; this test world
         # has not yet visited the End. Locate via the generator's BiomeSource
         # instead, so we can verify ungenerated locations without forcing
