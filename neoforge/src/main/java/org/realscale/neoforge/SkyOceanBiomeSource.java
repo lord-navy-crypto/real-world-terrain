@@ -85,6 +85,13 @@ public final class SkyOceanBiomeSource extends BiomeSource {
 
     private Holder<Biome> getNoiseBiomeUnprofiled(
             int quartX,int quartY,int quartZ,Climate.Sampler sampler) {
+        // New unified invasion worlds must keep their guaranteed initial
+        // Nether/End spawn biome even where a sky island intersects origin.
+        // Only the tiny 192-block starting circle is delegated. Elsewhere,
+        // offshore sky-island sampling is entirely unchanged.
+        if (containsCrossRealm()
+                && CrossRealmBiomeSource.isSpawnInvasionZone(quartX,quartZ))
+            return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
         // Explicit identity delegation for ocean, seabed, ocean structures and
         // even tall surface mountain biomes that do not contain an island.
         int y=quartY*4;
