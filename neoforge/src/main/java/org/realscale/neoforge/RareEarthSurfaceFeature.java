@@ -46,6 +46,12 @@ public final class RareEarthSurfaceFeature extends Feature<NoneFeatureConfigurat
                 ? Blocks.MOSS_BLOCK.defaultBlockState() : Blocks.PODZOL.defaultBlockState();
             case "permafrost_fen" -> pattern%3==0
                 ? Blocks.MOSS_BLOCK.defaultBlockState() : Blocks.GRAVEL.defaultBlockState();
+            case "namib_fog_desert" -> pattern%4==0
+                ? Blocks.GRAVEL.defaultBlockState() : Blocks.RED_SAND.defaultBlockState();
+            case "serpentine_barrens" -> pattern%4==0
+                ? Blocks.MOSS_BLOCK.defaultBlockState() : Blocks.TUFF.defaultBlockState();
+            case "socotra_endemic_scrub" -> pattern%3==0
+                ? Blocks.COARSE_DIRT.defaultBlockState() : Blocks.TERRACOTTA.defaultBlockState();
             case "limestone_island_scrub" -> pattern%3==0
                 ? Blocks.CALCITE.defaultBlockState() : Blocks.STONE.defaultBlockState();
             default -> null;
