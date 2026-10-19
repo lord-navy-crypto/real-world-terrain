@@ -143,6 +143,8 @@ public final class RealScaleChongqingGisClient {
         final MinecraftServer server;
         final ChongqingGisPlan plan;
         final ChongqingGisChunkQueue queue;
+        private int lastChunkX=Integer.MIN_VALUE;
+        private int lastChunkZ=Integer.MIN_VALUE;
         volatile long applied;
         volatile String status;
         volatile boolean running;
@@ -231,17 +233,26 @@ public final class RealScaleChongqingGisClient {
         private int[] nearestLoadedWork(ServerLevel level, ServerPlayer player) {
             int cx=Math.floorDiv(player.blockPosition().getX(),16);
             int cz=Math.floorDiv(player.blockPosition().getZ(),16);
+            if (Math.abs((long)lastChunkX-cx)<=5
+                    && Math.abs((long)lastChunkZ-cz)<=5
+                    && queue.hasPending(lastChunkX,lastChunkZ)
+                    && level.getChunkSource().hasChunk(lastChunkX,lastChunkZ))
+                return new int[]{lastChunkX,lastChunkZ};
             for (int radius=0;radius<=5;radius++) {
                 for (int dz=-radius;dz<=radius;dz++) {
                     for (int dx=-radius;dx<=radius;dx++) {
                         if (Math.max(Math.abs(dx),Math.abs(dz))!=radius) continue;
                         int x=cx+dx,z=cz+dz;
                         if (queue.hasPending(x,z)
-                                && level.getChunkSource().hasChunk(x,z))
+                                && level.getChunkSource().hasChunk(x,z)) {
+                            lastChunkX=x;lastChunkZ=z;
                             return new int[]{x,z};
+                        }
                     }
                 }
             }
+            lastChunkX=Integer.MIN_VALUE;
+            lastChunkZ=Integer.MIN_VALUE;
             return null;
         }
 
