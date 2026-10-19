@@ -28,6 +28,8 @@ VERTICAL_OFFSET = 96
 PACK_FORMAT = 48  # Minecraft 1.21.1
 MAX_COMMANDS = 250000
 COMMANDS_PER_FUNCTION = 3000
+MAX_BLOCKS_PER_COMMAND = 2048  # conservative /fill cap (vanilla default is higher)
+MAX_BLOCKS_PER_FUNCTION = 20000  # limit work in a single /function batch
 VALID_BLOCKS = {
     "building_footprint": "minecraft:light_gray_concrete",
     "building_wall": "minecraft:light_gray_concrete",
@@ -225,9 +227,15 @@ def osm_features(data: dict) -> list[dict]:
                 continue
             coords = [[p["lon"], p["lat"]] for p in raw]
             is_ring = (coords[0] == coords[-1] and len(coords) >= 4)
+            category = classify(tags)
+            # Closed ways are NOT necessarily filled areas: a loop of highway
+            # or railway is still a centreline unless explicitly area=yes.
+            is_area = (is_ring and tags.get("area") != "no" and
+                       (category in ("building", "water") or
+                        tags.get("area") == "yes"))
             out.append(dict(id="way/" + str(f["id"]), tags=tags,
-                            kind="Polygon" if is_ring else "LineString",
-                            coordinates=[coords] if is_ring else coords))
+                            kind="Polygon" if is_area else "LineString",
+                            coordinates=[coords] if is_area else coords))
         if not out:
             raise ValueError("Overpass data has no complete, supported ways")
         return sorted(out, key=lambda x: x["id"])
@@ -418,28 +426,64 @@ def export_datapack(layers: dict, stats: dict, source: Path,
         "pack":{"pack_format":PACK_FORMAT,
                 "description":"RealScale Chaotianmen real-GIS overlay, staged execution"}},
         ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    # Explicit per-column commands; safe maximum of 3000 commands/function,
-    # no silent /fill > 32768 substitution. Walls only for known height
-    # tags or tagged levels (the latter flagged as approximate).
-    output = []
+    # Row-run compression makes large REAL water polygons and roads practical.
+    # Never merge across different Y, features, materials or tagged heights;
+    # y follows the authentic DEM rather than an invented level surface.
+    # Keep each fill <= 2048 blocks, and each function <= 20000 writes so
+    # no single function can attempt millions of placements in one tick.
+    ordered = sorted(layers.items(), key=lambda e: (e[0][1], e[0][0]))
+    output = []  # list of (Minecraft command, affected block count)
     used = collections.Counter()
-    for (x,z), (type_name,y,height,feature_id) in sorted(
-            layers.items(), key=lambda e:(e[0][1],e[0][0])):
-        block = VALID_BLOCKS[type_name]
-        output.append(f"setblock {x} {y} {z} {block} replace")
-        used[type_name] += 1
-        if height is not None:
-            # Buildings are schematic massing from tagged dimensions,
-            # not accurate 3D roofs. Ground interpolation is per-column.
-            output.append(f"fill {x} {y+1} {z} {x} {y+height} {z} "
-                          f"{VALID_BLOCKS['building_wall']} replace")
-            used["building_mass_columns"] += 1
+    i = 0
+    while i < len(ordered):
+        (x, z), (type_name, y, height, feature_id) = ordered[i]
+        j = i + 1
+        while (j < len(ordered) and ordered[j][0] == (ordered[j-1][0][0] + 1, z)
+               and ordered[j][1] == (type_name, y, height, feature_id)):
+            j += 1
+        # Limit width by the *vertical* /fill volume for known-height
+        # buildings. Preserve the original exact footprint per block.
+        max_width = max(1, MAX_BLOCKS_PER_COMMAND // max(1, height or 1))
+        for start in range(i, j, max_width):
+            stop = min(j, start + max_width)
+            x0 = ordered[start][0][0]
+            x1 = ordered[stop - 1][0][0]
+            width = x1 - x0 + 1
+            block = VALID_BLOCKS[type_name]
+            if width == 1:
+                output.append((f"setblock {x0} {y} {z} {block} replace", 1))
+            else:
+                output.append((f"fill {x0} {y} {z} {x1} {y} {z} {block} replace",
+                               width))
+            used[type_name] += width
+            if height is not None:
+                # Solid schematic massing; NOT a researched facade/roof.
+                output.append((
+                    f"fill {x0} {y+1} {z} {x1} {y+height} {z} "
+                    f"{VALID_BLOCKS['building_wall']} replace",
+                    width * height))
+                used["building_mass_columns"] += width
+        i = j
     if len(output) > MAX_COMMANDS:
-        raise ValueError("Too many blocks for conservative staging cap")
-    chunks = [output[i:i+COMMANDS_PER_FUNCTION]
-              for i in range(0,len(output),COMMANDS_PER_FUNCTION)]
-    for i, commands in enumerate(chunks):
-        (functions / f"tile_{i:04d}.mcfunction").write_text(
+        raise ValueError("Too many commands for conservative staging cap")
+    chunks = []
+    current, volume = [], 0
+    volumes = []
+    for command, blocks in output:
+        if current and (len(current) >= COMMANDS_PER_FUNCTION or
+                        volume + blocks > MAX_BLOCKS_PER_FUNCTION):
+            chunks.append(current)
+            volumes.append(volume)
+            current, volume = [], 0
+        if blocks > MAX_BLOCKS_PER_FUNCTION:
+            raise ValueError("A single placement exceeds staged block cap")
+        current.append(command)
+        volume += blocks
+    if current:
+        chunks.append(current)
+        volumes.append(volume)
+    for batch, commands in enumerate(chunks):
+        (functions / f"tile_{batch:04d}.mcfunction").write_text(
             "\n".join(commands)+"\n",encoding="utf-8")
     manifest = {
         "format":"REALSCALE_CHAOTIANMEN_GIS_OVERLAY_V1",
@@ -450,6 +494,10 @@ def export_datapack(layers: dict, stats: dict, source: Path,
         "vector_attribution":attribution,
         "features_summary":stats,
         "block_counts":dict(used),"staged_commands":len(output),
+        "staged_block_writes":sum(volumes),
+        "max_stage_block_writes":MAX_BLOCKS_PER_FUNCTION,
+        "stage_block_writes":volumes,
+        "execution_method":"DEM-aligned horizontal run compression with 2048-block fill and 20000-write stage caps",
         "stages":len(chunks),
         "execute_in_order":[
             f"/function realscale_chongqing:tile_{i:04d}"
