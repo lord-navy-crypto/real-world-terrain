@@ -1,103 +1,94 @@
-# Unified World Settings — Sacred / Measured / Dimension Invasion (2026-10-19)
+# Unified World Settings — Invasions Always ON + Guaranteed Invasion Spawn
 
-Status: **EXPERIMENTAL branch, new-world only.** Not an in-place conversion for
-old saves; opt-in worldgen must remain deterministic and stored with each world.
+**Development status:** PR #59 experimental branch, new-world only. Minecraft
+1.21.1, NeoForge 21.1.249, Java 21.
 
-## The settings are ONE next-world draft, not a global worldgen mutation
+## Rule changes (2026-10-19)
 
-Minecraft client: **Mods → RealScale TVA → Config → Unified World Creation**.
+- For every **new Unified World Creation** export, Dimension Invasion is
+  **ALWAYS ON**. It is not an optional checkbox.
+- The default base terrain for a new YACL draft is Sacred Timeline. Players
+  can choose Sacred Timeline / Measured (read-only USGS) / Terrain Lab.
+- The initial overworld spawn is intentionally located inside **one**
+  genuine Nether or End biome ID. A 192-block radius around X/Z 0/0 has a
+  guaranteed invasion biome source; other rare invasion sites remain sparse.
+- Only the first creation of a matching opt-in world invokes the spawn
+  initialization event; reloading an existing save does not reset its spawn.
+- The world creates a minimal safe 3×3 blackstone/glowstone arrival pad
+  based on the actual terrain height, including high-altitude Measured
+  terrain. This is a deliberately **small visible change at X/Z 0/0**.
+- The outer sky-island source delegates within this starting region, so it
+  cannot accidentally override the guaranteed invasion biome at high Y.
+- The initial spawn uses X=0, Z=0. Randomized arrival offsets remain within
+  the special 192-block biome-radius under normal spawn-radius settings.
+- No canonical Sacred/Measured world preset JSON files are overwritten;
+  old worlds with other saved biome-source codecs retain their original
+  biomes, and default vanilla worlds remain unaffected.
 
-| Setting | Choice | Default |
-| --- | --- | --- |
-| Base World (next new world) | Terrain Lab / Sacred / Measured | Terrain Lab |
-| Dimension Invasion | ON / OFF | OFF |
-| Invasion Showcase near Origin (test-only) | ON / OFF | OFF |
+**Meaning of “always”:** every newly exported **unified** profile now
+requires `dimensionalInvasion: true`. The *historical* canonical world
+IDs and pre-feature draft imports remain available unchanged for existing
+save compatibility; they are not retroactively converted. Selecting a
+historical non-invasion world type from the old menus is NOT the same as
+selecting a new unified profile.
 
-- **Sacred:** keeps the exact canonical three-realm Sacred Timeline terrain,
-  including its original caves, ocean, skylands, ecotones, structures, and
-  Grand Nether/End generator settings.
-- **Measured:** keeps original USGS/DEM height and density settings without
-  any editable relief conversion. Its base terrain remains read-only.
-- **Terrain Lab:** retains its existing three editable family settings, but
-  can now add invasion to the *exported world preset*. A distinct world ID
-  avoids accidentally turning existing lab worlds into invasion worlds.
+## In-game settings
 
-ON wraps the original biome source with `realscale:cross_realm_invasion` in
-all three dimensions. In the overworld the wrapper is INSIDE the existing
-`sky_ocean` wrapper to retain sky archipelagos and coastline semantics. The
-feature/biome modifiers are already bundled with RealScale and gated to only
-operate on explicitly cross-realm worlds.
+**Mods → RealScale TVA → Config → Unified World Creation**
 
-Showcase ON adds a testing-only `cross_realm_showcase` outer wrapper with
-demonstration biome regions near X/Z **0,0** and **176,0** in each dimension.
-It is NOT suitable for normal rarity/performance tests; turn it OFF for real
-gameplay. The transferred terrain accents are small experimental prototypes,
-not an entire Nether/End landscape replicated into the target dimension.
+- **Base World:** Sacred Timeline (default), Measured/USGS, or Terrain Lab.
+- **Dimension Invasion:** Always enabled (no opt-out setting for new
+  unified worlds).
+- **Invasion Showcase near Origin:** Optional. ON demonstrates the six
+  interrealm directions at X/Z 0,0 and 176,0, in each dimension. OFF keeps
+  rare sites beyond the guaranteed starting region.
 
-## How to activate it (new world)
+## Export and create a new world
 
-1. Install matching Minecraft 1.21.1, NeoForge 21.1.249 and RealScale TVA JAR.
-   Install YACL 3.8.1+ on the client for its configuration screen.
-2. In the RealScale config's **Unified World Creation** tab, choose Sacred or
-   Measured, set **Dimension Invasion = ON**, optionally Showcase = ON,
-   and **Save**. Saving only writes `config/realscale-terrain-lab.json`;
-   it does not modify a running or existing world.
-3. Exit Minecraft. Using Python 3.9+, the matching mod JAR and repo scripts,
-   run (replace paths with yours):
+1. Install matching RealScale JAR, Java 21, NeoForge 1.21.1 and
+   YACL 3.8.1+ on client.
+2. Save the unified config; this only writes the next-world JSON draft.
+3. Exit Minecraft and export a new-world datapack:
 
-   ```sh
-   python3 scripts/export_terrain_lab_datapack.py \
-      --jar "/path/to/RealScale-TVA-Ultimate-NeoForge-1.21.1.jar" \
-      --draft "/path/to/minecraft/config/realscale-terrain-lab.json" \
-      --output "/path/to/Unified-Invasion-World.zip"
-   ```
-
-   The exporter is standalone, does not need Gradle, and *never* silently
-   replaces a previous ZIP. Run a new output filename on each export.
-4. In **Create New World → Data Packs**, enable the exported ZIP. Select the
-   newly available `realscale:unified_sacred_invasion_v1` or
-   `realscale:unified_measured_invasion_v1` **World Type**. With Showcase ON,
-   select the matching `..._invasion_showcase_v1` World Type instead.
-5. Optional `-Language.zip` is a resource pack that supplies the human-readable
-   world type label. Keep the exported data pack with that world save.
-6. Always test first in a fresh world, never overwrite, force-convert, or
-   rename an existing Sacred/Measured save. A world's saved generator codec
-   controls its new chunks regardless of later client config changes.
-
-## In-game verification
-
-Use F3 Biome ID, or execute exact biome checks (with cheats enabled)
-in a SHOWCASE world after the biome source has loaded:
-
-```mcfunction
-/execute in minecraft:overworld if biome 0 80 0 minecraft:nether_wastes run say INVASION_OVERWORLD_PASS
-/execute in minecraft:the_nether if biome 0 80 0 minecraft:forest run say INVASION_NETHER_PASS
-/execute in minecraft:the_end if biome 0 80 0 minecraft:forest run say INVASION_END_PASS
+```sh
+python3 scripts/export_terrain_lab_datapack.py \
+    --jar "/path/to/RealScale-TVA-Ultimate-NeoForge-1.21.1.jar" \
+    --draft "/path/to/minecraft/config/realscale-terrain-lab.json" \
+    --output "/path/to/Unified-Sacred-Invasion.zip"
 ```
 
-The above are *expected* by the showcase algorithm; actual live server
-evidence has NOT yet been collected for all six directions. If a command
-fails, verify world type, dimension/Y, registry source and log results rather
-than teleporting randomly. The ordinary rare mode is intentionally sparse
-and global `/locate biome` is not guaranteed to find a narrow patch.
+4. Enable that ZIP under **Create New World → Data Packs**.
+   Select the newly registered world type:
+   `realscale:unified_sacred_invasion_v1`, or
+   `realscale:unified_measured_invasion_v1`. Showcase has corresponding
+   `_invasion_showcase_v1` suffix.
+5. Optional `-Language.zip` is an independent human-readable resource pack.
+   Keep the data pack with the world's save.
 
-## Safety and verification scope
+The standalone exporter uses the matching JAR and cannot edit a running
+world, a previous save, or the canonical base preset registry. It rejects
+explicit new unified drafts with `dimensionalInvasion: false`. For backward
+compatibility, *old pre-unification drafts* without any `worldSource` field
+continue their old opt-out export semantics. You may delete/replace only
+test worlds, and should back up any important saves.
 
-- No original `tva_sacred_timeline_three_realms.json` or
-  `tva_measured_three_realms.json` is modified.
-- Existing YACL drafts missing new fields default to invasion OFF and legacy
-  `terrain_lab` export behavior, for backward compatibility.
-- New source validation checks exact three-dimension terrain settings and
-  original biome sources under the composed wrappers.
-- Datapack exporter bundles one additive World Type ID without editing the
-  stock preset tags.
-- The older `scripts/terrain_lab.py --from-yacl` legacy workflow only handles
-  terrain tuning. Use `scripts/export_terrain_lab_datapack.py` for unified
-  invasion toggles.
-- Full client GUI confirmation, six-direction persisted biome tests,
-  surface-patch visibility and performance regression are release gates,
-  not yet proven by source/static tests.
+## Player test: verify spawn's real biome
 
-**Known independent regression:** Natural Smoothing seed 2 with structures
-enabled can time out on strict distant chunk loading. This unified settings
-work does not claim to fix that worldgen performance issue.
+In a newly created unified world, stand at the original spawn near X/Z=0
+and use F3 to inspect the Biome ID. It should be
+`minecraft:nether_wastes` **or** `minecraft:end_highlands`:
+
+```mcfunction
+/execute in minecraft:overworld positioned 0 100 0 if biome ~ ~ ~ minecraft:nether_wastes run say INVASION_NETHER_PASS
+/execute in minecraft:overworld positioned 0 100 0 if biome ~ ~ ~ minecraft:end_highlands run say INVASION_END_PASS
+```
+
+The two examples are an OR condition; either result is a valid spawn
+invasion. Height Y=100 is only an example: use the actual spawn Y in F3
+for high mountain worlds.
+
+**Release gates still required:** Java compile, source/UI verification,
+actual Sacred+Measured first-world spawn biome and block pad persisted in
+Anvil, real client F3, no old-save changes, no surprise sky-island changes.
+Natural Smoothing seed 2 structures-on timeout remains a separate known
+issue. Do not call the guarantee fully game-verified until the live checks pass.
