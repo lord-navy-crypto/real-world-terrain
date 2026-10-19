@@ -87,6 +87,34 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
             w.setBlock(floor,accent,2);
     }
 
+    // Small irregular colonies, always within the originating chunk.
+    // Only source water above natural support may be replaced.
+    private static int colony(WorldGenLevel w,BlockPos center,ChunkPos chunk,
+                              RandomSource random,int sea,boolean reef){
+        int count=0;
+        int radius=reef ? 2+random.nextInt(2) : 2;
+        for(int dx=-radius;dx<=radius;dx++)for(int dz=-radius;dz<=radius;dz++){
+            if(dx*dx+dz*dz>radius*radius+random.nextInt(3))continue;
+            int x=center.getX()+dx,z=center.getZ()+dz;
+            if(x<chunk.getMinBlockX()||x>chunk.getMaxBlockX()
+                    ||z<chunk.getMinBlockZ()||z>chunk.getMaxBlockZ())continue;
+            if(random.nextInt(reef?3:2)==0)continue;
+            int y=w.getHeight(Heightmap.Types.OCEAN_FLOOR_WG,x,z);
+            if(y>=sea-3 || Math.abs(y-center.getY())>3)continue;
+            BlockPos p=new BlockPos(x,y,z);
+            if(!w.getBlockState(p).is(Blocks.WATER)
+                    ||!natural(w.getBlockState(p.below())))continue;
+            BlockState plant=reef
+                    ? (random.nextInt(6)==0 ? pickle(random) : coral(random,random.nextBoolean()))
+                    : Blocks.SEAGRASS.defaultBlockState();
+            if(!plant.canSurvive(w,p))continue;
+            w.setBlock(p,plant,2);
+            count++;
+            if(count>=9)return count;
+        }
+        return count;
+    }
+
     private static boolean kelp(WorldGenLevel w,BlockPos pos,int sea,RandomSource random){
         // Mixed canopy: short understory and occasional taller stands.
         int height=2+random.nextInt(4)+random.nextInt(4);
@@ -108,7 +136,7 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
         return true;
     }
     private static boolean placeAt(WorldGenLevel w,BlockPos source,
-                                   RandomSource random){
+                                   ChunkPos chunk,RandomSource random){
         int sea=w.getSeaLevel();
         int x=source.getX(),z=source.getZ();
         int y=w.getHeight(Heightmap.Types.OCEAN_FLOOR_WG,x,z);
@@ -176,6 +204,11 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
         // Change the natural support first, then re-check survival.
         // Existing support must remain unchanged for corals/kelp.
         w.setBlock(p,target,2);
+        if((h==MarineEcologyZonationMath.Habitat.TROPICAL_REEF
+                ||h==MarineEcologyZonationMath.Habitat.TROPICAL_SEAGRASS
+                ||h==MarineEcologyZonationMath.Habitat.TEMPERATE_SEAGRASS)
+                && random.nextInt(3)==0)
+            colony(w,p,chunk,random,sea,h==MarineEcologyZonationMath.Habitat.TROPICAL_REEF);
         return true;
     }
 
@@ -193,7 +226,7 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
         for(int i=0;i<9;i++){
             int x=chunk.getMinBlockX()+random.nextInt(16);
             int z=chunk.getMinBlockZ()+random.nextInt(16);
-            if(placeAt(w,new BlockPos(x,origin.getY(),z),random))placed++;
+            if(placeAt(w,new BlockPos(x,origin.getY(),z),chunk,random))placed++;
             if(placed>=5)break;
         }
         return placed>0;
