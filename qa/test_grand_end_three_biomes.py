@@ -55,6 +55,9 @@ class GrandEndThreeBiomeTests(unittest.TestCase):
                 modifier=json.loads((RES/f"data/realscale/neoforge/biome_modifier/{name}.json").read_text())
                 self.assertEqual(feature,{"type":"realscale:"+name,"config":{}})
                 self.assertEqual(placed["feature"],"realscale:"+name)
+                self.assertEqual(placed["placement"][0],
+                                 {"type":"minecraft:count","count":2})
+                self.assertEqual(placed["placement"][-1]["type"],"minecraft:biome")
                 self.assertEqual(modifier["type"],"neoforge:add_features")
                 self.assertEqual(modifier["biomes"],"realscale:"+name)
                 self.assertEqual(modifier["features"],"realscale:"+name)

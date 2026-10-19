@@ -114,6 +114,13 @@ try:
             if "Seed:" in response:
                 raise AssertionError("Old Nether/vanilla End spawn regression: "+old)
         print("UNIFIED_INVASION_SPAWN_BIOME_PASS",SOURCE,hits[0],flush=True)
+        # Regression: the entire 192-block spawn column is the same custom
+        # End habitat, including high-altitude Measured mountains.
+        for height in (64,160,320):
+            reply=rcon.send("execute in minecraft:overworld "
+                f"positioned 0 {height} 0 if biome ~ ~ ~ realscale:{hits[0]} run seed")
+            if "Seed:" not in reply:
+                raise AssertionError(f"Spawn biome changed at Y={height}: {reply!r}")
         # Verify the physical 9x9 arrival pad, not only a biome label.
         # Its spawn altitude is recorded in level.dat as an Int TAG_SpawnY.
         precheck=rcon.send("save-all flush")
