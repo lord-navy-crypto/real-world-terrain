@@ -56,12 +56,14 @@ jobs:
       - name: Fetch ODbL official OSM surfaces, squares and land-use areas
         run: |
           python3 tools/chongqing_osm_surface.py \
+            --radius 600 \
             --output build/chaotianmen-osm-surface-v1.json.gz
       - name: Verify real OSM width inference and bridge/tunnel safety
         run: python3 -m unittest discover -s qa -p 'test_chongqing_osm_roads.py' -v
       - name: Reproject genuine OSM highway ways and width tags into 1m road corridors
         run: |
           python3 tools/chongqing_osm_roads.py \
+            --radius 600 \
             --output build/chaotianmen-osm-road-corridors-v1.json.gz
       - name: Verify real OSM Crystal polygon and 3D height tags before writing any glass
         run: python3 -m unittest discover -s qa -p 'test_chongqing_crystal_3d.py' -v
