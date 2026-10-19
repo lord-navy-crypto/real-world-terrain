@@ -273,9 +273,15 @@ public final class RealScaleChongqingGisClient {
                     if (chunk==null) {
                         pause();
                         previewGood=false;
-                        status="No remaining GIS construction in loaded nearby chunks. "
-                                +"Walk/fly toward unfinished geometry; re-survey and Start. "
-                                +"Already completed "+applied+" writes are preserved.";
+                        int[] next=queue.nearestPendingChunk(
+                                Math.floorDiv(player.blockPosition().getX(),16),
+                                Math.floorDiv(player.blockPosition().getZ(),16));
+                        status=next==null
+                                ? "All GIS chunks are complete; inspect world."
+                                : "Nearby loaded chunks finished. Fly near X="
+                                    +(next[0]*16+8)+" Z="+(next[1]*16+8)
+                                    +", re-survey and Start. Completed "
+                                    +applied+" writes preserved.";
                         return;
                     }
                     int cx=chunk[0],cz=chunk[1];
@@ -533,6 +539,22 @@ public final class RealScaleChongqingGisClient {
                     left+size,top-14,0xDDDDDD);
             graphics.drawCenteredString(font,"Buildings / Roads / Rail / Water",
                     left+size,top+size*2+8,0xAAAAAA);
+            // Player dot uses the same true world X-east/Z-south reference;
+            // only display when inside the pinned 500m OSM square.
+            Minecraft mc=Minecraft.getInstance();
+            if (mc.player!=null && active!=null
+                    && active.server==mc.getSingleplayerServer()) {
+                int radius=active.plan.radius;
+                double px=mc.player.getX(),pz=mc.player.getZ();
+                if (px>=-radius && px<=radius
+                        && pz>=-radius && pz<=radius) {
+                    int dotX=(int)Math.floor((px+radius)*size/(2*radius+1));
+                    int dotZ=(int)Math.floor((pz+radius)*size/(2*radius+1));
+                    int centerX=left+dotX*2+1,centerZ=top+dotZ*2+1;
+                    graphics.fill(centerX-3,centerZ-1,centerX+4,centerZ+2,0xFFFFDD33);
+                    graphics.fill(centerX-1,centerZ-3,centerX+2,centerZ+4,0xFFFFDD33);
+                }
+            }
         }
         private static String truncate(String text, int max) {
             return text.length() <= max ? text : text.substring(0,max-3)+"...";
