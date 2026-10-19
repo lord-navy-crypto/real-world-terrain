@@ -6,6 +6,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SeaPickleBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
@@ -54,6 +55,36 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
                            : Blocks.HORN_CORAL.defaultBlockState();
         };
     }
+    // Native decorative proxy: waterlogged pickles light up sunny reef pockets.
+    private static BlockState pickle(RandomSource r){
+        return Blocks.SEA_PICKLE.defaultBlockState()
+                .setValue(SeaPickleBlock.PICKLES,1+r.nextInt(4));
+    }
+
+    // Color/rock variation acts only on the natural seafloor immediately below
+    // a water voxel. Never touch structural blocks, reef features or tile entities.
+    private static void seabedAccent(WorldGenLevel w,BlockPos floor,
+                                     MarineEcologyZonationMath.Habitat h,
+                                     RandomSource r){
+        BlockState existing=w.getBlockState(floor);
+        if(!natural(existing)||r.nextInt(7)!=0)return;
+        BlockState accent=switch(h){
+            case TROPICAL_REEF -> r.nextBoolean() ? Blocks.CALCITE.defaultBlockState()
+                    : Blocks.GRAVEL.defaultBlockState();
+            case TROPICAL_SEAGRASS,TEMPERATE_SEAGRASS -> r.nextBoolean()
+                    ? Blocks.CLAY.defaultBlockState():Blocks.GRAVEL.defaultBlockState();
+            case TEMPERATE_KELP,COLD_SPONGE_GARDEN,POLAR_BENTHIC ->
+                    r.nextBoolean()?Blocks.TUFF.defaultBlockState():Blocks.ANDESITE.defaultBlockState();
+            case COLD_CORAL_GARDEN -> r.nextBoolean()
+                    ? Blocks.CALCITE.defaultBlockState():Blocks.TUFF.defaultBlockState();
+            case DEEP_SILTY_FLOOR -> r.nextBoolean()
+                    ? Blocks.CLAY.defaultBlockState():Blocks.GRAVEL.defaultBlockState();
+            case NONE -> existing;
+        };
+        if(h!=MarineEcologyZonationMath.Habitat.NONE && !existing.equals(accent))
+            w.setBlock(floor,accent,2);
+    }
+
     private static boolean kelp(WorldGenLevel w,BlockPos pos,int sea,RandomSource random){
         int height=3+random.nextInt(5);
         if(pos.getY()+height>=sea-1)return false;
@@ -91,9 +122,10 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
                 biome,depth,hard(support),patch);
         // Deep-sea communities are scattered oases, not uniform seafloor carpets.
         BlockState target=switch(h){
-            case TROPICAL_REEF -> coral(random,random.nextBoolean());
-            case TROPICAL_SEAGRASS,TEMPERATE_SEAGRASS ->
-                    Blocks.SEAGRASS.defaultBlockState();
+            case TROPICAL_REEF -> random.nextInt(5)==0 ? pickle(random)
+                    : coral(random,random.nextBoolean());
+            case TROPICAL_SEAGRASS,TEMPERATE_SEAGRASS -> random.nextInt(9)==0
+                    ? pickle(random) : Blocks.SEAGRASS.defaultBlockState();
             case COLD_SPONGE_GARDEN -> random.nextInt(4)==0
                     ? Blocks.WET_SPONGE.defaultBlockState()
                     : coral(random,true);
@@ -107,9 +139,21 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
             case DEEP_SILTY_FLOOR,NONE -> null;
         };
         if(h==MarineEcologyZonationMath.Habitat.TEMPERATE_KELP){
-            return random.nextInt(3)!=0 && kelp(w,p,sea,random);
+            if(random.nextInt(3)!=0 && kelp(w,p,sea,random)){
+                seabedAccent(w,p.below(),h,random);
+                return true;
+            }
+            return false;
         }
-        if(target==null)return false;
+        if(target==null){
+            // Muddy abyss: sparse gravel/clay variation rather than coral carpets.
+            if(h==MarineEcologyZonationMath.Habitat.DEEP_SILTY_FLOOR
+                    && random.nextInt(4)==0){
+                seabedAccent(w,p.below(),h,random);
+                return true;
+            }
+            return false;
+        }
         if(random.nextInt(h==MarineEcologyZonationMath.Habitat.COLD_CORAL_GARDEN
                         ||h==MarineEcologyZonationMath.Habitat.POLAR_BENTHIC
                         ?3:2)!=0)return false;
@@ -118,6 +162,7 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
         // artifacts, structures or fish; only a native water source voxel.
         if(!w.getBlockState(p).is(Blocks.WATER))return false;
         w.setBlock(p,target,2);
+        seabedAccent(w,p.below(),h,random);
         return true;
     }
 
