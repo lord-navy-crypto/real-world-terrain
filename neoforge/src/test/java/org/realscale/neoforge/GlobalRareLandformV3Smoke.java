@@ -47,7 +47,6 @@ public final class GlobalRareLandformV3Smoke {
             check(RegionalLandformMath.apply(k,0.2,0,0,radius,.6)==0.2,
                     "sea-level protection regression");
         }
-        var m=RegionalLandformMath.class;
         check(RegionalLandformMath.effect(RegionalLandformMath.GUIANA_TEPUI,0,0,radius)>3,
                 "tepui plateau missing");
         check(RegionalLandformMath.effect(RegionalLandformMath.GUIANA_TEPUI,0,0,radius)>
@@ -61,8 +60,8 @@ public final class GlobalRareLandformV3Smoke {
         check(RegionalLandformMath.effect(RegionalLandformMath.GLACIAL_ESKER_RIDGE,0,0,radius)>
               RegionalLandformMath.effect(RegionalLandformMath.GLACIAL_ESKER_RIDGE,0,500,radius)+1.0,
                 "esker narrow ridge missing");
-        check(RegionalLandformMath.effect(RegionalLandformMath.NAMIB_STAR_DUNES,850,0,radius)>
-              RegionalLandformMath.effect(RegionalLandformMath.NAMIB_STAR_DUNES,736,425,radius)+.5,
+        check(RegionalLandformMath.effect(RegionalLandformMath.NAMIB_STAR_DUNES,680,510,radius)>
+              RegionalLandformMath.effect(RegionalLandformMath.NAMIB_STAR_DUNES,334,782,radius)+.5,
                 "dune arms not radiating");
         check(RegionalLandformMath.effect(RegionalLandformMath.EAST_AFRICAN_RIFT,0,0,radius)<
               RegionalLandformMath.effect(RegionalLandformMath.EAST_AFRICAN_RIFT,0,510,radius),
