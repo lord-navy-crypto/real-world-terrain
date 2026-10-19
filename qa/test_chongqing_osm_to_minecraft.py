@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""Real DEM/OSM coordinate parity + synthetic-vector raster control tests.
+
+TEST INPUT GEOMETRIES BELOW ARE SYNTHETIC, never bundled as city facts.
+"""
+import importlib.util
+import json
+import math
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT=Path(__file__).resolve().parents[1]
+spec=importlib.util.spec_from_file_location(
+    "chongqing_osm_to_minecraft",ROOT/"tools/chongqing_osm_to_minecraft.py")
+gis=importlib.util.module_from_spec(spec)
+spec.loader.exec_module(gis)
+
+def ll(dem,x,z):
+    return [dem.lon+x/dem.m_lon,dem.lat-z/dem.m_lat]
+
+def feature(fid,tags,kind,coords):
+    return {"type":"Feature","id":fid,"properties":tags,
+            "geometry":{"type":kind,"coordinates":coords}}
+
+class ChongqingGISTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.dem=gis.Dem(gis.DEFAULT_DEM)
+
+    def test_geodesy_matches_original_chongqing_dem_without_utm_drift(self):
+        dem=self.dem
+        self.assertEqual(dem.coords(dem.lon,dem.lat),(0,0))
+        for x,z in ((0,0),(-500,500),(500,-500),(300,350)):
+            a,b=dem.coords(*ll(dem,x,z))
+            self.assertAlmostEqual(x,a,places=6)
+            self.assertAlmostEqual(z,b,places=6)
+            self.assertTrue(math.isfinite(dem.height(x,z)))
+        self.assertEqual(dem.n,129)
+        self.assertEqual(dem.step,64)
+        self.assertEqual(dem.min_x,-4096)
+        self.assertEqual(dem.min_z,-4096)
+        with self.assertRaisesRegex(ValueError,"coverage"):
+            dem.height(5000,0)
+
+    def test_polygon_with_real_geometry_holes_and_exact_no_footprint_guess(self):
+        dem=self.dem
+        outer=[ll(dem,x,z) for x,z in
+               ((0,0),(10,0),(10,10),(0,10),(0,0))]
+        inner=[ll(dem,x,z) for x,z in
+               ((3,3),(7,3),(7,7),(3,7),(3,3))]
+        data={"type":"FeatureCollection","features":[
+            feature("synthetic-osm-test-1",{"building":"yes"},
+                    "Polygon",[outer,inner])]}
+        shapes=gis.osm_features(data)
+        pixels,stat=gis.prepare(dem,shapes,100)
+        self.assertIn((1,1),pixels)
+        self.assertNotIn((5,5),pixels)
+        self.assertEqual(pixels[(1,1)][0],"building_footprint")
+        self.assertIsNone(pixels[(1,1)][2],
+                          "Unknown height MUST NOT become fabricated tower")
+        self.assertGreaterEqual(stat["buildings_footprint_only"],1)
+
+    def test_exact_height_tag_and_levels_estimation_are_separate(self):
+        dem=self.dem
+        def poly(x):
+            return [[ll(dem,a,b) for a,b in (
+                (x,0),(x+3,0),(x+3,3),(x,3),(x,0))]]
+        source={"type":"FeatureCollection","features":[
+            feature("osm/1",{"building":"yes","height":"25 m"},
+                    "Polygon",poly(0)),
+            feature("osm/2",{"building":"yes","building:levels":"4"},
+                    "Polygon",poly(10))]}
+        cells,stats=gis.prepare(dem,gis.osm_features(source),100)
+        self.assertEqual(cells[(1,1)][2],25)
+        self.assertEqual(cells[(11,1)][2],12)
+        self.assertEqual(stats["buildings_estimated_height_from_levels"],1)
+
+    def test_roads_line_are_centerline_only_when_width_unknown(self):
+        dem=self.dem
+        line=[ll(dem,-20,0),ll(dem,20,0)]
+        source={"type":"FeatureCollection","features":[
+            feature("way/road1",{"highway":"primary"},
+                    "LineString",line)]}
+        cells,stats=gis.prepare(dem,gis.osm_features(source),100)
+        self.assertIn((0,0),cells)
+        self.assertNotIn((0,5),cells)
+        self.assertEqual(stats["roads_missing_or_unsupported_width"],1)
+        self.assertTrue(all(item[0]=="road" for item in cells.values()))
+
+    def test_water_without_polygon_cannot_fake_true_bank_geometry(self):
+        dem=self.dem
+        source={"type":"FeatureCollection","features":[
+            feature("osm/waterway",{"waterway":"river"},
+                    "LineString",[ll(dem,0,0),ll(dem,20,20)])]}
+        self.assertRaisesRegex(ValueError,"No real geometries",
+             gis.prepare,dem,gis.osm_features(source),100)
+        # A real water POLYGON can make a blue *reference* overlay, but
+        # it must not silently pour Minecraft flowing water onto cliffs.
+        poly=[[ll(dem,x,z) for x,z in
+                ((0,0),(4,0),(4,4),(0,4),(0,0))]]
+        water={"type":"FeatureCollection","features":[
+            feature("osm/riverbank",{"natural":"water"},"Polygon",poly)]}
+        cells,_=gis.prepare(dem,gis.osm_features(water),100)
+        self.assertEqual(cells[(1,1)][0],"water_reference")
+
+    def test_actual_overpass_way_geom_format_is_supported(self):
+        dem=self.dem
+        coords=[ll(dem,x,0) for x in (0,10)]
+        data={"elements":[{"type":"way","id":123,
+                           "tags":{"highway":"service"},
+                           "geometry":[{"lon":lon,"lat":lat}
+                                       for lon,lat in coords]}]}
+        shapes=gis.osm_features(data)
+        self.assertEqual(shapes[0]["id"],"way/123")
+        self.assertEqual(shapes[0]["kind"],"LineString")
+        cells,_=gis.prepare(dem,shapes,100)
+        self.assertIn((5,0),cells)
+        self.assertRaisesRegex(ValueError,"no complete",
+            gis.osm_features,{"elements":[{"type":"relation","id":1}]})
+
+    def test_datapack_staged_bounded_and_has_immutable_source_hash(self):
+        dem=self.dem
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            source=root/"source.geojson"
+            ring=[[ll(dem,x,z) for x,z in
+                   ((-3,-3),(3,-3),(3,3),(-3,3),(-3,-3))]]
+            source.write_text(json.dumps({"type":"FeatureCollection",
+                "features":[feature("osm/test",{"building":"yes",
+                    "height":"18"},"Polygon",ring)]}),encoding="utf-8")
+            blocks,stats=gis.prepare(dem,gis.osm_features(
+                json.loads(source.read_text())),100)
+            out=root/"pack"
+            result=gis.export_datapack(blocks,stats,source,dem,
+                         out,100,"© OpenStreetMap contributors (ODbL); synthetic test geometry")
+            self.assertEqual(result["stages"],1)
+            self.assertEqual(result["dem_source_raw_sha256"],dem.sha256)
+            commands=(out/"data/realscale_chongqing/function/tile_0000.mcfunction").read_text()
+            self.assertIn("minecraft:light_gray_concrete",commands)
+            self.assertIn("fill ",commands)
+            self.assertNotIn("minecraft:water",commands)
+            self.assertTrue((out/"pack.mcmeta").is_file())
+            self.assertEqual(json.loads((out/"pack.mcmeta").read_text())["pack"]["pack_format"],48)
+            with self.assertRaisesRegex(ValueError,"empty"):
+                gis.export_datapack(blocks,stats,source,dem,out,100,"OSM ODbL")
+
+if __name__=="__main__":
+    unittest.main()
