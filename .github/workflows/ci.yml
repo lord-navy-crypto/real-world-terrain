@@ -46,6 +46,15 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_usgs_measured_global_hybrid.py' -v
       - name: Check NOAA-inspired eight marine bathymetries and same-world USGS preservation
         run: python3 -m unittest discover -s qa -p 'test_integrated_marine_ocean_v1.py' -v
+      - name: Check cold coral/sponge, kelp, reef and Arctic habitat layers with one biome modifier
+        run: python3 -m unittest discover -s qa -p 'test_marine_ecology_zonation.py' -v
+      - name: Prove pure Java thermal-photic marine ecology and seed-stable contiguous habitats
+        run: |
+          mkdir -p build/marine-ecology-math
+          javac -d build/marine-ecology-math \
+            neoforge/src/main/java/org/realscale/neoforge/MarineEcologyZonationMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/MarineEcologyZonationMathSmoke.java
+          java -cp build/marine-ecology-math org.realscale.neoforge.MarineEcologyZonationMathSmoke
       - name: Test ocean seafloor ridges, trenches, fault zones, submerged caps and DEM gates in Java
         run: |
           mkdir -p build/marine-geology-math
