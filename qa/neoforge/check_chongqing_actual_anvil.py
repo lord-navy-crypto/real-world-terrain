@@ -58,10 +58,17 @@ def inspect(mod_root):
             top=get_block(chunk,8,observed,8)
             below=get_block(chunk,8,observed-75,8)
             deep=get_block(chunk,8,120,8)
+            # Exact GUI target matches exporter block_y():
+            # floor(DEM + 96) + 1, not rounded coarse DEM.
+            gui_target_y=math.floor(expected+96)+1
+            first_air_y=observed+1
             samples.append({"x":world_x,"z":world_z,
                             "dem_m":round(expected,2),
                             "expected_y":round(expected+96,2),
                             "observed_y":observed,
+                            "gui_target_y":gui_target_y,
+                            "actual_first_air_y":first_air_y,
+                            "gui_target_minus_actual_first_air":gui_target_y-first_air_y,
                             "top":top,"below":below,"deep":deep})
     if inspected<4 or len(samples)<3:
         raise AssertionError(
@@ -74,7 +81,15 @@ def inspect(mod_root):
             s["deep"]!="minecraft:air" or
             s["top"] not in ("minecraft:grass_block","minecraft:dirt",
                              "minecraft:stone")]
+    # A nonzero delta is a REAL WORLD overlay alignment warning even if
+    # the older +/-12m DEM-vs-saved-world sanity gate still passes.
+    from collections import Counter
+    delta_counts=Counter(s["gui_target_minus_actual_first_air"]
+                         for s in samples)
     report={"preset":"realscale:special_chongqing_sky_city",
+            "gis_overlay_target_delta_histogram":dict(sorted(delta_counts.items())),
+            "gis_overlay_exact_y_matches":delta_counts.get(0,0),
+            "gis_overlay_placement_y_is_checked_by_client":True,
             "actual_saved_chunks_inspected":inspected,
             "actual_columns":len(samples),
             "real_dem_height_tolerance_blocks":12,
@@ -84,7 +99,8 @@ def inspect(mod_root):
             json.dumps(report,indent=2,ensure_ascii=False))
     print("CHONGQING_ACTUAL_ANVIL_QA",json.dumps({
         "pass":report["pass"],"chunks":inspected,"samples":len(samples),
-        "bad":len(bad)
+        "bad":len(bad),
+        "gis_overlay_target_deltas":dict(sorted(delta_counts.items()))
     }),flush=True)
     if bad:raise AssertionError("Real Chongqing sky island block or height mismatch")
 
