@@ -36,6 +36,8 @@ import java.util.UUID;
  * Experimental GUI-only Chaotianmen GIS placement in INTEGRATED singleplayer.
  * Press G, review immutable DEM/source hashes, acknowledge backup, then
  * explicitly start a guarded 256-block/tick job; Close/ESC automatically pauses.
+ * Native V2 uses schematic walls/roof only for source-backed towers:
+ * interiors remain air rather than being filled as millions of concrete blocks.
  * Does not use Minecraft chat or commands, never auto-applies
  * on start, and refuses all foreign worlds/multiplayer/dimensions.
  *
@@ -90,7 +92,8 @@ public final class RealScaleChongqingGisClient {
                 .orElse(false);
     }
 
-    private static BlockState sourceBlock(String kind, boolean wall) {
+    private static BlockState sourceBlock(String kind, boolean wall, boolean roof) {
+        if (roof) return Blocks.GRAY_CONCRETE.defaultBlockState();
         if (wall) return Blocks.LIGHT_GRAY_CONCRETE.defaultBlockState();
         return switch (kind) {
             case "building_footprint" -> Blocks.LIGHT_GRAY_CONCRETE.defaultBlockState();
@@ -202,7 +205,7 @@ public final class RealScaleChongqingGisClient {
                     }
                     checked++;
                     BlockPos pos=new BlockPos(sx,row.y(),row.z());
-                    BlockState target=sourceBlock(row.kind(),false);
+                    BlockState target=sourceBlock(row.kind(),false,false);
                     BlockState old=level.getBlockState(pos);
                     if (terrainMatches(level,pos,old,target)
                             && canReplace(old,target,false)) good++;
@@ -243,7 +246,8 @@ public final class RealScaleChongqingGisClient {
                                 +"; pregenerate/visit first. Paused.";
                         return;
                     }
-                    BlockState target=sourceBlock(row.kind(),yOffset>0);
+                    BlockState target=sourceBlock(row.kind(),yOffset>0,
+                            row.height()>0 && yOffset==row.height());
                     BlockState old=level.getBlockState(pos);
                     if (yOffset==0 && !terrainMatches(level,pos,old,target)) {
                         pause();
@@ -281,7 +285,8 @@ public final class RealScaleChongqingGisClient {
                             return;
                         }
                     }
-                    applied++;writes++;yOffset++;
+                    applied++;writes++;
+                    yOffset=row.nextOffsetAfter(yOffset);
                     if (yOffset > row.height()) {
                         yOffset=0;x++;
                         if (x > row.x1()) {
