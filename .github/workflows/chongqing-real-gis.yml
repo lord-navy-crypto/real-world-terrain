@@ -6,6 +6,9 @@ on:
     paths:
       - 'chongqing/data/chaotianmen_osm_api_20261019_r500_b100.json.gz.b64'
       - 'tools/chongqing_osm_to_minecraft.py'
+      - 'neoforge/src/main/resources/assets/realscale/terrain/chaotianmen_authentic_osm_ui_plan_v2.json.gz.b64'
+      - 'neoforge/src/main/java/org/realscale/neoforge/ChongqingGisPlan.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/ChongqingGisMiniMap.java'
       - 'tools/chongqing_gis_audit.py'
       - 'qa/test_chongqing_osm_to_minecraft.py'
       - 'qa/test_chongqing_gis_audit.py'
