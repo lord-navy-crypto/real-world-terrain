@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "realscale:end_crystal_barrens",
+  "features": "realscale:end_crystal_barrens",
+  "step": "vegetal_decoration"
+}
