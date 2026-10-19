@@ -34,7 +34,7 @@ public final class MarineSpawnHabitats {
         if(type!=EntityType.COD && type!=EntityType.SALMON
                 && type!=EntityType.TROPICAL_FISH && type!=EntityType.PUFFERFISH
                 && type!=EntityType.SQUID && type!=EntityType.DOLPHIN)return;
-        if(!(event.getLevel().getLevel() instanceof ServerLevel level))return;
+        ServerLevel level=event.getLevel().getLevel();
         if(!(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator noise))return;
         if(!noise.generatorSettings().unwrapKey()
                 .map(k->k.location().equals(ENABLED)).orElse(false))return;
@@ -55,9 +55,12 @@ public final class MarineSpawnHabitats {
         // Sampling rejection is deterministic over coarse cells and mob types,
         // not per tick. No further entities are created, so caps stay vanilla.
         double chance=MarineMarineLifeMath.suitability(type,biome,habitat,column,above);
-        long seed=level.getSeed() ^ ((long)pos.getX()/8*0x9e3779b97f4a7c15L)
-                ^ ((long)pos.getZ()/8*0x632be59bd9b4e019L)
-                ^ ((long)type.hashCode()*0x94d049bb133111ebL);
+        long species=type==EntityType.COD ? 1 : type==EntityType.SALMON ? 2
+                : type==EntityType.TROPICAL_FISH ? 3 : type==EntityType.PUFFERFISH ? 4
+                : type==EntityType.SQUID ? 5 : 6;
+        long seed=level.getSeed() ^ ((long)Math.floorDiv(pos.getX(),8)*0x9e3779b97f4a7c15L)
+                ^ ((long)Math.floorDiv(pos.getZ(),8)*0x632be59bd9b4e019L)
+                ^ (species*0x94d049bb133111ebL);
         if(MarineEcologyZonationMath.unit(seed)>chance)
             event.setResult(MobSpawnEvent.PositionCheck.Result.FAIL);
     }
