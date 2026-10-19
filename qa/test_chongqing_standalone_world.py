@@ -172,6 +172,20 @@ def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
         assert get_block(world,x,y-4,z) in ("minecraft:stone","minecraft:dirt")
     assert verified_ground>=4
 
+    crystal_verified=0
+    if report.get("crystal_3d_evidence"):
+        from chongqing_crystal_3d import build_crystal
+        full_3d,provenance=build_crystal()
+        assert report["crystal_3d_evidence"]==provenance
+        assert report["crystal_schematic_block_writes"]==len(full_3d)
+        assert provenance["source_min_height_m"]==250
+        assert provenance["source_vertical_span_m"]==26
+        for x,y,z,material in full_3d[::max(1,len(full_3d)//30)]:
+            assert get_block(world,x,y,z)==exporter.NAME[material],(
+                "REAL pinned OSM Crystal structure not saved at correct 3D Y",
+                x,y,z,material)
+            crystal_verified+=1
+        assert crystal_verified>=20
     geometry_rows=plan["rows"]
     tested=0
     for row in geometry_rows[::max(1,len(geometry_rows)//20)]:
@@ -191,6 +205,7 @@ def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
               "classified_surface_columns":len(ground_surface),
               "satellite_ground_evidence_columns":len(satellite_surface),
               "road_corridor_actual_blocks_checked":verified_roads,
+              "crystal_3d_real_anvil_samples":crystal_verified,
               "spawn_y":int(data["SpawnY"])}))
 
 
