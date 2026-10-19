@@ -112,11 +112,31 @@ try:
             for gz in range(-16,17):
                 h=mix(gx*0x9e3779b97f4a7c15
                       ^gz*0xc2b2ae3d27d4eb4f^0x71a6e31d)
-                if h%5:continue
+                # Java Math.floorMod uses signed long; Python int defaults
+                # to unbounded positive for this hash, so convert to long.
+                java_h=h if h<(1<<63) else h-(1<<64)
+                if java_h%5:continue
                 x=gx*512+256+((h>>12)%129)-64
                 z=gz*512+256+((h>>27)%129)-64
                 if x*x+z*z<1024*1024:continue
                 candidate[(h>>54)%3].append((x*x+z*z,x,z))
+        # Diagnostic: prove the End dimension command context is working
+        # before blaming an optional biome-source wrapper.
+        for probe in ("the_end","end_highlands","end_midlands","end_barrens","small_end_islands"):
+            reply=rcon.send("execute in minecraft:the_end positioned 0 80 0 "
+                            "if biome ~ ~ ~ minecraft:"+probe+" run seed")
+            if "Seed:" in reply:
+                print("END_BASE_AT_ZERO",probe,flush=True)
+        # Check the first remote candidate's vanilla and custom biome IDs.
+        cx,cz=728,759
+        for probe in ("the_end","end_highlands","end_midlands","end_barrens",
+                      "small_end_islands","realscale:end_chorus_gardens"):
+            probeid=probe if ":" in probe else "minecraft:"+probe
+            reply=rcon.send(
+                f"execute in minecraft:the_end positioned {cx} 80 {cz} "
+                f"if biome ~ ~ ~ {probeid} run seed")
+            if "Seed:" in reply:
+                print("END_BASE_REMOTE",probeid,flush=True)
         names=("end_chorus_gardens","end_crystal_barrens","end_shattered_glades")
         for kind,name in enumerate(names):
             found=None
