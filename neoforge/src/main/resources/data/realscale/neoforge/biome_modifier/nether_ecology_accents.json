@@ -3,7 +3,8 @@
   "biomes": [
     "minecraft:crimson_forest",
     "minecraft:warped_forest",
-    "minecraft:soul_sand_valley"
+    "minecraft:soul_sand_valley",
+    "minecraft:basalt_deltas"
   ],
   "features": "realscale:nether_ecology_accents",
   "step": "vegetal_decoration"
