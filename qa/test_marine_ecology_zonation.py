@@ -35,9 +35,10 @@ class MarineZonationQA(unittest.TestCase):
     def test_feature_is_guarded_to_only_combined_usgs_ocean_world(self):
         code=(JAVA/"MarineEcologyFeature.java").read_text()
         worldguard=(JAVA/"RealScaleMod.java").read_text()
-        self.assertIn('"usgs_global_hybrid_marine"',code)
+        self.assertIn('getNamespace().equals("realscale")',code)
         self.assertIn("noise.generatorSettings().unwrapKey()",code)
-        self.assertIn("k.location().equals(ENABLED)",code)
+        self.assertIn('getPath().equals("grand_nether")',code)
+        self.assertIn('getPath().equals("grand_end")',code)
         self.assertIn("MarineEcologyFeature()",worldguard)
         self.assertIn('"marine_ecology_layers"',worldguard)
         self.assertIn("MarineEcologyZonationMath.classify(",code)
@@ -79,7 +80,7 @@ class MarineZonationQA(unittest.TestCase):
         mod=(JAVA/"RealScaleMod.java").read_text()
         self.assertIn("MarineSpawnHabitats.register()",mod)
         self.assertIn("MobSpawnType.NATURAL",event)
-        self.assertIn('"usgs_global_hybrid_marine"',event)
+        self.assertIn('getNamespace().equals("realscale")',event)
         self.assertIn("noise.generatorSettings().unwrapKey()",event)
         self.assertIn("MarineEcologyZonationMath.classify(",event)
         self.assertIn("MarineMarineLifeMath.suitability(",event)
@@ -122,6 +123,21 @@ class MarineZonationQA(unittest.TestCase):
         self.assertIn("z<chunk.getMinBlockZ()||z>chunk.getMaxBlockZ()",code)
         self.assertIn("if(kelp(w,new BlockPos(x,floor,z),sea,random))grown++",code)
         self.assertIn("kelpGrove(w,p,chunk,sea,random)",code)
+
+    def test_all_registered_realscale_overworld_presets_are_eligible(self):
+        presets=read(ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")["values"]
+        self.assertEqual(len(presets),13)
+        for preset in presets:
+            name=preset.split(":",1)[1]
+            data=read(WG/"world_preset"/(name+".json"))
+            generator=data["dimensions"]["minecraft:overworld"]["generator"]
+            self.assertEqual(generator["type"],"minecraft:noise",preset)
+            self.assertTrue(generator["settings"].startswith("realscale:"),preset)
+        for file in ("MarineEcologyFeature.java","MarineSpawnHabitats.java"):
+            code=(JAVA/file).read_text()
+            self.assertIn('getNamespace().equals("realscale")',code)
+            self.assertIn('getPath().equals("grand_nether")',code)
+            self.assertIn('getPath().equals("grand_end")',code)
 
     def test_no_new_world_mode_or_mutation_to_measured_noise_graph(self):
         preset=read(WG/"world_preset/tva_measured_global_landforms_three_realms.json")
