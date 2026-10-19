@@ -137,6 +137,7 @@ public final class RealScaleTerrainLabClient {
         String worldSource = "sacred";
         boolean dimensionalInvasion = true;
         boolean invasionShowcase = false;
+        boolean endBiomeAccents = true;
         int blendPercent = 25;
         boolean lithostitchedBlend = false;
         boolean lithostitchedGeology = false;
@@ -395,6 +396,17 @@ public final class RealScaleTerrainLabClient {
                     .binding("sacred", () -> d.worldSource, v -> d.worldSource=v)
                     .controller(o -> CyclingListControllerBuilder.create(o)
                         .values("terrain_lab", "sacred", "measured")).build())
+                .option(Option.<Boolean>createBuilder()
+                    .name(Component.literal("Grand End | Three Extra Biomes"))
+                    .description(description("ON by default for NEW unified worlds. "
+                        + "Adds Chorus Gardens, Crystal Barrens and Shattered Glades "
+                        + "to suitable remote End islands. Vanilla End Dragon island, "
+                        + "Grand End terrain, End Cities and foreign-mod biome IDs "
+                        + "are preserved. Switch OFF if needed for mod compatibility. "
+                        + "Save + export the next-world datapack; this does not change "
+                        + "already-created worlds."))
+                    .binding(true, () -> d.endBiomeAccents, v -> d.endBiomeAccents=v)
+                    .controller(BooleanControllerBuilder::create).build())
                 .option(Option.<Boolean>createBuilder()
                     .name(Component.literal("Invasion Showcase near Origin (test-only)"))
                     .description(description("Requires Dimension Invasion ON. "
