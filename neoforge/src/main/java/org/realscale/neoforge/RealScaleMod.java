@@ -161,6 +161,8 @@ public final class RealScaleMod {
                     new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.DELTA_DISTRIBUTARIES));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_karst_doline_rim"),
                     new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.KARST_DOLINE_RIM));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_permafrost_polygons"),
+                    new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.PERMAFROST_POLYGONS));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_hoodoo_spires"),
                     new EarthWonderFeature(EarthWonderFeature.Kind.HOODOO_SPIRES));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "earth_travertine_terraces"),
