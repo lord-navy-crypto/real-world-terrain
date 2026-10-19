@@ -136,6 +136,7 @@ public final class RealScaleTerrainLabClient {
         // to terrain_lab and never turn on invasion implicitly.
         String worldSource = "terrain_lab";
         boolean dimensionalInvasion = false;
+        boolean invasionShowcase = false;
         int blendPercent = 25;
         boolean lithostitchedBlend = false;
         boolean lithostitchedGeology = false;
@@ -217,6 +218,7 @@ public final class RealScaleTerrainLabClient {
             if (!("terrain_lab".equals(d.worldSource)
                     || "sacred".equals(d.worldSource)
                     || "measured".equals(d.worldSource))) return false;
+            if (d.invasionShowcase && !d.dimensionalInvasion) return false;
             if (!RealScaleStructurePacks.validOverworld(d.structureDensity)
                     || !RealScaleStructurePacks.validDimensions(d.dimensionStructureDensity))
                 return false;
@@ -399,8 +401,21 @@ public final class RealScaleTerrainLabClient {
                         + "Enable that datapack BEFORE creating a NEW world and "
                         + "choose its new world type. Saving this screen alone "
                         + "does not activate invasions."))
-                    .binding(false, () -> d.dimensionalInvasion,
-                             v -> d.dimensionalInvasion=v)
+                    .binding(false, () -> d.dimensionalInvasion, v -> {
+                        d.dimensionalInvasion=v;
+                        if (!v) d.invasionShowcase=false;
+                    })
+                    .controller(BooleanControllerBuilder::create).build())
+                .option(Option.<Boolean>createBuilder()
+                    .name(Component.literal("Invasion Showcase near Origin (test-only)"))
+                    .description(description("Requires Dimension Invasion ON. "
+                        + "Creates a NEW demonstration world with all six invasion "
+                        + "directions near X/Z 0/0 and 176/0 in their host realms. "
+                        + "Use this instead of searching many rare cells. "
+                        + "OFF is the normal rare-invasion gameplay mode. "
+                        + "This setting also requires exporting a new datapack."))
+                    .binding(false, () -> d.invasionShowcase,
+                             v -> d.invasionShowcase=v)
                     .controller(BooleanControllerBuilder::create).build())
                 .build())
             .category(ConfigCategory.createBuilder()
