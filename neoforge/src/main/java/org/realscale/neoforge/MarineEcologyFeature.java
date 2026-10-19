@@ -115,6 +115,24 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
         return count;
     }
 
+    // Compact multi-stem kelp stands: irregular openings and mixed canopy.
+    // Every additional stem is confined to this chunk and validated as water.
+    private static int kelpGrove(WorldGenLevel w,BlockPos center,ChunkPos chunk,
+                                 int sea,RandomSource random){
+        int grown=0;
+        for(int dx=-3;dx<=3;dx++)for(int dz=-3;dz<=3;dz++){
+            if(dx==0&&dz==0)continue;
+            if(dx*dx+dz*dz>10 || random.nextInt(4)!=0)continue;
+            int x=center.getX()+dx,z=center.getZ()+dz;
+            if(x<chunk.getMinBlockX()||x>chunk.getMaxBlockX()
+                    ||z<chunk.getMinBlockZ()||z>chunk.getMaxBlockZ())continue;
+            int floor=w.getHeight(Heightmap.Types.OCEAN_FLOOR_WG,x,z);
+            if(Math.abs(floor-center.getY())>3)continue;
+            if(kelp(w,new BlockPos(x,floor,z),sea,random))grown++;
+            if(grown>=4)return grown;
+        }
+        return grown;
+    }
     private static boolean kelp(WorldGenLevel w,BlockPos pos,int sea,RandomSource random){
         // Mixed canopy: short understory and occasional taller stands.
         int height=2+random.nextInt(4)+random.nextInt(4);
@@ -182,7 +200,10 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
             case DEEP_SILTY_FLOOR,NONE -> null;
         };
         if(h==MarineEcologyZonationMath.Habitat.TEMPERATE_KELP){
-            if(random.nextInt(3)!=0 && kelp(w,p,sea,random))return true;
+            if(random.nextInt(3)!=0 && kelp(w,p,sea,random)){
+                if(random.nextInt(2)==0)kelpGrove(w,p,chunk,sea,random);
+                return true;
+            }
             return false;
         }
         if(target==null){
