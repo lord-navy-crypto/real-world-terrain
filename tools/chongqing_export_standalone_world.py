@@ -52,6 +52,19 @@ NAME={0:"minecraft:air",1:"minecraft:stone",2:"minecraft:dirt",
       17:"minecraft:light_blue_stained_glass",
       18:"minecraft:smooth_quartz"}
 MATERIAL={"building_footprint":4,"road":5,"railway":6,"water_reference":7}
+
+def schematic_facade_block(x:int,z:int,offset:int,height:int)->int:
+    """Generic neutral glazing, NOT a surveyed Chongqing window layout.
+
+    Only source-tagged taller buildings receive a glass/white grid.
+    OSM geometry and source height are unchanged; the decorative
+    mullion pattern is an openly acknowledged artistic approximation.
+    """
+    if height<30:
+        return 4  # small buildings intentionally neutral until surveyed
+    if offset%8 in (0,1) or (x+z)%9==0:
+        return 16  # white structural-looking bands, not true load bearings
+    return 17  # blue-tinted glass, source-supported only as generic city style
 SURFACE_BLOCK={
     "asphalt":5,"paving":8,"concrete":4,
     "cobble":10,"gravel":11,"dirt":12,"grass":3,
@@ -436,7 +449,10 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None,
                     stats["actual_overlay_writes"]+=1
                     if shell=="facade":
                         for dy in range(1,height):
-                            set_block(lx,y+dy,localz,4)
+                            facade=schematic_facade_block(x,z,dy,height)
+                            set_block(lx,y+dy,localz,facade)
+                            if facade==17:
+                                stats["schematic_glazed_facade_blocks"]+=1
                             stats["actual_overlay_writes"]+=1
                         set_block(lx,y+height,localz,5)
                         stats["actual_overlay_writes"]+=1
@@ -582,6 +598,8 @@ def package_world(root,out,surface_file=None,satellite_file=None,road_file=None,
       "Map XY: 1 metre = 1 block, X east, Z south, origin lat 29.5667 lon 106.5874.\n"
       "Y: true DEM elevation +96, custom vanilla datapack world height -64..959.\n"
       "Buildings are source-footprint schematics with hollow interior, NOT full facades.\n"
+      "Source-height towers now use LOW-confidence generic white-framed blue\n"
+      "glass facades: these are NOT surveyed window sizes or real elevations.\n"
       "The Crystal elevated deck, road bridges, river heights and unknown structures\n"
       "are deliberately NOT fabricated. Blue concrete is a WATER REFERENCE only.\n"
       "Experimental "+str(RADIUS)+"m halfwidth square, outside = void. Use CREATIVE only.\n"
