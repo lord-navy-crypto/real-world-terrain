@@ -55,7 +55,7 @@ final class OceanFloorMorphologyMath {
         return switch(kind) {
             // Silty, smoothed deep basins. Does not erase regional relief.
             case ABYSSAL_PLAIN ->
-                    0.48*(-0.88-originalHeight);
+                    GeoMath.clamp(0.48*(-0.88-originalHeight),-0.44,0.44);
             // Spreading-center mountain chain with an axial depression.
             case MID_OCEAN_RIDGE -> {
                 double axis=v-185*Math.sin(u/680.0);
