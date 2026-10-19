@@ -25,6 +25,14 @@ class CaveGeologyQA(unittest.TestCase):
         self.assertIn("if(ceiling && !dry(w,rock.below()))continue",c)
         self.assertIn("Blocks.CALCITE.defaultBlockState()",c)
 
+    def test_wet_karst_and_deep_rock_variation(self):
+        c=(SRC/"CaveGeologyAccentFeature.java").read_text()
+        self.assertIn('boolean moist=biome.equals("realscale:damp_limestone_caverns")',c)
+        self.assertIn("moist && context.random().nextInt(4)==0",c)
+        self.assertIn("Blocks.CLAY.defaultBlockState()",c)
+        self.assertIn("Blocks.SMOOTH_BASALT.defaultBlockState()",c)
+        self.assertIn("if(!replaceable(previous))continue",c)
+
     def test_no_carving_ore_or_cross_chunk_edits(self):
         c=(SRC/"CaveGeologyAccentFeature.java").read_text()
         for marker in ("TVAWorldGuard.hasRealScaleGenerator", "minecraft:overworld",
