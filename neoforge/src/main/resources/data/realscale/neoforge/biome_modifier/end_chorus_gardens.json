@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "realscale:end_chorus_gardens",
+  "features": "realscale:end_chorus_gardens",
+  "step": "vegetal_decoration"
+}

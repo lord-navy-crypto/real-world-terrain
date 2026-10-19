@@ -27,7 +27,7 @@ SOURCE=os.environ.get("REALSCALE_UNIFIED_SPAWN_BASE","sacred")
 if SOURCE not in ("sacred","measured"):
     raise SystemExit("Expected REALSCALE_UNIFIED_SPAWN_BASE=sacred|measured")
 WORLD="unified-invasion-spawn-"+SOURCE
-PROFILE="realscale:unified_"+SOURCE+"_invasion_v1"
+PROFILE="realscale:unified_"+SOURCE+"_invasion_v1_end3"
 JARS=sorted((MOD/"build/libs").glob("RealScale-TVA-Ultimate*.jar"))
 if not JARS:
     raise SystemExit("Build the real NeoForge mod JAR before this smoke test")
@@ -38,7 +38,7 @@ with tempfile.TemporaryDirectory(prefix="realscale-spawn-profile-") as temp:
         "preset":"landscape","reliefPercent":100,
         "elevation":0,"caves":50,"riverGrade":6,"inland":True,
         "worldSource":SOURCE,"dimensionalInvasion":True,
-        "invasionShowcase":False
+        "invasionShowcase":False,"endBiomeAccents":True
     }),encoding="utf-8")
     data=Path(temp)/"unified-preset.zip"
     produced,_=export(JAR,draft,data,include_resource_pack=False)
@@ -88,16 +88,44 @@ try:
     rcon=Rcon(timeout=120,password="realscale_unified_spawn_ci_only")
     try:
         hits=[]
-        for biome in ("nether_wastes","end_highlands"):
+        for biome in ("end_chorus_gardens","end_crystal_barrens","end_shattered_glades"):
             response=rcon.send("execute in minecraft:overworld "
-                "positioned 0 100 0 if biome ~ ~ ~ minecraft:"+biome+
+                "positioned 0 100 0 if biome ~ ~ ~ realscale:"+biome+
                 " run seed")
             if "Seed:" in response:
                 hits.append(biome)
         if len(hits)!=1:
-            raise AssertionError("Expected exactly one genuine Nether/End biome "
-                                 "at x=0,z=0: "+str(hits))
-        print("UNIFIED_INVASION_SPAWN_BIOME_PASS",SOURCE,hits[0],flush=True)
+            raise AssertionError("Spawn MUST belong to exactly one of our THREE "
+                                 "End biome IDs, not vanilla Nether/End: "+str(hits))
+        print("UNIFIED_OWN_END_SPAWN_BIOME_PASS",SOURCE,hits[0],flush=True)
+        # Check the entire starter biome column for Measured's tall heights:
+        # the biome name must be identical at low/mid/high test altitudes.
+        for height in (64,160,320):
+            reply=rcon.send("execute in minecraft:overworld "
+                f"positioned 0 {height} 0 if biome ~ ~ ~ realscale:{hits[0]} run seed")
+            if "Seed:" not in reply:
+                raise AssertionError(f"Spawn biome changed at Y={height}")
+        # No ancient vanilla Nether spawn biome can appear at center.
+        for old in ("minecraft:nether_wastes","minecraft:end_highlands"):
+            reply=rcon.send("execute in minecraft:overworld "
+                f"positioned 0 100 0 if biome ~ ~ ~ {old} run seed")
+            if "Seed:" in reply:
+                raise AssertionError("Vanilla biome overrode own End spawn: "+old)
+
+        # /execute if biome reads only LOADED End chunks; this test world
+        # has not yet visited the End. Locate via the generator's BiomeSource
+        # instead, so we can verify ungenerated locations without forcing
+        # enormous Grand End chunks into memory.
+        names=("end_chorus_gardens","end_crystal_barrens","end_shattered_glades")
+        for name in names:
+            command=("execute in minecraft:the_end positioned 0 80 0 "
+                     "run locate biome realscale:"+name)
+            reply=rcon.send(command)
+            if not reply.strip() or any(t in reply.lower() for t in (
+                "could not find","unable to find","not found","unknown biome",
+                "no biome")):
+                raise AssertionError("End source did not locate "+name+": "+repr(reply))
+            print("REAL_GRAND_END_BIOME_LOCATE_PASS",SOURCE,name,repr(reply),flush=True)
         saved=rcon.send("save-all flush")
         if "Saved" not in saved:
             raise AssertionError("Missing world-save ACK: "+repr(saved))
@@ -122,6 +150,8 @@ worlds=list((MOD/"run").glob("**/"+WORLD+"/level.dat"))
 if not worlds:
     raise AssertionError("Unified invasion level.dat not written")
 save=gzip.decompress(worlds[0].read_bytes())
+if b"realscale:end_accents" not in save:
+    raise AssertionError("Grand End three-biome wrapper missing from saved world")
 if b"realscale:cross_realm_invasion" not in save:
     raise AssertionError("Invasion codec absent from saved world")
 if b"realscale:grand_nether" not in save or b"realscale:grand_end" not in save:

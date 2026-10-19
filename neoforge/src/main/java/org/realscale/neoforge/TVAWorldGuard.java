@@ -31,6 +31,7 @@ public final class TVAWorldGuard {
         BiomeSource source=context.chunkGenerator().getBiomeSource();
         return source instanceof CrossRealmBiomeSource
             || source instanceof CrossRealmShowcaseBiomeSource
+            || source instanceof EndAccentBiomeSource end && end.containsCrossRealm()
             || source instanceof SkyOceanBiomeSource sky && sky.containsCrossRealm();
     }
 }

@@ -107,12 +107,19 @@ class UnifiedRealmInvasionTests(unittest.TestCase):
         self.assertIn("Invasion Always ON", ui)
         self.assertIn("isSpawnInvasionZone(quartX, quartZ)", source)
         self.assertIn("SPAWN_INVASION_RADIUS_SQUARED=192L*192L;", source)
-        self.assertIn("return (biome.hashCode() & 1) == 0 ? netherWastes : endHighlands;", source)
+        self.assertIn('String anchor = source.getNoiseBiome(0,20,0,sampler)', source)
+        self.assertIn('case 0 -> chorusGardens;', source)
+        self.assertIn('case 1 -> crystalBarrens;', source)
+        self.assertIn('default -> shatteredGlades;', source)
+        self.assertIn('Stream.of(forest,plains,meadow,cherry,taiga,netherWastes,endHighlands,', source)
         self.assertIn("CrossRealmBiomeSource.isSpawnInvasionZone(quartX,quartZ)", sky)
         self.assertIn("LevelEvent.CreateSpawnPosition", init)
         self.assertIn("event.getSettings().setSpawn(spawn,0.0F);", init)
         self.assertIn("event.setCanceled(true);", init)
-        self.assertIn("Blocks.BLACKSTONE.defaultBlockState()", init)
+        self.assertIn("Blocks.END_STONE_BRICK_WALL.defaultBlockState()", init)
+        self.assertIn("Blocks.SEA_LANTERN.defaultBlockState()", init)
+        self.assertIn('isOurEndBiome(biome)', init)
+        self.assertIn('for(int dx=-4;dx<=4;dx++)', init)
         self.assertIn("level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,0,0)", init)
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -144,6 +151,28 @@ class UnifiedRealmInvasionTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     _unified_choices(path)
 
+    def test_additive_end_biome_layer_preserves_canonical_end_and_other_realms(self):
+        from unified_world_settings import create_preset
+        for source in ("sacred","measured"):
+            with self.subTest(source=source):
+                orig_name, base, _ = create_preset(RESOURCES, source, True)
+                name, update, labels = create_preset(RESOURCES, source, True,
+                                                    end_biomes=True)
+                self.assertEqual(name, orig_name+"_end3")
+                self.assertIn("Three End Biomes", labels["en_us"])
+                for dim in ("minecraft:overworld","minecraft:the_nether"):
+                    self.assertEqual(update["dimensions"][dim],base["dimensions"][dim])
+                original_end=base["dimensions"]["minecraft:the_end"]["generator"]
+                changed_end=update["dimensions"]["minecraft:the_end"]["generator"]
+                self.assertEqual(changed_end["settings"],original_end["settings"])
+                self.assertEqual(changed_end["type"],original_end["type"])
+                self.assertEqual(changed_end["biome_source"],{
+                    "type":"realscale:end_accents",
+                    "source":original_end["biome_source"]
+                })
+                # Old unified world preset remains an independent ID.
+                self.assertNotEqual(name,orig_name)
+
     def test_real_jar_resource_export_contains_only_new_preset_and_additive_tags(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -169,6 +198,7 @@ class UnifiedRealmInvasionTests(unittest.TestCase):
                             "inland": True, "worldSource": source,
                             "dimensionalInvasion": True,
                             "invasionShowcase": showcase,
+                            "endBiomeAccents": False,  # preserve legacy export test
                         }))
                         output = root / (source + ("showcase" if showcase else "normal") + ".zip")
                         profile, language = export(jar, draft, output)

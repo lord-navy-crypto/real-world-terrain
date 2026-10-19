@@ -51,6 +51,12 @@ public final class CrossRealmShowcaseBiomeSource extends BiomeSource {
     @Override public Holder<Biome> getNoiseBiome(int qx,int qy,int qz,Climate.Sampler sampler) {
         Holder<Biome> normal=source.getNoiseBiome(qx,qy,qz,sampler);
         String id=normal.unwrapKey().map(k->k.location().toString()).orElse("");
+        // Unified invasion spawn is locked to one of our three own End
+        // habitats. The gallery never changes that original spawn into
+        // minecraft:nether_wastes or minecraft:end_highlands.
+        if (id.equals("realscale:end_chorus_gardens")
+                || id.equals("realscale:end_crystal_barrens")
+                || id.equals("realscale:end_shattered_glades")) return normal;
         boolean n=id.equals("minecraft:nether_wastes")||id.equals("minecraft:crimson_forest")
             ||id.equals("minecraft:warped_forest")||id.equals("minecraft:soul_sand_valley")
             ||id.equals("minecraft:basalt_deltas");

@@ -53,15 +53,15 @@ def invasion_preset(source_preset: dict) -> dict:
 
 def create_preset(root: Path, world_source: str,
                   enable_invasion: bool, lab_name: str | None = None,
-                  showcase: bool = False
+                  showcase: bool = False, end_biomes: bool = False
                   ) -> tuple[str, dict, dict[str, str]]:
     """Return (new ID suffix, world JSON, localized world-type labels).
 
     'terrain_lab' must supply the generated lab preset name. Fixed families
     Sacred and Measured retain their canonical unmodified height/noise signals.
     """
-    if type(enable_invasion) is not bool or type(showcase) is not bool:
-        raise ValueError("Invasion and showcase settings must be boolean")
+    if type(enable_invasion) is not bool or type(showcase) is not bool or type(end_biomes) is not bool:
+        raise ValueError("Invasion, showcase and End biomes settings must be boolean")
     if showcase and not enable_invasion:
         raise ValueError("Showcase requires Dimension Invasion enabled")
     if world_source == "terrain_lab":
@@ -81,6 +81,15 @@ def create_preset(root: Path, world_source: str,
     world = read_json(root, PRESET_DIR / (base_name + ".json"))
     if enable_invasion:
         world = invasion_preset(world)
+    if end_biomes:
+        # Explicit opt-in, with NEW stable world-ID: old saved presets and
+        # canonical sacred/measured registries must never change silently.
+        end = world["dimensions"]["minecraft:the_end"]["generator"]
+        old = end["biome_source"]
+        if old.get("type") == "realscale:end_accents":
+            raise ValueError("Duplicate End accent wrapper")
+        end["biome_source"] = {"type": "realscale:end_accents", "source": old}
+        name = name + "_end3"
     if showcase:
         # Gallery mode deliberately lives only in a NEW opt-in world preset.
         # Near X/Z 0/0 or 176/0 it exposes all six invasion directions.
@@ -101,4 +110,7 @@ def create_preset(root: Path, world_source: str,
                  + (" + 入侵展示世界" if showcase else
                     " + 跨维度入侵" if enable_invasion else "（标准）"),
     }
+    if end_biomes:
+        names["en_us"] += " + Three End Biomes"
+        names["zh_cn"] += " + 三种末地生物群系"
     return name, world, names
