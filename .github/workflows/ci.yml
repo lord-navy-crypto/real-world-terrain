@@ -96,6 +96,14 @@ jobs:
           python3 -m unittest discover -s qa -p 'test_chongqing_gis_audit.py' -v
           python3 tools/chongqing_fetch_osm.py --radius 500 --dry-run --output build/chaotianmen-unfetched.json
 
+      - name: Verify GIS one-shot world marker prevents unintended replay
+        run: |
+          mkdir -p build/chongqing-gis-lock-smoke
+          javac -d build/chongqing-gis-lock-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/ChongqingPlacementLock.java \
+            neoforge/src/test/java/org/realscale/neoforge/ChongqingPlacementLockSmoke.java
+          java -cp build/chongqing-gis-lock-smoke \
+            org.realscale.neoforge.ChongqingPlacementLockSmoke
       - name: Verify real Chongqing DEM floating preset, license and geography
         run: |
           python3 -m unittest discover -s qa -p 'test_special_chongqing_worldgen.py' -v
