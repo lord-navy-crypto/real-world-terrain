@@ -146,7 +146,7 @@ public final class ChongqingGisPlan {
                     throw new IOException("Overlapping or out-of-order GIS rows");
                 for (int x = x0; x <= x1; x++) {
                     if (!dem.contains(x, z) ||
-                            (int) Math.floor(dem.metresAt(x, z) + 96) + 1 != y)
+                            (int) Math.ceil(dem.metresAt(x, z) + 96) != y)
                         throw new IOException("GIS ground Y differs from embedded DEM");
                 }
                 Row row = new Row(x0,x1,y,z,kind,height);
