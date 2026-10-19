@@ -133,6 +133,11 @@ public final class RealScaleMod {
                     new HabitatPatchFeature(HabitatPatchFeature.Kind.OCEAN_SEAGRASS));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "ocean_sediment_stones"),
                     new HabitatPatchFeature(HabitatPatchFeature.Kind.OCEAN_STONE));
+            // ONE shared decoration feature across vanilla ocean variants:
+            // guard inside the Feature enables it only in the unmerged
+            // USGS+24 Landforms+Marine world; avoids feature-order cycles.
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "marine_ecology_layers"),
+                    new MarineEcologyFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "temperate_rainforest"),
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.TEMPERATE_RAINFOREST));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "savanna_canopy"),
