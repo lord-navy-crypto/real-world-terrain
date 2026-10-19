@@ -469,6 +469,21 @@ def export_datapack(layers: dict, stats: dict, source: Path,
         "pack":{"pack_format":PACK_FORMAT,
                 "description":"RealScale Chaotianmen real-GIS overlay, staged execution"}},
         ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    # Native V2 scheme: preserve the REAL footprint but never fill a high-rise
+    # interior as millions of solid concrete blocks. Each boundary column has
+    # a schematic facade and roof cap; interior columns get foundation + roof.
+    # This is a visualization, NOT an accurate facade/floorplan survey.
+    def shell_for(x: int, z: int, kind: str, height: int | None, fid: str) -> str:
+        if kind != "building_footprint" or not height:
+            return "none"
+        if all((layers.get((x+dx,z+dz)) is not None and
+                layers[(x+dx,z+dz)][0] == kind and
+                layers[(x+dx,z+dz)][2] == height and
+                layers[(x+dx,z+dz)][3] == fid)
+               for dx,dz in ((-1,0),(1,0),(0,-1),(0,1))):
+            return "roof"
+        return "facade"
+
     # Row-run compression makes large REAL water polygons and roads practical.
     # Never merge across different Y, features, materials or tagged heights;
     # y follows the authentic DEM rather than an invented level surface.
@@ -493,10 +508,21 @@ def export_datapack(layers: dict, stats: dict, source: Path,
             x0 = ordered[start][0][0]
             x1 = ordered[stop - 1][0][0]
             width = x1 - x0 + 1
-            native_rows.append({
-                "x0": x0, "x1": x1, "z": z, "y": y,
-                "kind": type_name, "height": height if height is not None else 0
-            })
+            # A source-faithful V2 native plan compresses facade/roof
+            # subruns separately. The optional old datapack remains a
+            # legacy solid massing reference for older regression tests.
+            cursor=x0
+            while cursor<=x1:
+                shell=shell_for(cursor,z,type_name,height,feature_id)
+                last=cursor
+                while (last<x1 and shell_for(last+1,z,type_name,height,feature_id)==shell):
+                    last+=1
+                native_rows.append({
+                    "x0": cursor, "x1": last, "z": z, "y": y,
+                    "kind": type_name, "height": height if height is not None else 0,
+                    "shell": shell
+                })
+                cursor=last+1
             block = VALID_BLOCKS[type_name]
             if width == 1:
                 output.append((f"setblock {x0} {y} {z} {block} replace", 1))
@@ -559,7 +585,9 @@ def export_datapack(layers: dict, stats: dict, source: Path,
     # Each row is a deterministic, DEM-aligned horizontal segment.
     # This file is not itself an installer and never edits a save.
     native = {
-        "format": "REALSCALE_CHAOTIANMEN_PLACEMENT_V1",
+        "format": "REALSCALE_CHAOTIANMEN_PLACEMENT_V2",
+        "massing_policy": "schematic_hollow_facade_roof_v2",
+        "massing_warning": "Walls and roof are schematic, not surveyed elevations or an architectural BIM model",
         "center_lat": dem.lat, "center_lon": dem.lon, "radius_m": radius,
         "dem_source_raw_sha256": dem.sha256,
         "vector_source_sha256": manifest["vector_source_sha256"],
@@ -568,13 +596,18 @@ def export_datapack(layers: dict, stats: dict, source: Path,
         "placement_requires": "singleplayer creative NEW realscale:special_chongqing_sky world, saved-world backup, player confirmation",
         "row_count": len(native_rows),
         "planned_block_writes": sum(
-            (r["x1"] - r["x0"] + 1) * (r["height"] + 1) for r in native_rows),
+            (r["x1"] - r["x0"] + 1) *
+            (1 + (r["height"] if r["shell"] == "facade"
+                  else 1 if r["shell"] == "roof" else 0))
+            for r in native_rows),
         "rows": native_rows,
     }
     (destination/"chongqing-gis-plan.json").write_text(
         json.dumps(native,ensure_ascii=False,separators=(",",":"))+"\n",
         encoding="utf-8")
     manifest["native_ui_plan"] = "chongqing-gis-plan.json"
+    manifest["native_ui_massing_policy"] = native["massing_policy"]
+    manifest["native_ui_planned_block_writes"] = native["planned_block_writes"]
     # Keep on-disk manifest in sync with the new UI export.
     (destination/"manifest.json").write_text(json.dumps(
         manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
