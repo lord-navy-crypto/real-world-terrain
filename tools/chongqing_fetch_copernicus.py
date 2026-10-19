@@ -20,6 +20,7 @@ STAC="https://planetarycomputer.microsoft.com/api/stac/v1"
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--output",type=Path,required=True)
+    ap.add_argument("--extent-radius",type=int,choices=(500,600),default=500)
     ap.add_argument("--max-cloud-cover",type=float,default=25)
     args=ap.parse_args()
     if not (0<=args.max_cloud_cover<=50):
@@ -45,8 +46,9 @@ def main():
         try:
             signed=planetary_computer.sign(scene)
             urls=[signed.assets[band].href for band in ("B03","B04","B08","SCL")]
-            arrays=raster_bands(*urls,dem)
-            result=to_surface_rows(*arrays,scene.id,dem)
+            arrays=raster_bands(*urls,dem,radius=args.extent_radius)
+            result=to_surface_rows(*arrays,scene.id,dem,
+                                   radius=args.extent_radius)
             if result["known_surface_columns"]<1000:
                 errors.append(scene.id+": <1000 cloud-free classified columns")
                 continue
