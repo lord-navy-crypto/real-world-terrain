@@ -96,7 +96,7 @@ class StandaloneVanillaWorldTests(unittest.TestCase):
         self.assertEqual(counts,494988)
 
 
-def verify_world(world,surface_mask=None,satellite_mask=None):
+def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
     import nbtlib
     if not (world/"level.dat").is_file():
         raise AssertionError("Missing independent vanilla level.dat")
@@ -132,6 +132,32 @@ def verify_world(world,surface_mask=None,satellite_mask=None):
         assert report["source_classified_ground_columns"]==len(ground_surface)
         assert report["surface_source_sha256"]==surface_meta["raw_osm_api_sha256"]
         assert report["source_qualified_non_grass_ground_columns"]>0
+    protected={(x,r["z"]) for r in plan["rows"]
+               if r["kind"]!="road"
+               for x in range(r["x0"],r["x1"]+1)}
+    verified_roads=0
+    if roads_mask is not None:
+        corridors,roads_meta=exporter.read_road_corridors(
+            Path(roads_mask),plan["dem_source_raw_sha256"])
+        assert report["road_corridor_cells_source"]==len(corridors)
+        assert report["osm_road_corridor_sha256"]==roads_meta["raw_osm_api_sha256"]
+        allowed={pos:block for pos,block in corridors.items() if pos not in protected}
+        assert report["road_corridor_new_surface_writes"]==len(allowed)
+        assert len(allowed)>100
+        # Saved Anvil palette must contain actual buffered *road widths*,
+        # not only the original one-block centerlines.
+        points=sorted(allowed.items())
+        for (x,z),material in points[::max(1,len(points)//32)]:
+            y=math.ceil(exporter.elevation(grid,x,z))
+            expected=exporter.NAME[material]
+            original=next((r for r in plan["rows"] if r["z"]==z
+                           and r["x0"]<=x<=r["x1"]),None)
+            if original is not None:
+                expected=exporter.NAME[exporter.MATERIAL[original["kind"]]]
+            assert get_block(world,x,y,z)==expected,(
+                    "actual OSM road corridor block mismatch",x,y,z,expected)
+            verified_roads+=1
+        assert verified_roads>=20
     footprint={(x,z) for r in plan["rows"] for x in range(r["x0"],r["x1"]+1)
                for z in (r["z"],)}
     verified_ground=0
@@ -164,13 +190,15 @@ def verify_world(world,surface_mask=None,satellite_mask=None):
               "actual_NBT_blocks_checked":tested+12,
               "classified_surface_columns":len(ground_surface),
               "satellite_ground_evidence_columns":len(satellite_surface),
+              "road_corridor_actual_blocks_checked":verified_roads,
               "spawn_y":int(data["SpawnY"])}))
 
 
 if __name__=="__main__":
-    if len(sys.argv) in (2,3,4):
+    if len(sys.argv) in (2,3,4,5):
         verify_world(Path(sys.argv[1]).resolve(),
                      Path(sys.argv[2]).resolve() if len(sys.argv)>=3 else None,
-                     Path(sys.argv[3]).resolve() if len(sys.argv)>=4 else None)
+                     Path(sys.argv[3]).resolve() if len(sys.argv)>=4 else None,
+                     Path(sys.argv[4]).resolve() if len(sys.argv)>=5 else None)
     else:
         unittest.main()
