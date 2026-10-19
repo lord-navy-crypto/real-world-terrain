@@ -73,6 +73,23 @@ class MarineZonationQA(unittest.TestCase):
         self.assertIn("if(!target.canSurvive(w,p))",code)
         self.assertNotIn("EntityType.",code)
 
+    def test_marine_fish_are_thinned_only_in_usgs_natural_spawns(self):
+        event=(JAVA/"MarineSpawnHabitats.java").read_text()
+        math=(JAVA/"MarineMarineLifeMath.java").read_text()
+        mod=(JAVA/"RealScaleMod.java").read_text()
+        self.assertIn("MarineSpawnHabitats.register()",mod)
+        self.assertIn("MobSpawnType.NATURAL",event)
+        self.assertIn('"usgs_global_hybrid_marine"',event)
+        self.assertIn("noise.generatorSettings().unwrapKey()",event)
+        self.assertIn("MarineEcologyZonationMath.classify(",event)
+        self.assertIn("MarineMarineLifeMath.suitability(",event)
+        for animal in ("COD","SALMON","TROPICAL_FISH","PUFFERFISH","SQUID","DOLPHIN"):
+            self.assertIn("EntityType."+animal,event)
+        self.assertIn("PositionCheck.Result.FAIL",event)
+        self.assertNotIn("addFreshEntity",event)
+        self.assertNotIn("EntityType.GLOW_SQUID",event)
+        self.assertIn("return 1.0;",math)
+
     def test_no_new_world_mode_or_mutation_to_measured_noise_graph(self):
         preset=read(WG/"world_preset/tva_measured_global_landforms_three_realms.json")
         settings=preset["dimensions"]["minecraft:overworld"]["generator"]["settings"]
