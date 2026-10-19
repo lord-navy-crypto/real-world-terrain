@@ -58,9 +58,9 @@ def inspect(mod_root):
             top=get_block(chunk,8,observed,8)
             below=get_block(chunk,8,observed-75,8)
             deep=get_block(chunk,8,120,8)
-            # Exact GUI target matches exporter block_y():
-            # floor(DEM + 96) + 1, not rounded coarse DEM.
-            gui_target_y=math.floor(expected+96)+1
+            # Positive Chongqing density is strictly below DEM+96.
+            # So the first-air Y is ceil(DEM+96), including integer elevations.
+            gui_target_y=math.ceil(expected+96)
             first_air_y=observed+1
             samples.append({"x":world_x,"z":world_z,
                             "dem_m":round(expected,2),
