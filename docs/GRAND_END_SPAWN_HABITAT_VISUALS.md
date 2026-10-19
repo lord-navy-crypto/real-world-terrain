@@ -64,3 +64,24 @@ test world before recommending mixed installation.
   cross-mod integration tests complete.
 
 Existing saves and previous built-in world profiles remain unchanged.
+
+## Critical migration / world-ID rule
+
+The original `realscale:cross_realm_invasion` codec did NOT contain the
+`spawn_end_habitats` flag, and older players' saved world generators might
+already have stored that codec. Replacing the old biome around their spawn
+silently would violate saved-world compatibility.
+
+This patch adds an **optional, default-false** `spawn_end_habitats` codec
+field. Old world types and previously exported `*_end3` ZIPs therefore
+continue using their previous Nether/vanilla End spawn-biome behavior.
+Fresh YACL Unified World Creation drafts always save
+`spawnEndHabitats=true`, and the exporter emits an immutable **new**
+`*_end3_spawn3` world type such as:
+
+- `realscale:unified_sacred_invasion_v1_end3_spawn3`
+- `realscale:unified_measured_invasion_v1_end3_spawn3`
+
+Only these NEW worlds lock the entire starting region to one of our three
+original custom End habitats. The other cross-realm invasions continue
+elsewhere. No changes to historical worlds or unrelated biome IDs.
