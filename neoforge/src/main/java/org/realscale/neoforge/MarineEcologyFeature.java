@@ -15,7 +15,7 @@ import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 
 /**
- * Benthic life in the SINGLE USGS+global-geology+marine world.
+ * Shared benthic decorations across RealScale noise-based world presets.
  *
  * Source-biome temperature, water-column depth and natural substrate choose
  * what can grow; world-seeded regional fields make coherent ecological groves.
@@ -23,12 +23,11 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  * Does not add real marine animals, deep-sea biome registries or custom taxa.
  *
  * Biome modifiers attach one placed-feature key across vanilla oceans, but
- * strict generator-settings ID gating prevents any impact on vanilla,
- * Sacred, historic Measured or third-party worlds.
+ * namespace/settings gating keeps vanilla and third-party worlds unchanged;
+ * ocean-biome plus actual water/bedrock checks protect incompatible terrain.
  */
 public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration> {
-    private static final ResourceLocation ENABLED=
-            ResourceLocation.fromNamespaceAndPath("realscale","usgs_global_hybrid_marine");
+    // RealScale-owned terrain settings; independent of a particular preset.
 
     public MarineEcologyFeature(){super(NoneFeatureConfiguration.CODEC);}
 
@@ -237,7 +236,10 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
         if(!(context.chunkGenerator() instanceof NoiseBasedChunkGenerator noise))
             return false;
         if(!noise.generatorSettings().unwrapKey()
-                .map(k->k.location().equals(ENABLED)).orElse(false))
+                .map(k->k.location().getNamespace().equals("realscale")
+                        && !k.location().getPath().equals("grand_nether")
+                        && !k.location().getPath().equals("grand_end"))
+                .orElse(false))
             return false;
         WorldGenLevel w=context.level();
         BlockPos origin=context.origin();
