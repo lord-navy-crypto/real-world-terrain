@@ -30,6 +30,13 @@ class RealmQA(unittest.TestCase):
         self.assertNotIn("NETHER_GOLD_ORE",c)
         self.assertIn("Math.floorDiv(x,64)",c)
 
+    def test_safe_chorus_and_no_magma_replacement(self):
+        c=(JAVA/"RealmEcologyAccentFeature.java").read_text()
+        self.assertIn("if(flower.canSurvive(w,tip))",c)
+        self.assertNotIn("Blocks.MAGMA_BLOCK.defaultBlockState()",c)
+        self.assertIn("placed<28",c)
+        self.assertIn("i<64",c)
+
     def test_no_carving_and_chunk_bounds(self):
         source=(JAVA/"RealmEcologyAccentFeature.java").read_text()
         for v in ("TVAWorldGuard.hasRealScaleGenerator", "placed<28", "i<64",
