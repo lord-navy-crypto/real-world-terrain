@@ -22,7 +22,7 @@ def read_json(root: Path, relative: Path) -> dict:
     return json.loads((root / relative).read_text(encoding="utf-8"))
 
 
-def invasion_preset(source_preset: dict) -> dict:
+def invasion_preset(source_preset: dict, spawn_end_habitats: bool = False) -> dict:
     """Wrap three existing biome sources without changing their noise settings."""
     world = copy.deepcopy(source_preset)
     dims = world.get("dimensions", {})
@@ -39,6 +39,7 @@ def invasion_preset(source_preset: dict) -> dict:
             source["source"] = {
                 "type": "realscale:cross_realm_invasion",
                 "target": "overworld",
+                **({"spawn_end_habitats": True} if spawn_end_habitats else {}),
                 "source": source["source"],
             }
         else:
@@ -53,7 +54,8 @@ def invasion_preset(source_preset: dict) -> dict:
 
 def create_preset(root: Path, world_source: str,
                   enable_invasion: bool, lab_name: str | None = None,
-                  showcase: bool = False, end_biomes: bool = False
+                  showcase: bool = False, end_biomes: bool = False,
+                  spawn_end_habitats: bool = False
                   ) -> tuple[str, dict, dict[str, str]]:
     """Return (new ID suffix, world JSON, localized world-type labels).
 
@@ -64,6 +66,10 @@ def create_preset(root: Path, world_source: str,
         raise ValueError("Invasion, showcase and End biomes settings must be boolean")
     if showcase and not enable_invasion:
         raise ValueError("Showcase requires Dimension Invasion enabled")
+    if type(spawn_end_habitats) is not bool:
+        raise ValueError("spawn_end_habitats must be boolean")
+    if spawn_end_habitats and not enable_invasion:
+        raise ValueError("Three-End-biome spawn requires Dimension Invasion")
     if world_source == "terrain_lab":
         if not lab_name or not lab_name.startswith("lab_"):
             raise ValueError("terrain_lab requires a generated lab profile")
@@ -80,7 +86,7 @@ def create_preset(root: Path, world_source: str,
 
     world = read_json(root, PRESET_DIR / (base_name + ".json"))
     if enable_invasion:
-        world = invasion_preset(world)
+        world = invasion_preset(world, spawn_end_habitats=spawn_end_habitats)
     if end_biomes:
         # Explicit opt-in, with NEW stable world-ID: old saved presets and
         # canonical sacred/measured registries must never change silently.
@@ -90,6 +96,10 @@ def create_preset(root: Path, world_source: str,
             raise ValueError("Duplicate End accent wrapper")
         end["biome_source"] = {"type": "realscale:end_accents", "source": old}
         name = name + "_end3"
+    if spawn_end_habitats:
+        # A NEW stable ID prevents changing existing *_end3 saved worlds,
+        # whose codecs had no spawn_end_habitats field.
+        name += "_spawn3"
     if showcase:
         # Gallery mode deliberately lives only in a NEW opt-in world preset.
         # Near X/Z 0/0 or 176/0 it exposes all six invasion directions.
@@ -110,6 +120,9 @@ def create_preset(root: Path, world_source: str,
                  + (" + 入侵展示世界" if showcase else
                     " + 跨维度入侵" if enable_invasion else "（标准）"),
     }
+    if spawn_end_habitats:
+        names["en_us"] += " + End Spawn Invasion"
+        names["zh_cn"] += " + 三选一末地群系出生区"
     if end_biomes:
         names["en_us"] += " + Three End Biomes"
         names["zh_cn"] += " + 三种末地生物群系"
