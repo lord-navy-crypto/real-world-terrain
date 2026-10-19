@@ -184,6 +184,24 @@ class ChongqingGISTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"empty"):
                 gis.export_datapack(blocks,stats,source,dem,out,100,"OSM ODbL")
 
+    def test_overpass_turbo_incomplete_geojson_is_not_rasterized(self):
+        dem=self.dem
+        geometry=[ll(dem,0,0),ll(dem,10,0)]
+        source={"type":"FeatureCollection","generator":"overpass-turbo",
+                "features":[
+                    feature("way/incomplete",
+                            {"highway":"primary","@tainted":True},
+                            "LineString",geometry),
+                    feature("way/complete",{"highway":"path"},
+                            "LineString",[ll(dem,0,3),ll(dem,10,3)])]}
+        shapes=gis.osm_features(source)
+        self.assertEqual([f["id"] for f in shapes],["way/complete"])
+        pixels,_=gis.prepare(dem,shapes,100)
+        self.assertNotIn((5,0),pixels)
+        self.assertIn((5,3),pixels)
+        with self.assertRaisesRegex(ValueError,"No supported"):
+            gis.osm_features(dict(source,features=source["features"][:1]))
+
     def test_closed_road_and_rail_loops_remain_centerlines_not_filled_areas(self):
         # A closed OSM highway/railway is a loop, NOT necessarily an area.
         dem = self.dem
@@ -253,8 +271,12 @@ class ChongqingGISTests(unittest.TestCase):
             for i in range(m["stages"]):
                 path=root/"datapack/data/realscale_chongqing/function"/f"tile_{i:04d}.mcfunction"
                 for command in path.read_text().splitlines():
-                    if command.startswith("fill ") and "building_wall" not in command:
-                        self.assertLessEqual(int(command.split()[4])-int(command.split()[1])+1,2048)
+                    if command.startswith("fill "):
+                        parts=command.split()
+                        x0,y0,z0=map(int,parts[1:4])
+                        x1,y1,z1=map(int,parts[4:7])
+                        volume=(abs(x1-x0)+1)*(abs(y1-y0)+1)*(abs(z1-z0)+1)
+                        self.assertLessEqual(volume,gis.MAX_BLOCKS_PER_COMMAND)
 
 if __name__=="__main__":
     unittest.main()
