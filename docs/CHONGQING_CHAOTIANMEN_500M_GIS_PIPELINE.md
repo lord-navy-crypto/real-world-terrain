@@ -181,12 +181,15 @@ interactive workflow now is:
      <=2 million pilot writes and row-count integrity; does NOT place blocks.
    - **I backed up this NEW world**: deliberate user confirmation. This is
      an acknowledgment, not a technical check that a backup exists.
-   - **Apply next 256 blocks**: performs a small guarded singleplayer
-     server-side batch, using direct block APIs rather than Minecraft
-     `/function`, chat, or console commands. Remaining batches require
-     further explicit clicks. Closing the GUI does NOT auto-apply anything.
-   - **Close / Pause**: leaves the world untouched by this tool until
-     the next explicit click.
+   - **Start / Pause 256 blocks per tick**: after explicit confirmation,
+     uses the integrated server tick event to place at most 256 blocks/tick
+     when that tick has spare time. No Minecraft `/function`, chat or
+     console commands are involved. Click again to PAUSE.
+     **Closing the GUI or pressing ESC also PAUSES placement immediately**.
+     Progress is retained while this integrated server instance lives;
+     restarting the game is NOT yet a persistent resumable installer.
+   - **Close / Pause**: stops further automatic changes immediately and
+     requires a newly acknowledged backup before another GUI run.
 5. The native executor *refuses* dedicated/multiplayer sessions, player
    non-Creative mode, every other dimension, and every noise generator
    except `realscale:special_chongqing_sky`. It refuses unloaded chunks
