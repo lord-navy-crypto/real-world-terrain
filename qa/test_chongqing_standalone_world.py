@@ -202,6 +202,19 @@ def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
             extra_tower_checked+=1
         assert extra_tower_checked>=20
     geometry_rows=plan["rows"]
+    # The standalone world must contain ACTUAL glazed facades at source
+    # OSM tower coordinates, not just a facade style function in Python.
+    glazings=0
+    for row in geometry_rows:
+        if row["kind"]!="building_footprint" or row["shell"]!="facade" or row["height"]<30:
+            continue
+        x=row["x0"];z=row["z"];y=row["y"]+3
+        mat=exporter.schematic_facade_block(x,z,3,row["height"])
+        expected=exporter.NAME[mat]
+        assert get_block(world,x,y,z)==expected,("facade glass/white frame missing",x,y,z)
+        glazings+=1
+        if glazings>=20:break
+    assert glazings>=10
     tested=0
     for row in geometry_rows[::max(1,len(geometry_rows)//20)]:
         x=row["x0"];y=row["y"];z=row["z"]
@@ -222,6 +235,7 @@ def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
               "road_corridor_actual_blocks_checked":verified_roads,
               "crystal_3d_real_anvil_samples":crystal_verified,
               "actual_outer_t1_anvil_samples":extra_tower_checked,
+              "source_footprint_glazed_facade_samples":glazings,
               "spawn_y":int(data["SpawnY"])}))
 
 
