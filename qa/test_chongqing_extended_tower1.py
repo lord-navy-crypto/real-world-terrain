@@ -25,8 +25,10 @@ class ActualOutside500mTowerTest(unittest.TestCase):
                             for x,y,z,block in self.writes))
         self.assertTrue(all(-600<=x<=600 and -600<=z<=600
                             for x,y,z,block in self.writes))
-        self.assertTrue(all(block in (4,5)
+        self.assertTrue(all(block in (4,5,16,17)
                             for x,y,z,block in self.writes))
+        self.assertTrue(any(block==17 for x,y,z,block in self.writes))
+        self.assertTrue(any(block==16 for x,y,z,block in self.writes))
         cells={(x,z) for x,y,z,b in self.writes}
         self.assertEqual(len(cells),self.source["source_footprint_1m_columns"])
         self.assertEqual(len(self.writes),len({(x,y,z) for x,y,z,b in self.writes}),
