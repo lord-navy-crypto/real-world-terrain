@@ -135,7 +135,12 @@ def test_supported_microstructures():
 def test_all_custom_biome_carvers():
     # Minecraft 1.21.1 expects a carving-stage map, not the later-version list.
     all_biomes = list(BIOMES.glob("*.json"))
-    assert len(all_biomes) == 67, len(all_biomes)
+    # Preserve the original catalog exactly (67), while admitting ONLY our
+    # three additive End biomes. Never silently accept missing old entries.
+    end_extras = {"end_chorus_gardens", "end_crystal_barrens", "end_shattered_glades"}
+    new_end = {p.stem for p in all_biomes if p.stem in end_extras}
+    assert new_end == end_extras, ("Missing End accent biomes", new_end)
+    assert len(all_biomes) - len(new_end) == 67, len(all_biomes)
     for path in all_biomes:
         biome = load(path)
         assert isinstance(biome.get("carvers"), dict), path
