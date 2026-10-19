@@ -108,11 +108,11 @@ final class OceanFloorMorphologyMath {
         if(rim<=0.0)return 0.0;
         double u=dx*0.8+dz*0.6;
         double v=-dx*0.6+dz*0.8;
-        double target=originalHeight+rim*anomaly(kind,u,v,originalHeight);
-        // Avoid accidental dry-ocean / sky islands: stop elevation above
-        // -0.30 horizontal signal (~38 blocks BELOW sea level).
-        target=Math.min(target,-0.30);
-        return gate*(1.0-GeoMath.clamp(measuredProtection,0,1))*
-                (target-originalHeight);
+        double change=rim*anomaly(kind,u,v,originalHeight);
+        // Never raise the floor above a safe submerged depth. Importantly,
+        // clamp ONLY upward change, so fade -> 0 at the feature boundary.
+        // Clamping the absolute target would introduce a vertical seam.
+        if(change>0.0)change=Math.min(change,Math.max(0,-0.30-originalHeight));
+        return gate*(1.0-GeoMath.clamp(measuredProtection,0,1))*change;
     }
 }
