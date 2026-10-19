@@ -103,6 +103,11 @@ def _unified_choices(path: Path) -> tuple[str, bool, bool]:
         raise ValueError("worldSource must be terrain_lab, sacred or measured")
     if type(invasion) is not bool:
         raise ValueError("dimensionalInvasion must be true or false")
+    # New unified drafts ALWAYS enable invasion. Only historical drafts
+    # that predate the worldSource field retain their original off-by-default
+    # export, so an old world-profile recipe is not silently reinterpreted.
+    if "worldSource" in draft and not invasion:
+        raise ValueError("Unified World Creation requires dimensionalInvasion=true")
     if type(showcase) is not bool or (showcase and not invasion):
         raise ValueError("invasionShowcase requires dimensionalInvasion=true")
     return source, invasion, showcase
