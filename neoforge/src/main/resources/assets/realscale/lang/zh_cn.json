@@ -41,5 +41,15 @@
   "biome.realscale.arid_riparian_woodland": "干旱河岸林",
   "biome.realscale.windy_coastal_headland": "海风岬角草甸",
   "generator.realscale.tva_sacred_biodiversity_end3_spawn3_v2": "RealScale 神圣时间线 · 六种新群系 + 天空岛 + 末地群系入侵出生（实验）",
-  "generator.realscale.tva_measured_biodiversity_end3_spawn3_v2": "RealScale 实测地形 / USGS · 六种新群系 + 天空岛 + 末地群系入侵出生（实验）"
+  "generator.realscale.tva_measured_biodiversity_end3_spawn3_v2": "RealScale 实测地形 / USGS · 六种新群系 + 天空岛 + 末地群系入侵出生（实验）",
+  "biome.realscale.mediterranean_chaparral": "地中海硬叶灌丛",
+  "biome.realscale.temperate_tallgrass_prairie": "温带高草草原",
+  "biome.realscale.monsoon_woodland": "季风疏林",
+  "biome.realscale.montane_cloud_scrub": "山地云雾灌木林",
+  "biome.realscale.brackish_tidal_marsh": "半咸水潮汐沼泽",
+  "biome.realscale.coastal_pine_barrens": "海岸松林荒原",
+  "biome.realscale.frost_heath_moor": "寒霜石楠荒原",
+  "biome.realscale.arid_rocksteppe": "干旱岩砾草原",
+  "generator.realscale.tva_sacred_biodiversity_end3_spawn3_v3": "RealScale 神圣时间线 · 14 种新增生态群系 + 天空群岛 + 末地入侵（实验）",
+  "generator.realscale.tva_measured_biodiversity_end3_spawn3_v3": "RealScale 实测地形 / USGS · 14 种新增生态群系 + 天空群岛 + 末地入侵（实验）"
 }

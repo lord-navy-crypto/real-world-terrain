@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:frost_heath_moor"
+  ],
+  "features": "realscale:ecotone_highlands_undergrowth",
+  "step": "vegetal_decoration"
+}

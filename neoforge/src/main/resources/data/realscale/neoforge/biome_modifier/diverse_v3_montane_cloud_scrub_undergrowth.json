@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:montane_cloud_scrub"
+  ],
+  "features": "realscale:ecotone_forest_undergrowth",
+  "step": "vegetal_decoration"
+}

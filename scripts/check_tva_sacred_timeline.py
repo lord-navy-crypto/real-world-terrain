@@ -27,9 +27,11 @@ menu=expected+[opt_in]
 # biodiversity profiles to the normal menu only. Extended remains unchanged.
 diverse=["realscale:tva_sacred_biodiversity_end3_spawn3_v2",
          "realscale:tva_measured_biodiversity_end3_spawn3_v2"]
+diverse_v3=["realscale:tva_sacred_biodiversity_end3_spawn3_v3",
+            "realscale:tva_measured_biodiversity_end3_spawn3_v3"]
 for name in ("normal","extended"):
     tag=read(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset"/(name+".json"))
-    selected=menu+(diverse if name=="normal" else [])
+    selected=menu+(diverse+diverse_v3 if name=="normal" else [])
     assert tag["replace"] is False and tag["values"]==selected,(name,tag)
     assert len(tag["values"])==len(set(tag["values"]))==len(selected)
 for name,settings in FAMILIES.items():
@@ -61,7 +63,12 @@ v2={"tropical_dry_woodland","cool_temperate_rainforest",
     "alpine_sedge_fen","polar_fellfield",
     "arid_riparian_woodland","windy_coastal_headland"}
 assert v2 <= all_biomes
-assert len(all_biomes-new_end-v2)==67
+v3={"mediterranean_chaparral","temperate_tallgrass_prairie",
+    "monsoon_woodland","montane_cloud_scrub",
+    "brackish_tidal_marsh","coastal_pine_barrens",
+    "frost_heath_moor","arid_rocksteppe"}
+assert v3 <= all_biomes
+assert len(all_biomes-new_end-v2-v3)==67
 for e in catalog:
     assert (D/"worldgen/biome"/(e["id"]+".json")).exists(),e["id"]
 guard=R/"neoforge/src/main/java/org/realscale/neoforge/TVAWorldGuard.java"

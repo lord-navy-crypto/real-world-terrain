@@ -50,7 +50,9 @@ class CoreSmoothing(unittest.TestCase):
   stable=["realscale:"+x for x,_,_ in FAMILIES]+["realscale:tva_measured_three_realms"]
   optional="realscale:tva_wonders_invasion_three_realms"
   biodiversity=["realscale:tva_sacred_biodiversity_end3_spawn3_v2",
-                "realscale:tva_measured_biodiversity_end3_spawn3_v2"]
+                "realscale:tva_measured_biodiversity_end3_spawn3_v2",
+                "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
+                "realscale:tva_measured_biodiversity_end3_spawn3_v3"]
   for tag in ("normal","extended"):
    path=ROOT/"minecraft/tags/worldgen/world_preset"/(tag+".json")
    expected=stable+[optional]+(biodiversity if tag=="normal" else [])

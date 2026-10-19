@@ -1,0 +1,111 @@
+"""Experimental v3 biome diversity: strict append-only regression guards."""
+import json
+import unittest
+from pathlib import Path
+
+ROOT=Path(__file__).resolve().parents[1]
+RES=ROOT/"neoforge/src/main/resources/data/realscale"
+BIOMES=RES/"worldgen/biome"
+PRESETS=RES/"worldgen/world_preset"
+MOD=RES/"neoforge/biome_modifier"
+SRC=ROOT/"neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java"
+REG=ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java"
+TAGS=ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset"
+NAMES=("mediterranean_chaparral","temperate_tallgrass_prairie",
+       "monsoon_woodland","montane_cloud_scrub",
+       "brackish_tidal_marsh","coastal_pine_barrens",
+       "frost_heath_moor","arid_rocksteppe")
+BASE=("tva_sacred_timeline_three_realms","tva_measured_three_realms")
+COLORS=("grass_color","foliage_color","water_color")
+def read(p):return json.loads(p.read_text(encoding="utf-8"))
+
+
+class BiomeDiversityV3(unittest.TestCase):
+    def test_all_eight_are_actual_wired_biomes_with_unique_climates_and_palettes(self):
+        climates=set()
+        for name in NAMES:
+            with self.subTest(name=name):
+                biome=read(BIOMES/(name+".json"))
+                self.assertEqual(len(biome["features"]),11)
+                self.assertTrue(biome["features"][9])
+                self.assertTrue(biome["spawners"]["creature"])
+                self.assertTrue(isinstance(biome["carvers"]["air"],list))
+                self.assertTrue(0<=biome["downfall"]<=1)
+                key=(biome["temperature"],biome["downfall"])
+                self.assertNotIn(key,climates)
+                climates.add(key)
+                effects=biome["effects"]
+                self.assertTrue(all(isinstance(effects[color],int) for color in COLORS))
+                self.assertGreaterEqual(len({effects[c] for c in COLORS}),2)
+                mod=read(MOD/("diverse_v3_"+name+"_undergrowth.json"))
+                self.assertEqual(mod["type"],"neoforge:add_features")
+                self.assertEqual(mod["biomes"],["realscale:"+name])
+                self.assertEqual(mod["step"],"vegetal_decoration")
+                self.assertTrue(mod["features"].startswith("realscale:ecotone_"))
+
+    def test_versioned_codec_keeps_old_v1_v2_unchanged(self):
+        java=SRC.read_text(encoding="utf-8")
+        reg=REG.read_text(encoding="utf-8")
+        start=java.index("private static final List<Rule> V3_RULES")
+        end=java.index("private static final List<Rule> ALL_V3_RULES",start)
+        section=java[start:end]
+        for name in NAMES:
+            self.assertIn('rule("'+name+'"',section)
+        self.assertEqual(section.count('rule("'),8)
+        self.assertIn('return diverse ? DIVERSE_CODEC : CODEC;',java)
+        self.assertIn('for (Rule rule : diverse ? ALL_V2_RULES : RULES)',java)
+        self.assertIn('if (expandedV3) return DIVERSE_V3_CODEC;',java)
+        self.assertIn('natural_ecotones_diverse_v3',reg)
+        self.assertIn('NaturalEcotoneBiomeSource.DIVERSE_V3_CODEC',reg)
+        self.assertIn('V3_RULE_BY_BIOME',java)
+        self.assertIn('V3_CANDIDATE_IDS',java)
+        self.assertIn('V3_MAX_WIDTH_BY_BIOME',java)
+        self.assertIn('protectedWater(current)',java)
+
+    def test_presets_only_change_inner_ecotone_and_extend_normal_menu(self):
+        normal=read(TAGS/"normal.json")["values"]
+        extended=read(TAGS/"extended.json")["values"]
+        self.assertEqual(len(normal),9)
+        self.assertEqual(len(extended),5)
+        self.assertEqual(len(set(normal)),len(normal))
+        self.assertEqual(normal[:5],extended)
+        for family,legacy in zip(("sacred","measured"),BASE):
+            with self.subTest(family=family):
+                v2="tva_"+family+"_biodiversity_end3_spawn3_v2"
+                v3="tva_"+family+"_biodiversity_end3_spawn3_v3"
+                self.assertIn("realscale:"+v2,normal)
+                self.assertIn("realscale:"+v3,normal)
+                self.assertLess(normal.index("realscale:"+v2),normal.index("realscale:"+v3))
+                old=read(PRESETS/(legacy+".json"))
+                prev=read(PRESETS/(v2+".json"))
+                new=read(PRESETS/(v3+".json"))
+                self.assertEqual(new["dimensions"]["minecraft:the_nether"],prev["dimensions"]["minecraft:the_nether"])
+                self.assertEqual(new["dimensions"]["minecraft:the_end"],prev["dimensions"]["minecraft:the_end"])
+                for realm in old["dimensions"]:
+                    self.assertEqual(new["dimensions"][realm]["generator"]["settings"],
+                                     old["dimensions"][realm]["generator"]["settings"])
+                    self.assertEqual(new["dimensions"][realm]["type"],old["dimensions"][realm]["type"])
+                p=prev["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+                q=new["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+                self.assertEqual(q["type"],"realscale:sky_ocean")
+                self.assertEqual(q["source"]["type"],"realscale:cross_realm_spawn3")
+                self.assertEqual(q["source"]["target"],"overworld")
+                self.assertEqual(q["source"]["source"]["type"],"realscale:natural_ecotones_diverse_v3")
+                self.assertEqual(p["source"]["source"]["type"],"realscale:natural_ecotones_diverse_v2")
+                self.assertEqual(q["source"]["source"]["source"],p["source"]["source"]["source"])
+
+    def test_unique_labels_for_world_and_biomes(self):
+        for lang in ("en_us","zh_cn"):
+            labels=read(ROOT/"neoforge/src/main/resources/assets/realscale/lang"/(lang+".json"))
+            for biome in NAMES:
+                self.assertTrue(labels["biome.realscale."+biome])
+            for family in ("sacred","measured"):
+                self.assertTrue(labels["generator.realscale.tva_"+family+"_biodiversity_end3_spawn3_v3"])
+
+    def test_all_84_biome_ids_are_unique_and_unchanged_legacy_count(self):
+        ids={p.stem for p in BIOMES.glob("*.json")}
+        self.assertEqual(len(ids),84)
+        self.assertEqual(len(ids-set(NAMES)),76)
+
+
+if __name__=="__main__":unittest.main()

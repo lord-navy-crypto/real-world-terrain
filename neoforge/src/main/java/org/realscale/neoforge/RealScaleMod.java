@@ -49,6 +49,10 @@ public final class RealScaleMod {
                     NaturalEcotoneBiomeSource.DIVERSE_CODEC)
         );
         event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones_diverse_v3"),
+                    NaturalEcotoneBiomeSource.DIVERSE_V3_CODEC)
+        );
+        event.register(Registries.BIOME_SOURCE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cross_realm_showcase"),
                     CrossRealmShowcaseBiomeSource.CODEC)
         );

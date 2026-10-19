@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:temperate_tallgrass_prairie"
+  ],
+  "features": "realscale:ecotone_coastal_undergrowth",
+  "step": "vegetal_decoration"
+}

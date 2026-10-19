@@ -32,9 +32,13 @@ def main():
         "realscale:tva_canyon_three_realms",
         "realscale:tva_measured_three_realms",
     ]
-    require(core["replace"] is False and core["values"]==
-            original+["realscale:tva_wonders_invasion_three_realms"],
-            "TVA built mod must keep the four core choices and additive opt-in")
+    additive=["realscale:tva_wonders_invasion_three_realms",
+              "realscale:tva_sacred_biodiversity_end3_spawn3_v2",
+              "realscale:tva_measured_biodiversity_end3_spawn3_v2",
+              "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
+              "realscale:tva_measured_biodiversity_end3_spawn3_v3"]
+    require(core["replace"] is False and core["values"]==original+additive,
+            "TVA built mod must preserve original five and four explicit additive biomes world choices")
     with tempfile.TemporaryDirectory(prefix="tva-lab-export-") as temporary:
         directory=Path(temporary)
         draft=directory/"profile.json"
@@ -76,7 +80,7 @@ def main():
             pass
         else:
             raise AssertionError("Exporter unexpectedly overwrote a pre-existing pack")
-    print("TVA_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, 4 stable + 1 opt-in menu and immutable export")
+    print("TVA_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, 4 stable + 5 optional choices and immutable single-world export")
 
 if __name__=="__main__":
     main()

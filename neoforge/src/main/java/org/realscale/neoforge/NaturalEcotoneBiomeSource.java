@@ -45,6 +45,14 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
                     RegistryOps.retrieveGetter(Registries.BIOME)
             ).apply(instance, (source, biomes) -> new NaturalEcotoneBiomeSource(source, biomes, true)));
 
+    /** Persisted v3 codec: earlier saved worldgen maps decode unchanged. */
+    public static final MapCodec<NaturalEcotoneBiomeSource> DIVERSE_V3_CODEC =
+            RecordCodecBuilder.mapCodec(instance -> instance.group(
+                    BiomeSource.CODEC.fieldOf("source").forGetter(NaturalEcotoneBiomeSource::source),
+                    RegistryOps.retrieveGetter(Registries.BIOME)
+            ).apply(instance, (source, biomes) ->
+                    new NaturalEcotoneBiomeSource(source, biomes, true, true)));
+
     private record Rule(String target, int widthBlocks, Set<String> left, Set<String> right) {
         boolean matches(String first, String second) {
             return (left.contains(first) && right.contains(second))
@@ -150,6 +158,20 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     private static final List<Rule> ALL_V2_RULES =
             Stream.concat(DIVERSE_RULES.stream(), RULES.stream()).toList();
 
+    /** Version 3: eight non-overlapping natural-climate ecotone pairs. */
+    private static final List<Rule> V3_RULES = List.of(
+            rule("mediterranean_chaparral",32,"savanna,savanna_plateau","windswept_forest"),
+            rule("temperate_tallgrass_prairie",32,"plains,sunflower_plains","meadow"),
+            rule("monsoon_woodland",32,"jungle","savanna,savanna_plateau"),
+            rule("montane_cloud_scrub",24,"grove","windswept_forest"),
+            rule("brackish_tidal_marsh",24,"mangrove_swamp","beach"),
+            rule("coastal_pine_barrens",24,"stony_shore","forest"),
+            rule("frost_heath_moor",24,"snowy_plains","windswept_gravelly_hills"),
+            rule("arid_rocksteppe",32,"desert","stony_peaks")
+    );
+    private static final List<Rule> ALL_V3_RULES =
+            Stream.concat(V3_RULES.stream(), ALL_V2_RULES.stream()).toList();
+
     private static final Set<String> CANDIDATE_IDS = RULES.stream()
             .flatMap(rule -> Stream.concat(rule.left().stream(), rule.right().stream()))
             .collect(Collectors.toUnmodifiableSet());
@@ -160,7 +182,11 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
      */
     private static final Map<String, Map<String, Rule>> RULE_BY_BIOME = indexRules(RULES);
     private static final Map<String, Map<String, Rule>> V2_RULE_BY_BIOME = indexRules(ALL_V2_RULES);
+    private static final Map<String, Map<String, Rule>> V3_RULE_BY_BIOME = indexRules(ALL_V3_RULES);
     private static final Set<String> V2_CANDIDATE_IDS = ALL_V2_RULES.stream()
+            .flatMap(rule -> Stream.concat(rule.left().stream(), rule.right().stream()))
+            .collect(Collectors.toUnmodifiableSet());
+    private static final Set<String> V3_CANDIDATE_IDS = ALL_V3_RULES.stream()
             .flatMap(rule -> Stream.concat(rule.left().stream(), rule.right().stream()))
             .collect(Collectors.toUnmodifiableSet());
 
@@ -181,6 +207,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     // needlessly samples remote climate for narrow river/coast transitions.
     private static final Map<String, Integer> MAX_WIDTH_BY_BIOME = buildWidths(RULES);
     private static final Map<String, Integer> V2_MAX_WIDTH_BY_BIOME = buildWidths(ALL_V2_RULES);
+    private static final Map<String, Integer> V3_MAX_WIDTH_BY_BIOME = buildWidths(ALL_V3_RULES);
 
     private static Map<String, Integer> buildWidths(List<Rule> rules) {
         Map<String, Integer> widths = new HashMap<>();
@@ -218,14 +245,26 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     private final BiomeSource source;
     private final boolean diverse;
+    private final boolean expandedV3;
     private final ThreadLocal<SamplingCache> cached = ThreadLocal.withInitial(SamplingCache::new);
     private final Map<String, Holder<Biome>> transitionBiomes;
 
     private NaturalEcotoneBiomeSource(BiomeSource source, HolderGetter<Biome> biomes, boolean diverse) {
+        this(source, biomes, diverse, false);
+    }
+
+    private NaturalEcotoneBiomeSource(
+            BiomeSource source, HolderGetter<Biome> biomes, boolean diverse, boolean expandedV3) {
         this.source = source;
         this.diverse = diverse;
+        this.expandedV3 = expandedV3;
         this.transitionBiomes = new HashMap<>();
+        // Original v1 and v2 registration order and selection are untouched.
         for (Rule rule : diverse ? ALL_V2_RULES : RULES) {
+            ResourceLocation location = ResourceLocation.fromNamespaceAndPath("realscale", rule.target());
+            transitionBiomes.put(rule.target(), biomes.getOrThrow(ResourceKey.create(Registries.BIOME, location)));
+        }
+        if (expandedV3) for (Rule rule : V3_RULES) {
             ResourceLocation location = ResourceLocation.fromNamespaceAndPath("realscale", rule.target());
             transitionBiomes.put(rule.target(), biomes.getOrThrow(ResourceKey.create(Registries.BIOME, location)));
         }
@@ -248,6 +287,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     @Override
     protected MapCodec<? extends BiomeSource> codec() {
+        if (expandedV3) return DIVERSE_V3_CODEC;
         return diverse ? DIVERSE_CODEC : CODEC;
     }
 
@@ -268,7 +308,8 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     }
 
     private Rule findPair(String first, String second) {
-        Map<String, Rule> partners = (diverse ? V2_RULE_BY_BIOME : RULE_BY_BIOME).get(first);
+        Map<String, Rule> partners = (expandedV3 ? V3_RULE_BY_BIOME
+                : diverse ? V2_RULE_BY_BIOME : RULE_BY_BIOME).get(first);
         return partners == null ? null : partners.get(second);
     }
 
@@ -305,7 +346,8 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         if (quartY < 12) return original;
         String current = vanillaId(original);
         if (current.isEmpty() || protectedWater(current)
-                || !(diverse ? V2_CANDIDATE_IDS : CANDIDATE_IDS).contains(current))
+                || !(expandedV3 ? V3_CANDIDATE_IDS
+                     : diverse ? V2_CANDIDATE_IDS : CANDIDATE_IDS).contains(current))
             return original;
 
         // Check multiple quart positions outward, stopping at the first
@@ -313,7 +355,8 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         // width of 32 blocks, these samples never exceed 8 quart cells.
         Rule nearest = null;
         int closestDistanceSquared = Integer.MAX_VALUE;
-        int maxLocalQuarts = ((diverse ? V2_MAX_WIDTH_BY_BIOME : MAX_WIDTH_BY_BIOME)
+        int maxLocalQuarts = ((expandedV3 ? V3_MAX_WIDTH_BY_BIOME
+                : diverse ? V2_MAX_WIDTH_BY_BIOME : MAX_WIDTH_BY_BIOME)
                 .getOrDefault(current, 0) + 7) / 8;
         for (int[] direction : DIRECTIONS) {
             for (int step = 1; step <= maxLocalQuarts; step++) {

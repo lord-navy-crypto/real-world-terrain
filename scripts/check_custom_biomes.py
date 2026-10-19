@@ -141,10 +141,15 @@ def test_all_custom_biome_carvers():
     v2_extras = {"tropical_dry_woodland", "cool_temperate_rainforest",
                  "alpine_sedge_fen", "polar_fellfield",
                  "arid_riparian_woodland", "windy_coastal_headland"}
+    v3_extras = {"mediterranean_chaparral", "temperate_tallgrass_prairie",
+                 "monsoon_woodland", "montane_cloud_scrub",
+                 "brackish_tidal_marsh", "coastal_pine_barrens",
+                 "frost_heath_moor", "arid_rocksteppe"}
     names = {p.stem for p in all_biomes}
     assert end_extras <= names, ("Missing End biomes", end_extras - names)
     assert v2_extras <= names, ("Missing v2 biomes", v2_extras - names)
-    assert len(names - end_extras - v2_extras) == 67, len(names)
+    assert v3_extras <= names, ("Missing v3 biomes", v3_extras - names)
+    assert len(names - end_extras - v2_extras - v3_extras) == 67, len(names)
     for path in all_biomes:
         biome = load(path)
         assert isinstance(biome.get("carvers"), dict), path
