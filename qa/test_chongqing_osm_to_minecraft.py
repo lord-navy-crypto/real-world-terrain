@@ -184,5 +184,77 @@ class ChongqingGISTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"empty"):
                 gis.export_datapack(blocks,stats,source,dem,out,100,"OSM ODbL")
 
+    def test_closed_road_and_rail_loops_remain_centerlines_not_filled_areas(self):
+        # A closed OSM highway/railway is a loop, NOT necessarily an area.
+        dem = self.dem
+        ring = [ll(dem,x,z) for x,z in
+                ((0,0),(20,0),(20,20),(0,20),(0,0))]
+        src = {"elements":[
+            {"type":"way","id":90001,"tags":{"highway":"residential"},
+             "geometry":[{"lon":p[0],"lat":p[1]} for p in ring]},
+            {"type":"way","id":90002,"tags":{"railway":"rail"},
+             "geometry":[{"lon":p[0]+50/dem.m_lon,"lat":p[1]}
+                         for p in ring]}]}
+        ways = gis.osm_features(src)
+        self.assertTrue(all(f["kind"]=="LineString" for f in ways))
+        cells,_ = gis.prepare(dem,ways,100)
+        self.assertIn((0,10),cells)
+        self.assertNotIn((10,10),cells,
+                         "Closed highway loop must not fill inner city blocks")
+        self.assertNotIn((60,10),cells,
+                         "Closed rail loop must not turn into a concrete plaza")
+
+    def test_real_area_yes_road_can_still_fill_polygon(self):
+        dem = self.dem
+        ring = [ll(dem,x,z) for x,z in
+                ((0,0),(10,0),(10,10),(0,10),(0,0))]
+        raw = {"elements":[{"type":"way","id":90003,
+                "tags":{"highway":"pedestrian","area":"yes"},
+                "geometry":[{"lon":p[0],"lat":p[1]} for p in ring]}]}
+        cells,_ = gis.prepare(dem,gis.osm_features(raw),100)
+        self.assertIn((5,5),cells)
+
+    def test_big_water_rows_are_compressed_with_safe_stage_volume(self):
+        # Synthetic geometry: stress only exporter, NOT actual Yangtze data.
+        dem = self.dem
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root/"synthetic.json"
+            source.write_text('{"synthetic_qa_only":true}',encoding="utf-8")
+            # A 1,000-block single row previously needed 1,000 setblocks.
+            layers = {(x,0):("water_reference",100,None,"way/QA")
+                      for x in range(-500,500)}
+            out = root/"datapack"
+            m = gis.export_datapack(
+                layers,{},source,dem,out,500,
+                "Synthetic exporter unit test — NOT geographic source")
+            self.assertEqual(m["staged_commands"],1)
+            self.assertEqual(m["staged_block_writes"],1000)
+            self.assertEqual(m["stage_block_writes"],[1000])
+            commands = (out/"data/realscale_chongqing/function/tile_0000.mcfunction").read_text()
+            self.assertIn("fill -500 100 0 499 100 0 minecraft:blue_concrete",commands)
+            self.assertTrue(all(v<=20000 for v in m["stage_block_writes"]))
+
+    def test_tall_building_run_splits_vertical_fill_volume_safely(self):
+        dem = self.dem
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source=root/"test.geojson"
+            source.write_text("{}",encoding="utf-8")
+            layers={(x,0):("building_footprint",300,300,"way/height-QA")
+                    for x in range(20)}
+            m=gis.export_datapack(
+                layers,{},source,dem,root/"datapack",100,
+                "Synthetic height QA, not geographic data")
+            self.assertEqual(m["block_counts"]["building_mass_columns"],20)
+            self.assertEqual(m["staged_block_writes"],20*301)
+            self.assertTrue(all(v<=gis.MAX_BLOCKS_PER_FUNCTION
+                                for v in m["stage_block_writes"]))
+            for i in range(m["stages"]):
+                path=root/"datapack/data/realscale_chongqing/function"/f"tile_{i:04d}.mcfunction"
+                for command in path.read_text().splitlines():
+                    if command.startswith("fill ") and "building_wall" not in command:
+                        self.assertLessEqual(int(command.split()[4])-int(command.split()[1])+1,2048)
+
 if __name__=="__main__":
     unittest.main()
