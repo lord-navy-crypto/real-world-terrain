@@ -177,17 +177,22 @@ interactive workflow now is:
    Measured, any other family, and not an existing valued survival world).
    Let its pilot chunks load. **Create an external copy/backup of the save**
    before ever applying the overlay.
-3. Place the generated `chongqing-gis-plan.json` file at
-   `config/realscale/chaotianmen-gis-plan.json` in the Minecraft game
-   directory. This is a data import, not a command script. No arbitrary
-   file locations or executable commands are read by the GUI.
+3. The authentic 500m OSM V2 plan is now **BUILT INTO THE MOD JAR** at
+   `assets/realscale/terrain/chaotianmen_authentic_osm_ui_plan_v2.json.gz.b64`.
+   Players need NO external download, terminal, Python, datapack or file copy.
+   Press G and choose **Load & verify source plan** to read the real pinned
+   OSM plan, SHA-verified, entirely offline.
+   GIS researchers may optionally supply a newer audited JSON file at
+   `config/realscale/chaotianmen-gis-plan.json`; invalid overrides fail
+   closed, with no silent fall back to the built-in map.
 4. In **integrated singleplayer Creative** with the mod installed, press
    **G** to open `Special Chongqing | GIS Placement Lab`:
    - **Load & verify source plan**: validates coordinate origin, source
      checksum format, exact DEM SHA, real DEM Y for each planned block,
      allowed materials, source geometry bounds, sorted/nonoverlapping rows,
-     <=5 million pilot writes and row-count integrity; does NOT place blocks.
-      The current real OSM plan totals 4,033,166 writes.
+     the V2 shell/roof policy, <=5 million pilot writes and row-count
+     integrity; does NOT place blocks. The true-OSM native V2 shell plan
+     requires **494,988 writes** versus the old solid V1's 4,033,166.
    - **Survey nearby terrain (NO writes)**: the server checks up to 64
      ALREADY LOADED mapped columns close to the player, comparing the actual
      saved-world surface with DEM plan Y. It neither changes blocks nor
@@ -261,3 +266,26 @@ world Anvil .mca or modifies saved level.dat.
 
 Release: Keep Draft. Do not merge without live Minecraft save QA,
 source licensing review and 3D landmark / river bank acceptance tests.
+
+## Phase 6 — in-game built-in OSM V2 hollow architecture
+
+- Source geometry comes from the SAME real pinned OSM 500m archive;
+  shell generation adds no invented structure footprints. `The Crystal`
+  is still **DEFERRED** until correctly registered 3D support Y is verified.
+- Vertical tower massing uses neutral schematic blocks only: cells along
+  a source building's footprint edge become **perimeter walls + roof caps**,
+  interior cells become **foundation + roof cap with empty interior air**.
+  This is an illustrative shell, NOT a surveyed facade, floor layout,
+  glass texture, architectural roof model or decorated interior.
+- Native export format `REALSCALE_CHAOTIANMEN_PLACEMENT_V2` includes
+  `shell=none|facade|roof`. Old V1 plans are rejected rather than mixed.
+- GIS CI reports **34,063 rows and 494,988 planned direct GUI writes**,
+  compared with 4,033,166 writes for the old solid mass.
+- Bundled compressed-source plan is SHA-pinned to uncompressed JSON
+  `04a380b144d3f002c0157d841edefb68d5a5bfacf6ca07149c43e8f03a858980`;
+  build CI checks exact byte equality with a fresh offline conversion
+  from the real ODbL OSM snapshot.
+
+**Open:** full game-client G-key survey + actual save block-placement test,
+OSM facade heights and eighth tower, 3D skybridge, riverbank heights,
+client FPS and world re-entry. Draft only; never merge to main prematurely.
