@@ -45,7 +45,10 @@ NAME={0:"minecraft:air",1:"minecraft:stone",2:"minecraft:dirt",
       8:"minecraft:smooth_stone",9:"minecraft:stone_bricks",
       10:"minecraft:cobblestone",11:"minecraft:gravel",
       12:"minecraft:coarse_dirt",13:"minecraft:oak_planks",
-      14:"minecraft:sand",15:"minecraft:mud"}
+      14:"minecraft:sand",15:"minecraft:mud",
+      16:"minecraft:white_concrete",
+      17:"minecraft:light_blue_stained_glass",
+      18:"minecraft:smooth_quartz"}
 MATERIAL={"building_footprint":4,"road":5,"railway":6,"water_reference":7}
 SURFACE_BLOCK={
     "asphalt":5,"paving":8,"concrete":4,
@@ -320,7 +323,8 @@ def overlay_index(plan):
             x=end+1
     return output
 
-def generate(world, surface_file=None, satellite_file=None, road_file=None):
+def generate(world, surface_file=None, satellite_file=None, road_file=None,
+             add_crystal=False):
     grid,plan=read_inputs()
     surface_lookup,surface_meta=({},None)
     satellite_lookup,satellite_meta=({},None)
@@ -354,6 +358,17 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None):
     for (x,z),material in roads_lookup.items():
         if (x,z) not in protected:
             road_by_chunk[(x//16,z//16)].append((x,z,material))
+    # The 3D Crystal shell is explicit opt-in: source OSM polygon XY and
+    # min_height/height tags are real; a model rooftop median sets absolute
+    # Y because geodetically registered building ground-level data is absent.
+    # Do NOT insert a random 3D bridge across the river.
+    crystal_by_chunk=defaultdict(list)
+    crystal_metrics=None
+    if add_crystal:
+        from chongqing_crystal_3d import build_crystal
+        placements,crystal_metrics=build_crystal()
+        for x,y,z,material in placements:
+            crystal_by_chunk[(x//16,z//16)].append((x,y,z,material))
     regions={}
     stats=defaultdict(int)
     stats["road_corridor_cells_source"]=len(roads_lookup)
@@ -416,6 +431,11 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None):
                     elif shell=="roof":
                         set_block(lx,y+height,localz,5)
                         stats["actual_overlay_writes"]+=1
+            # Elevated source-backed Crystal geometry after the original
+            # 2D tower overlay. No floors generated beyond OSM 3D tag span.
+            for x,y,z,material in crystal_by_chunk.get((cx,cz),()):
+                set_block(x&15,y,z&15,material)
+                stats["crystal_schematic_block_writes"]+=1
             if not sections:continue
             region_key=(cx//32,cz//32)
             reg=regions.get(region_key)
@@ -438,6 +458,9 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None):
     stats["building_policy"]="Source-footprint-based hollow facade and roof; schematic"
     stats["world_y_range"]=[MIN_Y,MIN_Y+HEIGHT-1]
     stats["world_xz_range"]=[-RADIUS,RADIUS]
+    if crystal_metrics is not None:
+        stats["crystal_3d_evidence"]=crystal_metrics
+        stats["crystal_standalone_building_mode"]="real OSM polygon/min_height/height + LOW-confidence vertical anchor + schematic glass enclosure"
     if roads_meta is not None:
         stats["osm_road_corridor_sha256"]=roads_meta["raw_osm_api_sha256"]
         stats["osm_road_corridor_width_note"]=roads_meta["width_note"]
@@ -497,11 +520,12 @@ def prepare_server(root):
         "motd=RealScale Chaotianmen standalone experimental map\n")
     print("PREPARED empty official-vanilla server world and datapack",world)
 
-def package_world(root,out,surface_file=None,satellite_file=None,road_file=None):
+def package_world(root,out,surface_file=None,satellite_file=None,road_file=None,
+                  add_crystal=False):
     world=root/WORLD
     if not (world/"level.dat").is_file():
         raise RuntimeError("No vanilla 1.21.1 generated level.dat. Bootstrap the server first.")
-    stats=generate(world,surface_file,satellite_file,road_file)
+    stats=generate(world,surface_file,satellite_file,road_file,add_crystal)
     import nbtlib
     file=nbtlib.load(world/"level.dat")
     data=file["Data"]
@@ -529,6 +553,10 @@ def package_world(root,out,surface_file=None,satellite_file=None,road_file=None)
       "ROAD WIDTHS: OSM tagged real widths where present, otherwise\n"
       "provisional lane-count or road-class estimate, NOT surveyed edge.\n"
       "Bridge/tunnel/overpass roads are deferred, NOT grounded at river.\n"
+      "Crystal: TRUE official OSM geographic footprint (way/661717188),\n"
+      "min_height=250m and total height=276.5m; glass tubular architecture\n"
+      "is a low-confidence schematic, absolute Y anchored to median tower\n"
+      "rooftop, NOT a surveyed measured altitude or accurate glass count.\n"
       "Image source ID: "+str(stats.get("sentinel_source_stac_item","none"))+"\n"
       "Contains modified Copernicus Sentinel data [2025].\n"
 
@@ -568,6 +596,7 @@ def main():
     cli.add_argument("--osm-surface-mask",type=Path)
     cli.add_argument("--satellite-mask",type=Path)
     cli.add_argument("--osm-road-corridors",type=Path)
+    cli.add_argument("--enable-crystal-schematic",action="store_true")
     args=cli.parse_args()
     root=args.server_root.resolve()
     root.mkdir(parents=True,exist_ok=True)
@@ -575,6 +604,7 @@ def main():
     else:
         if args.zip is None:cli.error("--zip is required for packaging")
         package_world(root,args.zip.resolve(),args.osm_surface_mask,
-                      args.satellite_mask,args.osm_road_corridors)
+                      args.satellite_mask,args.osm_road_corridors,
+                      args.enable_crystal_schematic)
 
 if __name__=="__main__":main()
