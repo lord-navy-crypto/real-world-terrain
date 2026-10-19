@@ -185,6 +185,12 @@ interactive workflow now is:
      allowed materials, source geometry bounds, sorted/nonoverlapping rows,
      <=5 million pilot writes and row-count integrity; does NOT place blocks.
       The current real OSM plan totals 4,033,166 writes.
+   - **Survey nearby terrain (NO writes)**: the server checks up to 64
+     ALREADY LOADED mapped columns close to the player, comparing the actual
+     saved-world surface with DEM plan Y. It neither changes blocks nor
+     loads chunks. At least one valid nearby sample and zero mismatches
+     are needed before Start. Every column is checked again during placement.
+     This local preview does not guarantee unsurveyed columns are valid.
    - **I backed up this NEW world**: deliberate user confirmation. This is
      an acknowledgment, not a technical check that a backup exists.
    - **Start / Pause 256 blocks per tick**: after explicit confirmation,
@@ -192,14 +198,22 @@ interactive workflow now is:
      when that tick has spare time. No Minecraft `/function`, chat or
      console commands are involved. Click again to PAUSE.
      **Closing the GUI or pressing ESC also PAUSES placement immediately**.
-     Progress is retained while this integrated server instance lives;
-     restarting the game is NOT yet a persistent resumable installer.
+     Progress persists in memory only for the running server session.
+     Before the FIRST block write the server atomically creates
+     `realscale-chaotianmen-gis-lock.json` inside this save folder, recording
+     exact plan/source SHA-256 and preventing a repeat run after quitting,
+     crashing or restarting. This is NOT persistent resume. Restore an
+     untouched backed-up world for a new attempt; never delete the marker
+     to force replay.
    - **Close / Pause**: stops further automatic changes immediately and
      requires a newly acknowledged backup before another GUI run.
 5. The native executor *refuses* dedicated/multiplayer sessions, player
    non-Creative mode, every other dimension, and every noise generator
    except `realscale:special_chongqing_sky`. It refuses unloaded chunks
-   and protected collisions; it never downloads data at game startup.
+   and protected collisions. The integrated server also verifies
+   exact terrain height against the ACTUAL WORLD_SURFACE and requires
+   real bare soil/stone beneath any projected air block. It never
+   downloads data at game startup.
    A partially placed plan **cannot be automatically rolled back**:
    restore the external backed-up new world if necessary.
 
