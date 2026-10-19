@@ -46,6 +46,10 @@ public final class RealScaleMod {
                     GeoWondersBiomeSource.CODEC)
         );
         event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "rare_earth_biomes_v1"),
+                    RareEarthBiomeSource.CODEC)
+        );
+        event.register(Registries.BIOME_SOURCE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones"),
                     NaturalEcotoneBiomeSource.CODEC)
         );
@@ -128,6 +132,8 @@ public final class RealScaleMod {
                     new EndAccentFeature(EndAccentFeature.Kind.SHATTERED_GLADES));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_blossom_island"),
                     new SkyIslandFeature());
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "rare_earth_surface"),
+                    new RareEarthSurfaceFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_geology_accents"),
                     new CaveGeologyAccentFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"),
