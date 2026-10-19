@@ -317,6 +317,11 @@ public final class RealScaleChongqingGisClient {
     private static final class GisScreen extends Screen {
         private String message="Load an offline, attributed GIS placement plan.";
         private boolean backupConfirmed=false;
+        private ChongqingGisMiniMap miniMap;
+        private int mapFilter=0;
+        private static final String[] MAP_LAYERS={
+            "All", "Buildings", "Roads", "Rail", "Water"
+        };
 
         GisScreen() {
             super(Component.literal("Special Chongqing | GIS Placement Lab"));
@@ -340,6 +345,15 @@ public final class RealScaleChongqingGisClient {
                     b -> apply()).bounds(cx-125,height/2+36,250,20).build());
             addRenderableWidget(Button.builder(Component.literal("Close / Pause"),
                     b -> onClose()).bounds(cx-125,height/2+61,250,20).build());
+            if (width >= 740 && height >= 320) {
+                addRenderableWidget(Button.builder(
+                        Component.literal("GIS map: "+MAP_LAYERS[mapFilter]),
+                        b -> {
+                            mapFilter=(mapFilter+1)%MAP_LAYERS.length;
+                            b.setMessage(Component.literal(
+                                    "GIS map: "+MAP_LAYERS[mapFilter]));
+                        }).bounds(cx+150,height/2+64,144,20).build());
+            }
         }
 
         private void load() {
@@ -365,6 +379,7 @@ public final class RealScaleChongqingGisClient {
                     }
                     active=new Session(server,plan);
                 }
+                miniMap=ChongqingGisMiniMap.of(plan);
                 if (!active.claimed && ChongqingPlacementLock.alreadyClaimed(
                         server.getWorldPath(LevelResource.ROOT))) {
                     message="This world has an existing GIS placement lock. "
@@ -445,8 +460,43 @@ public final class RealScaleChongqingGisClient {
             graphics.drawCenteredString(font,truncate(info,108),
                     cx,height/2+123,0xCCCCCC);
             graphics.drawCenteredString(font,
-                    "No automatic run, no 3D facade claims, no normal TVA changes.",
+                    "No automatic run, no surveyed 3D facade claims, no TVA changes.",
                     cx,height/2+143,0xFFDD88);
+            drawGisPreview(graphics);
+        }
+        /** 2D orthographic GIS source footprint, never a satellite map. */
+        private void drawGisPreview(GuiGraphics graphics) {
+            if (miniMap==null || width<740 || height<320) return;
+            int left=width/2+150;
+            int top=height/2-105;
+            int size=ChongqingGisMiniMap.SIZE;
+            graphics.fill(left-2,top-2,left+size*2+2,top+size*2+2,
+                    0xCC1A1B20);
+            int mask=switch (mapFilter) {
+                case 1 -> ChongqingGisMiniMap.BUILDINGS;
+                case 2 -> ChongqingGisMiniMap.ROADS;
+                case 3 -> ChongqingGisMiniMap.RAILWAYS;
+                case 4 -> ChongqingGisMiniMap.WATER;
+                default -> 15;
+            };
+            for (int z=0;z<size;z++) {
+                for (int x=0;x<size;x++) {
+                    int bits=miniMap.at(x,z)&mask;
+                    if (bits==0) continue;
+                    int color=(bits&ChongqingGisMiniMap.BUILDINGS)!=0
+                            ? 0xFFDFBCD1
+                            : (bits&ChongqingGisMiniMap.RAILWAYS)!=0
+                            ? 0xFFE8C078
+                            : (bits&ChongqingGisMiniMap.ROADS)!=0
+                            ? 0xFFBDBDBD : 0xFF489ACA;
+                    graphics.fill(left+x*2,top+z*2,
+                            left+x*2+2,top+z*2+2,color);
+                }
+            }
+            graphics.drawCenteredString(font,"N ^  500m source XY",
+                    left+size,top-14,0xDDDDDD);
+            graphics.drawCenteredString(font,"Buildings / Roads / Rail / Water",
+                    left+size,top+size*2+8,0xAAAAAA);
         }
         private static String truncate(String text, int max) {
             return text.length() <= max ? text : text.substring(0,max-3)+"...";
