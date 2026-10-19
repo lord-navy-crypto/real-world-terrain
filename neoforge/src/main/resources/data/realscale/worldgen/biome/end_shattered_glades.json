@@ -6,7 +6,13 @@
     "fog_color": 12629994,
     "water_color": 4159204,
     "water_fog_color": 329011,
-    "sky_color": 13156320
+    "sky_color": 13156320,
+    "particle": {
+      "options": {
+        "type": "minecraft:reverse_portal"
+      },
+      "probability": 0.0015
+    }
   },
   "spawners": {},
   "spawn_costs": {},
