@@ -44,6 +44,8 @@ public final class MarineSpawnHabitats {
         if(!MarineEcologyZonationMath.ocean(biome))return;
         if(!level.getBlockState(pos).is(Blocks.WATER))return;
         int sea=level.getSeaLevel();
+        // WORLD_SURFACE includes the water surface; OCEAN_FLOOR excludes water
+        // but may include vegetation, so this is an approximation.
         int floor=level.getHeight(Heightmap.Types.OCEAN_FLOOR,pos.getX(),pos.getZ());
         int column=Math.max(0,sea-floor);
         int above=Math.max(0,pos.getY()-floor);
@@ -61,6 +63,9 @@ public final class MarineSpawnHabitats {
         long seed=level.getSeed() ^ ((long)Math.floorDiv(pos.getX(),8)*0x9e3779b97f4a7c15L)
                 ^ ((long)Math.floorDiv(pos.getZ(),8)*0x632be59bd9b4e019L)
                 ^ (species*0x94d049bb133111ebL);
+        // Use finer 4-block cells for natural local school variation.
+        seed ^= MarineEcologyZonationMath.mix(((long)Math.floorDiv(pos.getX(),4)<<32)
+                ^ (Math.floorDiv(pos.getZ(),4)&0xffffffffL));
         if(MarineEcologyZonationMath.unit(seed)>chance)
             event.setResult(MobSpawnEvent.PositionCheck.Result.FAIL);
     }
