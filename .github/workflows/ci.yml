@@ -89,6 +89,12 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_compare_client_fps.py' -v
       - name: Verify read-only tall-world Section inventory (not GPU visibility)
         run: python3 -m unittest discover -s qa -p 'test_vertical_section_budget.py' -v
+      - name: Verify Chaotianmen real-GIS conversion and OSM failure safety
+        run: |
+          python3 -m unittest discover -s qa -p 'test_chongqing_osm_to_minecraft.py' -v
+          python3 -m unittest discover -s qa -p 'test_chongqing_osm_fetch.py' -v
+          python3 tools/chongqing_fetch_osm.py --radius 500 --dry-run --output build/chaotianmen-unfetched.json
+
       - name: Verify real Chongqing DEM floating preset, license and geography
         run: |
           python3 -m unittest discover -s qa -p 'test_special_chongqing_worldgen.py' -v
