@@ -30,5 +30,8 @@
   "realscale.atlas.warmup_start": "Warm-up 128",
   "realscale.atlas.warmup_starting": "Starting a 128-block warm-up pass...",
   "realscale.atlas.warmup_busy": "A warm-up or pre-generation task is already active",
-  "realscale.atlas.busy_shared_io": "Finish or cancel the current task before starting another Atlas task"
+  "realscale.atlas.busy_shared_io": "Finish or cancel the current task before starting another Atlas task",
+  "biome.realscale.end_chorus_gardens": "Chorus Gardens",
+  "biome.realscale.end_crystal_barrens": "Crystal Barrens",
+  "biome.realscale.end_shattered_glades": "Shattered Glades"
 }
