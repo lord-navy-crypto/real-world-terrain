@@ -13,6 +13,7 @@ import tempfile
 import zipfile
 
 from terrain_lab import apply
+from unified_world_settings import create_preset, PRESET_DIR
 
 SOURCE_PREFIXES = (
     "data/realscale/worldgen/",
@@ -92,6 +93,18 @@ def _draft_options(path: Path) -> dict:
     )
 
 
+def _unified_choices(path: Path) -> tuple[str, bool]:
+    """Legacy drafts default to Terrain Lab with invasions disabled."""
+    draft = json.loads(path.read_text(encoding="utf-8"))
+    source = draft.get("worldSource", "terrain_lab")
+    invasion = draft.get("dimensionalInvasion", False)
+    if source not in ("terrain_lab", "sacred", "measured") or type(source) is not str:
+        raise ValueError("worldSource must be terrain_lab, sacred or measured")
+    if type(invasion) is not bool:
+        raise ValueError("dimensionalInvasion must be true or false")
+    return source, invasion
+
+
 def _pack_meta(format_number: int, description: str) -> bytes:
     return (json.dumps({"pack": {"pack_format": format_number,
                                  "description": description}},
@@ -110,15 +123,47 @@ def export(jar: Path, draft: Path, output: Path,
     with tempfile.TemporaryDirectory(prefix="realscale_export_") as temporary:
         root = Path(temporary)
         _copy_jar_resources(jar, root)
-        name, saved_options, files = apply(root, **options)
+        source, invasion = _unified_choices(draft)
+        labels = None
+        if source == "terrain_lab":
+            # Preserve byte-identical legacy exports when invasion is off.
+            name, saved_options, files = apply(root, **options)
+            generated = sorted((Path(item) for item in files
+                                if str(item).startswith("data/realscale/worldgen/")
+                                or str(item).startswith("data/realscale/lithostitched/fast_noise_config/")),
+                               key=str)
+            if invasion:
+                original_name = name
+                name, preset, labels = create_preset(root, source, True, lab_name=name)
+                # Do not export two selectable world IDs for the same draft.
+                generated = [p for p in generated
+                             if p != PRESET_DIR / (original_name + ".json")]
+                new_preset = PRESET_DIR / (name + ".json")
+                (root / new_preset).write_text(
+                    json.dumps(preset, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8")
+                generated.append(new_preset)
+        else:
+            # Sacred and Measured reuse their original immutable noise settings.
+            # No terrain retuning or DEM conversion is performed.
+            name, preset, labels = create_preset(root, source, invasion)
+            new_preset = PRESET_DIR / (name + ".json")
+            (root / new_preset).write_text(
+                json.dumps(preset, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8")
+            generated = [new_preset]
         profile_id = "realscale:" + name
-        generated = sorted((Path(item) for item in files
-                            if str(item).startswith("data/realscale/worldgen/")
-                            or str(item).startswith("data/realscale/lithostitched/fast_noise_config/")),
-                           key=str)
+        if labels is not None:
+            for language, label in labels.items():
+                lang_path = root / "assets/minecraft/lang" / (language + ".json")
+                data = json.loads(lang_path.read_text(encoding="utf-8"))
+                data["generator.realscale." + name] = label
+                lang_path.write_text(
+                    json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8")
         if not generated or not any(str(p).endswith("/world_preset/" + name + ".json")
                                      for p in generated):
-            raise ValueError("Profile generator did not produce a world preset")
+            raise ValueError("Unified generator did not produce a world preset")
         output.parent.mkdir(parents=True, exist_ok=True)
         # ZipFile(mode='x') refuses to silently replace a user's existing pack.
         with zipfile.ZipFile(output, "x", zipfile.ZIP_DEFLATED) as archive:
@@ -151,7 +196,7 @@ def export(jar: Path, draft: Path, output: Path,
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
-        description="Convert RealScale YACL config into a custom NEW-WORLD datapack, without Gradle.")
+        description="Convert RealScale YACL unified settings into a custom NEW-WORLD datapack, without Gradle.")
     parser.add_argument("--jar", type=Path, required=True,
                         help="Installed RealScale Terrain 1.21.1 NeoForge mod JAR")
     parser.add_argument("--draft", type=Path, required=True,
