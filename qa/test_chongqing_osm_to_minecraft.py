@@ -43,6 +43,21 @@ class ChongqingGISTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"coverage"):
             dem.height(5000,0)
 
+    def test_first_air_y_respects_integer_dem_density_boundary(self):
+        # The special Chongqing density node is >0 only if blockY <
+        # DEM metres + 96. At exact integer metres, ground does NOT
+        # extend through that integer Y itself.
+        dem=self.dem
+        for x,z in ((0,0),(-64,64),(64,-64),(-4096,-4096)):
+            actual_height=dem.height(x,z)
+            self.assertEqual(actual_height,int(actual_height))
+            self.assertEqual(dem.block_y(x,z),int(actual_height)+96)
+        x,z=17,23
+        self.assertEqual(dem.block_y(x,z),
+                         math.ceil(dem.height(x,z)+gis.VERTICAL_OFFSET))
+        self.assertLessEqual(dem.block_y(x,z) -
+                             (dem.height(x,z)+gis.VERTICAL_OFFSET),1)
+
     def test_polygon_with_real_geometry_holes_and_exact_no_footprint_guess(self):
         dem=self.dem
         outer=[ll(dem,x,z) for x,z in
