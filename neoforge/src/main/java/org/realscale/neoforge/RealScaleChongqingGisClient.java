@@ -45,6 +45,9 @@ import java.util.UUID;
  */
 @Mod(value = "realscale", dist = Dist.CLIENT)
 public final class RealScaleChongqingGisClient {
+    // The in-game G-key UI is the PRIMARY player interaction path.
+    // No external conversion scripts, downloads or chat commands required
+    // for the included authentic 500m pilot geometry.
     private static final KeyMapping OPEN = new KeyMapping(
             "key.realscale.chongqing_gis", InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_G, "key.categories.realscale");
@@ -341,8 +344,14 @@ public final class RealScaleChongqingGisClient {
 
         private void load() {
             try {
-                Files.createDirectories(ChongqingGisPlan.INPUT.getParent());
-                ChongqingGisPlan plan=ChongqingGisPlan.read(ChongqingGisPlan.INPUT);
+                // A matching authentic GIS plan ships INSIDE the JAR.
+                // A locally supplied, explicit override is supported for
+                // later surveyed sources; never silently fall back when
+                // such a file is invalid.
+                boolean custom=Files.exists(ChongqingGisPlan.INPUT);
+                ChongqingGisPlan plan=custom
+                        ? ChongqingGisPlan.read(ChongqingGisPlan.INPUT)
+                        : ChongqingGisPlan.readBundled();
                 MinecraftServer server=Minecraft.getInstance().getSingleplayerServer();
                 if (server == null) {
                     message="Only integrated singleplayer worlds are supported.";
@@ -362,9 +371,10 @@ public final class RealScaleChongqingGisClient {
                             +"Restore the PRE-CONSTRUCTION backup to restart.";
                     return;
                 }
-                message="Source "+plan.sourceHash.substring(0,12)
-                        +"...; "+plan.rows.size()+" rows; "+plan.blockWrites+" writes."
-                        +" Validate real surface Y before placement.";
+                message=(custom ? "Local GIS" : "BUILT-IN authentic OSM")
+                        +" source "+plan.sourceHash.substring(0,12)
+                        +"...; "+plan.rows.size()+" rows; "+plan.blockWrites
+                        +" writes. Survey nearby surface before construction.";
             } catch (IOException | RuntimeException ex) {
                 message="Plan rejected: "+ex.getMessage();
             }
@@ -427,7 +437,7 @@ public final class RealScaleChongqingGisClient {
                     "ONLY: singleplayer CREATIVE Special Chongqing world",
                     cx,height/2-79,0xFFAA88);
             graphics.drawCenteredString(font,
-                    "File: config/realscale/chaotianmen-gis-plan.json",
+                    "Built-in 2026-10-19 OSM V2 | optional local GIS JSON override",
                     cx,height/2-61,0xDDDDDD);
             String info = active != null ? active.status : "No plan loaded.";
             graphics.drawCenteredString(font,truncate(message,100),
