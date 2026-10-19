@@ -1,0 +1,86 @@
+name: Atlas real NeoForge Chunky save-reopen E2E
+on:
+  pull_request:
+    paths:
+      - 'neoforge/src/test/java/org/realscale/neoforge/WorldAtlasRealChunkySmoke.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/WorldAtlasOfflinePregenerator.java'
+      - '.github/workflows/atlas-real-neoforge-chunky-e2e.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-chunky:
+    runs-on: ubuntu-latest
+    timeout-minutes: 38
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Build the exact RealScale jar
+        working-directory: neoforge
+        run: gradle --no-daemon build -x test
+      - name: Install genuine NeoForge 21.1.249 and Chunky NeoForge 1.4.23
+        run: |
+          set -euo pipefail
+          mkdir -p .atlas-real/game/{mods,saves,realscale-atlas-server/mods}
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          jars=[p for p in Path('neoforge/build/libs').glob('*.jar') if not any(x in p.name for x in ('sources','javadoc','-dev'))]
+          assert len(jars)==1,jars
+          for folder in ('mods','realscale-atlas-server/mods'):
+              shutil.copy2(jars[0],Path('.atlas-real/game')/folder/jars[0].name)
+          PY
+          curl -fLsS --retry 3 https://maven.neoforged.net/releases/net/neoforged/neoforge/21.1.249/neoforge-21.1.249-installer.jar -o .atlas-real/installer.jar
+          (cd .atlas-real/game/realscale-atlas-server && java -jar "$GITHUB_WORKSPACE/.atlas-real/installer.jar" --installServer > "$GITHUB_WORKSPACE/.atlas-real/installer.log" 2>&1)
+          python3 - <<'PY'
+          import hashlib,json,urllib.request
+          from pathlib import Path
+          url='https://api.modrinth.com/v2/version/LuFhm4eU'
+          req=urllib.request.Request(url,headers={'User-Agent':'RealScaleAtlasCI/1.0'})
+          with urllib.request.urlopen(req,timeout=40) as r: version=json.load(r)
+          assert 'neoforge' in version['loaders'] and '1.21.1' in version['game_versions']
+          file=next((x for x in version['files'] if x.get('primary')),version['files'][0])
+          assert file['url'].startswith('https://cdn.modrinth.com/')
+          with urllib.request.urlopen(file['url'],timeout=120) as r: data=r.read()
+          assert hashlib.sha512(data).hexdigest()==file['hashes']['sha512']
+          Path('.atlas-real/game/realscale-atlas-server/mods/chunky-1.4.23-neoforge.jar').write_bytes(data)
+          PY
+          cat > .atlas-real/game/realscale-atlas-server/server.properties <<'PROPS'
+          level-name=atlas-ci
+          level-type=minecraft:normal
+          level-seed=2
+          server-ip=127.0.0.1
+          server-port=0
+          enable-rcon=false
+          online-mode=false
+          view-distance=3
+          simulation-distance=3
+          max-tick-time=-1
+          PROPS
+          echo 'eula=true' > .atlas-real/game/realscale-atlas-server/eula.txt
+          echo '-Xmx4G' > .atlas-real/game/realscale-atlas-server/user_jvm_args.txt
+          test -f .atlas-real/game/realscale-atlas-server/run.sh
+      - name: Actually warm up, pause, resume, save, unlock and reopen world
+        run: |
+          set -euo pipefail
+          mkdir -p .atlas-real/classes
+          javac -d .atlas-real/classes neoforge/src/main/java/org/realscale/neoforge/WorldAtlasOfflinePregenerator.java neoforge/src/test/java/org/realscale/neoforge/WorldAtlasRealChunkySmoke.java
+          java -cp .atlas-real/classes org.realscale.neoforge.WorldAtlasRealChunkySmoke "$GITHUB_WORKSPACE/.atlas-real/game" 2>&1 | tee .atlas-real/atlas-test.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-real-chunky-evidence
+          include-hidden-files: true
+          if-no-files-found: warn
+          path: |
+            .atlas-real/installer.log
+            .atlas-real/atlas-test.log
+            .atlas-real/game/realscale-atlas-server/logs/latest.log
+            .atlas-real/game/saves/atlas-ci/level.dat
+            .atlas-real/game/saves/atlas-ci/region/*.mca

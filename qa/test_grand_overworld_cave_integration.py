@@ -33,10 +33,16 @@ class OverworldCaveContracts(unittest.TestCase):
                     self.assertEqual(noise["noise_router"]["depth"],
                                      f"realscale:{preset}/terrain_density")
                 else:
-                    self.assertEqual(node["base"]["type"],"minecraft:range_choice")
-                    self.assertEqual(node["base"]["input"],
+                    # The original range_choice(min(T, caves), T) is fused
+                    # to compute identical T once, preserving both cave
+                    # and DEM inputs and the exact inclusive/exclusive gate.
+                    self.assertEqual(node["base"]["type"],"realscale:range_min_exact")
+                    self.assertEqual(node["base"]["base"],
                                      "realscale:usgs_big_sur_v2/terrain_density")
-                    self.assertEqual(node["base"]["when_in_range"]["type"],"minecraft:min")
+                    self.assertEqual(node["base"]["cave"],
+                                     "realscale:usgs_big_sur_v2/cave_density")
+                    self.assertEqual(node["base"]["min_inclusive"],0.25)
+                    self.assertEqual(node["base"]["max_exclusive"],4)
 
     def test_old_legacy_worldgen_remains_unmodified(self):
         for name in ("realism_max","himalayan","grand_canyon",
@@ -54,7 +60,13 @@ class OverworldCaveContracts(unittest.TestCase):
         self.assertIn("if(original<=0.24)",codec)
         self.assertIn("entranceStrength(",codec)
         self.assertIn("if(y<110 || y>MAX_Y)return 0",layout)
-        self.assertIn("Math.floorMod(key,9L)!=0",layout)
+        # Entrance geometry is now cached per worldgen worker to avoid
+        # recomputing the SAME 768-cell key over 2096 vertical samples.
+        # Check the preserved 1-in-9 selection mathematically, regardless
+        # of whether the cache writes it as != 0 or == 0.
+        self.assertIn("active=Math.floorMod(key,9L)==0",layout)
+        self.assertIn("if(!e.active)return 0",layout)
+        self.assertIn("ThreadLocal<EntranceSite>",layout)
         self.assertIn("MIN_Y = -40",layout)
         self.assertIn("MAX_Y = 1920",layout)
         self.assertIn("CELL = 768",layout)

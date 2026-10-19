@@ -20,27 +20,43 @@ final class RealDemSeamlessMath {
      * no synchronization on multi-threaded worldgen, no seed dependence.
      * Hash collisions can only lower hit rate, not alter a computed value.
      */
-    private static final int CACHE_SIZE = 256;
+    // Jigsaw height probes touch many columns while repeatedly revisiting
+    // existing ones. Keep a bounded 4096-slot working set (up from 256)
+    // plus a zero-hash last-column fast path. Cache miss always evaluates
+    // the EXACT original bicubic function, preserving DEM heights bitwise.
+    private static final int CACHE_SIZE = 4096;
     private static final class HeightCache {
         final int[] xs = new int[CACHE_SIZE];
         final int[] zs = new int[CACHE_SIZE];
         final double[] values = new double[CACHE_SIZE];
         final boolean[] valid = new boolean[CACHE_SIZE];
+        boolean lastValid;
+        int lastX, lastZ;
+        double lastValue;
     }
     private static final ThreadLocal<HeightCache> HEIGHT_CACHE =
         ThreadLocal.withInitial(HeightCache::new);
 
     static double cachedExtendedHeight(int x, int z) {
         HeightCache cache = HEIGHT_CACHE.get();
-        int slot = (x*0x9e3779b9 ^ Integer.rotateLeft(z*0x85ebca6b,13))
-                   & (CACHE_SIZE-1);
-        if (cache.valid[slot] && cache.xs[slot]==x && cache.zs[slot]==z)
-            return cache.values[slot];
-        double height=extendedHeight(x,z);
-        cache.valid[slot]=true;
-        cache.xs[slot]=x;
-        cache.zs[slot]=z;
-        cache.values[slot]=height;
+        if (cache.lastValid && cache.lastX==x && cache.lastZ==z)
+            return cache.lastValue;
+        int hash=x*0x9e3779b9 ^ Integer.rotateLeft(z*0x85ebca6b,13);
+        int slot=(hash^(hash>>>16))&(CACHE_SIZE-1);
+        final double height;
+        if (cache.valid[slot] && cache.xs[slot]==x && cache.zs[slot]==z) {
+            height=cache.values[slot];
+        } else {
+            height=extendedHeight(x,z);
+            cache.valid[slot]=true;
+            cache.xs[slot]=x;
+            cache.zs[slot]=z;
+            cache.values[slot]=height;
+        }
+        cache.lastValid=true;
+        cache.lastX=x;
+        cache.lastZ=z;
+        cache.lastValue=height;
         return height;
     }
 
@@ -77,8 +93,14 @@ final class RealDemSeamlessMath {
         final int minZ = DEM.originZ(), maxZ = DEM.maxZ();
         if (x >= minX && x <= maxX && z >= minZ && z <= maxZ)
             return 1.0;
-        if (x <= minX - fadeMeters || x >= maxX + fadeMeters
-                || z <= minZ - fadeMeters || z >= maxZ + fadeMeters)
+        // Use 64-bit bounds: Java int addition can overflow in very distant
+        // exploration, incorrectly turning an out-of-DEM world column into
+        // a transition-ring candidate (or vice versa). This is an exact,
+        // allocation-free far-field reject with unchanged in-range results.
+        if ((long)x <= (long)minX - fadeMeters
+                || (long)x >= (long)maxX + fadeMeters
+                || (long)z <= (long)minZ - fadeMeters
+                || (long)z >= (long)maxZ + fadeMeters)
             return 0.0;
 
         final long coordinate = ((long) x << 32) | (z & 0xffffffffL);

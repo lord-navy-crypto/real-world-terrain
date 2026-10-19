@@ -84,10 +84,17 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
         // Validate each column independently. One obstructed edge column must
         // not cancel the entire chunk (or leave the island center hollow).
         boolean placed=false;
-        for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
+        // Iterate only the 16x16 columns owned by this chunk. The previous
+        // (-r..r)^2 scan discarded out-of-chunk positions AFTER calculating
+        // their distance. This produces identical candidate coordinates,
+        // iteration order, block choices and random calls.
+        int minDx=Math.max(-r,chunkX*16-site.x());
+        int maxDx=Math.min(r,chunkX*16+15-site.x());
+        int minDz=Math.max(-r,chunkZ*16-site.z());
+        int maxDz=Math.min(r,chunkZ*16+15-site.z());
+        for (int dx=minDx; dx<=maxDx; dx++) for (int dz=minDz; dz<=maxDz; dz++) {
             double ratio = (double)(dx * dx + dz * dz) / (r * r);
-            if (ratio > 1.0 || Math.floorDiv(site.x()+dx,16)!=chunkX
-                    || Math.floorDiv(site.z()+dz,16)!=chunkZ) continue;
+            if (ratio > 1.0) continue;
             int top = surface(site, dx, dz, ratio);
             int thickness = thickness(ratio);
             int x = site.x() + dx, z = site.z() + dz;

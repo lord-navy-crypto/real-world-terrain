@@ -9,6 +9,30 @@ public final class MountainReliefMathSmoke {
     private static void close(double a,double b,String reason) {
         yes(Math.abs(a-b)<1e-9,reason+" ("+a+" vs "+b+")");
     }
+    /** Frozen pre-optimization arithmetic; parity must be raw-bit exact. */
+    private static double originalRelief(double original,double anchorHeight,
+            double continent,int kind,double radiusFraction,double basinDepth,
+            double plateauRise) {
+        double gate=MountainReliefMath.inlandUplandGate(continent,original);
+        if(gate<=0.0||radiusFraction>=1.10||kind==MountainReliefMath.NONE)
+            return original;
+        if(kind==MountainReliefMath.BASIN) {
+            double depression=basinDepth*MountainReliefMath.basinCore(radiusFraction);
+            double rim=basinDepth*0.15*MountainReliefMath.raisedRim(radiusFraction);
+            return original+gate*(rim-depression);
+        }
+        if(kind==MountainReliefMath.MESA) {
+            double target=Math.max(anchorHeight,1.4)+plateauRise*0.65;
+            double fit=1.0-GeoMath.smoothstep(1.4,3.0,Math.abs(original-target));
+            return original+gate*fit*MountainReliefMath.mesaCrest(radiusFraction)
+                    *(target-original);
+        }
+        double target=Math.max(anchorHeight,0.9)+plateauRise;
+        double heightFit=1.0-GeoMath.smoothstep(1.0,2.4,Math.abs(original-target));
+        return original+gate*heightFit*MountainReliefMath.plateauCrest(radiusFraction)
+                *(target-original);
+    }
+
     public static void main(String[] ignored) {
         // Lowlands: in any continental setting this path must be identical
         // to the pre-optimization mountain function.
@@ -126,6 +150,34 @@ public final class MountainReliefMathSmoke {
         yes(Math.abs(MountainReliefMath.relief(12.0,3.0,0.7,
                 MountainReliefMath.PLATEAU,0.05,1.1,0.65)-12.0)<1e-9,
                 "Never level a very tall summit all the way down to a low plateau");
+
+        // Verify that passing the precomputed gate saves a repeated pair
+        // of smoothsteps WITHOUT changing a single bit of generated relief.
+        long gateParity=0;
+        for (int kind : new int[]{MountainReliefMath.NONE,
+                                  MountainReliefMath.BASIN,
+                                  MountainReliefMath.PLATEAU,
+                                  MountainReliefMath.MESA}) {
+            for (double base : new double[]{-3.0,0.0,0.65,0.66,1.0,2.2,3.4,8.0}) {
+                for (double continent : new double[]{-1.0,-0.1,0.0,0.22,0.5,1.0}) {
+                    for (double radius : new double[]{0.0,0.25,0.62,0.78,
+                                                      0.91,1.0,1.1,1.11}) {
+                        double gate=MountainReliefMath.inlandUplandGate(continent,base);
+                        double baseline=originalRelief(base,3.25,continent,kind,
+                                radius,1.18,0.86);
+                        double optimized=MountainReliefMath.reliefWithGate(
+                                base,3.25,continent,kind,radius,1.18,0.86,gate);
+                        yes(Double.doubleToRawLongBits(baseline)==
+                                Double.doubleToRawLongBits(optimized),
+                                "Mountain precomputed gate changed terrain for kind="
+                                +kind+" base="+base+" continent="+continent
+                                +" radius="+radius);
+                        gateParity++;
+                    }
+                }
+            }
+        }
+        yes(gateParity>=1500,"Mountain parity insufficient");
 
         // Old valleys and cave calculation are retained by separate
         // worldgen graphs. This kernel is strictly local height relief.

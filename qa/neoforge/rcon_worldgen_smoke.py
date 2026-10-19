@@ -89,15 +89,31 @@ def await_full_chunk(rcon,x,z,timeout_seconds=240):
     command=(f"execute in minecraft:overworld if loaded {x} 128 {z} "
              "run seed")
     attempts=0
-    while time.monotonic()<deadline:
-        attempts+=1
-        reply=rcon.send(command)
-        if "Seed:" in reply:
-            print("QA_CHUNK_GENERATED:",x,z,"attempts",attempts,flush=True)
-            return
-        time.sleep(3)
+    # The deadline must also cap each SOCKET receive. Otherwise the first
+    # check after a 170s forceload ACK may wait an ADDITIONAL 180 seconds,
+    # silently defeating the strict overall 180-second distant-world gate.
+    sock=getattr(rcon,"sock",None)
+    previous_timeout=sock.gettimeout() if sock is not None else None
+    try:
+        while True:
+            remaining=deadline-time.monotonic()
+            if remaining<=0:
+                break
+            if sock is not None:
+                sock.settimeout(min(previous_timeout,remaining)
+                    if previous_timeout is not None else remaining)
+            attempts+=1
+            reply=rcon.send(command)
+            if "Seed:" in reply:
+                print("QA_CHUNK_GENERATED:",x,z,"attempts",attempts,
+                      flush=True)
+                return
+            time.sleep(min(3.0,max(0.0,deadline-time.monotonic())))
+    finally:
+        if sock is not None:
+            sock.settimeout(previous_timeout)
     raise TimeoutError(
-        f"Chunk at {x},{z} not fully loaded within {timeout_seconds}s "
+        f"Chunk at {x},{z} not fully loaded within {timeout_seconds:.1f}s "
         "despite forceload ACK; inspect RCON and Minecraft server logs")
 
 
@@ -238,6 +254,24 @@ def main(root,expected_preset,profile):
                     await_full_chunk(rcon,x,z)
                     rcon.send("save-all flush")
                     rcon.send(f"execute in minecraft:overworld run forceload remove {x} {z}")
+            elif profile=="distant":
+                # A successful /forceload response means "ticket added",
+                # NOT "2096-high target chunk is finished." This false green
+                # was masking incomplete remote worldgen for some seeds.
+                # Keep ONE overall 180s budget covering both the command
+                # and the loaded-block acknowledgement: no timeout raising.
+                budget_start=time.monotonic()
+                for command in commands:
+                    rcon.send(command)
+                    remaining=180.0-(time.monotonic()-budget_start)
+                    if remaining<=0:
+                        raise TimeoutError(
+                            "Distant 180s budget exhausted after forceload ACK"
+                            " but before fully-loaded chunk verification")
+                    await_full_chunk(rcon,1024,1024,
+                                     timeout_seconds=remaining)
+                print("QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS: PASS",
+                      flush=True)
             else:
                 for command in commands:
                     rcon.send(command)
@@ -267,12 +301,56 @@ def main(root,expected_preset,profile):
                         continue
                     pid=entry.split()[0]
                     if not pid.isdigit():continue
-                    threads=subprocess.run(
-                        ["jcmd",pid,"Thread.print"],capture_output=True,
-                        text=True,timeout=12)
-                    diagnostic=root/"build"/("rcon_"+profile+"_thread_dump.txt")
-                    diagnostic.write_text(threads.stdout+threads.stderr)
-                    print("RCON_TIMEOUT_THREAD_DUMP:",diagnostic,flush=True)
+                    # A single end-of-timeout dump is ambiguous: a worker
+                    # can be RUNNABLE inside a height probe, or WAITING on
+                    # another chunk's future. Compare three short snapshots
+                    # and print a bounded summary directly to Actions logs.
+                    # Preserve all raw JVM frames as artifacts for review.
+                    snapshots=[]
+                    dump_paths=[]
+                    for sample in range(3):
+                        threads=subprocess.run(
+                            ["jcmd",pid,"Thread.print"],capture_output=True,
+                            text=True,timeout=12)
+                        if threads.returncode!=0:
+                            print("RCON_JCMD_FAILED:",threads.stderr[-500:],
+                                  flush=True)
+                            break
+                        dump_path=root/"build"/(
+                            "rcon_"+profile+"_thread_dump_"+str(sample)+".txt")
+                        dump_path.write_text(threads.stdout+threads.stderr,
+                                             encoding="utf-8")
+                        dump_paths.append(dump_path)
+                        snapshots.append(threads.stdout)
+                        print("RCON_TIMEOUT_THREAD_DUMP:",dump_path,flush=True)
+                        if sample<2:
+                            time.sleep(1)
+                    if snapshots:
+                        from diagnose_worldgen_threads import diagnose_dumps
+                        report=diagnose_dumps(snapshots)
+                        report_path=root/"build"/(
+                            "rcon_"+profile+"_stall_fingerprint.json")
+                        report_path.write_text(json.dumps(report,indent=2),
+                                               encoding="utf-8")
+                        print("RCON_STALL_FINGERPRINT:",
+                              json.dumps({
+                                "samples":report["samples"],
+                                "thread_states":report["thread_states"],
+                                "marker_observations":report["marker_observations"],
+                                "top_leaf_frames":report["top_leaf_frames"],
+                                "hypotheses_not_proven_causes":
+                                    report["hypotheses_not_proven_causes"]
+                              },sort_keys=True),flush=True)
+                        for thread in report["sampled_threads"][:8]:
+                            print("RCON_STALL_THREAD:",json.dumps({
+                                "sample":thread["sample"],
+                                "name":thread["thread"],
+                                "state":thread["state"],
+                                "markers":thread["markers"],
+                                "frames":thread["frames"][:7]
+                            }),flush=True)
+                        print("RCON_STALL_FINGERPRINT_FILE:",report_path,
+                              flush=True)
             except (OSError,subprocess.TimeoutExpired) as dump_error:
                 print("RCON_TIMEOUT_DIAGNOSTIC_UNAVAILABLE:",repr(dump_error),flush=True)
     finally:

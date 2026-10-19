@@ -53,6 +53,50 @@ public final class RealDemSeamlessMathSmoke {
                 }
             }
         }
+        // Far-away exploration never pulls the small USGS pilot tile into
+        // distant procedural regions. These signed and near-world-border
+        // samples also protect overflow-safe arithmetic in the fade cache.
+        for (int fade : new int[]{256,768,2048,4096}) {
+            for (int x : new int[]{-30_000_000,-1_048_576,-65_536,-8192,
+                                    8192,65_536,1_048_576,30_000_000,
+                                    Integer.MIN_VALUE,Integer.MAX_VALUE}) {
+                for (int z : new int[]{-30_000_000,-8192,0,8192,
+                                        30_000_000,Integer.MAX_VALUE}) {
+                    long original=Double.doubleToRawLongBits(
+                            RealDemSeamlessMath.weightOutside(x,z,fade));
+                    long optimized=Double.doubleToRawLongBits(
+                            RealDemSeamlessMath.cachedWeightOutside(x,z,fade));
+                    require(original==optimized,
+                            "Far-distance USGS fade regression at "+x+","+z);
+                    require(original==Double.doubleToRawLongBits(0.0),
+                            "Distant procedural chunk mistakenly influenced by DEM");
+                }
+            }
+        }
+        // Revisit 256 far-separated DEM/fade columns while sweeping more
+        // than 4096 other columns through the bounded cache. Neither
+        // collisions nor evictions may change measured height raw bits.
+        final int nProbe=256;
+        int[] px=new int[nProbe],pz=new int[nProbe];
+        long[] originalBits=new long[nProbe];
+        for(int k=0;k<nProbe;k++) {
+            px[k]=((k*149)%4200)-2100;
+            pz[k]=((k*257)%4300)-2150;
+            originalBits[k]=Double.doubleToRawLongBits(
+                    RealDemSeamlessMath.extendedHeight(px[k],pz[k]));
+        }
+        for(int pass=0;pass<4;pass++) {
+            for(int k=0;k<8192;k++) {
+                int x=((k*79+pass*31)%4800)-2400;
+                int z=((k*173+pass*43)%4800)-2400;
+                RealDemSeamlessMath.cachedExtendedHeight(x,z);
+            }
+            for(int k=nProbe-1;k>=0;k--)
+                require(Double.doubleToRawLongBits(
+                        RealDemSeamlessMath.cachedExtendedHeight(px[k],pz[k]))
+                        ==originalBits[k],
+                        "DEM cache churn changed height at "+px[k]+","+pz[k]);
+        }
         System.out.println("TVA_USGS_V2_SMOKE_PASS: 256 measured elevations, four 2048m fade sides, cache fidelity");
     }
 }
