@@ -33,5 +33,13 @@
   "realscale.atlas.busy_shared_io": "请先完成或取消当前任务，再启动其他地图任务",
   "biome.realscale.end_chorus_gardens": "紫颂花园",
   "biome.realscale.end_crystal_barrens": "晶体荒原",
-  "biome.realscale.end_shattered_glades": "破碎幽林"
+  "biome.realscale.end_shattered_glades": "破碎幽林",
+  "biome.realscale.tropical_dry_woodland": "热带干旱疏林",
+  "biome.realscale.cool_temperate_rainforest": "凉温带雨林",
+  "biome.realscale.alpine_sedge_fen": "高山莎草沼泽",
+  "biome.realscale.polar_fellfield": "极地岩砾荒原",
+  "biome.realscale.arid_riparian_woodland": "干旱河岸林",
+  "biome.realscale.windy_coastal_headland": "海风岬角草甸",
+  "generator.realscale.tva_sacred_biodiversity_end3_spawn3_v2": "RealScale 神圣时间线 · 六种新群系 + 天空岛 + 末地群系入侵出生（实验）",
+  "generator.realscale.tva_measured_biodiversity_end3_spawn3_v2": "RealScale 实测地形 / USGS · 六种新群系 + 天空岛 + 末地群系入侵出生（实验）"
 }

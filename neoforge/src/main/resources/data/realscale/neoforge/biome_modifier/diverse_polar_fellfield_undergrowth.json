@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:polar_fellfield"
+  ],
+  "features": "realscale:ecotone_highlands_undergrowth",
+  "step": "vegetal_decoration"
+}

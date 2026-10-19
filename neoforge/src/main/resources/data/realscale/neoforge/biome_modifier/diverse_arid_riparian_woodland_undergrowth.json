@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:arid_riparian_woodland"
+  ],
+  "features": "realscale:ecotone_wetland_undergrowth",
+  "step": "vegetal_decoration"
+}

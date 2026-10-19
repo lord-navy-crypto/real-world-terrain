@@ -23,10 +23,15 @@ expected=["realscale:"+k for k in FAMILIES]
 # as a separately selected fifth world, never by mutating a canonical preset.
 opt_in="realscale:tva_wonders_invasion_three_realms"
 menu=expected+[opt_in]
+# Preserve exact first five original choices, and append two NEW opt-in
+# biodiversity profiles to the normal menu only. Extended remains unchanged.
+diverse=["realscale:tva_sacred_biodiversity_end3_spawn3_v2",
+         "realscale:tva_measured_biodiversity_end3_spawn3_v2"]
 for name in ("normal","extended"):
     tag=read(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset"/(name+".json"))
-    assert tag["replace"] is False and tag["values"]==menu,(name,tag)
-    assert len(tag["values"])==len(set(tag["values"]))==5
+    selected=menu+(diverse if name=="normal" else [])
+    assert tag["replace"] is False and tag["values"]==selected,(name,tag)
+    assert len(tag["values"])==len(set(tag["values"]))==len(selected)
 for name,settings in FAMILIES.items():
     world=read(D/"worldgen/world_preset"/(name+".json"))
     assert world["dimensions"]["minecraft:overworld"]["generator"]["settings"]==settings,name
@@ -52,7 +57,11 @@ assert len(catalog)==60
 all_biomes={p.stem for p in (D/"worldgen/biome").glob("*.json")}
 new_end={"end_chorus_gardens","end_crystal_barrens","end_shattered_glades"}
 assert new_end <= all_biomes
-assert len(all_biomes-new_end)==67
+v2={"tropical_dry_woodland","cool_temperate_rainforest",
+    "alpine_sedge_fen","polar_fellfield",
+    "arid_riparian_woodland","windy_coastal_headland"}
+assert v2 <= all_biomes
+assert len(all_biomes-new_end-v2)==67
 for e in catalog:
     assert (D/"worldgen/biome"/(e["id"]+".json")).exists(),e["id"]
 guard=R/"neoforge/src/main/java/org/realscale/neoforge/TVAWorldGuard.java"
@@ -75,4 +84,4 @@ for p in (D/"neoforge/biome_modifier").glob("*.json"):
     if m.get("type")!="neoforge:add_features":continue
     features=m["features"] if isinstance(m["features"],list) else [m["features"]]
     assert "realscale:ocean_sediment_stones" not in features,p
-print("TVA_STATIC_PASS: FOUR unchanged canonical families + one opt-in woven world, legacy-safe IDs, 60 ecotones, APES, Grand Nether/End and skylands")
+print("TVA_STATIC_PASS: FOUR canonical families + one opt-in woven world, two additive v2 profiles, 60 historical ecotones + six new, APES, Grand Nether/End and skylands")

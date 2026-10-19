@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:tropical_dry_woodland"
+  ],
+  "features": "realscale:ecotone_arid_undergrowth",
+  "step": "vegetal_decoration"
+}

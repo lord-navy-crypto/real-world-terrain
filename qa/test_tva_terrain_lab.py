@@ -24,6 +24,10 @@ CORE=("realscale:tva_sacred_timeline_three_realms",
       "realscale:tva_canyon_three_realms",
       "realscale:tva_measured_three_realms")
 MENU=CORE+("realscale:tva_wonders_invasion_three_realms",)
+DIVERSE_MENU=MENU+(
+ "realscale:tva_sacred_biodiversity_end3_spawn3_v2",
+ "realscale:tva_measured_biodiversity_end3_spawn3_v2",
+)
 
 def read(path):
     return json.loads(path.read_text(encoding="utf-8"))
@@ -41,7 +45,7 @@ class TVARecoveredTerrainLab(unittest.TestCase):
     def test_four_original_menu_items_and_additive_opt_in(self):
         for key in ("normal","extended"):
             j=read(self.root/"data/minecraft/tags/worldgen/world_preset"/(key+".json"))
-            self.assertEqual(tuple(j["values"]),MENU)
+            self.assertEqual(tuple(j["values"]),DIVERSE_MENU if key=="normal" else MENU)
 
     def test_three_family_exports_keep_512_grand_dimensions_and_biome_sources(self):
         canonical={k:read(self.root/"data/realscale/worldgen/world_preset"/(v+".json"))
@@ -72,7 +76,7 @@ class TVARecoveredTerrainLab(unittest.TestCase):
                          "realscale:grand_nether")
         self.assertEqual(j["dimensions"]["minecraft:the_end"]["generator"]["settings"],
                          "realscale:grand_end")
-        self.assertEqual(tuple(read(SOURCES/"data/minecraft/tags/worldgen/world_preset/normal.json")["values"]),MENU)
+        self.assertEqual(tuple(read(SOURCES/"data/minecraft/tags/worldgen/world_preset/normal.json")["values"]),DIVERSE_MENU)
 
 if __name__=="__main__":
     unittest.main()

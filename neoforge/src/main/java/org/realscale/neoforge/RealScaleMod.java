@@ -43,6 +43,11 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones"),
                     NaturalEcotoneBiomeSource.CODEC)
         );
+        // New codec ID only: original NaturalEcotoneBiomeSource.CODEC is immutable.
+        event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones_diverse_v2"),
+                    NaturalEcotoneBiomeSource.DIVERSE_CODEC)
+        );
         event.register(Registries.BIOME_SOURCE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cross_realm_showcase"),
                     CrossRealmShowcaseBiomeSource.CODEC)

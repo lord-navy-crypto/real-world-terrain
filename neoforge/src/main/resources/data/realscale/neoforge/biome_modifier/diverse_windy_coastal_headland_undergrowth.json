@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:windy_coastal_headland"
+  ],
+  "features": "realscale:ecotone_coastal_undergrowth",
+  "step": "vegetal_decoration"
+}

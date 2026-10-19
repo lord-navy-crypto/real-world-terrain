@@ -36,7 +36,14 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
             RecordCodecBuilder.mapCodec(instance -> instance.group(
                     BiomeSource.CODEC.fieldOf("source").forGetter(NaturalEcotoneBiomeSource::source),
                     RegistryOps.retrieveGetter(Registries.BIOME)
-            ).apply(instance, NaturalEcotoneBiomeSource::new));
+            ).apply(instance, (source, biomes) -> new NaturalEcotoneBiomeSource(source, biomes, false)));
+
+    /** Separate persisted codec: old saved worlds remain on the old 60-rule map. */
+    public static final MapCodec<NaturalEcotoneBiomeSource> DIVERSE_CODEC =
+            RecordCodecBuilder.mapCodec(instance -> instance.group(
+                    BiomeSource.CODEC.fieldOf("source").forGetter(NaturalEcotoneBiomeSource::source),
+                    RegistryOps.retrieveGetter(Registries.BIOME)
+            ).apply(instance, (source, biomes) -> new NaturalEcotoneBiomeSource(source, biomes, true)));
 
     private record Rule(String target, int widthBlocks, Set<String> left, Set<String> right) {
         boolean matches(String first, String second) {
@@ -126,6 +133,23 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
             rule("terracotta_scrub",32,BADLANDS,"desert")
     );
 
+    /**
+     * Opt-in v2 habitats. Pairs deliberately do not overlap the v1 rule map.
+     * Only true biome interfaces are assigned; vanilla rivers and oceans
+     * remain protected and all samples stay world-coordinate based.
+     */
+    private static final List<Rule> DIVERSE_RULES = List.of(
+            rule("tropical_dry_woodland",32,"sparse_jungle","savanna,savanna_plateau"),
+            rule("cool_temperate_rainforest",32,"dark_forest",
+                    "old_growth_spruce_taiga,old_growth_pine_taiga"),
+            rule("alpine_sedge_fen",16,"meadow","river,frozen_river"),
+            rule("polar_fellfield",24,"snowy_plains","stony_peaks"),
+            rule("arid_riparian_woodland",16,"badlands,wooded_badlands,eroded_badlands","river"),
+            rule("windy_coastal_headland",24,"stony_shore","meadow,plains")
+    );
+    private static final List<Rule> ALL_V2_RULES =
+            Stream.concat(DIVERSE_RULES.stream(), RULES.stream()).toList();
+
     private static final Set<String> CANDIDATE_IDS = RULES.stream()
             .flatMap(rule -> Stream.concat(rule.left().stream(), rule.right().stream()))
             .collect(Collectors.toUnmodifiableSet());
@@ -134,11 +158,15 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
      * exactly once instead of scanning 60 rules for every quart boundary.
      * putIfAbsent retains the original RULES priority at overlapping pairs.
      */
-    private static final Map<String, Map<String, Rule>> RULE_BY_BIOME = indexRules();
+    private static final Map<String, Map<String, Rule>> RULE_BY_BIOME = indexRules(RULES);
+    private static final Map<String, Map<String, Rule>> V2_RULE_BY_BIOME = indexRules(ALL_V2_RULES);
+    private static final Set<String> V2_CANDIDATE_IDS = ALL_V2_RULES.stream()
+            .flatMap(rule -> Stream.concat(rule.left().stream(), rule.right().stream()))
+            .collect(Collectors.toUnmodifiableSet());
 
-    private static Map<String, Map<String, Rule>> indexRules() {
+    private static Map<String, Map<String, Rule>> indexRules(List<Rule> rules) {
         Map<String, Map<String, Rule>> mutable = new HashMap<>();
-        for (Rule rule : RULES) {
+        for (Rule rule : rules) {
             for (String a : rule.left()) for (String b : rule.right()) {
                 mutable.computeIfAbsent(a, key -> new HashMap<>()).putIfAbsent(b, rule);
                 mutable.computeIfAbsent(b, key -> new HashMap<>()).putIfAbsent(a, rule);
@@ -151,11 +179,12 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     // Limit ray traversal to the largest boundary width this particular
     // vanilla biome can actually participate in. A global 48-block radius
     // needlessly samples remote climate for narrow river/coast transitions.
-    private static final Map<String, Integer> MAX_WIDTH_BY_BIOME = buildWidths();
+    private static final Map<String, Integer> MAX_WIDTH_BY_BIOME = buildWidths(RULES);
+    private static final Map<String, Integer> V2_MAX_WIDTH_BY_BIOME = buildWidths(ALL_V2_RULES);
 
-    private static Map<String, Integer> buildWidths() {
+    private static Map<String, Integer> buildWidths(List<Rule> rules) {
         Map<String, Integer> widths = new HashMap<>();
-        for (Rule rule : RULES) {
+        for (Rule rule : rules) {
             for (String id : rule.left()) widths.merge(id, rule.widthBlocks(), Math::max);
             for (String id : rule.right()) widths.merge(id, rule.widthBlocks(), Math::max);
         }
@@ -188,13 +217,15 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     }
 
     private final BiomeSource source;
+    private final boolean diverse;
     private final ThreadLocal<SamplingCache> cached = ThreadLocal.withInitial(SamplingCache::new);
     private final Map<String, Holder<Biome>> transitionBiomes;
 
-    private NaturalEcotoneBiomeSource(BiomeSource source, HolderGetter<Biome> biomes) {
+    private NaturalEcotoneBiomeSource(BiomeSource source, HolderGetter<Biome> biomes, boolean diverse) {
         this.source = source;
+        this.diverse = diverse;
         this.transitionBiomes = new HashMap<>();
-        for (Rule rule : RULES) {
+        for (Rule rule : diverse ? ALL_V2_RULES : RULES) {
             ResourceLocation location = ResourceLocation.fromNamespaceAndPath("realscale", rule.target());
             transitionBiomes.put(rule.target(), biomes.getOrThrow(ResourceKey.create(Registries.BIOME, location)));
         }
@@ -217,7 +248,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     @Override
     protected MapCodec<? extends BiomeSource> codec() {
-        return CODEC;
+        return diverse ? DIVERSE_CODEC : CODEC;
     }
 
     @Override
@@ -236,8 +267,8 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         return id.contains("ocean") || id.equals("river") || id.equals("frozen_river");
     }
 
-    private static Rule findPair(String first, String second) {
-        Map<String, Rule> partners = RULE_BY_BIOME.get(first);
+    private Rule findPair(String first, String second) {
+        Map<String, Rule> partners = (diverse ? V2_RULE_BY_BIOME : RULE_BY_BIOME).get(first);
         return partners == null ? null : partners.get(second);
     }
 
@@ -273,14 +304,17 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         // Surface ecotones must not be painted across caves or deep aquifers.
         if (quartY < 12) return original;
         String current = vanillaId(original);
-        if (current.isEmpty() || protectedWater(current) || !CANDIDATE_IDS.contains(current)) return original;
+        if (current.isEmpty() || protectedWater(current)
+                || !(diverse ? V2_CANDIDATE_IDS : CANDIDATE_IDS).contains(current))
+            return original;
 
         // Check multiple quart positions outward, stopping at the first
         // underlying biome boundary in each direction. With a maximum half
         // width of 32 blocks, these samples never exceed 8 quart cells.
         Rule nearest = null;
         int closestDistanceSquared = Integer.MAX_VALUE;
-        int maxLocalQuarts = (MAX_WIDTH_BY_BIOME.getOrDefault(current, 0) + 7) / 8;
+        int maxLocalQuarts = ((diverse ? V2_MAX_WIDTH_BY_BIOME : MAX_WIDTH_BY_BIOME)
+                .getOrDefault(current, 0) + 7) / 8;
         for (int[] direction : DIRECTIONS) {
             for (int step = 1; step <= maxLocalQuarts; step++) {
                 int distanceSquared = EcotoneMath.quartDistanceSquared(

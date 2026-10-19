@@ -49,8 +49,11 @@ class CoreSmoothing(unittest.TestCase):
  def test_four_curated_families_and_separate_combined_opt_in(self):
   stable=["realscale:"+x for x,_,_ in FAMILIES]+["realscale:tva_measured_three_realms"]
   optional="realscale:tva_wonders_invasion_three_realms"
+  biodiversity=["realscale:tva_sacred_biodiversity_end3_spawn3_v2",
+                "realscale:tva_measured_biodiversity_end3_spawn3_v2"]
   for tag in ("normal","extended"):
    path=ROOT/"minecraft/tags/worldgen/world_preset"/(tag+".json")
-   self.assertEqual(read(path)["values"],stable+[optional])
+   expected=stable+[optional]+(biodiversity if tag=="normal" else [])
+   self.assertEqual(read(path)["values"],expected)
    self.assertEqual(len(read(path)["values"]),len(set(read(path)["values"])))
 if __name__=="__main__": unittest.main()
