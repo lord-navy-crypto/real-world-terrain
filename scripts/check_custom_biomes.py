@@ -149,7 +149,14 @@ def test_all_custom_biome_carvers():
     assert end_extras <= names, ("Missing End biomes", end_extras - names)
     assert v2_extras <= names, ("Missing v2 biomes", v2_extras - names)
     assert v3_extras <= names, ("Missing v3 biomes", v3_extras - names)
-    assert len(names - end_extras - v2_extras - v3_extras) == 67, len(names)
+    rare_earth = {"geothermal_sulfur_basin", "socotra_dragonblood_woodland",
+                  "white_dune_lagoon", "sundarbans_tidal_mangrove",
+                  "congo_peat_swamp_forest", "steppe_saline_lake",
+                  "acidic_geothermal_mudflat", "montane_mist_forest",
+                  "permafrost_fen", "limestone_island_scrub",
+                  "namib_fog_desert", "serpentine_barrens", "socotra_endemic_scrub"}
+    assert rare_earth <= names, ("Missing rare Earth biomes", rare_earth - names)
+    assert len(names - end_extras - v2_extras - v3_extras - rare_earth) == 67, len(names)
     for path in all_biomes:
         biome = load(path)
         assert isinstance(biome.get("carvers"), dict), path
