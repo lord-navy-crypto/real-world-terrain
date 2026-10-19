@@ -49,7 +49,10 @@ for part in ("terrain_density","preliminary_density","cave_density"):
 
 catalog=read(R/"neoforge/ecotones/catalog.json")["entries"]
 assert len(catalog)==60
-assert len(list((D/"worldgen/biome").glob("*.json")))==67
+all_biomes={p.stem for p in (D/"worldgen/biome").glob("*.json")}
+new_end={"end_chorus_gardens","end_crystal_barrens","end_shattered_glades"}
+assert new_end <= all_biomes
+assert len(all_biomes-new_end)==67
 for e in catalog:
     assert (D/"worldgen/biome"/(e["id"]+".json")).exists(),e["id"]
 guard=R/"neoforge/src/main/java/org/realscale/neoforge/TVAWorldGuard.java"
