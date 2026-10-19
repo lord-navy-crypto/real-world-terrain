@@ -185,8 +185,8 @@ if not worlds:
 save=gzip.decompress(worlds[0].read_bytes())
 if b"realscale:natural_ecotones_diverse_v3" not in save:
     raise AssertionError("New v2 ecology codec not persisted in saved world")
-if b"realscale:usgs_global_hybrid" not in save:
-    raise AssertionError("Regional density noise setting missing from saved level.dat")
+if b"realscale:usgs_global_hybrid_marine" not in save:
+    raise AssertionError("USGS + global geology + marine bathymetry settings missing from saved level.dat")
 if b"realscale:sky_ocean" not in save:
     raise AssertionError("Floating sky-island worldgen codec missing")
 if b"realscale:cross_realm_spawn3" not in save:

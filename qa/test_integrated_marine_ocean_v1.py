@@ -32,7 +32,6 @@ class IntegratedMarineRenewal(unittest.TestCase):
         self.assertIn("intRange(256,4096)",source)
         self.assertIn("TYPES=8;",math)
         self.assertIn("CELL=8192;",math)
-        self.assertIn("target",math) is False if False else None
         for kind in ("ABYSSAL_PLAIN","MID_OCEAN_RIDGE","HADAL_TRENCH",
                      "SEAMOUNT_CHAIN","GUYOT","SUBMARINE_CANYON",
                      "ABYSSAL_HILLS","TRANSFORM_FRACTURE_ZONE"):

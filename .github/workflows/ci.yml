@@ -44,6 +44,17 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_global_rare_landforms_v3.py' -v
       - name: Validate integrated USGS ordinary DEM plus 24 rare geomorphic enclave sources
         run: python3 -m unittest discover -s qa -p 'test_usgs_measured_global_hybrid.py' -v
+      - name: Check NOAA-inspired eight marine bathymetries and same-world USGS preservation
+        run: python3 -m unittest discover -s qa -p 'test_integrated_marine_ocean_v1.py' -v
+      - name: Test ocean seafloor ridges, trenches, fault zones, submerged caps and DEM gates in Java
+        run: |
+          mkdir -p build/marine-geology-math
+          javac -d build/marine-geology-math \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/RegionalLandformMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/OceanFloorMorphologyMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/MarineBathymetryMathSmoke.java
+          java -cp build/marine-geology-math org.realscale.neoforge.MarineBathymetryMathSmoke
       - name: Assert pure Java measured baseline remains bit-exact outside rare geology
         run: |
           mkdir -p build/usgs-hybrid-math
