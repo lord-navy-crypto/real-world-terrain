@@ -1,0 +1,43 @@
+name: Real regional landform expedition - NeoForge server
+on:
+  pull_request:
+    paths:
+      - 'neoforge/**'
+      - 'qa/neoforge/regional_landform_atlas_world_boot.py'
+      - '.github/workflows/regional-landforms-world.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  regional-atlas-world:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Build NeoForge mod with eight physical regional terrain shapes
+        run: cd neoforge && gradle --no-daemon build
+      - name: Boot actual regional atlas, verify all End spawn modes and persistent NBT
+        run: python3 qa/neoforge/regional_landform_atlas_world_boot.py
+      - name: Preserve actual generated world and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Eight-Regional-Landforms-Real-World-Proof
+          path: |
+            neoforge/build/regional-landform-atlas-*.log
+            neoforge/run/**/regional-landform-atlas-*/level.dat
+            neoforge/run/**/regional-landform-atlas-*/region/*.mca
+          if-no-files-found: warn
