@@ -95,6 +95,39 @@ class UnifiedRealmInvasionTests(unittest.TestCase):
                              "realscale:cross_realm_invasion")
             self.assertEqual(json.loads((directory / "lab_example.json").read_text()), seed)
 
+    def test_new_unified_ui_always_on_and_first_spawn_is_invasion(self):
+        java = ROOT / "neoforge/src/main/java/org/realscale/neoforge"
+        ui = (java / "RealScaleTerrainLabClient.java").read_text()
+        source = (java / "CrossRealmBiomeSource.java").read_text()
+        sky = (java / "SkyOceanBiomeSource.java").read_text()
+        init = (java / "InvasionInitialSpawn.java").read_text()
+        self.assertIn('String worldSource = "sacred";', ui)
+        self.assertIn("boolean dimensionalInvasion = true;", ui)
+        self.assertIn("dimensionalInvasion = true;", ui)
+        self.assertIn("Invasion Always ON", ui)
+        self.assertIn("isSpawnInvasionZone(quartX, quartZ)", source)
+        self.assertIn("SPAWN_INVASION_RADIUS_SQUARED=192L*192L;", source)
+        self.assertIn("return (biome.hashCode() & 1) == 0 ? netherWastes : endHighlands;", source)
+        self.assertIn("CrossRealmBiomeSource.isSpawnInvasionZone(quartX,quartZ)", sky)
+        self.assertIn("LevelEvent.CreateSpawnPosition", init)
+        self.assertIn("event.getSettings().setSpawn(spawn,0.0F);", init)
+        self.assertIn("event.setCanceled(true);", init)
+        self.assertIn("Blocks.BLACKSTONE.defaultBlockState()", init)
+        self.assertIn("level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,0,0)", init)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            draft = Path(tmp) / "new-profile.json"
+            draft.write_text(json.dumps({
+                "worldSource": "sacred", "dimensionalInvasion": True,
+                "invasionShowcase": False,
+            }))
+            self.assertEqual(_unified_choices(draft), ("sacred", True, False))
+            draft.write_text(json.dumps({
+                "worldSource": "measured", "dimensionalInvasion": False,
+            }))
+            with self.assertRaisesRegex(ValueError, "requires dimensionalInvasion=true"):
+                _unified_choices(draft)
+
     def test_legacy_drafts_default_to_safe_off(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "legacy.json"
