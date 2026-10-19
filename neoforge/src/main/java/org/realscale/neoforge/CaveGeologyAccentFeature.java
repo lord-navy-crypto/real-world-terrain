@@ -54,11 +54,16 @@ public final class CaveGeologyAccentFeature extends Feature<NoneFeatureConfigura
             boolean deep=biome.equals("minecraft:deep_dark");
             if(!karst && !fungal && !deep)continue;
             // Exposed floor/wall geology; only ordinary rock is recolored.
-            BlockPos rock=air.below();
+            // Small dry mineral crusts on existing karst cave ceilings.
+            boolean ceiling=karst && context.random().nextInt(4)==0;
+            BlockPos rock=ceiling?air.above(2):air.below();
             BlockState previous=w.getBlockState(rock);
             if(!replaceable(previous))continue;
+            if(ceiling && !dry(w,rock.below()))continue;
             BlockState accent;
-            if(karst)accent=context.random().nextBoolean()
+            if(karst)accent=ceiling
+                    ? Blocks.CALCITE.defaultBlockState()
+                    : context.random().nextBoolean()
                     ? Blocks.CALCITE.defaultBlockState()
                     : Blocks.DRIPSTONE_BLOCK.defaultBlockState();
             else if(fungal)accent=context.random().nextBoolean()
