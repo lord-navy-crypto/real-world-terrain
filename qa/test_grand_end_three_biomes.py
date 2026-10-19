@@ -60,6 +60,40 @@ class GrandEndThreeBiomeTests(unittest.TestCase):
                 self.assertEqual(modifier["features"],"realscale:"+name)
                 self.assertEqual(modifier["step"],"vegetal_decoration")
 
+    def test_end_biome_visuals_are_bounded_and_spawn_only_in_overworld(self):
+        implementation=(JAVA/"EndAccentFeature.java").read_text()
+        self.assertIn("Level.OVERWORLD",implementation)
+        self.assertIn("TVAWorldGuard.hasCrossRealmInvasion(context)",implementation)
+        self.assertIn("CrossRealmBiomeSource.isSpawnInvasionZone(",implementation)
+        self.assertIn("Math.floorDiv(above.getX(),4)",implementation)
+        self.assertIn("Math.floorDiv(above.getZ(),4)",implementation)
+        # Vanilla and foreign worlds cannot generate end-accent decorations.
+        self.assertIn("if (!end && !overworldSpawn) return false;",implementation)
+        # No neighboring chunk writes, no fluid replacement or structures.
+        self.assertIn("Math.floorDiv(above.getX(),16)!=chunkX",implementation)
+        self.assertIn("!world.getFluidState(above).isEmpty()",implementation)
+        self.assertIn("world.getBlockState(above).isAir()",implementation)
+        for natural in ("STONE","DIRT","GRASS_BLOCK","GRAVEL","COARSE_DIRT","TUFF"):
+            self.assertIn("ground.is(Blocks."+natural+")",implementation)
+        # The imported chorus grove roots on real End Stone.
+        self.assertIn("world.setBlock(floor,Blocks.END_STONE.defaultBlockState(),2);",
+                      implementation)
+
+    def test_subtle_particle_ambiance_uses_only_vanilla_effects(self):
+        expected={
+            "end_chorus_gardens":"minecraft:end_rod",
+            "end_crystal_barrens":"minecraft:glow",
+            "end_shattered_glades":"minecraft:reverse_portal",
+        }
+        for name, particle in expected.items():
+            with self.subTest(name=name):
+                biome=json.loads((RES/"data/realscale/worldgen/biome"/
+                                  (name+".json")).read_text())
+                effect=biome["effects"]["particle"]
+                self.assertEqual(effect["options"],{"type":particle})
+                self.assertLess(effect["probability"],0.01)
+                self.assertGreater(effect["probability"],0)
+
     def test_composition_preserves_all_original_dimension_noise(self):
         for base in ("sacred","measured"):
             original, old, _ = create_preset(RES, base, True)
