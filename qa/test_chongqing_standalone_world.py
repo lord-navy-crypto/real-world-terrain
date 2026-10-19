@@ -96,7 +96,7 @@ class StandaloneVanillaWorldTests(unittest.TestCase):
         self.assertEqual(counts,494988)
 
 
-def verify_world(world,surface_mask=None):
+def verify_world(world,surface_mask=None,satellite_mask=None):
     import nbtlib
     if not (world/"level.dat").is_file():
         raise AssertionError("Missing independent vanilla level.dat")
@@ -118,6 +118,14 @@ def verify_world(world,surface_mask=None):
     # Inspect actual NBT saved chunks, not a manifest or PNG stand-in.
     grid,plan=exporter.read_inputs()
     ground_surface={}
+    satellite_surface={}
+    if satellite_mask is not None:
+        satellite_surface,satellite_meta=exporter.read_copernicus_mask(
+            Path(satellite_mask),plan["dem_source_raw_sha256"])
+        assert report["sentinel_source_stac_item"]==satellite_meta["source_stac_item"]
+        assert report["sentinel_classified_columns"]==len(satellite_surface)
+        assert report["sentinel_resolution_m"]==10
+        assert report["satellite_evidence_used_after_exact_osm_precedence"]>1000
     if surface_mask is not None:
         ground_surface,surface_meta=exporter.read_surface_mask(
             Path(surface_mask),plan["dem_source_raw_sha256"])
@@ -131,7 +139,8 @@ def verify_world(world,surface_mask=None):
                 (401,401),(-401,401),(401,-401),(-401,-401)):
         y=math.ceil(exporter.elevation(grid,x,z))-1
         if (x,z) not in footprint:
-            expected=exporter.NAME[ground_surface.get((x,z),3)]
+            expected=exporter.NAME[ground_surface.get(
+                (x,z),satellite_surface.get((x,z),3))]
             assert get_block(world,x,y,z)==expected,(x,y,z,expected)
             verified_ground+=1
         assert get_block(world,x,y-4,z) in ("minecraft:stone","minecraft:dirt")
@@ -154,12 +163,14 @@ def verify_world(world,surface_mask=None):
               "genuine_osm_block_writes":report["actual_overlay_writes"],
               "actual_NBT_blocks_checked":tested+12,
               "classified_surface_columns":len(ground_surface),
+              "satellite_ground_evidence_columns":len(satellite_surface),
               "spawn_y":int(data["SpawnY"])}))
 
 
 if __name__=="__main__":
-    if len(sys.argv) in (2,3):
+    if len(sys.argv) in (2,3,4):
         verify_world(Path(sys.argv[1]).resolve(),
-                     Path(sys.argv[2]).resolve() if len(sys.argv)==3 else None)
+                     Path(sys.argv[2]).resolve() if len(sys.argv)>=3 else None,
+                     Path(sys.argv[3]).resolve() if len(sys.argv)>=4 else None)
     else:
         unittest.main()
