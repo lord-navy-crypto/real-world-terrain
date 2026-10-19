@@ -182,8 +182,8 @@
     [
       "minecraft:glow_lichen",
       "minecraft:trees_taiga",
-      "minecraft:patch_grass_normal",
-      "minecraft:patch_dead_bush"
+      "minecraft:flower_default",
+      "minecraft:patch_grass_taiga_2"
     ],
     [
       "minecraft:freeze_top_layer"

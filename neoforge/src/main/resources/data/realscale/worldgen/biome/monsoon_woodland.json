@@ -168,8 +168,8 @@
       "minecraft:spring_lava"
     ],
     [
-      "minecraft:trees_savanna",
       "minecraft:patch_tall_grass",
+      "minecraft:trees_savanna",
       "minecraft:flower_warm",
       "minecraft:patch_grass_savanna"
     ],
