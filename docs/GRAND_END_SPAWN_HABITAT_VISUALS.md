@@ -72,12 +72,16 @@ The original `realscale:cross_realm_invasion` codec did NOT contain the
 already have stored that codec. Replacing the old biome around their spawn
 silently would violate saved-world compatibility.
 
-This patch adds an **optional, default-false** `spawn_end_habitats` codec
-field. Old world types and previously exported `*_end3` ZIPs therefore
-continue using their previous Nether/vanilla End spawn-biome behavior.
-Fresh YACL Unified World Creation drafts always save
-`spawnEndHabitats=true`, and the exporter emits an immutable **new**
-`*_end3_spawn3` world type such as:
+This patch preserves an **optional, default-false** `spawn_end_habitats`
+field only as a backward-compatible reader for existing invasion codecs.
+To make the new selection impossible to confuse with a legacy save,
+fresh `spawn3` world presets instead encode a **dedicated**
+`realscale:cross_realm_spawn3` biome-source codec. Its identifier is
+persisted in `level.dat` and always selects the three custom End habitats.
+Old `realscale:cross_realm_invasion` sources (and previously exported
+`*_end3` ZIPs) remain unchanged. Fresh YACL Unified World Creation
+drafts save `spawnEndHabitats=true`, and the exporter emits an immutable
+new `*_end3_spawn3` world type such as:
 
 - `realscale:unified_sacred_invasion_v1_end3_spawn3`
 - `realscale:unified_measured_invasion_v1_end3_spawn3`
@@ -85,3 +89,13 @@ Fresh YACL Unified World Creation drafts always save
 Only these NEW worlds lock the entire starting region to one of our three
 original custom End habitats. The other cross-realm invasions continue
 elsewhere. No changes to historical worlds or unrelated biome IDs.
+
+### Save/reload validation gate
+
+A world type name or an exported JSON file alone does not prove runtime
+selection. CI must check all three levels: the exported ZIP uses
+`cross_realm_spawn3`; the live biome predicate selects exactly one of
+the three custom End biomes; and a saved `level.dat` contains the
+dedicated `realscale:cross_realm_spawn3` identifier. Any failure blocks
+merging this draft PR. Previous CI run 39203167765 failed the live
+biome predicate and saved the legacy `cross_realm_invasion` type.
