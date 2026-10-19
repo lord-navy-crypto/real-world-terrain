@@ -143,6 +143,11 @@ def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
             Path(surface_mask),plan["dem_source_raw_sha256"])
         assert report["source_classified_ground_columns"]==len(ground_surface)
         assert report["surface_source_sha256"]==surface_meta["raw_osm_api_sha256"]
+        assert report["osm_surface_radius_m"]==surface_meta["radius_m"]
+        if radius==600:
+            assert surface_meta["radius_m"]==600, "Old 500m OSM ground source supplied to 600m save"
+            assert any(abs(x)>500 or abs(z)>500 for x,z in ground_surface), (
+                "Full 600m OSM ground contains no source-backed outer-ring cells")
         assert report["source_qualified_non_grass_ground_columns"]>0
     protected={(x,r["z"]) for r in plan["rows"]
                if r["kind"]!="road"
@@ -153,6 +158,14 @@ def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
             Path(roads_mask),plan["dem_source_raw_sha256"])
         assert report["road_corridor_cells_source"]==len(corridors)
         assert report["osm_road_corridor_sha256"]==roads_meta["raw_osm_api_sha256"]
+        assert report["osm_road_corridor_radius_m"]==roads_meta["radius_m"]
+        if radius==600:
+            assert roads_meta["radius_m"]==600, "Old 500m highway mask used on 600m world"
+            assert any(abs(x)>500 or abs(z)>500 for x,z in corridors), (
+                "Full 600m highways have no genuine outer-ring segments")
+            from chongqing_extended_tower1 import build_real_outer_t1
+            outer_t1,_=build_real_outer_t1(radius=600)
+            protected.update((x,z) for x,y,z,block in outer_t1)
         allowed={pos:block for pos,block in corridors.items() if pos not in protected}
         assert report["road_corridor_new_surface_writes"]==len(allowed)
         assert len(allowed)>100
