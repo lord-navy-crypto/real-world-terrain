@@ -114,6 +114,15 @@ class MarineZonationQA(unittest.TestCase):
         self.assertIn("colony(w,p,chunk,random,sea,",code)
         self.assertIn("Blocks.SEAGRASS.defaultBlockState()",code)
 
+    def test_chunk_bounded_kelp_groves(self):
+        code=(JAVA/"MarineEcologyFeature.java").read_text()
+        self.assertIn("private static int kelpGrove(",code)
+        self.assertIn("if(grown>=4)return grown",code)
+        self.assertIn("x<chunk.getMinBlockX()||x>chunk.getMaxBlockX()",code)
+        self.assertIn("z<chunk.getMinBlockZ()||z>chunk.getMaxBlockZ()",code)
+        self.assertIn("if(kelp(w,new BlockPos(x,floor,z),sea,random))grown++",code)
+        self.assertIn("kelpGrove(w,p,chunk,sea,random)",code)
+
     def test_no_new_world_mode_or_mutation_to_measured_noise_graph(self):
         preset=read(WG/"world_preset/tva_measured_global_landforms_three_realms.json")
         settings=preset["dimensions"]["minecraft:overworld"]["generator"]["settings"]
