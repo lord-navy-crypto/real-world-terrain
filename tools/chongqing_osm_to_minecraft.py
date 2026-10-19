@@ -15,6 +15,7 @@ import collections
 import gzip
 import hashlib
 import json
+import io
 import math
 import re
 import struct
@@ -40,6 +41,32 @@ VALID_BLOCKS = {
 }
 LEVEL_HEIGHT_ESTIMATE = 3  # only for tagged levels; report as estimated
 SUPPORTED = {"building", "highway", "railway", "water"}
+MAX_SOURCE_BYTES = 8 * 1024 * 1024
+MAX_DECODED_BYTES = 32 * 1024 * 1024
+
+
+def load_gis_source(path: Path) -> dict:
+    """Bounded import of regular JSON or immutable gzip+base64 OSM snapshots.
+
+    The .json.gz.b64 extension is compact archival encoding, NOT a fabricated
+    raster/shape. Its JSON contents retain original OSM IDs, tags, coordinates
+    and original API source URL/raw XML SHA.
+    """
+    if not path.is_file() or path.stat().st_size > MAX_SOURCE_BYTES:
+        raise ValueError("Source missing or exceeds 8 MiB archive safety cap")
+    if path.name.endswith(".json.gz.b64"):
+        raw = base64.b64decode(path.read_bytes().strip(), validate=True)
+        with gzip.GzipFile(fileobj=io.BytesIO(raw), mode="rb") as archive:
+            payload = archive.read(MAX_DECODED_BYTES + 1)
+        if len(payload) > MAX_DECODED_BYTES:
+            raise ValueError("Decompressed OSM source exceeds 32 MiB cap")
+    else:
+        payload = path.read_bytes()
+    value = json.loads(payload)
+    if not isinstance(value, dict):
+        raise ValueError("Source must be an OSM/GeoJSON JSON object")
+    return value
+
 
 def props(path: Path) -> dict:
     output = {}
@@ -345,6 +372,15 @@ def prepare(dem: Dem, features: list, radius: int) -> tuple[dict, dict]:
     for kind, f in categorized:
         geom = project(dem, f)
         tags = f["tags"]
+        if kind == "building" and (
+                str(tags.get("layer", "0")) not in ("0", "0.0") or
+                meters_tag(tags, "min_height") is not None or
+                str(tags.get("building:min_level", "0")) not in ("0", "0.0")):
+            # Never build Crystal's elevated 250m-high skybridge as a
+            # 276.5m-high SOLID ground tower, or bury a -1-layer plaza.
+            # Recorded 3D datums are not yet accurately surveyed.
+            stats["multilevel_buildings_deferred_no_3d_y"] += 1
+            continue
         if kind in ("highway","railway") and (
                 tags.get("bridge") not in (None,"no") or
                 tags.get("tunnel") not in (None,"no") or
@@ -553,7 +589,7 @@ def main(argv=None):
                    help="OSM author/license/source URL/date for metadata")
     args=p.parse_args(argv)
     dem=Dem(args.dem)
-    data=json.loads(args.input.read_text(encoding="utf-8"))
+    data=load_gis_source(args.input)
     features=osm_features(data)
     blocks,stats=prepare(dem,features,args.radius)
     manifest=export_datapack(blocks,stats,args.input,dem,
