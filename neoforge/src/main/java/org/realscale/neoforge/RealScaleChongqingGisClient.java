@@ -146,6 +146,9 @@ public final class RealScaleChongqingGisClient {
         private int lastChunkX=Integer.MIN_VALUE;
         private int lastChunkZ=Integer.MIN_VALUE;
         volatile long applied;
+        // Published by the logical server thread. The GUI never accesses
+        // the mutable HashMap-backed chunk queue from the client thread.
+        volatile boolean completed;
         volatile String status;
         volatile boolean running;
         volatile boolean claimed;
@@ -162,7 +165,7 @@ public final class RealScaleChongqingGisClient {
                 status="Survey the REAL loaded surface first. No placement started.";
                 return;
             }
-            if (queue.isComplete()) {
+            if (completed) {
                 status="All source-aligned batches were already placed.";
                 return;
             }
@@ -341,6 +344,7 @@ public final class RealScaleChongqingGisClient {
                 }
                 if (queue.isComplete()) {
                     running=false;
+                    completed=true;
                     status="Completed "+applied+" OSM source-grounded block "
                             +"operations. Visually verify / save backup.";
                 } else {
@@ -462,7 +466,7 @@ public final class RealScaleChongqingGisClient {
                 message="No player attached.";
                 return;
             }
-            if (active.queue.isComplete()) {
+            if (active.completed) {
                 message="All batches completed; do not replay.";
                 return;
             }
