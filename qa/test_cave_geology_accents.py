@@ -33,6 +33,14 @@ class CaveGeologyQA(unittest.TestCase):
         self.assertIn("Blocks.SMOOTH_BASALT.defaultBlockState()",c)
         self.assertIn("if(!replaceable(previous))continue",c)
 
+    def test_bounded_mineral_streaks(self):
+        c=(SRC/"CaveGeologyAccentFeature.java").read_text()
+        self.assertIn("if(changed<3 && context.random().nextInt(3)==0)",c)
+        self.assertIn("adjacent.getX()>=chunk.getMinBlockX()",c)
+        self.assertIn("adjacent.getX()<=chunk.getMaxBlockX()",c)
+        self.assertIn("replaceable(w.getBlockState(adjacent))",c)
+        self.assertIn("dry(w,adjacent.above())",c)
+
     def test_no_carving_ore_or_cross_chunk_edits(self):
         c=(SRC/"CaveGeologyAccentFeature.java").read_text()
         for marker in ("TVAWorldGuard.hasRealScaleGenerator", "minecraft:overworld",
