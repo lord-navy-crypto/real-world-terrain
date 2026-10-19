@@ -95,6 +95,8 @@ def classify_osm_xml(xml: bytes, dem: Dem, radius=RADIUS) -> dict:
     root=ET.fromstring(xml)
     if root.tag!="osm" or root.get("version")!="0.6":
         raise ValueError("Not OSM API 0.6 XML")
+    if "odbl" not in (root.get("license") or "").lower():
+        raise ValueError("OSM surface geometry lacks verifiable ODbL license")
     nodes={}
     for n in root.findall("node"):
         if n.get("lat") and n.get("lon"):
