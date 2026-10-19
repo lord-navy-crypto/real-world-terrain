@@ -1,0 +1,17 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:geothermal_sulfur_basin",
+    "realscale:socotra_dragonblood_woodland",
+    "realscale:white_dune_lagoon",
+    "realscale:sundarbans_tidal_mangrove",
+    "realscale:congo_peat_swamp_forest",
+    "realscale:steppe_saline_lake",
+    "realscale:acidic_geothermal_mudflat",
+    "realscale:montane_mist_forest",
+    "realscale:permafrost_fen",
+    "realscale:limestone_island_scrub"
+  ],
+  "features": "realscale:rare_earth_surface",
+  "step": "vegetal_decoration"
+}
