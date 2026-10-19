@@ -139,7 +139,10 @@ class Dem:
         # Approximate top surface of the existing real density field.
         # Export is a *postgen* overlay; inspect a saved-world section
         # before using on terrain near cliffs/water or altered heightmaps.
-        return math.floor(self.height(x, z) + VERTICAL_OFFSET) + 1
+        # Density is positive strictly below DEM + offset. At an integer
+        # surface elevation, the first AIR block is the integer itself,
+        # not integer+1 (which would leave an unsupported floating overlay).
+        return math.ceil(self.height(x, z) + VERTICAL_OFFSET)
 
 
 def classify(tags: dict) -> str | None:
