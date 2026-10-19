@@ -1,0 +1,29 @@
+{
+  "type": "realscale:measured_rare_hybrid",
+  "measured": "realscale:usgs_big_sur_v2/terrain_density",
+  "procedural": {
+    "type": "minecraft:add",
+    "argument1": {
+      "type": "realscale:measured_horizontal_memo",
+      "input": "realscale:realism_max/height_signal"
+    },
+    "argument2": {
+      "type": "minecraft:y_clamped_gradient",
+      "from_y": -64,
+      "to_y": 2032,
+      "from_value": 0.9921875,
+      "to_value": -15.3828125
+    }
+  },
+  "procedural_height": {
+    "type": "realscale:measured_horizontal_memo",
+    "input": "realscale:realism_max/height_signal"
+  },
+  "continents": "realscale:realism_max/continental_field",
+  "selector": {
+    "type": "minecraft:noise",
+    "noise": "minecraft:erosion",
+    "xz_scale": 0.006,
+    "y_scale": 0
+  }
+}
