@@ -27,6 +27,8 @@ MENU=CORE+("realscale:tva_wonders_invasion_three_realms",)
 DIVERSE_MENU=MENU+(
  "realscale:tva_sacred_biodiversity_end3_spawn3_v2",
  "realscale:tva_measured_biodiversity_end3_spawn3_v2",
+ "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
+ "realscale:tva_measured_biodiversity_end3_spawn3_v3",
 )
 
 def read(path):
