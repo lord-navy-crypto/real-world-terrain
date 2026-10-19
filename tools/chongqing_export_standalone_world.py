@@ -93,6 +93,44 @@ def read_surface_mask(file: Path, dem_sha: str) -> tuple[dict,dict]:
     return lookup,data
 
 
+def read_copernicus_mask(path: Path, dem_sha: str) -> tuple[dict,dict]:
+    """Strict satellite-evidence mask. 10m imagery is NOT 1m detail."""
+    if not path.is_file() or path.stat().st_size>12*1024*1024:
+        raise ValueError("Missing or oversized open-data Sentinel-2 mask")
+    with gzip.open(path,"rb") as f:
+        raw=f.read(36*1024*1024)
+    if len(raw)>=36*1024*1024:
+        raise ValueError("Oversized Sentinel-2 ground mask")
+    data=json.loads(raw)
+    if (data.get("format")!="REALSCALE_CHAOTIANMEN_S2_LANDCOVER_V1"
+            or data.get("radius_m")!=RADIUS
+            or data.get("resolution_m")!=10
+            or data.get("dem_source_raw_sha256")!=dem_sha
+            or data.get("origin_lat")!=29.5667
+            or data.get("origin_lon")!=106.5874
+            or data.get("license")!="Copernicus Sentinel free and open data"):
+        raise ValueError("Unlicensed/misaligned satellite landcover evidence")
+    item=data.get("source_stac_item","")
+    if not isinstance(item,str) or len(item)<10 or len(item)>250:
+        raise ValueError("Missing Sentinel-2 image provenance")
+    result={}
+    for row in data["rows"]:
+        z,x0,x1,material,confidence,source=row
+        if (not all(type(n) is int for n in (z,x0,x1))
+                or not(-RADIUS<=z<=RADIUS and -RADIUS<=x0<=x1<=RADIUS)
+                or material not in ("grass","urban_inferred")
+                or confidence not in ("low","medium")
+                or source!="sentinel-2-l2a/"+item):
+            raise ValueError("Malformed or unsupported 10m landcover row")
+        for x in range(x0,x1+1):
+            if (x,z) in result:
+                raise ValueError("Overlapping satellite-ground cells")
+            result[(x,z)]=SURFACE_BLOCK[material]
+    if len(result)!=data["known_surface_columns"]:
+        raise ValueError("Sentinel-2 ground count doesn't match provenance")
+    return result,data
+
+
 def read_inputs():
     props={}
     for line in DEM.read_text().splitlines():
@@ -238,12 +276,17 @@ def overlay_index(plan):
             x=end+1
     return output
 
-def generate(world, surface_file=None):
+def generate(world, surface_file=None, satellite_file=None):
     grid,plan=read_inputs()
     surface_lookup,surface_meta=({},None)
+    satellite_lookup,satellite_meta=({},None)
     if surface_file is not None:
         surface_lookup,surface_meta=read_surface_mask(
             Path(surface_file),plan["dem_source_raw_sha256"])
+    if satellite_file is not None:
+        satellite_lookup,satellite_meta=read_copernicus_mask(
+            Path(satellite_file),plan["dem_source_raw_sha256"])
+
     # A real OSM material marker is written BEFORE roads and buildings.
     # Existing pinned OSM V2 structure blocks retain priority.
 
@@ -278,7 +321,8 @@ def generate(world, surface_file=None):
                         set_block(lx,y,lz,1)
                     for y in range(max(bottom,top-3),top):
                         set_block(lx,y,lz,2)
-                    ground=surface_lookup.get((x,z),3)
+                    ground=surface_lookup.get((x,z),
+                              satellite_lookup.get((x,z),3))
                     set_block(lx,top,lz,ground)
                     if ground!=3:
                         stats["source_qualified_non_grass_ground_columns"]+=1
@@ -322,6 +366,12 @@ def generate(world, surface_file=None):
     stats["building_policy"]="Source-footprint-based hollow facade and roof; schematic"
     stats["world_y_range"]=[MIN_Y,MIN_Y+HEIGHT-1]
     stats["world_xz_range"]=[-RADIUS,RADIUS]
+    if satellite_meta is not None:
+        stats["sentinel_source_stac_item"]=satellite_meta["source_stac_item"]
+        stats["sentinel_resolution_m"]=satellite_meta["resolution_m"]
+        stats["sentinel_classified_columns"]=satellite_meta["known_surface_columns"]
+        stats["satellite_license"]=satellite_meta["license"]
+        stats["satellite_warning"]="10m broad vegetation vs bare ground, NOT exact 1m surface or 3D geometry; OSM supersedes pixels"
     if surface_meta is not None:
         stats["surface_source_sha256"]=surface_meta["raw_osm_api_sha256"]
         stats["ground_surface_osm_source_url"]=surface_meta.get("source_url")
@@ -368,11 +418,11 @@ def prepare_server(root):
         "motd=RealScale Chaotianmen standalone experimental map\n")
     print("PREPARED empty official-vanilla server world and datapack",world)
 
-def package_world(root,out,surface_file=None):
+def package_world(root,out,surface_file=None,satellite_file=None):
     world=root/WORLD
     if not (world/"level.dat").is_file():
         raise RuntimeError("No vanilla 1.21.1 generated level.dat. Bootstrap the server first.")
-    stats=generate(world,surface_file)
+    stats=generate(world,surface_file,satellite_file)
     import nbtlib
     file=nbtlib.load(world/"level.dat")
     data=file["Data"]
@@ -426,12 +476,14 @@ def main():
     cli.add_argument("--server-root",type=Path,required=True)
     cli.add_argument("--zip",type=Path)
     cli.add_argument("--osm-surface-mask",type=Path)
+    cli.add_argument("--satellite-mask",type=Path)
     args=cli.parse_args()
     root=args.server_root.resolve()
     root.mkdir(parents=True,exist_ok=True)
     if args.mode=="prepare":prepare_server(root)
     else:
         if args.zip is None:cli.error("--zip is required for packaging")
-        package_world(root,args.zip.resolve(),args.osm_surface_mask)
+        package_world(root,args.zip.resolve(),args.osm_surface_mask,
+                      args.satellite_mask)
 
 if __name__=="__main__":main()
