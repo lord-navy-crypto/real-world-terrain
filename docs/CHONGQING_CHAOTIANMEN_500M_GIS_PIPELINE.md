@@ -156,7 +156,53 @@ All geometry is projected at **1 horizontal metre = 1 MC block**.
   clearance, tunnel geometry, vegetation and real 3D facades remain
   explicitly unknown. We do NOT auto-invent Raffles City or Hongyadong.
 
-## Step C. Preview safely and stage placement
+## Step C (experimental) — Native in-game UI, NO chat commands
+
+The exporter also creates `chongqing-gis-plan.json`: a JSON file made
+of immutable, DEM-aligned run-length block columns, separate from vanilla
+function files. It contains **no Minecraft commands**. The preferred
+interactive workflow now is:
+
+1. Obtain/verify REAL OSM source; run GIS audit and export; examine source
+   SHA, landmarks and `manifest.json`. No fabricated geometry is acceptable.
+2. Create a **NEW** `Special Chongqing Sky City` world (not TVA Sacred,
+   Measured, any other family, and not an existing valued survival world).
+   Let its pilot chunks load. **Create an external copy/backup of the save**
+   before ever applying the overlay.
+3. Place the generated `chongqing-gis-plan.json` file at
+   `config/realscale/chaotianmen-gis-plan.json` in the Minecraft game
+   directory. This is a data import, not a command script. No arbitrary
+   file locations or executable commands are read by the GUI.
+4. In **integrated singleplayer Creative** with the mod installed, press
+   **G** to open `Special Chongqing | GIS Placement Lab`:
+   - **Load & verify source plan**: validates coordinate origin, source
+     checksum format, exact DEM SHA, real DEM Y for each planned block,
+     allowed materials, source geometry bounds, sorted/nonoverlapping rows,
+     <=2 million pilot writes and row-count integrity; does NOT place blocks.
+   - **I backed up this NEW world**: deliberate user confirmation. This is
+     an acknowledgment, not a technical check that a backup exists.
+   - **Apply next 256 blocks**: performs a small guarded singleplayer
+     server-side batch, using direct block APIs rather than Minecraft
+     `/function`, chat, or console commands. Remaining batches require
+     further explicit clicks. Closing the GUI does NOT auto-apply anything.
+   - **Close / Pause**: leaves the world untouched by this tool until
+     the next explicit click.
+5. The native executor *refuses* dedicated/multiplayer sessions, player
+   non-Creative mode, every other dimension, and every noise generator
+   except `realscale:special_chongqing_sky`. It refuses unloaded chunks
+   and protected collisions; it never downloads data at game startup.
+   A partially placed plan **cannot be automatically rolled back**:
+   restore the external backed-up new world if necessary.
+
+**Experimental warning:** This is a minimal native pilot interaction layer,
+NOT yet a validated full-city or distributed multiplayer installer. Plans
+are only source-faithful when genuine, complete and accurate GIS is provided.
+Test an actual client in a disposable world and inspect each small batch
+before increasing performance budgets. The standalone datapack remains an
+optional backward-compatible laboratory exporter; it must not become the
+required user interface.
+
+## Legacy Step D. Preview safely and stage placement
 
 1. Create a **NEW** Special Chongqing world, use Chunky (optional) to
    pregenerate the 1 km pilot. Do not load this datapack into existing
