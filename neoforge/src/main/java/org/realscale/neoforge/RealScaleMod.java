@@ -46,6 +46,10 @@ public final class RealScaleMod {
                     GeoWondersBiomeSource.CODEC)
         );
         event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "rare_earth_biomes_v1"),
+                    RareEarthBiomeSource.CODEC)
+        );
+        event.register(Registries.BIOME_SOURCE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones"),
                     NaturalEcotoneBiomeSource.CODEC)
         );
