@@ -239,8 +239,7 @@ public final class RealScaleChongqingGisClient {
                     return;
                 }
                 if (active == null || active.server != server
-                        || !active.plan.sourceHash.equals(plan.sourceHash)
-                        || !active.plan.demHash.equals(plan.demHash)) {
+                        || !active.plan.planHash.equals(plan.planHash)) {
                     if (active != null && active.server == server && active.applied != 0) {
                         message="Another plan already wrote blocks in this session; restart safely.";
                         return;
