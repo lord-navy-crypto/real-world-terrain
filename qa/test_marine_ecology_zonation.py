@@ -61,6 +61,18 @@ class MarineZonationQA(unittest.TestCase):
         self.assertIn("depth>=64",math)
         self.assertIn("depth>=30",math)
 
+    def test_vanilla_visual_accents_without_custom_entities(self):
+        code=(JAVA/"MarineEcologyFeature.java").read_text()
+        for block in ("SEA_PICKLE","CALCITE","GRAVEL","CLAY","TUFF","ANDESITE",
+                      "SEAGRASS","KELP","WET_SPONGE"):
+            self.assertIn("Blocks."+block,code)
+        self.assertIn("SeaPickleBlock.PICKLES",code)
+        self.assertIn("seabedAccent(w,p.below(),h,random)",code)
+        self.assertIn("if(!natural(existing)",code)
+        self.assertIn("if(!original.is(Blocks.WATER)",code)
+        self.assertIn("if(!target.canSurvive(w,p))",code)
+        self.assertNotIn("EntityType.",code)
+
     def test_no_new_world_mode_or_mutation_to_measured_noise_graph(self):
         preset=read(WG/"world_preset/tva_measured_global_landforms_three_realms.json")
         settings=preset["dimensions"]["minecraft:overworld"]["generator"]["settings"]
