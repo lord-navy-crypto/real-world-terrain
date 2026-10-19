@@ -38,6 +38,16 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_biome_feature_order_dag.py' -v
       - name: Validate real-world-inspired regional terrain atlas and old noise graphs
         run: python3 -m unittest discover -s qa -p 'test_regional_landform_atlas.py' -v
+      - name: Validate 16-region Highland v2 noise graph and legacy v1 save isolation
+        run: python3 -m unittest discover -s qa -p 'test_regional_landform_atlas_v2.py' -v
+      - name: Prove 8-km regions and new glacial, tiankeng, volcanic, saline-basin morphology
+        run: |
+          mkdir -p build/regional-landform-v2-math
+          javac -d build/regional-landform-v2-math \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/RegionalLandformMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/RegionalLandformV2Smoke.java
+          java -cp build/regional-landform-v2-math org.realscale.neoforge.RegionalLandformV2Smoke
       - name: Verify 8 regional landform shapes and 4km boundary continuity
         run: |
           mkdir -p build/regional-landform-math
