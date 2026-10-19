@@ -143,6 +143,7 @@ public final class RealScaleChongqingGisClient {
         volatile String status;
         volatile boolean running;
         volatile boolean claimed;
+        volatile boolean previewGood;
         volatile UUID authorizedPlayer;
         Session(MinecraftServer server, ChongqingGisPlan plan) {
             this.server=server; this.plan=plan; this.x=plan.rows.get(0).x0();
@@ -150,6 +151,10 @@ public final class RealScaleChongqingGisClient {
         }
 
         void start(UUID playerId) {
+            if (!previewGood) {
+                status="Survey the REAL loaded surface first. No placement started.";
+                return;
+            }
             if (rowIndex >= plan.rows.size()) {
                 status="All source-aligned batches were already placed.";
                 return;
@@ -162,6 +167,55 @@ public final class RealScaleChongqingGisClient {
         void pause() {
             running=false;
             status="PAUSED at "+applied+"/"+plan.blockWrites+" writes.";
+        }
+
+        /**
+         * Native button-driven DRY RUN, limited to at most 64 nearby
+         * already loaded samples. Never calls setBlock or loads chunks.
+         * This is not a substitute for future per-column collision checks.
+         */
+        void survey(UUID playerId) {
+            if (running) {
+                status="Pause placement before running a no-write survey.";
+                return;
+            }
+            previewGood=false;
+            status="Checking nearby saved-world surface without writes...";
+            server.execute(() -> {
+                ServerPlayer player=server.getPlayerList().getPlayer(playerId);
+                if (!validWorld(server,player)) {
+                    status="Survey requires local Creative Special Chongqing.";
+                    return;
+                }
+                ServerLevel level=server.overworld();
+                int px=player.blockPosition().getX();
+                int pz=player.blockPosition().getZ();
+                int checked=0,good=0,bad=0,notLoaded=0;
+                for (ChongqingGisPlan.Row row : plan.rows) {
+                    if (checked>=64) break;
+                    if (Math.abs((long)row.z()-pz)>48
+                            || row.x0()>px+48 || row.x1()<px-48) continue;
+                    int sx=Math.max(row.x0(),Math.min(px,row.x1()));
+                    if (!level.getChunkSource().hasChunk(sx>>4,row.z()>>4)) {
+                        notLoaded++;
+                        continue;
+                    }
+                    checked++;
+                    BlockPos pos=new BlockPos(sx,row.y(),row.z());
+                    BlockState target=sourceBlock(row.kind(),false);
+                    BlockState old=level.getBlockState(pos);
+                    if (terrainMatches(level,pos,old,target)
+                            && canReplace(old,target,false)) good++;
+                    else bad++;
+                }
+                previewGood=good>0 && bad==0;
+                status=previewGood
+                    ? "SURVEY PASS: "+good+" actual nearby columns aligned; "
+                      +notLoaded+" chunks unavailable. No blocks changed."
+                    : "SURVEY FAIL: "+good+" aligned / "+bad
+                      +" misaligned; "+notLoaded+" unavailable. "
+                      +"No writes. Move to mapped terrain or inspect DEM Y.";
+            });
         }
 
         // Runs only on the logical integrated-server tick thread.
@@ -263,18 +317,21 @@ public final class RealScaleChongqingGisClient {
         @Override protected void init() {
             int cx=width/2;
             addRenderableWidget(Button.builder(Component.literal("Load & verify source plan"),
-                    b -> load()).bounds(cx-125,height/2-31,250,20).build());
+                    b -> load()).bounds(cx-125,height/2-39,250,20).build());
+            addRenderableWidget(Button.builder(
+                    Component.literal("Survey nearby terrain (NO writes)"),
+                    b -> survey()).bounds(cx-125,height/2-14,250,20).build());
             addRenderableWidget(Button.builder(Component.literal(
                     "I backed up this NEW world: NO"),b -> {
                 backupConfirmed=!backupConfirmed;
                 b.setMessage(Component.literal(
                     "I backed up this NEW world: "+(backupConfirmed?"YES":"NO")));
-            }).bounds(cx-125,height/2-6,250,20).build());
+            }).bounds(cx-125,height/2+11,250,20).build());
             addRenderableWidget(Button.builder(
                     Component.literal("Start / Pause 256 blocks per tick"),
-                    b -> apply()).bounds(cx-125,height/2+19,250,20).build());
+                    b -> apply()).bounds(cx-125,height/2+36,250,20).build());
             addRenderableWidget(Button.builder(Component.literal("Close / Pause"),
-                    b -> onClose()).bounds(cx-125,height/2+44,250,20).build());
+                    b -> onClose()).bounds(cx-125,height/2+61,250,20).build());
         }
 
         private void load() {
@@ -306,6 +363,17 @@ public final class RealScaleChongqingGisClient {
             } catch (IOException | RuntimeException ex) {
                 message="Plan rejected: "+ex.getMessage();
             }
+        }
+
+        private void survey() {
+            Minecraft mc=Minecraft.getInstance();
+            if (active == null || active.server != mc.getSingleplayerServer()
+                    || mc.player == null) {
+                message="Load GIS plan in local Special Chongqing first.";
+                return;
+            }
+            active.survey(mc.player.getUUID());
+            message="No-write survey requested; check results below.";
         }
 
         private void apply() {
@@ -358,12 +426,12 @@ public final class RealScaleChongqingGisClient {
                     cx,height/2-61,0xDDDDDD);
             String info = active != null ? active.status : "No plan loaded.";
             graphics.drawCenteredString(font,truncate(message,100),
-                    cx,height/2+82,0xFFFFFF);
+                    cx,height/2+104,0xFFFFFF);
             graphics.drawCenteredString(font,truncate(info,108),
-                    cx,height/2+100,0xCCCCCC);
+                    cx,height/2+123,0xCCCCCC);
             graphics.drawCenteredString(font,
                     "No automatic run, no 3D facade claims, no normal TVA changes.",
-                    cx,height/2+120,0xFFDD88);
+                    cx,height/2+143,0xFFDD88);
         }
         private static String truncate(String text, int max) {
             return text.length() <= max ? text : text.substring(0,max-3)+"...";
