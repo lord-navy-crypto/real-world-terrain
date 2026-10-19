@@ -52,6 +52,10 @@ public final class RealScaleMod {
                     CrossRealmBiomeSource.CODEC)
         );
         event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cross_realm_spawn3"),
+                    CrossRealmBiomeSource.SPAWN3_CODEC)
+        );
+        event.register(Registries.BIOME_SOURCE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "end_accents"),
                     EndAccentBiomeSource.CODEC)
         );
