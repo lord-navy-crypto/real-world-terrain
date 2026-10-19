@@ -286,6 +286,43 @@ public final class GrandOverworldCaveNetworkSmoke {
                         GrandOverworldCaveNetwork.strength(wx,y,wz)),
                         "Unsupported displacement must fall back to full cave graph");
             }
+        // Jigsaw structure height probes revisit many neighboring cave cells
+        // in changing order. Verify per-region memo retention cannot cause
+        // stale geometry, invalid masks, or changed density raw bits.
+        int[] churnX={-2350,-1600,-780,-20,18,706,785,1590,2350};
+        int[] churnZ={-1701,-770,-23,16,764,1547,2280};
+        int[] churnY={135,395,790,1330,1530};
+        long[] expected=new long[churnX.length*churnZ.length*churnY.length];
+        int offset=0;
+        for(int x:churnX)for(int z:churnZ)for(int y:churnY)
+            expected[offset++]=Double.doubleToRawLongBits(
+                    GrandOverworldCaveNetwork.strength(x,y,z));
+        long extraChecks=0;
+        for(int pass=0;pass<7;pass++) {
+            for(int xi=0;xi<churnX.length;xi++)
+                for(int zi=0;zi<churnZ.length;zi++)
+                    for(int yi=0;yi<churnY.length;yi++) {
+                        int ax=(xi+pass*3)%churnX.length;
+                        int az=(zi+pass*2)%churnZ.length;
+                        int x=churnX[ax],z=churnZ[az],y=churnY[yi];
+                        int originalIndex=(ax*churnZ.length+az)*churnY.length+yi;
+                        require(Double.doubleToRawLongBits(
+                                GrandOverworldCaveNetwork.strength(x,y,z))
+                                ==expected[originalIndex],
+                                "Cave geometry mutated after region switching");
+                        double warp=(pass%3-1)*0.7;
+                        double wx=x+6*warp, wz=z-5*warp, wy=y+2*warp;
+                        require(Double.doubleToRawLongBits(
+                                GrandOverworldCaveNetwork.strengthFromColumn(
+                                        x,z,wx,wy,wz))
+                                ==Double.doubleToRawLongBits(
+                                        GrandOverworldCaveNetwork.strength(
+                                                wx,wy,wz)),
+                                "Cave mask changed after 8-region churn");
+                        extraChecks++;
+                    }
+        }
+        require(extraChecks>2000,"Region-churn regression did not run");
         System.out.println("TVA_GRAND_OVERWORLD_CAVE_PASS halls="+halls+
                 " large_or_wide_tunnels="+longLinks+
                 " high_halls="+highAltitudeHalls+

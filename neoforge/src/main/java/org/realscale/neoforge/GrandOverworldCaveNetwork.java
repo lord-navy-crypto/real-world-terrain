@@ -114,7 +114,39 @@ public final class GrandOverworldCaveNetwork {
                 }
         }
     }
-    private static final ThreadLocal<Cache> LOCAL=ThreadLocal.withInitial(Cache::new);
+    /**
+     * A jigsaw structure height probe alternates between several distant
+     * 768-block cells. Rebuilding a single global "last cell" creates all
+     * 4-tier hall, gallery and arterial geometry again at every switch.
+     *
+     * Retain eight independent, bounded region snapshots per worker. Each
+     * snapshot also retains its own per-column broad-phase masks and epoch,
+     * so switching A->B->A reuses exactly the same seeded geometry without
+     * rehashing/reallocating the corridor graph. Evictions change ONLY CPU
+     * work; they cannot affect world seed, biome, terrain or cave topology.
+     */
+    private static final class RegionCache {
+        private static final int REGION_SLOTS=8;
+        private final Cache[] regions=new Cache[REGION_SLOTS];
+        private Cache last;
+
+        Cache get(int gx,int gz) {
+            Cache recent=last;
+            if(recent!=null && recent.gx==gx && recent.gz==gz)return recent;
+            int hash=gx*0x9e3779b9 ^ Integer.rotateLeft(gz*0x85ebca6b,13);
+            int slot=(hash^(hash>>>16))&(REGION_SLOTS-1);
+            Cache c=regions[slot];
+            if(c==null) {
+                c=new Cache();
+                regions[slot]=c;
+            }
+            c.load(gx,gz);
+            last=c;
+            return c;
+        }
+    }
+    private static final ThreadLocal<RegionCache> LOCAL=
+            ThreadLocal.withInitial(RegionCache::new);
     /**
      * Last-site-only, thread-confined memo for the rare cave entrance.
      * This is a much cheaper lookup than repeatedly hashing the same cell
@@ -355,8 +387,7 @@ public final class GrandOverworldCaveNetwork {
         // tunnels. Never prune at those edges; retain the original path.
         if(localX<=6 || localX>=CELL-7 || localZ<=5 || localZ>=CELL-6)
             return -1L;
-        Cache c=LOCAL.get();
-        c.load(Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
+        Cache c=LOCAL.get().get(Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
         int slot=(x*0x9e3779b9 ^ z*0x85ebca6b)&(Cache.COLUMN_SLOTS-1);
         if(c.columnEpoch[slot]==c.epoch
                 && c.columnX[slot]==x && c.columnZ[slot]==z)
@@ -391,7 +422,7 @@ public final class GrandOverworldCaveNetwork {
         long mask=componentMaskForColumn(sourceX,sourceZ);
         if(mask==-1L)return strength(x,y,z);
         if(mask==0L)return 0;
-        Cache c=LOCAL.get();
+        Cache c=LOCAL.get().get(Math.floorDiv(sourceX,CELL),Math.floorDiv(sourceZ,CELL));
         double value=0;
         for(int layer=0;layer<LAYERS;layer++) {
             Hall center=c.halls[layer][0];
@@ -499,8 +530,7 @@ public final class GrandOverworldCaveNetwork {
     public static double strength(double x,double y,double z) {
         if(y<MIN_Y||y>MAX_GEOMETRY_Y)return 0;
         int gx=(int)Math.floor(x/CELL),gz=(int)Math.floor(z/CELL);
-        Cache cache=LOCAL.get();
-        cache.load(gx,gz);
+        Cache cache=LOCAL.get().get(gx,gz);
         double value=0;
         for(int layer=0;layer<LAYERS;layer++) {
             Hall center=cache.halls[layer][0];

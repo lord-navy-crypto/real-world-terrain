@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'neoforge/src/main/java/org/realscale/neoforge/MeasuredHorizontalMemoDensity.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/RealDemSeamlessMath.java'
+      - 'neoforge/src/test/java/org/realscale/neoforge/GrandOverworldCaveNetworkSmoke.java'
+      - 'neoforge/src/test/java/org/realscale/neoforge/RealDemSeamlessMathSmoke.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java'
       - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/usgs_big_sur_v2/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/realism_max/**'
