@@ -53,7 +53,10 @@ public final class CaveGeologyAccentFeature extends Feature<NoneFeatureConfigura
                     ||biome.equals("realscale:deep_fungal_caverns");
             boolean deep=biome.equals("minecraft:deep_dark");
             if(!karst && !fungal && !deep)continue;
-            // Exposed floor/wall geology; only ordinary rock is recolored.
+            boolean moist=biome.equals("realscale:damp_limestone_caverns")
+                    ||biome.equals("minecraft:lush_caves")
+                    ||biome.equals("realscale:deep_fungal_caverns");
+            // Exposed natural rock only; never carve caves or change ores.
             // Small dry mineral crusts on existing karst cave ceilings.
             boolean ceiling=karst && context.random().nextInt(4)==0;
             BlockPos rock=ceiling?air.above(2):air.below();
@@ -63,13 +66,17 @@ public final class CaveGeologyAccentFeature extends Feature<NoneFeatureConfigura
             BlockState accent;
             if(karst)accent=ceiling
                     ? Blocks.CALCITE.defaultBlockState()
+                    : moist && context.random().nextInt(4)==0
+                    ? Blocks.CLAY.defaultBlockState()
                     : context.random().nextBoolean()
                     ? Blocks.CALCITE.defaultBlockState()
                     : Blocks.DRIPSTONE_BLOCK.defaultBlockState();
             else if(fungal)accent=context.random().nextBoolean()
                     ? Blocks.MOSS_BLOCK.defaultBlockState()
                     : Blocks.CLAY.defaultBlockState();
-            else accent=context.random().nextBoolean()
+            else accent=context.random().nextInt(4)==0
+                    ? Blocks.SMOOTH_BASALT.defaultBlockState()
+                    : context.random().nextBoolean()
                     ? Blocks.TUFF.defaultBlockState()
                     : Blocks.DEEPSLATE.defaultBlockState();
             if(previous.equals(accent))continue;
