@@ -1,0 +1,97 @@
+name: Chaotianmen TRUE OSM snapshot to Minecraft UI plan
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'chongqing/data/chaotianmen_osm_api_20261019_r500_b100.json.gz.b64'
+      - 'tools/chongqing_osm_to_minecraft.py'
+      - 'neoforge/src/main/resources/assets/realscale/terrain/chaotianmen_authentic_osm_ui_plan_v2.json.gz.b64'
+      - 'neoforge/src/main/java/org/realscale/neoforge/ChongqingGisPlan.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/ChongqingGisMiniMap.java'
+      - 'tools/chongqing_gis_audit.py'
+      - 'qa/test_chongqing_osm_to_minecraft.py'
+      - 'qa/test_chongqing_gis_audit.py'
+      - 'tools/chongqing_fetch_osm_api.py'
+      - 'qa/test_chongqing_fetch_osm_api.py'
+      - '.github/workflows/chongqing-real-gis.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-real-geography:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify authentic OSM snapshot and no-ground-flattening regressions
+        run: |
+          python3 -m unittest discover -s qa -p 'test_chongqing_osm_to_minecraft.py' -v
+          python3 -m unittest discover -s qa -p 'test_chongqing_gis_audit.py' -v
+          python3 -m unittest discover -s qa -p 'test_chongqing_fetch_osm_api.py' -v
+          python3 tools/chongqing_fetch_osm_api.py --radius 500 --dry-run --output build/future-osm-unfetched.json.gz.b64
+      - name: Generate actual 500m WGS84 geometry audit from pinned ODbL source
+        run: |
+          python3 tools/chongqing_gis_audit.py \
+            --input chongqing/data/chaotianmen_osm_api_20261019_r500_b100.json.gz.b64 \
+            --radius 500 \
+            --output build/chaotianmen-real-osm-audit
+      - name: Export native command-free Chaotianmen Minecraft UI placement plan
+        run: |
+          python3 tools/chongqing_osm_to_minecraft.py \
+            --input chongqing/data/chaotianmen_osm_api_20261019_r500_b100.json.gz.b64 \
+            --radius 500 \
+            --output build/chaotianmen-real-osm-datapack \
+            --attribution '© OpenStreetMap contributors, ODbL-1.0; official OSM API 2026-10-19'
+      - name: Validate generated UI plan and geographic provenance
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, base64, gzip, hashlib
+          root=pathlib.Path('build/chaotianmen-real-osm-datapack')
+          native_json=(root/'chongqing-gis-plan.json').read_bytes()
+          baked_path=pathlib.Path(
+              'neoforge/src/main/resources/assets/realscale/terrain/'
+              'chaotianmen_authentic_osm_ui_plan_v2.json.gz.b64')
+          baked_json=gzip.decompress(
+              base64.b64decode(baked_path.read_bytes().strip(),validate=True))
+          assert native_json == baked_json, (
+              'BUNDLED PLAYER GUI DATA DOES NOT MATCH AUTHENTIC SOURCE EXPORT')
+          assert hashlib.sha256(native_json).hexdigest()==(
+              '04a380b144d3f002c0157d841edefb68d5a5bfacf6ca07149c43e8f03a858980')
+          print('Bundled RealScale JAR GIS resource source-parity PASS')
+          plan=json.loads((root/'chongqing-gis-plan.json').read_text())
+          manifest=json.loads((root/'manifest.json').read_text())
+          audit=json.loads(pathlib.Path('build/chaotianmen-real-osm-audit/audit.json').read_text())
+          assert plan['format']=='REALSCALE_CHAOTIANMEN_PLACEMENT_V2'
+          assert plan['radius_m']==500
+          assert plan['dem_source_raw_sha256']==manifest['dem_source_raw_sha256']
+          assert audit['source_sha256']==manifest['vector_source_sha256']
+          assert plan['massing_policy']=='schematic_hollow_facade_roof_v2'
+          assert plan['row_count']==len(plan['rows'])
+          assert all(r['shell'] in {'none','facade','roof'} for r in plan['rows'])
+          assert plan['planned_block_writes']==sum(
+              (r['x1']-r['x0']+1)*(1+(r['height'] if r['shell']=='facade'
+                  else 1 if r['shell']=='roof' else 0))
+              for r in plan['rows'])
+          assert 0 < plan['planned_block_writes'] <= 5_000_000
+          assert all(0<=r['height']<=500 and r['x0']<=r['x1'] for r in plan['rows'])
+          assert audit['upstream_osm_provenance']['raw_xml_sha256']=='7a2e4d777de05efe5fc46b889fca3d86ff47981d6d9bab2cf940188790022d31'
+          print('AUTHENTIC SNAPSHOT PASS:',audit['source_sha256'],audit['counts'])
+          print('Native GUI plan:',plan['row_count'],'rows',plan['planned_block_writes'],'writes')
+          PY
+      - name: Upload verified preview, provenance and native GUI plan
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-chaotianmen-500m-gis-ui-plan
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            build/chaotianmen-real-osm-audit/plan.svg
+            build/chaotianmen-real-osm-audit/audit.json
+            build/chaotianmen-real-osm-datapack/manifest.json
+            build/chaotianmen-real-osm-datapack/chongqing-gis-plan.json
