@@ -49,19 +49,19 @@ if world_preset["dimensions"]["minecraft:the_end"]["generator"]["biome_source"][
 server_dir=MOD/"run"
 for candidate in (server_dir,server_dir/"server",server_dir/"gametestserver"):
     candidate.mkdir(parents=True,exist_ok=True)
-    (candidate/"eula.txt").write_text("eula=true\\n".replace("\\\\n","\\n"))
+    (candidate/"eula.txt").write_text("eula=true\n".replace("\\\n","\n"))
     (candidate/"server.properties").write_text(
-        "level-name="+WORLD+"\\n"
-        "level-type="+PROFILE+"\\n"
-        "level-seed=785312\\n"
-        "view-distance=3\\n"
-        "simulation-distance=3\\n"
-        "spawn-protection=0\\n"
-        "max-tick-time=-1\\n"
-        "online-mode=true\\n"
-        "enable-rcon=true\\n"
-        "rcon.password=realscale_unified_spawn_ci_only\\n"
-        "rcon.port=25575\\n",encoding="utf-8")
+        "level-name="+WORLD+"\n"
+        "level-type="+PROFILE+"\n"
+        "level-seed=785312\n"
+        "view-distance=3\n"
+        "simulation-distance=3\n"
+        "spawn-protection=0\n"
+        "max-tick-time=-1\n"
+        "online-mode=true\n"
+        "enable-rcon=true\n"
+        "rcon.password=realscale_unified_spawn_ci_only\n"
+        "rcon.port=25575\n",encoding="utf-8")
 
 log=[]
 ready=threading.Event()
