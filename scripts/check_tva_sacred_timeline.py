@@ -31,7 +31,7 @@ diverse_v3=["realscale:tva_sacred_biodiversity_end3_spawn3_v3",
             "realscale:tva_measured_biodiversity_end3_spawn3_v3"]
 for name in ("normal","extended"):
     tag=read(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset"/(name+".json"))
-    selected=menu+(diverse+diverse_v3+["realscale:tva_regional_landform_expedition_three_realms","realscale:tva_regional_landform_expedition_v2_three_realms","realscale:tva_global_landform_expedition_v3_three_realms"] if name=="normal" else [])
+    selected=menu+(diverse+diverse_v3+["realscale:tva_regional_landform_expedition_three_realms","realscale:tva_regional_landform_expedition_v2_three_realms","realscale:tva_global_landform_expedition_v3_three_realms","realscale:tva_measured_global_landforms_three_realms"] if name=="normal" else [])
     assert tag["replace"] is False and tag["values"]==selected,(name,tag)
     assert len(tag["values"])==len(set(tag["values"]))==len(selected)
 for name,settings in FAMILIES.items():

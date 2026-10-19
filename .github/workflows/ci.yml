@@ -42,6 +42,17 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_regional_landform_atlas_v2.py' -v
       - name: Validate 24-geomorphology global-landform v3 graph and legacy world isolation
         run: python3 -m unittest discover -s qa -p 'test_global_rare_landforms_v3.py' -v
+      - name: Validate integrated USGS ordinary DEM plus 24 rare geomorphic enclave sources
+        run: python3 -m unittest discover -s qa -p 'test_usgs_measured_global_hybrid.py' -v
+      - name: Assert pure Java measured baseline remains bit-exact outside rare geology
+        run: |
+          mkdir -p build/usgs-hybrid-math
+          javac -d build/usgs-hybrid-math \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/RegionalLandformMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/MeasuredHybridRareMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/MeasuredHybridRareMathSmoke.java
+          java -cp build/usgs-hybrid-math org.realscale.neoforge.MeasuredHybridRareMathSmoke
       - name: Prove world-global 12km rare geological field geometry on pure Java
         run: |
           mkdir -p build/rare-landform-v3-math

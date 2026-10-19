@@ -54,5 +54,6 @@
   "generator.realscale.tva_measured_biodiversity_end3_spawn3_v3": "RealScale Measured / USGS • 14 Additional Ecological Biomes + Sky Isles + End Invasion (Experimental)",
   "generator.realscale.tva_regional_landform_expedition_three_realms": "RealScale Global Highlands Expedition — Tibet, Andes, Sichuan, Chongqing & Yungui (Experimental)",
   "generator.realscale.tva_regional_landform_expedition_v2_three_realms": "RealScale Global Highlands Expedition v2 • 16 Tibetan/Andean/Yungui/Sichuan Regional Landforms (Experimental)",
-  "generator.realscale.tva_global_landform_expedition_v3_three_realms": "RealScale Global Rare Landform Expedition v3 • 24 Worldwide Geological Shapes (Experimental)"
+  "generator.realscale.tva_global_landform_expedition_v3_three_realms": "RealScale Global Rare Landform Expedition v3 • 24 Worldwide Geological Shapes (Experimental)",
+  "generator.realscale.tva_measured_global_landforms_three_realms": "RealScale USGS Measured + All Global Landforms • Natural DEM Terrain / 24 Rare Geological Wonders (Experimental)"
 }
