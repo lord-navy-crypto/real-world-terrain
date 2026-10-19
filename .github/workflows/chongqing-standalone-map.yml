@@ -5,6 +5,8 @@ on:
   pull_request:
     paths:
       - 'tools/chongqing_export_standalone_world.py'
+      - 'tools/chongqing_osm_surface.py'
+      - 'qa/test_chongqing_osm_surface.py'
       - 'neoforge/src/main/resources/assets/realscale/terrain/chaotianmen_authentic_osm_ui_plan_v2.json.gz.b64'
       - 'neoforge/src/main/resources/assets/realscale/terrain/chongqing_chaotianmen_dem_v1.properties'
       - 'qa/test_chongqing_standalone_world.py'
@@ -31,6 +33,12 @@ jobs:
         run: python3 -m pip install 'nbtlib==2.0.4'
       - name: Test actual Anvil block serialization and independent world rules
         run: python3 -m unittest discover -s qa -p 'test_chongqing_standalone_world.py' -v
+      - name: Verify real OSM material classifier and source licensing regression
+        run: python3 -m unittest discover -s qa -p 'test_chongqing_osm_surface.py' -v
+      - name: Fetch ODbL official OSM surfaces, squares and land-use areas
+        run: |
+          python3 tools/chongqing_osm_surface.py \
+            --output build/chaotianmen-osm-surface-v1.json.gz
       - name: Prepare authentic extended-height vanilla world creation
         run: |
           python3 tools/chongqing_export_standalone_world.py \
@@ -92,11 +100,13 @@ jobs:
         run: |
           python3 tools/chongqing_export_standalone_world.py \
             --mode package --server-root build/vanilla-chaotianmen \
+            --osm-surface-mask build/chaotianmen-osm-surface-v1.json.gz \
             --zip build/Chaotianmen-Chongqing-500m-Standalone-Vanilla-1.21.1.zip
       - name: Verify saved 1.21.1 region block palette, height and pinned GIS count
         run: |
           python3 qa/test_chongqing_standalone_world.py \
-            build/vanilla-chaotianmen/Chaotianmen_500m_Standalone
+            build/vanilla-chaotianmen/Chaotianmen_500m_Standalone \
+            build/chaotianmen-osm-surface-v1.json.gz
       - name: Boot the REAL exported vanilla map and verify it reaches Done
         run: |
           python3 - <<'PY'
@@ -148,3 +158,4 @@ jobs:
             build/vanilla-chaotianmen/bootstrap.log
             build/vanilla-chaotianmen/actual_standalone_world_reload.log
             build/vanilla-chaotianmen/Chaotianmen_500m_Standalone/realscale-standalone-export-metrics.json
+            build/chaotianmen-osm-surface-v1.json.gz
