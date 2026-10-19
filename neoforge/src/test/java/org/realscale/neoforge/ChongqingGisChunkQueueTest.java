@@ -17,6 +17,10 @@ class ChongqingGisChunkQueueTest {
         assertEquals(plan.blockWrites,work.totalWrites());
         assertTrue(work.remainingChunks()>30);
         assertNull(work.peek(200,200),"Faraway chunks cannot appear");
+        int[] nearby=work.nearestPendingChunk(0,0);
+        assertNotNull(nearby);
+        assertTrue(work.hasPending(nearby[0],nearby[1]));
+        assertTrue(Math.abs(nearby[0])<=32 && Math.abs(nearby[1])<=32);
 
         long visits=0;
         int visitedChunks=0;
@@ -56,6 +60,7 @@ class ChongqingGisChunkQueueTest {
         assertEquals(visits,work.completedWrites());
         assertEquals(0,work.remainingChunks());
         assertTrue(work.isComplete());
+        assertNull(work.nearestPendingChunk(0,0));
         assertThrows(IllegalStateException.class,()->work.acknowledge(0,0));
     }
 
