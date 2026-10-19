@@ -40,6 +40,7 @@ public final class CrossRealmBiomeSource extends BiomeSource {
     private final BiomeSource source;
     private final String target;
     private final Holder<Biome> forest, plains, meadow, cherry, taiga, netherWastes, endHighlands;
+    private final Holder<Biome> chorusGardens, crystalBarrens, shatteredGlades;
 
     private CrossRealmBiomeSource(BiomeSource source,String target,HolderGetter<Biome> registry) {
         this.source=source;
@@ -51,17 +52,25 @@ public final class CrossRealmBiomeSource extends BiomeSource {
         taiga=get(registry,"taiga");
         netherWastes=get(registry,"nether_wastes");
         endHighlands=get(registry,"end_highlands");
+        chorusGardens=getAccent(registry,"end_chorus_gardens");
+        crystalBarrens=getAccent(registry,"end_crystal_barrens");
+        shatteredGlades=getAccent(registry,"end_shattered_glades");
     }
     private static Holder<Biome> get(HolderGetter<Biome> registry,String id) {
         return registry.getOrThrow(ResourceKey.create(Registries.BIOME,
             ResourceLocation.fromNamespaceAndPath("minecraft",id)));
+    }
+    private static Holder<Biome> getAccent(HolderGetter<Biome> registry,String id) {
+        return registry.getOrThrow(ResourceKey.create(Registries.BIOME,
+            ResourceLocation.fromNamespaceAndPath("realscale",id)));
     }
     private BiomeSource source(){return source;}
     private String target(){return target;}
     @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),
-            Stream.of(forest,plains,meadow,cherry,taiga,netherWastes,endHighlands)).distinct();
+            Stream.of(forest,plains,meadow,cherry,taiga,netherWastes,endHighlands,
+                      chorusGardens,crystalBarrens,shatteredGlades)).distinct();
     }
     private static long mix(long x) {
         x^=x>>>30;x*=0xbf58476d1ce4e5b9L;
@@ -75,15 +84,20 @@ public final class CrossRealmBiomeSource extends BiomeSource {
         // Only extend an actual Nether or End biome; never overwrite ocean,
         // rivers or overworld climate, even if somebody wraps the wrong source.
         String biome=original.unwrapKey().map(k->k.location().toString()).orElse("");
-        if("overworld".equals(target) && isSpawnInvasionZone(quartX, quartZ)
-                && biome.startsWith("minecraft:")) {
-            // A guaranteed Nether/End biome at the NEW world's origin.
-            // The special starting region is small, immutable and restricted
-            // to explicit invasion world presets; all existing worlds with
-            // other saved biome-source codecs retain their original terrain.
-            // Allow the whole vertical column because the Measured terrain
-            // surface can be much higher than vanilla Y=196.
-            return (biome.hashCode() & 1) == 0 ? netherWastes : endHighlands;
+        if("overworld".equals(target) && isSpawnInvasionZone(quartX, quartZ)) {
+            // Locked rule: the NEW WORLD's starting biome is EXACTLY one of
+            // RealScale's three original End habitats, never a vanilla Nether
+            // biome or a vanilla End biome. Determine the choice from a fixed
+            // seed-dependent source sample, not local X/Y: the whole starting
+            // column, even above Measured mountains, stays ONE biome.
+            String anchor = source.getNoiseBiome(0,20,0,sampler).unwrapKey()
+                    .map(k->k.location().toString()).orElse("minecraft:plains");
+            int choice=(int)Math.floorMod(mix(anchor.hashCode() ^ 0x7346b127L),3L);
+            return switch(choice) {
+                case 0 -> chorusGardens;
+                case 1 -> crystalBarrens;
+                default -> shatteredGlades;
+            };
         }
         if("overworld".equals(target)) {
             // A different site population from the Nether/End imported
