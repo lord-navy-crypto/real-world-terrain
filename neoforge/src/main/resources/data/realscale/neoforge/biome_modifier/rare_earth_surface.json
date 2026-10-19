@@ -10,7 +10,10 @@
     "realscale:acidic_geothermal_mudflat",
     "realscale:montane_mist_forest",
     "realscale:permafrost_fen",
-    "realscale:limestone_island_scrub"
+    "realscale:limestone_island_scrub",
+    "realscale:namib_fog_desert",
+    "realscale:serpentine_barrens",
+    "realscale:socotra_endemic_scrub"
   ],
   "features": "realscale:rare_earth_surface",
   "step": "vegetal_decoration"
