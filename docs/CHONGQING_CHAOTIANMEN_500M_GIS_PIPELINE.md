@@ -332,3 +332,80 @@ force-loading additional chunks.
 NeoForge block placement and reopening a backed-up save, robust FPS
 measurements, ODbL legal handling, The Crystal's measured 3D deck,
 rivers and complex over/underpasses. **Only the isolated Draft PR changes.**
+
+## Phase 8 — real OSM + LICENSED Copernicus satellite terrain material recognition
+
+User-observed bug: the old standalone city generated grass over essentially
+every DEM cell, even on real urban hardscapes, and so looked like a
+Minecraft dirt/grass island rather than Chongqing. The real cause is that
+the pinned OSM V2 object archive originally filtered out nearly all
+surface, land-use, squares and parks.
+
+### Implemented georeferenced source layers
+
+1. The official open OSM 0.6 API is used to fetch separate source-attributed
+   real OSM **surface and land-use polygons**, not just lines/buildings.
+   `tools/chongqing_osm_surface.py` preserves the raw API response
+   SHA-256, correct WGS84 coordinates, ODbL provenance and each
+   individual way ID. Exact pavement tags override inferred
+   commercial/residential land-use; no undeclared feature is given a fake
+   source. Official data verified in the first run: **27,537 1m
+   ground locations** tagged or inferred (8,364 grass; 5,113 concrete;
+   837 asphalt; 13,223 urban-use low-confidence candidates). A minimum
+   of 974,464 cells had no qualifying direct OSM surface polygon.
+2. `tools/chongqing_fetch_copernicus.py` queries the PUBLIC
+   Microsoft Planetary Computer STAC catalog for an authentic **Copernicus
+   Sentinel-2 L2A scene**, reads truly georeferenced green, red, NIR and
+   scene-classification GeoTIFF bands, and records the exact source
+   scene ID/date/cloud score and open Sentinel use terms. This does
+   not use Google Earth, restricted imagery or satellite screen grabs.
+   Data and attribution are reproducible at original 10m resolution.
+3. `tools/chongqing_copernicus_landcover.py` calculates NDVI and
+   checks Sentinel scene classes: healthy green vegetation becomes
+   a candidate grass-covered location; confidently detected nonvegetated
+   ground receives a **low-confidence generic urban/bare ground
+   material**, NOT a claim that it is specifically an asphalt road.
+   Cloud, shadow, snow, river/water, uncertain and invalid pixels
+   stay unclassified instead of being colored as invented land cover.
+   The first public scene classified **300,251** 1m display positions
+   from true **10m image measurements** (250,130 low-confidence bare/
+   urban and 50,121 vegetation), with many remaining unknown.
+   The 1m display is upsampling, NOT 1m imagery detail.
+4. In the independent vanilla `region/*.mca` export, color/material
+   selection respects a **provenance-based precedence**:
+   *actual pinned OSM V2 building/road/rail/reference blocks*
+   above *explicit/land-use OSM ground* above *cloud-screened
+   open Sentinel-2 broad spectral land cover* above
+   *unverified default neutral terrain*.
+   Terrain Y still comes from the same checksum-pinned actual DEM,
+   not from satellite pixel color.
+5. The experimental **standalone 1.21.1 world ZIP is rebuilt and
+   real-Java-server-reloaded in CI**. Unit and actual-Anvil NBT tests
+   verify source-ground material precedence, license and hashes,
+   incomplete cloud masks, all 494,988 GIS writes and the extended
+   world height. Original RealScale Java mod and TVA world presets
+   remain unaffected.
+
+### What this does NOT solve yet
+
+- Sentinel-2 10m spectral pixels cannot resolve individual sidewalks,
+  doors, building walls, paved tile patterns or accurate height.
+- OSM `landuse=commercial` alone does NOT reveal real pavement material:
+  these blocks are visibly annotated `LOW CONFIDENCE` in the audit.
+- The rivers still need accurately sourced and vertically aligned
+  water surfaces; their satellite detection alone does not supply a safe
+  river surface Y. We must not pour vanilla water at guessed heights.
+- True Chongqing building detail, Raffles City's elevated Crystal,
+  overpasses, underpasses and tower facades require more open 3D
+  geometry, building parts, DSM/LiDAR or independently verified modeling.
+  Overture Maps (ODbL) provides building footprints, height and parts
+  where available, but quality must be audited before import.
+- High-resolution (sub-1m) licensed orthophotography would greatly
+  improve pavement recognition. No such image has yet been obtained
+  and validated for use and redistribution in this build.
+
+**Never claim this is an exact 1:1 visual reconstruction:** coordinate
+scale is 1m per block, but the source resolution and mapping completeness
+are independent. Public attribution for the satellite layer:
+"Contains modified Copernicus Sentinel data (2025)." Public OSM
+attribution: "© OpenStreetMap contributors, ODbL-1.0."
