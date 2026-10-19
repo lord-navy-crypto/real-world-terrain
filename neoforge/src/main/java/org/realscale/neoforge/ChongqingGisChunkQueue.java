@@ -95,6 +95,25 @@ public final class ChongqingGisChunkQueue {
             throw new IllegalStateException("GIS executor exceeded plan writes");
     }
 
+    /**
+     * Gives players an actual remaining chunk to fly toward, no teleport
+     * commands, no automatic chunk loads and no made-up street addresses.
+     */
+    public int[] nearestPendingChunk(int playerChunkX,int playerChunkZ) {
+        long best=Long.MAX_VALUE;
+        int[] chosen=null;
+        for (long chunk:chunks.keySet()) {
+            int cx=(int)(chunk>>32),cz=(int)chunk;
+            long dx=(long)cx-playerChunkX,dz=(long)cz-playerChunkZ;
+            long distance=dx*dx+dz*dz;
+            if (distance<best) {
+                best=distance;
+                chosen=new int[]{cx,cz};
+            }
+        }
+        return chosen;
+    }
+
     public long completedWrites() { return completedWrites; }
     public long totalWrites() { return totalWrites; }
     public int remainingChunks() { return chunks.size(); }
