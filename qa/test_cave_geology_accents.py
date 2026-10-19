@@ -18,6 +18,13 @@ class CaveGeologyQA(unittest.TestCase):
         self.assertIn("minecraft:lush_caves",m["biomes"])
         self.assertIn("minecraft:dripstone_caves",m["biomes"])
         self.assertIn("minecraft:deep_dark",m["biomes"])
+    def test_karst_ceiling_mineral_accents(self):
+        c=(SRC/"CaveGeologyAccentFeature.java").read_text()
+        self.assertIn("boolean ceiling=karst",c)
+        self.assertIn("air.above(2):air.below()",c)
+        self.assertIn("if(ceiling && !dry(w,rock.below()))continue",c)
+        self.assertIn("Blocks.CALCITE.defaultBlockState()",c)
+
     def test_no_carving_ore_or_cross_chunk_edits(self):
         c=(SRC/"CaveGeologyAccentFeature.java").read_text()
         for marker in ("TVAWorldGuard.hasRealScaleGenerator", "minecraft:overworld",
