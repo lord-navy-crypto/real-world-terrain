@@ -27,6 +27,7 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "regional_landform_diverse_v2"), RegionalLandformDensity.V2_MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "regional_landform_global_v3"), RegionalGlobalLandformDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "measured_rare_hybrid"), MeasuredHybridRareDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "marine_seafloor"), MarineSeafloorDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "ridge_erosion"), RidgeErosionDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "strata"), StrataDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "valley_temperature"), ValleyTemperatureDensity.MAP_CODEC);
