@@ -27,6 +27,17 @@ final class RegionalLandformMath {
     static final int WULONG_TIAN_KENG = 14;
     static final int SICHUAN_ESCARPMENT = 15;
     static final int KINDS_V2 = 16;
+    // v3: worldwide landform atlas. All original 0..15 IDs preserved.
+    static final int CELL_V3 = 12288;
+    static final int GUIANA_TEPUI = 16;
+    static final int TROPICAL_INSELBERGS = 17;
+    static final int GLACIAL_DRUMLIN_FIELD = 18;
+    static final int GLACIAL_ESKER_RIDGE = 19;
+    static final int NAMIB_STAR_DUNES = 20;
+    static final int EAST_AFRICAN_RIFT = 21;
+    static final int UTAH_SLOT_CANYON = 22;
+    static final int ICELAND_CALDERA = 23;
+    static final int KINDS_V3 = 24;
 
     private RegionalLandformMath() {}
     static long mix(long x) {
@@ -75,6 +86,31 @@ final class RegionalLandformMath {
         int candidate=Math.floorMod((int)Math.floorMod(h,KINDS_V2)
                 +(int)Math.round(GeoMath.clamp(seededSelector,-1,1)*5),KINDS_V2);
         return candidate;
+    }
+    /** 12.288km cells, safely bounded and independent of v1/v2 worldgen. */
+    static long hashV3(int cx,int cz) {
+        return mix((long)cx*0x9e3779b97f4a7c15L
+                 ^ (long)cz*0xc2b2ae3d27d4eb4fL
+                 ^ 0x740e47a6db15c921L);
+    }
+    static int centerXV3(int cx,long h) {
+        return Math.toIntExact((long)cx*CELL_V3+CELL_V3/2
+                +Math.floorMod(h>>>17,721L)-360);
+    }
+    static int centerZV3(int cz,long h) {
+        return Math.toIntExact((long)cz*CELL_V3+CELL_V3/2
+                +Math.floorMod(h>>>37,721L)-360);
+    }
+    static double radiusV3(long h) {
+        return 4150.0+Math.floorMod(h>>>11,751L);
+    }
+    static int kindV3(long h,double seededSelector) {
+        return Math.floorMod((int)Math.floorMod(h,KINDS_V3)
+                +(int)Math.round(GeoMath.clamp(seededSelector,-1,1)*7),
+                KINDS_V3);
+    }
+    static double gaussian(double x) {
+        return Math.exp(-x*x);
     }
     static double gate(double continent,double baseline) {
         // Inland surface ONLY. Preserves ocean floors and low sea-level land.
@@ -177,6 +213,64 @@ final class RegionalLandformMath {
                 double slope=GeoMath.smoothstep(280,1050,Math.abs(v));
                 double terrace=0.13*Math.cos(v/160.0)*slope;
                 yield core*(-0.42+1.8*slope+terrace);
+            }
+            // UNESCO Guiana Shield tepui: broad top with rapidly falling sandstone walls.
+            case GUIANA_TEPUI -> {
+                double shelf=1.0-GeoMath.smoothstep(0.44,0.51,rr);
+                yield core*(0.20+3.55*shelf
+                        +0.055*Math.sin(u/310.0)*Math.cos(v/360.0));
+            }
+            // Tropical inselbergs: separate smooth granite domes above flatter ground.
+            case TROPICAL_INSELBERGS -> {
+                double domes=0;
+                for(int n=-2;n<=2;n++) {
+                    double px=(u-n*780.0)/410.0;
+                    double pz=(v-380*Math.sin(n*2.1))/325.0;
+                    domes=Math.max(domes,2.9*gaussian(px)*gaussian(pz));
+                }
+                yield core*(0.12+domes);
+            }
+            // Ice-flow aligned drumlins: rounded but elongated till hills.
+            case GLACIAL_DRUMLIN_FIELD -> {
+                double span=Math.pow(Math.max(0,Math.cos(u/220.0)),8.0);
+                double elongate=Math.pow(Math.max(0,
+                        Math.cos((v+55*Math.sin(u/330.0))/820.0)),6.0);
+                yield core*(0.18+1.75*span*elongate);
+            }
+            // Esker: a continuous winding, narrow glaciofluvial gravel ridge.
+            case GLACIAL_ESKER_RIDGE -> {
+                double offset=v-300*Math.sin(u/660.0)-130*Math.sin(u/205.0);
+                double crest=gaussian(offset/69.0);
+                yield core*(0.05+2.30*crest);
+            }
+            // Namib-like star dunes: multiple radial dune arms, not a cone.
+            case NAMIB_STAR_DUNES -> {
+                double theta=Math.atan2(v,u);
+                double arms=Math.pow(0.5+0.5*Math.cos(6*theta),5.0);
+                double distance=Math.hypot(u,v);
+                double dune=gaussian((distance-870.0)/700.0);
+                yield core*(0.15+2.75*dune*(0.38+0.62*arms));
+            }
+            // Rift valley: down-dropped floor, two lifted fault shoulders.
+            case EAST_AFRICAN_RIFT -> {
+                double transverse=Math.abs(v-140*Math.sin(u/940.0));
+                double floor=1.0-GeoMath.smoothstep(165,360,transverse);
+                double shoulders=GeoMath.smoothstep(280,530,transverse)
+                                  *(1.0-GeoMath.smoothstep(700,1100,transverse));
+                yield core*(-1.60*floor+1.40*shoulders);
+            }
+            // Sandstone slot canyon: narrow meandering incision in plateau.
+            case UTAH_SLOT_CANYON -> {
+                double channel=v-190*Math.sin(u/510.0)-75*Math.sin(u/160.0);
+                yield core*(0.53-2.85*gaussian(channel/82.0));
+            }
+            // Wide caldera with a ring wall and recessed floor, unlike a cone volcano.
+            case ICELAND_CALDERA -> {
+                double localR=Math.hypot(u,v)/1900.0;
+                double ring=GeoMath.smoothstep(0.60,0.81,localR)
+                        *(1.0-GeoMath.smoothstep(0.97,1.16,localR));
+                double basin=1.0-GeoMath.smoothstep(0.48,0.84,localR);
+                yield core*(2.60*ring-1.35*basin);
             }
             default -> 0;
         };

@@ -40,6 +40,16 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_regional_landform_atlas.py' -v
       - name: Validate 16-region Highland v2 noise graph and legacy v1 save isolation
         run: python3 -m unittest discover -s qa -p 'test_regional_landform_atlas_v2.py' -v
+      - name: Validate 24-geomorphology global-landform v3 graph and legacy world isolation
+        run: python3 -m unittest discover -s qa -p 'test_global_rare_landforms_v3.py' -v
+      - name: Prove world-global 12km rare geological field geometry on pure Java
+        run: |
+          mkdir -p build/rare-landform-v3-math
+          javac -d build/rare-landform-v3-math \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/RegionalLandformMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/GlobalRareLandformV3Smoke.java
+          java -cp build/rare-landform-v3-math org.realscale.neoforge.GlobalRareLandformV3Smoke
       - name: Prove 8-km regions and new glacial, tiankeng, volcanic, saline-basin morphology
         run: |
           mkdir -p build/regional-landform-v2-math

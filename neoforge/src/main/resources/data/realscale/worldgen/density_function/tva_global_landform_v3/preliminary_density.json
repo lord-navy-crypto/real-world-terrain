@@ -1,0 +1,5 @@
+{
+  "argument1": "realscale:tva_global_landform_v3/terrain_density",
+  "argument2": 0.390625,
+  "type": "minecraft:add"
+}
