@@ -7,6 +7,8 @@ on:
       - 'tools/chongqing_export_standalone_world.py'
       - 'tools/chongqing_osm_surface.py'
       - 'tools/chongqing_osm_roads.py'
+      - 'tools/chongqing_crystal_3d.py'
+      - 'qa/test_chongqing_crystal_3d.py'
       - 'qa/test_chongqing_osm_roads.py'
       - 'tools/chongqing_copernicus_landcover.py'
       - 'tools/chongqing_fetch_copernicus.py'
@@ -58,6 +60,8 @@ jobs:
         run: |
           python3 tools/chongqing_osm_roads.py \
             --output build/chaotianmen-osm-road-corridors-v1.json.gz
+      - name: Verify real OSM Crystal polygon and 3D height tags before writing any glass
+        run: python3 -m unittest discover -s qa -p 'test_chongqing_crystal_3d.py' -v
       - name: Prepare authentic extended-height vanilla world creation
         run: |
           python3 tools/chongqing_export_standalone_world.py \
@@ -122,6 +126,7 @@ jobs:
             --osm-surface-mask build/chaotianmen-osm-surface-v1.json.gz \
             --satellite-mask build/chaotianmen-copernicus-10m-surface-v1.json.gz \
             --osm-road-corridors build/chaotianmen-osm-road-corridors-v1.json.gz \
+            --enable-crystal-schematic \
             --zip build/Chaotianmen-Chongqing-500m-Standalone-Vanilla-1.21.1.zip
       - name: Verify saved 1.21.1 region block palette, height and pinned GIS count
         run: |
