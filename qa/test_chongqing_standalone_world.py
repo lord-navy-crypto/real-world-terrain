@@ -115,6 +115,11 @@ def verify_world(world,surface_mask=None,satellite_mask=None,roads_mask=None):
     radius=report["world_xz_range"][1]
     assert report["world_xz_range"]==[-radius,radius]
     assert radius in (500,600)
+    # CLI validator imports the exporter afresh, where 500m is the
+    # conservative legacy default. Adopt the exact saved-world footprint
+    # only AFTER reading its signed-off metadata, so a true 600m satellite
+    # mask is not rejected as if we were still validating the old save.
+    exporter.RADIUS=radius
     assert report["regions"]==(4 if radius==500 else 16)
     assert report["dem_terrain_columns"]==(2*radius+1)**2
 
