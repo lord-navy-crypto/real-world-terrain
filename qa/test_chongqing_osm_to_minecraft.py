@@ -175,6 +175,16 @@ class ChongqingGISTests(unittest.TestCase):
                          out,100,"© OpenStreetMap contributors (ODbL); synthetic test geometry")
             self.assertEqual(result["stages"],1)
             self.assertEqual(result["dem_source_raw_sha256"],dem.sha256)
+            self.assertEqual(result["native_ui_plan"],"chongqing-gis-plan.json")
+            native=json.loads((out/"chongqing-gis-plan.json").read_text())
+            self.assertEqual(native["format"],"REALSCALE_CHAOTIANMEN_PLACEMENT_V1")
+            self.assertEqual(native["dem_source_raw_sha256"],dem.sha256)
+            self.assertEqual(native["row_count"],len(native["rows"]))
+            self.assertEqual(native["planned_block_writes"],sum(
+                (r["x1"]-r["x0"]+1)*(r["height"]+1) for r in native["rows"]))
+            self.assertTrue(native["source_unverified"])
+            self.assertTrue(all(-100<=r["x0"]<=r["x1"]<=100
+                                and -100<=r["z"]<=100 for r in native["rows"]))
             commands=(out/"data/realscale_chongqing/function/tile_0000.mcfunction").read_text()
             self.assertIn("minecraft:light_gray_concrete",commands)
             self.assertIn("fill ",commands)
