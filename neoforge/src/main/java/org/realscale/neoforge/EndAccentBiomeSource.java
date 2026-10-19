@@ -48,6 +48,12 @@ public final class EndAccentBiomeSource extends BiomeSource {
 
     private BiomeSource source() { return source; }
 
+    /** Used only by our opt-in decoration guard; foreign biomes remain intact. */
+    public boolean containsCrossRealm() {
+        return source instanceof CrossRealmBiomeSource
+            || source instanceof CrossRealmShowcaseBiomeSource;
+    }
+
     @Override protected MapCodec<? extends BiomeSource> codec() { return CODEC; }
 
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
