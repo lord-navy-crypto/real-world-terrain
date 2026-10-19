@@ -89,7 +89,7 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         // Nether/End spawn biome even where a sky island intersects origin.
         // Only the tiny 192-block starting circle is delegated. Elsewhere,
         // offshore sky-island sampling is entirely unchanged.
-        if (source instanceof CrossRealmBiomeSource
+        if (containsCrossRealm()
                 && CrossRealmBiomeSource.isSpawnInvasionZone(quartX,quartZ))
             return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
         // Explicit identity delegation for ocean, seabed, ocean structures and
