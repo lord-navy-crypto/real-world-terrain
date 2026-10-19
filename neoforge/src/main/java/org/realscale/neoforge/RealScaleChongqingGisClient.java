@@ -142,9 +142,7 @@ public final class RealScaleChongqingGisClient {
     private static final class Session {
         final MinecraftServer server;
         final ChongqingGisPlan plan;
-        volatile int rowIndex;
-        int x;
-        int yOffset;
+        final ChongqingGisChunkQueue queue;
         volatile long applied;
         volatile String status;
         volatile boolean running;
@@ -152,7 +150,8 @@ public final class RealScaleChongqingGisClient {
         volatile boolean previewGood;
         volatile UUID authorizedPlayer;
         Session(MinecraftServer server, ChongqingGisPlan plan) {
-            this.server=server; this.plan=plan; this.x=plan.rows.get(0).x0();
+            this.server=server; this.plan=plan;
+            this.queue=new ChongqingGisChunkQueue(plan);
             status="Plan validated. Confirm an external world backup first.";
         }
 
@@ -161,7 +160,7 @@ public final class RealScaleChongqingGisClient {
                 status="Survey the REAL loaded surface first. No placement started.";
                 return;
             }
-            if (rowIndex >= plan.rows.size()) {
+            if (queue.isComplete()) {
                 status="All source-aligned batches were already placed.";
                 return;
             }
@@ -224,6 +223,28 @@ public final class RealScaleChongqingGisClient {
             });
         }
 
+        /**
+         * A loaded chunk near the player is selected first. This avoids
+         * ancient sorted-row starvation where the first GIS row is far
+         * outside currently loaded chunks. NEVER generate chunks here.
+         */
+        private int[] nearestLoadedWork(ServerLevel level, ServerPlayer player) {
+            int cx=Math.floorDiv(player.blockPosition().getX(),16);
+            int cz=Math.floorDiv(player.blockPosition().getZ(),16);
+            for (int radius=0;radius<=5;radius++) {
+                for (int dz=-radius;dz<=radius;dz++) {
+                    for (int dx=-radius;dx<=radius;dx++) {
+                        if (Math.max(Math.abs(dx),Math.abs(dz))!=radius) continue;
+                        int x=cx+dx,z=cz+dz;
+                        if (queue.hasPending(x,z)
+                                && level.getChunkSource().hasChunk(x,z))
+                            return new int[]{x,z};
+                    }
+                }
+            }
+            return null;
+        }
+
         // Runs only on the logical integrated-server tick thread.
         void applyTick() {
             try {
@@ -236,39 +257,49 @@ public final class RealScaleChongqingGisClient {
                 ServerLevel level=server.overworld();
                 int writes=0;
                 while (running && writes < WRITES_PER_TICK
-                        && rowIndex < plan.rows.size()) {
-                    ChongqingGisPlan.Row row=plan.rows.get(rowIndex);
-                    if (x < row.x0() || x > row.x1()) {
-                        x=row.x0();yOffset=0;
+                        && !queue.isComplete()) {
+                    int[] chunk=nearestLoadedWork(level,player);
+                    if (chunk==null) {
+                        pause();
+                        previewGood=false;
+                        status="No remaining GIS construction in loaded nearby chunks. "
+                                +"Walk/fly toward unfinished geometry; re-survey and Start. "
+                                +"Already completed "+applied+" writes are preserved.";
+                        return;
                     }
-                    int y=row.y()+yOffset;
+                    int cx=chunk[0],cz=chunk[1];
+                    ChongqingGisChunkQueue.Placement work=queue.peek(cx,cz);
+                    if (work==null) {
+                        pause();
+                        status="GIS chunk queue inconsistent; world is protected.";
+                        return;
+                    }
+                    ChongqingGisPlan.Row row=plan.rows.get(work.rowIndex());
+                    int x=work.x(),offset=work.yOffset(),y=row.y()+offset;
                     BlockPos pos=new BlockPos(x,y,row.z());
-                    if (!level.getChunkSource().hasChunk(x>>4,row.z()>>4)) {
+                    if (!level.getChunkSource().hasChunk(cx,cz)) {
                         pause();
-                        status="Missing loaded chunk "+(x>>4)+","+(row.z()>>4)
-                                +"; pregenerate/visit first. Paused.";
+                        status="GIS target chunk unloaded before placement; paused.";
                         return;
                     }
-                    BlockState target=sourceBlock(row.kind(),yOffset>0,
-                            row.height()>0 && yOffset==row.height());
+                    BlockState target=sourceBlock(row.kind(),offset>0,
+                            row.height()>0 && offset==row.height());
                     BlockState old=level.getBlockState(pos);
-                    if (yOffset==0 && !terrainMatches(level,pos,old,target)) {
+                    if (offset==0 && !terrainMatches(level,pos,old,target)) {
                         pause();
-                        status="Real saved-world surface differs from DEM plan at "
-                                +x+","+row.z()+" Y="+y
-                                +". No automatic Y guessing; survey first.";
+                        status="Actual saved surface differs from DEM at "
+                                +x+","+row.z()+" y="+y+". No Y guessing.";
                         return;
                     }
-                    if (!canReplace(old,target,yOffset>0)) {
+                    if (!canReplace(old,target,offset>0)) {
                         pause();
-                        status="Protected collision at "+x+","+y+","+row.z()
-                                +"; paused; inspect the location before retry.";
+                        status="Protected block collision at "+x+","+y+","+row.z()
+                                +"; inspect/restore backup; no overwrite.";
                         return;
                     }
                     if (!claimed) {
-                        // CREATE_NEW in the specific save directory, before
-                        // the first block, prevents replay after a crash/quit.
-                        // Restore a PRE-CONSTRUCTION backup for a new attempt.
+                        // Create the persistent one-shot marker before ANY
+                        // world mutation, even after choosing a later chunk.
                         try {
                             Path worldRoot=server.getWorldPath(LevelResource.ROOT);
                             ChongqingPlacementLock.claim(worldRoot,
@@ -276,40 +307,34 @@ public final class RealScaleChongqingGisClient {
                             claimed=true;
                         } catch (IOException ex) {
                             pause();
-                            status="World already attempted GIS placement or lock "
-                                    +"cannot be saved. Restore a clean NEW world backup.";
+                            status="Save already has a GIS lock or lock cannot be "
+                                    +"created. Restore a clean backup.";
                             return;
                         }
                     }
-                    if (!old.is(target.getBlock())) {
-                        if (!level.setBlock(pos,target,3)) {
-                            pause();
-                            status="World rejected placement at "+x+","+y+","+row.z();
-                            return;
-                        }
+                    if (!old.is(target.getBlock())
+                            && !level.setBlock(pos,target,3)) {
+                        pause();
+                        status="World refused placement at "+x+","+y+","+row.z();
+                        return;
                     }
-                    applied++;writes++;
-                    yOffset=row.nextOffsetAfter(yOffset);
-                    if (yOffset > row.height()) {
-                        yOffset=0;x++;
-                        if (x > row.x1()) {
-                            rowIndex++;
-                            if (rowIndex < plan.rows.size())
-                                x=plan.rows.get(rowIndex).x0();
-                        }
-                    }
+                    queue.acknowledge(cx,cz);
+                    applied=queue.completedWrites();
+                    writes++;
                 }
-                if (rowIndex == plan.rows.size()) {
+                if (queue.isComplete()) {
                     running=false;
-                    status="Finished "+applied+" placements. Visually verify GIS fidelity.";
+                    status="Completed "+applied+" OSM source-grounded block "
+                            +"operations. Visually verify / save backup.";
                 } else {
                     status="RUNNING: "+applied+"/"+plan.blockWrites
-                            +" block writes; close GUI to pause.";
+                            +" writes; "+queue.remainingChunks()
+                            +" GIS chunks remain; ESC pauses.";
                 }
             } catch (RuntimeException ex) {
                 pause();
-                status="Placement stopped: "+ex.getClass().getSimpleName()
-                        +". Inspect logs and world backup.";
+                status="GIS stopped: "+ex.getClass().getSimpleName()
+                        +". Inspect save and world backup.";
             }
         }
     }
@@ -420,7 +445,7 @@ public final class RealScaleChongqingGisClient {
                 message="No player attached.";
                 return;
             }
-            if (active.rowIndex >= active.plan.rows.size()) {
+            if (active.queue.isComplete()) {
                 message="All batches completed; do not replay.";
                 return;
             }
