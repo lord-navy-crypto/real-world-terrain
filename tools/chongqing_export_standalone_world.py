@@ -367,6 +367,8 @@ def generate(world, surface_file=None, satellite_file=None):
     stats["world_y_range"]=[MIN_Y,MIN_Y+HEIGHT-1]
     stats["world_xz_range"]=[-RADIUS,RADIUS]
     if satellite_meta is not None:
+        stats["satellite_evidence_used_after_exact_osm_precedence"]=sum(
+            1 for pos in satellite_lookup if pos not in surface_lookup)
         stats["sentinel_source_stac_item"]=satellite_meta["source_stac_item"]
         stats["sentinel_resolution_m"]=satellite_meta["resolution_m"]
         stats["sentinel_classified_columns"]=satellite_meta["known_surface_columns"]
@@ -442,6 +444,14 @@ def package_world(root,out,surface_file=None,satellite_file=None):
       "No RealScale mod required; unzip this folder directly inside saves/.\n"
       "REAL DATA: © OpenStreetMap contributors (ODbL 1.0), pinned OSM way geometries.\n"
       "Source DEM: same checksum-verified elevation dataset as RealScale.\n"
+      "GROUND: verified OSM surface/polygon landuse where available; Copernicus\n"
+      "Sentinel-2 10m vegetation/bare-surface classification elsewhere.\n"
+      "Satellite pixels have 10m resolution, NOT exact 1m photographed material.\n"
+      "Some unknown ground remains grass: this is a research prototype.\n"
+      "Open satellite source: Copernicus Sentinel-2 L2A, permitted to adapt.\n"
+      "Image source ID: "+str(stats.get("sentinel_source_stac_item","none"))+"\n"
+      "Contains modified Copernicus Sentinel data [2025].\n"
+
       "Map XY: 1 metre = 1 block, X east, Z south, origin lat 29.5667 lon 106.5874.\n"
       "Y: true DEM elevation +96, custom vanilla datapack world height -64..959.\n"
       "Buildings are source-footprint schematics with hollow interior, NOT full facades.\n"
