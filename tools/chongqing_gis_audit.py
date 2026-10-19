@@ -13,7 +13,7 @@ import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from chongqing_osm_to_minecraft import DEFAULT_DEM, Dem, classify, osm_features, project
+from chongqing_osm_to_minecraft import DEFAULT_DEM, Dem, classify, osm_features, project, load_gis_source
 
 SVG_NS = "http://www.w3.org/2000/svg"
 ET.register_namespace("", SVG_NS)
@@ -25,6 +25,14 @@ COLORS = {
 }
 LANDMARKS = {
     "Raffles City / 重庆来福士": ("来福士", "raffles city"),
+    "The Crystal / 水晶连廊": ("水晶连廊", "the crystal"),
+    "T2 tower / T2塔楼": ("t2塔楼",),
+    "T3N tower / T3N塔楼": ("t3n塔楼",),
+    "T3S tower / T3S塔楼": ("t3s塔楼",),
+    "T4N tower / T4N塔楼": ("t4n塔楼",),
+    "T4S tower / T4S塔楼": ("t4s塔楼",),
+    "T5 tower / T5塔楼": ("t5塔楼",),
+    "T6 tower / T6塔楼": ("t6塔楼",),
     "Chaotianmen / 朝天门": ("朝天门", "chaotianmen"),
     "Chaotianmen Square / 朝天门广场": ("朝天门广场", "chaotianmen square"),
     "Qiansimen Bridge / 千厮门大桥": ("千厮门", "qiansimen"),
@@ -98,6 +106,8 @@ def inspect(data, dem, radius, source_digest):
                    tags.get("tunnel") not in (None,"no") or
                    str(tags.get("layer","0")) not in ("0","0.0"))
         if kind == "building":
+            if layered or tags.get("min_height") or tags.get("building:min_level"):
+                counts["buildings_require_vertical_survey"] += 1
             if has_height:
                 counts["building_has_height_tag"] += 1
             elif has_levels:
@@ -116,12 +126,16 @@ def inspect(data, dem, radius, source_digest):
                         "bbox_xz_m":[round(v,2) for v in bbox],
                         "height_tag":tags.get("height"),
                         "levels_tag":tags.get("building:levels"),
+                        "min_height_tag":tags.get("min_height"),
+                        "layer_tag":tags.get("layer"),
                         "bridge_or_tunnel_or_layer":bool(layered),
                         "_paths":paths})
     report = {
         "format": "CHAOTIANMEN_OSM_GIS_AUDIT_V1",
         "source_sha256": source_digest,
-        "dataset_type": "Overpass JSON" if "elements" in data else "GeoJSON",
+        "dataset_type": ("OSM API verified-coordinate adapter" if data.get("realscale_source")
+                          else "Overpass JSON" if "elements" in data else "GeoJSON"),
+        "upstream_osm_provenance": data.get("realscale_source"),
         "osm_timestamp_if_provided": (data.get("osm3s") or {}).get("timestamp_osm_base"),
         "center_wgs84":[dem.lat,dem.lon],"radius_m":radius,
         "projection":"Same local WGS84 tangent plane as CQDEM1; X east, Z south, 1 m/block",
@@ -197,7 +211,7 @@ def main(argv=None):
     if args.output.exists() and any(args.output.iterdir()):
         ap.error("Audit output must be a new empty directory")
     raw=args.input.read_bytes()
-    data=json.loads(raw)
+    data=load_gis_source(args.input)
     if not isinstance(data,dict):
         ap.error("Expected JSON object with OSM/GeoJSON vectors")
     dem=Dem(args.dem)
