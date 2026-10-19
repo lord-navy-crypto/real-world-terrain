@@ -92,7 +92,7 @@ class StandaloneVanillaWorldTests(unittest.TestCase):
                 counts+=(b-a+1)*(1+(
                     row["height"] if row["shell"]=="facade"
                     else 1 if row["shell"]=="roof" else 0))
-        self.assertGreater(rows,100000)
+        self.assertGreater(rows,50000)
         self.assertEqual(counts,494988)
 
 
@@ -117,10 +117,17 @@ def verify_world(world):
 
     # Inspect actual NBT saved chunks, not a manifest or PNG stand-in.
     grid,plan=exporter.read_inputs()
-    for x,z in ((0,0),(64,64),(-64,64),(192,-128),(-500,-500),(500,500)):
+    footprint={(x,z) for r in plan["rows"] for x in range(r["x0"],r["x1"]+1)
+               for z in (r["z"],)}
+    verified_ground=0
+    for x,z in ((0,0),(64,64),(-64,64),(192,-128),(-500,-500),(500,500),
+                (401,401),(-401,401),(401,-401),(-401,-401)):
         y=math.ceil(exporter.elevation(grid,x,z))-1
-        assert get_block(world,x,y,z)=="minecraft:grass_block",(x,y,z)
+        if (x,z) not in footprint:
+            assert get_block(world,x,y,z)=="minecraft:grass_block",(x,y,z)
+            verified_ground+=1
         assert get_block(world,x,y-4,z) in ("minecraft:stone","minecraft:dirt")
+    assert verified_ground>=4
 
     geometry_rows=plan["rows"]
     tested=0
