@@ -60,11 +60,6 @@ public final class RealmEcologyAccentFeature extends Feature<NoneFeatureConfigur
                         && variant<=1){
                     accent=variant==0?Blocks.SMOOTH_BASALT.defaultBlockState()
                             :Blocks.BLACKSTONE.defaultBlockState();
-                }else if(biome.equals("minecraft:nether_wastes")
-                        && floor.is(Blocks.NETHERRACK) && variant==0){
-                    accent=Blocks.NETHER_GOLD_ORE.defaultBlockState();
-                    // This would alter ore economy: DO NOT place it.
-                    accent=null;
                 }
             }else if((biome.equals("minecraft:end_highlands")
                         ||biome.equals("minecraft:end_midlands")
@@ -81,8 +76,13 @@ public final class RealmEcologyAccentFeature extends Feature<NoneFeatureConfigur
                     count++;
                     continue;
                 }
-                if(variant==2)accent=Blocks.AMETHYST_BLOCK.defaultBlockState();
-                if(variant==3)accent=Blocks.PURPUR_BLOCK.defaultBlockState();
+                if(variant==2 || variant==3){
+                    // Crystal/ruin mosaic replaces only plain End Stone.
+                    w.setBlock(p.below(),(variant==2?Blocks.AMETHYST_BLOCK
+                            :Blocks.PURPUR_BLOCK).defaultBlockState(),2);
+                    count++;
+                    continue;
+                }
             }
             if(accent==null || !accent.canSurvive(w,p))continue;
             w.setBlock(p,accent,2);
