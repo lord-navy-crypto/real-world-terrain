@@ -27,7 +27,7 @@ SOURCE=os.environ.get("REALSCALE_UNIFIED_SPAWN_BASE","sacred")
 if SOURCE not in ("sacred","measured"):
     raise SystemExit("Expected REALSCALE_UNIFIED_SPAWN_BASE=sacred|measured")
 WORLD="unified-invasion-spawn-"+SOURCE
-PROFILE="realscale:unified_"+SOURCE+"_invasion_v1_end3"
+PROFILE="realscale:unified_"+SOURCE+"_invasion_v1_end3_spawn3"
 JARS=sorted((MOD/"build/libs").glob("RealScale-TVA-Ultimate*.jar"))
 if not JARS:
     raise SystemExit("Build the real NeoForge mod JAR before this smoke test")
@@ -38,7 +38,8 @@ with tempfile.TemporaryDirectory(prefix="realscale-spawn-profile-") as temp:
         "preset":"landscape","reliefPercent":100,
         "elevation":0,"caves":50,"riverGrade":6,"inland":True,
         "worldSource":SOURCE,"dimensionalInvasion":True,
-        "invasionShowcase":False,"endBiomeAccents":True
+        "invasionShowcase":False,"endBiomeAccents":True,
+        "spawnEndHabitats":True
     }),encoding="utf-8")
     data=Path(temp)/"unified-preset.zip"
     produced,_=export(JAR,draft,data,include_resource_pack=False)
@@ -88,15 +89,22 @@ try:
     rcon=Rcon(timeout=120,password="realscale_unified_spawn_ci_only")
     try:
         hits=[]
-        for biome in ("nether_wastes","end_highlands"):
+        for biome in ("end_chorus_gardens","end_crystal_barrens",
+                      "end_shattered_glades"):
             response=rcon.send("execute in minecraft:overworld "
-                "positioned 0 100 0 if biome ~ ~ ~ minecraft:"+biome+
+                "positioned 0 100 0 if biome ~ ~ ~ realscale:"+biome+
                 " run seed")
             if "Seed:" in response:
                 hits.append(biome)
         if len(hits)!=1:
-            raise AssertionError("Expected exactly one genuine Nether/End biome "
-                                 "at x=0,z=0: "+str(hits))
+            raise AssertionError("Expected exactly one of the THREE custom "
+                                 "End invasion habitats at x=0,z=0: "+str(hits))
+        for old in ("nether_wastes","end_highlands"):
+            response=rcon.send("execute in minecraft:overworld "
+                "positioned 0 100 0 if biome ~ ~ ~ minecraft:"+old+
+                " run seed")
+            if "Seed:" in response:
+                raise AssertionError("Old Nether/vanilla End spawn regression: "+old)
         print("UNIFIED_INVASION_SPAWN_BIOME_PASS",SOURCE,hits[0],flush=True)
         # /execute if biome reads only LOADED End chunks; this test world
         # has not yet visited the End. Locate via the generator's BiomeSource
@@ -136,6 +144,8 @@ worlds=list((MOD/"run").glob("**/"+WORLD+"/level.dat"))
 if not worlds:
     raise AssertionError("Unified invasion level.dat not written")
 save=gzip.decompress(worlds[0].read_bytes())
+if b"spawn_end_habitats" not in save:
+    raise AssertionError("Versioned 3-End-spawn flag not persisted")
 if b"realscale:end_accents" not in save:
     raise AssertionError("Grand End three-biome wrapper missing from saved world")
 if b"realscale:cross_realm_invasion" not in save:
