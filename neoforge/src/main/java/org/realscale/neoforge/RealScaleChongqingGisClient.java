@@ -11,6 +11,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -26,6 +28,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Files;
 import java.util.UUID;
 
@@ -98,14 +101,35 @@ public final class RealScaleChongqingGisClient {
         };
     }
 
-    private static boolean canReplace(BlockState old, BlockState newState,
-                                      boolean wall) {
-        if (old.is(newState.getBlock())) return true;
-        if (old.isAir()) return true;
-        if (wall) return false; // never flatten foreign buildings / cliffs
+    private static boolean isBareTerrain(BlockState old) {
         return old.is(Blocks.GRASS_BLOCK) || old.is(Blocks.DIRT)
                 || old.is(Blocks.STONE) || old.is(Blocks.COARSE_DIRT)
                 || old.is(Blocks.GRAVEL);
+    }
+
+    private static boolean canReplace(BlockState old, BlockState target,
+                                      boolean wall) {
+        if (old.is(target.getBlock())) return true;
+        if (old.isAir()) return true;
+        // Never break water, trees, chests, existing buildings or player
+        // constructions. Bare stone/soil can only be replaced at the top.
+        return !wall && isBareTerrain(old);
+    }
+
+    private static boolean terrainMatches(ServerLevel level, BlockPos pos,
+                                          BlockState old, BlockState target) {
+        // The external DEM grid is NOT a voxel heightmap. Real saves can
+        // have a different surface Y. Refuse misaligned columns, don't
+        // place floating roads or bury buildings in a wall of terrain.
+        int firstAirY = level.getHeight(Heightmap.Types.WORLD_SURFACE,
+                                        pos.getX(),pos.getZ());
+        if (firstAirY == pos.getY()) {
+            return old.isAir() && isBareTerrain(level.getBlockState(pos.below()));
+        }
+        if (firstAirY == pos.getY() + 1) {
+            return isBareTerrain(old) || old.is(target.getBlock());
+        }
+        return false;
     }
 
     /** One plan bound to one running integrated server: no remote mutations. */
@@ -118,6 +142,7 @@ public final class RealScaleChongqingGisClient {
         volatile long applied;
         volatile String status;
         volatile boolean running;
+        volatile boolean claimed;
         volatile UUID authorizedPlayer;
         Session(MinecraftServer server, ChongqingGisPlan plan) {
             this.server=server; this.plan=plan; this.x=plan.rows.get(0).x0();
@@ -166,11 +191,34 @@ public final class RealScaleChongqingGisClient {
                     }
                     BlockState target=sourceBlock(row.kind(),yOffset>0);
                     BlockState old=level.getBlockState(pos);
+                    if (yOffset==0 && !terrainMatches(level,pos,old,target)) {
+                        pause();
+                        status="Real saved-world surface differs from DEM plan at "
+                                +x+","+row.z()+" Y="+y
+                                +". No automatic Y guessing; survey first.";
+                        return;
+                    }
                     if (!canReplace(old,target,yOffset>0)) {
                         pause();
                         status="Protected collision at "+x+","+y+","+row.z()
                                 +"; paused; inspect the location before retry.";
                         return;
+                    }
+                    if (!claimed) {
+                        // CREATE_NEW in the specific save directory, before
+                        // the first block, prevents replay after a crash/quit.
+                        // Restore a PRE-CONSTRUCTION backup for a new attempt.
+                        try {
+                            Path worldRoot=server.getWorldPath(LevelResource.ROOT);
+                            ChongqingPlacementLock.claim(worldRoot,
+                                    plan.planHash,plan.sourceHash);
+                            claimed=true;
+                        } catch (IOException ex) {
+                            pause();
+                            status="World already attempted GIS placement or lock "
+                                    +"cannot be saved. Restore a clean NEW world backup.";
+                            return;
+                        }
                     }
                     if (!old.is(target.getBlock())) {
                         if (!level.setBlock(pos,target,3)) {
@@ -246,9 +294,15 @@ public final class RealScaleChongqingGisClient {
                     }
                     active=new Session(server,plan);
                 }
+                if (!active.claimed && ChongqingPlacementLock.alreadyClaimed(
+                        server.getWorldPath(LevelResource.ROOT))) {
+                    message="This world has an existing GIS placement lock. "
+                            +"Restore the PRE-CONSTRUCTION backup to restart.";
+                    return;
+                }
                 message="Source "+plan.sourceHash.substring(0,12)
                         +"...; "+plan.rows.size()+" rows; "+plan.blockWrites+" writes."
-                        +" Source geometry is NOT independently verified.";
+                        +" Validate real surface Y before placement.";
             } catch (IOException | RuntimeException ex) {
                 message="Plan rejected: "+ex.getMessage();
             }
@@ -270,6 +324,11 @@ public final class RealScaleChongqingGisClient {
             }
             if (active.rowIndex >= active.plan.rows.size()) {
                 message="All batches completed; do not replay.";
+                return;
+            }
+            if (!active.claimed && ChongqingPlacementLock.alreadyClaimed(
+                    active.server.getWorldPath(LevelResource.ROOT))) {
+                message="Blocked by persistent world lock. Restore earlier backup.";
                 return;
             }
             if (active.running) {
