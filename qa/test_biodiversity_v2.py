@@ -57,7 +57,7 @@ class BiodiversityV2(unittest.TestCase):
                         source.index("private static final List<Rule> DIVERSE_RULES")]
         for name in NAMES:
             self.assertNotIn('rule("' + name + '"', legacy)
-        self.assertEqual(len(re.findall(r'\\brule\\("', new_rules)), 6)
+        self.assertEqual(new_rules.count('rule("'), 6)
         self.assertIn("natural_ecotones_diverse_v2", register)
         self.assertIn("NaturalEcotoneBiomeSource.DIVERSE_CODEC", register)
         self.assertIn("return diverse ? DIVERSE_CODEC : CODEC;", source)
