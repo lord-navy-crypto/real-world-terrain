@@ -1,6 +1,6 @@
 # Rare Earth Biomes V1 — Registry foundation
 
-Ten standalone biome JSON IDs:
+Thirteen standalone biome JSON IDs:
 - geothermal_sulfur_basin
 - socotra_dragonblood_woodland
 - white_dune_lagoon
@@ -11,6 +11,9 @@ Ten standalone biome JSON IDs:
 - montane_mist_forest
 - permafrost_fen
 - limestone_island_scrub
+- namib_fog_desert
+- serpentine_barrens
+- socotra_endemic_scrub
 
 ## Honest implementation status
 These are biome registry JSON definitions plus a shared, biome-aware surface mosaic feature. No biome source selects them yet.
