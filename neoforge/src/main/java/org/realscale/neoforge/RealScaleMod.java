@@ -116,6 +116,10 @@ public final class RealScaleMod {
                     new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.END));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_overworld"),
                     new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.OVERWORLD));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "nether_ecology_accents"),
+                    new RealmEcologyAccentFeature(RealmEcologyAccentFeature.Realm.NETHER));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "end_ecology_accents"),
+                    new RealmEcologyAccentFeature(RealmEcologyAccentFeature.Realm.END));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "end_chorus_gardens"),
                     new EndAccentFeature(EndAccentFeature.Kind.CHORUS_GARDENS));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "end_crystal_barrens"),
