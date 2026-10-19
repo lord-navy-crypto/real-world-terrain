@@ -5,6 +5,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.util.Base64;
+import java.util.zip.GZIPInputStream;
 import java.io.InputStream;
 import java.io.Reader;
 import java.security.MessageDigest;
@@ -62,6 +65,12 @@ public final class ChongqingGisPlan {
     public static final Path INPUT =
             Path.of("config", "realscale", "chaotianmen-gis-plan.json");
     public static final String FORMAT = "REALSCALE_CHAOTIANMEN_PLACEMENT_V2";
+    private static final String BUILT_IN =
+            "/assets/realscale/terrain/chaotianmen_authentic_osm_ui_plan_v2.json.gz.b64";
+    private static final String BUNDLED_PLAN_SHA256 =
+            "04a380b144d3f002c0157d841edefb68d5a5bfacf6ca07149c43e8f03a858980";
+    private static final String BUNDLED_VECTOR_SHA256 =
+            "9816d76beb4579e8c7289cce52fdd3f216e323c2e2a320562654005717494657";
     private static final long MAX_SOURCE_BYTES = 40L * 1024 * 1024;
     private static final int MAX_ROWS = 250_000;
     // Real 500m OSM snapshot produces 4,033,166 planned writes.
@@ -92,15 +101,57 @@ public final class ChongqingGisPlan {
         return obj.get(key).getAsInt();
     }
 
+    /** Manual override: explicit offline JSON supplied by a user. */
     public static ChongqingGisPlan read(Path path) throws IOException {
         if (!Files.isRegularFile(path) || Files.isSymbolicLink(path)
                 || Files.size(path) > MAX_SOURCE_BYTES)
             throw new IOException("No local GIS placement plan or file too large");
+        return parse(Files.readAllBytes(path));
+    }
+
+    /**
+     * Default UI workflow: the pinned, genuine ODbL Chaotianmen GIS plan is
+     * ALREADY INSIDE THE MOD JAR. Players never run Python or game commands
+     * to use it. No network access or world edits during this read.
+     */
+    public static ChongqingGisPlan readBundled() throws IOException {
+        byte[] packed;
+        try (InputStream in=ChongqingGisPlan.class.getResourceAsStream(BUILT_IN)) {
+            if (in==null) throw new IOException("Authentic bundled GIS plan missing");
+            packed=in.readNBytes(MAX_SOURCE_BYTES+1);
+        }
+        if (packed.length>MAX_SOURCE_BYTES)
+            throw new IOException("Oversized bundled GIS archive");
+        byte[] zipped;
+        try {
+            zipped=Base64.getDecoder().decode(
+                    new String(packed,StandardCharsets.US_ASCII).strip());
+        } catch (IllegalArgumentException ex) {
+            throw new IOException("Invalid built-in GIS Base64",ex);
+        }
+        byte[] decoded;
+        try (GZIPInputStream gzip=new GZIPInputStream(
+                new ByteArrayInputStream(zipped))) {
+            decoded=gzip.readNBytes(MAX_SOURCE_BYTES+1);
+        }
+        if (decoded.length>MAX_SOURCE_BYTES)
+            throw new IOException("Decompressed GIS plan exceeds safety cap");
+        ChongqingGisPlan plan=parse(decoded);
+        if (!plan.planHash.equals(BUNDLED_PLAN_SHA256)
+                || !plan.sourceHash.equals(BUNDLED_VECTOR_SHA256))
+            throw new IOException("Bundled real GIS data fingerprint mismatch");
+        return plan;
+    }
+
+    private static ChongqingGisPlan parse(byte[] raw) throws IOException {
+        if (raw.length>MAX_SOURCE_BYTES)
+            throw new IOException("GIS JSON exceeds safety cap");
         JsonObject root;
-        try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
-            root = JsonParser.parseReader(reader).getAsJsonObject();
+        try (Reader reader=new java.io.InputStreamReader(
+                new ByteArrayInputStream(raw),StandardCharsets.UTF_8)) {
+            root=JsonParser.parseReader(reader).getAsJsonObject();
         } catch (RuntimeException ex) {
-            throw new IOException("Invalid JSON placement plan", ex);
+            throw new IOException("Invalid JSON placement plan",ex);
         }
 
         try {
@@ -184,7 +235,7 @@ public final class ChongqingGisPlan {
             String planHash;
             try {
                 planHash=HexFormat.of().formatHex(
-                    MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)));
+                    MessageDigest.getInstance("SHA-256").digest(raw));
             } catch (NoSuchAlgorithmException ex) {
                 throw new IOException("SHA-256 provider missing", ex);
             }
