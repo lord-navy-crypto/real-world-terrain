@@ -131,6 +131,50 @@ def read_copernicus_mask(path: Path, dem_sha: str) -> tuple[dict,dict]:
     return result,data
 
 
+ROAD_FORMAT="REALSCALE_CHAOTIANMEN_ROAD_CORRIDORS_V1"
+
+def read_road_corridors(path: Path, dem_sha: str):
+    """Accept only geo-aligned ODbL highway footprints with audited widths."""
+    if not path.is_file() or path.stat().st_size > 12*1024*1024:
+        raise ValueError("Missing or oversized REAL OSM road-corridor mask")
+    with gzip.open(path,"rb") as reader:
+        raw=reader.read(35*1024*1024+1)
+    if len(raw)>35*1024*1024:
+        raise ValueError("OSM road footprint archive unbounded")
+    src=json.loads(raw)
+    if (src.get("format")!=ROAD_FORMAT
+            or src.get("radius_m")!=RADIUS
+            or src.get("resolution_m")!=1
+            or src.get("origin_lat")!=29.5667
+            or src.get("origin_lon")!=106.5874
+            or src.get("dem_source_raw_sha256")!=dem_sha
+            or src.get("license")!="ODbL-1.0"
+            or not __import__("re").fullmatch(
+                r"[0-9a-f]{64}",src.get("raw_osm_api_sha256",""))):
+        raise ValueError("Invalid georeference or origin license for roads")
+    if not 0<len(src.get("rows",[]))<=300000:
+        raise ValueError("Empty or excess road source rows")
+    positions={}
+    for r in src["rows"]:
+        if len(r)!=7:raise ValueError("Invalid road provenance row size")
+        z,x0,x1,material,confidence,source_id,evidence=r
+        if (not all(type(n)==int for n in (z,x0,x1))
+                or not(-RADIUS<=z<=RADIUS and -RADIUS<=x0<=x1<=RADIUS)
+                or confidence not in ("low","medium","high")
+                or not source_id.startswith("way/")
+                or evidence not in (
+                    "osm_width_m","osm_lanes_estimate","highway_class_inference")
+                or material not in SURFACE_BLOCK):
+            raise ValueError("Malformed road source material/provenance")
+        for x in range(x0,x1+1):
+            if (x,z) in positions:
+                raise ValueError("Overlapping OSM road mask; expected unique run")
+            positions[(x,z)]=SURFACE_BLOCK[material]
+    if len(positions)!=src["classified_road_surface_cells"]:
+        raise ValueError("OSM road source coverage count mismatch")
+    return positions,src
+
+
 def read_inputs():
     props={}
     for line in DEM.read_text().splitlines():
@@ -276,10 +320,14 @@ def overlay_index(plan):
             x=end+1
     return output
 
-def generate(world, surface_file=None, satellite_file=None):
+def generate(world, surface_file=None, satellite_file=None, road_file=None):
     grid,plan=read_inputs()
     surface_lookup,surface_meta=({},None)
     satellite_lookup,satellite_meta=({},None)
+    roads_lookup,roads_meta=({},None)
+    if road_file is not None:
+        roads_lookup,roads_meta=read_road_corridors(
+            Path(road_file),plan["dem_source_raw_sha256"])
     if surface_file is not None:
         surface_lookup,surface_meta=read_surface_mask(
             Path(surface_file),plan["dem_source_raw_sha256"])
@@ -294,8 +342,23 @@ def generate(world, surface_file=None, satellite_file=None):
     region_dir.mkdir(parents=True,exist_ok=True)
     for old in region_dir.glob("r.*.*.mca"):old.unlink()
     index=overlay_index(plan)
+    # Do not accidentally pave through OSM building footprints, genuine
+    # water reference locations or tracks. Streets with known road tags
+    # never mutate this original 494,988-operation GIS source plan.
+    protected=set()
+    for row in plan["rows"]:
+        if row["kind"]!="road":
+            protected.update((x,row["z"]) for x in
+                             range(row["x0"],row["x1"]+1))
+    road_by_chunk=defaultdict(list)
+    for (x,z),material in roads_lookup.items():
+        if (x,z) not in protected:
+            road_by_chunk[(x//16,z//16)].append((x,z,material))
     regions={}
     stats=defaultdict(int)
+    stats["road_corridor_cells_source"]=len(roads_lookup)
+    stats["road_corridor_cells_protected"]=len(roads_lookup)-sum(
+        len(rows) for rows in road_by_chunk.values())
     for cz in range(-32,32):
         for cx in range(-32,32):
             sections={}
@@ -327,6 +390,15 @@ def generate(world, surface_file=None, satellite_file=None):
                     if ground!=3:
                         stats["source_qualified_non_grass_ground_columns"]+=1
                     stats["dem_terrain_columns"]+=1
+            # Wider true-OSM road corridors are a new visual surface pass:
+            # explicit width > lane-count estimate > conservative class
+            # default; bridge/tunnel geometry is DEFERRED, not flattened.
+            # The original accurate source building and railway rows are
+            # written afterwards and therefore retain ownership.
+            for rx,rz,material in road_by_chunk.get((cx,cz),()):
+                ry=math.ceil(elevation(grid,rx,rz))
+                set_block(rx&15,ry,rz&15,material)
+                stats["road_corridor_new_surface_writes"]+=1
             for row,x0,x1 in index.get((cx,cz),()):
                 y=row["y"];z=row["z"];localz=z&15
                 height=row["height"];shell=row["shell"]
@@ -366,6 +438,11 @@ def generate(world, surface_file=None, satellite_file=None):
     stats["building_policy"]="Source-footprint-based hollow facade and roof; schematic"
     stats["world_y_range"]=[MIN_Y,MIN_Y+HEIGHT-1]
     stats["world_xz_range"]=[-RADIUS,RADIUS]
+    if roads_meta is not None:
+        stats["osm_road_corridor_sha256"]=roads_meta["raw_osm_api_sha256"]
+        stats["osm_road_corridor_width_note"]=roads_meta["width_note"]
+        stats["osm_road_corridor_deferred"]=roads_meta["deferred_road_types"]
+        stats["osm_road_corridor_feature_count"]=roads_meta["osm_road_type_count"]
     if satellite_meta is not None:
         stats["satellite_evidence_used_after_exact_osm_precedence"]=sum(
             1 for pos in satellite_lookup if pos not in surface_lookup)
@@ -420,11 +497,11 @@ def prepare_server(root):
         "motd=RealScale Chaotianmen standalone experimental map\n")
     print("PREPARED empty official-vanilla server world and datapack",world)
 
-def package_world(root,out,surface_file=None,satellite_file=None):
+def package_world(root,out,surface_file=None,satellite_file=None,road_file=None):
     world=root/WORLD
     if not (world/"level.dat").is_file():
         raise RuntimeError("No vanilla 1.21.1 generated level.dat. Bootstrap the server first.")
-    stats=generate(world,surface_file,satellite_file)
+    stats=generate(world,surface_file,satellite_file,road_file)
     import nbtlib
     file=nbtlib.load(world/"level.dat")
     data=file["Data"]
@@ -449,6 +526,9 @@ def package_world(root,out,surface_file=None,satellite_file=None):
       "Satellite pixels have 10m resolution, NOT exact 1m photographed material.\n"
       "Some unknown ground remains grass: this is a research prototype.\n"
       "Open satellite source: Copernicus Sentinel-2 L2A, permitted to adapt.\n"
+      "ROAD WIDTHS: OSM tagged real widths where present, otherwise\n"
+      "provisional lane-count or road-class estimate, NOT surveyed edge.\n"
+      "Bridge/tunnel/overpass roads are deferred, NOT grounded at river.\n"
       "Image source ID: "+str(stats.get("sentinel_source_stac_item","none"))+"\n"
       "Contains modified Copernicus Sentinel data [2025].\n"
 
@@ -487,6 +567,7 @@ def main():
     cli.add_argument("--zip",type=Path)
     cli.add_argument("--osm-surface-mask",type=Path)
     cli.add_argument("--satellite-mask",type=Path)
+    cli.add_argument("--osm-road-corridors",type=Path)
     args=cli.parse_args()
     root=args.server_root.resolve()
     root.mkdir(parents=True,exist_ok=True)
@@ -494,6 +575,6 @@ def main():
     else:
         if args.zip is None:cli.error("--zip is required for packaging")
         package_world(root,args.zip.resolve(),args.osm_surface_mask,
-                      args.satellite_mask)
+                      args.satellite_mask,args.osm_road_corridors)
 
 if __name__=="__main__":main()
