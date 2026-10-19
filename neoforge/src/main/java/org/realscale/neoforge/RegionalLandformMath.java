@@ -24,7 +24,7 @@ final class RegionalLandformMath {
     static final int ANDEAN_BOFEDEL_SHELF = 11;
     static final int ECUADOR_VOLCANIC_CHAIN = 12;
     static final int YUNGUI_FENGLIN = 13;
-    static final int WULONG_TIAN_KENG_PLACEHOLDER = 14;
+    static final int WULONG_TIAN_KENG = 14;
     static final int SICHUAN_ESCARPMENT = 15;
     static final int KINDS_V2 = 16;
 
