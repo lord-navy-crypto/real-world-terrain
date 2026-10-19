@@ -63,7 +63,7 @@ class HybridMeasuredUSGS(unittest.TestCase):
         after=newDims["minecraft:overworld"]["generator"]
         self.assertEqual(after["type"],before["type"])
         self.assertEqual(after["biome_source"],before["biome_source"])
-        self.assertEqual(after["settings"],"realscale:usgs_global_hybrid")
+        self.assertEqual(after["settings"],"realscale:usgs_global_hybrid_marine")
         self.assertEqual(before["settings"],"realscale:usgs_big_sur_v2")
         menu=read(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
         self.assertEqual(len(menu["values"]),13)

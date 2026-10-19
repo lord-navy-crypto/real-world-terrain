@@ -16,7 +16,7 @@
             }
           }
         },
-        "settings": "realscale:usgs_global_hybrid",
+        "settings": "realscale:usgs_global_hybrid_marine",
         "type": "minecraft:noise"
       },
       "type": "realscale:realism_max_overworld"
