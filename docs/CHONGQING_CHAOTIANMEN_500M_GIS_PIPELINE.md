@@ -16,7 +16,10 @@ TVA Sacred/Measured/sky presets remain unchanged.
   converts to metres with the **SAME local WGS84 tangent-plane formula**
   originally used by PR #54's 129 x 129, 64m elevation grid.
 - Minecraft ground surface is modelled by the DEM density function,
-  approx Y=floor(real DEM elevation +96)+1 for overlays. Block placement
+  conservative first-air Y=ceil(real DEM elevation +96) for overlays.
+  The exact integer-elevation case matters: floor(Y)+1 would create a
+  floating one-block offset. Actual saved WORLD_SURFACE must still be
+  checked by the GUI before placing a block. Block placement
   is a post-generation approximation and should be visually measured in
   real saved Anvil worlds; exact cliff/road foundations will require
   future heightmap-based placement calibration.
