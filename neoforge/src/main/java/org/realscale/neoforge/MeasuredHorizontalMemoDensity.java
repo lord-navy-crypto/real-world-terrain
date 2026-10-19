@@ -23,8 +23,6 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  */
 public final class MeasuredHorizontalMemoDensity
         implements DensityFunction.SimpleFunction {
-    private static final int SLOTS=8192;
-
     public static final MapCodec<MeasuredHorizontalMemoDensity> MAP_CODEC =
             RecordCodecBuilder.mapCodec(i -> i.group(
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("input")
@@ -35,17 +33,8 @@ public final class MeasuredHorizontalMemoDensity
             KeyDispatchDataCodec.of(MAP_CODEC);
 
     private final DensityFunction input;
-    private final ThreadLocal<Columns> caches =
-            ThreadLocal.withInitial(Columns::new);
-
-    private static final class Columns {
-        final long[] coordinates=new long[SLOTS];
-        final double[] values=new double[SLOTS];
-        final boolean[] valid=new boolean[SLOTS];
-        boolean lastValid;
-        long lastCoordinate;
-        double lastValue;
-    }
+    private final ThreadLocal<MeasuredColumnMemo> caches =
+            ThreadLocal.withInitial(MeasuredColumnMemo::new);
 
     public MeasuredHorizontalMemoDensity(DensityFunction input) {
         this.input=java.util.Objects.requireNonNull(input);
@@ -54,24 +43,10 @@ public final class MeasuredHorizontalMemoDensity
     public DensityFunction input() { return input; }
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
-        int x=ctx.blockX(), z=ctx.blockZ();
-        long coordinate=((long)x<<32)|(z&0xffffffffL);
-        Columns c=caches.get();
-        if(c.lastValid && c.lastCoordinate==coordinate)return c.lastValue;
-        int hash=x*0x9e3779b9 ^ Integer.rotateLeft(z*0x85ebca6b,13);
-        int slot=(hash^(hash>>>16))&(SLOTS-1);
-        final double value;
-        if(c.valid[slot] && c.coordinates[slot]==coordinate)
-            value=c.values[slot];
-        else {
-            value=input.compute(ctx);
-            c.coordinates[slot]=coordinate;
-            c.values[slot]=value;
-            c.valid[slot]=true;
-        }
-        c.lastCoordinate=coordinate;
-        c.lastValue=value;
-        c.lastValid=true;
+        MeasuredColumnMemo memo=caches.get();
+        if(memo.lookup(ctx.blockX(),ctx.blockZ()))return memo.value();
+        double value=input.compute(ctx);
+        memo.store(value);
         return value;
     }
 
