@@ -409,3 +409,76 @@ scale is 1m per block, but the source resolution and mapping completeness
 are independent. Public attribution for the satellite layer:
 "Contains modified Copernicus Sentinel data (2025)." Public OSM
 attribution: "© OpenStreetMap contributors, ODbL-1.0."
+
+## Phase 9 — real 3D landmark construction, road width, and standalone export
+
+This revision responds directly to the city looking like a flat colored
+terrain prototype rather than a replica of Chongqing Chaotianmen. The
+previous geographic data collection was useful and is **retained**:
+the precise original DEM height grid, the 1m-block tangent-plane XY
+projection, the immutable real OSM building/road archive and the
+verified no-mod vanilla 1.21.1 Anvil save all remain in place.
+
+### OSM highway *corridors*, not one-block lines
+
+The original GIS V2 road layer drew many authentic OSM highway way
+CENTERLINES as single-block-wide strips, which is not how real roads
+appear. `tools/chongqing_osm_roads.py` now uses the official OSM
+0.6 XML (including ODbL attribution and source SHA-256) to render
+roads as georeferenced corridors. Width precedence:
+
+- explicit `width=*` tag: HIGH confidence on nominal documented width;
+- `lanes=*` tag: MEDIUM confidence estimate (3.2m per lane);
+- `highway=*` class: LOW confidence fallback width.
+
+Road footprint shapes derive from genuine GPS/GIS way nodes; unknown
+roads are not created. OSM bridges, elevated structures, layers,
+covered roads, and tunnels remain **DEFERRED**, not collapsed to the
+wrong ground elevation. Road corridor blocks never erase protected
+building footprints, original water references or railways. Exact
+pinned V2 structures and DEM Y are unchanged. The output reports
+genuine 1m cells placed, material counts, source width method, skipped
+multilevel roads and source XML hash.
+
+### Source-backed Crystal 3D pilot
+
+A real elevated landmark is now being added to the independent map,
+*not* to the NeoForge core:
+- Official pinned OSM **way/661717188**, "水晶连廊 / The Crystal",
+  has a TRUE measured geographic polygon with 43 vertices and height
+  properties `min_height=250`, `height=276.5` and `layer=1`.
+- `tools/chongqing_crystal_3d.py` verifies BOTH the raw official XML
+  SHA and the archived JSON SHA, fills the real world-coordinate
+  horizontal polygon, and produces a schematic glass floor/wall/
+  curved roof shell over the exact 26.5m source vertical span.
+- The model's **absolute** world Y is a LOW-confidence estimate made
+  from the median of the DEM-based roof heights of four genuine
+  250m high OSM tower polygons (T2/T3S/T4S/T5). No high-precision
+  building base altitude, surveyed 3D BIM, proper curved tube
+  structure or real glass-pane dimensions have been obtained.
+  The famous horizontal connection is therefore a **schematic
+  preview**, not a complete architectural reconstruction.
+- The independent Minecraft world exporter writes these additional
+  SOURCE-BOUND 3D blocks *after* the unchanged original tower
+  footprints, and a real Anvil NBT test reads sampled roof/floor
+  glass back out from the saved `region/*.mca` files.
+- The old 500m half-width still clips some major landmarks. In
+  particular, OSM records T1 at approximately world X=-545, which
+  lies OUTSIDE the current pilot square. An expanded geospatial
+  extent is necessary before claiming all eight towers are present.
+
+### Still outstanding
+
+The next independent-map construction phase must widen the coverage
+beyond the `±500m` pilot, bring all eight towers into the map, capture
+proper 3D land-use elevation (roads passing over/under others), add
+the confluence's true river water plane, and use openly licensable
+higher-resolution orthophotography or other measured 3D data to
+model accurate facades/podium. Never claim that an OSM massing plus
+low-confidence satellite inference matches a real 3D surveyed city.
+
+**Release policy:** the separate `Chaotianmen_500m_Standalone` ZIP
+must pass the REAL Mojang 1.21.1 server bootstrap, .mca material/height
+verification, in-world Crystal roof-block verification and server
+reload before being linked as the newest artifact. PR #63 stays Draft;
+main/TVA unchanged.
