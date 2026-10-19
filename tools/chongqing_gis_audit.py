@@ -40,6 +40,15 @@ LANDMARKS = {
     "Jialing River / 嘉陵江": ("嘉陵江", "jialing"),
     "Hongyadong / 洪崖洞": ("洪崖洞", "hongyadong"),
 }
+# A road tagged "长江滨江路" is NOT evidence of a Yangtze water polygon.
+# River labels can only be confirmed by water-category OSM geometries.
+LANDMARK_ALLOWED_KINDS = {
+    "Yangtze River / 长江": {"water"},
+    "Jialing River / 嘉陵江": {"water"},
+    "The Crystal / 水晶连廊": {"building"},
+    "Raffles City / 重庆来福士": {"building"},
+    "Chaotianmen Square / 朝天门广场": {"building","highway"},
+}
 
 def svg_elem(parent, name, attributes=None, text=None):
     element = ET.SubElement(parent, "{" + SVG_NS + "}" + name, attributes or {})
@@ -98,7 +107,8 @@ def inspect(data, dem, radius, source_digest):
         names = " ".join(str(tags.get(k) or "") for k in
                          ("name","name:zh","name:en","alt_name","official_name")).lower()
         for label, keywords in LANDMARKS.items():
-            if any(key in names for key in keywords):
+            if (kind in LANDMARK_ALLOWED_KINDS.get(label, COLORS)
+                    and any(key in names for key in keywords)):
                 landmarks[label].append(f["id"])
         has_height = bool(str(tags.get("height","")).strip())
         has_levels = bool(str(tags.get("building:levels","")).strip())
