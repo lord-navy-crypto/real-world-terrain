@@ -89,6 +89,7 @@ def width_mask(points,width,radius=RADIUS):
     return cells
 
 def classify_osm_roads(xml,dem,radius=RADIUS):
+    if radius not in (500,600):raise ValueError("Unverified OSM highway radius")
     if len(xml)>MAX_XML_BYTES:raise ValueError("OSM source larger than 8MB")
     root=ET.fromstring(xml)
     if root.tag!="osm" or root.get("version")!="0.6":
@@ -171,9 +172,10 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--input-xml",type=Path)
     ap.add_argument("--output",type=Path,required=True)
+    ap.add_argument("--radius",type=int,choices=(500,600),default=500)
     args=ap.parse_args()
     dem=Dem(DEFAULT_DEM)
-    bbox,url=bounds(dem,RADIUS,100)
+    bbox,url=bounds(dem,args.radius,100)
     if args.input_xml:
         raw=args.input_xml.read_bytes()
         src="offline_user_supplied_official_OSM_XML"
@@ -184,7 +186,7 @@ def main():
         with urllib.request.urlopen(req,timeout=60) as response:
             raw=response.read(MAX_XML_BYTES+1)
         src=url
-    result=classify_osm_roads(raw,dem)
+    result=classify_osm_roads(raw,dem,radius=args.radius)
     result["source_url"]=src;result["query_bbox_wsen"]=bbox
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_bytes(gzip.compress(
