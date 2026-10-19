@@ -45,6 +45,14 @@ with tempfile.TemporaryDirectory(prefix="realscale-spawn-profile-") as temp:
     produced,_=export(JAR,draft,data,include_resource_pack=False)
     if produced!=PROFILE:
         raise AssertionError("Unexpected exported preset ID: "+produced)
+    # Inspect the *actual ZIP handed to NeoForge*, not only the Python
+    # create_preset() result. Distinct codec IDs prevent silent fallback.
+    with zipfile.ZipFile(data) as archive:
+        path="data/realscale/worldgen/world_preset/"+PROFILE.split(":")[1]+".json"
+        world_preset=json.loads(archive.read(path))
+        source=world_preset["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]["source"]
+        if source.get("type")!="realscale:cross_realm_spawn3":
+            raise AssertionError("Exported spawn3 codec missing: "+repr(source))
     server_dir=MOD/"run"
     for candidate in (server_dir,server_dir/"server",server_dir/"gametestserver"):
         candidate.mkdir(parents=True,exist_ok=True)
@@ -144,8 +152,8 @@ worlds=list((MOD/"run").glob("**/"+WORLD+"/level.dat"))
 if not worlds:
     raise AssertionError("Unified invasion level.dat not written")
 save=gzip.decompress(worlds[0].read_bytes())
-if b"spawn_end_habitats" not in save:
-    raise AssertionError("Versioned 3-End-spawn flag not persisted")
+if b"realscale:cross_realm_spawn3" not in save:
+    raise AssertionError("Dedicated spawn3 biome-source codec not persisted in level.dat")
 if b"realscale:end_accents" not in save:
     raise AssertionError("Grand End three-biome wrapper missing from saved world")
 if b"realscale:cross_realm_invasion" not in save:
