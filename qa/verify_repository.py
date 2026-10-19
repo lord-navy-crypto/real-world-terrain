@@ -19,8 +19,10 @@ for name,want in checks.items():
    'realscale:tva_alpine_three_realms',
    'realscale:tva_canyon_three_realms',
    'realscale:tva_measured_three_realms',
-   'realscale:tva_wonders_invasion_three_realms']
-  print('INTENTIONAL MODIFICATION: four curated TVA families plus opt-in woven features')
+   'realscale:tva_wonders_invasion_three_realms',
+   'realscale:tva_sacred_biodiversity_end3_spawn3_v2',
+   'realscale:tva_measured_biodiversity_end3_spawn3_v2']
+  print('INTENTIONAL MODIFICATION: original five presets plus only two explicit biodiversity-v2 additions')
   continue
  if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):
   # Preserve the exact historical text for every legacy ID while allowing
