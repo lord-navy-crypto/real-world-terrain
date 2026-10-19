@@ -7,6 +7,9 @@ import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,16 +31,18 @@ public final class ChongqingGisPlan {
 
     public final List<Row> rows;
     public final String sourceHash;
+    public final String planHash;
     public final String attribution;
     public final String demHash;
     public final int radius;
     public final long blockWrites;
 
     private ChongqingGisPlan(List<Row> rows, String sourceHash,
-                             String attribution, String demHash,
+                             String planHash, String attribution, String demHash,
                              int radius, long blockWrites) {
         this.rows = List.copyOf(rows);
         this.sourceHash = sourceHash;
+        this.planHash = planHash;
         this.attribution = attribution;
         this.demHash = demHash;
         this.radius = radius;
@@ -150,7 +155,15 @@ public final class ChongqingGisPlan {
             }
             if (root.get("planned_block_writes").getAsLong() != writes)
                 throw new IOException("GIS block-count integrity mismatch");
-            return new ChongqingGisPlan(rows,sourceHash,attribution,demHash,radius,writes);
+            String planHash;
+            try {
+                planHash=HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)));
+            } catch (NoSuchAlgorithmException ex) {
+                throw new IOException("SHA-256 provider missing", ex);
+            }
+            return new ChongqingGisPlan(rows,sourceHash,planHash,
+                    attribution,demHash,radius,writes);
         } catch (IllegalStateException | NullPointerException
                  | NumberFormatException ex) {
             throw new IOException("Malformed GIS placement schema",ex);
