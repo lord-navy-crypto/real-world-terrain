@@ -52,23 +52,28 @@ def invasion_preset(source_preset: dict) -> dict:
 
 
 def create_preset(root: Path, world_source: str,
-                  enable_invasion: bool, lab_name: str | None = None
+                  enable_invasion: bool, lab_name: str | None = None,
+                  showcase: bool = False
                   ) -> tuple[str, dict, dict[str, str]]:
     """Return (new ID suffix, world JSON, localized world-type labels).
 
     'terrain_lab' must supply the generated lab preset name. Fixed families
     Sacred and Measured retain their canonical unmodified height/noise signals.
     """
-    if type(enable_invasion) is not bool:
-        raise ValueError("enable_invasion must be a boolean")
+    if type(enable_invasion) is not bool or type(showcase) is not bool:
+        raise ValueError("Invasion and showcase settings must be boolean")
+    if showcase and not enable_invasion:
+        raise ValueError("Showcase requires Dimension Invasion enabled")
     if world_source == "terrain_lab":
         if not lab_name or not lab_name.startswith("lab_"):
             raise ValueError("terrain_lab requires a generated lab profile")
         base_name = lab_name
-        name = lab_name + "_invasion" if enable_invasion else lab_name
+        name = (lab_name + ("_invasion_showcase" if showcase else "_invasion")
+                if enable_invasion else lab_name)
     elif world_source in PRESETS:
         base_name = PRESETS[world_source]
         name = "unified_" + world_source + (
+            "_invasion_showcase_v1" if showcase else
             "_invasion_v1" if enable_invasion else "_standard_v1")
     else:
         raise ValueError("Unknown unified world source: " + str(world_source))
@@ -76,13 +81,24 @@ def create_preset(root: Path, world_source: str,
     world = read_json(root, PRESET_DIR / (base_name + ".json"))
     if enable_invasion:
         world = invasion_preset(world)
+    if showcase:
+        # Gallery mode deliberately lives only in a NEW opt-in world preset.
+        # Near X/Z 0/0 or 176/0 it exposes all six invasion directions.
+        for realm in DIMENSIONS:
+            generator = world["dimensions"][realm]["generator"]
+            generator["biome_source"] = {
+                "type": "realscale:cross_realm_showcase",
+                "source": generator["biome_source"],
+            }
     names = {
         "en_us": ("Terrain Lab" if world_source == "terrain_lab"
                   else ("Sacred Timeline" if world_source == "sacred"
                         else "Measured / USGS"))
-                 + (" + Dimension Invasion" if enable_invasion else " (Standard)"),
+                 + (" + Invasion Showcase" if showcase else
+                    " + Dimension Invasion" if enable_invasion else " (Standard)"),
         "zh_cn": ("地形实验室" if world_source == "terrain_lab"
                   else ("神圣时间线" if world_source == "sacred" else "实测地形 / USGS"))
-                 + (" + 跨维度入侵" if enable_invasion else "（标准）"),
+                 + (" + 入侵展示世界" if showcase else
+                    " + 跨维度入侵" if enable_invasion else "（标准）"),
     }
     return name, world, names
