@@ -125,6 +125,64 @@ def classify(tags: dict) -> str | None:
         return "water"
     return None
 
+def stitch_members(members: list, role: str) -> list[list] | None:
+    """Stitch authentic OSM relation way segments; never fake closure.
+
+    All endpoints must have identical WGS84 coordinates after export.
+    A broken multipolygon is rejected in full, not approximately closed.
+    """
+    parts = []
+    for part in members:
+        if part.get("type") != "way" or part.get("role") != role:
+            continue
+        geometry = part.get("geometry")
+        if not isinstance(geometry, list) or len(geometry) < 2:
+            return None
+        line = [[v["lon"], v["lat"]] for v in geometry]
+        parts.append(line)
+    result = []
+    while parts:
+        chain = parts.pop(0)
+        while chain[0] != chain[-1]:
+            merged = False
+            for i, candidate in enumerate(parts):
+                if chain[-1] == candidate[0]:
+                    chain += candidate[1:]
+                elif chain[-1] == candidate[-1]:
+                    chain += list(reversed(candidate[:-1]))
+                elif chain[0] == candidate[-1]:
+                    chain = candidate[:-1] + chain
+                elif chain[0] == candidate[0]:
+                    chain = list(reversed(candidate[1:])) + chain
+                else:
+                    continue
+                parts.pop(i)
+                merged = True
+                break
+            if not merged:
+                return None
+        if len(chain) < 4:
+            return None
+        result.append(chain)
+    return result
+
+def relation_multipolygon(element: dict) -> list | None:
+    if element.get("tags", {}).get("type") != "multipolygon":
+        return None
+    members = element.get("members") or []
+    outers = stitch_members(members, "outer")
+    inners = stitch_members(members, "inner")
+    if not outers or inners is None:
+        return None
+    polygons = [[outer] for outer in outers]
+    for hole in inners:
+        fitting = [i for i, outer in enumerate(outers)
+                   if ring_contains(hole[0][0], hole[0][1], outer)]
+        if len(fitting) != 1:
+            return None  # ambiguous/intersecting or missing outer
+        polygons[fitting[0]].append(hole)
+    return polygons
+
 def osm_features(data: dict) -> list[dict]:
     """Accept Overpass out geom OR GeoJSON, reject empty/invalid sources."""
     if data.get("type") == "FeatureCollection":
@@ -152,9 +210,15 @@ def osm_features(data: dict) -> list[dict]:
         out = []
         for f in incoming:
             tags = f.get("tags") or {}
+            if f.get("type") == "relation" and classify(tags):
+                polygons = relation_multipolygon(f)
+                if polygons:
+                    out.append(dict(id="relation/" + str(f["id"]),
+                                    tags=tags, kind="MultiPolygon",
+                                    coordinates=polygons))
+                # Invalid OSM relations are skipped, not autocorrected.
+                continue
             if f.get("type") != "way" or not classify(tags):
-                # Complex multipolygon relations can have split ways and
-                # holes; do not pretend a missing complete relation is valid.
                 continue
             raw = f.get("geometry")
             if not isinstance(raw, list) or len(raw) < 2:
@@ -269,6 +333,15 @@ def prepare(dem: Dem, features: list, radius: int) -> tuple[dict, dict]:
     for kind, f in categorized:
         geom = project(dem, f)
         tags = f["tags"]
+        if kind in ("highway","railway") and (
+                tags.get("bridge") not in (None,"no") or
+                tags.get("tunnel") not in (None,"no") or
+                str(tags.get("layer","0")) not in ("0","0.0")):
+            # Chongqing's road decks, tunnel mouths and sky rail cannot
+            # be flattened onto ground. Only a survey-/source-backed
+            # 3D alignment is allowed in a later version.
+            stats["multilevel_lines_deferred_no_3d_y"] += 1
+            continue
         if kind == "water" and f["kind"] == "LineString":
             stats["linear_water_skipped_unknown_width"] += 1
             continue
