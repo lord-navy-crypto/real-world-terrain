@@ -98,59 +98,20 @@ try:
             raise AssertionError("Expected exactly one genuine Nether/End biome "
                                  "at x=0,z=0: "+str(hits))
         print("UNIFIED_INVASION_SPAWN_BIOME_PASS",SOURCE,hits[0],flush=True)
-        # Sample deterministic accent-patch centers in the ACTUAL End
-        # BiomeSource: ensure each of the three new biome IDs is reachable
-        # through a real NeoForge server without regenerating remote chunks.
-        mask=(1<<64)-1
-        def mix(v):
-            v &= mask
-            v ^= v>>30;v=(v*0xbf58476d1ce4e5b9)&mask
-            v ^= v>>27;v=(v*0x94d049bb133111eb)&mask
-            return v^(v>>31)
-        candidate={0:[],1:[],2:[]}
-        for gx in range(-16,17):
-            for gz in range(-16,17):
-                h=mix(gx*0x9e3779b97f4a7c15
-                      ^gz*0xc2b2ae3d27d4eb4f^0x71a6e31d)
-                # Java Math.floorMod uses signed long; Python int defaults
-                # to unbounded positive for this hash, so convert to long.
-                java_h=h if h<(1<<63) else h-(1<<64)
-                if java_h%5:continue
-                x=gx*512+256+((h>>12)%129)-64
-                z=gz*512+256+((h>>27)%129)-64
-                if x*x+z*z<1024*1024:continue
-                candidate[(h>>54)%3].append((x*x+z*z,x,z))
-        # Diagnostic: prove the End dimension command context is working
-        # before blaming an optional biome-source wrapper.
-        for probe in ("the_end","end_highlands","end_midlands","end_barrens","small_end_islands"):
-            reply=rcon.send("execute in minecraft:the_end positioned 0 80 0 "
-                            "if biome ~ ~ ~ minecraft:"+probe+" run seed")
-            if "Seed:" in reply:
-                print("END_BASE_AT_ZERO",probe,flush=True)
-        # Check the first remote candidate's vanilla and custom biome IDs.
-        cx,cz=728,759
-        for probe in ("the_end","end_highlands","end_midlands","end_barrens",
-                      "small_end_islands","realscale:end_chorus_gardens"):
-            probeid=probe if ":" in probe else "minecraft:"+probe
-            reply=rcon.send(
-                f"execute in minecraft:the_end positioned {cx} 80 {cz} "
-                f"if biome ~ ~ ~ {probeid} run seed")
-            if "Seed:" in reply:
-                print("END_BASE_REMOTE",probeid,flush=True)
+        # /execute if biome reads only LOADED End chunks; this test world
+        # has not yet visited the End. Locate via the generator's BiomeSource
+        # instead, so we can verify ungenerated locations without forcing
+        # enormous Grand End chunks into memory.
         names=("end_chorus_gardens","end_crystal_barrens","end_shattered_glades")
-        for kind,name in enumerate(names):
-            found=None
-            for _,x,z in sorted(candidate[kind])[:70]:
-                out=rcon.send(
-                    f"execute in minecraft:the_end positioned {x} 80 {z} "
-                    f"if biome ~ ~ ~ realscale:{name} run seed")
-                if "Seed:" in out:
-                    found=(x,z)
-                    break
-            if found is None:
-                raise AssertionError(
-                    "No real End biome found in 70 candidate cells: "+name)
-            print("REAL_GRAND_END_BIOME_PASS",SOURCE,name,found,flush=True)
+        for name in names:
+            command=("execute in minecraft:the_end positioned 0 80 0 "
+                     "run locate biome realscale:"+name)
+            reply=rcon.send(command)
+            if not reply.strip() or any(t in reply.lower() for t in (
+                "could not find","unable to find","not found","unknown biome",
+                "no biome")):
+                raise AssertionError("End source did not locate "+name+": "+repr(reply))
+            print("REAL_GRAND_END_BIOME_LOCATE_PASS",SOURCE,name,repr(reply),flush=True)
         saved=rcon.send("save-all flush")
         if "Saved" not in saved:
             raise AssertionError("Missing world-save ACK: "+repr(saved))
