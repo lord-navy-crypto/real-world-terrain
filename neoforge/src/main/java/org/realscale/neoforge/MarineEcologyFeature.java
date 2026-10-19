@@ -68,6 +68,8 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
                                      RandomSource r){
         BlockState existing=w.getBlockState(floor);
         if(!natural(existing)||r.nextInt(7)!=0)return;
+        // Avoid weakening the support of existing seagrass, coral and kelp.
+        if(!w.getBlockState(floor.above()).is(Blocks.WATER))return;
         BlockState accent=switch(h){
             case TROPICAL_REEF -> r.nextBoolean() ? Blocks.CALCITE.defaultBlockState()
                     : Blocks.GRAVEL.defaultBlockState();
@@ -135,7 +137,7 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
         BlockState target=switch(h){
             case TROPICAL_REEF -> random.nextInt(5)==0 ? pickle(random)
                     : coral(random,random.nextBoolean());
-            case TROPICAL_SEAGRASS,TEMPERATE_SEAGRASS -> random.nextInt(9)==0
+            case TROPICAL_SEAGRASS,TEMPERATE_SEAGRASS -> random.nextInt(12)==0
                     ? pickle(random) : Blocks.SEAGRASS.defaultBlockState();
             case COLD_SPONGE_GARDEN -> random.nextInt(4)==0
                     ? Blocks.WET_SPONGE.defaultBlockState()
@@ -150,10 +152,7 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
             case DEEP_SILTY_FLOOR,NONE -> null;
         };
         if(h==MarineEcologyZonationMath.Habitat.TEMPERATE_KELP){
-            if(random.nextInt(3)!=0 && kelp(w,p,sea,random)){
-                seabedAccent(w,p.below(),h,random);
-                return true;
-            }
+            if(random.nextInt(3)!=0 && kelp(w,p,sea,random))return true;
             return false;
         }
         if(target==null){
@@ -172,8 +171,9 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
         // No overwrite of waterlogged features, corals, shipwrecks,
         // artifacts, structures or fish; only a native water source voxel.
         if(!w.getBlockState(p).is(Blocks.WATER))return false;
+        // Change the natural support first, then re-check survival.
+        // Existing support must remain unchanged for corals/kelp.
         w.setBlock(p,target,2);
-        seabedAccent(w,p.below(),h,random);
         return true;
     }
 
