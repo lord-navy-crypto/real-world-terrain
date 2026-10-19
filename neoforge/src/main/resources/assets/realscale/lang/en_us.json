@@ -41,5 +41,15 @@
   "biome.realscale.arid_riparian_woodland": "Arid Riparian Woodland",
   "biome.realscale.windy_coastal_headland": "Windy Coastal Headland",
   "generator.realscale.tva_sacred_biodiversity_end3_spawn3_v2": "RealScale Sacred • Six New Biomes + Sky Isles + End-Spawn Invasion (Experimental)",
-  "generator.realscale.tva_measured_biodiversity_end3_spawn3_v2": "RealScale Measured / USGS • Six New Biomes + Sky Isles + End-Spawn Invasion (Experimental)"
+  "generator.realscale.tva_measured_biodiversity_end3_spawn3_v2": "RealScale Measured / USGS • Six New Biomes + Sky Isles + End-Spawn Invasion (Experimental)",
+  "biome.realscale.mediterranean_chaparral": "Mediterranean Chaparral",
+  "biome.realscale.temperate_tallgrass_prairie": "Temperate Tallgrass Prairie",
+  "biome.realscale.monsoon_woodland": "Monsoon Woodland",
+  "biome.realscale.montane_cloud_scrub": "Montane Cloud Scrub",
+  "biome.realscale.brackish_tidal_marsh": "Brackish Tidal Marsh",
+  "biome.realscale.coastal_pine_barrens": "Coastal Pine Barrens",
+  "biome.realscale.frost_heath_moor": "Frost Heath Moor",
+  "biome.realscale.arid_rocksteppe": "Arid Rocky Steppe",
+  "generator.realscale.tva_sacred_biodiversity_end3_spawn3_v3": "RealScale Sacred • 14 Additional Ecological Biomes + Sky Isles + End Invasion (Experimental)",
+  "generator.realscale.tva_measured_biodiversity_end3_spawn3_v3": "RealScale Measured / USGS • 14 Additional Ecological Biomes + Sky Isles + End Invasion (Experimental)"
 }
