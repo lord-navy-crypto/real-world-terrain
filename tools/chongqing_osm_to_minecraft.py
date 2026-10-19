@@ -197,6 +197,10 @@ def osm_features(data: dict) -> list[dict]:
             if kind not in ("LineString", "Polygon", "MultiPolygon"):
                 continue
             tags = f.get("properties") or {}
+            # Overpass Turbo marks GeoJSON that has missing nodes / broken
+            # geometries as @tainted. Do NOT rasterize it as verified GIS.
+            if not isinstance(tags, dict) or tags.get("@tainted"):
+                continue
             feature_id = str(f.get("id", tags.get("@id", "unknown")))
             if not isinstance(coords, list):
                 continue
