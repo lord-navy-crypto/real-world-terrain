@@ -36,14 +36,15 @@ class RareEarthBiomes(unittest.TestCase):
         self.assertIn("id.contains(\"ocean\")",source)
         self.assertIn("Math.floorDiv(qx,64)",source)
 
-    def test_opt_in_preset_selects_new_biomes(self):
-        path=DATA/"worldgen/world_preset/tva_rare_earth_ecosystems_three_realms.json"
-        preset=json.loads(path.read_text())
-        source=preset["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
-        self.assertEqual(source["type"],"realscale:rare_earth_biomes_v1")
-        self.assertEqual(source["source"]["type"],"realscale:sky_ocean")
-        normal=json.loads((ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json").read_text())
-        self.assertIn("realscale:tva_rare_earth_ecosystems_three_realms",normal["values"])
+    def test_all_world_presets_select_rare_biomes(self):
+        presets=DATA/"worldgen/world_preset"
+        tag=json.loads((ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json").read_text())
+        self.assertNotIn("realscale:tva_rare_earth_ecosystems_three_realms",tag["values"])
+        for name in tag["values"]:
+            data=json.loads((presets/(name.split(":")[1]+".json")).read_text())
+            source=data["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+            self.assertEqual(source["type"],"realscale:rare_earth_biomes_v1",name)
+            self.assertIn("source",source)
 
     def test_safe_surface_only(self):
         src=(SRC/"RareEarthSurfaceFeature.java").read_text()
