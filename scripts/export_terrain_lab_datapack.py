@@ -93,16 +93,19 @@ def _draft_options(path: Path) -> dict:
     )
 
 
-def _unified_choices(path: Path) -> tuple[str, bool]:
+def _unified_choices(path: Path) -> tuple[str, bool, bool]:
     """Legacy drafts default to Terrain Lab with invasions disabled."""
     draft = json.loads(path.read_text(encoding="utf-8"))
     source = draft.get("worldSource", "terrain_lab")
     invasion = draft.get("dimensionalInvasion", False)
+    showcase = draft.get("invasionShowcase", False)
     if source not in ("terrain_lab", "sacred", "measured") or type(source) is not str:
         raise ValueError("worldSource must be terrain_lab, sacred or measured")
     if type(invasion) is not bool:
         raise ValueError("dimensionalInvasion must be true or false")
-    return source, invasion
+    if type(showcase) is not bool or (showcase and not invasion):
+        raise ValueError("invasionShowcase requires dimensionalInvasion=true")
+    return source, invasion, showcase
 
 
 def _pack_meta(format_number: int, description: str) -> bytes:
@@ -123,7 +126,7 @@ def export(jar: Path, draft: Path, output: Path,
     with tempfile.TemporaryDirectory(prefix="realscale_export_") as temporary:
         root = Path(temporary)
         _copy_jar_resources(jar, root)
-        source, invasion = _unified_choices(draft)
+        source, invasion, showcase = _unified_choices(draft)
         labels = None
         if source == "terrain_lab":
             # Preserve byte-identical legacy exports when invasion is off.
@@ -134,7 +137,7 @@ def export(jar: Path, draft: Path, output: Path,
                                key=str)
             if invasion:
                 original_name = name
-                name, preset, labels = create_preset(root, source, True, lab_name=name)
+                name, preset, labels = create_preset(root, source, True, lab_name=name, showcase=showcase)
                 # Do not export two selectable world IDs for the same draft.
                 generated = [p for p in generated
                              if p != PRESET_DIR / (original_name + ".json")]
@@ -146,7 +149,7 @@ def export(jar: Path, draft: Path, output: Path,
         else:
             # Sacred and Measured reuse their original immutable noise settings.
             # No terrain retuning or DEM conversion is performed.
-            name, preset, labels = create_preset(root, source, invasion)
+            name, preset, labels = create_preset(root, source, invasion, showcase=showcase)
             new_preset = PRESET_DIR / (name + ".json")
             (root / new_preset).write_text(
                 json.dumps(preset, ensure_ascii=False, indent=2) + "\n",
