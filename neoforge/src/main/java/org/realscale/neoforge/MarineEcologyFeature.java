@@ -88,13 +88,15 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
     }
 
     private static boolean kelp(WorldGenLevel w,BlockPos pos,int sea,RandomSource random){
-        int height=3+random.nextInt(5);
+        // Mixed canopy: short understory and occasional taller stands.
+        int height=2+random.nextInt(4)+random.nextInt(4);
         if(pos.getY()+height>=sea-1)return false;
         for(int j=0;j<height;j++){
             BlockPos p=pos.above(j);
             if(!w.getBlockState(p).is(Blocks.WATER))return false;
         }
-        if(!w.getBlockState(pos.below()).isCollisionShapeFullBlock(w,pos.below()))
+        if(!natural(w.getBlockState(pos.below()))
+                || !w.getBlockState(pos.below()).isCollisionShapeFullBlock(w,pos.below()))
             return false;
         // All required spaces checked BEFORE changing any blocks.
         for(int j=0;j<height;j++){
