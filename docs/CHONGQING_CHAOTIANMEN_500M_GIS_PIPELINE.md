@@ -58,7 +58,9 @@ Review the exact query. Then run without --dry-run. It requests:
 3. Railways, genuine natural=water and waterway=riverbank polygon ways.
 
 Query extends 100 metres outside the target area so features intersecting
-its boundary can be clipped properly. Source saved as immutable raw
+its boundary can be clipped properly. Closed water/building multipolygon
+relations are also queried; the importer only stitches segments where
+the exported coordinates form valid, complete closed rings. Source saved as immutable raw
 Overpass JSON plus a provenance JSON containing OSM timestamp and source
 query SHA-256; NEVER silently replace a snapshot with new data.
 
@@ -67,11 +69,11 @@ queries. If this happens **STOP** and use Overpass Turbo's official
 export (GeoJSON) into a local file. We do not invent geography or
 commit a pretend successful snapshot.
 
-**Not yet supported:** OSM multipolygon relations assembled from split
-ways. This limitation matters a lot for the Yangtze and Jialing rivers,
-complex station buildings, and plaza areas; those are deliberately not
-called "fully rebuilt" here. Split-way geometry needs a future relation
-assembler with topology tests or a sourced valid GeoJSON MultiPolygon.
+**Important limitation:** Complete OSM multipolygon relation way segments
+are now stitched and their interior holes respected. Broken/unclosed
+relations are rejected instead of being forced together. Real OSM coverage
+can still omit waterways and buildings, so a successful conversion does
+not imply the Yangtze/Jialing rivers or plaza have been fully surveyed.
 No vector snapshot is bundled in this PR until such a real export is
 successfully fetched and verified.
 
@@ -101,13 +103,16 @@ All geometry is projected at **1 horizontal metre = 1 MC block**.
   rasterize approximate pavement breadth. If width is missing, keep
   just a 1-block centerline rather than invent 4/6-lane road widths.
 - Railways: one-block alignment guide, not a fully accurate multi-level
-  monorail, tunnel or bridge reconstruction.
+  monorail, tunnel or bridge reconstruction. Ground-level geometry only:
+  tagged bridges/tunnels and nonzero layer features are **deferred** when
+  their actual vertical placement is not verified, rather than falsely
+  flattened onto the terrain.
 - Water: only REAL *closed water polygons* become blue **reference blocks**,
   never arbitrary flowing Minecraft water that could flood the whole
   floating island. Do not mistake the blue reference color for finished
   Yangtze/Jialing channel hydrodynamics.
-- Complex building relations and exact structure elevations, bridge
-  clearance, tunnel geometry, vegetation and true 3D facades remain
+- Incomplete multipolygon relations, exact structural elevations, bridge
+  clearance, tunnel geometry, vegetation and real 3D facades remain
   explicitly unknown. We do NOT auto-invent Raffles City or Hongyadong.
 
 ## Step C. Preview safely and stage placement
@@ -141,5 +146,5 @@ genuine, but the structure overlay, saved-block Y alignment, river polygons
 and 3D landmark models still need real dataset and live Minecraft QA.
 
 Release: Keep Draft; do not merge until *actual* OSM provenance,
-multi-geometry parity, river relations, field height checks, the
+multi-geometry parity, real river bank data availability, field height checks, the
 full worldgen matrix, client FPS and world-save re-entry pass.
