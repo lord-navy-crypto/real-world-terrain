@@ -134,8 +134,8 @@ public final class RealScaleTerrainLabClient {
         String preset = "landscape";
         // Shared immutable next-world profile choice. Old YACL drafts default
         // to terrain_lab and never turn on invasion implicitly.
-        String worldSource = "terrain_lab";
-        boolean dimensionalInvasion = false;
+        String worldSource = "sacred";
+        boolean dimensionalInvasion = true;
         boolean invasionShowcase = false;
         int blendPercent = 25;
         boolean lithostitchedBlend = false;
@@ -188,7 +188,7 @@ public final class RealScaleTerrainLabClient {
         private static void migrateLegacyDraft(Draft d) {
             // Saved YACL drafts from v1.4.1 remain readable. These names are
             // normalized only in the next-world draft, never in existing saves.
-            if (d.worldSource == null) d.worldSource = "terrain_lab";
+            if (d.worldSource == null) d.worldSource = "sacred";
             if (d.preset == null) return;
             switch (d.preset) {
                 case "realism_max", "georeal_ultimate", "ultimate" -> d.preset = "landscape";
@@ -253,6 +253,8 @@ public final class RealScaleTerrainLabClient {
         }
 
         void save() {
+            // Users requested invasion always enabled in every NEW unified world.
+            dimensionalInvasion = true;
             initializeProfiles();
             profiles.get(preset).copyTo(this);
             if (!valid(this)) throw new IllegalArgumentException("Terrain Lab draft is invalid");
@@ -362,6 +364,8 @@ public final class RealScaleTerrainLabClient {
 
     private static Screen createScreen(Screen parent) {
         Draft d=Draft.read();
+        // Always ON even for previously saved pre-feature drafts.
+        d.dimensionalInvasion = true;
         d.initializeProfiles();
         return YetAnotherConfigLib.createBuilder()
             .title(Component.literal("RealScale | Unified World Settings"))
@@ -378,34 +382,19 @@ public final class RealScaleTerrainLabClient {
             .category(familyCategory("Alpine | Mountains",d.profiles.get("alpine")))
             .category(familyCategory("Canyon | Plateaus",d.profiles.get("canyon")))
             .category(ConfigCategory.createBuilder()
-                .name(Component.literal("Unified World Creation"))
+                .name(Component.literal("Unified World Creation — Invasion Always ON"))
                 .option(Option.<String>createBuilder()
                     .name(Component.literal("Base World (next new world)"))
-                    .description(description("Terrain Lab = editable custom family below. "
+                    .description(description("Dimension Invasion is ALWAYS ENABLED for newly exported worlds. "
+                        + "The new world's guaranteed starting area is one of the invader biomes. "
+                        + "Terrain Lab = editable custom family below. "
                         + "Sacred Timeline = canonical Natural preset. "
                         + "Measured = canonical read-only USGS/DEM world. "
                         + "These choices affect ONLY the exported new-world datapack, "
                         + "NOT an already-created world or Minecraft's current World Type."))
-                    .binding("terrain_lab", () -> d.worldSource, v -> d.worldSource=v)
+                    .binding("sacred", () -> d.worldSource, v -> d.worldSource=v)
                     .controller(o -> CyclingListControllerBuilder.create(o)
                         .values("terrain_lab", "sacred", "measured")).build())
-                .option(Option.<Boolean>createBuilder()
-                    .name(Component.literal("Dimension Invasion (new world only)"))
-                    .description(description("OFF by default. When ON, compose six "
-                        + "Nether/End/Overworld biome invasions with the selected "
-                        + "Sacred, Measured or Terrain Lab terrain WITHOUT changing "
-                        + "its underlying noise/DEM or any saved world. "
-                        + "SAVE this draft, then export a datapack with "
-                        + "RealScale-Config-Exporter.pyz (or "
-                        + "scripts/export_terrain_lab_datapack.py). "
-                        + "Enable that datapack BEFORE creating a NEW world and "
-                        + "choose its new world type. Saving this screen alone "
-                        + "does not activate invasions."))
-                    .binding(false, () -> d.dimensionalInvasion, v -> {
-                        d.dimensionalInvasion=v;
-                        if (!v) d.invasionShowcase=false;
-                    })
-                    .controller(BooleanControllerBuilder::create).build())
                 .option(Option.<Boolean>createBuilder()
                     .name(Component.literal("Invasion Showcase near Origin (test-only)"))
                     .description(description("Requires Dimension Invasion ON. "
