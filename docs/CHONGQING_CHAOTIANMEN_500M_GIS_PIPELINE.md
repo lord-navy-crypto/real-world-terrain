@@ -482,3 +482,72 @@ must pass the REAL Mojang 1.21.1 server bootstrap, .mca material/height
 verification, in-world Crystal roof-block verification and server
 reload before being linked as the newest artifact. PR #63 stays Draft;
 main/TVA unchanged.
+
+## Phase 11 — both genuine OSM layers now cover the FULL 600m city (2026-10-19)
+
+The previous expanded map mixed **600m Sentinel-2 landcover** with
+**OSM pavement/road sources clipped at 500m**, leaving the added
+100m outer ring poorly mapped. This was not an issue with the user's
+Minecraft install: our own extractor/manifest were artificially bounded.
+
+Implemented changes:
+
+- Both official ODbL OSM API workflows now accept the explicitly
+  limited ±600m Chaotianmen research extent. Their source geometries,
+  way IDs and raw XML hashes remain unchanged; no synthetic streets or
+  imaginary road-edge polygons are inserted.
+- `chongqing_fetch_osm_api.bounds` was also updated to allow bounded
+  600m queries; the original 500m source snapshot remains SHA-pinned
+  and unmodified for the core built-architecture GIS plan.
+- The standalone exporter now **requires** valid georeferencing
+  (origin, identical DEM fingerprint, licence, bounded 500/600m radius,
+  row counts, per-way source attribution) on each data layer and
+  protects the real T1 tower from overlapping 600m road corridors.
+- The independently loaded saved-world verifier requires genuine
+  **OSM land-use AND road coverage in the 500–600m outer ring**,
+  and compares actual Anvil blocks at 600m source road coordinates.
+  Sources cannot be falsely labelled full-extent when they are still
+  the 500m corpus.
+
+### Confirmed actual GIS/Anvil data, successful standalone CI
+
+**CI:** https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39264767098
+
+- True official OSM source 600m ground classification: **137,070**
+  cells (from 27,537 at 500m). Breakdown:
+  71,647 low-confidence urban land-use, 55,701 grass candidate,
+  6,825 concrete, 2,670 asphalt, 227 pedestrian paving.
+- True OSM highway centerline-derived corridors: **100,627** cells
+  (from 67,563 previously); original highway source tag widths remain
+  more trusted than lane/class estimates. Exactly **100,129**
+  extra surface block writes after protecting architectural masks.
+- Satellite: pinned openly licensed Copernicus Sentinel-2 image,
+  **467,450** 1m display positions classifiable from true **10m**
+  observations, sourced over the full 600m region.
+- Combined preliminary 1m ground material: **378,121**
+  non-grass surface columns, 1,442,401 DEM-ground positions,
+  5,776 generated chunks, 16 Anvil region files.
+- Architectural 2D source plan remains **494,988 exact writes**,
+  original OSM T1 tower **44,168** writes, Crystal schematic 3D
+  **21,368** writes and generic tower glazing **234,769** blocks.
+- `qa/test_chongqing_standalone_world.py` read 33 actual road blocks,
+  31 Crystal 3D blocks, 41 outer-T1 source blocks, 20 glazed OSM
+  facade points plus historical surfaces. **Actual official Mojang
+  1.21.1 vanilla server boot and re-entry PASS.**
+- Independent playable map:
+  https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39264767098/artifacts/12192781943
+
+### Strict unfulfilled accuracy gates
+
+- A 1m *output coordinate system* does not create 1m source precision:
+  Copernicus is approximately 10m resolution.
+- OSM highway class fallback widths and residential/commercial
+  land-use are LOW confidence and NOT original measured pavement.
+- Full 3D urban structures remain mostly schematic; 600m OSM road
+  tags still defer about 50 multi-level bridge/tunnel features.
+- Exact Yangtze/Jialing water elevations, all ferry docks and slope
+  retaining walls, detailed podium, engineered 3D Crystal supports,
+  high-resolution licensed aerial imagery, and Overture building-part
+  attribute completeness must be checked before real city claims.
+- Never merge this experimental PR to main or overwrite TVA; the
+  standalone world remains a separately downloadable research map.
