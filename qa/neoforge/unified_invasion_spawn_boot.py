@@ -27,7 +27,7 @@ SOURCE=os.environ.get("REALSCALE_UNIFIED_SPAWN_BASE","sacred")
 if SOURCE not in ("sacred","measured"):
     raise SystemExit("Expected REALSCALE_UNIFIED_SPAWN_BASE=sacred|measured")
 WORLD="unified-invasion-spawn-"+SOURCE
-PROFILE="realscale:unified_"+SOURCE+"_invasion_v1"
+PROFILE="realscale:unified_"+SOURCE+"_invasion_v1_end3"
 JARS=sorted((MOD/"build/libs").glob("RealScale-TVA-Ultimate*.jar"))
 if not JARS:
     raise SystemExit("Build the real NeoForge mod JAR before this smoke test")
@@ -38,7 +38,7 @@ with tempfile.TemporaryDirectory(prefix="realscale-spawn-profile-") as temp:
         "preset":"landscape","reliefPercent":100,
         "elevation":0,"caves":50,"riverGrade":6,"inland":True,
         "worldSource":SOURCE,"dimensionalInvasion":True,
-        "invasionShowcase":False
+        "invasionShowcase":False,"endBiomeAccents":True
     }),encoding="utf-8")
     data=Path(temp)/"unified-preset.zip"
     produced,_=export(JAR,draft,data,include_resource_pack=False)
@@ -98,6 +98,39 @@ try:
             raise AssertionError("Expected exactly one genuine Nether/End biome "
                                  "at x=0,z=0: "+str(hits))
         print("UNIFIED_INVASION_SPAWN_BIOME_PASS",SOURCE,hits[0],flush=True)
+        # Sample deterministic accent-patch centers in the ACTUAL End
+        # BiomeSource: ensure each of the three new biome IDs is reachable
+        # through a real NeoForge server without regenerating remote chunks.
+        mask=(1<<64)-1
+        def mix(v):
+            v &= mask
+            v ^= v>>30;v=(v*0xbf58476d1ce4e5b9)&mask
+            v ^= v>>27;v=(v*0x94d049bb133111eb)&mask
+            return v^(v>>31)
+        candidate={0:[],1:[],2:[]}
+        for gx in range(-16,17):
+            for gz in range(-16,17):
+                h=mix(gx*0x9e3779b97f4a7c15
+                      ^gz*0xc2b2ae3d27d4eb4f^0x71a6e31d)
+                if h%5:continue
+                x=gx*512+256+((h>>12)%129)-64
+                z=gz*512+256+((h>>27)%129)-64
+                if x*x+z*z<1024*1024:continue
+                candidate[(h>>54)%3].append((x*x+z*z,x,z))
+        names=("end_chorus_gardens","end_crystal_barrens","end_shattered_glades")
+        for kind,name in enumerate(names):
+            found=None
+            for _,x,z in sorted(candidate[kind])[:70]:
+                out=rcon.send(
+                    f"execute in minecraft:the_end positioned {x} 80 {z} "
+                    f"if biome ~ ~ ~ realscale:{name} run seed")
+                if "Seed:" in out:
+                    found=(x,z)
+                    break
+            if found is None:
+                raise AssertionError(
+                    "No real End biome found in 70 candidate cells: "+name)
+            print("REAL_GRAND_END_BIOME_PASS",SOURCE,name,found,flush=True)
         saved=rcon.send("save-all flush")
         if "Saved" not in saved:
             raise AssertionError("Missing world-save ACK: "+repr(saved))
@@ -122,6 +155,8 @@ worlds=list((MOD/"run").glob("**/"+WORLD+"/level.dat"))
 if not worlds:
     raise AssertionError("Unified invasion level.dat not written")
 save=gzip.decompress(worlds[0].read_bytes())
+if b"realscale:end_accents" not in save:
+    raise AssertionError("Grand End three-biome wrapper missing from saved world")
 if b"realscale:cross_realm_invasion" not in save:
     raise AssertionError("Invasion codec absent from saved world")
 if b"realscale:grand_nether" not in save or b"realscale:grand_end" not in save:
