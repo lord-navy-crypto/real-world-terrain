@@ -34,6 +34,16 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_biodiversity_v2.py' -v
       - name: Verify eight additional versioned v3 habitats and historical world isolation
         run: python3 -m unittest discover -s qa -p 'test_biodiversity_v3.py' -v
+      - name: Validate real-world-inspired regional terrain atlas and old noise graphs
+        run: python3 -m unittest discover -s qa -p 'test_regional_landform_atlas.py' -v
+      - name: Verify 8 regional landform shapes and 4km boundary continuity
+        run: |
+          mkdir -p build/regional-landform-math
+          javac -d build/regional-landform-math \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/RegionalLandformMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/RegionalLandformMathSmoke.java
+          java -cp build/regional-landform-math org.realscale.neoforge.RegionalLandformMathSmoke
       - name: Verify three opt-in Grand End biomes preserve foreign biome IDs and existing generators
         run: python3 -m unittest discover -s qa -p 'test_grand_end_three_biomes.py' -v
       - name: Validate Grand Ecology registrations and preserved dimensions

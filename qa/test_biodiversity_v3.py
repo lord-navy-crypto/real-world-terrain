@@ -65,7 +65,7 @@ class BiomeDiversityV3(unittest.TestCase):
     def test_presets_only_change_inner_ecotone_and_extend_normal_menu(self):
         normal=read(TAGS/"normal.json")["values"]
         extended=read(TAGS/"extended.json")["values"]
-        self.assertEqual(len(normal),9)
+        self.assertEqual(len(normal),10)
         self.assertEqual(len(extended),5)
         self.assertEqual(len(set(normal)),len(normal))
         self.assertEqual(normal[:5],extended)

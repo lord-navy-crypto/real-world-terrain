@@ -51,5 +51,6 @@
   "biome.realscale.frost_heath_moor": "寒霜石楠荒原",
   "biome.realscale.arid_rocksteppe": "干旱岩砾草原",
   "generator.realscale.tva_sacred_biodiversity_end3_spawn3_v3": "RealScale 神圣时间线 · 14 种新增生态群系 + 天空群岛 + 末地入侵（实验）",
-  "generator.realscale.tva_measured_biodiversity_end3_spawn3_v3": "RealScale 实测地形 / USGS · 14 种新增生态群系 + 天空群岛 + 末地入侵（实验）"
+  "generator.realscale.tva_measured_biodiversity_end3_spawn3_v3": "RealScale 实测地形 / USGS · 14 种新增生态群系 + 天空群岛 + 末地入侵（实验）",
+  "generator.realscale.tva_regional_landform_expedition_three_realms": "RealScale 全球高原探险 · 青藏、安第斯、四川、重庆、云贵地貌（实验）"
 }
