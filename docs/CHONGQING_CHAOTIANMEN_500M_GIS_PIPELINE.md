@@ -50,7 +50,7 @@ With Python 3.10+ and internet access on your OWN device:
     python3 tools/chongqing_fetch_osm.py \
       --radius 500 \
       --dry-run \
-      --output chongqing/data/chaotianmen_500m_2026.osm.json
+      --output chongqing/data/chaotianmen_osm_api_20261019_r500_b100.json.gz.b64
 
 Review the exact query. Then run without --dry-run. It requests:
 1. Closed building footprints (only supported OSM ways).
@@ -74,17 +74,22 @@ are now stitched and their interior holes respected. Broken/unclosed
 relations are rejected instead of being forced together. Real OSM coverage
 can still omit waterways and buildings, so a successful conversion does
 not imply the Yangtze/Jialing rivers or plaza have been fully surveyed.
-No vector snapshot is bundled in this PR until such a real export is
-successfully fetched and verified.
+**UPDATE 2026-10-19:** Authentic OSM contributor data now exists at
+`chongqing/data/chaotianmen_osm_api_20261019_r500_b100.json.gz.b64`.
+This comes from the **official OSM API** `/api/0.6/map` (not Overpass):
+preserved OSM IDs, tagged positions and provenance with upstream XML SHA,
+licensed ODbL. It is gzip+base64 for compact GitHub archival and can be read
+directly by the converter and audit tools. It is NOT a complete 3D survey.
+See `docs/CHONGQING_REAL_OSM_SNAPSHOT_20261019.md`.
 
 ## Step A.5 — Audit the actual imported GIS before Minecraft placement
 
-After obtaining an **actual** Overpass JSON / Overpass Turbo GeoJSON file,
-run the new source-only audit. This needs no Minecraft client or extra Python
-packages and makes NO network request:
+The source-only audit can now read the checked-in authentic OSM API archive,
+regular Overpass JSON, or Overpass Turbo GeoJSON. This needs no Minecraft
+client, external Python packages or further network requests:
 
     python3 tools/chongqing_gis_audit.py \\
-      --input chongqing/data/chaotianmen_500m_2026.osm.json \\
+      --input chongqing/data/chaotianmen_osm_api_20261019_r500_b100.json.gz.b64 \\
       --radius 500 \\
       --output build/chaotianmen-gis-audit
 
@@ -115,7 +120,7 @@ unit-test fixture is evidence of Chongqing geometry.
 After obtaining a REAL Overpass JSON/GeoJSON file:
 
     python3 tools/chongqing_osm_to_minecraft.py \
-      --input chongqing/data/chaotianmen_500m_2026.osm.json \
+      --input chongqing/data/chaotianmen_osm_api_20261019_r500_b100.json.gz.b64 \
       --radius 500 \
       --output build/chaotianmen-gis-datapack \
       --attribution "© OpenStreetMap contributors, ODbL; exported YYYY-MM-DD"
@@ -178,7 +183,8 @@ interactive workflow now is:
    - **Load & verify source plan**: validates coordinate origin, source
      checksum format, exact DEM SHA, real DEM Y for each planned block,
      allowed materials, source geometry bounds, sorted/nonoverlapping rows,
-     <=2 million pilot writes and row-count integrity; does NOT place blocks.
+     <=5 million pilot writes and row-count integrity; does NOT place blocks.
+      The current real OSM plan totals 4,033,166 writes.
    - **I backed up this NEW world**: deliberate user confirmation. This is
      an acknowledgment, not a technical check that a backup exists.
    - **Start / Pause 256 blocks per tick**: after explicit confirmation,
@@ -205,36 +211,36 @@ before increasing performance budgets. The standalone datapack remains an
 optional backward-compatible laboratory exporter; it must not become the
 required user interface.
 
-## Legacy Step D. Preview safely and stage placement
+## Research-only legacy output (NOT the player interface)
 
-1. Create a **NEW** Special Chongqing world, use Chunky (optional) to
-   pregenerate the 1 km pilot. Do not load this datapack into existing
-   TVA Sacred or Measured worlds.
-2. **Back up your new world save**, and shut down other servers writing it.
-3. Copy the exported datapack into that world's datapacks folder, then
-   reload datapacks. Check the manifest and command counts first.
-4. In an authorized creative/administrative session, execute each line
-   under manifest.execute_in_order. Split batches deliberately to prevent
-   hundreds of thousands of block placement commands in a single tick.
-   Gradually compare rendered Minecraft geometry against the original
-   georeferenced OSM and DEM (corner and riverfront alignment). This is
-   still a laboratory-grade overlay, not public finished city content.
-5. Record side-by-side checks at Chaotianmen Square, riverfront,
-   surrounding roads and Raffles City building locations. Reject visible
-   street/ground level mismatches instead of forcing random foundations.
+The exporter also retains a backwards-compatible vanilla datapack for
+integration comparisons, but in normal gameplay **players never run chat
+commands, terminal commands or functions to trigger buildings**.
+Use the integrated **G-key** GUI and its Start/Pause button. The
+command-based export is strictly optional research material, not a
+requirement of the mod or city experience.
 
 The importer NEVER downloads Chunky, starts background servers, writes
 world Anvil .mca or modifies saved level.dat.
 
-## Acceptance status
+## Acceptance status (real OSM checkpoint)
 
-The program and synthetic fixture tests are implemented; fixture geometry
-is **only synthetic for QA**. OSM acquisition can be constrained by remote
-API rate limits/outages, and the complete real city data is not yet
-integrated. The source DEM in PR #54 and its server/worldgen tests are
-genuine, but the structure overlay, saved-block Y alignment, river polygons
-and 3D landmark models still need real dataset and live Minecraft QA.
+- Authentic official OSM geometry snapshot archived with source URL,
+  upstream raw response SHA-256, ODbL attribution and preserved OSM ids.
+- The real 500m map preview is committed as
+  `docs/assets/chaotianmen_500m_authentic_osm_20261019.svg`.
+  205 source features overlap the pilot bounding box by their bounding
+  rectangles, not all are complete/accurate 3D surveys.
+- The real 500m GIS-only CI job completed successfully. Output:
+  32,403 plan rows, 44,606 legacy commands, and 4,033,166 native
+  block writes. 71 unsupported multilevel road/rail features and
+  seven vertically ambiguous building features remain deferred.
+- The Crystal is specifically **NOT** flattened into a ground tower.
+  Real upper/lower construction datums, more complete river banks,
+  facades and bridge levels still need separately verified sources.
+- NeoForge GUI compilation has passed, but player interaction,
+  long-duration real placement, exact live terrain Y, world reload,
+  client FPS and complete TVA gates are NOT yet fully verified.
 
-Release: Keep Draft; do not merge until *actual* OSM provenance,
-multi-geometry parity, real river bank data availability, field height checks, the
-full worldgen matrix, client FPS and world-save re-entry pass.
+Release: Keep Draft. Do not merge without live Minecraft save QA,
+source licensing review and 3D landmark / river bank acceptance tests.
