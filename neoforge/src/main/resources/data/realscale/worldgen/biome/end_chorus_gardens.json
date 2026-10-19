@@ -6,7 +6,13 @@
     "fog_color": 11671663,
     "water_color": 4159204,
     "water_fog_color": 329011,
-    "sky_color": 11828179
+    "sky_color": 11828179,
+    "particle": {
+      "options": {
+        "type": "minecraft:end_rod"
+      },
+      "probability": 0.004
+    }
   },
   "spawners": {},
   "spawn_costs": {},

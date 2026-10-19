@@ -122,6 +122,21 @@ def _end_biome_choices(path: Path) -> bool:
     return flag
 
 
+def _spawn_habitat_choice(path: Path) -> bool:
+    """Only a NEW YACL draft explicitly enables three-End-biome spawn.
+
+    Older saved user drafts, existing world presets and already exported
+    *_end3 ZIPs remain untouched. New UI drafts emit spawnEndHabitats=true.
+    """
+    draft = json.loads(path.read_text(encoding="utf-8"))
+    enabled = draft.get("spawnEndHabitats", False)
+    if type(enabled) is not bool:
+        raise ValueError("spawnEndHabitats must be a boolean")
+    if enabled and not draft.get("dimensionalInvasion", False):
+        raise ValueError("spawnEndHabitats requires dimensionalInvasion=true")
+    return enabled
+
+
 def _pack_meta(format_number: int, description: str) -> bytes:
     return (json.dumps({"pack": {"pack_format": format_number,
                                  "description": description}},
@@ -142,6 +157,7 @@ def export(jar: Path, draft: Path, output: Path,
         _copy_jar_resources(jar, root)
         source, invasion, showcase = _unified_choices(draft)
         end_biomes = _end_biome_choices(draft)
+        spawn_habitats = _spawn_habitat_choice(draft)
         labels = None
         if source == "terrain_lab":
             # Preserve byte-identical legacy exports when invasion is off.
@@ -150,10 +166,11 @@ def export(jar: Path, draft: Path, output: Path,
                                 if str(item).startswith("data/realscale/worldgen/")
                                 or str(item).startswith("data/realscale/lithostitched/fast_noise_config/")),
                                key=str)
-            if invasion or end_biomes:
+            if invasion or end_biomes or spawn_habitats:
                 original_name = name
                 name, preset, labels = create_preset(root, source, invasion, lab_name=name,
-                                                     showcase=showcase, end_biomes=end_biomes)
+                                                     showcase=showcase, end_biomes=end_biomes,
+                                                     spawn_end_habitats=spawn_habitats)
                 # Do not export two selectable world IDs for the same draft.
                 generated = [p for p in generated
                              if p != PRESET_DIR / (original_name + ".json")]
@@ -166,7 +183,8 @@ def export(jar: Path, draft: Path, output: Path,
             # Sacred and Measured reuse their original immutable noise settings.
             # No terrain retuning or DEM conversion is performed.
             name, preset, labels = create_preset(root, source, invasion, showcase=showcase,
-                                                 end_biomes=end_biomes)
+                                                 end_biomes=end_biomes,
+                                                 spawn_end_habitats=spawn_habitats)
             new_preset = PRESET_DIR / (name + ".json")
             (root / new_preset).write_text(
                 json.dumps(preset, ensure_ascii=False, indent=2) + "\n",

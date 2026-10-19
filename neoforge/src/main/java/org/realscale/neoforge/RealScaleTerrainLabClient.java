@@ -138,6 +138,10 @@ public final class RealScaleTerrainLabClient {
         boolean dimensionalInvasion = true;
         boolean invasionShowcase = false;
         boolean endBiomeAccents = true;
+        // New Unified World Creation always uses a versioned 3-End-biome
+        // initial spawn. Historical datapacks continue to use their saved
+        // optional codec flag default (false).
+        boolean spawnEndHabitats = true;
         int blendPercent = 25;
         boolean lithostitchedBlend = false;
         boolean lithostitchedGeology = false;
@@ -256,6 +260,7 @@ public final class RealScaleTerrainLabClient {
         void save() {
             // Users requested invasion always enabled in every NEW unified world.
             dimensionalInvasion = true;
+            spawnEndHabitats = true;
             initializeProfiles();
             profiles.get(preset).copyTo(this);
             if (!valid(this)) throw new IllegalArgumentException("Terrain Lab draft is invalid");
@@ -367,6 +372,7 @@ public final class RealScaleTerrainLabClient {
         Draft d=Draft.read();
         // Always ON even for previously saved pre-feature drafts.
         d.dimensionalInvasion = true;
+        d.spawnEndHabitats = true;
         d.initializeProfiles();
         return YetAnotherConfigLib.createBuilder()
             .title(Component.literal("RealScale | Unified World Settings"))
@@ -387,6 +393,8 @@ public final class RealScaleTerrainLabClient {
                 .option(Option.<String>createBuilder()
                     .name(Component.literal("Base World (next new world)"))
                     .description(description("Dimension Invasion is ALWAYS ENABLED for newly exported worlds. "
+                        + "The spawn zone is LOCKED to one of our three original "
+                        + "End biomes; the generated new world ID ends with _spawn3. "
                         + "The new world's guaranteed starting area is one of the invader biomes. "
                         + "Terrain Lab = editable custom family below. "
                         + "Sacred Timeline = canonical Natural preset. "

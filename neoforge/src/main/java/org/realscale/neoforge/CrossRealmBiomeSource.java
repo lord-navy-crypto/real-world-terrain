@@ -25,8 +25,25 @@ public final class CrossRealmBiomeSource extends BiomeSource {
         RecordCodecBuilder.mapCodec(i -> i.group(
             BiomeSource.CODEC.fieldOf("source").forGetter(CrossRealmBiomeSource::source),
             Codec.STRING.optionalFieldOf("target","auto").forGetter(CrossRealmBiomeSource::target),
+            // Missing field preserves the original Nether/vanilla End spawn
+            // in any old saved generator codec; NEW profiles set it true.
+            Codec.BOOL.optionalFieldOf("spawn_end_habitats",false)
+                .forGetter(CrossRealmBiomeSource::spawnEndHabitats),
             RegistryOps.retrieveGetter(Registries.BIOME)
         ).apply(i, CrossRealmBiomeSource::new));
+
+    // A distinct, persistent codec discriminator for NEW spawn3 worlds.
+    // Unlike an optional flag, this type survives save/reload visibly in
+    // level.dat and cannot be mistaken for historical invasion generators.
+    // The legacy CODEC above still decodes old saves with missing=false.
+    public static final MapCodec<CrossRealmBiomeSource> SPAWN3_CODEC =
+        RecordCodecBuilder.mapCodec(i -> i.group(
+            BiomeSource.CODEC.fieldOf("source").forGetter(CrossRealmBiomeSource::source),
+            Codec.STRING.optionalFieldOf("target","overworld")
+                .forGetter(CrossRealmBiomeSource::target),
+            RegistryOps.retrieveGetter(Registries.BIOME)
+        ).apply(i, (source, target, registry) ->
+            new CrossRealmBiomeSource(source, target, true, registry)));
 
     private static final int CELL=512;
     // A 192-block radius covers the origin spawn platform and vanilla
@@ -39,12 +56,15 @@ public final class CrossRealmBiomeSource extends BiomeSource {
     }
     private final BiomeSource source;
     private final String target;
+    private final boolean spawnEndHabitats;
     private final Holder<Biome> forest, plains, meadow, cherry, taiga, netherWastes, endHighlands;
     private final Holder<Biome> chorusGardens, crystalBarrens, shatteredGlades;
 
-    private CrossRealmBiomeSource(BiomeSource source,String target,HolderGetter<Biome> registry) {
+    private CrossRealmBiomeSource(BiomeSource source,String target,
+                                 boolean spawnEndHabitats,HolderGetter<Biome> registry) {
         this.source=source;
         this.target=target;
+        this.spawnEndHabitats=spawnEndHabitats;
         forest=get(registry,"forest");
         plains=get(registry,"plains");
         meadow=get(registry,"meadow");
@@ -66,7 +86,8 @@ public final class CrossRealmBiomeSource extends BiomeSource {
     }
     private BiomeSource source(){return source;}
     private String target(){return target;}
-    @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
+    private boolean spawnEndHabitats(){return spawnEndHabitats;}
+    @Override protected MapCodec<? extends BiomeSource> codec(){return spawnEndHabitats ? SPAWN3_CODEC : CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),
             Stream.of(forest,plains,meadow,cherry,taiga,netherWastes,endHighlands,
@@ -90,6 +111,11 @@ public final class CrossRealmBiomeSource extends BiomeSource {
             // biome or a vanilla End biome. Determine the choice from a fixed
             // seed-dependent source sample, not local X/Y: the whole starting
             // column, even above Measured mountains, stays ONE biome.
+            if (!spawnEndHabitats) {
+                // Do not silently change the old immutable cross-realm world
+                // generators already written to players' level.dat files.
+                return (biome.hashCode() & 1)==0 ? netherWastes : endHighlands;
+            }
             String anchor = source.getNoiseBiome(0,20,0,sampler).unwrapKey()
                     .map(k->k.location().toString()).orElse("minecraft:plains");
             int choice=(int)Math.floorMod(mix(anchor.hashCode() ^ 0x7346b127L),3L);
