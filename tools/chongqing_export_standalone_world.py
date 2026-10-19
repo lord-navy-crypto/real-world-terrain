@@ -121,8 +121,10 @@ def read_copernicus_mask(path: Path, dem_sha: str) -> tuple[dict,dict]:
     if len(raw)>=36*1024*1024:
         raise ValueError("Oversized Sentinel-2 ground mask")
     data=json.loads(raw)
+    satellite_radius=data.get("radius_m")
     if (data.get("format")!="REALSCALE_CHAOTIANMEN_S2_LANDCOVER_V1"
-            or data.get("radius_m")!=SOURCE_MASK_RADIUS
+            or satellite_radius not in (500,600)
+            or satellite_radius>RADIUS
             or data.get("resolution_m")!=10
             or data.get("dem_source_raw_sha256")!=dem_sha
             or data.get("origin_lat")!=29.5667
@@ -136,8 +138,8 @@ def read_copernicus_mask(path: Path, dem_sha: str) -> tuple[dict,dict]:
     for row in data["rows"]:
         z,x0,x1,material,confidence,source=row
         if (not all(type(n) is int for n in (z,x0,x1))
-                or not(-SOURCE_MASK_RADIUS<=z<=SOURCE_MASK_RADIUS
-                        and -SOURCE_MASK_RADIUS<=x0<=x1<=SOURCE_MASK_RADIUS)
+                or not(-satellite_radius<=z<=satellite_radius
+                        and -satellite_radius<=x0<=x1<=satellite_radius)
                 or material not in ("grass","urban_inferred")
                 or confidence not in ("low","medium")
                 or source!="sentinel-2-l2a/"+item):
@@ -492,7 +494,7 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None,
     stats["gis_source_overlay_radius_m"]=SOURCE_MASK_RADIUS
     if extra_tower_metrics is not None:
         stats["expanded_real_t1_evidence"]=extra_tower_metrics
-        stats["expanded_extra_landcover_note"]="500m OSM/satellite source masks remain; 500..600m ring uses DEM with UNKNOWN ground cover except source-verified T1 polygon"
+        stats["expanded_extra_landcover_note"]="source OSM polygons and road widths 500m; Copernicus 10m satellite georeferenced across 600m; other outer-ring source GIS coverage incomplete"
     if crystal_metrics is not None:
         stats["crystal_3d_evidence"]=crystal_metrics
         stats["crystal_standalone_building_mode"]="real OSM polygon/min_height/height + LOW-confidence vertical anchor + schematic glass enclosure"
@@ -506,6 +508,7 @@ def generate(world, surface_file=None, satellite_file=None, road_file=None,
             1 for pos in satellite_lookup if pos not in surface_lookup)
         stats["sentinel_source_stac_item"]=satellite_meta["source_stac_item"]
         stats["sentinel_resolution_m"]=satellite_meta["resolution_m"]
+        stats["satellite_classified_extent_radius_m"]=satellite_meta["radius_m"]
         stats["sentinel_classified_columns"]=satellite_meta["known_surface_columns"]
         stats["satellite_license"]=satellite_meta["license"]
         stats["satellite_warning"]="10m broad vegetation vs bare ground, NOT exact 1m surface or 3D geometry; OSM supersedes pixels"
@@ -605,9 +608,9 @@ def package_world(root,out,surface_file=None,satellite_file=None,road_file=None,
       "multilevel road bridges, true river water heights and unknown structures\n"
       "are DEFERRED. Blue concrete is a WATER REFERENCE, not a river.\n"
       "Experimental "+str(RADIUS)+"m halfwidth square, outside = void. Use CREATIVE only.\n"
-      "Source limitation: true OSM/Sentinel ground-material masks still end\n"
-      "at original +/-500m; the outer ring preserves authentic DEM Y but\n"
-      "has UNKNOWN ground material except the true pinned OSM T1 tower.\n"
+      "The real Copernicus 10m landcover mask covers full +/-"+str(RADIUS)+"m.\n"
+      "Original official OSM material/road GIS is pinned at +/-500m;\n"
+      "outer ring OSM source details remain incomplete, T1 is sourced.\n"
       "World and original template level.dat were created with official vanilla server.\n"
       "No mods, command blocks, cheats or external GIS files required to VIEW the map.\n"
       "Do not remove the included custom-height datapack from this world.\n"
