@@ -24,9 +24,19 @@ import java.util.Properties;
  * world-save modifications can be embedded in the user-supplied JSON.
  */
 public final class ChongqingGisPlan {
-    public record Row(int x0, int x1, int y, int z, String kind, int height) {
+    public record Row(int x0, int x1, int y, int z, String kind,
+                      int height, String shell) {
         int length() { return x1 - x0 + 1; }
-        long writes() { return (long) length() * (height + 1); }
+        long writes() {
+            return (long) length() *
+                    (1 + ("facade".equals(shell) ? height
+                         : "roof".equals(shell) ? 1 : 0));
+        }
+        int nextOffsetAfter(int previous) {
+            // Roof-only interior jumps directly from the foundation to
+            // roof Y; intermediate air is NEVER filled or scheduled.
+            return "roof".equals(shell) && previous == 0 ? height : previous + 1;
+        }
     }
 
     public final List<Row> rows;
@@ -51,7 +61,7 @@ public final class ChongqingGisPlan {
 
     public static final Path INPUT =
             Path.of("config", "realscale", "chaotianmen-gis-plan.json");
-    public static final String FORMAT = "REALSCALE_CHAOTIANMEN_PLACEMENT_V1";
+    public static final String FORMAT = "REALSCALE_CHAOTIANMEN_PLACEMENT_V2";
     private static final long MAX_SOURCE_BYTES = 40L * 1024 * 1024;
     private static final int MAX_ROWS = 250_000;
     // Real 500m OSM snapshot produces 4,033,166 planned writes.
@@ -111,6 +121,10 @@ public final class ChongqingGisPlan {
             int radius = intValue(root, "radius_m");
             if (radius < 32 || radius > 500)
                 throw new IOException("GIS radius must be 32..500m");
+            if (!"schematic_hollow_facade_roof_v2".equals(
+                    text(root, "massing_policy"))) {
+                throw new IOException("Unsupported building shell policy");
+            }
             JsonArray incoming = root.getAsJsonArray("rows");
             if (incoming == null || incoming.size() < 1 || incoming.size() > MAX_ROWS)
                 throw new IOException("GIS rows count invalid");
@@ -130,6 +144,7 @@ public final class ChongqingGisPlan {
                 int z = intValue(r, "z"), y = intValue(r, "y");
                 int height = intValue(r, "height");
                 String kind = text(r, "kind");
+                String shell = text(r, "shell");
                 if (!switch (kind) {
                     case "building_footprint", "road", "railway", "water_reference" -> true;
                     default -> false;
@@ -137,6 +152,14 @@ public final class ChongqingGisPlan {
                 if (height < 0 || height > 500 ||
                         (height != 0 && !"building_footprint".equals(kind)))
                     throw new IOException("Unsupported GIS building height");
+                if (!("none".equals(shell) || "facade".equals(shell)
+                        || "roof".equals(shell))) {
+                    throw new IOException("Unknown GIS vertical-shell mode");
+                }
+                if (("none".equals(shell) && height != 0)
+                        || (!"none".equals(shell) && height == 0)) {
+                    throw new IOException("Building shell/height mismatch");
+                }
                 if (x0 < -radius || x1 > radius || x1 < x0 ||
                         x1 - x0 + 1 > 2048 || z < -radius || z > radius)
                     throw new IOException("Out-of-bounds GIS placement row");
@@ -149,7 +172,7 @@ public final class ChongqingGisPlan {
                             (int) Math.ceil(dem.metresAt(x, z) + 96) != y)
                         throw new IOException("GIS ground Y differs from embedded DEM");
                 }
-                Row row = new Row(x0,x1,y,z,kind,height);
+                Row row = new Row(x0,x1,y,z,kind,height,shell);
                 writes += row.writes();
                 if (writes > MAX_WRITES)
                     throw new IOException("Placement exceeds 5m-block pilot cap");
