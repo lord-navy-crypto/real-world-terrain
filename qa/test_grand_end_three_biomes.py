@@ -131,6 +131,10 @@ class GrandEndThreeBiomeTests(unittest.TestCase):
         from unified_world_settings import create_preset
         java=(JAVA/"CrossRealmBiomeSource.java").read_text()
         self.assertIn('Codec.BOOL.optionalFieldOf("spawn_end_habitats",false)',java)
+        self.assertIn("SPAWN3_CODEC", java)
+        self.assertIn("spawnEndHabitats ? SPAWN3_CODEC : CODEC", java)
+        registrar=(JAVA/"RealScaleMod.java").read_text()
+        self.assertIn('"cross_realm_spawn3"', registrar)
         self.assertIn("if (!spawnEndHabitats)",java)
         self.assertIn("chorusGardens",java)
         self.assertIn("crystalBarrens",java)
@@ -143,8 +147,10 @@ class GrandEndThreeBiomeTests(unittest.TestCase):
             a=before["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
             b=nxt["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
             self.assertEqual(a["type"],b["type"])
+            self.assertEqual(a["source"]["type"],"realscale:cross_realm_invasion")
+            self.assertEqual(b["source"]["type"],"realscale:cross_realm_spawn3")
             self.assertNotIn("spawn_end_habitats",a["source"])
-            self.assertTrue(b["source"]["spawn_end_habitats"])
+            self.assertNotIn("spawn_end_habitats",b["source"])
             self.assertEqual(a["source"]["source"],b["source"]["source"])
             for realm in ("minecraft:the_nether","minecraft:the_end"):
                 self.assertEqual(before["dimensions"][realm],nxt["dimensions"][realm])
