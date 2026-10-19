@@ -47,8 +47,19 @@ jobs:
       - name: Validate generated UI plan and geographic provenance
         run: |
           python3 - <<'PY'
-          import json, pathlib
+          import json, pathlib, base64, gzip, hashlib
           root=pathlib.Path('build/chaotianmen-real-osm-datapack')
+          native_json=(root/'chongqing-gis-plan.json').read_bytes()
+          baked_path=pathlib.Path(
+              'neoforge/src/main/resources/assets/realscale/terrain/'
+              'chaotianmen_authentic_osm_ui_plan_v2.json.gz.b64')
+          baked_json=gzip.decompress(
+              base64.b64decode(baked_path.read_bytes().strip(),validate=True))
+          assert native_json == baked_json, (
+              'BUNDLED PLAYER GUI DATA DOES NOT MATCH AUTHENTIC SOURCE EXPORT')
+          assert hashlib.sha256(native_json).hexdigest()==(
+              '04a380b144d3f002c0157d841edefb68d5a5bfacf6ca07149c43e8f03a858980')
+          print('Bundled RealScale JAR GIS resource source-parity PASS')
           plan=json.loads((root/'chongqing-gis-plan.json').read_text())
           manifest=json.loads((root/'manifest.json').read_text())
           audit=json.loads(pathlib.Path('build/chaotianmen-real-osm-audit/audit.json').read_text())
