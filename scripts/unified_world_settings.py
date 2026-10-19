@@ -37,9 +37,9 @@ def invasion_preset(source_preset: dict, spawn_end_habitats: bool = False) -> di
                 raise ValueError("This preset already has cross-realm invasion")
             # Preserve sky-island behavior and every underlying ecotone/DEM sampler.
             source["source"] = {
-                "type": "realscale:cross_realm_invasion",
+                "type": ("realscale:cross_realm_spawn3" if spawn_end_habitats
+                         else "realscale:cross_realm_invasion"),
                 "target": "overworld",
-                **({"spawn_end_habitats": True} if spawn_end_habitats else {}),
                 "source": source["source"],
             }
         else:
