@@ -33,5 +33,13 @@
   "realscale.atlas.busy_shared_io": "Finish or cancel the current task before starting another Atlas task",
   "biome.realscale.end_chorus_gardens": "Chorus Gardens",
   "biome.realscale.end_crystal_barrens": "Crystal Barrens",
-  "biome.realscale.end_shattered_glades": "Shattered Glades"
+  "biome.realscale.end_shattered_glades": "Shattered Glades",
+  "biome.realscale.tropical_dry_woodland": "Tropical Dry Woodland",
+  "biome.realscale.cool_temperate_rainforest": "Cool Temperate Rainforest",
+  "biome.realscale.alpine_sedge_fen": "Alpine Sedge Fen",
+  "biome.realscale.polar_fellfield": "Polar Rocky Fellfield",
+  "biome.realscale.arid_riparian_woodland": "Arid Riparian Woodland",
+  "biome.realscale.windy_coastal_headland": "Windy Coastal Headland",
+  "generator.realscale.tva_sacred_biodiversity_end3_spawn3_v2": "RealScale Sacred • Six New Biomes + Sky Isles + End-Spawn Invasion (Experimental)",
+  "generator.realscale.tva_measured_biodiversity_end3_spawn3_v2": "RealScale Measured / USGS • Six New Biomes + Sky Isles + End-Spawn Invasion (Experimental)"
 }
