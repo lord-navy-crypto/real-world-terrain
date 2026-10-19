@@ -44,7 +44,7 @@ public final class RealScaleChongqingGisClient {
             "key.realscale.chongqing_gis", InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_G, "key.categories.realscale");
     private static final int WRITES_PER_TICK = 256;
-    private static Session active;
+    private static volatile Session active;
 
     public RealScaleChongqingGisClient(IEventBus modBus) {
         modBus.addListener(RealScaleChongqingGisClient::registerKeys);
@@ -112,7 +112,7 @@ public final class RealScaleChongqingGisClient {
     private static final class Session {
         final MinecraftServer server;
         final ChongqingGisPlan plan;
-        int rowIndex;
+        volatile int rowIndex;
         int x;
         int yOffset;
         volatile long applied;
