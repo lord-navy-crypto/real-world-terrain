@@ -43,53 +43,59 @@ def spectral_decision(green,red,nir,scl):
         return ("urban_inferred","low")
     return None
 
-def to_surface_rows(green,red,nir,scl,item_id,dem):
+def to_surface_rows(green,red,nir,scl,item_id,dem,radius=RADIUS):
     import numpy as np
+    if radius not in (500,600):
+        raise ValueError("Only source-backed 500m or 600m crop")
+    side=(radius*2)//RESOLUTION_METRES+1
     for a in (green,red,nir,scl):
-        if a.shape!=(SIDE,SIDE):
-            raise ValueError("Expected 101x101 georeferenced 10m grid")
+        if a.shape!=(side,side):
+            raise ValueError("Expected georeferenced 10m square satellite grid")
     # Each 10m Sentinel measurement can only fill a 10m world square.
     # The per-1m "pixels" are explicitly NOT 1m native spectral detail.
     source_id="sentinel-2-l2a/"+item_id
     rows=[];counts={}
-    for z in range(-RADIUS,RADIUS+1):
-        iz=min(SIDE-1,max(0,(z+RADIUS)//RESOLUTION_METRES))
-        x=-RADIUS
-        while x<=RADIUS:
-            ix=min(SIDE-1,max(0,(x+RADIUS)//RESOLUTION_METRES))
+    for z in range(-radius,radius+1):
+        iz=min(side-1,max(0,(z+radius)//RESOLUTION_METRES))
+        x=-radius
+        while x<=radius:
+            ix=min(side-1,max(0,(x+radius)//RESOLUTION_METRES))
             info=spectral_decision(int(green[iz,ix]),int(red[iz,ix]),
                                    int(nir[iz,ix]),int(scl[iz,ix]))
             if info is None:
                 x+=1;continue
-            until=min(RADIUS,((ix+1)*RESOLUTION_METRES-RADIUS-1))
+            until=min(radius,((ix+1)*RESOLUTION_METRES-radius-1))
             rows.append([z,x,until,info[0],info[1],source_id])
             counts[info[0]]=counts.get(info[0],0)+(until-x+1)
             x=until+1
-    return {"format":FORMAT,"radius_m":RADIUS,"resolution_m":RESOLUTION_METRES,
+    return {"format":FORMAT,"radius_m":radius,"resolution_m":RESOLUTION_METRES,
             "origin_lat":dem.lat,"origin_lon":dem.lon,
             "dem_source_raw_sha256":dem.sha256,
             "license":"Copernicus Sentinel free and open data",
             "attribution":"Contains modified Copernicus Sentinel-2 data",
             "source_stac_item":item_id,
             "known_surface_columns":sum(counts.values()),
-            "unmapped_surface_columns":(2*RADIUS+1)**2-sum(counts.values()),
+            "unmapped_surface_columns":(2*radius+1)**2-sum(counts.values()),
             "materials":counts,"rows":rows,
             "interpretation":"low-confidence broad 10m classes; not observed 1m urban pavement or 3D"}
 
-def raster_bands(green,red,nir,scl,dem):
+def raster_bands(green,red,nir,scl,dem,radius=RADIUS):
     import numpy as np
     import rasterio
     from rasterio.warp import reproject, Resampling
     from rasterio.transform import from_bounds
     # The exact same WGS84 tangent-plane mapping used for original RealScale
     # Chaotianmen ensures physical GIS and multispectral evidence align.
-    d=RADIUS+5
+    if radius not in (500,600):
+        raise ValueError("Only public 500m or 600m georeferenced crop")
+    d=radius+5
+    side=(2*radius)//RESOLUTION_METRES+1
     lo=dem.lon-d/dem.m_lon;hi=dem.lon+d/dem.m_lon
     south=dem.lat-d/dem.m_lat;north=dem.lat+d/dem.m_lat
-    target=from_bounds(lo,south,hi,north,SIDE,SIDE)
+    target=from_bounds(lo,south,hi,north,side,side)
     arrays=[]
     for path in (green,red,nir,scl):
-        dest=np.zeros((SIDE,SIDE),dtype=np.uint16)
+        dest=np.zeros((side,side),dtype=np.uint16)
         with rasterio.Env(GDAL_DISABLE_READDIR_ON_OPEN="YES"):
             with rasterio.open(path) as dataset:
                 if not dataset.crs:
