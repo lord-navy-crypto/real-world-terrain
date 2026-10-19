@@ -192,11 +192,15 @@ class ChongqingGISTests(unittest.TestCase):
             self.assertEqual(result["dem_source_raw_sha256"],dem.sha256)
             self.assertEqual(result["native_ui_plan"],"chongqing-gis-plan.json")
             native=json.loads((out/"chongqing-gis-plan.json").read_text())
-            self.assertEqual(native["format"],"REALSCALE_CHAOTIANMEN_PLACEMENT_V1")
+            self.assertEqual(native["format"],"REALSCALE_CHAOTIANMEN_PLACEMENT_V2")
             self.assertEqual(native["dem_source_raw_sha256"],dem.sha256)
             self.assertEqual(native["row_count"],len(native["rows"]))
+            self.assertEqual(native["massing_policy"],"schematic_hollow_facade_roof_v2")
             self.assertEqual(native["planned_block_writes"],sum(
-                (r["x1"]-r["x0"]+1)*(r["height"]+1) for r in native["rows"]))
+                (r["x1"]-r["x0"]+1) *
+                (1 + (r["height"] if r["shell"]=="facade"
+                      else 1 if r["shell"]=="roof" else 0))
+                for r in native["rows"]))
             self.assertTrue(native["source_unverified"])
             self.assertTrue(all(-100<=r["x0"]<=r["x1"]<=100
                                 and -100<=r["z"]<=100 for r in native["rows"]))
@@ -208,6 +212,36 @@ class ChongqingGISTests(unittest.TestCase):
             self.assertEqual(json.loads((out/"pack.mcmeta").read_text())["pack"]["pack_format"],48)
             with self.assertRaisesRegex(ValueError,"empty"):
                 gis.export_datapack(blocks,stats,source,dem,out,100,"OSM ODbL")
+
+    def test_schematic_hollow_tower_matches_real_footprint_not_solid_mass(self):
+        # 16x16 synthetic tower with ACTUAL (not invented) plan footprint
+        # geometry and explicit 100m height; used strictly for algorithm QA.
+        dem=self.dem
+        shape=[[ll(dem,x,z) for x,z in
+                ((0,0),(16,0),(16,16),(0,16),(0,0))]]
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            source=root/"synthetic-16m-height.geojson"
+            source.write_text(json.dumps({"type":"FeatureCollection",
+                "features":[feature("synthetic/hollow",{"building":"yes",
+                          "height":"100"},"Polygon",shape)]}),encoding="utf-8")
+            blocks,stats=gis.prepare(dem,gis.osm_features(
+                json.loads(source.read_text())),100)
+            result=gis.export_datapack(blocks,stats,source,dem,root/"out",
+                     100,"Synthetic hollow-tower unit test, not true Chongqing geometry")
+            plan=json.loads((root/"out/chongqing-gis-plan.json").read_text())
+            self.assertEqual(plan["format"],"REALSCALE_CHAOTIANMEN_PLACEMENT_V2")
+            self.assertTrue(any(r["shell"]=="roof" for r in plan["rows"]))
+            self.assertTrue(any(r["shell"]=="facade" for r in plan["rows"]))
+            self.assertLess(plan["planned_block_writes"],
+                            result["staged_block_writes"])
+            self.assertEqual(plan["planned_block_writes"],sum(
+                (r["x1"]-r["x0"]+1) *
+                (1 + (r["height"] if r["shell"]=="facade"
+                      else 1 if r["shell"]=="roof" else 0))
+                for r in plan["rows"]))
+            self.assertTrue(all(r["kind"]=="building_footprint"
+                                for r in plan["rows"]))
 
     def test_authentic_official_osm_snapshot_towers_and_provenance(self):
         # REAL public OSM data, not QA-created synthetic geometry.
