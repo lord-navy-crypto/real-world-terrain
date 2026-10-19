@@ -52,11 +52,17 @@ jobs:
           plan=json.loads((root/'chongqing-gis-plan.json').read_text())
           manifest=json.loads((root/'manifest.json').read_text())
           audit=json.loads(pathlib.Path('build/chaotianmen-real-osm-audit/audit.json').read_text())
-          assert plan['format']=='REALSCALE_CHAOTIANMEN_PLACEMENT_V1'
+          assert plan['format']=='REALSCALE_CHAOTIANMEN_PLACEMENT_V2'
           assert plan['radius_m']==500
           assert plan['dem_source_raw_sha256']==manifest['dem_source_raw_sha256']
           assert audit['source_sha256']==manifest['vector_source_sha256']
+          assert plan['massing_policy']=='schematic_hollow_facade_roof_v2'
           assert plan['row_count']==len(plan['rows'])
+          assert all(r['shell'] in {'none','facade','roof'} for r in plan['rows'])
+          assert plan['planned_block_writes']==sum(
+              (r['x1']-r['x0']+1)*(1+(r['height'] if r['shell']=='facade'
+                  else 1 if r['shell']=='roof' else 0))
+              for r in plan['rows'])
           assert 0 < plan['planned_block_writes'] <= 5_000_000
           assert all(0<=r['height']<=500 and r['x0']<=r['x1'] for r in plan['rows'])
           assert audit['upstream_osm_provenance']['raw_xml_sha256']=='7a2e4d777de05efe5fc46b889fca3d86ff47981d6d9bab2cf940188790022d31'
