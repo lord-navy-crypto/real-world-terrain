@@ -1,0 +1,150 @@
+name: Chaotianmen STANDALONE playable vanilla 1.21.1 world ZIP
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tools/chongqing_export_standalone_world.py'
+      - 'neoforge/src/main/resources/assets/realscale/terrain/chaotianmen_authentic_osm_ui_plan_v2.json.gz.b64'
+      - 'neoforge/src/main/resources/assets/realscale/terrain/chongqing_chaotianmen_dem_v1.properties'
+      - 'qa/test_chongqing_standalone_world.py'
+      - '.github/workflows/chongqing-standalone-map.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-playable-world:
+    name: Authentic OSM+DEM directly written to Anvil world save
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install NBT validator for vanilla world metadata only
+        run: python3 -m pip install 'nbtlib==2.0.4'
+      - name: Test actual Anvil block serialization and independent world rules
+        run: python3 -m unittest discover -s qa -p 'test_chongqing_standalone_world.py' -v
+      - name: Prepare authentic extended-height vanilla world creation
+        run: |
+          python3 tools/chongqing_export_standalone_world.py \
+            --mode prepare --server-root build/vanilla-chaotianmen
+      - name: Download and verify OFFICIAL Mojang 1.21.1 dedicated server
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,urllib.request,pathlib
+          def get_json(url):
+              with urllib.request.urlopen(url,timeout=35) as r:
+                  return json.load(r)
+          manifest=get_json('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json')
+          version=next(x for x in manifest['versions'] if x['id']=='1.21.1')
+          metadata=get_json(version['url'])
+          official=metadata['downloads']['server']
+          assert official['url'].startswith('https://')
+          jar=pathlib.Path('build/vanilla-chaotianmen/server.jar')
+          with urllib.request.urlopen(official['url'],timeout=90) as r:
+              jar.write_bytes(r.read())
+          if hashlib.sha1(jar.read_bytes()).hexdigest()!=official['sha1']:
+              raise SystemExit('Mojang server jar SHA-1 does not match version manifest')
+          print('OFFICIAL MOJANG VANILLA 1.21.1 JAR VERIFIED',len(jar.read_bytes()))
+          PY
+      - name: Bootstrap a REAL 1.21.1 vanilla world with 1024-block Overworld
+        run: |
+          python3 - <<'PY'
+          import pathlib,subprocess,time
+          root=pathlib.Path('build/vanilla-chaotianmen').resolve()
+          log=root/'bootstrap.log'
+          with log.open('w',encoding='utf8') as output:
+              process=subprocess.Popen(['java','-Xms256M','-Xmx3G','-jar',
+                       'server.jar','nogui'],cwd=root,stdin=subprocess.PIPE,
+                       stdout=output,stderr=subprocess.STDOUT,text=True)
+              end=time.monotonic()+180
+              ready=False
+              while time.monotonic()<end and process.poll() is None:
+                  time.sleep(1.5)
+                  try:
+                      content=log.read_text(errors='replace')
+                  except OSError:content=''
+                  if 'Done (' in content:
+                      ready=True
+                      break
+              if not ready:
+                  process.kill();process.wait()
+                  raise RuntimeError('Vanilla bootstrap failed:\n'+
+                                     log.read_text(errors='replace')[-7000:])
+              process.stdin.write('stop\n');process.stdin.flush()
+              try:process.wait(timeout=65)
+              except subprocess.TimeoutExpired:
+                  process.kill();process.wait()
+                  raise RuntimeError('Vanilla bootstrap failed to stop cleanly')
+              if process.returncode:raise RuntimeError(
+                   'Vanilla server returned nonzero: '+str(process.returncode))
+          print('VANILLA 1.21.1 FIRST BOOT WORLD PASS')
+          print(log.read_text(errors='replace')[-2000:])
+          PY
+      - name: Export actual REAL DEM terrain and OSM buildings/roads into Anvil
+        run: |
+          python3 tools/chongqing_export_standalone_world.py \
+            --mode package --server-root build/vanilla-chaotianmen \
+            --zip build/Chaotianmen-Chongqing-500m-Standalone-Vanilla-1.21.1.zip
+      - name: Verify saved 1.21.1 region block palette, height and pinned GIS count
+        run: |
+          python3 qa/test_chongqing_standalone_world.py \
+            build/vanilla-chaotianmen/Chaotianmen_500m_Standalone
+      - name: Boot the REAL exported vanilla map and verify it reaches Done
+        run: |
+          python3 - <<'PY'
+          import pathlib,subprocess,time
+          root=pathlib.Path('build/vanilla-chaotianmen').resolve()
+          log=root/'actual_standalone_world_reload.log'
+          with log.open('w',encoding='utf8') as output:
+              process=subprocess.Popen(['java','-Xms512M','-Xmx3G','-jar',
+                  'server.jar','nogui'],cwd=root,stdin=subprocess.PIPE,
+                  stdout=output,stderr=subprocess.STDOUT,text=True)
+              end=time.monotonic()+200
+              ready=False
+              while time.monotonic()<end and process.poll() is None:
+                  time.sleep(1)
+                  if 'Done (' in log.read_text(errors='replace'):
+                      ready=True
+                      break
+              if not ready:
+                  process.kill();process.wait()
+                  raise RuntimeError('STANDALONE ACTUAL WORLD reload FAILED:\n'+
+                                     log.read_text(errors='replace')[-9000:])
+              process.stdin.write('stop\n');process.stdin.flush()
+              try:process.wait(timeout=65)
+              except subprocess.TimeoutExpired:
+                  process.kill();process.wait()
+                  raise RuntimeError('World reload failed to shut down')
+              if process.returncode:
+                  raise RuntimeError('Real vanilla world load exited nonzero')
+          print('ACTUAL STANDALONE VANILLA 1.21.1 RELOAD PASS')
+          print(log.read_text(errors='replace')[-2300:])
+          PY
+      - name: Upload the actual standalone playable world ZIP
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Chaotianmen-500m-Standalone-Minecraft-Java-1.21.1
+          path: build/Chaotianmen-Chongqing-500m-Standalone-Vanilla-1.21.1.zip
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+      - name: Archive generation and vanilla server evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Chaotianmen-Standalone-Vanilla-World-QA-Logs
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            build/vanilla-chaotianmen/bootstrap.log
+            build/vanilla-chaotianmen/actual_standalone_world_reload.log
+            build/vanilla-chaotianmen/Chaotianmen_500m_Standalone/realscale-standalone-export-metrics.json
