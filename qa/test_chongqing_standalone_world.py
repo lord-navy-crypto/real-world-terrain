@@ -112,7 +112,7 @@ def verify_world(world):
     report=json.loads((world/"realscale-standalone-export-metrics.json").read_text())
     assert report["actual_overlay_writes"]==494988
     assert report["chunks"]>=3900
-    assert report["regions"]>=16
+    assert report["regions"]==4  # 64×64 chunks over [-500,500] = 2×2 Anvil regions
     assert report["dem_terrain_columns"]==1001*1001
 
     # Inspect actual NBT saved chunks, not a manifest or PNG stand-in.
