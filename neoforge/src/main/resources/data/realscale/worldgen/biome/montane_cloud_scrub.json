@@ -175,9 +175,11 @@
     ],
     [
       "minecraft:glow_lichen",
+      "minecraft:patch_large_fern",
       "minecraft:trees_taiga",
-      "minecraft:patch_grass_normal",
-      "minecraft:brown_mushroom_normal"
+      "minecraft:flower_default",
+      "minecraft:patch_grass_taiga_2",
+      "minecraft:brown_mushroom_taiga"
     ],
     [
       "minecraft:freeze_top_layer"
