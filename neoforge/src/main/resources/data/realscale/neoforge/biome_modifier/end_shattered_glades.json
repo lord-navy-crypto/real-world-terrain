@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "realscale:end_shattered_glades",
+  "features": "realscale:end_shattered_glades",
+  "step": "vegetal_decoration"
+}
