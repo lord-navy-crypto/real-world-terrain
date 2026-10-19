@@ -26,8 +26,8 @@ MAX_SOURCE_BYTES = 8 * 1024 * 1024
 
 
 def bounds(dem: Dem, radius: int, buffer_m: int = 100):
-    if not 32 <= radius <= 500 or not 0 <= buffer_m <= 200:
-        raise ValueError("Only the explicitly bounded 500m pilot is supported")
+    if not 32 <= radius <= 600 or not 0 <= buffer_m <= 200:
+        raise ValueError("Only the bounded 500–600m Chaotianmen research pilots are supported")
     dx = (radius + buffer_m) / dem.m_lon
     dy = (radius + buffer_m) / dem.m_lat
     # OSM endpoint accepts west,south,east,north.
