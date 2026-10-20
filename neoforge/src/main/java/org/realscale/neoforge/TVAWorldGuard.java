@@ -22,7 +22,9 @@ public final class TVAWorldGuard {
         if (!hasRealScaleGenerator(context)) return false;
         BiomeSource source=context.chunkGenerator().getBiomeSource();
         return source instanceof GeoWondersBiomeSource
-            || source instanceof SkyOceanBiomeSource sky && sky.containsGeoWonders();
+            || source instanceof SkyOceanBiomeSource sky && sky.containsGeoWonders()
+            || source instanceof CrossRealmShowcaseBiomeSource showcase
+               && showcase.containsGeoWonders();
     }
 
     /** Opt-in cross-realm invasion, not an implicit effect of any RealScale preset. */
