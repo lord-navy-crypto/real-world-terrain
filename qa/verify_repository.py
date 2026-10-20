@@ -15,20 +15,11 @@ for name,want in checks.items():
  if name==modified_preset_tag:
   tag=json.loads((ROOT/name).read_text())
   assert tag.get('values',[]) == [
-   'realscale:tva_sacred_timeline_three_realms',
-   'realscale:tva_alpine_three_realms',
-   'realscale:tva_canyon_three_realms',
-   'realscale:tva_measured_three_realms',
-   'realscale:tva_wonders_invasion_three_realms',
-   'realscale:tva_sacred_biodiversity_end3_spawn3_v2',
-   'realscale:tva_measured_biodiversity_end3_spawn3_v2',
    'realscale:tva_sacred_biodiversity_end3_spawn3_v3',
-   'realscale:tva_measured_biodiversity_end3_spawn3_v3',
-    'realscale:tva_regional_landform_expedition_three_realms',
-    'realscale:tva_regional_landform_expedition_v2_three_realms',
-    'realscale:tva_global_landform_expedition_v3_three_realms',
-    'realscale:tva_measured_global_landforms_three_realms']
-  print('INTENTIONAL MODIFICATION: original five presets plus only two explicit biodiversity-v2 additions')
+   'realscale:tva_measured_global_landforms_three_realms',
+   'realscale:tva_alpine_three_realms',
+   'realscale:tva_canyon_three_realms']
+  print('INTENTIONAL MODIFICATION: exactly four player-facing world presets')
   continue
  if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):
   # Preserve the exact historical text for every legacy ID while allowing
