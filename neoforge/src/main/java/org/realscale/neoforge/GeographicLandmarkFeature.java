@@ -213,7 +213,7 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
             if(!eligible||((kind==Kind.ASWAN_GRANITE
                     ||kind==Kind.HUANGLONG_TRAVERTINE
                     ||kind==Kind.GUILIN_RIVER_KARST)&&!riverAdjacency)
-                    ||shape.isEmpty()||shape.size()>38)continue;
+                    ||shape.isEmpty()||shape.size()>64)continue;
             // Preflight all positions before writing to avoid partial geometry.
             boolean safe=true;
             for(BlockPos p:shape.keySet()) {
