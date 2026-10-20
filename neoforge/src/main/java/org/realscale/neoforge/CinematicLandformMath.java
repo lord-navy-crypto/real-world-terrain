@@ -65,7 +65,10 @@ final class CinematicLandformMath {
         // Nearest jittered lattice site: no uniform Minecraft checkerboard
         // repetition. Jitter is fixed by world-absolute lattice coordinates.
         int cx=(int)Math.floor(u/spacing),cz=(int)Math.floor(v/spacing);
-        double best=Double.POSITIVE_INFINITY;
+        // Compare squared distances, then take ONE square root. Density
+        // sampling calls this for every column: nine hypot/sqrt calls here
+        // were unnecessary and dominate generation in tower districts.
+        double bestSquared=Double.POSITIVE_INFINITY;
         for(int i=-1;i<=1;i++)for(int j=-1;j<=1;j++) {
             int xx=cx+i,zz=cz+j;
             long k=mix(h ^ (long)xx*0x9e3779b97f4a7c15L
@@ -74,9 +77,10 @@ final class CinematicLandformMath {
                     +(Math.floorMod(k>>>17,1001L)/1000.0-0.5)*spacing*0.47;
             double pz=(zz+0.5)*spacing
                     +(Math.floorMod(k>>>38,1001L)/1000.0-0.5)*spacing*0.47;
-            best=Math.min(best,Math.hypot(u-px,v-pz));
+            double du=u-px,dv=v-pz;
+            bestSquared=Math.min(bestSquared,du*du+dv*dv);
         }
-        return best;
+        return Math.sqrt(bestSquared);
     }
     static double relief(int kind,double dx,double dz,double radius,long h) {
         final double r=Math.hypot(dx,dz)/radius;
