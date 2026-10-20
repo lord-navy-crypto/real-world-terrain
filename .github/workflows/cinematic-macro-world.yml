@@ -79,7 +79,10 @@ jobs:
           found=False
           for path in pathlib.Path('run').glob('**/level.dat'):
             data=gzip.decompress(path.read_bytes())
-            if b'realscale:cinematic_landforms_v1' in data and b'realscale:sky_ocean' in data:
+            print('LEVEL_METADATA',path,
+                  'versioned_noise',b'realscale:tva_cinematic_landforms_v1' in data,
+                  'real_ecology',b'realscale:sky_ocean' in data)
+            if b'realscale:tva_cinematic_landforms_v1' in data and b'realscale:sky_ocean' in data:
               print('CINEMATIC_MACRO_SETTINGS_PERSISTED',path)
               found=True
           if not ready.is_set() or not found:
