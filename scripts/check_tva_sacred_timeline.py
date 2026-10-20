@@ -62,7 +62,7 @@ for old in ("ultimate","realistic_mountains","himalayan","grand_canyon",
 "usgs_big_sur_v2","realism_max_ecotones","realism_max_three_realms",
 "grand_ecology_three_realms","apes_gallery_three_realms"):
     assert (D/"worldgen/world_preset"/(old+".json")).is_file(),old
-    assert "realscale:"+old not in expected,old
+    assert "realscale:"+old not in menu,old
 assert (D/"worldgen/noise_settings/usgs_big_sur_v2.json").is_file()
 assert (D/"worldgen/density_function/realism_max/cave_core.json").is_file()
 cave=read(D/"worldgen/density_function/usgs_big_sur_v2/cave_density.json")
