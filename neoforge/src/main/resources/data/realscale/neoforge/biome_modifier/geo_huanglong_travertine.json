@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:meadow",
+    "minecraft:grove",
+    "minecraft:forest",
+    "realscale:montane_mist_forest"
+  ],
+  "features": "realscale:geo_huanglong_travertine",
+  "step": "vegetal_decoration"
+}
