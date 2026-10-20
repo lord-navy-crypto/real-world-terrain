@@ -44,6 +44,17 @@ public final class RareEarthBiomeSource extends BiomeSource {
             rare.put(id,biomes.getOrThrow(ResourceKey.create(Registries.BIOME,
                 ResourceLocation.fromNamespaceAndPath("realscale",id))));
     }
+    // Preserve existing SkyOcean spawn-island and invasion semantics when
+    // inserted transparently between SkyOcean and its previous child source.
+    boolean containsCrossRealm() {
+        return source instanceof CrossRealmBiomeSource
+                || source instanceof CrossRealmShowcaseBiomeSource
+                || source instanceof GeoWondersBiomeSource wonders
+                   && wonders.containsCrossRealm();
+    }
+    boolean containsGeoWonders() {
+        return source instanceof GeoWondersBiomeSource;
+    }
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),rare.values().stream()).distinct();
     }
