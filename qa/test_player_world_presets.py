@@ -39,6 +39,16 @@ class PlayerWorldPresets(unittest.TestCase):
                                  "realscale:rare_earth_biomes_v1")
                 self.assertTrue(dims["minecraft:overworld"]["generator"]["settings"].startswith("realscale:"))
 
+    def test_geological_wonders_remain_playable(self):
+        # Former wonders-only mode is now incorporated in Natural Exploration.
+        data=read(PRESETS/"tva_sacred_biodiversity_end3_spawn3_v3.json")
+        source=data["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+        self.assertEqual(source["type"],"realscale:sky_ocean")
+        self.assertEqual(source["source"]["type"],"realscale:rare_earth_biomes_v1")
+        self.assertEqual(source["source"]["source"]["type"],"realscale:geo_wonders_opt_in")
+        self.assertEqual(source["source"]["source"]["source"]["type"],"realscale:cross_realm_spawn3")
+        self.assertEqual(source["source"]["source"]["source"]["target"],"overworld")
+
     def test_no_separate_rare_earth_preset(self):
         self.assertFalse((PRESETS/"tva_rare_earth_ecosystems_three_realms.json").exists())
 
