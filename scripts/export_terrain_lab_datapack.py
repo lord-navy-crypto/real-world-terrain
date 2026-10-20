@@ -195,6 +195,14 @@ def export(jar: Path, draft: Path, output: Path,
             name, preset, labels = create_preset(root, source, invasion, showcase=showcase,
                                                  end_biomes=end_biomes,
                                                  spawn_end_habitats=spawn_habitats)
+            if "worldSource" in json.loads(draft.read_text(encoding="utf-8")):
+                # New unified Sacred/Measured UI drafts get the same recovered
+                # ecology as Lab. Version the ID so old unified_v1 packs
+                # and their saved worlds are never silently reinterpreted.
+                preset = recover_terrain_lab_ecology(preset)
+                name += "_ecology_v1"
+                labels["en_us"] += " + Recovered Ecosystems"
+                labels["zh_cn"] += " + 生态功能整合"
             new_preset = PRESET_DIR / (name + ".json")
             (root / new_preset).write_text(
                 json.dumps(preset, ensure_ascii=False, indent=2) + "\n",
