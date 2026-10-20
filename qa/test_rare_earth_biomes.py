@@ -35,6 +35,8 @@ class RareEarthBiomes(unittest.TestCase):
         self.assertIn("if(qy<16)return original",source)
         self.assertIn("id.contains(\"ocean\")",source)
         self.assertIn("Math.floorDiv(qx,64)",source)
+        self.assertIn("int variant=(int)((h>>>3)&3L)",source)
+        self.assertNotIn("(h&1)==0",source)
 
     def test_all_world_presets_select_rare_biomes(self):
         presets=DATA/"worldgen/world_preset"
