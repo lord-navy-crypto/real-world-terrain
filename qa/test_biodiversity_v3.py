@@ -85,8 +85,13 @@ class BiomeDiversityV3(unittest.TestCase):
             self.assertEqual(new["dimensions"]["minecraft:the_nether"],prev["dimensions"]["minecraft:the_nether"])
             self.assertEqual(new["dimensions"]["minecraft:the_end"],prev["dimensions"]["minecraft:the_end"])
             for realm in old["dimensions"]:
+                expected_setting=old["dimensions"][realm]["generator"]["settings"]
+                # Featured Sacred v3 is now a new versioned macro noise profile.
+                # This must not mutate any historical Sacred setting/fixture.
+                if family=="sacred" and realm=="minecraft:overworld":
+                    expected_setting="realscale:tva_cinematic_landforms_v1"
                 self.assertEqual(new["dimensions"][realm]["generator"]["settings"],
-                                 old["dimensions"][realm]["generator"]["settings"])
+                                 expected_setting)
                 self.assertEqual(new["dimensions"][realm]["type"],old["dimensions"][realm]["type"])
             p=prev["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
             q=new["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
