@@ -62,8 +62,8 @@
       "genshin": "Sumeru - rainforest mountains and ancient giant trees",
       "real": "South Asian tropical/moist forests as broad landscape category",
       "evidence": "officially_described_environment",
-      "game_source": "https://genshin-impact.fandom.com/wiki/Sumeru/Design",
-      "real_source": "https://www.unesco.org/en/mab",
+      "game_source": "https://www.youtube.com/watch?v=R2l9IpLVgXQ",
+      "real_source": "https://whc.unesco.org/en/list/1342",
       "real_process": "Humid valley slopes, canopy stratification and riparian ecosystems",
       "current_code": "realscale:scenic_rainforest_terrace",
       "next_stage": "Canopy stratification keyed to climate and exposure; no invented species-level range maps."
@@ -113,8 +113,8 @@
       "real": "High-latitude oceanic coastal forest, wetland and island climate analogues",
       "evidence": "visual_analogy_only",
       "game_source": "https://www.hoyoverse.com/en-us/news/159364",
-      "real_source": "https://whc.unesco.org/en/list/1243",
-      "real_process": "Coastal exposure, seasonal cold and local moisture, no assumption of specific real site",
+      "real_source": "https://whc.unesco.org/en/list/898",
+      "real_process": "High-latitude coastal glacial landforms, glacio-isostatic rebound and wetlands; proposed analog only",
       "current_code": null,
       "next_stage": "Model temperature/precipitation/sea spray gradients; do not recreate fictional moon energy."
     }
