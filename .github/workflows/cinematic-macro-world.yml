@@ -35,6 +35,14 @@ jobs:
           java -Djava.awt.headless=true -cp build/cinematic-preview/classes \
             org.realscale.neoforge.CinematicLandformPreview build/cinematic-preview/maps
           test "$(find build/cinematic-preview/maps -name '*.png' | wc -l)" -eq 6
+          mkdir -p build/cinematic-preview/v2
+          javac -d build/cinematic-preview/classes \
+            src/main/java/org/realscale/neoforge/CinematicLandformMath.java \
+            src/main/java/org/realscale/neoforge/CinematicLandformMathV2.java \
+            src/test/java/org/realscale/neoforge/CinematicLandformPreviewV2.java
+          java -Djava.awt.headless=true -cp build/cinematic-preview/classes \
+            org.realscale.neoforge.CinematicLandformPreviewV2 build/cinematic-preview/v2
+          test "$(find build/cinematic-preview/v2 -name '*.png' | wc -l)" -eq 8
       - name: Prepare a player Natural Exploration world
         working-directory: neoforge
         run: |
@@ -90,9 +98,9 @@ jobs:
           for path in pathlib.Path('run').glob('**/level.dat'):
             data=gzip.decompress(path.read_bytes())
             print('LEVEL_METADATA',path,
-                  'versioned_noise',b'realscale:tva_cinematic_landforms_v1' in data,
+                  'versioned_noise',b'realscale:tva_cinematic_landforms_v2' in data,
                   'real_ecology',b'realscale:sky_ocean' in data)
-            if b'realscale:tva_cinematic_landforms_v1' in data and b'realscale:sky_ocean' in data:
+            if b'realscale:tva_cinematic_landforms_v2' in data and b'realscale:sky_ocean' in data:
               print('CINEMATIC_MACRO_SETTINGS_PERSISTED',path)
               found=True
           if not ready.is_set() or not found:
@@ -120,6 +128,7 @@ jobs:
           path: |
             neoforge/build/cinematic-macro-server.log
             neoforge/build/cinematic-preview/maps/*.png
+            neoforge/build/cinematic-preview/v2/*.png
             neoforge/run/**/cinematic-macro-test/level.dat
             neoforge/run/**/cinematic-macro-test/region/*.mca
           if-no-files-found: warn
