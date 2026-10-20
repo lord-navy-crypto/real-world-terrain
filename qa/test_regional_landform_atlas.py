@@ -62,7 +62,7 @@ class RegionalLandformAtlasQA(unittest.TestCase):
         self.assertEqual(newGenerator["biome_source"],base_source)
         self.assertEqual(newGenerator["type"],oldGenerator["type"])
         self.assertEqual(newGenerator["settings"],"realscale:"+NAME)
-        self.assertEqual(oldGenerator["settings"],"realscale:tva_cinematic_landforms_v3")
+        self.assertEqual(oldGenerator["settings"],"realscale:tva_cinematic_integrated_v1")
         self.assertEqual(load(DATA/"world_preset/tva_measured_biodiversity_end3_spawn3_v3.json")[
                          "dimensions"]["minecraft:overworld"]["generator"]["settings"],
                          "realscale:usgs_big_sur_v2")
