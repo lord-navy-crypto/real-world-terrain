@@ -75,6 +75,47 @@ def main():
             pass
         else:
             raise AssertionError("Exporter unexpectedly overwrote a pre-existing pack")
+    # Real new-UI drafts must inherit the complete current ecosystem stack,
+    # not just the archived Sacred/Alpine/Canyon template copied by Terrain Lab.
+    with tempfile.TemporaryDirectory(prefix="tva-unified-ecology-") as temp:
+        directory=Path(temp)
+        draft=directory/"unified.json"
+        draft.write_text(json.dumps({
+            "preset":"landscape","reliefPercent":110,"elevation":12,
+            "caves":65,"riverGrade":6,"inland":True,
+            "worldSource":"terrain_lab","dimensionalInvasion":True,
+            "endBiomeAccents":True,"spawnEndHabitats":True,
+            "invasionShowcase":False,
+        }),encoding="utf-8")
+        output=directory/"TVA-Unified-Ecology.zip"
+        profile,_=export(jar,draft,output)
+        with zipfile.ZipFile(output) as archive:
+            world=json.loads(archive.read(
+                "data/realscale/worldgen/world_preset/"
+                +profile.split(":",1)[1]+".json"))
+            generator=world["dimensions"]["minecraft:overworld"]["generator"]
+            self_chain=[]
+            source=generator["biome_source"]
+            while isinstance(source,dict) and "type" in source:
+                self_chain.append(source["type"])
+                source=source.get("source")
+            require(self_chain==[
+                "realscale:sky_ocean",
+                "realscale:rare_earth_biomes_v1",
+                "realscale:geo_wonders_opt_in",
+                "realscale:cross_realm_spawn3",
+                "realscale:natural_ecotones_diverse_v3",
+                "minecraft:multi_noise",
+            ],"New unified Lab export lost a rescued ecology or invasion feature")
+            require(world["dimensions"]["minecraft:the_end"]["generator"]
+                    ["biome_source"]["type"]=="realscale:end_accents",
+                    "New unified Lab export lost End accents")
+            require(world["dimensions"]["minecraft:the_nether"]["generator"]
+                    ["biome_source"]["type"]=="realscale:cross_realm_invasion",
+                    "New unified Lab export lost Nether invasion")
+            require(generator["settings"].startswith("realscale:lab_"),
+                    "Unified export lost adjustable terrain noise settings")
+
     print("TVA_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, four curated player choices and immutable single-world export")
 
 if __name__=="__main__":
