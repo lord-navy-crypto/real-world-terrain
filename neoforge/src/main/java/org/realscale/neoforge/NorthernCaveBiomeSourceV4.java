@@ -25,7 +25,7 @@ public final class NorthernCaveBiomeSourceV4 extends BiomeSource {
         "underground_springs","deep_fungal_caverns","glacial_subsurface",
         "damp_limestone_caverns","dry_karst_caves","volcanic_caverns");
     private final BiomeSource source;
-    private final List<Holder<Biome>> regions;
+    private final List<Holder.Reference<Biome>> regions;
     private NorthernCaveBiomeSourceV4(BiomeSource source,HolderGetter<Biome> biomes) {
         this.source=source;
         regions=NAMES.stream().map(id->biomes.getOrThrow(ResourceKey.create(
