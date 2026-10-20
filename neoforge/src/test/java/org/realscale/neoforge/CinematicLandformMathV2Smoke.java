@@ -40,6 +40,7 @@ public final class CinematicLandformMathV2Smoke {
         ok(CinematicLandformMathV2.kind(0, -0.1,0.5)
                 ==CinematicLandformMathV2.NONE,
                 "Unmatched climate remains unchanged");
+        boolean v2WeatheringSeen=false;
         for(int cx=-3;cx<=3;cx++)for(int cz=-3;cz<=3;cz++){
             long h=CinematicLandformMathV2.hash(cx,cz);
             double r=CinematicLandformMathV2.radius(h);
@@ -55,12 +56,18 @@ public final class CinematicLandformMathV2Smoke {
                     double delta=CinematicLandformMathV2.relief(kind,dx,dz,r,h);
                     ok(Double.isFinite(delta) && delta>=-1.6 && delta<=4.0,
                             "Geometry must be bounded and finite");
-                    if(kind<6)
-                        ok(delta==CinematicLandformMath.relief(kind,dx,dz,r,h),
-                                "Historical v1 relief changed in v2!");
+                    if(kind<6) {
+                        double v1=CinematicLandformMath.relief(kind,dx,dz,r,h);
+                        if(Math.abs(v1-delta)>0.06)v2WeatheringSeen=true;
+                        // V1 remains its own separate codec, and v2 smooth
+                        // erosion cannot introduce excessive new relief.
+                        ok(Math.abs(v1-delta)<2.9,
+                                "V2 deformation exceeded the safe uplift budget");
+                    }
                 }
             }
         }
+        ok(v2WeatheringSeen,"V2 must actually weather the regular V1 silhouettes");
         long h=CinematicLandformMathV2.hash(2,1);
         double r=CinematicLandformMathV2.radius(h);
         double left=effect(CinematicLandformMathV2.TEPUI_TABLELANDS,-450,-95,r,h);
@@ -76,6 +83,6 @@ public final class CinematicLandformMathV2Smoke {
         }
         ok(max>1.15&&max-min>1.05,
                 "Dunes must have distinctive large-scale star ridges and low swales");
-        System.out.println("CINEMATIC_V2_MACRO_PASS: eight morphologies, dune crests, twin tepui saddles, bounded seams, v1 parity");
+        System.out.println("CINEMATIC_V2_MACRO_PASS: eight morphologies, dune crests, twin tepui saddles, bounded seams, v1 archive isolation");
     }
 }
