@@ -101,13 +101,23 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
         }
         return false;
     }
-    private BlockState rock(long district,int column,int y,int height) {
+    /** Horizontal sedimentary beds share the same world Y in a region.
+     *  An absolute elevation band avoids the checkerboard/diagonal stripes
+     *  caused by the former (column+y)%3 coloring.
+     */
+    static int sedimentBand(long district,int worldY,int thickness) {
+        int phase=(int)Math.floorMod(district >>> 17,thickness*3L);
+        return Math.floorMod(worldY+phase,thickness*3)/thickness;
+    }
+    private BlockState rock(long district,int column,int y,int height,int worldY) {
         return switch(kind) {
             // Quartz sandstone is represented by sandstone with weathered caps.
             case WULINGYUAN_SANDSTONE ->
                     y==height-1 && (column%3==0)
                     ?Blocks.MOSS_BLOCK.defaultBlockState()
-                    :Blocks.SANDSTONE.defaultBlockState();
+                    :(sedimentBand(district,worldY,3)==0
+                      ?Blocks.SMOOTH_SANDSTONE.defaultBlockState()
+                      :Blocks.SANDSTONE.defaultBlockState());
             case SOUTH_CHINA_KARST ->
                     y==height-1?Blocks.POINTED_DRIPSTONE.defaultBlockState()
                     :Blocks.CALCITE.defaultBlockState();
@@ -130,10 +140,11 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
                     y==height-1&&column%2==0
                     ?Blocks.MOSS_BLOCK.defaultBlockState()
                     :Blocks.CALCITE.defaultBlockState();
-            case DANXIA_REDBEDS ->
-                    (y+column)%3==0?Blocks.RED_SANDSTONE.defaultBlockState()
-                    :((y+column)%3==1?Blocks.ORANGE_TERRACOTTA.defaultBlockState()
-                    :Blocks.RED_TERRACOTTA.defaultBlockState());
+            case DANXIA_REDBEDS -> switch(sedimentBand(district,worldY,2)) {
+                case 0 -> Blocks.RED_SANDSTONE.defaultBlockState();
+                case 1 -> Blocks.ORANGE_TERRACOTTA.defaultBlockState();
+                default -> Blocks.RED_TERRACOTTA.defaultBlockState();
+            };
         };
     }
     @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> ctx) {
@@ -189,7 +200,14 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
                             ||!world.getFluidState(p).isEmpty()) {
                         eligible=false;break;
                     }
-                    shape.put(p,rock(district,column,y,height));
+                    shape.put(p,rock(district,column,y,height,p.getY()));
+                    // Wider basal weathered ledges give sandstone/redbed
+                    // microforms silhouettes without carving natural strata.
+                    if(y<height-1 && (kind==Kind.WULINGYUAN_SANDSTONE
+                            ||kind==Kind.DANXIA_REDBEDS)) {
+                        BlockPos ledge=p.east();
+                        shape.put(ledge,rock(district,column,y,height,ledge.getY()));
+                    }
                 }
             }
             if(!eligible||((kind==Kind.ASWAN_GRANITE
