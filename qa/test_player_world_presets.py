@@ -49,6 +49,66 @@ class PlayerWorldPresets(unittest.TestCase):
         self.assertEqual(source["source"]["source"]["source"]["type"],"realscale:cross_realm_spawn3")
         self.assertEqual(source["source"]["source"]["source"]["target"],"overworld")
 
+    def test_four_modes_restore_all_old_worldgen_layers(self):
+        expected_noise={
+            "tva_sacred_biodiversity_end3_spawn3_v3":"realscale:tva_natural_smoothed",
+            "tva_measured_global_landforms_three_realms":"realscale:usgs_global_hybrid_marine",
+            "tva_alpine_three_realms":"realscale:tva_alpine_smoothed",
+            "tva_canyon_three_realms":"realscale:tva_canyon_smoothed",
+        }
+        for raw,noise in expected_noise.items():
+            with self.subTest(preset=raw):
+                dims=read(PRESETS/(raw+".json"))["dimensions"]
+                self.assertEqual(dims["minecraft:overworld"]["generator"]["settings"],noise)
+                source=dims["minecraft:overworld"]["generator"]["biome_source"]
+                types=[]
+                node=source
+                while isinstance(node,dict) and "type" in node:
+                    types.append(node["type"])
+                    node=node.get("source")
+                self.assertEqual(types,[
+                    "realscale:sky_ocean",
+                    "realscale:rare_earth_biomes_v1",
+                    "realscale:geo_wonders_opt_in",
+                    "realscale:cross_realm_spawn3",
+                    "realscale:natural_ecotones_diverse_v3",
+                    "minecraft:multi_noise"
+                ])
+                self.assertEqual(dims["minecraft:the_nether"]["generator"]["biome_source"]["type"],
+                                 "realscale:cross_realm_invasion")
+                end=dims["minecraft:the_end"]["generator"]["biome_source"]
+                self.assertEqual(end["type"],"realscale:end_accents")
+                self.assertEqual(end["source"]["type"],"realscale:cross_realm_invasion")
+                self.assertEqual(end["source"]["source"]["type"],"minecraft:the_end")
+
+    def test_original_scenic_landscape_features(self):
+        java=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/ScenicLandscapeFeature.java").read_text()
+        registration=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
+        entries={
+            "scenic_rainforest_terrace":"WORLD_SURFACE_WG",
+            "scenic_misty_coast":"WORLD_SURFACE_WG",
+            "scenic_basalt_upland":"WORLD_SURFACE_WG",
+            "scenic_underwater_arch":"OCEAN_FLOOR_WG",
+        }
+        for name,heightmap in entries.items():
+            with self.subTest(name=name):
+                cfg=read(BASE/"data/realscale/worldgen/configured_feature"/(name+".json"))
+                placed=read(BASE/"data/realscale/worldgen/placed_feature"/(name+".json"))
+                modifier=read(BASE/"data/realscale/neoforge/biome_modifier"/(name+".json"))
+                self.assertEqual(cfg["type"],"realscale:"+name)
+                self.assertEqual(placed["feature"],"realscale:"+name)
+                self.assertEqual(placed["placement"][2]["heightmap"],heightmap)
+                self.assertEqual(modifier["features"],"realscale:"+name)
+                self.assertEqual(modifier["step"],"vegetal_decoration")
+                self.assertIn('"'+name+'"',registration)
+                self.assertTrue(modifier["biomes"])
+        for guard in ("TVAWorldGuard.hasRealScaleGenerator","Level.OVERWORLD",
+                      "owns(chunk,p)","existing.is(Blocks.WATER)",
+                      "blocks.size()>45","w.setBlock(block.getKey(),block.getValue(),2)"):
+            self.assertIn(guard,java)
+        self.assertNotIn("CAVE_AIR.defaultBlockState()",java)
+        self.assertNotIn("LAVA.defaultBlockState()",java)
+
     def test_no_separate_rare_earth_preset(self):
         self.assertFalse((PRESETS/"tva_rare_earth_ecosystems_three_realms.json").exists())
 
