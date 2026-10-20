@@ -153,8 +153,8 @@ public final class RareEarthHabitatFeature extends Feature<NoneFeatureConfigurat
         if(!w.getLevel().dimension().equals(Level.OVERWORLD))return false;
         ChunkPos chunk=new ChunkPos(context.origin());
         int created=0;
-        boolean treeAttempted=false;
-        boolean mineralAttempted=false;
+        int groves=0;
+        int mineralPatches=0;
         for(int attempt=0;attempt<32&&created<15;attempt++) {
             int x=chunk.getMinBlockX()+context.random().nextInt(16);
             int z=chunk.getMinBlockZ()+context.random().nextInt(16);
@@ -163,16 +163,14 @@ public final class RareEarthHabitatFeature extends Feature<NoneFeatureConfigurat
             BlockPos p=new BlockPos(x,y,z);
             if(!allowedAir(w,p)||!substrate(w.getBlockState(p.below())))continue;
             String biome=rareId(w,p);
-            if(!treeAttempted && attempt<12 && context.random().nextInt(7)==0) {
-                treeAttempted=true;
+            if(groves<2 && attempt<22 && context.random().nextInt(6)==0) {
                 int height=biome.equals("socotra_dragonblood_woodland")?5:
                         biome.equals("socotra_endemic_scrub")?3:4;
-                if(grove(w,p,chunk,biome,height)) {created+=8;continue;}
+                if(grove(w,p,chunk,biome,height)) {groves++;created+=7;continue;}
             }
-            if(!mineralAttempted && attempt<20 && context.random().nextInt(8)==0) {
-                mineralAttempted=true;
+            if(mineralPatches<1 && attempt<20 && context.random().nextInt(8)==0) {
                 int blocks=mineralOutcrop(w,p,chunk,biome);
-                if(blocks>0){created+=blocks;continue;}
+                if(blocks>0){mineralPatches++;created+=blocks;continue;}
             }
             BlockState plant=species(biome,context.random().nextInt(8));
             if(plant!=null && context.random().nextInt(3)==0 &&
