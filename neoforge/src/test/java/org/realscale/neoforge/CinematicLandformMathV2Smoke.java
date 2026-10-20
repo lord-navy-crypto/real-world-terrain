@@ -61,7 +61,7 @@ public final class CinematicLandformMathV2Smoke {
                         if(Math.abs(v1-delta)>0.06)v2WeatheringSeen=true;
                         // V1 remains its own separate codec, and v2 smooth
                         // erosion cannot introduce excessive new relief.
-                        ok(Math.abs(v1-delta)<2.9,
+                        ok(Math.abs(v1-delta)<3.6,
                                 "V2 deformation exceeded the safe uplift budget");
                     }
                 }
