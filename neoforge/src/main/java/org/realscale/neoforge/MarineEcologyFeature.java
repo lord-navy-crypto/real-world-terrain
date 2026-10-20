@@ -78,8 +78,12 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
                     r.nextBoolean()?Blocks.TUFF.defaultBlockState():Blocks.ANDESITE.defaultBlockState();
             case COLD_CORAL_GARDEN -> r.nextBoolean()
                     ? Blocks.CALCITE.defaultBlockState():Blocks.TUFF.defaultBlockState();
-            case COLD_SEEP,VENT_MINERAL_FIELD,ROCKY_SEAMOUNT ->
-                    r.nextBoolean()?Blocks.TUFF.defaultBlockState():Blocks.CALCITE.defaultBlockState();
+            case COLD_SEEP -> r.nextBoolean()
+                    ? Blocks.CLAY.defaultBlockState():Blocks.CALCITE.defaultBlockState();
+            case VENT_MINERAL_FIELD -> r.nextBoolean()
+                    ? Blocks.BASALT.defaultBlockState():Blocks.TUFF.defaultBlockState();
+            case ROCKY_SEAMOUNT -> r.nextBoolean()
+                    ? Blocks.TUFF.defaultBlockState():Blocks.ANDESITE.defaultBlockState();
             case DEEP_SILTY_FLOOR -> r.nextBoolean()
                     ? Blocks.CLAY.defaultBlockState():Blocks.GRAVEL.defaultBlockState();
             case NONE -> existing;
