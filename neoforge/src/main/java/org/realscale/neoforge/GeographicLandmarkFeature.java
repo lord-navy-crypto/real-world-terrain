@@ -124,6 +124,7 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
             Map<BlockPos,BlockState> shape=new LinkedHashMap<>();
             int columns=kind==Kind.ASWAN_GRANITE?3:4;
             boolean eligible=true;
+            boolean riverAdjacency=false;
             for(int column=0;column<columns && eligible;column++) {
                 int dx=(column%2)*3-1;
                 int dz=(column/2)*3-1;
@@ -139,10 +140,8 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
                 if(!allowedBiome(biome)||!natural(world.getBlockState(foot.below()))) {
                     eligible=false;break;
                 }
-                if(kind==Kind.ASWAN_GRANITE
-                        && !sourceWaterNearby(world,foot,chunk)) {
-                    eligible=false;break;
-                }
+                if(kind==Kind.ASWAN_GRANITE)
+                    riverAdjacency |= sourceWaterNearby(world,foot,chunk);
                 int height=switch(kind) {
                     case WULINGYUAN_SANDSTONE -> 4+(int)Math.floorMod(mix(district+column*37L),5L);
                     case SOUTH_CHINA_KARST -> 3+(int)Math.floorMod(mix(district+column*43L),4L);
@@ -159,7 +158,8 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
                     shape.put(p,rock(district,column,y,height));
                 }
             }
-            if(!eligible||shape.isEmpty()||shape.size()>38)continue;
+            if(!eligible||(kind==Kind.ASWAN_GRANITE&&!riverAdjacency)
+                    ||shape.isEmpty()||shape.size()>38)continue;
             // Preflight all positions before writing to avoid partial geometry.
             boolean safe=true;
             for(BlockPos p:shape.keySet()) {
