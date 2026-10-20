@@ -408,6 +408,29 @@ jobs:
       - name: Build readable NeoForge project
         working-directory: neoforge
         run: gradle --no-daemon --stacktrace build
+      - name: Verify compiled integrated terrain Java class and all four noise resources in JAR
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from zipfile import ZipFile
+          jars=sorted(Path("neoforge/build/libs").glob("*.jar"),key=lambda p:p.stat().st_size,reverse=True)
+          assert jars,"No compiled NeoForge JAR"
+          with ZipFile(jars[0]) as z:
+            entries=set(z.namelist())
+            namespace="org/realscale/neoforge/RealScaleCinematicIntegrated"
+            for suffix in (".class","$V1.class","$V2.class","$V3.class","$Site.class"):
+              assert namespace+suffix in entries, f"Missing integrated Java bytecode: {suffix}"
+            base="data/realscale/worldgen/"
+            for v in ("v1","v2","v3"):
+              assert base+f"noise_settings/tva_cinematic_landforms_{v}.json" in entries
+            noise=base+"noise_settings/tva_cinematic_integrated_v1.json"
+            height=base+"density_function/tva_cinematic_integrated_v1/height_signal.json"
+            assert noise in entries and height in entries
+            obj=json.loads(z.read(height))
+            assert obj["argument"]["type"]=="realscale:cinematic_landforms_integrated_v1"
+          print("INTEGRATED_TERRAIN_JAR_PASS",jars[0],jars[0].stat().st_size)
+          PY
       - name: Verify RealScale JAR contains selectable structure packs and Config integration
         run: python3 -m unittest discover -s qa -p 'test_builtin_structure_packs.py' -v
       - name: Export real TVA YACL Terrain Lab datapack from compiled JAR
