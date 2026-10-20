@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:add",
+  "argument1": "realscale:tva_cinematic_landforms_v2/height_signal",
+  "argument2": {
+    "type": "minecraft:y_clamped_gradient",
+    "from_y": -64,
+    "to_y": 2032,
+    "from_value": 0.9921875,
+    "to_value": -15.3828125
+  }
+}
