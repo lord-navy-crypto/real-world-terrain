@@ -39,3 +39,30 @@ This is an initial scenic layer, *not* 1:1 reconstruction of proprietary game en
 ## Release gate
 
 QA must verify four-menu list, old/new feature chains, distinct terrain settings, configured/placed/modifier references, build, dedicated server boot, saved-chunk outputs, ocean water retention and structure safety. Keep Draft until the gates pass.
+
+
+## New unified Terrain Lab export rescue (ecology_v1)
+
+When a **new** YACL draft has an explicit `worldSource=terrain_lab`
+and dimensional invasion enabled, the exporter now upgrades its generated
+`sky_ocean` source to this order:
+
+`sky_ocean → rare_earth_biomes_v1 → geo_wonders_opt_in → cross_realm_spawn3
+(or cross_realm_invasion) → natural_ecotones_diverse_v3 → multi_noise`.
+
+The existing generated Lab density/noise router and dimension noise settings
+remain unchanged. Nether invasion, optional End accents and optional
+cross-realm showcase retain the user's requested settings.
+
+The upgraded export uses a new `_ecology_v1` world preset ID. It does not
+silently replace a previously generated `lab_*_invasion` profile. Older
+saved drafts **without** the `worldSource` field still follow the previous
+legacy exporter path byte-for-byte, and the historical world preset JSON
+files remain available for migration and testing.
+
+Underwater scenic rock arches now require water source blocks and a
+natural support below each foot; all terrestrial scenic columns similarly
+require supported natural terrain. Placement remains confined to a chunk.
+
+A positive compiled-JAR export regression is required before release; the
+new source-wiring tests do not establish old-world interoperability.
