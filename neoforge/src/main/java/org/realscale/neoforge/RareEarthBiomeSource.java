@@ -65,10 +65,13 @@ public final class RareEarthBiomeSource extends BiomeSource {
                 ^ (long)Math.floorDiv(qz,64)*0x632be59bd9b4e019L
                 ^ 0x193a4ef1L);
         if(Math.floorMod(h,8)!=0)return original;
+        // Low three hash bits are zero for admitted districts; use *higher*
+        // bits for variants or half the rare ecosystems become unreachable.
+        int variant=(int)((h>>>3)&3L);
         String target=switch(id){
-            case "badlands","eroded_badlands" -> (h&1)==0
+            case "badlands","eroded_badlands" -> (variant&1)==0
                     ?"geothermal_sulfur_basin":"acidic_geothermal_mudflat";
-            case "desert" -> (h&3)==0?"white_dune_lagoon":
+            case "desert" -> variant==0?"white_dune_lagoon":
                     (h&1)==0?"namib_fog_desert":"limestone_island_scrub";
             case "savanna","savanna_plateau" -> (h&1)==0
                     ?"socotra_dragonblood_woodland":"socotra_endemic_scrub";
