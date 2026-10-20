@@ -13,6 +13,15 @@ final class CinematicLandformMathV2 {
     static final int NONE=8;
 
     private CinematicLandformMathV2() {}
+    // Reuse the exact world-absolute v1 spatial cell layout for continuity.
+    // The source functions themselves retain their v1 implementations.
+    static long hash(int cx,int cz){return CinematicLandformMath.hash(cx,cz);}
+    static int siteX(int cx,long h){return CinematicLandformMath.siteX(cx,h);}
+    static int siteZ(int cz,long h){return CinematicLandformMath.siteZ(cz,h);}
+    static double radius(long h){return CinematicLandformMath.radius(h);}
+    static double gate(double continent,double height) {
+        return CinematicLandformMath.gate(continent,height);
+    }
     static int kind(long hash,double temperature,double humidity) {
         // Keep existing cold/wet archetypes, but allow climate-matched
         // diversity within broad wet tropics and hot arid environments.
