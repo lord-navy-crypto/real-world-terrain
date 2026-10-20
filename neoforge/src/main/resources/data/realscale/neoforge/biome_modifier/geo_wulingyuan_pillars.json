@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:windswept_forest",
+    "minecraft:stony_peaks",
+    "realscale:montane_mist_forest",
+    "minecraft:jungle"
+  ],
+  "features": "realscale:geo_wulingyuan_pillars",
+  "step": "vegetal_decoration"
+}
