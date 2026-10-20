@@ -44,13 +44,16 @@ public final class SkyOceanBiomeSource extends BiomeSource {
     private BiomeSource source(){return source;}
     /** Preserve sky island placement for nested optional invasion presets. */
     public boolean containsGeoWonders() {
-        return source instanceof GeoWondersBiomeSource;
+        return source instanceof GeoWondersBiomeSource
+                || source instanceof RareEarthBiomeSource earth && earth.containsGeoWonders();
     }
     public boolean containsCrossRealm() {
         return source instanceof CrossRealmBiomeSource
                 || source instanceof CrossRealmShowcaseBiomeSource
                 || source instanceof GeoWondersBiomeSource wonders
-                   && wonders.containsCrossRealm();
+                   && wonders.containsCrossRealm()
+                || source instanceof RareEarthBiomeSource earth
+                   && earth.containsCrossRealm();
     }
     @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
