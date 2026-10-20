@@ -74,6 +74,43 @@
       ],
       "region_authority": "https://www.fisheries.noaa.gov/national/habitat-conservation/deep-sea-coral-habitat",
       "notes": "Use depth and hard-bottom checks; no claim of actual geographic occurrence or threatened-status for a particular chunk."
+    },
+    {
+      "id": "huanglong_travertine_rims",
+      "place": "Huanglong, Sichuan, China",
+      "geological_process": "Calcium-carbonate precipitation from flowing mineral-bearing water, creating stepped travertine rims and pools",
+      "minecraft_feature": "realscale:geo_huanglong_travertine",
+      "material_proxy": [
+        "minecraft:calcite",
+        "minecraft:diorite"
+      ],
+      "region_authority": "https://whc.unesco.org/en/list/638",
+      "notes": "Direct Genshin reference: Luhua Pool, confirmed by official Huanglong documentary. Worldgen adds only dry calcite-like rim microforms adjacent to existing source water: NO new ponds, dye, water, altered aquatic chemistry or terrace hydrology."
+    },
+    {
+      "id": "guilin_river_tower_karst",
+      "place": "Guilin, Guangxi, China",
+      "geological_process": "Karst tower and cone hill development coupled to the Li River's humid fluvial valley",
+      "minecraft_feature": "realscale:geo_guilin_river_karst",
+      "material_proxy": [
+        "minecraft:calcite",
+        "minecraft:moss_block"
+      ],
+      "region_authority": "https://whc.unesco.org/en/list/1248",
+      "notes": "Direct Genshin reference: Dihua Marsh, officially confirmed in Guilin documentary. Small river-adjacent calcite hill proxies only; do not carve river channels or pretend full tower karst."
+    },
+    {
+      "id": "china_danxia_redbeds",
+      "place": "Subtropical China redbed formations",
+      "geological_process": "Uplift, weathering and erosion of red continental sedimentary layers yielding cliffs, scarps, towers and ravines",
+      "minecraft_feature": "realscale:geo_danxia_redbeds",
+      "material_proxy": [
+        "minecraft:red_sandstone",
+        "minecraft:orange_terracotta",
+        "minecraft:red_terracotta"
+      ],
+      "region_authority": "https://whc.unesco.org/en/list/1335",
+      "notes": "Design analog for red-rock landscapes, NOT a confirmed Natlan direct reference. Three-color cliff microform; deep regional scarps require density functions."
     }
   ],
   "ethics": {
