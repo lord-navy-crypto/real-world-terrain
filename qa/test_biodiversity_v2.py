@@ -78,7 +78,7 @@ class BiodiversityV2(unittest.TestCase):
             with self.subTest(kind=kind):
                 original = load(PRESETS / (source_name + ".json"))
                 ident = "tva_" + kind + "_biodiversity_end3_spawn3_v2"
-                self.assertIn("realscale:" + ident, normal["values"])
+                self.assertNotIn("realscale:" + ident, normal["values"])  # Legacy fixture must not appear in player menu
                 current = load(PRESETS / (ident + ".json"))
                 self.assertEqual(set(original["dimensions"]), set(current["dimensions"]))
                 for dim in original["dimensions"]:
@@ -89,11 +89,15 @@ class BiodiversityV2(unittest.TestCase):
                     self.assertEqual(after["generator"]["type"], before["generator"]["type"])
                 over = current["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
                 self.assertEqual(over["type"], "realscale:sky_ocean")
-                self.assertEqual(over["source"]["type"], "realscale:cross_realm_spawn3")
-                self.assertEqual(over["source"]["target"], "overworld")
-                self.assertEqual(over["source"]["source"]["type"], "realscale:natural_ecotones_diverse_v2")
-                self.assertEqual(over["source"]["source"]["source"],
-                                 original["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]["source"]["source"])
+                self.assertEqual(over["source"]["type"], "realscale:rare_earth_biomes_v1")
+                invasion = over["source"]["source"]
+                self.assertEqual(invasion["type"], "realscale:cross_realm_spawn3")
+                self.assertEqual(invasion["target"], "overworld")
+                self.assertEqual(invasion["source"]["type"], "realscale:natural_ecotones_diverse_v2")
+                # Old v2 fixture still delegates to the same vanilla multi-noise data.
+                underlying = invasion["source"]["source"]
+                old_underlying = original["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]["source"]["source"]["source"]
+                self.assertEqual(underlying, old_underlying)
                 nether = current["dimensions"]["minecraft:the_nether"]["generator"]["biome_source"]
                 self.assertEqual(nether["type"], "realscale:cross_realm_invasion")
                 self.assertEqual(nether["source"], original["dimensions"]["minecraft:the_nether"]["generator"]["biome_source"])
