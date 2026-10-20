@@ -405,6 +405,8 @@ jobs:
         run: python3 -m unittest discover -s qa -p test_tva_terrain_lab.py -v
       - name: Compile single-file integrated geomorphology and verify bit-exact legacy math
         run: python3 -m unittest discover -s qa -p 'test_cinematic_integrated_all_in_one.py' -v
+      - name: Verify experimental v4 coastal fjord JDK geometry and preserved old worldgen
+        run: python3 -m unittest discover -s qa -p 'test_coastal_fjord_v4.py' -v
       - name: Build readable NeoForge project
         working-directory: neoforge
         run: gradle --no-daemon --stacktrace build
@@ -424,6 +426,13 @@ jobs:
             base="data/realscale/worldgen/"
             for v in ("v1","v2","v3"):
               assert base+f"noise_settings/tva_cinematic_landforms_{v}.json" in entries
+            fjord="org/realscale/neoforge/CoastalFjordDensityV4"
+            for suffix in (".class","$Site.class","$FjordMath.class"):
+              assert fjord+suffix in entries, f"Missing experimental fjord code: {suffix}"
+            for resource in ("noise_settings/tva_cinematic_landforms_v4.json",
+              "density_function/tva_cinematic_landforms_v4/height_signal.json",
+              "world_preset/tva_northern_fjord_experiment_v4_three_realms.json"):
+              assert base+resource in entries, f"Missing v4 registry resource: {resource}"
             noise=base+"noise_settings/tva_cinematic_integrated_v1.json"
             height=base+"density_function/tva_cinematic_integrated_v1/height_signal.json"
             assert noise in entries and height in entries

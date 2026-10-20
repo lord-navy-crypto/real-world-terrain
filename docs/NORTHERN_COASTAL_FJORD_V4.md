@@ -18,3 +18,5 @@ The new `realscale:coastal_fjord_v4` codec consumes the immutable v3 height sign
 Run `python3 -m unittest discover -s qa -p 'test_coastal_fjord_v4.py' -v` for the pure JDK math and data isolation checks, then `cd neoforge && gradle build` to prove the codec links against NeoForge. Launch a **new** disposable world with `level-type=realscale:tva_northern_fjord_experiment_v4_three_realms` to test real water connection. Do not use this preset in existing important saves.
 
 The unchanged four player presets deliberately do not pick up v4 until real multi-seed coast geometry is approved. This experiment is not an image-based recreation of a fictional game region.
+
+Scientific reference: US National Park Service, U-shaped valleys and fjords: https://www.nps.gov/articles/ushapedvalleysfjordshangingvalleys.htm
