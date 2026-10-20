@@ -39,6 +39,14 @@ public final class CrossRealmShowcaseBiomeSource extends BiomeSource {
             ResourceLocation.fromNamespaceAndPath("minecraft",name)));
     }
     private BiomeSource source(){return source;}
+    /** The outer gallery must not conceal opt-in geology from worldgen. */
+    boolean containsGeoWonders() {
+        return source instanceof GeoWondersBiomeSource
+                || source instanceof SkyOceanBiomeSource sky
+                   && sky.containsGeoWonders()
+                || source instanceof RareEarthBiomeSource rare
+                   && rare.containsGeoWonders();
+    }
     @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),
