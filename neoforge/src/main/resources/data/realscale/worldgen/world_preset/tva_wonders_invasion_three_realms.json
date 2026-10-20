@@ -3,9 +3,9 @@
     "minecraft:overworld": {
       "generator": {
         "biome_source": {
-          "type": "realscale:rare_earth_biomes_v1",
+          "type": "realscale:sky_ocean",
           "source": {
-            "type": "realscale:sky_ocean",
+            "type": "realscale:rare_earth_biomes_v1",
             "source": {
               "type": "realscale:geo_wonders_opt_in",
               "source": {
