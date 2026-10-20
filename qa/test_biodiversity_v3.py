@@ -89,7 +89,7 @@ class BiomeDiversityV3(unittest.TestCase):
                 # Featured Sacred v3 is now a new versioned macro noise profile.
                 # This must not mutate any historical Sacred setting/fixture.
                 if family=="sacred" and realm=="minecraft:overworld":
-                    expected_setting="realscale:tva_cinematic_landforms_v1"
+                    expected_setting="realscale:tva_cinematic_landforms_v2"
                 self.assertEqual(new["dimensions"][realm]["generator"]["settings"],
                                  expected_setting)
                 self.assertEqual(new["dimensions"][realm]["type"],old["dimensions"][realm]["type"])
