@@ -12,10 +12,13 @@
                 "type": "realscale:cross_realm_spawn3",
                 "target": "overworld",
                 "source": {
-                  "type": "realscale:natural_ecotones_diverse_v3",
+                  "type": "realscale:northern_cave_biomes_v4",
                   "source": {
-                    "preset": "minecraft:overworld",
-                    "type": "minecraft:multi_noise"
+                    "type": "realscale:natural_ecotones_diverse_v3",
+                    "source": {
+                      "preset": "minecraft:overworld",
+                      "type": "minecraft:multi_noise"
+                    }
                   }
                 }
               }

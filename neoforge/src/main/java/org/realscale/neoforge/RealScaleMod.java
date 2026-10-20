@@ -87,6 +87,10 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_ocean"),
                     SkyOceanBiomeSource.CODEC)
         );
+        event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "northern_cave_biomes_v4"),
+                NorthernCaveBiomeSourceV4.CODEC)
+        );
         event.register(Registries.FEATURE, helper -> {
             // Terrain Lab's bank-protected, source-only river channels. The
             // feature itself rejects vanilla/foreign noise settings.
@@ -167,6 +171,8 @@ public final class RealScaleMod {
                     new GeographicLandmarkFeature(GeographicLandmarkFeature.Kind.DANXIA_REDBEDS));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_geology_accents"),
                     new CaveGeologyAccentFeature());
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "northern_cave_habitats_v4"),
+                    new NorthernCaveHabitatFeatureV4());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"),
                     new HabitatPatchFeature(HabitatPatchFeature.Kind.CAVE_MOSS));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_stalagmites"),

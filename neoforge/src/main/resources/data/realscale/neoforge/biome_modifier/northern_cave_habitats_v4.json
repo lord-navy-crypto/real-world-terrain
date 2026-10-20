@@ -1,0 +1,13 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:underground_springs",
+    "realscale:deep_fungal_caverns",
+    "realscale:glacial_subsurface",
+    "realscale:damp_limestone_caverns",
+    "realscale:dry_karst_caves",
+    "realscale:volcanic_caverns"
+  ],
+  "features": "realscale:northern_cave_habitats_v4",
+  "step": "underground_decoration"
+}

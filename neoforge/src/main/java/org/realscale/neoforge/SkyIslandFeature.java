@@ -40,6 +40,7 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
             return false; // Existing worlds and vanilla presets cannot create islands.
         WorldGenLevel world = context.level();
         BlockPos origin = context.origin();
+        boolean enhanced=TVAWorldGuard.hasNorthernFjordV4(context);
         int chunkX=Math.floorDiv(origin.getX(),16);
         int chunkZ=Math.floorDiv(origin.getZ(),16);
         boolean any=false;
@@ -59,16 +60,16 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
                 if (island.x()+r<chunkX*16 || island.x()-r>=chunkX*16+16
                         || island.z()+r<chunkZ*16 || island.z()-r>=chunkZ*16+16)
                     continue;
-                any |= placeIsland(world,island,chunkX,chunkZ);
+                any |= placeIsland(world,island,chunkX,chunkZ,enhanced);
             }
         }
         return any;
     }
 
     private static boolean placeIsland(WorldGenLevel world, SkyIslandLayout.Site site,
-                                       int chunkX,int chunkZ) {
-        if (site.topY() + 4 >= world.getMaxBuildHeight()
-                || site.topY() - 17 <= world.getMinBuildHeight())
+                                       int chunkX,int chunkZ,boolean enhanced) {
+        if (site.topY() + 8 >= world.getMaxBuildHeight()
+                || site.topY() - (enhanced?26:17) <= world.getMinBuildHeight())
             return false;
         // Biome selection enforces the sampled ocean isolation tier, so an
         // inactive island slot cannot write a real landmass.
@@ -95,8 +96,10 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
         for (int dx=minDx; dx<=maxDx; dx++) for (int dz=minDz; dz<=maxDz; dz++) {
             double ratio = (double)(dx * dx + dz * dz) / (r * r);
             if (ratio > 1.0) continue;
-            int top = surface(site, dx, dz, ratio);
-            int thickness = thickness(ratio);
+            int top = enhanced ? SkyIslandShapeV4.top(site.topY(),dx,dz,ratio)
+                    : surface(site,dx,dz,ratio);
+            int thickness = enhanced ? SkyIslandShapeV4.thickness(ratio,dx,dz)
+                    : thickness(ratio);
             int x = site.x() + dx, z = site.z() + dz;
             boolean clear=true;
             for (int y=top-thickness;y<=top;y++) {
@@ -133,8 +136,17 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
                 world.setBlock(new BlockPos(x, y, z), state, 2);
                 placed=true;
             }
+            // V4-only sheltered understory, within the owning chunk.
+            if(enhanced && ratio<.55 && ((x*13 ^ z*37)&31)==7) {
+                BlockPos shrub=new BlockPos(x,top+1,z);
+                BlockState plant=((x^z)&1)==0
+                    ? Blocks.AZALEA.defaultBlockState()
+                    : Blocks.FLOWERING_AZALEA.defaultBlockState();
+                if(world.getBlockState(shrub).isAir()&&plant.canSurvive(world,shrub))
+                    world.setBlock(shrub,plant,2);
+            }
             // Fantastical flowering meadow, solely using vanilla blocks.
-            if (ratio < .70 && ((x * 31 ^ z * 17) & 15) == 3) {
+            if (ratio < .70 && ((x * 31 ^ z * 17) & (enhanced?7:15)) == 3) {
                 BlockPos flower = new BlockPos(x, top + 1, z);
                 BlockState plant = ((x ^ z) & 1) == 0
                         ? Blocks.ALLIUM.defaultBlockState()
@@ -144,7 +156,9 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
             }
         }
         // A glowing violet beacon makes the sky island recognizably fictional.
-        BlockPos beacon = new BlockPos(site.x(), surface(site, 0, 0, 0) + 1, site.z());
+        BlockPos beacon = new BlockPos(site.x(), (enhanced
+                ? SkyIslandShapeV4.top(site.topY(),0,0,0)
+                : surface(site,0,0,0))+1, site.z());
         if (placed && Math.floorDiv(beacon.getX(),16)==chunkX
                 && Math.floorDiv(beacon.getZ(),16)==chunkZ
                 && world.getBlockState(beacon).isAir()

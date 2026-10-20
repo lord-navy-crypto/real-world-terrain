@@ -405,6 +405,8 @@ jobs:
         run: python3 -m unittest discover -s qa -p test_tva_terrain_lab.py -v
       - name: Compile single-file integrated geomorphology and verify bit-exact legacy math
         run: python3 -m unittest discover -s qa -p 'test_cinematic_integrated_all_in_one.py' -v
+      - name: Verify v4 caves and sky island variation in production Java
+        run: python3 -m unittest discover -s qa -p 'test_northern_caves_sky_v4.py' -v
       - name: Verify experimental v4 coastal fjord JDK geometry and preserved old worldgen
         run: python3 -m unittest discover -s qa -p 'test_coastal_fjord_v4.py' -v
       - name: Build readable NeoForge project
