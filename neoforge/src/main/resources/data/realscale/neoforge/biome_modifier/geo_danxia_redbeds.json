@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:badlands",
+    "minecraft:eroded_badlands",
+    "minecraft:jungle",
+    "minecraft:sparse_jungle"
+  ],
+  "features": "realscale:geo_danxia_redbeds",
+  "step": "vegetal_decoration"
+}
