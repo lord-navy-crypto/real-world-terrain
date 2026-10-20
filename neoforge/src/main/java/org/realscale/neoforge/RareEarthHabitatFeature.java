@@ -115,6 +115,38 @@ public final class RareEarthHabitatFeature extends Feature<NoneFeatureConfigurat
         return true;
     }
 
+    /** Chunk-local 3D mineral outcrops; never excavate or replace water. */
+    private static int mineralOutcrop(WorldGenLevel w,BlockPos center,
+                                      ChunkPos chunk,String biome) {
+        BlockState stone=switch(biome) {
+            case "geothermal_sulfur_basin" -> Blocks.YELLOW_TERRACOTTA.defaultBlockState();
+            case "acidic_geothermal_mudflat" -> Blocks.LIGHT_GRAY_TERRACOTTA.defaultBlockState();
+            case "steppe_saline_lake", "white_dune_lagoon" ->
+                    Blocks.CALCITE.defaultBlockState();
+            case "serpentine_barrens" -> Blocks.TUFF.defaultBlockState();
+            case "limestone_island_scrub" -> Blocks.CALCITE.defaultBlockState();
+            case "namib_fog_desert" -> Blocks.RED_SANDSTONE.defaultBlockState();
+            default -> null;
+        };
+        if(stone==null)return 0;
+        if(center.getX()-1<chunk.getMinBlockX() ||
+                center.getX()+1>chunk.getMaxBlockX() ||
+                center.getZ()-1<chunk.getMinBlockZ() ||
+                center.getZ()+1>chunk.getMaxBlockZ())return 0;
+        if(!allowedAir(w,center)||!substrate(w.getBlockState(center.below())))return 0;
+        int changed=0;
+        for(int dx=-1;dx<=1;dx++)for(int dz=-1;dz<=1;dz++) {
+            if(Math.abs(dx)+Math.abs(dz)>1)continue;
+            BlockPos p=center.offset(dx,0,dz);
+            if(!allowedAir(w,p)||!substrate(w.getBlockState(p.below())))continue;
+            w.setBlock(p,stone,2);
+            changed++;
+        }
+        if(changed>0 && allowedAir(w,center.above()))
+            w.setBlock(center.above(),stone,2);
+        return changed;
+    }
+
     @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         if(!TVAWorldGuard.hasRealScaleGenerator(context))return false;
         WorldGenLevel w=context.level();
@@ -122,6 +154,7 @@ public final class RareEarthHabitatFeature extends Feature<NoneFeatureConfigurat
         ChunkPos chunk=new ChunkPos(context.origin());
         int created=0;
         boolean treeAttempted=false;
+        boolean mineralAttempted=false;
         for(int attempt=0;attempt<32&&created<15;attempt++) {
             int x=chunk.getMinBlockX()+context.random().nextInt(16);
             int z=chunk.getMinBlockZ()+context.random().nextInt(16);
@@ -135,6 +168,11 @@ public final class RareEarthHabitatFeature extends Feature<NoneFeatureConfigurat
                 int height=biome.equals("socotra_dragonblood_woodland")?5:
                         biome.equals("socotra_endemic_scrub")?3:4;
                 if(grove(w,p,chunk,biome,height)) {created+=8;continue;}
+            }
+            if(!mineralAttempted && attempt<20 && context.random().nextInt(8)==0) {
+                mineralAttempted=true;
+                int blocks=mineralOutcrop(w,p,chunk,biome);
+                if(blocks>0){created+=blocks;continue;}
             }
             BlockState plant=species(biome,context.random().nextInt(8));
             if(plant!=null && context.random().nextInt(3)==0 &&
