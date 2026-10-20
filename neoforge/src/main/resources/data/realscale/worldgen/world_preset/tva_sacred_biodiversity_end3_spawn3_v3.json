@@ -7,13 +7,16 @@
           "source": {
             "type": "realscale:rare_earth_biomes_v1",
             "source": {
-              "type": "realscale:cross_realm_spawn3",
-              "target": "overworld",
+              "type": "realscale:geo_wonders_opt_in",
               "source": {
-                "type": "realscale:natural_ecotones_diverse_v3",
+                "type": "realscale:cross_realm_spawn3",
+                "target": "overworld",
                 "source": {
-                  "preset": "minecraft:overworld",
-                  "type": "minecraft:multi_noise"
+                  "type": "realscale:natural_ecotones_diverse_v3",
+                  "source": {
+                    "preset": "minecraft:overworld",
+                    "type": "minecraft:multi_noise"
+                  }
                 }
               }
             }
