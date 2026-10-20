@@ -54,7 +54,12 @@ class RegionalLandformAtlasQA(unittest.TestCase):
         self.assertEqual(nowDims["minecraft:overworld"]["type"],origDims["minecraft:overworld"]["type"])
         oldGenerator=origDims["minecraft:overworld"]["generator"]
         newGenerator=nowDims["minecraft:overworld"]["generator"]
-        self.assertEqual(newGenerator["biome_source"],oldGenerator["biome_source"])
+        base_source=json.loads(json.dumps(oldGenerator["biome_source"]))
+        # The player-facing Natural Exploration preset now also preserves
+        # historical geological wonders; regional archive did not opt in.
+        if base_source["source"]["source"]["type"]=="realscale:geo_wonders_opt_in":
+            base_source["source"]["source"]=base_source["source"]["source"]["source"]
+        self.assertEqual(newGenerator["biome_source"],base_source)
         self.assertEqual(newGenerator["type"],oldGenerator["type"])
         self.assertEqual(newGenerator["settings"],"realscale:"+NAME)
         self.assertEqual(oldGenerator["settings"],"realscale:tva_natural_smoothed")
