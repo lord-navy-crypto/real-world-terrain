@@ -13,7 +13,7 @@ import tempfile
 import zipfile
 
 from terrain_lab import apply
-from unified_world_settings import create_preset, PRESET_DIR
+from unified_world_settings import create_preset, recover_terrain_lab_ecology, PRESET_DIR
 
 SOURCE_PREFIXES = (
     "data/realscale/worldgen/",
@@ -171,6 +171,11 @@ def export(jar: Path, draft: Path, output: Path,
                 name, preset, labels = create_preset(root, source, invasion, lab_name=name,
                                                      showcase=showcase, end_biomes=end_biomes,
                                                      spawn_end_habitats=spawn_habitats)
+                # Only NEW UI drafts explicitly carrying worldSource use the
+                # recovered v3 ecosystem stack. Pre-unification Lab recipe
+                # exports remain byte-identical and keep their old save IDs.
+                if "worldSource" in json.loads(draft.read_text(encoding="utf-8")):
+                    preset = recover_terrain_lab_ecology(preset)
                 # Do not export two selectable world IDs for the same draft.
                 generated = [p for p in generated
                              if p != PRESET_DIR / (original_name + ".json")]
