@@ -62,10 +62,13 @@ class RegionalLandformAtlasQA(unittest.TestCase):
                          "dimensions"]["minecraft:overworld"]["generator"]["settings"],
                          "realscale:usgs_big_sur_v2")
         menu=load(ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
-        self.assertEqual(menu["values"][-4],"realscale:"+PRESET)
-        self.assertEqual(menu["values"][-3],"realscale:tva_regional_landform_expedition_v2_three_realms")
-        self.assertEqual(len(menu["values"]),13)
-        self.assertEqual(len(set(menu["values"])),13)
+        # Legacy regional experiments remain inspectable, but are not
+        # duplicate choices in the four-mode player menu.
+        self.assertNotIn("realscale:"+PRESET,menu["values"])
+        self.assertNotIn("realscale:tva_regional_landform_expedition_v2_three_realms",menu["values"])
+        self.assertIn("realscale:tva_measured_global_landforms_three_realms",menu["values"])
+        self.assertEqual(len(menu["values"]),4)
+        self.assertEqual(len(set(menu["values"])),4)
 
     def test_density_codec_and_eight_distinct_geometry_kinds(self):
         code=(JAVA/"RealScaleMod.java").read_text(encoding="utf-8")
