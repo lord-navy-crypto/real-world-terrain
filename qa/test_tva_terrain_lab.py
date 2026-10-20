@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Actual cross-branch regression: former YACL Lab exports must inherit TVA's
-four stable choices plus an opt-in fifth, and three enlarged dimensions without old-ID changes.
+four player choices while retaining archival presets, and three enlarged dimensions without old-ID changes.
 """
 import importlib.util
 import json
@@ -19,20 +19,11 @@ TVA={
  "alpine":"tva_alpine_three_realms",
  "canyon":"tva_canyon_three_realms",
 }
-CORE=("realscale:tva_sacred_timeline_three_realms",
-      "realscale:tva_alpine_three_realms",
-      "realscale:tva_canyon_three_realms",
-      "realscale:tva_measured_three_realms")
-MENU=CORE+("realscale:tva_wonders_invasion_three_realms",)
-DIVERSE_MENU=MENU+(
- "realscale:tva_sacred_biodiversity_end3_spawn3_v2",
- "realscale:tva_measured_biodiversity_end3_spawn3_v2",
+PLAYER_MENU=(
  "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
- "realscale:tva_measured_biodiversity_end3_spawn3_v3",
- "realscale:tva_regional_landform_expedition_three_realms",
- "realscale:tva_regional_landform_expedition_v2_three_realms",
- "realscale:tva_global_landform_expedition_v3_three_realms",
  "realscale:tva_measured_global_landforms_three_realms",
+ "realscale:tva_alpine_three_realms",
+ "realscale:tva_canyon_three_realms",
 )
 
 def read(path):
@@ -51,7 +42,7 @@ class TVARecoveredTerrainLab(unittest.TestCase):
     def test_four_original_menu_items_and_additive_opt_in(self):
         for key in ("normal","extended"):
             j=read(self.root/"data/minecraft/tags/worldgen/world_preset"/(key+".json"))
-            self.assertEqual(tuple(j["values"]),DIVERSE_MENU if key=="normal" else MENU)
+            self.assertEqual(tuple(j["values"]),PLAYER_MENU)
 
     def test_three_family_exports_keep_512_grand_dimensions_and_biome_sources(self):
         canonical={k:read(self.root/"data/realscale/worldgen/world_preset"/(v+".json"))
@@ -82,7 +73,7 @@ class TVARecoveredTerrainLab(unittest.TestCase):
                          "realscale:grand_nether")
         self.assertEqual(j["dimensions"]["minecraft:the_end"]["generator"]["settings"],
                          "realscale:grand_end")
-        self.assertEqual(tuple(read(SOURCES/"data/minecraft/tags/worldgen/world_preset/normal.json")["values"]),DIVERSE_MENU)
+        self.assertEqual(tuple(read(SOURCES/"data/minecraft/tags/worldgen/world_preset/normal.json")["values"]),PLAYER_MENU)
 
 if __name__=="__main__":
     unittest.main()
