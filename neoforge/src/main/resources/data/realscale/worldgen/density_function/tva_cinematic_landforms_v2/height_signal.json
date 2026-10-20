@@ -20,15 +20,71 @@
     },
     "continents": "realscale:realism_max/continental_field",
     "temperature": {
-      "type": "minecraft:noise",
-      "noise": "minecraft:temperature",
-      "xz_scale": 0.0035,
-      "y_scale": 0
+      "type": "realscale:climate_budget",
+      "original": {
+        "noise": "minecraft:temperature",
+        "shift_x": "minecraft:shift_x",
+        "shift_y": 0,
+        "shift_z": "minecraft:shift_z",
+        "type": "minecraft:shifted_noise",
+        "xz_scale": 0.15,
+        "y_scale": 0
+      },
+      "adjusted": {
+        "type": "realscale:mountain_basin_temperature",
+        "base": {
+          "type": "realscale:radial_latitude_temperature",
+          "base": {
+            "type": "minecraft:add",
+            "argument1": {
+              "noise": "minecraft:temperature",
+              "shift_x": "minecraft:shift_x",
+              "shift_y": 0,
+              "shift_z": "minecraft:shift_z",
+              "type": "minecraft:shifted_noise",
+              "xz_scale": 0.15,
+              "y_scale": 0
+            },
+            "argument2": {
+              "type": "minecraft:mul",
+              "argument1": -0.42,
+              "argument2": {
+                "type": "minecraft:y_clamped_gradient",
+                "from_y": 96,
+                "to_y": 720,
+                "from_value": 0,
+                "to_value": 1
+              }
+            }
+          },
+          "center_x": 0,
+          "center_z": 0,
+          "pole_distance": 8192,
+          "strength": 0.58,
+          "balanced": true,
+          "altitude_cooling": 0.42,
+          "area_balanced": true
+        },
+        "height_signal": "realscale:tva_natural_smoothed/original_height_signal",
+        "continents": "realscale:realism_max/continental_field",
+        "selector": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:erosion",
+          "xz_scale": 0.006,
+          "y_scale": 0
+        },
+        "warmth": 0.1
+      },
+      "max_cooling": 0.66,
+      "max_warming": 0.34
     },
     "humidity": {
-      "type": "minecraft:noise",
       "noise": "minecraft:vegetation",
-      "xz_scale": 0.0035,
+      "shift_x": "minecraft:shift_x",
+      "shift_y": 0,
+      "shift_z": "minecraft:shift_z",
+      "type": "minecraft:shifted_noise",
+      "xz_scale": 0.15,
       "y_scale": 0
     }
   }
