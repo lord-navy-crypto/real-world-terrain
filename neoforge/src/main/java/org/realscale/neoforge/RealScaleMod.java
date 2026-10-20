@@ -134,6 +134,8 @@ public final class RealScaleMod {
                     new SkyIslandFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "rare_earth_surface"),
                     new RareEarthSurfaceFeature());
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "rare_earth_habitat"),
+                    new RareEarthHabitatFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_geology_accents"),
                     new CaveGeologyAccentFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"),
