@@ -69,14 +69,20 @@ class IntegratedMarineRenewal(unittest.TestCase):
                          "realscale:usgs_big_sur_v2")
         for dim in ("minecraft:the_nether","minecraft:the_end"):
             self.assertEqual(fused["dimensions"][dim],canonical["dimensions"][dim])
-        self.assertEqual(fused["dimensions"]["minecraft:overworld"]["generator"]["biome_source"],
-                         canonical["dimensions"]["minecraft:overworld"]["generator"]["biome_source"])
+        actual=fused["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+        baseline=canonical["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+        # Shared ecological and geological-wonder layers are now part of the
+        # four player presets, while this mode retains its marine/USGS density.
+        prior=json.loads(json.dumps(baseline))
+        prior["source"]["source"]={"type":"realscale:geo_wonders_opt_in",
+                                   "source":prior["source"]["source"]}
+        self.assertEqual(actual,prior)
         self.assertEqual(fused["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]["type"],
                          "realscale:sky_ocean")
         values=read(ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")["values"]
-        self.assertEqual(len(values),13,"Do not add yet another redundant world mode")
-        self.assertEqual(len(set(values)),13)
-        self.assertEqual(values[-1],"realscale:tva_measured_global_landforms_three_realms")
+        self.assertEqual(len(values),4,"Only four playable world modes")
+        self.assertEqual(len(set(values)),4)
+        self.assertIn("realscale:tva_measured_global_landforms_three_realms",values)
 
     def test_existing_ocean_features_do_not_receive_global_biome_modifiers(self):
         b=ROOT/"neoforge/src/main/resources/data/realscale/neoforge/biome_modifier"
