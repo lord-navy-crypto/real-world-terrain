@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "purpose": "Evidence-ranked environment-design references for RealScale (no game art/model/code/map assets copied).",
+  "status_definitions": {
+    "officially_confirmed_direct": "HoYoverse/Genshin official material explicitly names a real landscape and in-game target.",
+    "officially_described_environment": "HoYoverse describes the game's terrain or mechanics; specific real geographic analogue is not confirmed.",
+    "visual_analogy_only": "Real landscape suggested by resemblance or geomorphology; NOT an asserted developer inspiration."
+  },
+  "constraints": [
+    "Exactly four player-facing world presets",
+    "RealScale terrain DEM and existing density fields remain authoritative",
+    "Do not alter existing world IDs",
+    "Use vanilla material proxies for microforms only",
+    "Use separate noise/density development for large landform geometry",
+    "No third-party game asset copying",
+    "Respect geomorphology and ecological conditions",
+    "No new fluid sources or destructive terrain edits",
+    "Source-based conservation categories only"
+  ],
+  "entries": [
+    {
+      "genshin": "Liyue - Jueyun Karst and Mt. Tianheng entrance",
+      "real": "Zhangjiajie Wulingyuan quartz sandstone pillars",
+      "evidence": "officially_confirmed_direct",
+      "game_source": "https://www.youtube.com/watch?v=mfUSO0DlAwc",
+      "real_source": "https://whc.unesco.org/en/list/640",
+      "real_process": "Joint-controlled quartz sandstone weathering and erosion; gorges and natural bridges",
+      "current_code": "realscale:geo_wulingyuan_pillars",
+      "next_stage": "Regional density-field peak towers and valley networks, preserving distinct sandstone bedrock."
+    },
+    {
+      "genshin": "Liyue - Luhua Pool",
+      "real": "Huanglong, Sichuan travertine terraces",
+      "evidence": "officially_confirmed_direct",
+      "game_source": "https://www.youtube.com/watch?v=8g6FNA7oVpI",
+      "real_source": "https://whc.unesco.org/en/list/638",
+      "real_process": "Carbonate-rich waters deposit terraces, rims and step pools",
+      "current_code": "realscale:geo_huanglong_travertine",
+      "next_stage": "Connect to existing stream slope/flow model; no new water without hydrological verification."
+    },
+    {
+      "genshin": "Liyue - Dihua Marsh",
+      "real": "Guilin fluvial tower karst and wetland landscape",
+      "evidence": "officially_confirmed_direct",
+      "game_source": "https://www.hoyolab.com/article/96306",
+      "real_source": "https://whc.unesco.org/en/list/1248",
+      "real_process": "Karst towers and cones adjacent to wet lowland river valleys",
+      "current_code": "realscale:geo_guilin_river_karst",
+      "next_stage": "Riverbank reeds and riparian ecology; broad tower-karst density mask."
+    },
+    {
+      "genshin": "Liyue - Chenyu Vale and Qiaoying tea village",
+      "real": "Humid mountains, cloud forest and managed tea terraces in southern China",
+      "evidence": "officially_described_environment",
+      "game_source": "https://www.hoyoverse.com/en-us/news/122237",
+      "real_source": "https://whc.unesco.org/en/list/1248",
+      "real_process": "Moist mountain slopes, rock weathering and human agricultural terraces",
+      "current_code": "realscale:scenic_misty_coast",
+      "next_stage": "Slope/aspect-aware patchy mist and managed vegetation only where agricultural land is mapped; renderer-specific fog is not a worldgen feature."
+    },
+    {
+      "genshin": "Sumeru - rainforest mountains and ancient giant trees",
+      "real": "South Asian tropical/moist forests as broad landscape category",
+      "evidence": "officially_described_environment",
+      "game_source": "https://genshin-impact.fandom.com/wiki/Sumeru/Design",
+      "real_source": "https://www.unesco.org/en/mab",
+      "real_process": "Humid valley slopes, canopy stratification and riparian ecosystems",
+      "current_code": "realscale:scenic_rainforest_terrace",
+      "next_stage": "Canopy stratification keyed to climate and exposure; no invented species-level range maps."
+    },
+    {
+      "genshin": "Sumeru - desert, dune valleys and oases",
+      "real": "Arid-region wind erosion, wadis and groundwater-dependent vegetation",
+      "evidence": "officially_described_environment",
+      "game_source": "https://genshin-impact.fandom.com/wiki/Sumeru/Design",
+      "real_source": "https://whc.unesco.org/en/list/1430",
+      "real_process": "Aeolian deposition and erosion, local groundwater oasis habitats",
+      "current_code": null,
+      "next_stage": "Separate dune field, rock desert, wadi and groundwater-proxy layers; avoid generating water from scenery."
+    },
+    {
+      "genshin": "Fontaine - underwater exploration",
+      "real": "Rocky marine slopes, seamounts and deep-water coral habitats",
+      "evidence": "visual_analogy_only",
+      "game_source": "https://genshin.hoyoverse.com/en/news/detail/112567",
+      "real_source": "https://www.fisheries.noaa.gov/national/habitat-conservation/deep-sea-coral-habitat",
+      "real_process": "Depth zonation and hard-substrate marine ecology",
+      "current_code": "realscale:scenic_underwater_arch",
+      "next_stage": "Distinct deep habitat zones, currents and coral/sponge substrate constraints."
+    },
+    {
+      "genshin": "Natlan - colorful red-rock plateaus and canyon vistas",
+      "real": "China Danxia redbed landforms / Venezuela tepui table mountains as morphological analogues",
+      "evidence": "visual_analogy_only",
+      "game_source": "https://genshin.hoyoverse.com/en/news/detail/155172",
+      "real_source": "https://whc.unesco.org/en/list/1335",
+      "real_process": "Redbed erosion and tectonic incision differ from sandstone tepui escarpments",
+      "current_code": "realscale:geo_danxia_redbeds",
+      "next_stage": "Mesa scarps and sedimentary strata through density/strata system; do not conflate redbeds and volcanic basalt."
+    },
+    {
+      "genshin": "Inazuma - Tsurumi fog island",
+      "real": "Humid coastal islands, fog belts and maritime forest analogues",
+      "evidence": "visual_analogy_only",
+      "game_source": "https://genshin.hoyoverse.com/en/news/detail/104058",
+      "real_source": "https://whc.unesco.org/en/list/662",
+      "real_process": "Orographic cloud immersion, salt spray and maritime climate",
+      "current_code": "realscale:scenic_misty_coast",
+      "next_stage": "Fog gradients belong in compatible renderer/client ambience; ocean island cliffs remain climate/topography controlled."
+    },
+    {
+      "genshin": "Nod-Krai - northern misty islands",
+      "real": "High-latitude oceanic coastal forest, wetland and island climate analogues",
+      "evidence": "visual_analogy_only",
+      "game_source": "https://www.hoyoverse.com/en-us/news/159364",
+      "real_source": "https://whc.unesco.org/en/list/1243",
+      "real_process": "Coastal exposure, seasonal cold and local moisture, no assumption of specific real site",
+      "current_code": null,
+      "next_stage": "Model temperature/precipitation/sea spray gradients; do not recreate fictional moon energy."
+    }
+  ]
+}
