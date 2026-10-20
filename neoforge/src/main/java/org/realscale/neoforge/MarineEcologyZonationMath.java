@@ -12,7 +12,7 @@ final class MarineEcologyZonationMath {
     enum Habitat {
         TROPICAL_REEF, TROPICAL_SEAGRASS, TEMPERATE_KELP,
         TEMPERATE_SEAGRASS, COLD_SPONGE_GARDEN, COLD_CORAL_GARDEN,
-        POLAR_BENTHIC, DEEP_SILTY_FLOOR, NONE
+        POLAR_BENTHIC, DEEP_SILTY_FLOOR, COLD_SEEP, VENT_MINERAL_FIELD, ROCKY_SEAMOUNT, NONE
     }
     private MarineEcologyZonationMath() {}
 
@@ -66,6 +66,20 @@ final class MarineEcologyZonationMath {
         if(depth<=16 && !hardBottom)return Habitat.TEMPERATE_SEAGRASS;
         return hardBottom && patch>0.24
                 ? Habitat.COLD_SPONGE_GARDEN : Habitat.DEEP_SILTY_FLOOR;
+    }
+
+    /** Rare 192-block seeded districts. Relief and substrate gate each habitat. */
+    static Habitat geologicalDeepHabitat(int x,int z,long seed,int depth,
+                                         boolean hard,int relief) {
+        if(depth<32 || depth>160)return Habitat.NONE;
+        long hash=mix(seed ^ 0x35eaaa9bL
+                ^ (long)Math.floorDiv(x,192)*0x9e3779b97f4a7c15L
+                ^ (long)Math.floorDiv(z,192)*0x632be59bd9b4e019L);
+        int band=(int)Math.floorMod(hash,32L);
+        if(hard && relief>=5 && band==0)return Habitat.VENT_MINERAL_FIELD;
+        if(hard && relief>=3 && band>=1 && band<=5)return Habitat.ROCKY_SEAMOUNT;
+        if(!hard && relief<=2 && band==6)return Habitat.COLD_SEEP;
+        return Habitat.NONE;
     }
 
     static long mix(long n) {
