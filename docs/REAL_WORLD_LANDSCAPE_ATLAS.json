@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "scope": "Reference-driven, biome-qualified procedural microforms; not georeferenced reproductions.",
+  "landmarks": [
+    {
+      "id": "wulingyuan_quartz_sandstone",
+      "place": "Wulingyuan / Zhangjiajie, Hunan, China",
+      "geological_process": "Quartz sandstone jointing and differential erosion into isolated towers and narrow valleys",
+      "minecraft_feature": "realscale:geo_wulingyuan_pillars",
+      "material_proxy": [
+        "minecraft:sandstone",
+        "minecraft:moss_block"
+      ],
+      "region_authority": "https://whc.unesco.org/en/list/640",
+      "notes": "Microforms only. Large real sandstone pillars require a noise/density treatment, not a surface decoration."
+    },
+    {
+      "id": "south_china_karst",
+      "place": "Yunnan, Guizhou, Guangxi and Chongqing, China",
+      "geological_process": "Carbonate dissolution into pinnacle and cone/tower karst, depressions, caves and bridges",
+      "minecraft_feature": "realscale:geo_south_china_karst",
+      "material_proxy": [
+        "minecraft:calcite",
+        "minecraft:pointed_dripstone"
+      ],
+      "region_authority": "https://whc.unesco.org/en/list/1248",
+      "notes": "Calcite is a vanilla limestone visual approximation, not literal limestone stratigraphy."
+    },
+    {
+      "id": "aswan_first_cataract",
+      "place": "Aswan / Nile First Cataract, Egypt",
+      "geological_process": "Granitic bedrock outcrops, rocky river islands and riverine dryland transitions",
+      "minecraft_feature": "realscale:geo_aswan_granite",
+      "material_proxy": [
+        "minecraft:granite",
+        "minecraft:polished_granite"
+      ],
+      "region_authority": "https://whc.unesco.org/en/tentativelists/1809/",
+      "notes": "Only next to existing source water on appropriate arid surfaces; river is not excavated."
+    },
+    {
+      "id": "socotra_limestone_plateau",
+      "place": "Socotra Archipelago, Yemen",
+      "geological_process": "Limestone plateaus over basement, insular arid vegetation and sheltered escarpments",
+      "minecraft_feature": "realscale:geo_socotra_limestone",
+      "material_proxy": [
+        "minecraft:calcite",
+        "minecraft:tuff"
+      ],
+      "region_authority": "https://whc.unesco.org/document/10073",
+      "notes": "Existing Socotra-inspired groves retained; endemic species conservation status is not asserted from appearance."
+    },
+    {
+      "id": "iceland_basalt_lava",
+      "place": "Iceland rift systems, volcanic landscapes",
+      "geological_process": "Basalt lava fields, fissures and slow moss colonization",
+      "minecraft_feature": "realscale:geo_iceland_basalt",
+      "material_proxy": [
+        "minecraft:basalt",
+        "minecraft:moss_block"
+      ],
+      "region_authority": "https://www.visiticeland.com/article/south-icelands-dynamic-geosites-geysers-glaciers/",
+      "notes": "Does not create active lava or destructive eruption."
+    },
+    {
+      "id": "deep_sea_seamount_corals",
+      "place": "Global deep rocky continental slopes and seamounts",
+      "geological_process": "Exposed hard substrate and bottom currents enable cold-water coral and sponge habitats",
+      "minecraft_feature": "realscale:marine_ecology_layers",
+      "material_proxy": [
+        "minecraft:wet_sponge",
+        "minecraft:dead_tube_coral",
+        "minecraft:tuff"
+      ],
+      "region_authority": "https://www.fisheries.noaa.gov/national/habitat-conservation/deep-sea-coral-habitat",
+      "notes": "Use depth and hard-bottom checks; no claim of actual geographic occurrence or threatened-status for a particular chunk."
+    }
+  ],
+  "ethics": {
+    "reference_only": true,
+    "copy_game_assets": false,
+    "real_dem_priority": true,
+    "no_new_presets": true,
+    "no_new_liquid_sources": true,
+    "threat_status_requires_assessment": true
+  }
+}
