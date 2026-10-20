@@ -62,14 +62,12 @@ class GeographicLandmarksTest(unittest.TestCase):
         self.assertIn("BlockPos ledge=p.east()",src)
         self.assertIn("shape.put(ledge,rock(district,column,y,height,ledge.getY()))",src)
         self.assertNotIn("(y+column)%3",src)
-        # Pure, deterministic reference examples for continuous Y strata;
-        # a future integration test must also check actual generated chunks.
-        for world_y in range(-64,320):
-            phase=8 % (2*3)
-            band=((world_y+phase)%(2*3))//2
-            self.assertIn(band,(0,1,2))
-            if world_y+1<(world_y//6+1)*6:
-                pass
+        # The same world elevation must use the same band regardless of
+        # which pillar/column it belongs to; these are not vertical stripes.
+        phase=8 % 6
+        def band(world_y): return ((world_y+phase)%6)//2
+        self.assertEqual([band(y) for y in range(4,10)],[0,0,1,1,2,2])
+        self.assertEqual(band(68),band(68))
 
     def test_scientific_atlas_matches_registered_landmarks(self):
         atlas=read(ROOT/"docs/REAL_WORLD_LANDSCAPE_ATLAS.json")
