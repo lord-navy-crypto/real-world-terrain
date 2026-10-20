@@ -62,16 +62,23 @@ class HybridMeasuredUSGS(unittest.TestCase):
         before=oldDims["minecraft:overworld"]["generator"]
         after=newDims["minecraft:overworld"]["generator"]
         self.assertEqual(after["type"],before["type"])
-        self.assertEqual(after["biome_source"],before["biome_source"])
+        prior=json.loads(json.dumps(before["biome_source"]))
+        # Measured Earth now additionally enables the formerly hidden
+        # geological-wonders layer without replacing the original USGS signal.
+        self.assertEqual(after["biome_source"]["source"]["source"]["type"],
+                         "realscale:geo_wonders_opt_in")
+        prior["source"]["source"]={
+            "type":"realscale:geo_wonders_opt_in",
+            "source":prior["source"]["source"]
+        }
+        self.assertEqual(after["biome_source"],prior)
         self.assertEqual(after["settings"],"realscale:usgs_global_hybrid_marine")
         self.assertEqual(before["settings"],"realscale:usgs_big_sur_v2")
         menu=read(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
-        self.assertEqual(len(menu["values"]),13)
-        self.assertEqual(len(set(menu["values"])),13)
-        self.assertEqual(menu["values"][-1],
-                         "realscale:tva_measured_global_landforms_three_realms")
-        self.assertEqual(menu["values"][-2],
-                         "realscale:tva_global_landform_expedition_v3_three_realms")
+        self.assertEqual(len(menu["values"]),4)
+        self.assertEqual(len(set(menu["values"])),4)
+        self.assertIn("realscale:tva_measured_global_landforms_three_realms",menu["values"])
+        self.assertNotIn("realscale:tva_global_landform_expedition_v3_three_realms",menu["values"])
 
     def test_sparse_enclaves_and_registered_density_with_exact_default(self):
         java=(J/"MeasuredHybridRareDensity.java").read_text()
