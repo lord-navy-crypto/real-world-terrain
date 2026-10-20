@@ -1,0 +1,37 @@
+name: One-file RealScale terrain Java 21 validation
+on:
+  pull_request:
+    paths:
+      - 'tools/RealScaleTenLandforms.java'
+      - '.github/workflows/single-java-landforms.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  single-java:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Compile and test one standalone Java file
+        run: |
+          mkdir -p build/single-java/classes build/single-java/previews
+          javac -encoding UTF-8 -d build/single-java/classes tools/RealScaleTenLandforms.java
+          java -Djava.awt.headless=true -cp build/single-java/classes RealScaleTenLandforms --test
+          java -Djava.awt.headless=true -cp build/single-java/classes RealScaleTenLandforms --render build/single-java/previews
+          test "$(find build/single-java/previews -type f -name '*.png' | wc -l)" -eq 10
+          java -cp build/single-java/classes RealScaleTenLandforms --sample 0 0 0 0 0.2 0.8
+      - name: Publish complete single Java source and ten previews
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RealScale-TenLandforms-SingleJava
+          path: |
+            tools/RealScaleTenLandforms.java
+            build/single-java/previews/*.png
+            build/single-java/classes/**/*.class
+          if-no-files-found: warn
