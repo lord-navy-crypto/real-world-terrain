@@ -136,6 +136,14 @@ public final class RealScaleMod {
                     new RareEarthSurfaceFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "rare_earth_habitat"),
                     new RareEarthHabitatFeature());
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "scenic_rainforest_terrace"),
+                    new ScenicLandscapeFeature(ScenicLandscapeFeature.Kind.RAINFOREST_TERRACE));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "scenic_misty_coast"),
+                    new ScenicLandscapeFeature(ScenicLandscapeFeature.Kind.MISTY_COAST_CRAG));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "scenic_basalt_upland"),
+                    new ScenicLandscapeFeature(ScenicLandscapeFeature.Kind.BASALT_UPLAND));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "scenic_underwater_arch"),
+                    new ScenicLandscapeFeature(ScenicLandscapeFeature.Kind.UNDERWATER_ARCH));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_geology_accents"),
                     new CaveGeologyAccentFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"),
