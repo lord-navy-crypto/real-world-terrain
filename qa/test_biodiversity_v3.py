@@ -92,11 +92,17 @@ class BiomeDiversityV3(unittest.TestCase):
             q=new["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
             self.assertEqual(q["type"],"realscale:sky_ocean")
             self.assertEqual(q["source"]["type"],"realscale:rare_earth_biomes_v1")
-            self.assertEqual(q["source"]["source"]["type"],"realscale:cross_realm_spawn3")
-            self.assertEqual(q["source"]["source"]["target"],"overworld")
-            self.assertEqual(q["source"]["source"]["source"]["type"],"realscale:natural_ecotones_diverse_v3")
+            invasion=q["source"]["source"]
+            if family=="sacred":
+                # Geological wonders from the removed menu option now remain
+                # reachable in the featured Natural Exploration preset.
+                self.assertEqual(invasion["type"],"realscale:geo_wonders_opt_in")
+                invasion=invasion["source"]
+            self.assertEqual(invasion["type"],"realscale:cross_realm_spawn3")
+            self.assertEqual(invasion["target"],"overworld")
+            self.assertEqual(invasion["source"]["type"],"realscale:natural_ecotones_diverse_v3")
             self.assertEqual(p["source"]["source"]["source"]["type"],"realscale:natural_ecotones_diverse_v2")
-            self.assertEqual(q["source"]["source"]["source"]["source"],
+            self.assertEqual(invasion["source"]["source"],
                              p["source"]["source"]["source"]["source"])
 
     def test_unique_labels_for_world_and_biomes(self):
