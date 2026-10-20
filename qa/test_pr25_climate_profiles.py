@@ -32,10 +32,22 @@ class PR25CompleteClimateRecovery(unittest.TestCase):
                 self.assertTrue(basin["base"]["base"]["area_balanced"])
                 self.assertEqual(alternative["dimensions"]["minecraft:overworld"]["generator"]["settings"],
                                  "realscale:"+key)
-                self.assertEqual(alternative["dimensions"]["minecraft:the_nether"],
-                                 canon_world["dimensions"]["minecraft:the_nether"])
-                self.assertEqual(alternative["dimensions"]["minecraft:the_end"],
-                                 canon_world["dimensions"]["minecraft:the_end"])
+                # Historical PR25 variants keep their old other-realm sources;
+                # Alpine/Canyon player worlds now additionally restore realm
+                # invasion and End accents without changing their terrain.
+                for realm in ("minecraft:the_nether","minecraft:the_end"):
+                    prior=alternative["dimensions"][realm]
+                    current=canon_world["dimensions"][realm]
+                    self.assertEqual(prior["type"],current["type"])
+                    self.assertEqual(prior["generator"]["settings"],
+                                     current["generator"]["settings"])
+                    actual=current["generator"]["biome_source"]
+                    original=prior["generator"]["biome_source"]
+                    if realm=="minecraft:the_end" and actual["type"]=="realscale:end_accents":
+                        actual=actual["source"]
+                    if actual["type"]=="realscale:cross_realm_invasion":
+                        actual=actual["source"]
+                    self.assertEqual(actual,original)
                 for field in ("final_density","depth","continents","erosion"):
                     self.assertEqual(noise["noise_router"][field],
                                      canon_noise["noise_router"][field])
