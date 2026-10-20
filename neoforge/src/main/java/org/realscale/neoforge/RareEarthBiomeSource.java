@@ -72,8 +72,8 @@ public final class RareEarthBiomeSource extends BiomeSource {
             case "badlands","eroded_badlands" -> (variant&1)==0
                     ?"geothermal_sulfur_basin":"acidic_geothermal_mudflat";
             case "desert" -> variant==0?"white_dune_lagoon":
-                    (h&1)==0?"namib_fog_desert":"limestone_island_scrub";
-            case "savanna","savanna_plateau" -> (h&1)==0
+                    (variant&1)==0?"namib_fog_desert":"limestone_island_scrub";
+            case "savanna","savanna_plateau" -> (variant&1)==0
                     ?"socotra_dragonblood_woodland":"socotra_endemic_scrub";
             case "mangrove_swamp" -> "sundarbans_tidal_mangrove";
             case "swamp" -> "congo_peat_swamp_forest";
