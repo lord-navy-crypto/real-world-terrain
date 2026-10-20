@@ -43,8 +43,8 @@ QA must verify four-menu list, old/new feature chains, distinct terrain settings
 
 ## New unified Terrain Lab export rescue (ecology_v1)
 
-When a **new** YACL draft has an explicit `worldSource=terrain_lab`
-and dimensional invasion enabled, the exporter now upgrades its generated
+When a **new** YACL draft has an explicit `worldSource` of `terrain_lab`,
+`sacred` or `measured`, with dimensional invasion enabled, the exporter upgrades its generated
 `sky_ocean` source to this order:
 
 `sky_ocean → rare_earth_biomes_v1 → geo_wonders_opt_in → cross_realm_spawn3
@@ -55,7 +55,8 @@ remain unchanged. Nether invasion, optional End accents and optional
 cross-realm showcase retain the user's requested settings.
 
 The upgraded export uses a new `_ecology_v1` world preset ID. It does not
-silently replace a previously generated `lab_*_invasion` profile. Older
+silently replace previously generated `lab_*_invasion` profiles or the
+fixed-name historic `unified_sacred_*` / `unified_measured_*` profiles. Older
 saved drafts **without** the `worldSource` field still follow the previous
 legacy exporter path byte-for-byte, and the historical world preset JSON
 files remain available for migration and testing.
