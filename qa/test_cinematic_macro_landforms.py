@@ -83,6 +83,32 @@ class CinematicMacroWorldgen(unittest.TestCase):
                        "towerDistance","envelope","gate"):
             self.assertIn(phrase,math)
 
+    def test_six_png_visual_preview_maps_from_production_math(self):
+        if not shutil.which("javac") or not shutil.which("java"):
+            self.skipTest("Java toolchain unavailable")
+        with tempfile.TemporaryDirectory(prefix="realscale-preview-") as d:
+            root=Path(d)
+            classes=root/"classes"
+            sources=[JAVA/"CinematicLandformMath.java",
+                     TEST_JAVA/"CinematicLandformPreview.java"]
+            subprocess.run(["javac","-d",str(classes),*map(str,sources)],
+                           check=True,capture_output=True,text=True,timeout=45)
+            output=root/"preview"
+            process=subprocess.run(["java","-Djava.awt.headless=true","-cp",str(classes),
+                         "org.realscale.neoforge.CinematicLandformPreview",str(output)],
+                         check=True,capture_output=True,text=True,timeout=45)
+            self.assertIn("CINEMATIC_PREVIEWS_PASS",process.stdout)
+            expected=("sandstone-towers","karst-towers","caprock-mesa",
+                      "incised-canyon","volcanic-caldera","glacial-u-valley")
+            self.assertEqual(sorted(p.stem for p in output.glob("*.png")),
+                             sorted(expected))
+            for path in output.glob("*.png"):
+                raw=path.read_bytes()
+                self.assertEqual(raw[:8],b"\\x89PNG\\r\\n\\x1a\\n")
+                self.assertEqual(int.from_bytes(raw[16:20],"big"),320)
+                self.assertEqual(int.from_bytes(raw[20:24],"big"),320)
+                self.assertGreater(len(raw),600)
+
     def test_standalone_actual_java_terrain_math(self):
         if not shutil.which("javac") or not shutil.which("java"):
             self.skipTest("Full Java toolchain unavailable in Python-only environment")
