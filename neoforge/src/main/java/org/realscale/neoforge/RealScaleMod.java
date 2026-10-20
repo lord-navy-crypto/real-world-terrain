@@ -154,6 +154,12 @@ public final class RealScaleMod {
                     new GeographicLandmarkFeature(GeographicLandmarkFeature.Kind.SOCOTRA_LIMESTONE));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_iceland_basalt"),
                     new GeographicLandmarkFeature(GeographicLandmarkFeature.Kind.ICELAND_LAVA_FIELD));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_huanglong_travertine"),
+                    new GeographicLandmarkFeature(GeographicLandmarkFeature.Kind.HUANGLONG_TRAVERTINE));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_guilin_river_karst"),
+                    new GeographicLandmarkFeature(GeographicLandmarkFeature.Kind.GUILIN_RIVER_KARST));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_danxia_redbeds"),
+                    new GeographicLandmarkFeature(GeographicLandmarkFeature.Kind.DANXIA_REDBEDS));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_geology_accents"),
                     new CaveGeologyAccentFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"),
