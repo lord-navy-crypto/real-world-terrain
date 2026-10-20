@@ -106,6 +106,6 @@ jobs:
           name: Cinematic-macro-world-log
           path: |
             neoforge/build/cinematic-macro-server.log
-                        neoforge/run/**/cinematic-macro-test/level.dat
+            neoforge/run/**/cinematic-macro-test/level.dat
             neoforge/run/**/cinematic-macro-test/region/*.mca
           if-no-files-found: warn
