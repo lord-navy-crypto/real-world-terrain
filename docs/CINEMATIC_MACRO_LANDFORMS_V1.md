@@ -34,6 +34,12 @@ the actual density/solid surface, not 5-block decorative landmarks.
 - **Caprock mesa:** broad plateau and abrupt continuous escarpment;
   ~3.05 density-unit rise.
 - **Incised canyon:** curving channel, depressed floor and elevated shoulders.
+- **Glacial U valley:** sinuous broad, gently curving depressed floor and
+  glacially carved outer shoulders, not an unrealistic V-shaped slot.
+- **Volcanic caldera:** ring wall surrounding a recessed basin; unlike a
+  pointed volcanic cone, does not place lava or create a water source.
+- Six archetypes are gated by *approximate*, world-seeded vanilla
+  climate signals. Glacier/caldera are restricted to cold upland proxies.
 - No terrain-changing fluid actions, biome swaps, chunk neighbor reads or
   replacement of pre-existing ore/biome feature registries.
 - Approximate surface-height conversion ~128 blocks per RealScale density unit;
@@ -62,7 +68,7 @@ large structure-safe natural rock bridges, or shader-defined valley fog.
    preserved; original noise settings exactly preserved except 3 intentional
    router pointers in the *new* profile.
 2. Actual JDK compilation and execution of
-   `CinematicLandformMathSmoke`: deterministic selection, all archetype
+   `CinematicLandformMathSmoke`: deterministic selection, all six archetype
    relief signatures, safe 4-km cell boundaries, finite bounded heights,
    ocean/lowland invariance and hundreds-of-block prototype tower height.
 3. Full NeoForge compile/registry parse and saved-chunk boot: no warnings or
