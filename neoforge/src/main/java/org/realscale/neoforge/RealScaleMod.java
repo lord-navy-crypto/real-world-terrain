@@ -144,6 +144,16 @@ public final class RealScaleMod {
                     new ScenicLandscapeFeature(ScenicLandscapeFeature.Kind.BASALT_UPLAND));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "scenic_underwater_arch"),
                     new ScenicLandscapeFeature(ScenicLandscapeFeature.Kind.UNDERWATER_ARCH));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_wulingyuan_pillars"),
+                    new GeographicLandmarkFeature(GeographicLandmarkFeature.Kind.WULINGYUAN_SANDSTONE));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_south_china_karst"),
+                    new GeographicLandmarkFeature(GeographicLandmarkFeature.Kind.SOUTH_CHINA_KARST));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_aswan_granite"),
+                    new GeographicLandmarkFeature(GeographicLandmarkFeature.Kind.ASWAN_GRANITE));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_socotra_limestone"),
+                    new GeographicLandmarkFeature(GeographicLandmarkFeature.Kind.SOCOTRA_LIMESTONE));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "geo_iceland_basalt"),
+                    new GeographicLandmarkFeature(GeographicLandmarkFeature.Kind.ICELAND_LAVA_FIELD));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_geology_accents"),
                     new CaveGeologyAccentFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"),
