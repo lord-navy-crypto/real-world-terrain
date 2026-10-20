@@ -19,8 +19,6 @@ class CinematicMacroWorldgen(unittest.TestCase):
         cinematic=load(RES/"noise_settings/tva_cinematic_landforms_v1.json")
         settings=copy.deepcopy(cinematic)
         original=copy.deepcopy(historic)
-        for key in ("depth","final_density","initial_density_without_jaggedness"):
-            pass
         old_router=original["noise_router"]
         new_router=settings["noise_router"]
         self.assertEqual(new_router["depth"],
@@ -81,6 +79,7 @@ class CinematicMacroWorldgen(unittest.TestCase):
             self.assertIn(phrase,density)
         for phrase in ("SANDSTONE_TOWERS","KARST_TOWERS",
                        "CAPROCK_MESA","INCISED_CANYON",
+                       "VOLCANIC_CALDERA","GLACIAL_U_TROUGH",
                        "towerDistance","envelope","gate"):
             self.assertIn(phrase,math)
 
