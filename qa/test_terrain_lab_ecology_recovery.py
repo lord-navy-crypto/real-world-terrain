@@ -80,6 +80,13 @@ class TerrainLabEcologyRecovery(unittest.TestCase):
             recover_terrain_lab_ecology(source)
         self.assertEqual(old,source)
 
+    def test_showcase_delegates_geology_worldgen_guard(self):
+        showcase=(JAVA/"CrossRealmShowcaseBiomeSource.java").read_text()
+        guard=(JAVA/"TVAWorldGuard.java").read_text()
+        self.assertIn("boolean containsGeoWonders()",showcase)
+        self.assertIn("sky.containsGeoWonders()",showcase)
+        self.assertIn("showcase.containsGeoWonders()",guard)
+
     def test_scenery_requires_natural_foundation_and_source_water(self):
         impl=(JAVA/"ScenicLandscapeFeature.java").read_text()
         self.assertIn("blocks.containsKey(p.below())",impl)
