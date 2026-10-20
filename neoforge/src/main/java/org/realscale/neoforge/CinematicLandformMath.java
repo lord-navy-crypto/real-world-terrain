@@ -14,7 +14,9 @@ final class CinematicLandformMath {
     static final int KARST_TOWERS = 1;
     static final int CAPROCK_MESA = 2;
     static final int INCISED_CANYON = 3;
-    static final int NONE = 4;
+    static final int VOLCANIC_CALDERA = 4;
+    static final int GLACIAL_U_TROUGH = 5;
+    static final int NONE = 6;
 
     private CinematicLandformMath() {}
     static long mix(long h) {
@@ -55,6 +57,8 @@ final class CinematicLandformMath {
             return (h&1L)==0 ? SANDSTONE_TOWERS : KARST_TOWERS;
         if(temp>=0.09 && humidity<=-0.09)return CAPROCK_MESA;
         if(humidity<=0.09 && temp>=-0.35)return INCISED_CANYON;
+        if(temp<=-0.30)
+            return humidity>=-0.04 ? GLACIAL_U_TROUGH : VOLCANIC_CALDERA;
         return NONE;
     }
     static double towerDistance(double u,double v,long h,double spacing) {
@@ -107,6 +111,23 @@ final class CinematicLandformMath {
                 double trench=1.0-smooth(54.0,155.0,Math.abs(axis));
                 double shoulders=smooth(105.0,320.0,Math.abs(axis));
                 yield edge*(0.55*shoulders-1.35*trench);
+            }
+            // Broad volcanic caldera: eroded ring wall enclosing a recessed
+            // floor. No lava, new water or destructive block placement.
+            case VOLCANIC_CALDERA -> {
+                double ring=smooth(0.29,0.49,r)
+                           *(1.0-smooth(0.68,0.84,r));
+                double floor=1.0-smooth(0.12,0.48,r);
+                yield edge*(2.85*ring-0.95*floor);
+            }
+            // Wide glacier-carved U valley with sinuous trough, broad floor
+            // and flanking shoulders, rather than a sharp V-shaped ravine.
+            case GLACIAL_U_TROUGH -> {
+                double axis=Math.abs(v-72*Math.sin(u/360.0));
+                double floor=1.0-smooth(105.0,270.0,axis);
+                double shoulders=smooth(135.0,430.0,axis)
+                        *(1.0-smooth(740.0,1120.0,axis));
+                yield edge*(1.80*shoulders-0.78*floor);
             }
             default -> 0.0;
         };
