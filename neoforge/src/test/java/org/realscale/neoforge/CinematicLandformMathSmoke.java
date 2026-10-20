@@ -12,7 +12,9 @@ public final class CinematicLandformMathSmoke {
             CinematicLandformMath.SANDSTONE_TOWERS,
             CinematicLandformMath.KARST_TOWERS,
             CinematicLandformMath.CAPROCK_MESA,
-            CinematicLandformMath.INCISED_CANYON};
+            CinematicLandformMath.INCISED_CANYON,
+            CinematicLandformMath.VOLCANIC_CALDERA,
+            CinematicLandformMath.GLACIAL_U_TROUGH};
         long h=CinematicLandformMath.hash(0,0);
         yes(CinematicLandformMath.kind(h,0.4,0.5)<2,
                 "Wet warm landscapes should make towers");
@@ -20,8 +22,12 @@ public final class CinematicLandformMathSmoke {
                 "Dry hot regions should make caprock mesas");
         yes(CinematicLandformMath.kind(h,-0.1,-0.1)==3,
                 "Dry temperate regions should make incised canyons");
-        yes(CinematicLandformMath.kind(h,-0.7,0.5)==4,
-                "Cold wet remote regions remain unmodified");
+        yes(CinematicLandformMath.kind(h,-0.7,0.5)==5,
+                "Cold wet highlands form broad glacial U valleys");
+        yes(CinematicLandformMath.kind(h,-0.7,-0.5)==4,
+                "Cold dry uplands can form extinct caldera basins");
+        yes(CinematicLandformMath.kind(h,-0.1,0.5)==6,
+                "Moderate cool wet districts preserve baseline");
         yes(CinematicLandformMath.gate(-0.2,3.5)==0,
                 "Seafloor and offshore continents are untouched");
         yes(CinematicLandformMath.gate(0.6,0.2)==0,
@@ -63,10 +69,18 @@ public final class CinematicLandformMathSmoke {
         double canyon=CinematicLandformMath.relief(3,0,0,radius,h);
         double canyonBank=CinematicLandformMath.relief(3,0,radius*0.35,radius,h);
         yes(canyon<0&&canyonBank>0,"Canyon needs incised floor and high shoulders");
+        double calderaFloor=CinematicLandformMath.relief(4,0,0,radius,h);
+        double calderaRim=CinematicLandformMath.relief(4,0.59*radius,0,radius,h);
+        yes(calderaFloor<0&&calderaRim>1.8,
+                "Volcanic caldera needs lowered floor and raised broken rim");
+        double glacierFloor=CinematicLandformMath.relief(5,0,0,radius,h);
+        double glacierShoulder=CinematicLandformMath.relief(5,0,550,radius,h);
+        yes(glacierFloor<0&&glacierShoulder>0.7,
+                "U valley needs broad trough floor and lifted shoulders");
         double towerMax=0;
         for(int x=-900;x<=900;x+=24)for(int z=-900;z<=900;z+=24)
             towerMax=Math.max(towerMax,CinematicLandformMath.relief(0,x,z,radius,h));
         yes(towerMax>2.1,"Sandstone macro pillars must rise ~250 blocks, not five");
-        System.out.println("CINEMATIC_MACRO_RELIEF_PASS: climate, towers, karst, mesas, gorges, seams and ocean safety");
+        System.out.println("CINEMATIC_MACRO_RELIEF_PASS: six forms, climate, towers, karst, mesas, gorges, calderas, glacier valleys, seams and ocean safety");
     }
 }
