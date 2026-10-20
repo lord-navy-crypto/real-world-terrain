@@ -29,10 +29,10 @@ jobs:
         working-directory: neoforge
         run: |
           mkdir -p build/cinematic-preview/classes build/cinematic-preview/maps
-          javac -d build/cinematic-preview/classes \\
-            src/main/java/org/realscale/neoforge/CinematicLandformMath.java \\
+          javac -d build/cinematic-preview/classes \
+            src/main/java/org/realscale/neoforge/CinematicLandformMath.java \
             src/test/java/org/realscale/neoforge/CinematicLandformPreview.java
-          java -Djava.awt.headless=true -cp build/cinematic-preview/classes \\
+          java -Djava.awt.headless=true -cp build/cinematic-preview/classes \
             org.realscale.neoforge.CinematicLandformPreview build/cinematic-preview/maps
           test "$(find build/cinematic-preview/maps -name '*.png' | wc -l)" -eq 6
       - name: Prepare a player Natural Exploration world
