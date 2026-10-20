@@ -7,7 +7,7 @@ geographic placement.
 
 ## What is actually new
 
-The existing six large-scale shapes remain supported:
+The six v1 large-scale families remain supported; in v2 they also receive\n**bounded, smooth, seed-stable erosion warps** to replace near-perfect circular\nmesas/calderas and regularly spaced pillar silhouettes seen in actual v1\nCI height-map previews. Historic v1 implementation is unchanged:\n
 Wulingyuan-like quartz sandstone pillar districts, Guilin/Yunnan-inspired
 limestone cone clusters, caprock mesas, incised canyons, extinct caldera rings,
 and U-shaped glacial valley corridors.
@@ -26,8 +26,8 @@ v2 adds two **new, macro density-driven** archetypes:
   language of open-world exploration games. The two caps are not claimed
   to reproduce a particular real tepui 1:1.
 
-Archetype selection uses world-seeded warm/humid or hot/dry noise sampled at
-each site's **fixed center**, plus the stable absolute-world region hash.
+Archetype selection uses the existing world router's *original seed-shifted*\ntemperature and vegetation noise, sampled at
+each site's **fixed center**, plus the stable absolute-world region hash. This avoids querying the\ninterpolated mountain-height-adjusted temperature at a distant site anchor\nduring terrain generation, which could depend on the current noise cursor.
 The same terrain generates regardless of chunk load order. The process preserves
 sea floors and low elevations with continentalness + baseline-height gating.
 Visual palette is still handled by the existing biome and surface rules.
@@ -55,7 +55,7 @@ terrain-lab pipelines, ecological features or the previous v1 resources.
   caves, fluids, climate source, structures and biome palettes remain intact.
 - A pure JDK smoke test scans many site hashes to check all eight categories,
   samples two tepui plateaus and their saddle, checks dune height variation,
-  and checks **exact equality** with v1 for all six original relief functions.
+  and checks bounded v2 erosion changes. V1's separate registered implementation\nand entire v1 noise graph remain intact and have their own original smoke test.
 - Both the original six and new eight PNG previews are generated from actual
   production math and exposed as CI artifacts. They are mathematical
   **relative-height views**, not actual NeoForge camera captures.
@@ -74,3 +74,7 @@ Reality references:
 - UNESCO Canaima National Park (tepuis): https://whc.unesco.org/en/list/701
 - Wulingyuan: https://whc.unesco.org/en/list/640
 - South China Karst: https://whc.unesco.org/en/list/1248
+
+## Visual QA finding and correction
+
+Six **actual CI-generated math maps** from the previous release candidate\nshowed over-regular dots in tower fields and nearly perfect circles on mesa\nand caldera fields. This was a genuine aesthetic defect, even though those\nmathematical maps and the server passed CI. V2 now smoothly perturbs\nworld-coordinate sampling, changes bluff/peak geometry and adds small\nseed-stable weathering-height variation. The original regional envelope is\napplied again after warp so regional boundaries still fade to zero. V2 test\nnow explicitly asserts that the new erosion effect is nonzero, bounded and\nfully deterministic. Neither v2 preview nor CI persistence alone proves\nthat these changes look realistic in actual-game 3D camera screenshots.\n
