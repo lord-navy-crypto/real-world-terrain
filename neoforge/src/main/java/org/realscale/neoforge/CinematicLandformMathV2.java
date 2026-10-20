@@ -43,11 +43,25 @@ final class CinematicLandformMathV2 {
     }
 
     static double relief(int kind,double dx,double dz,double radius,long hash) {
-        if(kind<STAR_DUNE_FIELD)
-            return CinematicLandformMath.relief(kind,dx,dz,radius,hash);
         double r=Math.hypot(dx,dz)/radius;
         if(r>=1.0 || kind==NONE)return 0.0;
         double envelope=CinematicLandformMath.envelope(r);
+        if(kind<STAR_DUNE_FIELD) {
+            // V2 scenic erosion: replace perfectly circular rims and orderly
+            // dot grids with smooth site-specific folding, without changing
+            // a single byte of the V1 production shape function.
+            // The original radius gate is applied last so warped shapes NEVER
+            // leak across 4-km site boundaries.
+            double seed=Math.floorMod(hash>>>36,6284L)/1000.0;
+            double wx=dx*1.035+58.0*Math.sin(dz/290.0+seed)
+                    +21.0*Math.sin((dx+dz)/124.0-seed);
+            double wz=dz*0.955+52.0*Math.cos(dx/325.0-seed)
+                    +24.0*Math.sin((dx-dz)/138.0+seed);
+            double weather=0.88+0.16*
+                    (0.5+0.5*Math.sin(wx/270.0+wz/410.0+seed));
+            return envelope*weather*
+                    CinematicLandformMath.relief(kind,wx,wz,radius,hash);
+        }
         double angle=Math.floorMod(hash>>>45,6284L)/1000.0;
         double u=dx*Math.cos(angle)+dz*Math.sin(angle);
         double v=-dx*Math.sin(angle)+dz*Math.cos(angle);
