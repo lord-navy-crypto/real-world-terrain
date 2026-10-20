@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exercise real compiled TVA .jar -> YACL draft -> self-contained new-world pack.
 
-Must preserve four original menu choices plus additive experiments and Grand dimensions.
+Must expose four curated player worlds while preserving historical worldgen and Grand dimensions.
 """
 import json
 from pathlib import Path
@@ -26,23 +26,14 @@ def main():
             "data/realscale/worldgen/world_preset/tva_sacred_timeline_three_realms.json"))
         core=json.loads(source.read(
             "data/minecraft/tags/worldgen/world_preset/normal.json"))
-    original=[
-        "realscale:tva_sacred_timeline_three_realms",
+    player_modes=[
+        "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
+        "realscale:tva_measured_global_landforms_three_realms",
         "realscale:tva_alpine_three_realms",
         "realscale:tva_canyon_three_realms",
-        "realscale:tva_measured_three_realms",
     ]
-    additive=["realscale:tva_wonders_invasion_three_realms",
-              "realscale:tva_sacred_biodiversity_end3_spawn3_v2",
-              "realscale:tva_measured_biodiversity_end3_spawn3_v2",
-              "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
-              "realscale:tva_measured_biodiversity_end3_spawn3_v3",
-              "realscale:tva_regional_landform_expedition_three_realms",
-              "realscale:tva_regional_landform_expedition_v2_three_realms",
-              "realscale:tva_global_landform_expedition_v3_three_realms",
-              "realscale:tva_measured_global_landforms_three_realms"]
-    require(core["replace"] is False and core["values"]==original+additive,
-            "TVA built mod must preserve original five and four explicit additive biomes world choices")
+    require(core["replace"] is False and core["values"]==player_modes,
+            "Compiled TVA must expose only four player worlds while keeping archived presets")
     with tempfile.TemporaryDirectory(prefix="tva-lab-export-") as temporary:
         directory=Path(temporary)
         draft=directory/"profile.json"
@@ -84,7 +75,7 @@ def main():
             pass
         else:
             raise AssertionError("Exporter unexpectedly overwrote a pre-existing pack")
-    print("TVA_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, 4 stable + 5 optional choices and immutable single-world export")
+    print("TVA_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, four curated player choices and immutable single-world export")
 
 if __name__=="__main__":
     main()
