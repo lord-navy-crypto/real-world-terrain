@@ -22,7 +22,7 @@
             }
           }
         },
-        "settings": "realscale:tva_cinematic_landforms_v2",
+        "settings": "realscale:tva_cinematic_landforms_v3",
         "type": "minecraft:noise"
       },
       "type": "realscale:realism_max_overworld"
