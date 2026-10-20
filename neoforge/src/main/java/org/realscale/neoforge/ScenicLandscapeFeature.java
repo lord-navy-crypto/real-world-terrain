@@ -43,7 +43,7 @@ public final class ScenicLandscapeFeature extends Feature<NoneFeatureConfigurati
         return p.getX()>=chunk.getMinBlockX()&&p.getX()<=chunk.getMaxBlockX()
                 &&p.getZ()>=chunk.getMinBlockZ()&&p.getZ()<=chunk.getMaxBlockZ();
     }
-    private boolean commit(WorldGenLevel w,ChunkPos chunk,
+    private boolean commit(WorldGenLevel w,ChunkPos chunk,BlockPos root,
                            Map<BlockPos,BlockState> blocks) {
         if(blocks.isEmpty() || blocks.size()>45)return false;
         for(BlockPos p:blocks.keySet()) {
@@ -51,8 +51,18 @@ public final class ScenicLandscapeFeature extends Feature<NoneFeatureConfigurati
                     ||p.getY()<w.getMinBuildHeight()+2)return false;
             BlockState existing=w.getBlockState(p);
             if(kind==Kind.UNDERWATER_ARCH) {
-                if(!existing.is(Blocks.WATER))return false;
-            } else if(!existing.isAir()||!w.getFluidState(p).isEmpty())return false;
+                if(!existing.is(Blocks.WATER)||!w.getFluidState(p).isSource())return false;
+                // The two feet of the underwater arch must sit on natural
+                // seabed: no hanging columns above deep trenches.
+                if(p.getY()==root.getY() && !natural(w.getBlockState(p.below())))
+                    return false;
+            } else {
+                if(!existing.isAir()||!w.getFluidState(p).isEmpty())return false;
+                // Each footprint must have a natural foundation, including
+                // on slopes. Never leave floating scenery or sit on buildings.
+                if(!blocks.containsKey(p.below())
+                        && !natural(w.getBlockState(p.below())))return false;
+            }
         }
         for(var block:blocks.entrySet())w.setBlock(block.getKey(),block.getValue(),2);
         return true;
@@ -140,7 +150,7 @@ public final class ScenicLandscapeFeature extends Feature<NoneFeatureConfigurati
                     else blocks.put(root.offset(dx,3,0),Blocks.CALCITE.defaultBlockState());
                 }
             }
-            if(commit(w,chunk,blocks))return true;
+            if(commit(w,chunk,root,blocks))return true;
         }
         return false;
     }
