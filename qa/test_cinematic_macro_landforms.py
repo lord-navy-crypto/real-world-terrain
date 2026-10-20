@@ -57,7 +57,7 @@ class CinematicMacroWorldgen(unittest.TestCase):
                "tva_alpine_three_realms","tva_canyon_three_realms"]
         settings=[load(preset_dir/(name+".json"))["dimensions"]
                   ["minecraft:overworld"]["generator"]["settings"] for name in names]
-        self.assertEqual(settings,["realscale:tva_cinematic_landforms_v3",
+        self.assertEqual(settings,["realscale:tva_cinematic_integrated_v1",
                 "realscale:usgs_global_hybrid_marine",
                 "realscale:tva_alpine_smoothed","realscale:tva_canyon_smoothed"])
         self.assertEqual(load(RES/"noise_settings/tva_natural_smoothed.json")
