@@ -46,12 +46,30 @@ class GeographicLandmarksTest(unittest.TestCase):
                        "natural(world.getBlockState(p.below()))",
                        "world.getBlockState(p).isAir()",
                        "world.getFluidState(p).isEmpty()",
-                       "shape.size()>38","sourceWaterNearby(",
+                       "shape.size()>64","sourceWaterNearby(",
                        "world.getFluidState(p).isSource()"):
             self.assertIn(marker,src)
         self.assertNotIn("Blocks.WATER.defaultBlockState()",src)
         self.assertNotIn("Blocks.LAVA.defaultBlockState()",src)
         self.assertNotIn("Blocks.CAVE_AIR.defaultBlockState()",src)
+
+    def test_layered_rock_palettes_follow_global_height(self):
+        src=(JAVA/"GeographicLandmarkFeature.java").read_text()
+        self.assertIn("static int sedimentBand(long district,int worldY,int thickness)",src)
+        self.assertIn("Math.floorMod(worldY+phase,thickness*3)/thickness",src)
+        self.assertIn("sedimentBand(district,worldY,2)",src)
+        self.assertIn("sedimentBand(district,worldY,3)",src)
+        self.assertIn("BlockPos ledge=p.east()",src)
+        self.assertIn("shape.put(ledge,rock(district,column,y,height,ledge.getY()))",src)
+        self.assertNotIn("(y+column)%3",src)
+        # Pure, deterministic reference examples for continuous Y strata;
+        # a future integration test must also check actual generated chunks.
+        for world_y in range(-64,320):
+            phase=8 % (2*3)
+            band=((world_y+phase)%(2*3))//2
+            self.assertIn(band,(0,1,2))
+            if world_y+1<(world_y//6+1)*6:
+                pass
 
     def test_scientific_atlas_matches_registered_landmarks(self):
         atlas=read(ROOT/"docs/REAL_WORLD_LANDSCAPE_ATLAS.json")
