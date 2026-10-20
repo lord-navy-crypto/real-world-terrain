@@ -107,10 +107,17 @@ class BiomeDiversityV3(unittest.TestCase):
             for family in ("sacred","measured"):
                 self.assertTrue(labels["generator.realscale.tva_"+family+"_biodiversity_end3_spawn3_v3"])
 
-    def test_all_84_biome_ids_are_unique_and_unchanged_legacy_count(self):
+    def test_all_biome_ids_preserve_legacy_catalog_and_rare_ecology(self):
         ids={p.stem for p in BIOMES.glob("*.json")}
-        self.assertEqual(len(ids),84)
-        self.assertEqual(len(ids-set(NAMES)),76)
+        rare={"geothermal_sulfur_basin","socotra_dragonblood_woodland",
+              "white_dune_lagoon","sundarbans_tidal_mangrove",
+              "congo_peat_swamp_forest","steppe_saline_lake",
+              "acidic_geothermal_mudflat","montane_mist_forest",
+              "permafrost_fen","limestone_island_scrub",
+              "namib_fog_desert","serpentine_barrens","socotra_endemic_scrub"}
+        self.assertEqual(len(ids),97)
+        self.assertTrue(rare <= ids)
+        self.assertEqual(len(ids-set(NAMES)-rare),76)
 
 
 if __name__=="__main__":unittest.main()
