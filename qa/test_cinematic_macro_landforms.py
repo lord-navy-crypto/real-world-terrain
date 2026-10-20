@@ -57,7 +57,7 @@ class CinematicMacroWorldgen(unittest.TestCase):
                "tva_alpine_three_realms","tva_canyon_three_realms"]
         settings=[load(preset_dir/(name+".json"))["dimensions"]
                   ["minecraft:overworld"]["generator"]["settings"] for name in names]
-        self.assertEqual(settings,["realscale:tva_cinematic_landforms_v2",
+        self.assertEqual(settings,["realscale:tva_cinematic_landforms_v3",
                 "realscale:usgs_global_hybrid_marine",
                 "realscale:tva_alpine_smoothed","realscale:tva_canyon_smoothed"])
         self.assertEqual(load(RES/"noise_settings/tva_natural_smoothed.json")
@@ -168,6 +168,66 @@ class CinematicMacroWorldgen(unittest.TestCase):
             for image in output.glob("*.png"):
                 self.assertEqual(image.read_bytes()[:8],bytes.fromhex("89504e470d0a1a0a"))
                 self.assertGreater(image.stat().st_size,600)
+
+    def test_northern_v3_preserves_v2_noise_and_usgs_independence(self):
+        old=load(RES/"noise_settings/tva_cinematic_landforms_v2.json")
+        new=load(RES/"noise_settings/tva_cinematic_landforms_v3.json")
+        previous=copy.deepcopy(old)
+        current=copy.deepcopy(new)
+        a=previous["noise_router"]
+        b=current["noise_router"]
+        self.assertEqual(a["depth"],"realscale:tva_cinematic_landforms_v2/terrain_density")
+        self.assertEqual(b["depth"],"realscale:tva_cinematic_landforms_v3/terrain_density")
+        for field in ("depth","initial_density_without_jaggedness"):
+            a[field]=b[field]
+        a["final_density"]["base"]=b["final_density"]["base"]
+        self.assertEqual(previous,current,
+            "v3 must not change other world noise, fluid, cave or surface systems")
+        for version in ("v1","v2","v3"):
+            c=load(RES/("density_function/tva_cinematic_landforms_"+version)
+                   /"height_signal.json")
+            self.assertEqual(c["argument"]["type"],"realscale:cinematic_landforms_"+version)
+        mod=(JAVA/"RealScaleMod.java").read_text()
+        self.assertIn('"cinematic_landforms_v3"), CinematicLandformDensityV3.MAP_CODEC',mod)
+        v3=(JAVA/"CinematicLandformDensityV3.java").read_text()
+        self.assertIn("CinematicLandformMathV3.kind(",v3)
+        self.assertIn("base.mapAll(visitor)",v3)
+        self.assertIn("Math.floorDiv(x,CinematicLandformMathV3.CELL)",v3)
+
+    def test_northern_v3_real_java_glacial_math(self):
+        if not shutil.which("javac") or not shutil.which("java"):
+            self.skipTest("JDK unavailable")
+        with tempfile.TemporaryDirectory(prefix="realscale-v3-") as d:
+            files=[JAVA/"CinematicLandformMath.java",
+                   JAVA/"CinematicLandformMathV2.java",
+                   JAVA/"CinematicLandformMathV3.java",
+                   TEST_JAVA/"CinematicLandformMathV3Smoke.java"]
+            subprocess.run(["javac","-d",d,*map(str,files)],
+                           check=True,capture_output=True,text=True,timeout=45)
+            result=subprocess.run(["java","-cp",d,
+                    "org.realscale.neoforge.CinematicLandformMathV3Smoke"],
+                    check=True,capture_output=True,text=True,timeout=45)
+            self.assertIn("CINEMATIC_NORTH_V3_PASS",result.stdout)
+
+    def test_northern_v3_ten_real_math_png_maps(self):
+        if not shutil.which("javac") or not shutil.which("java"):
+            self.skipTest("JDK unavailable")
+        with tempfile.TemporaryDirectory(prefix="realscale-preview-north-") as d:
+            classes=Path(d)/"classes"
+            target=Path(d)/"maps"
+            files=[JAVA/"CinematicLandformMath.java",
+                   JAVA/"CinematicLandformMathV2.java",
+                   JAVA/"CinematicLandformMathV3.java",
+                   TEST_JAVA/"CinematicLandformPreviewV3.java"]
+            subprocess.run(["javac","-d",str(classes),*map(str,files)],
+                           check=True,capture_output=True,text=True,timeout=45)
+            out=subprocess.run(["java","-Djava.awt.headless=true",
+                    "-cp",str(classes),"org.realscale.neoforge.CinematicLandformPreviewV3",
+                    str(target)],check=True,capture_output=True,text=True,timeout=45)
+            self.assertIn("CINEMATIC_PREVIEWS_PASS",out.stdout)
+            self.assertEqual(len(list(target.glob("*.png"))),10)
+            for p in target.glob("*.png"):
+                self.assertEqual(p.read_bytes()[:8],bytes.fromhex("89504e470d0a1a0a"))
 
     def test_standalone_actual_java_terrain_math(self):
         if not shutil.which("javac") or not shutil.which("java"):
