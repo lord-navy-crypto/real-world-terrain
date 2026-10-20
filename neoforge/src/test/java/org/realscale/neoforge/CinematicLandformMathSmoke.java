@@ -7,7 +7,42 @@ public final class CinematicLandformMathSmoke {
     private static boolean near(double a,double b) {
         return Math.abs(a-b)<1.0e-9;
     }
+    /**
+     * Reference implementation before the squared-distance optimization.
+     * Compare outputs on positive/negative world-relative coordinates, lattice
+     * boundaries, and many district seeds to detect accidental terrain drift.
+     */
+    private static double historicalTowerDistance(double u,double v,long h,double spacing) {
+        int cx=(int)Math.floor(u/spacing),cz=(int)Math.floor(v/spacing);
+        double best=Double.POSITIVE_INFINITY;
+        for(int i=-1;i<=1;i++)for(int j=-1;j<=1;j++) {
+            int xx=cx+i,zz=cz+j;
+            long k=CinematicLandformMath.mix(h ^ (long)xx*0x9e3779b97f4a7c15L
+                    ^ (long)zz*0xc2b2ae3d27d4eb4fL);
+            double px=(xx+0.5)*spacing
+                    +(Math.floorMod(k>>>17,1001L)/1000.0-0.5)*spacing*0.47;
+            double pz=(zz+0.5)*spacing
+                    +(Math.floorMod(k>>>38,1001L)/1000.0-0.5)*spacing*0.47;
+            best=Math.min(best,Math.hypot(u-px,v-pz));
+        }
+        return best;
+    }
+    private static void testOptimizedDistanceParity() {
+        for(int gx=-4;gx<=4;gx++)for(int gz=-4;gz<=4;gz++) {
+            long h=CinematicLandformMath.hash(gx,gz);
+            for(int i=-35;i<=35;i++)for(int j=-35;j<=35;j++) {
+                double u=i*27.135,v=j*31.875;
+                for(double spacing:new double[]{205.0,300.0}) {
+                    double reference=historicalTowerDistance(u,v,h,spacing);
+                    double current=CinematicLandformMath.towerDistance(u,v,h,spacing);
+                    yes(Math.abs(reference-current)<1.0e-9,
+                            "Squared distance optimization changed tower geometry");
+                }
+            }
+        }
+    }
     public static void main(String[] args) {
+        testOptimizedDistanceParity();
         int[] terrain={
             CinematicLandformMath.SANDSTONE_TOWERS,
             CinematicLandformMath.KARST_TOWERS,
