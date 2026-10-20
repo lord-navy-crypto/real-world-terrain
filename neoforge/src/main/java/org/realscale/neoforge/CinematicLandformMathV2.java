@@ -71,10 +71,10 @@ final class CinematicLandformMathV2 {
                 // Two caprock massifs with independent flat tops and steep
                 // sides; the saddle between them opens a traverse corridor.
                 double first=Math.pow(
-                        Math.pow(Math.abs((u+380.0)/530.0),4)
+                        Math.pow(Math.abs((u+450.0)/480.0),4)
                         +Math.pow(Math.abs((v+95.0)/440.0),4),0.25);
                 double second=Math.pow(
-                        Math.pow(Math.abs((u-385.0)/475.0),4)
+                        Math.pow(Math.abs((u-450.0)/455.0),4)
                         +Math.pow(Math.abs((v-130.0)/395.0),4),0.25);
                 double plateau1=1.0-CinematicLandformMath.smooth(0.68,0.84,first);
                 double plateau2=1.0-CinematicLandformMath.smooth(0.68,0.84,second);
