@@ -100,7 +100,7 @@ def test_natural_ecotone_preset():
     assert load(PRESETS / "realism_max.json") == original
     tag = load(ROOT.parent / "minecraft/tags/worldgen/world_preset/normal.json")
     assert (PRESETS / "realism_max_ecotones.json").is_file()  # historical preset remains available
-    assert "realscale:tva_sacred_timeline_three_realms" in tag["values"]
+    assert "realscale:tva_sacred_biodiversity_end3_spawn3_v3" in tag["values"]\n    assert len(tag["values"]) == 4
 
 def test_biome_lab():
     d = load(PRESETS / "biome_lab.json")
