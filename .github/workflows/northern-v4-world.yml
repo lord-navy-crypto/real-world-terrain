@@ -29,7 +29,7 @@ jobs:
         run: |
           python3 -m unittest discover -s qa -p 'test_coastal_fjord_v4.py' -v
           python3 -m unittest discover -s qa -p 'test_northern_caves_sky_v4.py' -v
-      - name: Prepare a player Natural Exploration world
+      - name: Prepare an isolated northern v4 experimental world
         working-directory: neoforge
         run: |
           for dir in run run/server run/gametestserver; do
@@ -92,8 +92,9 @@ jobs:
                   'versioned_noise',b'realscale:tva_cinematic_landforms_v4' in data,
                   'real_ecology',b'realscale:sky_ocean' in data,
                   'cave_biomes',b'realscale:northern_cave_biomes_v4' in data)
-            if b'realscale:tva_cinematic_landforms_v4' in data and b'realscale:sky_ocean' in data
-                and b'realscale:northern_cave_biomes_v4' in data:
+            if (b'realscale:tva_cinematic_landforms_v4' in data
+                and b'realscale:sky_ocean' in data
+                and b'realscale:northern_cave_biomes_v4' in data):
               print('NORTHERN_V4_SETTINGS_PERSISTED',path)
               found=True
           if not ready.is_set() or not found:
@@ -113,7 +114,7 @@ jobs:
           print("NORTHERN_V4_REGION_COUNT",len(regions),"ANVIL_CHUNKS",count)
           if count<1:raise SystemExit("No persisted northern v4 Anvil chunks")
           PY
-      - name: Upload cinematic macro world diagnostics
+      - name: Upload northern v4 actual server diagnostics
         uses: actions/upload-artifact@v4
         if: always()
         with:
