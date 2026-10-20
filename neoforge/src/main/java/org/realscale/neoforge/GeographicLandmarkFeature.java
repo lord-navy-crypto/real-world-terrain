@@ -21,7 +21,8 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfiguration> {
     public enum Kind {
         WULINGYUAN_SANDSTONE, SOUTH_CHINA_KARST, ASWAN_GRANITE,
-        SOCOTRA_LIMESTONE, ICELAND_LAVA_FIELD
+        SOCOTRA_LIMESTONE, ICELAND_LAVA_FIELD,
+        HUANGLONG_TRAVERTINE, GUILIN_RIVER_KARST, DANXIA_REDBEDS
     }
     private final Kind kind;
     public GeographicLandmarkFeature(Kind kind) {
@@ -73,6 +74,21 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
                     ||key.equals("minecraft:windswept_hills")
                     ||key.equals("minecraft:snowy_slopes")
                     ||key.equals("realscale:geothermal_sulfur_basin");
+            case HUANGLONG_TRAVERTINE ->
+                    key.equals("minecraft:meadow")
+                    ||key.equals("minecraft:grove")
+                    ||key.equals("minecraft:forest")
+                    ||key.equals("realscale:montane_mist_forest");
+            case GUILIN_RIVER_KARST ->
+                    key.equals("minecraft:jungle")
+                    ||key.equals("minecraft:sparse_jungle")
+                    ||key.equals("minecraft:swamp")
+                    ||key.equals("realscale:cool_temperate_rainforest");
+            case DANXIA_REDBEDS ->
+                    key.equals("minecraft:badlands")
+                    ||key.equals("minecraft:eroded_badlands")
+                    ||key.equals("minecraft:jungle")
+                    ||key.equals("minecraft:sparse_jungle");
         };
     }
     private static boolean sourceWaterNearby(WorldGenLevel world,BlockPos at,
@@ -105,6 +121,19 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
                     y==height-1&&(district&1L)==0L
                     ?Blocks.MOSS_BLOCK.defaultBlockState()
                     :Blocks.BASALT.defaultBlockState();
+            // Calcite-laden existing waters produce pale rims.
+            // No new water or fake hot spring is created.
+            case HUANGLONG_TRAVERTINE ->
+                    y==height-1?Blocks.CALCITE.defaultBlockState()
+                    :Blocks.DIORITE.defaultBlockState();
+            case GUILIN_RIVER_KARST ->
+                    y==height-1&&column%2==0
+                    ?Blocks.MOSS_BLOCK.defaultBlockState()
+                    :Blocks.CALCITE.defaultBlockState();
+            case DANXIA_REDBEDS ->
+                    (y+column)%3==0?Blocks.RED_SANDSTONE.defaultBlockState()
+                    :((y+column)%3==1?Blocks.ORANGE_TERRACOTTA.defaultBlockState()
+                    :Blocks.RED_TERRACOTTA.defaultBlockState());
         };
     }
     @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> ctx) {
@@ -140,7 +169,9 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
                 if(!allowedBiome(biome)||!natural(world.getBlockState(foot.below()))) {
                     eligible=false;break;
                 }
-                if(kind==Kind.ASWAN_GRANITE)
+                if(kind==Kind.ASWAN_GRANITE
+                        ||kind==Kind.HUANGLONG_TRAVERTINE
+                        ||kind==Kind.GUILIN_RIVER_KARST)
                     riverAdjacency |= sourceWaterNearby(world,foot,chunk);
                 int height=switch(kind) {
                     case WULINGYUAN_SANDSTONE -> 4+(int)Math.floorMod(mix(district+column*37L),5L);
@@ -148,6 +179,9 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
                     case ASWAN_GRANITE -> 1+(int)Math.floorMod(mix(district+column*29L),3L);
                     case SOCOTRA_LIMESTONE -> 2+(int)Math.floorMod(mix(district+column*31L),4L);
                     case ICELAND_LAVA_FIELD -> 1+(int)Math.floorMod(mix(district+column*17L),4L);
+                    case HUANGLONG_TRAVERTINE -> 1+(int)Math.floorMod(mix(district+column*23L),2L);
+                    case GUILIN_RIVER_KARST -> 3+(int)Math.floorMod(mix(district+column*47L),4L);
+                    case DANXIA_REDBEDS -> 2+(int)Math.floorMod(mix(district+column*53L),4L);
                 };
                 for(int y=0;y<height;y++) {
                     BlockPos p=foot.above(y);
@@ -158,7 +192,9 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
                     shape.put(p,rock(district,column,y,height));
                 }
             }
-            if(!eligible||(kind==Kind.ASWAN_GRANITE&&!riverAdjacency)
+            if(!eligible||((kind==Kind.ASWAN_GRANITE
+                    ||kind==Kind.HUANGLONG_TRAVERTINE
+                    ||kind==Kind.GUILIN_RIVER_KARST)&&!riverAdjacency)
                     ||shape.isEmpty()||shape.size()>38)continue;
             // Preflight all positions before writing to avoid partial geometry.
             boolean safe=true;
