@@ -74,7 +74,9 @@ public final class CinematicLandformMathSmoke {
         yes(calderaFloor<0&&calderaRim>1.8,
                 "Volcanic caldera needs lowered floor and raised broken rim");
         double glacierFloor=CinematicLandformMath.relief(5,0,0,radius,h);
-        double glacierShoulder=CinematicLandformMath.relief(5,0,550,radius,h);
+        double siteAngle=Math.floorMod(h>>>45,6284L)/1000.0;
+        double glacierShoulder=CinematicLandformMath.relief(5,
+                -550*Math.sin(siteAngle),550*Math.cos(siteAngle),radius,h);
         yes(glacierFloor<0&&glacierShoulder>0.7,
                 "U valley needs broad trough floor and lifted shoulders");
         double towerMax=0;
