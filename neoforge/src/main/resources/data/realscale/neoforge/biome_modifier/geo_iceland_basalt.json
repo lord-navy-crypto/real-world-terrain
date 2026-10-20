@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:stony_peaks",
+    "minecraft:windswept_hills",
+    "minecraft:snowy_slopes",
+    "realscale:geothermal_sulfur_basin"
+  ],
+  "features": "realscale:geo_iceland_basalt",
+  "step": "vegetal_decoration"
+}
