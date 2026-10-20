@@ -28,6 +28,7 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "regional_landform_diverse_v2"), RegionalLandformDensity.V2_MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "regional_landform_global_v3"), RegionalGlobalLandformDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cinematic_landforms_v1"), CinematicLandformDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cinematic_landforms_v2"), CinematicLandformDensityV2.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "measured_rare_hybrid"), MeasuredHybridRareDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "marine_seafloor"), MarineSeafloorDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "ridge_erosion"), RidgeErosionDensity.MAP_CODEC);
