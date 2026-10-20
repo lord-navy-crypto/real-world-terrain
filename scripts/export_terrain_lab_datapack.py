@@ -176,6 +176,11 @@ def export(jar: Path, draft: Path, output: Path,
                 # exports remain byte-identical and keep their old save IDs.
                 if "worldSource" in json.loads(draft.read_text(encoding="utf-8")):
                     preset = recover_terrain_lab_ecology(preset)
+                    # New worldgen behavior needs a new world-type ID, not
+                    # a silent reinterpretation of an existing Lab profile.
+                    name += "_ecology_v1"
+                    labels["en_us"] += " + Recovered Ecosystems"
+                    labels["zh_cn"] += " + 生态功能整合"
                 # Do not export two selectable world IDs for the same draft.
                 generated = [p for p in generated
                              if p != PRESET_DIR / (original_name + ".json")]
