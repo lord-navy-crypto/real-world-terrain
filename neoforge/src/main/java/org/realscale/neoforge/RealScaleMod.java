@@ -30,6 +30,7 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cinematic_landforms_v1"), CinematicLandformDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cinematic_landforms_v2"), CinematicLandformDensityV2.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cinematic_landforms_v3"), CinematicLandformDensityV3.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cinematic_landforms_integrated_v1"), RealScaleCinematicIntegrated.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "measured_rare_hybrid"), MeasuredHybridRareDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "marine_seafloor"), MarineSeafloorDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "ridge_erosion"), RidgeErosionDensity.MAP_CODEC);
