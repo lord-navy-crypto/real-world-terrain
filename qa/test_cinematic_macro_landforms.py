@@ -129,8 +129,8 @@ class CinematicMacroWorldgen(unittest.TestCase):
                          ["argument"]["type"],"realscale:cinematic_landforms_v2")
         height=load(RES/"density_function/tva_cinematic_landforms_v2/height_signal.json")
         macro=height["argument"]
-        self.assertEqual(macro["temperature"],new_router["temperature"],
-                         "Macro climate must match actual v2 world temperature router")
+        self.assertEqual(macro["temperature"],new_router["temperature"]["original"],
+                         "Site climate uses the world router's un-interpolated seed-shifted signal")
         self.assertEqual(macro["humidity"],new_router["vegetation"],
                          "Macro humidity must match v2 biome-selection vegetation")
         self.assertIn('"cinematic_landforms_v2"), CinematicLandformDensityV2.MAP_CODEC',
