@@ -36,6 +36,11 @@ class JfrTests(unittest.TestCase):
         self.assertTrue(any(r["method"]=="org.realscale.neoforge.GrandOverworldCaverns.compute"
                             and r["samples"]==12 for r in report["inclusive_worldgen_methods"]))
 
+    def test_many_samples_must_include_genuine_game_call_stacks(self):
+        with self.assertRaisesRegex(ValueError,"implausibly few game frames"):
+            summarize_events([sample([("java.lang.Thread","run")])
+                              for _ in range(200)])
+
     def test_minimum_samples(self):
         with self.assertRaises(ValueError):
             summarize_events([sample([("java.lang.Thread","run")])])

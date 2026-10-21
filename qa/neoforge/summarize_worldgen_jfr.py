@@ -53,6 +53,11 @@ def summarize_events(events):
     def top(c,n=30):
         return [{"method":name,"samples":count} for name,count in c.most_common(n)]
     if total<10:raise ValueError("Not enough JVM execution samples; profiling did not attach")
+    if total>=100 and worldgen<total//5:
+        # Avoid the original false-green run that dropped 84% of JVM stacks
+        # because JFR uses net/minecraft/... internal class names.
+        raise ValueError("JFR stack parser classified implausibly few game frames: "+
+                         str(worldgen)+"/"+str(total))
     return {"execution_samples":total,"stacks_with_minecraft_or_realscale":worldgen,
             "leaf_methods":top(leaf),"inclusive_worldgen_methods":top(inclusive),
             "nearest_relevant_stack_category":category,

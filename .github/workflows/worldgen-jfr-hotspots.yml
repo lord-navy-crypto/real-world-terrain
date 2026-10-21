@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/worldgen-jfr-hotspots.yml'
+      - 'qa/neoforge/summarize_worldgen_jfr.py'
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
   workflow_dispatch:
 permissions:
   contents: read
