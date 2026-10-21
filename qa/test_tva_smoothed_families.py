@@ -49,7 +49,7 @@ class CoreSmoothing(unittest.TestCase):
  def test_four_curated_player_modes_preserve_archived_family_graphs(self):
   active=[
    "realscale:tva_natural_hypsometry_v1_three_realms",
-   "realscale:tva_measured_usgs_fitted_v1_three_realms",
+   "realscale:tva_measured_usgs_fitted_v2_three_realms",
    "realscale:tva_alpine_three_realms",
    "realscale:tva_canyon_three_realms",
   ]
