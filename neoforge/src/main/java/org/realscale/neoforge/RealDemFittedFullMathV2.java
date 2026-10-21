@@ -16,9 +16,13 @@ final class RealDemFittedFullMathV2 {
         return t*t*t*(t*(t*6.0-15.0)+10.0);
     }
     static double landWeight(double continentalness) {
+        if(continentalness<=-0.15)return 0.0;
+        if(continentalness>=0.18)return 1.0; // exact 100%, no float sliver
         return fade((continentalness+0.15)/0.33);
     }
     static double demTransitionWeight(double distance) {
+        if(distance<=0.0)return 0.0;
+        if(distance>=BLEND_DISTANCE)return 1.0; // no generic tail
         return fade(distance/BLEND_DISTANCE);
     }
     static double fittedWeight(double distance,double continentalness) {
