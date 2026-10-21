@@ -27,14 +27,19 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
     }
     private static final int GRID = GeoWonderGeometry.GRID;
     private final Kind kind;
+    // One 256-slot cache per feature and generation thread. Includes absent
+    // sites, which account for most of the 9 queried cells per chunk.
+    private final ThreadLocal<GeoWonderSiteCache> cachedSites;
 
     public GeoWonderRegionFeature(Kind kind) {
         super(NoneFeatureConfiguration.CODEC);
         this.kind=kind;
+        this.cachedSites=ThreadLocal.withInitial(
+                ()->new GeoWonderSiteCache(kind.ordinal()));
     }
     private static long mix(long n) {return GeoWonderGeometry.mix(n);}
     private GeoWonderGeometry.Site site(int gx,int gz) {
-        return GeoWonderGeometry.surfaceSite(gx,gz,kind.ordinal());
+        return cachedSites.get().get(gx,gz);
     }
     private static boolean match(String id,String... values) {
         for(String v:values)if(id.equals("minecraft:"+v))return true;
