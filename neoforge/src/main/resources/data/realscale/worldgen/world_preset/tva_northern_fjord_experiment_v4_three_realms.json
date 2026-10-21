@@ -9,7 +9,7 @@
             "source": {
               "type": "realscale:geo_wonders_opt_in",
               "source": {
-                "type": "realscale:cross_realm_spawn3",
+                "type": "realscale:cross_realm_free_spawn_v1",
                 "target": "overworld",
                 "source": {
                   "type": "realscale:northern_cave_biomes_v4",
