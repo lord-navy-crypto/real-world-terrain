@@ -50,7 +50,7 @@ jobs:
           java -cp build/experimental-vanilla org.realscale.neoforge.BeardifierYExtentSmoke
       - name: Test tighter vertical envelope and raw-original guard
         run: |
-          javac -d build/experimental-vanilla neoforge/src/main/java/org/realscale/neoforge/BeardifierYTightGuardSmoke.java neoforge/src/main/java/org/realscale/neoforge/BeardifierYExtent.java
+          javac -d build/experimental-vanilla neoforge/src/test/java/org/realscale/neoforge/BeardifierYTightGuardSmoke.java neoforge/src/main/java/org/realscale/neoforge/BeardifierYExtent.java
           java -Drealscale.experimental.beardifier.tight_y=true -cp build/experimental-vanilla org.realscale.neoforge.BeardifierYTightGuardSmoke
       - name: Unit-test semantic Anvil parity comparator
         run: python3 -m unittest discover -s qa -p 'test_beardifier_anvil_semantics.py' -v
