@@ -9,6 +9,8 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/BeardifierYExtent.java'
       - 'neoforge/src/main/resources/realscale.experimental.mixins.json'
       - 'neoforge/src/main/resources/META-INF/neoforge.mods.toml'
+      - 'qa/neoforge/compare_beardifier_saved_regions.py'
+      - 'qa/test_beardifier_anvil_semantics.py'
   workflow_dispatch:
 permissions:
   contents: read
