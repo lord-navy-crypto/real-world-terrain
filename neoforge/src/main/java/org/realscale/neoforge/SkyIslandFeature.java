@@ -54,6 +54,11 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
             SkyIslandLayout.Site base=SkyIslandLayout.at(
                 referenceX+gx*SkyIslandLayout.GRID,
                 referenceZ+gz*SkyIslandLayout.GRID);
+            // The parent or any satellite is at most 94 blocks from base.
+            // Account for the full 16x16 decorating chunk, not only center:
+            // rejecting this site cannot omit an island block in this chunk.
+            if(!SkyIslandLayout.mayIntersectChunk(base,chunkX,chunkZ))
+                continue;
             for (int slot=0;slot<SkyIslandLayout.SLOTS;slot++) {
                 SkyIslandLayout.Site island=SkyIslandLayout.satellite(base,slot);
                 int r=island.radius();
