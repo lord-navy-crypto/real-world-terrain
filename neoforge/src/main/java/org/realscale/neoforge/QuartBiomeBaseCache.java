@@ -16,7 +16,11 @@ import java.util.Objects;
  * the original source lookup and can never affect the selected biome.
  */
 final class QuartBiomeBaseCache<V> {
-    static final int SLOTS = 8192;
+    // 2096-high parallel worldgen revisits climate columns after many
+    // unrelated Y sections and chunk tasks. 32768 primitive-key entries
+    // keep four times the recent samples; each worker remains bounded at
+    // roughly 0.4 MB, with no map nodes or boxing.
+    static final int SLOTS = 32768;
     private static final int BUCKETS = SLOTS / 2;
     private final long[] keys = new long[SLOTS];
     private final Object[] values = new Object[SLOTS];

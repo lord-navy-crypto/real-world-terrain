@@ -158,14 +158,6 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_worldgen_profile_compare.py' -v
       - name: Prove sky ocean classification bypass preserves all ecotone water predicates
         run: python3 -m unittest discover -s qa -p 'test_sky_ocean_classification_bypass.py' -v
-      - name: Verify radial biome boundary search parity across 180000 seeded worlds
-        run: |
-          mkdir -p build/ecotone-radial-smoke
-          javac -d build/ecotone-radial-smoke \
-            neoforge/src/main/java/org/realscale/neoforge/EcotoneMath.java \
-            neoforge/src/main/java/org/realscale/neoforge/EcotoneRaySchedule.java \
-            neoforge/src/test/java/org/realscale/neoforge/EcotoneRayScheduleParitySmoke.java
-          java -cp build/ecotone-radial-smoke org.realscale.neoforge.EcotoneRayScheduleParitySmoke
       - name: Guard climate sampler reuse within complete ecotone ray searches
         run: python3 -m unittest discover -s qa -p 'test_ecotone_sampler_context_reuse.py' -v
       - name: Verify bounded ecotone resolution cache and parallel sampler isolation

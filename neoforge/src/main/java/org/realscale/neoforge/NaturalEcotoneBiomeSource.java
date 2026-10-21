@@ -169,12 +169,6 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
             {1,0},{-1,0},{0,1},{0,-1},
             {1,1},{1,-1},{-1,1},{-1,-1}
     };
-    // Process the same original ray samples in increasing physical distance.
-    // An actual nearest compatible border then prevents all more distant
-    // climate samples. Stable ties retain the original cardinal/diagonal
-    // heading order; no rule or generated biome is changed.
-    private static final int[][] RADIAL_RAYS =
-            EcotoneRaySchedule.build(DIRECTIONS,MAX_SEARCH_QUARTS);
 
     /** Bounded per-thread climate cache, invalidated when the climate sampler changes. */
     private static final class SamplingCache {
@@ -310,30 +304,27 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         Rule nearest = null;
         int closestDistanceSquared = Integer.MAX_VALUE;
         int maxLocalQuarts = (MAX_WIDTH_BY_BIOME.getOrDefault(current, 0) + 7) / 8;
-        int blockedHeadings=0;
-        final int maxDistanceSquared=16*maxLocalQuarts*maxLocalQuarts;
-        for(int[] ray : RADIAL_RAYS) {
-            int distanceSquared=ray[2];
-            // Globally ordered by exact squared Euclidean distance. Once
-            // the closest compatible border is known, no later sample can
-            // improve it, even in a different direction.
-            if(distanceSquared>maxDistanceSquared
-                    || distanceSquared>=closestDistanceSquared)break;
-            int heading=ray[0];
-            // The first differing biome terminates its direction, exactly
-            // as in the old direction-major walk. No array per query.
-            if((blockedHeadings&(1<<heading))!=0)continue;
-            int[] direction=DIRECTIONS[heading];
-            int step=ray[1];
-            String next=vanillaId(sampleBase(quartX+direction[0]*step,
-                    quartY,quartZ+direction[1]*step,sampler,cache));
-            if(current.equals(next))continue;
-            blockedHeadings|=1<<heading;
-            Rule rule=findPair(current,next);
-            if(rule!=null&&EcotoneMath.withinRadialBand(
-                    direction[0],direction[1],step,rule.widthBlocks())) {
-                nearest=rule;
-                closestDistanceSquared=distanceSquared;
+        for (int[] direction : DIRECTIONS) {
+            for (int step = 1; step <= maxLocalQuarts; step++) {
+                int distanceSquared = EcotoneMath.quartDistanceSquared(
+                        direction[0], direction[1], step);
+                // No rule can be wider than the configured global search span.
+                if (distanceSquared > 16 * maxLocalQuarts * maxLocalQuarts) break;
+                // Rays are visited from closest to farthest. We can safely
+                // stop once a heading cannot beat the best existing border.
+                if (distanceSquared >= closestDistanceSquared) break;
+                String next = vanillaId(sampleBase(quartX + direction[0] * step,
+                        quartY, quartZ + direction[1] * step, sampler, cache));
+                if (current.equals(next)) continue;
+                Rule rule = findPair(current, next);
+                if (rule != null && EcotoneMath.withinRadialBand(
+                        direction[0], direction[1], step, rule.widthBlocks())) {
+                    nearest = rule;
+                    closestDistanceSquared = distanceSquared;
+                }
+                // The very first adjacent nonmatching biome is the physical
+                // interface; never search through an unrelated third biome.
+                break;
             }
         }
         return nearest == null ? original : transitionBiomes.get(nearest.target());

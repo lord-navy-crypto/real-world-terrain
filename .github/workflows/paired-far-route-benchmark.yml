@@ -10,6 +10,7 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/SkyOceanBiomeSource.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/QuartBiomeBaseCache.java'
   workflow_dispatch:
 permissions:
   contents: read
@@ -75,8 +76,9 @@ jobs:
           PROPERTIES
             done
           done
-      # Baseline keeps the original direction-major ray search, same memo and codec.
-      # Candidate changes ONLY the ray visitation order while preserving rule ties.
+      # Baseline keeps the 8192-entry climate-sample memo.
+      # Candidate preserves its exact lookup/eviction semantics but raises
+      # capacity to 32768 entries; no biome or density formula changes.
       - name: Run original real server first (fresh saved world)
         env:
           BASEDIR: ${{ runner.temp }}
