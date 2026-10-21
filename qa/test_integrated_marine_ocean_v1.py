@@ -85,7 +85,7 @@ class IntegratedMarineRenewal(unittest.TestCase):
         values=read(ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")["values"]
         self.assertEqual(len(values),4,"Only four playable world modes")
         self.assertEqual(len(set(values)),4)
-        self.assertIn("realscale:tva_measured_usgs_fitted_v1_three_realms",values)
+        self.assertIn("realscale:tva_measured_usgs_fitted_v2_three_realms",values)
 
     def test_existing_ocean_features_do_not_receive_global_biome_modifiers(self):
         b=ROOT/"neoforge/src/main/resources/data/realscale/neoforge/biome_modifier"
