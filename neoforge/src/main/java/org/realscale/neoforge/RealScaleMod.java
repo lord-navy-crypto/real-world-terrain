@@ -56,6 +56,7 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_density"), RealDemDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_density_seamless"), RealDemSeamlessDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_fitted_continuation_v1"), RealDemFittedDensityV1.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "dem_fitted_continuation_v2"), RealDemFittedFullDensityV2.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "measured_horizontal_memo"), MeasuredHorizontalMemoDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "grand_end_density"), GrandEndDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "grand_nether_caverns"), GrandNetherCaverns.MAP_CODEC);
