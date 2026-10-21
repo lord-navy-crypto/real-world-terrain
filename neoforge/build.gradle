@@ -73,7 +73,7 @@ repositories {
 }
 dependencies {
     implementation 'dev.isxander:yet-another-config-lib:3.8.1+1.21.1-neoforge' // YACL 3.8.1, official upstream Maven
-    implementation 'maven.modrinth:XaDC71GB:sPmtDq1X' // Lithostitched 1.8.0 NeoForge 21.1: upstream density cache optimization; EXPERIMENTAL A/B, not release-approved
+    compileOnly 'maven.modrinth:XaDC71GB:sPmtDq1X' // OPTIONAL Terrain Lab-only codec: do not load global jigsaw redirect in baseline RealScale
     testImplementation(platform('org.junit:junit-bom:5.14.1'))
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

@@ -1,5 +1,13 @@
 name: Measured distant chunk 180s regression (seed 2 and 42)
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'neoforge/build.gradle'
+      - 'neoforge/src/main/java/org/realscale/neoforge/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/**'
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - '.github/workflows/measured-distant-180s-regression.yml'
   pull_request:
     paths:
       - 'neoforge/src/main/java/org/realscale/neoforge/MeasuredHorizontalMemoDensity.java'
