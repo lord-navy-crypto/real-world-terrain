@@ -58,5 +58,6 @@
   "generator.realscale.tva_measured_global_landforms_three_realms": "RealScale 地球实测 · USGS 与全球特色地貌",
   "generator.realscale.tva_alpine_three_realms": "RealScale 高山世界 · 山脉与雪线",
   "generator.realscale.tva_canyon_three_realms": "RealScale 峡谷世界 · 岩层与深切河谷",
-  "generator.realscale.tva_natural_hypsometry_v1_three_realms": "自然探索 · 全球海拔比例优化"
+  "generator.realscale.tva_natural_hypsometry_v1_three_realms": "自然探索 · 全球海拔比例优化",
+  "generator.realscale.tva_measured_usgs_fitted_v1_three_realms": "USGS 实测探索 · 连续地貌拟合（试验版）"
 }
