@@ -1,0 +1,82 @@
+name: RealScale sequential far-route 180s generation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/far-distance-route.yml'
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefSiteCache.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/MeasuredHorizontalMemoDensity.java'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: far-distance-route-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  sequential-virgin-chunks:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - preset: tva_measured_three_realms
+            seed: 2
+          - preset: tva_sacred_timeline_three_realms
+            seed: 42
+    name: Far route / ${{ matrix.preset }} / seed ${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Prepare original 2096-high world with normal structure generation
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=world
+          level-type=realscale:${{ matrix.preset }}
+          level-seed=${{ matrix.seed }}
+          generate-structures=true
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Generate, fully load and save three virgin far regions sequentially
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . 'realscale:${{ matrix.preset }}' distant_route
+      - name: Validate saved ground and cave continuity
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/check_realism_continuity.py . '${{ matrix.preset }}'
+      - name: Preserve real route timings, saved chunks and JVM stall evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-FarRoute-${{ matrix.preset }}-seed-${{ matrix.seed }}
+          path: |
+            neoforge/build/rcon_distant_route_timing.json
+            neoforge/build/rcon_distant_route_server.log
+            neoforge/build/rcon_distant_route_thread_dump_*.txt
+            neoforge/build/rcon_distant_route_stall_fingerprint.json
+            neoforge/realism_continuity_qa.json
+            neoforge/run/**/level.dat
+            neoforge/run/**/region/*.mca
+          if-no-files-found: warn

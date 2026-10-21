@@ -22,6 +22,10 @@ PORT=25575
 PASSWORD="realscale_ci_probe_only"
 HEADER=struct.Struct("<iii")
 
+# Three virgin far regions with separate chunk neighborhoods, including
+# negative coordinates. No preloading/ticket batching between waypoints.
+FAR_ROUTE_SITES=((1024,1024),(-2048,1536),(4096,-2048))
+
 class Rcon:
     def __init__(self, host="127.0.0.1", port=PORT, password=PASSWORD, timeout=25):
         self.sock=socket.create_connection((host,port),timeout=12)
@@ -153,7 +157,7 @@ def main(root,expected_preset,profile):
         rcon=None
         for attempt in range(12):
             try:
-                rcon=Rcon(timeout=180 if profile in ("usgs","distant","structures") else 75)
+                rcon=Rcon(timeout=180 if profile in ("usgs","distant","distant_route","structures") else 75)
                 break
             except (ConnectionError,OSError,TimeoutError):
                 time.sleep(1)
@@ -184,6 +188,8 @@ def main(root,expected_preset,profile):
                 # Spawn already loads many chunks. Avoid starting two
                 # expensive remote regions concurrently in high-relief maps.
                 commands=["execute in minecraft:overworld run forceload add 1024 1024"]
+            elif profile=="distant_route":
+                commands=[]  # verified sequentially below, never enqueued as a batch
             elif profile=="packs":
                 # A real NeoForge server must load ALL THREE optional datapacks.
                 # Static JSON/ZIP tests alone cannot establish registry or
@@ -272,6 +278,40 @@ def main(root,expected_preset,profile):
                                      timeout_seconds=remaining)
                 print("QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS: PASS",
                       flush=True)
+            elif profile=="distant_route":
+                results=[]
+                result_file=root/"build"/"rcon_distant_route_timing.json"
+                for x,z in FAR_ROUTE_SITES:
+                    started=time.monotonic()
+                    command=f"execute in minecraft:overworld run forceload add {x} {z}"
+                    rcon.send(command)
+                    remaining=180.0-(time.monotonic()-started)
+                    if remaining<=0:
+                        raise TimeoutError(
+                            f"Far route {x},{z}: ticket ACK exhausted strict 180s budget")
+                    await_full_chunk(rcon,x,z,timeout_seconds=remaining)
+                    full_seconds=time.monotonic()-started
+                    if full_seconds>180.0:
+                        raise TimeoutError(
+                            f"Far route {x},{z}: fully loaded after strict 180s limit")
+                    # Save the real Anvil blocks and release the completed
+                    # ticket BEFORE visiting the next distant region.
+                    rcon.send("save-all flush")
+                    rcon.send(
+                        f"execute in minecraft:overworld run forceload remove {x} {z}")
+                    results.append({
+                        "x":x, "z":z, "loaded_seconds":round(full_seconds,3),
+                        "saved":True, "unloaded_ticket":True})
+                    result_file.write_text(json.dumps({
+                        "preset":expected_preset,"waypoints":results,
+                        "strict_seconds_per_waypoint":180
+                    },indent=2)+"\n",encoding="utf-8")
+                    print("QA_DISTANT_ROUTE_FULL_CHUNK_PASS:",x,z,
+                          f"seconds={full_seconds:.3f}",flush=True)
+                if len(results)!=len(FAR_ROUTE_SITES):
+                    raise AssertionError("Far route did not complete every waypoint")
+                print("QA_DISTANT_ROUTE_ALL_SAVED_PASS:",len(results),
+                      "waypoints",flush=True)
             else:
                 for command in commands:
                     rcon.send(command)
@@ -437,5 +477,5 @@ def main(root,expected_preset,profile):
 
 if __name__=="__main__":
     if len(sys.argv)!=4:
-        raise SystemExit("usage: rcon_worldgen_smoke.py neoForgeRoot preset usgs|distant|fantasy|structures|packs")
+        raise SystemExit("usage: rcon_worldgen_smoke.py neoForgeRoot preset usgs|distant|distant_route|fantasy|structures|packs")
     main(pathlib.Path(sys.argv[1]).resolve(),sys.argv[2],sys.argv[3])
