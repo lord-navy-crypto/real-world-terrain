@@ -46,7 +46,7 @@ class GlobalRareGeomorphologyV3(unittest.TestCase):
         self.assertIn("base.mapAll(visitor)",source)
         self.assertIn("selector.mapAll(visitor)",source)
         self.assertIn("Math.floorDiv(x, RegionalLandformMath.CELL_V3)",source)
-        self.assertIn("RegionalLandformMath.gate(continental, current)",source)
+        self.assertIn("RegionalLandformMath.gate(continental,current)",source)
         self.assertIn("ThreadLocal<RegionalGlobalLandformCellMemo>",source)
         self.assertIn("site.at(cellX,cellZ)",source)
         self.assertIn("selector.compute(anchor)",source)
