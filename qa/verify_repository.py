@@ -16,7 +16,7 @@ for name,want in checks.items():
   tag=json.loads((ROOT/name).read_text())
   assert tag.get('values',[]) == [
    'realscale:tva_natural_hypsometry_v1_three_realms',
-   'realscale:tva_measured_usgs_fitted_v1_three_realms',
+   'realscale:tva_measured_usgs_fitted_v2_three_realms',
    'realscale:tva_alpine_three_realms',
    'realscale:tva_canyon_three_realms']
   print('INTENTIONAL MODIFICATION: exactly four player-facing world presets')
