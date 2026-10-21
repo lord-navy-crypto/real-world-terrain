@@ -152,7 +152,14 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
     }
     private boolean paint(WorldGenLevel w,GeoWonderGeometry.Site site,int minX,int minZ) {
         boolean placed=false;
-        for(int x=minX;x<minX+16;x++)for(int z=minZ;z<minZ+16;z++) {
+        // Safe bounding rectangle of the EXACT original circular footprint.
+        // This eliminates empty 16x16 columns on small edge intersections,
+        // without changing predicate order or touching neighboring chunks.
+        final int firstX=Math.max(minX,site.x-site.r);
+        final int lastX=Math.min(minX+15,site.x+site.r);
+        final int firstZ=Math.max(minZ,site.z-site.r);
+        final int lastZ=Math.min(minZ+15,site.z+site.r);
+        for(int x=firstX;x<=lastX;x++)for(int z=firstZ;z<=lastZ;z++) {
             long dx=(long)x-site.x,dz=(long)z-site.z;
             if(!GeoWonderGeometry.contains(site,x,z))continue;
             // Climate-restricted polygon rims are in world coordinates, so
