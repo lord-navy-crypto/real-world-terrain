@@ -1,0 +1,110 @@
+name: EXPERIMENT Vanilla Beardifier height cull A-B
+on:
+  push:
+    branches:
+      - experiment/vanilla-beardifier-height-cull
+    paths:
+      - '.github/workflows/experimental-beardifier-ab.yml'
+      - 'neoforge/src/main/java/org/realscale/neoforge/mixin/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/BeardifierYExtent.java'
+      - 'neoforge/src/main/resources/realscale.experimental.mixins.json'
+      - 'neoforge/src/main/resources/META-INF/neoforge.mods.toml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  same-runner-ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - preset: tva_sacred_timeline_three_realms
+            seed: 42
+          - preset: tva_measured_three_realms
+            seed: 2
+    name: Vanilla beardifier disabled/enabled ${{ matrix.preset }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Verify conservative vertical support mathematics
+        run: |
+          mkdir -p build/experimental-vanilla
+          javac -d build/experimental-vanilla neoforge/src/main/java/org/realscale/neoforge/BeardifierYExtent.java neoforge/src/test/java/org/realscale/neoforge/BeardifierYExtentSmoke.java
+          java -cp build/experimental-vanilla org.realscale.neoforge.BeardifierYExtentSmoke
+      - name: Prepare identical fresh servers from this one experiment commit
+        env:
+          PRESET: ${{ matrix.preset }}
+          SEED: ${{ matrix.seed }}
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/realscale-before" "$GITHUB_SHA"
+          git worktree add --detach "$RUNNER_TEMP/realscale-after" "$GITHUB_SHA"
+          for variant in before after; do
+            root="$RUNNER_TEMP/realscale-$variant/neoforge"
+            for dir in run run/server run/gametestserver; do
+              mkdir -p "$root/$dir"
+              printf 'eula=true\n' > "$root/$dir/eula.txt"
+              cat > "$root/$dir/server.properties" <<PROPERTIES
+          level-name=world
+          level-type=realscale:$PRESET
+          level-seed=$SEED
+          generate-structures=true
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+            done
+          done
+      - name: Real dedicated-server baseline (mixin not applied)
+        env:
+          PRESET: ${{ matrix.preset }}
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=false
+        run: |
+          cd "$RUNNER_TEMP/realscale-before/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Real dedicated-server variant (conservative Beardifier Mixin)
+        env:
+          PRESET: ${{ matrix.preset }}
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=true
+        run: |
+          cd "$RUNNER_TEMP/realscale-after/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Compare three complete-load waypoints, never ticket ACKs
+        run: |
+          python3 qa/neoforge/compare_paired_far_route.py \
+            "$RUNNER_TEMP/realscale-before/neoforge/build/rcon_distant_route_timing.json" \
+            "$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_timing.json" \
+            "$RUNNER_TEMP/realscale-beardifier-ab.json"
+      - name: Compare actual saved NBT palettes and heightmaps (no structure loss)
+        run: |
+          python3 qa/neoforge/compare_beardifier_saved_regions.py \
+            "$RUNNER_TEMP/realscale-before/neoforge" \
+            "$RUNNER_TEMP/realscale-after/neoforge"
+      - name: Preserve logs, NBT parity, and same-runner complete-load timings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Experimental-Beardifier-${{ matrix.preset }}
+          path: |
+            ${{ runner.temp }}/realscale-beardifier-ab.json
+            ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_timing.json
+            ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_timing.json
+          if-no-files-found: warn

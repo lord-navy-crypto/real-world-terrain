@@ -28,3 +28,8 @@ type="required"
 versionRange="[3.8.1,)"
 ordering="NONE"
 side="CLIENT"
+
+# EXPERIMENT BRANCH ONLY. The plugin DISABLES this mixin unless the JVM
+# explicitly launches with -Drealscale.experimental.beardifier.ycull=true.
+[[mixins]]
+config="realscale.experimental.mixins.json"
