@@ -13,7 +13,11 @@ import sys
 TARGET_PREFIX=("net.minecraft.","net.neoforged.","org.realscale.")
 def method_name(frame):
     method=frame.get("method") or {}
-    owner=(method.get("type") or {}).get("name","")
+    # HotSpot's jfr print --json emits JVM *internal* class names with
+    # slashes, even though synthetic fixture methods may use dot notation.
+    # Normalize BEFORE prefix filters; otherwise 84% of real worldgen
+    # ExecutionSample stacks are incorrectly classified as non-worldgen.
+    owner=(method.get("type") or {}).get("name","").replace("/",".")
     return owner+"."+method.get("name","") if owner else ""
 
 def summarize_events(events):
