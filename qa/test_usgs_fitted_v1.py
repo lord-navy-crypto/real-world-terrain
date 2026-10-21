@@ -26,7 +26,9 @@ class FittedUSGSQA(unittest.TestCase):
         for tag in ("normal","extended"):
             modes=read(RES/"data/minecraft/tags/worldgen/world_preset"/(tag+".json"))["values"]
             self.assertEqual(len(modes),4)
-            self.assertEqual(modes[1],"realscale:tva_measured_usgs_fitted_v1_three_realms")
+            self.assertEqual(modes[1],"realscale:tva_measured_usgs_fitted_v2_three_realms")
+            # V1 remains loadable for existing generated worlds but is hidden from new-world selection.
+            self.assertNotIn("realscale:tva_measured_usgs_fitted_v1_three_realms",modes)
             self.assertNotIn("realscale:tva_measured_global_landforms_three_realms",modes)
     def test_same_marine_ocean_caves_climate_resources(self):
         old=read(WG/"noise_settings/usgs_global_hybrid_marine.json")
