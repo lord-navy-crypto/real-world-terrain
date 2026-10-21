@@ -9,7 +9,7 @@ TAGS=BASE/"data/minecraft/tags/worldgen/world_preset"
 PRESETS=BASE/"data/realscale/worldgen/world_preset"
 
 PLAYER_PRESETS=(
- "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
+ "realscale:tva_natural_hypsometry_v1_three_realms",
  "realscale:tva_measured_global_landforms_three_realms",
  "realscale:tva_alpine_three_realms",
  "realscale:tva_canyon_three_realms",
@@ -41,7 +41,7 @@ class PlayerWorldPresets(unittest.TestCase):
 
     def test_geological_wonders_remain_playable(self):
         # Former wonders-only mode is now incorporated in Natural Exploration.
-        data=read(PRESETS/"tva_sacred_biodiversity_end3_spawn3_v3.json")
+        data=read(PRESETS/"tva_natural_hypsometry_v1_three_realms.json")
         source=data["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
         self.assertEqual(source["type"],"realscale:sky_ocean")
         self.assertEqual(source["source"]["type"],"realscale:rare_earth_biomes_v1")
@@ -51,7 +51,7 @@ class PlayerWorldPresets(unittest.TestCase):
 
     def test_four_modes_restore_all_old_worldgen_layers(self):
         expected_noise={
-            "tva_sacred_biodiversity_end3_spawn3_v3":"realscale:tva_cinematic_integrated_v1",
+            "tva_natural_hypsometry_v1_three_realms":"realscale:tva_natural_hypsometry_v1",
             "tva_measured_global_landforms_three_realms":"realscale:usgs_global_hybrid_marine",
             "tva_alpine_three_realms":"realscale:tva_alpine_smoothed",
             "tva_canyon_three_realms":"realscale:tva_canyon_smoothed",
