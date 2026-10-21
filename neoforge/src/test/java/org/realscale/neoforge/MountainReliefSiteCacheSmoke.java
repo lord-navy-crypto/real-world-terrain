@@ -70,6 +70,46 @@ public final class MountainReliefSiteCacheSmoke {
                                 &&site.anchorHeight==100+i,
                         "Alternating structure probes lost seeded classification");
             }
+        // Exercise two keys that deliberately share the same two-way bucket.
+        // They must retain their classified noise result and object identity
+        // across thousands of alternating 2096-high structure queries.
+        int[][] colliding=new int[3][2];
+        int found=0;
+        int target=(-71*0x9e3779b9 ^ 29*0x85ebca6b)&31;
+        outer:for(int gx=-256;gx<256;gx++)
+            for(int gz=-256;gz<256;gz++)
+                if(((gx*0x9e3779b9 ^ gz*0x85ebca6b)&31)==target) {
+                    colliding[found++]=new int[]{gx,gz};
+                    if(found==3)break outer;
+                }
+        check(found==3,"cannot find three colliding relief sites");
+        MountainReliefSiteCache collisionCache=new MountainReliefSiteCache();
+        var alpha=collisionCache.get(colliding[0][0],colliding[0][1]);
+        alpha.classified=true;
+        alpha.type=MountainReliefMath.BASIN;
+        alpha.anchorHeight=12.5;
+        var beta=collisionCache.get(colliding[1][0],colliding[1][1]);
+        beta.classified=true;
+        beta.type=MountainReliefMath.MESA;
+        beta.anchorHeight=95.25;
+        for(int i=0;i<4000;i++) {
+            check(collisionCache.get(colliding[0][0],colliding[0][1])==alpha
+                    && alpha.classified && alpha.type==MountainReliefMath.BASIN
+                    && alpha.anchorHeight==12.5,
+                    "A/B alternation lost first seeded relief classification");
+            check(collisionCache.get(colliding[1][0],colliding[1][1])==beta
+                    && beta.classified && beta.type==MountainReliefMath.MESA
+                    && beta.anchorHeight==95.25,
+                    "A/B alternation lost second seeded relief classification");
+        }
+        checkEquivalent(collisionCache.get(colliding[2][0],colliding[2][1]));
+        // Eviction must never return the other site's geometry or classification.
+        for(int i=0;i<90;i++)for(int[] pair:colliding) {
+            var v=collisionCache.get(pair[0],pair[1]);
+            check(v.gx==pair[0] && v.gz==pair[1],
+                    "Hash collision incorrectly reused another mountain site");
+            checkEquivalent(v);
+        }
         // Forced collision and eviction affect only cost, never results.
         for(int gx=-300;gx<=300;gx++)
             for(int gz=-20;gz<=20;gz++)checkEquivalent(cache.get(gx,gz));

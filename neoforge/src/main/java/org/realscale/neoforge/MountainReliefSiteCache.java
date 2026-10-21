@@ -46,18 +46,42 @@ final class MountainReliefSiteCache {
         }
     }
 
+    // Two-way set association preserves both hot mountain cells when their
+    // old direct-mapped hash collides during multi-column structure probes.
+    // Total capacity remains exactly 64 sites per mapped density and worker.
+    // Eviction changes only reuse; the original site geometry is untouched.
+    private static final int BUCKETS=SLOTS/2;
     private final Site[] sites=new Site[SLOTS];
+    private final byte[] victim=new byte[BUCKETS];
     private Site last;
+
+    private static int bucket(int gx,int gz) {
+        int hash=gx*0x9e3779b9 ^ gz*0x85ebca6b;
+        return hash & (BUCKETS-1);
+    }
 
     Site get(int gx,int gz) {
         Site prev=last;
         if(prev!=null && prev.gx==gx && prev.gz==gz)return prev;
-        int slot=(gx*0x9e3779b9 ^ gz*0x85ebca6b)&(SLOTS-1);
-        Site site=sites[slot];
-        if(site==null || site.gx!=gx || site.gz!=gz) {
-            site=new Site(gx,gz);
-            sites[slot]=site;
+        int bucket=bucket(gx,gz),first=bucket<<1;
+        Site a=sites[first],b=sites[first+1];
+        if(a!=null && a.gx==gx && a.gz==gz) {
+            last=a;
+            return a;
         }
+        if(b!=null && b.gx==gx && b.gz==gz) {
+            last=b;
+            return b;
+        }
+        int slot;
+        if(a==null)slot=first;
+        else if(b==null)slot=first+1;
+        else {
+            slot=first+(victim[bucket]&1);
+            victim[bucket]^=1;
+        }
+        Site site=new Site(gx,gz);
+        sites[slot]=site;
         last=site;
         return site;
     }
