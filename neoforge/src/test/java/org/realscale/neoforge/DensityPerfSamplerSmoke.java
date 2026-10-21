@@ -30,6 +30,7 @@ public final class DensityPerfSamplerSmoke {
         String snap=DensityPerfSampler.snapshot(cave);
         check(snap.contains("samples=9"),"Missing sample count: "+snap);
         check(snap.contains("stride=1024"),"Missing sampling rate: "+snap);
+        check(snap.contains("mean_ns="),"Lost nanosecond precision: "+snap);
         check(snap.contains("p95_bucket_upper_us="),"Missing bounded histogram");
         check(DensityPerfSampler.snapshot(sky).contains("samples=0"),
                 "Stages must have independent counters");

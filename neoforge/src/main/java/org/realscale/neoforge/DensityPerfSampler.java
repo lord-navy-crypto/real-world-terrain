@@ -60,6 +60,7 @@ final class DensityPerfSampler {
     static String snapshot(Stage stage) {
         Measurement m=METRICS[stage.ordinal()];
         long n=m.samples.get();
+        long meanNanos=n==0?0:Math.round(m.nanos.sum()/(double)n);
         long meanMicros=n==0?0:Math.round(m.nanos.sum()/(double)n/1000.0);
         long target=(long)Math.ceil(n*.95),observed=0,upper=0;
         for(int i=0;i<m.histogram.length();i++) {
@@ -70,7 +71,8 @@ final class DensityPerfSampler {
             }
         }
         return stage.name()+" samples="+n+" stride="+STRIDE+
-                " mean_us="+meanMicros+" p95_bucket_upper_us="+upper+
+                " mean_ns="+meanNanos+" mean_us="+meanMicros+
+                " p95_bucket_upper_us="+upper+
                 " max_us="+(m.max.get()/1000);
     }
 
