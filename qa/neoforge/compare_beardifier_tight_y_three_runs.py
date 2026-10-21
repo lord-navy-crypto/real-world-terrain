@@ -20,7 +20,7 @@ if __name__=="__main__":
         "gain_vs_faster_y256_pct":a["conservative_speedup_vs_faster_vanilla_pct"],
         "y256_drift_pct":a["vanilla_run_to_run_spread_pct"],
         "candidate_faster_than_both_y256_controls":a["candidate_faster_than_both_controls"],
-        "caveat":"One same-runner real NeoForge A-B-A test; cannot claim robust improvement until repeats and Anvil parity."
+        "caveat":"Uninstrumented Y256/Y64/Y256 A-B-A; separate Y64 verifier runs same context with sampled replay. Repeat shuffled orders and review Anvil parity before promotion."
     }
     dest=pathlib.Path(sys.argv[4])
     dest.parent.mkdir(parents=True,exist_ok=True)

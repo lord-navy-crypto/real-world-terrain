@@ -1,4 +1,4 @@
-name: EXPERIMENT Beardifier tighter Y envelope A-B-A
+name: EXPERIMENT Beardifier Y64 unbiased A-B-A plus separate parity
 on:
   push:
     branches:
@@ -64,7 +64,8 @@ jobs:
           git worktree add --detach "$RUNNER_TEMP/realscale-before" "$GITHUB_SHA"
           git worktree add --detach "$RUNNER_TEMP/realscale-after" "$GITHUB_SHA"
           git worktree add --detach "$RUNNER_TEMP/realscale-control" "$GITHUB_SHA"
-          for variant in before after control; do
+          git worktree add --detach "$RUNNER_TEMP/realscale-verify" "$GITHUB_SHA"
+          for variant in before after control verify; do
             root="$RUNNER_TEMP/realscale-$variant/neoforge"
             for dir in run run/server run/gametestserver; do
               mkdir -p "$root/$dir"
@@ -94,10 +95,10 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/realscale-before/neoforge"
           python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
-      - name: Real dedicated-server variant (Y64, direct vanilla parity)
+      - name: Real dedicated-server candidate (Y64, parity replay OFF for fair timing)
         env:
           PRESET: ${{ matrix.preset }}
-          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=true -Drealscale.experimental.beardifier.tight_y=true -Drealscale.experimental.beardifier.verify=true
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=true -Drealscale.experimental.beardifier.tight_y=true -Drealscale.experimental.beardifier.verify=false
         run: |
           cd "$RUNNER_TEMP/realscale-after/neoforge"
           python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
@@ -107,21 +108,6 @@ jobs:
             "$RUNNER_TEMP/realscale-before/neoforge/build/rcon_distant_route_timing.json" \
             "$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_timing.json" \
             "$RUNNER_TEMP/realscale-beardifier-y64-ab.json"
-      - name: Require sampled same-context vanilla Beardifier zero-contribution parity
-        run: |
-          logfile="$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_server.log"
-          grep -E 'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS samples=[1-9][0-9]*' "$logfile"
-          grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=true' "$logfile"
-          grep -q 'realscale.experimental.beardifier.tight_y=true' "$logfile"
-          python3 - "$logfile" <<'PY'
-          import re,sys
-          data=open(sys.argv[1],encoding='utf-8',errors='replace').read()
-          evidence=re.search(r'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS samples=(\d+) skipped=(\d+) tight_only=(\d+) tight_samples=(\d+)',data)
-          assert evidence is not None, "Missing direct vanilla parity report"
-          verified,skipped,new_skips,new_samples=map(int,evidence.groups())
-          assert verified>0 and skipped>0 and new_skips>0 and new_samples>0, evidence.groups()
-          print("REALSCALE_BEARDIFIER_TIGHT_Y_DIRECT_PARITY_VERIFIED",evidence.groups())
-          PY
       - name: Repeat Y256 server with exact same startup flags (control)
         env:
           PRESET: ${{ matrix.preset }}
@@ -136,18 +122,54 @@ jobs:
             "$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_timing.json" \
             "$RUNNER_TEMP/realscale-control/neoforge/build/rcon_distant_route_timing.json" \
             "$RUNNER_TEMP/realscale-beardifier-y64-three-runs.json"
+      - name: Dedicated Y64 parity verifier (excluded from A-B-A timings)
+        env:
+          PRESET: ${{ matrix.preset }}
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=true -Drealscale.experimental.beardifier.tight_y=true -Drealscale.experimental.beardifier.verify=true
+        run: |
+          cd "$RUNNER_TEMP/realscale-verify/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Require separate same-context vanilla Beardifier zero-contribution parity
+        run: |
+          logfile="$RUNNER_TEMP/realscale-verify/neoforge/build/rcon_distant_route_server.log"
+          grep -E 'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS samples=[1-9][0-9]*' "$logfile"
+          grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=true' "$logfile"
+          grep -q 'realscale.experimental.beardifier.tight_y=true' "$logfile"
+          python3 - "$logfile" <<'PY'
+          import re,sys
+          data=open(sys.argv[1],encoding='utf-8',errors='replace').read()
+          evidence=re.search(r'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS samples=(\d+) skipped=(\d+) tight_only=(\d+) tight_samples=(\d+)',data)
+          assert evidence is not None, "Missing direct vanilla parity report"
+          verified,skipped,new_skips,new_samples=map(int,evidence.groups())
+          assert verified>0 and skipped>0 and new_skips>0 and new_samples>0, evidence.groups()
+          print("REALSCALE_BEARDIFIER_TIGHT_Y_DIRECT_PARITY_VERIFIED",evidence.groups())
+          PY
       - name: Require enabled Mixin in both Y256 control worlds
         run: |
           grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=true' \
             "$RUNNER_TEMP/realscale-before/neoforge/build/rcon_distant_route_server.log"
           grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=true' \
             "$RUNNER_TEMP/realscale-control/neoforge/build/rcon_distant_route_server.log"
+      - name: Verify performance candidate has NO replay overhead
+        run: |
+          logfile="$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_server.log"
+          grep -q 'realscale.experimental.beardifier.ycull=true' "$logfile"
+          grep -q 'realscale.experimental.beardifier.tight_y=true' "$logfile"
+          grep -q 'realscale.experimental.beardifier.verify=false' "$logfile"
+          if grep -q 'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS' "$logfile"; then
+            echo "Performance candidate improperly enabled vanilla replay" >&2
+            exit 1
+          fi
       - name: Assert reference/control Y256 startup flags
         run: |
           for variant in before control; do
             logfile="$RUNNER_TEMP/realscale-$variant/neoforge/build/rcon_distant_route_server.log"
             grep -q 'realscale.experimental.beardifier.ycull=true' "$logfile"
             grep -q 'realscale.experimental.beardifier.tight_y=false' "$logfile"
+            if grep -q 'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS' "$logfile"; then
+              echo "Reference/control incorrectly enabled parity replay" >&2
+              exit 1
+            fi
           done
       - name: Investigate Y256 vs Y256 saved-block variation
         continue-on-error: true
@@ -175,4 +197,6 @@ jobs:
             ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_timing.json
             ${{ runner.temp }}/realscale-control/neoforge/build/rcon_distant_route_timing.json
             ${{ runner.temp }}/realscale-control/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-verify/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-verify/neoforge/build/rcon_distant_route_timing.json
           if-no-files-found: warn
