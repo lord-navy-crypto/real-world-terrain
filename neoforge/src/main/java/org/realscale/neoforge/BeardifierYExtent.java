@@ -13,7 +13,9 @@ package org.realscale.neoforge;
  * rather than estimating structure geometry.
  */
 public final class BeardifierYExtent {
-    private static final int GUARD=256;
+    private static final int ORIGINAL_GUARD=256;
+    private static final int GUARD=Boolean.getBoolean(
+            "realscale.experimental.beardifier.tight_y") ? 64 : ORIGINAL_GUARD;
     private long lo=Long.MAX_VALUE,hi=Long.MIN_VALUE;
     private boolean disabled;
 
@@ -30,5 +32,11 @@ public final class BeardifierYExtent {
         if(lo==Long.MAX_VALUE)return true; // Both original iterators empty.
         return (long)y<lo-GUARD||(long)y>hi+GUARD;
     }
+    public boolean canSkipOriginal(int y){
+        if(disabled)return false;
+        if(lo==Long.MAX_VALUE)return true;
+        return (long)y<lo-ORIGINAL_GUARD||(long)y>hi+ORIGINAL_GUARD;
+    }
     public int guard(){return GUARD;}
+    public boolean isTight(){return GUARD<ORIGINAL_GUARD;}
 }

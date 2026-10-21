@@ -86,7 +86,8 @@ public abstract class BeardifierYHeightCullMixin {
             // In verification mode, occasionally re-enter the identical
             // UNMODIFIED vanilla method using a thread-scoped recursion guard.
             // Invalid zero assumptions FAIL the test server immediately.
-            if(BeardifierDirectParity.shouldVerifySkip()) {
+            boolean tightOnly=e.isTight() && !e.canSkipOriginal(ctx.blockY());
+            if(BeardifierDirectParity.shouldVerifySkip(tightOnly)) {
                 BeardifierDirectParity.setReplaying(true);
                 double vanilla;
                 try {
@@ -94,8 +95,12 @@ public abstract class BeardifierYHeightCullMixin {
                 } finally {
                     BeardifierDirectParity.setReplaying(false);
                 }
-                BeardifierDirectParity.assertZero(vanilla,
-                        ctx.blockX(),ctx.blockY(),ctx.blockZ());
+                if(tightOnly)
+                    BeardifierDirectParity.assertTightZero(vanilla,
+                            ctx.blockX(),ctx.blockY(),ctx.blockZ());
+                else
+                    BeardifierDirectParity.assertZero(vanilla,
+                            ctx.blockX(),ctx.blockY(),ctx.blockZ());
             }
             cir.setReturnValue(0.0);
         }
