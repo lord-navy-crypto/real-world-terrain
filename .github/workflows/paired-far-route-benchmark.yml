@@ -76,9 +76,9 @@ jobs:
           PROPERTIES
             done
           done
-      # Baseline keeps the 8192-entry climate-sample memo.
-      # Candidate preserves its exact lookup/eviction semantics but raises
-      # capacity to 32768 entries; no biome or density formula changes.
+      # A/B worktrees share the same CI machine but run in fixed baseline-then-
+      # candidate order. Interpret changes as one noisy sample; preserve
+      # complete-load times, saved world integrity, and repeat before merging.
       - name: Run original real server first (fresh saved world)
         env:
           BASEDIR: ${{ runner.temp }}
