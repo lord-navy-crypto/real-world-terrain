@@ -27,6 +27,10 @@ public final class MeasuredColumnMemoCollisionSmoke {
                 Double.doubleToRawLongBits(sample(x,z,seed)),
                 "Mismatched column ("+x+","+z+") seed="+seed);
     }
+    private static int oldDirectSlot(int x,int z) {
+        int hash=x*0x9e3779b9 ^ Integer.rotateLeft(z*0x85ebca6b,13);
+        return (hash^(hash>>>16)) & (MeasuredColumnMemo.SLOTS-1);
+    }
     public static void main(String[] args) throws Exception {
         int x0=-29_998_997,z0=17;
         int collisionX=0,collisionZ=0;
@@ -34,11 +38,13 @@ public final class MeasuredColumnMemoCollisionSmoke {
         int expectedBucket=MeasuredColumnMemo.bucket(x0,z0);
         outer: for (int x=-350; x<=350; x++) for (int z=-350; z<=350; z++) {
             if(x==x0 && z==z0)continue;
-            if (MeasuredColumnMemo.bucket(x,z)==expectedBucket) {
+            if (oldDirectSlot(x,z)==oldDirectSlot(x0,z0)) {
                 collisionX=x;collisionZ=z;found=true;break outer;
             }
         }
         check(found,"No colliding signed coordinate pair found");
+        check(MeasuredColumnMemo.bucket(collisionX,collisionZ)==expectedBucket,
+                "Old direct-map collision must also collide in two-way bucket");
         var cache=new MeasuredColumnMemo();
         check(!cache.lookup(x0,z0),"Uninitialized slot unexpectedly valid");
         cache.store(-0.0);
@@ -54,7 +60,7 @@ public final class MeasuredColumnMemoCollisionSmoke {
         boolean thirdFound=false;
         outer: for(int x=-350;x<=350;x++) for(int z=-350;z<=350;z++) {
             if(x==collisionX && z==collisionZ)continue;
-            if(MeasuredColumnMemo.bucket(x,z)==expectedBucket) {
+            if(oldDirectSlot(x,z)==oldDirectSlot(x0,z0)) {
                 thirdX=x;thirdZ=z;thirdFound=true;break outer;
             }
         }

@@ -126,15 +126,39 @@ public final class GrandOverworldCaveNetwork {
      * work; they cannot affect world seed, biome, terrain or cave topology.
      */
     private static final class RegionCache {
+        // Eight snapshots per worker, with two candidates per hash bucket.
+        // Alternating nearby jigsaw probes can share a direct-map slot and
+        // otherwise rebuild the entire seeded multi-layer cave graph.
+        // Victim replacement recomputes geometry only; it never changes it.
         private static final int REGION_SLOTS=8;
+        private static final int REGION_BUCKETS=REGION_SLOTS/2;
         private final Cache[] regions=new Cache[REGION_SLOTS];
+        private final byte[] victim=new byte[REGION_BUCKETS];
         private Cache last;
 
         Cache get(int gx,int gz) {
             Cache recent=last;
             if(recent!=null && recent.gx==gx && recent.gz==gz)return recent;
             int hash=gx*0x9e3779b9 ^ Integer.rotateLeft(gz*0x85ebca6b,13);
-            int slot=(hash^(hash>>>16))&(REGION_SLOTS-1);
+            int bucket=(hash^(hash>>>16))&(REGION_BUCKETS-1);
+            int first=bucket<<1;
+            Cache a=regions[first];
+            if(a!=null && a.gx==gx && a.gz==gz) {
+                last=a;
+                return a;
+            }
+            Cache b=regions[first+1];
+            if(b!=null && b.gx==gx && b.gz==gz) {
+                last=b;
+                return b;
+            }
+            int slot;
+            if(a==null)slot=first;
+            else if(b==null)slot=first+1;
+            else {
+                slot=first+(victim[bucket]&1);
+                victim[bucket]^=1;
+            }
             Cache c=regions[slot];
             if(c==null) {
                 c=new Cache();
