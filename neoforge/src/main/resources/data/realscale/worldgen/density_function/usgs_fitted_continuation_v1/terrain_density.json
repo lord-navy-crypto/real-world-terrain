@@ -1,0 +1,6 @@
+{
+  "type": "realscale:dem_fitted_continuation_v1",
+  "base": "realscale:usgs_global_hybrid_marine/terrain_density",
+  "continents": "realscale:realism_max/continental_field",
+  "strength": 0.72
+}
