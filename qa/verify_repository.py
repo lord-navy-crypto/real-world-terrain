@@ -15,7 +15,7 @@ for name,want in checks.items():
  if name==modified_preset_tag:
   tag=json.loads((ROOT/name).read_text())
   assert tag.get('values',[]) == [
-   'realscale:tva_sacred_biodiversity_end3_spawn3_v3',
+   'realscale:tva_natural_hypsometry_v1_three_realms',
    'realscale:tva_measured_global_landforms_three_realms',
    'realscale:tva_alpine_three_realms',
    'realscale:tva_canyon_three_realms']
