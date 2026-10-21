@@ -12,8 +12,11 @@ public final class ExperimentalVanillaMixinPlugin implements IMixinConfigPlugin 
     @Override public void onLoad(String mixinPackage) {}
     @Override public String getRefMapperConfig(){return null;}
     @Override public boolean shouldApplyMixin(String target,String mixin) {
-        return mixin.endsWith(".BeardifierYHeightCullMixin")
+        boolean enabled=mixin.endsWith(".BeardifierYHeightCullMixin")
                 && Boolean.getBoolean(FLAG);
+        System.err.println("REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: "+
+                mixin+" enabled="+enabled);
+        return enabled;
     }
     @Override public void acceptTargets(Set<String> mine,Set<String> other) {}
     @Override public List<String> getMixins(){return null;}
