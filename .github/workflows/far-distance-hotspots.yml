@@ -10,6 +10,7 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefDensity.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/MeasuredHorizontalMemoDensity.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/RangeMinDensity.java'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/tva_natural_smoothing_probe/height_signal.json'
       - 'qa/neoforge/rcon_worldgen_smoke.py'
   workflow_dispatch:
 permissions:
