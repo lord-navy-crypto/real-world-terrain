@@ -16,6 +16,68 @@ class ChunkSpatialCullingV3QA(unittest.TestCase):
         self.assertIn("final int firstZ=Math.max(minZ,site.z-site.r);",wonders)
         self.assertIn("for(int x=firstX;x<=lastX;x++)for(int z=firstZ;z<=lastZ;z++)",wonders)
 
+    def test_actual_wonder_site_cache_preserves_null_and_site_geometry(self):
+        feature=(JAVA/"GeoWonderRegionFeature.java").read_text()
+        self.assertIn("ThreadLocal.withInitial(",feature)
+        self.assertIn("cachedSites.get().get(gx,gz)",feature)
+        if not shutil.which("javac") or not shutil.which("java"):
+            self.skipTest("JDK unavailable")
+        runner="""package org.realscale.neoforge;
+public class GeoSiteMemoSmoke {
+  static void same(GeoWonderGeometry.Site got,GeoWonderGeometry.Site original,
+                   int gx,int gz,int kind){
+    if(original==null) {
+      if(got!=null)throw new AssertionError("Null site changed "+gx+","+gz);
+      return;
+    }
+    if(got==null||got.x!=original.x||got.z!=original.z||
+       got.r!=original.r||got.seed!=original.seed)
+       throw new AssertionError("Site mismatch "+gx+","+gz+" kind="+kind);
+  }
+  public static void main(String[] args) {
+    long hits=0,misses=0;
+    for(int kind=0;kind<11;kind++) {
+      GeoWonderSiteCache cache=new GeoWonderSiteCache(kind);
+      for(int ix=-90;ix<90;ix++)for(int iz=-10;iz<10;iz++){
+        for(int sx=-1;sx<=1;sx++)for(int sz=-1;sz<=1;sz++){
+          int gx=ix+sx,gz=iz+sz;
+          GeoWonderGeometry.Site old=GeoWonderGeometry.surfaceSite(gx,gz,kind);
+          GeoWonderGeometry.Site now=cache.get(gx,gz);
+          same(now,old,gx,gz,kind);
+        }
+      }
+      for(int i=0;i<1000;i++){
+         int gx=(int)(i*14237L%200000)-100000,
+             gz=(int)(i*-17257L%200000);
+         same(cache.get(gx,gz),
+              GeoWonderGeometry.surfaceSite(gx,gz,kind),gx,gz,kind);
+      }
+      hits+=cache.hits();misses+=cache.misses();
+    }
+    if(hits*2<misses)
+      throw new AssertionError("No neighboring site memo reuse "+hits+"/"+misses);
+    GeoWonderSiteCache first=new GeoWonderSiteCache(0);
+    GeoWonderSiteCache other=new GeoWonderSiteCache(10);
+    same(first.get(999999,-999999),
+         GeoWonderGeometry.surfaceSite(999999,-999999,0),999999,-999999,0);
+    same(other.get(999999,-999999),
+         GeoWonderGeometry.surfaceSite(999999,-999999,10),999999,-999999,10);
+    System.out.println("WONDER_SITE_CACHE_PASS hits="+hits+" misses="+misses);
+  }
+}
+"""
+        with tempfile.TemporaryDirectory() as tmp:
+            work=Path(tmp);java=work/"GeoSiteMemoSmoke.java"
+            java.write_text(runner,encoding="utf-8")
+            subprocess.run(["javac","-d",str(work),
+                str(JAVA/"GeoWonderGeometry.java"),str(JAVA/"GeoWonderSiteCache.java"),str(java)],
+                capture_output=True,text=True,check=True,timeout=40)
+            result=subprocess.run(["java","-cp",str(work),
+                "org.realscale.neoforge.GeoSiteMemoSmoke"],
+                capture_output=True,text=True,timeout=60)
+            self.assertEqual(result.returncode,0,result.stdout+"\\n"+result.stderr)
+            self.assertIn("WONDER_SITE_CACHE_PASS",result.stdout)
+
     def test_real_java_old_vs_new_preserves_every_candidate_block(self):
         if not shutil.which("javac") or not shutil.which("java"):
             self.skipTest("JDK unavailable")
