@@ -331,6 +331,8 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java \
             neoforge/src/test/java/org/realscale/neoforge/RealDemColumnCacheSmoke.java
           java -cp build/dem-cache-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemColumnCacheSmoke
+      - name: Prove exact 12km worldwide landform site math via JDK 21
+        run: python3 -m unittest discover -s qa -p 'test_global_landform_cell_memo_v5.py' -v
       - name: Test task-local bounded World Atlas Anvil decoding cache
         run: python3 -m unittest discover -s qa -p 'test_world_atlas_height_cache_v5.py' -v
       - name: Prove landmark water-source memo preserves all original 7x7 queries
