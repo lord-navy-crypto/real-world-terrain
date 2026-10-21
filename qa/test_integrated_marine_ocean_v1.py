@@ -76,6 +76,9 @@ class IntegratedMarineRenewal(unittest.TestCase):
         prior=json.loads(json.dumps(baseline))
         prior["source"]["source"]={"type":"realscale:geo_wonders_opt_in",
                                    "source":prior["source"]["source"]}
+        # New player-facing Measured worlds use ordinary spawn; legacy fixture
+        # still keeps its original origin End-invasion codec.
+        prior["source"]["source"]["source"]["type"]="realscale:cross_realm_free_spawn_v1"
         self.assertEqual(actual,prior)
         self.assertEqual(fused["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]["type"],
                          "realscale:sky_ocean")
