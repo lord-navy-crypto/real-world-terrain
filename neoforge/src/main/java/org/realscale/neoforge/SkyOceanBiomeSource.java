@@ -22,6 +22,10 @@ public final class SkyOceanBiomeSource extends BiomeSource {
                 RegistryOps.retrieveGetter(Registries.BIOME))
           .apply(i,SkyOceanBiomeSource::new));
     private final BiomeSource source;
+    // Offshore radius probes only classify vanilla oceans. Bypass expensive
+    // 8-direction ecotone ray searches, which cannot change ocean predicates.
+    // Final sky biome delegation ALWAYS uses the original decorated source.
+    private final BiomeSource oceanClassificationSource;
     private final Holder<Biome> blossomIsle;
     private final ThreadLocal<EligibilityCache> cache=ThreadLocal.withInitial(EligibilityCache::new);
 
@@ -38,6 +42,8 @@ public final class SkyOceanBiomeSource extends BiomeSource {
     }
     private SkyOceanBiomeSource(BiomeSource source,HolderGetter<Biome> biomes) {
         this.source=source;
+        this.oceanClassificationSource=source instanceof NaturalEcotoneBiomeSource eco
+                ? eco.offshoreOceanClassificationSource() : source;
         blossomIsle=biomes.getOrThrow(ResourceKey.create(Registries.BIOME,
             ResourceLocation.fromNamespaceAndPath("realscale","sky_blossom_isles")));
     }
@@ -57,7 +63,8 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         return Stream.concat(source.possibleBiomes().stream(),Stream.of(blossomIsle)).distinct();
     }
     private String underlying(int x,int z,Climate.Sampler sampler) {
-        return source.getNoiseBiome(Math.floorDiv(x,4),16,Math.floorDiv(z,4),sampler)
+        return oceanClassificationSource.getNoiseBiome(
+                    Math.floorDiv(x,4),16,Math.floorDiv(z,4),sampler)
                 .unwrapKey().map(k->{
                     var id=k.location();
                     return "minecraft".equals(id.getNamespace())?id.getPath():"";

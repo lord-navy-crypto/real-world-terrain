@@ -219,6 +219,20 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         return source;
     }
 
+    /**
+     * Raw source for INTERNAL sky-island offshore ocean classification only.
+     * Natural ecotones never change the predicates ocean/deep ocean:
+     *  - Every underlying Minecraft ocean returns unchanged (protectedWater).
+     *  - Every transition target belongs to realscale:, not minecraft:,
+     *    so a non-ocean can never become a Minecraft ocean.
+     *
+     * Do not use this for normal biome selection: ecotone colors, vegetation,
+     * shore transitions and final per-block biome identity must remain intact.
+     */
+    BiomeSource offshoreOceanClassificationSource() {
+        return source;
+    }
+
     @Override
     protected MapCodec<? extends BiomeSource> codec() {
         return CODEC;
