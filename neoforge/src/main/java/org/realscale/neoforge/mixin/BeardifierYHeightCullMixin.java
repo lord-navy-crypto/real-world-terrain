@@ -7,6 +7,7 @@ import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.pools.JigsawJunction;
 import org.realscale.neoforge.BeardifierYExtent;
+import org.realscale.neoforge.BeardifierDirectParity;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -79,7 +80,24 @@ public abstract class BeardifierYHeightCullMixin {
     @Inject(method="compute",at=@At("HEAD"),cancellable=true,remap=false)
     private void realscale$skipUnaffectedY(DensityFunction.FunctionContext ctx,
             CallbackInfoReturnable<Double> cir) {
+        if(BeardifierDirectParity.replaying())return;
         BeardifierYExtent e=realscale$extent;
-        if(e!=null && e.canSkip(ctx.blockY()))cir.setReturnValue(0.0);
+        if(e!=null && e.canSkip(ctx.blockY())) {
+            // In verification mode, occasionally re-enter the identical
+            // UNMODIFIED vanilla method using a thread-scoped recursion guard.
+            // Invalid zero assumptions FAIL the test server immediately.
+            if(BeardifierDirectParity.shouldVerifySkip()) {
+                BeardifierDirectParity.setReplaying(true);
+                double vanilla;
+                try {
+                    vanilla=((Beardifier)(Object)this).compute(ctx);
+                } finally {
+                    BeardifierDirectParity.setReplaying(false);
+                }
+                BeardifierDirectParity.assertZero(vanilla,
+                        ctx.blockX(),ctx.blockY(),ctx.blockZ());
+            }
+            cir.setReturnValue(0.0);
+        }
     }
 }
