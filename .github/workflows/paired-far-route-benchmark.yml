@@ -8,6 +8,8 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaverns.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/SkyOceanBiomeSource.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java'
   workflow_dispatch:
 permissions:
   contents: read
@@ -41,7 +43,7 @@ jobs:
           gradle-version: '8.14.3'
       - name: Prepare separate clean worktrees on the same runner
         env:
-          BEFORE_SHA: '36fae4cbea2086c10280d06efb78c09448ba6de5'
+          BEFORE_SHA: '9efbfe6d53aae28c0bf49cb814b496d2b6459621'
           AFTER_SHA: ${{ github.sha }}
           PRESET: ${{ matrix.preset }}
           SEED: ${{ matrix.seed }}
@@ -73,6 +75,8 @@ jobs:
           PROPERTIES
             done
           done
+      # Before = last green commit without the offshore ocean-probe bypass.
+      # Both presets use sky_ocean -> natural_ecotones -> vanilla multi_noise.
       - name: Run original real server first (fresh saved world)
         env:
           BASEDIR: ${{ runner.temp }}
