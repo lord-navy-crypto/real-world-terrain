@@ -6,6 +6,8 @@ on:
       - '.github/workflows/far-distance-route.yml'
       - 'qa/neoforge/rcon_worldgen_smoke.py'
       - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefSiteCache.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefDensity.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/SkyIslandSiteCache.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/QuartBiomeResultCache.java'

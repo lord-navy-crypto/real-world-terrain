@@ -163,6 +163,12 @@ class MountainBasinPlateauTest(unittest.TestCase):
                         terrain.index("classify(s);"))
         self.assertLess(terrain.index("classify(s);"),
                         terrain.index("double continent = continents.compute(ctx);"))
+        self.assertIn("MountainReliefMath.definitelyOutsideActiveRelief(",terrain)
+        self.assertLess(terrain.index("MountainReliefMath.definitelyOutsideActiveRelief("),
+                        terrain.index("double continent = continents.compute(ctx);"))
+        self.assertIn("static boolean definitelyOutsideActiveRelief(",pure)
+        self.assertIn("else if(kind == PLATEAU) support=1.000000001;",pure)
+        self.assertIn("if(kind == MESA) support=0.580000001;",pure)
 
         self.assertIn("return original;",temp)
         self.assertIn("if(exposedLand<=0.0)return original;",temp)

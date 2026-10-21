@@ -1,0 +1,110 @@
+name: RealScale paired A-B far-route performance
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/paired-far-route-benchmark.yml'
+      - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefDensity.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: paired-far-route-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  paired-real-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - preset: tva_sacred_timeline_three_realms
+            seed: 42
+          - preset: tva_measured_three_realms
+            seed: 2
+    name: Same-runner A/B / ${{ matrix.preset }} / seed ${{ matrix.seed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Prepare separate clean worktrees on the same runner
+        env:
+          BEFORE_SHA: '66e029722e98355e58941041a74a1d8d85c43deb'
+          AFTER_SHA: ${{ github.sha }}
+          PRESET: ${{ matrix.preset }}
+          SEED: ${{ matrix.seed }}
+        run: |
+          git cat-file -e "$BEFORE_SHA^{commit}"
+          git cat-file -e "$AFTER_SHA^{commit}"
+          git worktree add --detach "$RUNNER_TEMP/realscale-before" "$BEFORE_SHA"
+          git worktree add --detach "$RUNNER_TEMP/realscale-after" "$AFTER_SHA"
+          for variant in before after; do
+            root="$RUNNER_TEMP/realscale-$variant/neoforge"
+            for dir in run run/server run/gametestserver; do
+              mkdir -p "$root/$dir"
+              printf 'eula=true\n' > "$root/$dir/eula.txt"
+              cat > "$root/$dir/server.properties" <<PROPERTIES
+          level-name=world
+          level-type=realscale:$PRESET
+          level-seed=$SEED
+          generate-structures=true
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+            done
+          done
+      - name: Run original real server first (fresh saved world)
+        env:
+          BASEDIR: ${{ runner.temp }}
+          PRESET: ${{ matrix.preset }}
+        run: |
+          cd "$BASEDIR/realscale-before/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Run optimized real server second (fresh saved world)
+        env:
+          BASEDIR: ${{ runner.temp }}
+          PRESET: ${{ matrix.preset }}
+        run: |
+          cd "$BASEDIR/realscale-after/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Compare matched coordinates and publish inspectable timing JSON
+        env:
+          BASEDIR: ${{ runner.temp }}
+          PRESET: ${{ matrix.preset }}
+          SEED: ${{ matrix.seed }}
+        run: |
+          python3 qa/neoforge/compare_paired_far_route.py \
+            "$BASEDIR/realscale-before/neoforge/build/rcon_distant_route_timing.json" \
+            "$BASEDIR/realscale-after/neoforge/build/rcon_distant_route_timing.json" \
+            "$RUNNER_TEMP/realscale-paired-result.json"
+          cat "$RUNNER_TEMP/realscale-paired-result.json" >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve both timing logs, result and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: A-B-FarRoute-${{ matrix.preset }}-seed-${{ matrix.seed }}
+          path: |
+            ${{ runner.temp }}/realscale-paired-result.json
+            ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_timing.json
+            ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_timing.json
+            ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_server.log
+          if-no-files-found: warn

@@ -65,6 +65,25 @@ final class MountainReliefMath {
         return dx*dx+dz*dz>=conservative*conservative;
     }
 
+    /**
+     * Exclude geometry only where reliefWithGate() is exactly the original
+     * finite density for ANY positive gate and ANY seeded plateau height.
+     *
+     * The site-level 1.10 envelope already rejects all BASIN footprints.
+     * Mesa's crest is zero beyond 0.58; plateau's crest beyond 1.0.
+     * A 1e-9 relative guard is far above floating-point distance rounding,
+     * so samples adjacent to exact spline boundaries use the original path.
+     */
+    static boolean definitelyOutsideActiveRelief(int kind,
+            double dx,double dz,double radius) {
+        final double support;
+        if(kind == MESA) support=0.580000001;
+        else if(kind == PLATEAU) support=1.000000001;
+        else return false;
+        double maxDistance=radius*support;
+        return dx*dx+dz*dz>=maxDistance*maxDistance;
+    }
+
     static double basinCore(double radiusFraction) {
         return 1.0 - GeoMath.smoothstep(0.25, 0.78, radiusFraction);
     }

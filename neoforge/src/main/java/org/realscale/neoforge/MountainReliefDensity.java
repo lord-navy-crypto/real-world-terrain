@@ -93,6 +93,12 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
             return original;
         classify(s);
         if (s.type == MountainReliefMath.NONE) return original;
+        // Type-specific support is narrower than the common basin envelope:
+        // mesas vanish at radiusFraction >= 0.58, plateaus at >= 1.0.
+        // Reject only mathematically zero relief, with conservative slack,
+        // BEFORE computing potentially expensive continental noise.
+        if (MountainReliefMath.definitelyOutsideActiveRelief(
+                s.type, dx, dz, s.radius)) return original;
         double continent = continents.compute(ctx);
         double gate = MountainReliefMath.inlandUplandGate(continent, original);
         if (gate <= 0.0) return original;

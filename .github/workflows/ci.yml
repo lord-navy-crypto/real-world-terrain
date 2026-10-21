@@ -192,6 +192,16 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
             neoforge/src/test/java/org/realscale/neoforge/MountainReliefMathSmoke.java
           java -cp build/mountain-relief-smoke org.realscale.neoforge.MountainReliefMathSmoke
+      - name: Validate same-runner worldgen A/B timing result parser
+        run: python3 -m unittest discover -s qa -p 'test_paired_far_route_compare.py' -v
+      - name: Verify mountain relief active support early-out bit parity
+        run: |
+          mkdir -p build/relief-active-envelope-smoke
+          javac -d build/relief-active-envelope-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/MountainReliefActiveEnvelopeSmoke.java
+          java -cp build/relief-active-envelope-smoke org.realscale.neoforge.MountainReliefActiveEnvelopeSmoke
       - name: Verify mountain relief site cache and jigsaw query-order parity
         run: |
           mkdir -p build/mountain-site-cache-smoke
