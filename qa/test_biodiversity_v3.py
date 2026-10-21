@@ -103,7 +103,9 @@ class BiomeDiversityV3(unittest.TestCase):
                 # reachable in the featured Natural Exploration preset.
                 self.assertEqual(invasion["type"],"realscale:geo_wonders_opt_in")
                 invasion=invasion["source"]
-            self.assertEqual(invasion["type"],"realscale:cross_realm_spawn3")
+            self.assertEqual(invasion["type"],"realscale:cross_realm_free_spawn_v1")
+            # Archived v2 keeps its persisted forced-spawn codec unchanged.
+            self.assertEqual(p["source"]["source"]["type"],"realscale:cross_realm_spawn3")
             self.assertEqual(invasion["target"],"overworld")
             self.assertEqual(invasion["source"]["type"],"realscale:natural_ecotones_diverse_v3")
             self.assertEqual(p["source"]["source"]["source"]["type"],"realscale:natural_ecotones_diverse_v2")
