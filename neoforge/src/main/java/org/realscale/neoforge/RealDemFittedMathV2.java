@@ -88,6 +88,12 @@ final class RealDemFittedMathV2 {
         double bz=clamp(z,DEM.originZ(),DEM.maxZ());
         double dx=x-bx,dz=z-bz;
         if(dx==0&&dz==0)return DEM.worldSolidYAt(x,z);
+        // Exactly outside the local 2560-block band, the old expression
+        // lerp(near,broad,1) is mathematically broad. Avoid the expensive
+        // border DEM lookup, two finite differences and local noise field.
+        // This is the dominant fast path for exploration far from USGS data.
+        final double d=Math.hypot(dx,dz);
+        if(d>=2560.0)return clamp(broad(x,z),MIN,MAX);
         double center=RealDemSeamlessMath.measuredHeight(bx,bz);
         // Inward derivatives, not a global polynomial outside its fit domain.
         double sx=dx==0?0:
@@ -103,7 +109,6 @@ final class RealDemFittedMathV2 {
                 +ROUGH*1.5*(fractal(x,z)-fractal(bx,bz));
         // For tiny DEMs, an infinite edge-projected stripe would be artificial.
         // Gradually prefer DEM-fitted global statistics, never a tiled raster.
-        double d=Math.hypot(dx,dz);
         double farWeight=smoothstep(0.0,2560.0,d);
         return clamp(lerp(near,broad(x,z),farWeight),MIN,MAX);
     }
