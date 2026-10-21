@@ -49,7 +49,26 @@ public final class MeasuredColumnMemoCollisionSmoke {
                 Double.doubleToRawLongBits(-0.0),"First colliding value lost");
         check(cache.lookup(collisionX,collisionZ) && Double.doubleToRawLongBits(cache.value()) ==
                 0x7ff8000000000001L,"Second colliding NaN lost");
-        // Third key sharing the bucket exercises eviction; never alias values.
+        // A third key in the same bucket forces eviction, never false results.
+        int thirdX=0,thirdZ=0;
+        boolean thirdFound=false;
+        outer: for(int x=-350;x<=350;x++) for(int z=-350;z<=350;z++) {
+            if(x==collisionX && z==collisionZ)continue;
+            if(MeasuredColumnMemo.bucket(x,z)==expectedBucket) {
+                thirdX=x;thirdZ=z;thirdFound=true;break outer;
+            }
+        }
+        check(thirdFound,"No third coordinate found in collision bucket");
+        check(!cache.lookup(thirdX,thirdZ),"Third collision incorrectly hit");
+        cache.store(1.25);
+        check(cache.lookup(thirdX,thirdZ) && cache.value()==1.25,
+                "Third collision could not be stored");
+        if (cache.lookup(x0,z0))
+            check(Double.doubleToRawLongBits(cache.value())==
+                    Double.doubleToRawLongBits(-0.0),"Eviction aliased first value");
+        if (cache.lookup(collisionX,collisionZ))
+            check(Double.doubleToRawLongBits(cache.value())==
+                    0x7ff8000000000001L,"Eviction aliased second value");
         var probe=new MeasuredColumnMemo();
         var random=new Random(20261021L);
         for(int i=0;i<80000;i++) {

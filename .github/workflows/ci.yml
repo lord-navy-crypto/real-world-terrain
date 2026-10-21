@@ -246,6 +246,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
+      - name: Verify measured XZ two-way cache bit parity, far coordinates and collision retention
+        run: |
+          mkdir -p build/measured-column-cache-smoke
+          javac -d build/measured-column-cache-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/MeasuredColumnMemo.java \
+            neoforge/src/test/java/org/realscale/neoforge/MeasuredColumnMemoCollisionSmoke.java
+          java -cp build/measured-column-cache-smoke org.realscale.neoforge.MeasuredColumnMemoCollisionSmoke
       - name: Prove DEM column locality cache equivalence under all tile edges
         run: |
           mkdir -p build/dem-cache-smoke
