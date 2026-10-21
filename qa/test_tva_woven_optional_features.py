@@ -66,7 +66,7 @@ class WovenOptionalFeaturesTest(unittest.TestCase):
                 entry = load(TAGS/(tag_name+".json"))
                 self.assertFalse(entry["replace"])
                 self.assertEqual(entry["values"][0],
-                                 "realscale:tva_sacred_biodiversity_end3_spawn3_v3")
+                                 "realscale:tva_natural_hypsometry_v1_three_realms")
                 self.assertEqual(len(entry["values"]),4)
                 # The archived opt-in world stays in the registry but its
                 # features are now included in the four featured worlds.
