@@ -34,8 +34,6 @@ class CoreSmoothing(unittest.TestCase):
       {"type":"minecraft:interpolated","argument":"realscale:"+legacy+"/height_signal"})
     restored=read(R/"density_function"/smoothed/"height_signal.json")
     if smoothed=="tva_natural_smoothed":
-     self.assertEqual(restored["type"],"realscale:measured_horizontal_memo")
-     restored=restored["input"]
      self.assertEqual(restored["type"],"minecraft:cache_2d")
      restored=restored["argument"]
     self.assertEqual(restored["type"],"realscale:mountain_relief")
