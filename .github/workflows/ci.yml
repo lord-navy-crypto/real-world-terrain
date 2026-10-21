@@ -331,6 +331,8 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java \
             neoforge/src/test/java/org/realscale/neoforge/RealDemColumnCacheSmoke.java
           java -cp build/dem-cache-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemColumnCacheSmoke
+      - name: Verify V2 pure fitted interior, no discrete grid chunks and exact older-world preservation
+        run: python3 -m unittest discover -s qa -p 'test_usgs_fitted_full_v2.py' -v
       - name: Verify DEM-conditioned USGS fitted continuation and four-side seam continuity
         run: python3 -m unittest discover -s qa -p 'test_usgs_fitted_v1.py' -v
       - name: Regress USGS v2 DEM grid fidelity and exterior continuity
