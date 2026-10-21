@@ -12,6 +12,8 @@ on:
       - 'neoforge/src/main/resources/META-INF/neoforge.mods.toml'
       - 'qa/neoforge/compare_beardifier_saved_regions.py'
       - 'qa/test_beardifier_anvil_semantics.py'
+      - 'qa/neoforge/compare_beardifier_three_runs.py'
+      - 'qa/test_beardifier_three_runs.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -46,6 +48,8 @@ jobs:
           java -cp build/experimental-vanilla org.realscale.neoforge.BeardifierYExtentSmoke
       - name: Unit-test semantic Anvil parity comparator
         run: python3 -m unittest discover -s qa -p 'test_beardifier_anvil_semantics.py' -v
+      - name: Unit-test three-run performance comparison and drift guard
+        run: python3 -m unittest discover -s qa -p 'test_beardifier_three_runs.py' -v
       - name: Prepare identical fresh servers from this one experiment commit
         env:
           PRESET: ${{ matrix.preset }}
@@ -109,6 +113,19 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/realscale-control/neoforge"
           python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Compare original, optimized, repeated-original loading times
+        run: |
+          python3 qa/neoforge/compare_beardifier_three_runs.py \
+            "$RUNNER_TEMP/realscale-before/neoforge/build/rcon_distant_route_timing.json" \
+            "$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_timing.json" \
+            "$RUNNER_TEMP/realscale-control/neoforge/build/rcon_distant_route_timing.json" \
+            "$RUNNER_TEMP/realscale-beardifier-three-runs.json"
+      - name: Require disabled mixin in both vanilla/control worlds
+        run: |
+          grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=false' \
+            "$RUNNER_TEMP/realscale-before/neoforge/build/rcon_distant_route_server.log"
+          grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=false' \
+            "$RUNNER_TEMP/realscale-control/neoforge/build/rcon_distant_route_server.log"
       - name: Investigate vanilla-vs-vanilla saved-block variation
         continue-on-error: true
         run: |
@@ -128,6 +145,7 @@ jobs:
           name: Experimental-Beardifier-${{ matrix.preset }}
           path: |
             ${{ runner.temp }}/realscale-beardifier-ab.json
+            ${{ runner.temp }}/realscale-beardifier-three-runs.json
             ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_server.log
             ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_server.log
             ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_timing.json
