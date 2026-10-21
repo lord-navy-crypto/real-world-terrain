@@ -8,6 +8,7 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.pools.JigsawJunction;
 import org.realscale.neoforge.BeardifierYExtent;
 import org.realscale.neoforge.BeardifierXZExtent;
+import org.realscale.neoforge.BeardifierSparseXZGrid;
 import org.realscale.neoforge.BeardifierDirectParity;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,6 +29,10 @@ public abstract class BeardifierYHeightCullMixin {
     @Shadow @Final protected ObjectListIterator<JigsawJunction> junctionIterator;
     @Unique private static final boolean realscale$XZ_ENABLED =
             Boolean.getBoolean("realscale.experimental.beardifier.xzcull");
+    @Unique private static final boolean realscale$SPARSE_ENABLED =
+            realscale$XZ_ENABLED &&
+            Boolean.getBoolean("realscale.experimental.beardifier.sparsegrid");
+    @Unique private BeardifierSparseXZGrid realscale$sparse;
     @Unique private BeardifierYExtent realscale$extent;
     @Unique private BeardifierXZExtent realscale$horizontal;
 
@@ -38,13 +43,18 @@ public abstract class BeardifierYHeightCullMixin {
         BeardifierXZExtent horizontal=new BeardifierXZExtent();
         realscale$extent=envelope;
         realscale$horizontal=horizontal;
+        BeardifierSparseXZGrid sparse=realscale$SPARSE_ENABLED
+                ?new BeardifierSparseXZGrid():null;
+        realscale$sparse=sparse;
         if(pieceIterator.nextIndex()!=0 || junctionIterator.nextIndex()!=0){
-            envelope.disable();horizontal.disable();return;
+            envelope.disable();horizontal.disable();
+            if(sparse!=null)sparse.disable();return;
         }
         try {
             int entries=0;
             while(pieceIterator.hasNext()){
-                if(++entries>4096){envelope.disable();horizontal.disable();break;}
+                if(++entries>4096){envelope.disable();horizontal.disable();
+            if(sparse!=null)sparse.disable();break;}
                 Object rigid=pieceIterator.next();
                 Class<?> type=rigid.getClass();
                 Method boxMethod=null,deltaMethod=null;
@@ -56,26 +66,33 @@ public abstract class BeardifierYHeightCullMixin {
                 }
                 if(boxMethod==null||deltaMethod==null||
                         !boxMethod.trySetAccessible()||!deltaMethod.trySetAccessible()){
-                    envelope.disable();horizontal.disable();break;
+                    envelope.disable();horizontal.disable();
+            if(sparse!=null)sparse.disable();break;
                 }
                 BoundingBox box=(BoundingBox)boxMethod.invoke(rigid);
                 int delta=(Integer)deltaMethod.invoke(rigid);
                 envelope.includePiece(box.minY(),box.maxY(),delta);
                 horizontal.includePiece(box.minX(),box.maxX(),
                         box.minZ(),box.maxZ());
+                if(sparse!=null)sparse.includePiece(box.minX(),box.maxX(),
+                        box.minZ(),box.maxZ());
             }
             entries=0;
             while(junctionIterator.hasNext()){
-                if(++entries>4096){envelope.disable();horizontal.disable();break;}
+                if(++entries>4096){envelope.disable();horizontal.disable();
+            if(sparse!=null)sparse.disable();break;}
                 JigsawJunction j=junctionIterator.next();
                 envelope.includeJunction(j.getSourceGroundY());
                 horizontal.includeJunction(j.getSourceX(),j.getSourceZ());
+                if(sparse!=null)sparse.includeJunction(j.getSourceX(),j.getSourceZ());
             }
         }catch(ReflectiveOperationException|RuntimeException ex){
             envelope.disable();horizontal.disable();
+            if(sparse!=null)sparse.disable();
         }finally{
             pieceIterator.back(Integer.MAX_VALUE);
             junctionIterator.back(Integer.MAX_VALUE);
+            if(sparse!=null)sparse.finish();
         }
     }
 
@@ -88,8 +105,14 @@ public abstract class BeardifierYHeightCullMixin {
         BeardifierXZExtent h=realscale$horizontal;
         boolean outsideXZ=!outsideY&&realscale$XZ_ENABLED&&h!=null
                 &&h.canSkip(ctx.blockX(),ctx.blockZ());
-        if(outsideY||outsideXZ){
-            if(BeardifierDirectParity.shouldVerifySkip(outsideXZ)){
+        BeardifierSparseXZGrid grid=realscale$sparse;
+        boolean outsideSparse=!outsideY&&!outsideXZ&&realscale$SPARSE_ENABLED
+                &&grid!=null&&grid.canSkip(ctx.blockX(),ctx.blockZ());
+        if(outsideY||outsideXZ||outsideSparse){
+            boolean sample=outsideSparse
+                    ?BeardifierDirectParity.shouldVerifySparseSkip()
+                    :BeardifierDirectParity.shouldVerifySkip(outsideXZ);
+            if(sample){
                 BeardifierDirectParity.setReplaying(true);
                 double vanilla;
                 try{
@@ -97,8 +120,12 @@ public abstract class BeardifierYHeightCullMixin {
                 }finally{
                     BeardifierDirectParity.setReplaying(false);
                 }
-                BeardifierDirectParity.assertZero(vanilla,
-                        ctx.blockX(),ctx.blockY(),ctx.blockZ(),outsideXZ);
+                if(outsideSparse)
+                    BeardifierDirectParity.assertSparseZero(vanilla,
+                            ctx.blockX(),ctx.blockY(),ctx.blockZ());
+                else
+                    BeardifierDirectParity.assertZero(vanilla,
+                            ctx.blockX(),ctx.blockY(),ctx.blockZ(),outsideXZ);
             }
             cir.setReturnValue(0.0);
         }
