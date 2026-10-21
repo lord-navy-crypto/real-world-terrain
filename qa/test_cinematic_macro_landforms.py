@@ -53,12 +53,12 @@ class CinematicMacroWorldgen(unittest.TestCase):
     def test_only_one_player_preset_has_macro_noise(self):
         preset_dir=RES/"world_preset"
         names=["tva_natural_hypsometry_v1_three_realms",
-               "tva_measured_usgs_fitted_v1_three_realms",
+               "tva_measured_usgs_fitted_v2_three_realms",
                "tva_alpine_three_realms","tva_canyon_three_realms"]
         settings=[load(preset_dir/(name+".json"))["dimensions"]
                   ["minecraft:overworld"]["generator"]["settings"] for name in names]
         self.assertEqual(settings,["realscale:tva_natural_hypsometry_v1",
-                "realscale:usgs_fitted_continuation_v1",
+                "realscale:usgs_fitted_continuation_v2",
                 "realscale:tva_alpine_smoothed","realscale:tva_canyon_smoothed"])
         self.assertEqual(load(RES/"noise_settings/tva_natural_smoothed.json")
                          ["noise_router"]["depth"],
