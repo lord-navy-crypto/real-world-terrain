@@ -26,6 +26,8 @@ public final class NorthernCaveBiomeSourceV4 extends BiomeSource {
         "damp_limestone_caverns","dry_karst_caves","volcanic_caverns");
     private final BiomeSource source;
     private final List<Holder.Reference<Biome>> regions;
+    private final ThreadLocal<NorthernCaveSurfaceMemoV6> surfaceMemo =
+            ThreadLocal.withInitial(NorthernCaveSurfaceMemoV6::new);
     private NorthernCaveBiomeSourceV4(BiomeSource source,HolderGetter<Biome> biomes) {
         this.source=source;
         regions=NAMES.stream().map(id->biomes.getOrThrow(ResourceKey.create(
@@ -42,9 +44,20 @@ public final class NorthernCaveBiomeSourceV4 extends BiomeSource {
     @Override public Holder<Biome> getNoiseBiome(int qx,int qy,int qz,Climate.Sampler sampler) {
         Holder<Biome> original=source.getNoiseBiome(qx,qy,qz,sampler);
         if(qy>9||qy< -12)return original;
-        String chosen=NorthernCaveBiomeMathV4.select(name(original),
-            name(source.getNoiseBiome(qx,16,qz,sampler)),qy,
-            NorthernCaveBiomeMathV4.regionHash(qx,qz));
+        String originalName=name(original);
+        // Deep Dark never receives an overlay: avoid needless Y=16 lookup.
+        if(originalName.equals("minecraft:deep_dark"))return original;
+        // For -12..9 quart heights, the Y=16 surface query is independent of
+        // cave Y. Cache its exact keyed biome and absolute region hash for
+        // this worker/Climate.Sampler; no guessed climate interpolation.
+        NorthernCaveSurfaceMemoV6 memo=surfaceMemo.get();
+        memo.prepare(sampler);
+        if(!memo.lookup(qx,qz))
+            memo.store(qx,qz,
+                name(source.getNoiseBiome(qx,16,qz,sampler)),
+                NorthernCaveBiomeMathV4.regionHash(qx,qz));
+        String chosen=NorthernCaveBiomeMathV4.select(
+            originalName,memo.name(),qy,memo.regionHash());
         if(chosen==null)return original;
         int idx=NAMES.indexOf(chosen.substring("realscale:".length()));
         return idx<0?original:regions.get(idx);
