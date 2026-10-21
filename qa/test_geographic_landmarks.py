@@ -100,7 +100,9 @@ class GeographicLandmarksTest(unittest.TestCase):
         src=(JAVA/"GeographicLandmarkFeature.java").read_text()
         self.assertIn("kind==Kind.HUANGLONG_TRAVERTINE",src)
         self.assertIn("kind==Kind.GUILIN_RIVER_KARST",src)
-        self.assertIn("sourceWaterNearby(world,foot,chunk)",src)
+        self.assertIn("sourceWaterNearby(world,foot,chunk,waterMemo)",src)
+        self.assertIn("new LandmarkWaterMemo((x,y,z)->",src)
+        self.assertIn("world.getFluidState(pos).isSource()",src)
         self.assertIn("!riverAdjacency",src)
         self.assertNotIn("world.setBlock(p,Blocks.WATER",src)
 
