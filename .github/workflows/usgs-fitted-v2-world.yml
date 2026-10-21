@@ -1,4 +1,4 @@
-name: USGS fitted DEM continuation real Minecraft world
+name: USGS fully fitted V2 real world and Anvil proof
 on:
   pull_request:
     paths:
@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: usgs-fitted-world
+  group: usgs-fitted-world-v2
   cancel-in-progress: true
 jobs:
   fitted-usgs-world:
