@@ -79,7 +79,7 @@ class HybridMeasuredUSGS(unittest.TestCase):
         menu=read(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
         self.assertEqual(len(menu["values"]),4)
         self.assertEqual(len(set(menu["values"])),4)
-        self.assertIn("realscale:tva_measured_usgs_fitted_v1_three_realms",menu["values"])
+        self.assertIn("realscale:tva_measured_usgs_fitted_v2_three_realms",menu["values"])
         self.assertNotIn("realscale:tva_global_landform_expedition_v3_three_realms",menu["values"])
 
     def test_sparse_enclaves_and_registered_density_with_exact_default(self):
