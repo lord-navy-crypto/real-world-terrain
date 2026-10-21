@@ -22,6 +22,10 @@ public final class SkyOceanBiomeSource extends BiomeSource {
                 RegistryOps.retrieveGetter(Registries.BIOME))
           .apply(i,SkyOceanBiomeSource::new));
     private final BiomeSource source;
+    // BiomeSource wrapper topology is immutable after construction. The
+    // previous method performed 2-4 instanceof checks for EVERY high-world
+    // quart sampling request even though the answer never changes.
+    private final boolean crossRealmWrapped;
     private final Holder<Biome> blossomIsle;
     private final ThreadLocal<EligibilityCache> cache=ThreadLocal.withInitial(EligibilityCache::new);
 
@@ -38,6 +42,12 @@ public final class SkyOceanBiomeSource extends BiomeSource {
     }
     private SkyOceanBiomeSource(BiomeSource source,HolderGetter<Biome> biomes) {
         this.source=source;
+        this.crossRealmWrapped=source instanceof CrossRealmBiomeSource
+                || source instanceof CrossRealmShowcaseBiomeSource
+                || source instanceof GeoWondersBiomeSource wonders
+                   && wonders.containsCrossRealm()
+                || source instanceof RareEarthBiomeSource earth
+                   && earth.containsCrossRealm();
         blossomIsle=biomes.getOrThrow(ResourceKey.create(Registries.BIOME,
             ResourceLocation.fromNamespaceAndPath("realscale","sky_blossom_isles")));
     }
@@ -48,12 +58,7 @@ public final class SkyOceanBiomeSource extends BiomeSource {
                 || source instanceof RareEarthBiomeSource earth && earth.containsGeoWonders();
     }
     public boolean containsCrossRealm() {
-        return source instanceof CrossRealmBiomeSource
-                || source instanceof CrossRealmShowcaseBiomeSource
-                || source instanceof GeoWondersBiomeSource wonders
-                   && wonders.containsCrossRealm()
-                || source instanceof RareEarthBiomeSource earth
-                   && earth.containsCrossRealm();
+        return crossRealmWrapped;
     }
     @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
