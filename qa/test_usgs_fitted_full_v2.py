@@ -161,7 +161,8 @@ public final class RealDemFittedFullV2Smoke {
             subprocess.run(cmd,check=True,capture_output=True,text=True,timeout=45)
             p=subprocess.run(["java","-cp",str(dst)+":"+str(RES),
                    "org.realscale.neoforge.RealDemFittedFullV2Smoke"],
-                   check=True,capture_output=True,text=True,timeout=45)
+                   check=False,capture_output=True,text=True,timeout=45)
+            self.assertEqual(p.returncode,0,"JDK continuity probe failed:\\n"+p.stdout+"\\n"+p.stderr)
             self.assertIn("USGS_FITTED_FULL_V2_CONTINUITY_PASS",p.stdout)
 
 if __name__=="__main__":unittest.main()
