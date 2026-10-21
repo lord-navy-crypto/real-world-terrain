@@ -12,7 +12,6 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/SkyIslandSiteCache.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/SkyOceanBiomeSource.java'
-      - 'neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/QuartBiomeResultCache.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/MeasuredHorizontalMemoDensity.java'
       - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/tva_natural_smoothed/height_signal.json'
