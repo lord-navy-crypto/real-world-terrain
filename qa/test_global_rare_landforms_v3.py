@@ -47,7 +47,9 @@ class GlobalRareGeomorphologyV3(unittest.TestCase):
         self.assertIn("selector.mapAll(visitor)",source)
         self.assertIn("Math.floorDiv(x, RegionalLandformMath.CELL_V3)",source)
         self.assertIn("RegionalLandformMath.gate(continental, current)",source)
-        self.assertIn("ThreadLocal<SiteCache>",source)
+        self.assertIn("ThreadLocal<RegionalGlobalLandformCellMemo>",source)
+        self.assertIn("site.at(cellX,cellZ)",source)
+        self.assertIn("selector.compute(anchor)",source)
 
     def test_world_can_be_selected_without_changing_previous_worlds(self):
         old=load(DATA/"world_preset/tva_regional_landform_expedition_v2_three_realms.json")
