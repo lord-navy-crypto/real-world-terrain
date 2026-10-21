@@ -46,7 +46,7 @@ class PlayerWorldPresets(unittest.TestCase):
         self.assertEqual(source["type"],"realscale:sky_ocean")
         self.assertEqual(source["source"]["type"],"realscale:rare_earth_biomes_v1")
         self.assertEqual(source["source"]["source"]["type"],"realscale:geo_wonders_opt_in")
-        self.assertEqual(source["source"]["source"]["source"]["type"],"realscale:cross_realm_spawn3")
+        self.assertEqual(source["source"]["source"]["source"]["type"],"realscale:cross_realm_free_spawn_v1")
         self.assertEqual(source["source"]["source"]["source"]["target"],"overworld")
 
     def test_four_modes_restore_all_old_worldgen_layers(self):
@@ -70,7 +70,7 @@ class PlayerWorldPresets(unittest.TestCase):
                     "realscale:sky_ocean",
                     "realscale:rare_earth_biomes_v1",
                     "realscale:geo_wonders_opt_in",
-                    "realscale:cross_realm_spawn3",
+                    "realscale:cross_realm_free_spawn_v1",
                     "realscale:natural_ecotones_diverse_v3",
                     "minecraft:multi_noise"
                 ])
