@@ -46,7 +46,6 @@ public final class RealDemFittedFullDensityV2 implements DensityFunction.SimpleF
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
         final int x=ctx.blockX(), z=ctx.blockZ();
-        final double original=base.compute(ctx);
         final Column c=columns.get();
         if(!c.valid||c.x!=x||c.z!=z){
             c.x=x;c.z=z;c.valid=true;
@@ -55,13 +54,19 @@ public final class RealDemFittedFullDensityV2 implements DensityFunction.SimpleF
                 ?RealDemFittedMathV1.predictedHeight(x,z):0.0;
         }
         // Keep exact measured USGS and its natural block terrain.
-        if(c.distance<=0.0)return original;
+        if(c.distance<=0.0)return base.compute(ctx);
         final double continentalness=continents.compute(ctx);
         // Ocean is never touched; near-coast morphology blends continuously.
-        if(continentalness<=-0.15)return original;
+        if(continentalness<=-0.15)return base.compute(ctx);
         final double fitted=(c.fittedSurfaceHeight-ctx.blockY())/128.0;
-        return RealDemFittedFullMathV2.blendDensity(
-            original,fitted,c.distance,continentalness);
+        final double fittedWeight=RealDemFittedFullMathV2.fittedWeight(
+            c.distance,continentalness);
+        // Outside the 1536m ring, inland DEM-fitted terrain NEVER reads
+        // or mixes the old generic procedural height density.
+        if(fittedWeight>=1.0)return fitted;
+        if(fittedWeight<=0.0)return base.compute(ctx);
+        final double original=base.compute(ctx);
+        return Math.fma(fitted-original,fittedWeight,original);
     }
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {
         return visitor.apply(new RealDemFittedFullDensityV2(
