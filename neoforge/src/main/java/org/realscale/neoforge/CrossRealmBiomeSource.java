@@ -123,6 +123,16 @@ public final class CrossRealmBiomeSource extends BiomeSource {
     @Override public Holder<Biome> getNoiseBiome(int quartX,int quartY,int quartZ,
                                                   Climate.Sampler sampler) {
         Holder<Biome> original=source.getNoiseBiome(quartX,quartY,quartZ,sampler);
+        // Most of the 2096-high overworld is outside the rare invasion's
+        // 56..196 Y band. Do not unwrap registry keys or hash site geometry
+        // for columns that must delegate unchanged. Historical forced-spawn
+        // worlds still cover EVERY Y in their initial 192-block circle.
+        if("overworld".equals(target)){
+            boolean originZone=isSpawnInvasionZone(quartX,quartZ);
+            if(!forceOriginInvasion && originZone)return original;
+            if((quartY<14||quartY>49)
+                    && !(forceOriginInvasion && originZone))return original;
+        }
         // Only extend an actual Nether or End biome; never overwrite ocean,
         // rivers or overworld climate, even if somebody wraps the wrong source.
         String biome=original.unwrapKey().map(k->k.location().toString()).orElse("");
