@@ -50,7 +50,7 @@ for identifier in menu:
         source=source["source"]
     chain.append(source["type"])
     assert chain==["realscale:sky_ocean","realscale:rare_earth_biomes_v1",
-                   "realscale:geo_wonders_opt_in","realscale:cross_realm_spawn3",
+                   "realscale:geo_wonders_opt_in","realscale:cross_realm_free_spawn_v1",
                    "realscale:natural_ecotones_diverse_v3","minecraft:multi_noise"], identifier
     nether=world["dimensions"]["minecraft:the_nether"]["generator"]["biome_source"]
     end=world["dimensions"]["minecraft:the_end"]["generator"]["biome_source"]
