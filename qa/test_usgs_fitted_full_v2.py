@@ -105,7 +105,7 @@ public final class RealDemFittedFullV2Smoke {
         int x=dem.originX()+(int)(dem.cellMeters()*ix);
         int z=dem.originZ()+(int)(dem.cellMeters()*iz);
         require(Double.doubleToRawLongBits(
-                 RealDemFittedMathV1.predictedHeight(x,z)) ==
+                 RealDemFittedMathV2.predictedHeight(x,z)) ==
                 Double.doubleToRawLongBits(dem.worldSolidYAt(x,z)),
                 "Measured elevation modified!");
       }
@@ -119,12 +119,12 @@ public final class RealDemFittedFullV2Smoke {
       for(int offset:new int[]{-5243,-2137,-901,0,617,1681,3193,8127}){
         for(int delta=-32;delta<=32;delta++){
           int x=edge+delta,z=offset;
-          if(RealDemFittedMathV1.distanceOutside(x,z)<=1536)continue;
-          double left=RealDemFittedMathV1.predictedHeight(x-1,z);
-          double at=RealDemFittedMathV1.predictedHeight(x,z);
-          double right=RealDemFittedMathV1.predictedHeight(x+1,z);
-          double up=RealDemFittedMathV1.predictedHeight(z,x-1);
-          double down=RealDemFittedMathV1.predictedHeight(z,x+1);
+          if(RealDemFittedMathV2.distanceOutside(x,z)<=1536)continue;
+          double left=RealDemFittedMathV2.predictedHeight(x-1,z);
+          double at=RealDemFittedMathV2.predictedHeight(x,z);
+          double right=RealDemFittedMathV2.predictedHeight(x+1,z);
+          double up=RealDemFittedMathV2.predictedHeight(z,x-1);
+          double down=RealDemFittedMathV2.predictedHeight(z,x+1);
           require(Double.isFinite(at),"non-finite terrain");
           // This is a conservative bound across 1-block continuous samples;
           // a cliff measuring dozens of blocks per column is not acceptable.
@@ -139,7 +139,7 @@ public final class RealDemFittedFullV2Smoke {
     require(worstStep<12.0,"Fitted terrain still has discrete blocky seams: "+worstStep);
     for(int x:new int[]{-30000000,-1000000,-65536,65536,1000000,30000000}){
       for(int z:new int[]{-30000000,-130000,0,130000,30000000}){
-        double h=RealDemFittedMathV1.predictedHeight(x,z);
+        double h=RealDemFittedMathV2.predictedHeight(x,z);
         require(Double.isFinite(h)&&h>=-48&&h<=2000,
             "Distant fitted terrain unstable or out of bounds");
       }
@@ -155,7 +155,7 @@ public final class RealDemFittedFullV2Smoke {
             smoke=dst/"RealDemFittedFullV2Smoke.java"
             smoke.write_text(src,encoding="utf-8")
             files=[JAVA/n for n in ("RealDemTile.java","RealDemDataSource.java",
-                    "RealDemSeamlessMath.java","RealDemFittedMathV1.java",
+                    "RealDemSeamlessMath.java","RealDemFittedMathV2.java",
                     "RealDemFittedFullMathV2.java")]
             cmd=["javac","-d",str(dst),*map(str,files),str(smoke)]
             subprocess.run(cmd,check=True,capture_output=True,text=True,timeout=45)
