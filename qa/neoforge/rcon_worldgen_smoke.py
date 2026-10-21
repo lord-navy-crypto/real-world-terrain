@@ -161,7 +161,27 @@ def main(root,expected_preset,profile):
                 break
             except (ConnectionError,OSError,TimeoutError):
                 time.sleep(1)
+
         if rcon is None:raise RuntimeError("Cannot authenticate to enabled RCON")
+        jfr_pid=None
+        if os.getenv("REALSCALE_JFR_DIAGNOSTIC")=="1":
+            listing=subprocess.run(["jcmd","-l"],capture_output=True,text=True,timeout=15,check=True)
+            candidates=[]
+            for line in listing.stdout.splitlines():
+                if not any(name in line.lower() for name in ("net.neoforged","minecraft","bootstraplauncher")):
+                    continue
+                pid=line.split()[0]
+                if pid.isdigit():
+                    candidates.append(pid)
+            if len(candidates)!=1:
+                raise RuntimeError("JFR profile requires exactly one active game server, got "+
+                                   str(candidates)+": "+listing.stdout[-2400:])
+            jfr_pid=candidates[0]
+            cmd=["jcmd",jfr_pid,"JFR.start","name=realscale_worldgen",
+                 "settings=profile","disk=true","maxsize=128m"]
+            start_result=subprocess.run(cmd,capture_output=True,text=True,
+                                        timeout=30,check=True)
+            print("REALSCALE_JFR_STARTED:",jfr_pid,start_result.stdout.strip(),flush=True)
         try:
             if profile=="usgs":
                 # Previous QA requested 25 + 9*9 chunks at once in a
@@ -315,6 +335,18 @@ def main(root,expected_preset,profile):
             else:
                 for command in commands:
                     rcon.send(command)
+            if jfr_pid is not None:
+                recording=root/"build"/"realscale_worldgen_cpu.jfr"
+                capture=subprocess.run(
+                    ["jcmd",jfr_pid,"JFR.dump","name=realscale_worldgen",
+                     "filename="+str(recording)],
+                    capture_output=True,text=True,timeout=45,check=True)
+                print("REALSCALE_JFR_DUMP:",recording,
+                      "bytes=",recording.stat().st_size,flush=True)
+                print("REALSCALE_JFR_CAPTURE_MESSAGE:",capture.stdout.strip(),
+                      flush=True)
+                subprocess.run(["jcmd",jfr_pid,"JFR.stop","name=realscale_worldgen"],
+                               capture_output=True,text=True,timeout=30,check=True)
             time.sleep(5 if profile=="structures" else (100 if profile=="fantasy" else (5 if profile=="usgs" else 35)))
             rcon.send("save-all flush")
             time.sleep(5)

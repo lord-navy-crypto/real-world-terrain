@@ -196,6 +196,8 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
             neoforge/src/test/java/org/realscale/neoforge/MountainReliefMathSmoke.java
           java -cp build/mountain-relief-smoke org.realscale.neoforge.MountainReliefMathSmoke
+      - name: Verify JFR sampled CPU hotspot report interpretation
+        run: python3 -m unittest discover -s qa -p 'test_summarize_worldgen_jfr.py' -v
       - name: Validate sampled worldgen-stage profiler parsing and honesty guard
         run: python3 -m unittest discover -s qa -p 'test_parse_density_profile.py' -v
       - name: Validate same-runner worldgen A/B timing result parser
