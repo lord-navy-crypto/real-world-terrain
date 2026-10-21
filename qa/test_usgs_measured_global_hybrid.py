@@ -71,6 +71,8 @@ class HybridMeasuredUSGS(unittest.TestCase):
             "type":"realscale:geo_wonders_opt_in",
             "source":prior["source"]["source"]
         }
+        # Modern player presets intentionally opt out of historic forced End spawn.
+        prior["source"]["source"]["source"]["type"]="realscale:cross_realm_free_spawn_v1"
         self.assertEqual(after["biome_source"],prior)
         self.assertEqual(after["settings"],"realscale:usgs_global_hybrid_marine")
         self.assertEqual(before["settings"],"realscale:usgs_big_sur_v2")
