@@ -418,7 +418,10 @@ public final class GrandOverworldCaveNetwork {
                 & (Cache.COLUMN_BUCKETS - 1);
     }
 
-    private static long componentMaskForColumn(int x,int z) {
+    // Package-private for the density wrapper: a single voxel already asks
+    // whether this same X/Z column can contain a giant void. Hand its exact
+    // broad-phase mask to the final evaluator instead of looking it up twice.
+    static long componentMaskForColumn(int x,int z) {
         int localX=Math.floorMod(x,CELL),localZ=Math.floorMod(z,CELL);
         // A displaced coordinate may select another cell's distinct
         // tunnels. Never prune at those edges; retain the original path.
@@ -467,7 +470,27 @@ public final class GrandOverworldCaveNetwork {
                 || Math.floorDiv(sourceX,CELL)!=(int)Math.floor(x/CELL)
                 || Math.floorDiv(sourceZ,CELL)!=(int)Math.floor(z/CELL))
             return strength(x,y,z);
-        long mask=componentMaskForColumn(sourceX,sourceZ);
+        return strengthFromColumnWithMask(sourceX,sourceZ,x,y,z,
+                componentMaskForColumn(sourceX,sourceZ));
+    }
+
+    /**
+     * Use the exact conservative mask already computed in the same
+     * GrandOverworldCaverns.compute call. The method remains robust if the
+     * seed warp unexpectedly leaves the declared +/-6 X / +/-5 Z support:
+     * check displacement and source cell BEFORE trusting any mask (even 0).
+     *
+     * Never store the mask across distinct context calls, thread switches,
+     * or seeded density instances. Passing a stale mask is not supported.
+     */
+    static double strengthFromColumnWithMask(int sourceX,int sourceZ,
+            double x,double y,double z,long mask) {
+        if(y<MIN_Y || y>MAX_GEOMETRY_Y)return 0;
+        if(x<sourceX-6.0 || x>sourceX+6.0
+                || z<sourceZ-5.0 || z>sourceZ+5.0
+                || Math.floorDiv(sourceX,CELL)!=(int)Math.floor(x/CELL)
+                || Math.floorDiv(sourceZ,CELL)!=(int)Math.floor(z/CELL))
+            return strength(x,y,z);
         if(mask==-1L)return strength(x,y,z);
         if(mask==0L)return 0;
         Cache c=LOCAL.get().get(Math.floorDiv(sourceX,CELL),Math.floorDiv(sourceZ,CELL));

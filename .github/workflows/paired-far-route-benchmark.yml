@@ -6,6 +6,8 @@ on:
       - '.github/workflows/paired-far-route-benchmark.yml'
       - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefDensity.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaverns.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
   workflow_dispatch:
 permissions:
   contents: read
@@ -39,7 +41,7 @@ jobs:
           gradle-version: '8.14.3'
       - name: Prepare separate clean worktrees on the same runner
         env:
-          BEFORE_SHA: '66e029722e98355e58941041a74a1d8d85c43deb'
+          BEFORE_SHA: '36fae4cbea2086c10280d06efb78c09448ba6de5'
           AFTER_SHA: ${{ github.sha }}
           PRESET: ${{ matrix.preset }}
           SEED: ${{ matrix.seed }}

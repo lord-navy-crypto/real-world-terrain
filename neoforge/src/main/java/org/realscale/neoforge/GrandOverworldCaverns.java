@@ -68,19 +68,24 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
         // +/-6 X and +/-5 Z displacement from the seeded warp. When they
         // prove no cave can exist here, skip both warp noise and the 3D
         // corridor graph. Keep small caves and rare entrances unchanged.
-        if (y > GrandOverworldCaveNetwork.MAX_GEOMETRY_Y + 2
-                || !GrandOverworldCaveNetwork.mayContainVoidNearColumn(
-                    ctx.blockX(), ctx.blockZ())) {
+        int blockX=ctx.blockX(),blockZ=ctx.blockZ();
+        // An upper-layer rejection needs no column mask at all. Otherwise
+        // compute the candidate mask ONCE for both fast exclusion and
+        // the (potentially expensive) warped 3D cave strength evaluation.
+        long columnMask=y>GrandOverworldCaveNetwork.MAX_GEOMETRY_Y+2
+                ? 0L : GrandOverworldCaveNetwork.componentMaskForColumn(
+                        blockX,blockZ);
+        if (columnMask==0L) {
             double chosen=carve(original,smallCaves.compute(ctx),0.0);
             return Math.min(chosen,entrance>0 ? -2.0*entrance : original);
         }
         // The vanilla-seeded noise provides world-seed-dependent detail.
         // It never changes the room/corridor topology or chunk-border logic.
         double shift=Math.max(-1.0,Math.min(1.0,warp.compute(ctx)));
-        double strength=GrandOverworldCaveNetwork.strengthFromColumn(
-                ctx.blockX(),ctx.blockZ(),
-                ctx.blockX()+shift*6.0, y+shift*2.0,
-                ctx.blockZ()-shift*5.0);
+        double strength=GrandOverworldCaveNetwork.strengthFromColumnWithMask(
+                blockX,blockZ,
+                blockX+shift*6.0, y+shift*2.0,
+                blockZ-shift*5.0,columnMask);
         // Within a sufficiently strong giant void, the network already
         // wins against the documented lower bound of the small-cave noise.
         // Skip three additional noise evaluations in those voxels without
