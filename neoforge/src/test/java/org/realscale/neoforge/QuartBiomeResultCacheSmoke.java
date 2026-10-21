@@ -33,10 +33,23 @@ public final class QuartBiomeResultCacheSmoke {
         require("forest".equals(cache.get(first)), "First coordinate was not cached");
         cache.put(second, "plains");
         require("plains".equals(cache.get(second)), "Collision overwrite failed");
-        // A separate one-entry hot cache may retain the previous key, but must
-        // never return the colliding key's value as another biome.
-        String prior = cache.get(first);
-        require(prior == null || prior.equals("forest"), "Hash collision corrupted biome");
+        // The two colliding quart positions must BOTH survive alternating
+        // height/biome probes, not just return the last hot coordinate.
+        for(int i=0;i<3000;i++) {
+            require("forest".equals(cache.get(first)),
+                    "First colliding quart coordinate was evicted");
+            require("plains".equals(cache.get(second)),
+                    "Second colliding quart coordinate was evicted");
+        }
+        long third=second+1;
+        while(QuartBiomeResultCache.bucket(third)!=QuartBiomeResultCache.bucket(first))
+            third++;
+        cache.put(third,"river");
+        require("river".equals(cache.get(third)),
+                "Third colliding coordinate not inserted");
+        String prior=cache.get(first);
+        require(prior==null || prior.equals("forest"),
+                "Three-way eviction returned a wrong biome");
 
         cache.clear();
         require(cache.get(second) == null, "Sampler invalidation retained a result");

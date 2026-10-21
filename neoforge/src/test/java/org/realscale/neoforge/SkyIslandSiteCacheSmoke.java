@@ -50,6 +50,48 @@ public final class SkyIslandSiteCacheSmoke {
                 }
             }
 
+        // Two distinct lattice cells in one bucket must coexist (including
+        // their satellite instances and sampler-scoped tier values).
+        long[][] collision=new long[3][2];
+        int hits=0;
+        int desired=SkyIslandSiteCache.bucket(-7,11);
+        outer:for(long gx=-50;gx<50;gx++)for(long gz=-50;gz<50;gz++)
+            if(SkyIslandSiteCache.bucket(gx,gz)==desired) {
+                collision[hits++]=new long[]{gx,gz};
+                if(hits==3)break outer;
+            }
+        check(hits==3,"Could not find three colliding sky-lattice cells");
+        SkyIslandSiteCache collidingCache=new SkyIslandSiteCache();
+        int aX=Math.toIntExact(collision[0][0]*SkyIslandLayout.GRID);
+        int aZ=Math.toIntExact(collision[0][1]*SkyIslandLayout.GRID);
+        int bX=Math.toIntExact(collision[1][0]*SkyIslandLayout.GRID);
+        int bZ=Math.toIntExact(collision[1][1]*SkyIslandLayout.GRID);
+        var first=collidingCache.at(aX,aZ);
+        var second=collidingCache.at(bX,bZ);
+        var firstSatellite=first.satellite(1);
+        first.tier=2;
+        second.tier=3;
+        for(int i=0;i<2000;i++) {
+            check(collidingCache.at(aX,aZ)==first && first.tier==2,
+                    "First collided sky site was evicted prematurely");
+            check(collidingCache.at(bX,bZ)==second && second.tier==3,
+                    "Second collided sky site was evicted prematurely");
+        }
+        check(first.satellite(1)==firstSatellite,
+                "Colliding sky site dropped its satellite identity");
+        int cX=Math.toIntExact(collision[2][0]*SkyIslandLayout.GRID);
+        int cZ=Math.toIntExact(collision[2][1]*SkyIslandLayout.GRID);
+        var third=collidingCache.at(cX,cZ);
+        check(third.base().equals(SkyIslandLayout.at(cX,cZ)),
+                "Third sky site was aliased by eviction");
+        check(collidingCache.at(aX,aZ).base().equals(SkyIslandLayout.at(aX,aZ)),
+                "Eviction corrupted first sky lattice coordinate");
+        check(collidingCache.at(bX,bZ).base().equals(SkyIslandLayout.at(bX,bZ)),
+                "Eviction corrupted second sky lattice coordinate");
+        collidingCache.clear();
+        check(collidingCache.at(aX,aZ).tier==-1,
+                "Sampler reset retained collided sky tier");
+
         // Forced eviction cannot return a stale site after slot reuse.
         for(int i=0;i<18_000;i++) {
             int x=(i*113)-1_000_000;

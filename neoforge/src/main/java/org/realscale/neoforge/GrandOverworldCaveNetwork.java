@@ -43,6 +43,10 @@ public final class GrandOverworldCaveNetwork {
         // Direct-mapped, epoch-tagged per-worker X/Z reject cache. An entry
         // only says that a column MAY contain a cave, never that it must.
         private static final int COLUMN_SLOTS = 512;
+        private static final int COLUMN_BUCKETS = COLUMN_SLOTS / 2;
+        // Two colliding hot columns may retain separate 47-component masks.
+        // Eight region snapshots still own only 512 entries each; no growth.
+        final byte[] columnVictim=new byte[COLUMN_BUCKETS];
         final int[] columnX=new int[COLUMN_SLOTS];
         final int[] columnZ=new int[COLUMN_SLOTS];
         final int[] columnEpoch=new int[COLUMN_SLOTS];
@@ -405,6 +409,11 @@ public final class GrandOverworldCaveNetwork {
         return componentMaskForColumn(x,z)!=0;
     }
 
+    static int columnBucket(int x,int z) {
+        return (x*0x9e3779b9 ^ z*0x85ebca6b)
+                & (Cache.COLUMN_BUCKETS - 1);
+    }
+
     private static long componentMaskForColumn(int x,int z) {
         int localX=Math.floorMod(x,CELL),localZ=Math.floorMod(z,CELL);
         // A displaced coordinate may select another cell's distinct
@@ -412,15 +421,26 @@ public final class GrandOverworldCaveNetwork {
         if(localX<=6 || localX>=CELL-7 || localZ<=5 || localZ>=CELL-6)
             return -1L;
         Cache c=LOCAL.get().get(Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
-        int slot=(x*0x9e3779b9 ^ z*0x85ebca6b)&(Cache.COLUMN_SLOTS-1);
-        if(c.columnEpoch[slot]==c.epoch
-                && c.columnX[slot]==x && c.columnZ[slot]==z)
-            return c.columnComponents[slot];
+        int bucket=columnBucket(x,z);
+        int first=bucket<<1,second=first+1;
+        if(c.columnEpoch[first]==c.epoch && c.columnX[first]==x
+                && c.columnZ[first]==z)
+            return c.columnComponents[first];
+        if(c.columnEpoch[second]==c.epoch && c.columnX[second]==x
+                && c.columnZ[second]==z)
+            return c.columnComponents[second];
         long mask=columnComponentMask(c,x-6.0,x+6.0,z-5.0,z+5.0);
-        c.columnEpoch[slot]=c.epoch;
-        c.columnX[slot]=x;
-        c.columnZ[slot]=z;
-        c.columnComponents[slot]=mask;
+        final int target;
+        if(c.columnEpoch[first]!=c.epoch)target=first;
+        else if(c.columnEpoch[second]!=c.epoch)target=second;
+        else {
+            target=first+(c.columnVictim[bucket]&1);
+            c.columnVictim[bucket]^=1;
+        }
+        c.columnEpoch[target]=c.epoch;
+        c.columnX[target]=x;
+        c.columnZ[target]=z;
+        c.columnComponents[target]=mask;
         return mask;
     }
 

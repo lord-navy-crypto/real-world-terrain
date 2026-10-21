@@ -7,6 +7,8 @@ on:
       - 'qa/neoforge/rcon_worldgen_smoke.py'
       - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefSiteCache.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/SkyIslandSiteCache.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/QuartBiomeResultCache.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/MeasuredHorizontalMemoDensity.java'
       - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/tva_natural_smoothed/height_signal.json'
   workflow_dispatch:

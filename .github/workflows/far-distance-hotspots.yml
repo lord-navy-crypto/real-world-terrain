@@ -6,6 +6,8 @@ on:
       - '.github/workflows/far-distance-hotspots.yml'
       - 'neoforge/build.gradle'
       - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/SkyIslandSiteCache.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/QuartBiomeResultCache.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaverns.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefDensity.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefSiteCache.java'
