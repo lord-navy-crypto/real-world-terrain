@@ -23,20 +23,9 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * inland skips base.compute ENTIRELY, including its nested procedural graph.
  */
 public final class RealDemFittedFullDensityV2 implements DensityFunction.SimpleFunction {
-    private static final int SLOTS=4096, MASK=SLOTS-1;
     private final DensityFunction base, continents;
-    private static final class Columns {
-        final long[] keys=new long[SLOTS];
-        final boolean[] valid=new boolean[SLOTS];
-        final double[] weights=new double[SLOTS];
-        final double[] surfaces=new double[SLOTS];
-        long recentKey;
-        double recentWeight,recentSurface;
-        boolean recentValid;
-        int misses;
-        int hits;
-    }
-    private final ThreadLocal<Columns> columns=ThreadLocal.withInitial(Columns::new);
+    private final ThreadLocal<RealDemFittedColumnCache> columns=
+        ThreadLocal.withInitial(RealDemFittedColumnCache::new);
 
     public RealDemFittedFullDensityV2(DensityFunction base,DensityFunction continents){
         this.base=base;this.continents=continents;
@@ -53,59 +42,33 @@ public final class RealDemFittedFullDensityV2 implements DensityFunction.SimpleF
     private static final KeyDispatchDataCodec<RealDemFittedFullDensityV2> DISPATCH=
         KeyDispatchDataCodec.of(MAP_CODEC);
 
-    private static int index(int x,int z){
-        int h=x*0x9e3779b9^Integer.rotateLeft(z*0x85ebca6b,13);
-        return (h^(h>>>16))&MASK;
-    }
-
     @Override public double compute(DensityFunction.FunctionContext ctx) {
         final int x=ctx.blockX(),z=ctx.blockZ();
-        final long key=((long)x<<32)|(z&0xffffffffL);
-        final Columns cache=columns.get();
-        final double weight, surface;
-        if(cache.recentValid && cache.recentKey==key){
-            weight=cache.recentWeight;surface=cache.recentSurface;
-            cache.hits++;
-        }else{
-            final int slot=index(x,z);
-            if(cache.valid[slot] && cache.keys[slot]==key){
-                weight=cache.weights[slot];surface=cache.surfaces[slot];
-                cache.hits++;
-            }else{
-                // Only time a small bounded sample of cache MISSES, not
-                // every one of the 2096 height-level density invocations.
-                final long started=DensityPerfSampler.begin(
-                    DensityPerfSampler.Stage.USGS_FITTED_COLUMN);
-                final double distance=RealDemFittedMathV2.distanceOutside(x,z);
-                double fittedWeight=0.0, fittedSurface=0.0;
-                // Do not load the continental noise or fitted surface at all
-                // for exact USGS area. No ocean height extrapolation either.
-                if(distance>0.0){
-                    final double continentalness=continents.compute(ctx);
-                    fittedWeight=RealDemFittedFullMathV2.fittedWeight(
-                        distance,continentalness);
-                    if(fittedWeight>0.0){
-                        fittedSurface=RealDemFittedMathV2.predictedHeight(x,z);
-                    }
-                }
-                cache.keys[slot]=key;cache.valid[slot]=true;
-                cache.weights[slot]=fittedWeight;
-                cache.surfaces[slot]=fittedSurface;
-                cache.misses++;
-                DensityPerfSampler.finish(
-                    DensityPerfSampler.Stage.USGS_FITTED_COLUMN,started);
-                weight=fittedWeight;surface=fittedSurface;
+        final RealDemFittedColumnCache memo=columns.get();
+        if(!memo.lookup(x,z)){
+            // Only sample expensive misses (one 2D column, many vertical Y).
+            final long begin=DensityPerfSampler.begin(
+                DensityPerfSampler.Stage.USGS_FITTED_COLUMN);
+            final double distance=RealDemFittedMathV2.distanceOutside(x,z);
+            double weight=0.0,height=0.0;
+            if(distance>0.0){
+                // Known Y-invariant 2D continental field in V2 settings.
+                final double continent=continents.compute(ctx);
+                weight=RealDemFittedFullMathV2.fittedWeight(distance,continent);
+                // No needless DEM fitting in protected ocean columns.
+                if(weight>0.0)height=RealDemFittedMathV2.predictedHeight(x,z);
             }
-            cache.recentKey=key;cache.recentWeight=weight;
-            cache.recentSurface=surface;cache.recentValid=true;
+            memo.store(x,z,weight,height);
+            DensityPerfSampler.finish(
+                DensityPerfSampler.Stage.USGS_FITTED_COLUMN,begin);
         }
-        if(weight<=0.0)return base.compute(ctx); // exact DEM and oceans
-        final double fitted=(surface-ctx.blockY())/128.0;
-        if(weight>=1.0)return fitted; // not a single generic height operation
+        final double weight=memo.weight();
+        if(weight<=0.0)return base.compute(ctx); // original DEM and sea
+        final double fitted=(memo.height()-ctx.blockY())/128.0;
+        if(weight>=1.0)return fitted; // pure fitted, no generic land
         final double original=base.compute(ctx);
         return Math.fma(fitted-original,weight,original);
     }
-
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor){
         // Never share cached per-column results across remapped world seeds.
         return visitor.apply(new RealDemFittedFullDensityV2(
