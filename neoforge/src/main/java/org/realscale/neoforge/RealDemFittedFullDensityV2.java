@@ -72,6 +72,10 @@ public final class RealDemFittedFullDensityV2 implements DensityFunction.SimpleF
                 weight=cache.weights[slot];surface=cache.surfaces[slot];
                 cache.hits++;
             }else{
+                // Only time a small bounded sample of cache MISSES, not
+                // every one of the 2096 height-level density invocations.
+                final long started=DensityPerfSampler.begin(
+                    DensityPerfSampler.Stage.USGS_FITTED_COLUMN);
                 final double distance=RealDemFittedMathV2.distanceOutside(x,z);
                 double fittedWeight=0.0, fittedSurface=0.0;
                 // Do not load the continental noise or fitted surface at all
@@ -88,6 +92,8 @@ public final class RealDemFittedFullDensityV2 implements DensityFunction.SimpleF
                 cache.weights[slot]=fittedWeight;
                 cache.surfaces[slot]=fittedSurface;
                 cache.misses++;
+                DensityPerfSampler.finish(
+                    DensityPerfSampler.Stage.USGS_FITTED_COLUMN,started);
                 weight=fittedWeight;surface=fittedSurface;
             }
             cache.recentKey=key;cache.recentWeight=weight;
