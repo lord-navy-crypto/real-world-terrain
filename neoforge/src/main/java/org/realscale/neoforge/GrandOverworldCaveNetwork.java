@@ -339,7 +339,11 @@ public final class GrandOverworldCaveNetwork {
             cx+=displacementA;cy+=displacementB;
         }
         // Changes continuously, keeping cross-sections unlike uniform pipes.
-        double widthScale=0.80+0.20*Math.sin(Math.PI*t)*Math.sin(Math.PI*t);
+        // Width is constant along a given cross-section: reuse the same
+        // exact sine instead of evaluating expensive trig twice per voxel.
+        // Preserve the original left-to-right multiply order and raw bits.
+        double sinPiT=Math.sin(Math.PI*t);
+        double widthScale=0.80+0.20*sinPiT*sinPiT;
         double width=section.radius()*widthScale;
         double height=width*section.verticalScale();
         double xx=x-cx, yy=y-cy, zz=z-cz;
