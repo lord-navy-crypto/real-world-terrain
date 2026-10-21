@@ -18,8 +18,11 @@ def load(name):
 class NaturalCache2DTests(unittest.TestCase):
     def test_root_is_only_wrapped_without_cave_or_relief_changes(self):
         root=load("tva_natural_smoothed/height_signal")
-        self.assertEqual(root["type"],"minecraft:cache_2d")
-        relief=root["argument"]
+        # Outer memo must see the identical Minecraft native 2D cache.
+        self.assertEqual(root["type"],"realscale:measured_horizontal_memo")
+        native=root["input"]
+        self.assertEqual(native["type"],"minecraft:cache_2d")
+        relief=native["argument"]
         self.assertEqual(relief,{
             "type":"realscale:mountain_relief",
             "base":"realscale:tva_natural_smoothed/original_height_signal",

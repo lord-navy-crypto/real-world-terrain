@@ -30,6 +30,8 @@ class MountainBasinPlateauTest(unittest.TestCase):
                 if preset=="tva_natural_smoothed":
                     # Native 2D cache is only an outer wrapper; every basin
                     # and plateau parameter remains exactly as before.
+                    self.assertEqual(shape["type"],"realscale:measured_horizontal_memo")
+                    shape=shape["input"]
                     self.assertEqual(shape["type"],"minecraft:cache_2d")
                     shape=shape["argument"]
                 self.assertEqual(shape["type"],"realscale:mountain_relief")
@@ -69,6 +71,8 @@ class MountainBasinPlateauTest(unittest.TestCase):
             self.assertGreater(base["altitude_cooling"],0)
             landform=read(DATA/"density_function"/preset/"height_signal.json")
             if preset=="tva_natural_smoothed":
+                self.assertEqual(landform["type"],"realscale:measured_horizontal_memo")
+                landform=landform["input"]
                 self.assertEqual(landform["type"],"minecraft:cache_2d")
                 landform=landform["argument"]
             self.assertEqual(adjusted["selector"],landform["selector"])
