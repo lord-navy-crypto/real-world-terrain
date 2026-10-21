@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:cache_2d",
+  "argument": {
+    "type": "realscale:land_hypsometry_v1",
+    "base": "realscale:tva_cinematic_integrated_v1/height_signal",
+    "strength": 0.28
+  }
+}
