@@ -30,21 +30,22 @@ final class DensityPerfSampler {
 
     // Distinguish cheap memo hits from the costly bottom-level climate calls.
     // Counters are opt-in only; production chunk generation pays NO atomics.
-    private static final LongAdder ECOTONE_RESOLUTIONS=new LongAdder();
+    private static final LongAdder ECOTONE_RESULT_HITS=new LongAdder();
+    private static final LongAdder ECOTONE_RESULT_MISSES=new LongAdder();
     private static final LongAdder ECOTONE_BASE_HITS=new LongAdder();
     private static final LongAdder ECOTONE_BASE_MISSES=new LongAdder();
 
-    static void ecotoneResolution() {
-        if(ENABLED)ECOTONE_RESOLUTIONS.increment();
-    }
-
-    static void ecotoneCacheProbe(boolean hit) {
+    static void ecotoneCacheProbe(boolean resolved,boolean hit) {
         if(!ENABLED)return;
-        (hit?ECOTONE_BASE_HITS:ECOTONE_BASE_MISSES).increment();
+        LongAdder counter=resolved
+                ? (hit?ECOTONE_RESULT_HITS:ECOTONE_RESULT_MISSES)
+                : (hit?ECOTONE_BASE_HITS:ECOTONE_BASE_MISSES);
+        counter.increment();
     }
 
     static String ecotoneCacheSnapshot() {
-        return "resolution_calls="+ECOTONE_RESOLUTIONS.sum()
+        return "resolved_hits="+ECOTONE_RESULT_HITS.sum()
+                +" resolved_misses="+ECOTONE_RESULT_MISSES.sum()
                 +" base_hits="+ECOTONE_BASE_HITS.sum()
                 +" base_misses="+ECOTONE_BASE_MISSES.sum();
     }
@@ -54,7 +55,7 @@ final class DensityPerfSampler {
             for(Stage stage:Stage.values())
                 if(METRICS[stage.ordinal()].samples.get()>0)
                     System.err.println("[RealScale density profile] "+snapshot(stage));
-            if(ECOTONE_RESOLUTIONS.sum()>0)
+            if(ECOTONE_RESULT_HITS.sum()+ECOTONE_RESULT_MISSES.sum()>0)
                 System.err.println("[RealScale ecotone cache profile] "
                         +ecotoneCacheSnapshot());
         },"realscale-density-profile-summary"));

@@ -13,10 +13,11 @@ class LocalRayBoundsTest(unittest.TestCase):
         self.assertIn("MAX_WIDTH_BY_BIOME = buildWidths()",source)
         self.assertIn("widths.merge(id, rule.widthBlocks(), Math::max)",source)
         self.assertIn("MAX_WIDTH_BY_BIOME.getOrDefault(current, 0)",source)
-        self.assertIn("step <= maxLocalQuarts; step++",source)
-        self.assertIn("distanceSquared > 16 * maxLocalQuarts * maxLocalQuarts",source)
-        self.assertIn("if (distanceSquared >= closestDistanceSquared) break;",source)
-        self.assertIn("if (current.equals(next)) continue;",source)
+        self.assertIn("EcotoneRaySchedule.build(DIRECTIONS,MAX_SEARCH_QUARTS)",source)
+        self.assertIn("16*maxLocalQuarts*maxLocalQuarts",source)
+        self.assertIn("distanceSquared>=closestDistanceSquared",source)
+        self.assertIn("if(current.equals(next))continue;",source)
+        self.assertIn("blockedHeadings|=1<<heading;",source)
         self.assertNotIn("step <= MAX_SEARCH_QUARTS; step++",source)
 
 if __name__=="__main__":

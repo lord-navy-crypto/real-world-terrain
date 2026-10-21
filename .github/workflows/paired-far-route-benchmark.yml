@@ -75,9 +75,8 @@ jobs:
           PROPERTIES
             done
           done
-      # Before is the last fully green baseline WITH the 0.03% hit-rate
-      # complete-resolution cache; after removes only that cache.
-      # Both presets use sky_ocean -> natural_ecotones -> vanilla multi_noise.
+      # Baseline keeps the original direction-major ray search, same memo and codec.
+      # Candidate changes ONLY the ray visitation order while preserving rule ties.
       - name: Run original real server first (fresh saved world)
         env:
           BASEDIR: ${{ runner.temp }}

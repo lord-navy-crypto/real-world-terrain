@@ -15,10 +15,9 @@ class EcotoneContextReuseTests(unittest.TestCase):
                   s.index("/**\n     * Original ecotone algorithm:")]
         self.assertIn("SamplingCache cache = cached.get();",resolve)
         self.assertIn("cache.prepare(sampler);",resolve)
+        self.assertLess(resolve.index("cache.prepare(sampler);"),
+                        resolve.index("cache.resolved.get(key);"))
         self.assertIn("resolveUncached(quartX, quartY, quartZ, sampler, cache)",resolve)
-        self.assertNotIn("cache.resolved",resolve)
-        self.assertNotIn("BlockPos.asLong(",resolve)
-        self.assertIn("DensityPerfSampler.ecotoneResolution();",resolve)
         sample=s[s.index("private Holder<Biome> sampleBase("):
                  s.index("private BiomeSource source()")]
         self.assertIn("Climate.Sampler sampler, SamplingCache cache)",sample)
@@ -27,13 +26,14 @@ class EcotoneContextReuseTests(unittest.TestCase):
         self.assertIn("source.getNoiseBiome(quartX, quartY, quartZ, sampler)",sample)
         inner=s[s.index("private Holder<Biome> resolveUncached("):]
         self.assertIn("sampleBase(quartX, quartY, quartZ, sampler, cache)",inner)
-        self.assertIn("quartY, quartZ + direction[1] * step, sampler, cache)",inner)
+        self.assertIn("quartY,quartZ+direction[1]*step,sampler,cache)",inner)
 
     def test_boundary_traversal_order_and_rejections_unchanged(self):
         s=SRC.read_text()
         self.assertIn("if (quartY < 12) return original;",s)
-        self.assertIn("if (distanceSquared >= closestDistanceSquared) break;",s)
-        self.assertIn("if (current.equals(next)) continue;",s)
+        self.assertIn("distanceSquared>=closestDistanceSquared",s)
+        self.assertIn("if((blockedHeadings&(1<<heading))!=0)continue;",s)
+        self.assertIn("if(current.equals(next))continue;",s)
         self.assertIn("Rule rule = findPair(current, next);",s)
         self.assertIn("if (rule != null && EcotoneMath.withinRadialBand(",s)
         self.assertIn("if (nearest == null",s) if False else None
