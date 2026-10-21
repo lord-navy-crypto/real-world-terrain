@@ -88,12 +88,10 @@ final class RealDemFittedMathV1 {
         // Inward derivatives, not a global polynomial outside its fit domain.
         double sx=dx==0?0:
             (center-RealDemSeamlessMath.measuredHeight(
-                clamp(bx-Math.copySign(STEP,dx),DEM.originX(),DEM.maxX()),bz))/STEP
-                *Math.signum(dx);
+                clamp(bx-Math.copySign(STEP,dx),DEM.originX(),DEM.maxX()),bz))/STEP;
         double sz=dz==0?0:
             (center-RealDemSeamlessMath.measuredHeight(
-                bx,clamp(bz-Math.copySign(STEP,dz),DEM.originZ(),DEM.maxZ())))/STEP
-                *Math.signum(dz);
+                bx,clamp(bz-Math.copySign(STEP,dz),DEM.originZ(),DEM.maxZ())))/STEP;
         // Derivative contribution is bounded: no kilometer-high sloping plane.
         double tilt=clamp(sx,-0.70,0.70)*1600.0*Math.tanh(Math.abs(dx)/1600.0)
                    +clamp(sz,-0.70,0.70)*1600.0*Math.tanh(Math.abs(dz)/1600.0);
