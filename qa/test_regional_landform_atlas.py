@@ -59,6 +59,10 @@ class RegionalLandformAtlasQA(unittest.TestCase):
         # historical geological wonders; regional archive did not opt in.
         if base_source["source"]["source"]["type"]=="realscale:geo_wonders_opt_in":
             base_source["source"]["source"]=base_source["source"]["source"]["source"]
+        # The archived regional test world retains the older saved spawn3 codec.
+        # Only newly player-selected presets adopt the separate free-spawn codec.
+        if base_source["source"]["source"]["type"]=="realscale:cross_realm_free_spawn_v1":
+            base_source["source"]["source"]["type"]="realscale:cross_realm_spawn3"
         self.assertEqual(newGenerator["biome_source"],base_source)
         self.assertEqual(newGenerator["type"],oldGenerator["type"])
         self.assertEqual(newGenerator["settings"],"realscale:"+NAME)
