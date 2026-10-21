@@ -1,0 +1,69 @@
+name: RealScale sampled density-stage diagnostic
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/density-stage-diagnostic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: density-stage-diagnostic-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  sampled-real-worldgen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # JVM property inherited by the forked NeoForge game server, not only Gradle.
+      JAVA_TOOL_OPTIONS: -Drealscale.density.profile=true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Configure original 2096-high Sacred world and normal structures
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=world
+          level-type=realscale:tva_sacred_timeline_three_realms
+          level-seed=42
+          generate-structures=true
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Run actual distant-route worldgen with sampled density instrumentation
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . realscale:tva_sacred_timeline_three_realms distant_route
+      - name: Parse server shutdown density-stage CPU timing samples
+        run: |
+          python3 qa/neoforge/parse_density_profile.py neoforge/build/rcon_distant_route_server.log build/density-stage-diagnostic.json
+          cat build/density-stage-diagnostic.json
+      - name: Preserve real JVM timing counters and complete-route evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-Density-Stage-Samples-Sacred42
+          path: |
+            build/density-stage-diagnostic.json
+            neoforge/build/rcon_distant_route_server.log
+            neoforge/build/rcon_distant_route_timing.json
+            neoforge/build/rcon_distant_route_thread_dump_*.txt
+          if-no-files-found: warn
