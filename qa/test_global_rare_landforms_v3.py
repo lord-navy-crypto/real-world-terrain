@@ -46,8 +46,10 @@ class GlobalRareGeomorphologyV3(unittest.TestCase):
         self.assertIn("base.mapAll(visitor)",source)
         self.assertIn("selector.mapAll(visitor)",source)
         self.assertIn("Math.floorDiv(x, RegionalLandformMath.CELL_V3)",source)
-        self.assertIn("RegionalLandformMath.gate(continental, current)",source)
-        self.assertIn("ThreadLocal<SiteCache>",source)
+        self.assertIn("RegionalLandformMath.gate(continental,current)",source)
+        self.assertIn("ThreadLocal<RegionalGlobalLandformCellMemo>",source)
+        self.assertIn("site.at(cellX,cellZ)",source)
+        self.assertIn("selector.compute(anchor)",source)
 
     def test_world_can_be_selected_without_changing_previous_worlds(self):
         old=load(DATA/"world_preset/tva_regional_landform_expedition_v2_three_realms.json")
@@ -62,12 +64,11 @@ class GlobalRareGeomorphologyV3(unittest.TestCase):
         self.assertEqual(old["dimensions"]["minecraft:overworld"]["generator"]["settings"],
                          "realscale:tva_regional_atlas_v2")
         menu=load(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
-        self.assertEqual(len(menu["values"]),13)
-        self.assertEqual(len(set(menu["values"])),13)
-        self.assertEqual(menu["values"][-2],
-                         "realscale:tva_global_landform_expedition_v3_three_realms")
-        self.assertEqual(menu["values"][-3],
-                         "realscale:tva_regional_landform_expedition_v2_three_realms")
+        self.assertEqual(len(menu["values"]),4)
+        self.assertEqual(len(set(menu["values"])),4)
+        self.assertNotIn("realscale:tva_global_landform_expedition_v3_three_realms",menu["values"])
+        self.assertNotIn("realscale:tva_regional_landform_expedition_v2_three_realms",menu["values"])
+        self.assertIn("realscale:tva_measured_usgs_fitted_v2_three_realms",menu["values"])
         self.assertEqual(load(DATA/"world_preset/tva_measured_biodiversity_end3_spawn3_v3.json")[
                          "dimensions"]["minecraft:overworld"]["generator"]["settings"],
                          "realscale:usgs_big_sur_v2")

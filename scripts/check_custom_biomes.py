@@ -100,7 +100,8 @@ def test_natural_ecotone_preset():
     assert load(PRESETS / "realism_max.json") == original
     tag = load(ROOT.parent / "minecraft/tags/worldgen/world_preset/normal.json")
     assert (PRESETS / "realism_max_ecotones.json").is_file()  # historical preset remains available
-    assert "realscale:tva_sacred_timeline_three_realms" in tag["values"]
+    assert "realscale:tva_natural_hypsometry_v1_three_realms" in tag["values"]
+    assert len(tag["values"]) == 4
 
 def test_biome_lab():
     d = load(PRESETS / "biome_lab.json")
@@ -238,7 +239,7 @@ def test_grand_dimensions():
     mod_java = (ROOT.parents[2] / "java/org/realscale/neoforge/RealScaleMod.java").read_text()
     assert '"grand_end_density"' in mod_java
     tag = load(ROOT.parent/"minecraft/tags/worldgen/world_preset/normal.json")
-    assert "realscale:tva_sacred_timeline_three_realms" in tag["values"]
+    assert "realscale:tva_natural_hypsometry_v1_three_realms" in tag["values"]
     assert (PRESETS/"realism_max_three_realms.json").exists()
     for file in ("realism_max.json","realism_max_ecotones.json"):
         assert load(PRESETS/file)["dimensions"]["minecraft:the_nether"]["generator"]["settings"] == "minecraft:nether"

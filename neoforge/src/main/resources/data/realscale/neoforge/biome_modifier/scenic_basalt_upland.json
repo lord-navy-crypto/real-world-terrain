@@ -1,0 +1,12 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:badlands",
+    "minecraft:eroded_badlands",
+    "minecraft:stony_peaks",
+    "realscale:geothermal_sulfur_basin",
+    "realscale:acidic_geothermal_mudflat"
+  ],
+  "features": "realscale:scenic_basalt_upland",
+  "step": "vegetal_decoration"
+}

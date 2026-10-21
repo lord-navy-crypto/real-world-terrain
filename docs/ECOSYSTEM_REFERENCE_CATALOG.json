@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "sources": {
+    "iucn": "https://iucn.org/resources/conservation-tool/iucn-global-ecosystem-typology",
+    "noaa": "https://oceanexplorer.noaa.gov/exploration-extras/24-national-ocean-month/"
+  },
+  "habitats": [
+    {
+      "id": "abyssal_sediment",
+      "realm": "marine",
+      "geology": "soft sediment",
+      "priority": "high"
+    },
+    {
+      "id": "seamount_coral_garden",
+      "realm": "marine",
+      "geology": "rocky exposed slopes",
+      "priority": "high"
+    },
+    {
+      "id": "cold_seep_community",
+      "realm": "marine",
+      "geology": "seabed seep environments",
+      "priority": "high"
+    },
+    {
+      "id": "deep_marine_canyon",
+      "realm": "marine",
+      "geology": "canyon walls and floor",
+      "priority": "medium"
+    },
+    {
+      "id": "coastal_seagrass_meadow",
+      "realm": "coastal marine",
+      "geology": "shallow sediment",
+      "priority": "high"
+    },
+    {
+      "id": "temperate_kelp_forest",
+      "realm": "coastal marine",
+      "geology": "hard shallow substrate",
+      "priority": "high"
+    },
+    {
+      "id": "mangrove_tidal_forest",
+      "realm": "coastal transitional",
+      "geology": "tidal mud",
+      "priority": "high"
+    },
+    {
+      "id": "peat_swamp_forest",
+      "realm": "terrestrial freshwater",
+      "geology": "waterlogged organic soils",
+      "priority": "high"
+    }
+  ],
+  "disclaimer": "Habitat classification is illustrative; no IUCN conservation risk category is assigned without location-specific assessment."
+}

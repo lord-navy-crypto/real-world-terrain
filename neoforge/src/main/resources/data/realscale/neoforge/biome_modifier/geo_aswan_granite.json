@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:desert",
+    "minecraft:savanna",
+    "minecraft:badlands"
+  ],
+  "features": "realscale:geo_aswan_granite",
+  "step": "vegetal_decoration"
+}

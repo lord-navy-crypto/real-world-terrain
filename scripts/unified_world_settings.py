@@ -52,6 +52,52 @@ def invasion_preset(source_preset: dict, spawn_end_habitats: bool = False) -> di
     return world
 
 
+
+def recover_terrain_lab_ecology(source_preset: dict) -> dict:
+    """Restore current shared habitats in a newly exported unified Lab world.
+
+    Legacy saved profiles and the mod's historical source JSON are untouched.
+    Do not change existing fixed-ID unified Sacred/Measured export variants.
+    """
+    world = copy.deepcopy(source_preset)
+    overworld = world["dimensions"]["minecraft:overworld"]["generator"]
+    biome = overworld["biome_source"]
+    if biome.get("type") == "realscale:cross_realm_showcase":
+        biome = biome["source"]
+    if biome.get("type") != "realscale:sky_ocean":
+        raise ValueError("Unified Lab ecology requires an outer sky_ocean source")
+    source = biome["source"]
+    wrappers = {"realscale:rare_earth_biomes_v1", "realscale:geo_wonders_opt_in"}
+    while source.get("type") in wrappers:
+        source = source["source"]
+    if source.get("type") not in ("realscale:cross_realm_spawn3",
+                                  "realscale:cross_realm_invasion"):
+        raise ValueError("Unified Lab ecology requires existing invasion")
+    invasion = copy.deepcopy(source)
+    baseline = invasion["source"]
+    while baseline.get("type") in wrappers:
+        baseline = baseline["source"]
+    if baseline.get("type") in ("realscale:natural_ecotones",
+                                "realscale:natural_ecotones_diverse_v2"):
+        baseline = {"type": "realscale:natural_ecotones_diverse_v3",
+                    "source": baseline["source"]}
+    elif baseline.get("type") != "realscale:natural_ecotones_diverse_v3":
+        raise ValueError("Cannot preserve unknown Lab ecotone source: "
+                         + str(baseline.get("type")))
+    invasion["source"] = baseline
+    # Geo-wonders must stay OUTSIDE invasion, rare-Earth outside wonders,
+    # with sky islands at the outermost sampled overworld level.
+    # These positions are also required by SkyOcean's feature guards.
+    biome["source"] = {
+        "type": "realscale:rare_earth_biomes_v1",
+        "source": {
+            "type": "realscale:geo_wonders_opt_in",
+            "source": invasion
+        }
+    }
+    return world
+
+
 def create_preset(root: Path, world_source: str,
                   enable_invasion: bool, lab_name: str | None = None,
                   showcase: bool = False, end_biomes: bool = False,

@@ -13,7 +13,7 @@ public final class MarineEcologyZonationMathSmoke {
     }
     public static void main(String[] args){
         var H=MarineEcologyZonationMath.Habitat.values();
-        yes(H.length==9,"Expected eight visual strata plus none");
+        yes(H.length==12,"Expected original eight strata plus three geological habitats and none");
         zone("minecraft:warm_ocean",10,true,.9,H[0]);
         zone("minecraft:lukewarm_ocean",12,false,.75,H[1]);
         zone("minecraft:ocean",10,true,.9,H[2]);
@@ -26,10 +26,10 @@ public final class MarineEcologyZonationMathSmoke {
         zone("minecraft:deep_frozen_ocean",72,false,.8,H[7]);
         zone("minecraft:deep_ocean",78,true,.8,H[5]);
         zone("minecraft:deep_ocean",88,false,.8,H[7]);
-        zone("minecraft:river",15,true,.8,H[8]);
-        zone("realscale:end_crystal_barrens",15,true,.8,H[8]);
-        zone("minecraft:deep_cold_ocean",3,true,.8,H[8]);
-        zone("minecraft:deep_cold_ocean",161,true,.8,H[8]);
+        zone("minecraft:river",15,true,.8,MarineEcologyZonationMath.Habitat.NONE);
+        zone("realscale:end_crystal_barrens",15,true,.8,MarineEcologyZonationMath.Habitat.NONE);
+        zone("minecraft:deep_cold_ocean",3,true,.8,MarineEcologyZonationMath.Habitat.NONE);
+        zone("minecraft:deep_cold_ocean",161,true,.8,MarineEcologyZonationMath.Habitat.NONE);
         zone("minecraft:deep_cold_ocean",70,true,0,H[7]);
         zone("minecraft:warm_ocean",40,true,.9,H[5]);
         // Seaweed photosynthesis cannot go into a dark deep zone.
@@ -52,6 +52,6 @@ public final class MarineEcologyZonationMathSmoke {
         yes(MarineEcologyZonationMath.patch(100,200,42)!=
             MarineEcologyZonationMath.patch(100,200,785312L),
             "Different seeds must not produce identical patches");
-        System.out.println("MARINE_ECOLOGY_LAYERS_PASS: 8 distinct strata, cold colorful reefs, shallow kelp, seed-safe 96-block groves");
+        System.out.println("MARINE_ECOLOGY_LAYERS_PASS: 11 visual strata, cold reefs, seamounts, seeps and seed-safe groves");
     }
 }

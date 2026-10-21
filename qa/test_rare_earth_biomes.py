@@ -35,6 +35,8 @@ class RareEarthBiomes(unittest.TestCase):
         self.assertIn("if(qy<16)return original",source)
         self.assertIn("id.contains(\"ocean\")",source)
         self.assertIn("Math.floorDiv(qx,64)",source)
+        self.assertIn("int variant=(int)((h>>>3)&3L)",source)
+        self.assertNotIn("(h&1)==0",source)
 
     def test_all_world_presets_select_rare_biomes(self):
         presets=DATA/"worldgen/world_preset"
@@ -43,8 +45,25 @@ class RareEarthBiomes(unittest.TestCase):
         for name in tag["values"]:
             data=json.loads((presets/(name.split(":")[1]+".json")).read_text())
             source=data["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
-            self.assertEqual(source["type"],"realscale:rare_earth_biomes_v1",name)
-            self.assertIn("source",source)
+            self.assertEqual(source["type"],"realscale:sky_ocean",name)
+            self.assertEqual(source["source"]["type"],"realscale:rare_earth_biomes_v1",name)
+            self.assertIn("source",source["source"])
+
+    def test_terrestrial_habitat_feature(self):
+        self.assertIn("new RareEarthHabitatFeature()", (SRC/"RealScaleMod.java").read_text())
+        config=json.loads((DATA/"worldgen/configured_feature/rare_earth_habitat.json").read_text())
+        placed=json.loads((DATA/"worldgen/placed_feature/rare_earth_habitat.json").read_text())
+        modifier=json.loads((DATA/"neoforge/biome_modifier/rare_earth_habitat.json").read_text())
+        self.assertEqual(config["type"],"realscale:rare_earth_habitat")
+        self.assertEqual(placed["feature"],"realscale:rare_earth_habitat")
+        self.assertEqual(set(modifier["biomes"]),{"realscale:"+x for x in IDS})
+        code=(SRC/"RareEarthHabitatFeature.java").read_text()
+        for marker in ("grove(", "flora(", "w.getBlockState(pos).isAir()",
+                       "TVAWorldGuard.hasRealScaleGenerator", "Level.OVERWORLD",
+                       "LeavesBlock.PERSISTENT", "getMinBlockX()", "getMaxBlockX()"):
+            self.assertIn(marker, code)
+        self.assertNotIn("Blocks.LAVA.defaultBlockState()", code)
+        self.assertNotIn("Blocks.WATER.defaultBlockState()", code)
 
     def test_safe_surface_only(self):
         src=(SRC/"RareEarthSurfaceFeature.java").read_text()

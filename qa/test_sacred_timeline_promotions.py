@@ -11,7 +11,8 @@ class SacredPromotionTest(unittest.TestCase):
   g=j["dimensions"]["minecraft:overworld"]["generator"]
   self.assertEqual(g["settings"],"realscale:tva_natural_smoothed")
   self.assertEqual(g["biome_source"]["type"],"realscale:sky_ocean")
-  self.assertEqual(g["biome_source"]["source"]["type"],"realscale:natural_ecotones")
+  self.assertEqual(g["biome_source"]["source"]["type"],"realscale:rare_earth_biomes_v1")
+  self.assertEqual(g["biome_source"]["source"]["source"]["type"],"realscale:natural_ecotones")
   self.assertEqual(j["dimensions"]["minecraft:the_nether"]["generator"]["settings"],"realscale:grand_nether")
   self.assertEqual(j["dimensions"]["minecraft:the_end"]["generator"]["settings"],"realscale:grand_end")
   self.assertNotIn("geo_wonders_opt_in",json.dumps(j))
@@ -26,7 +27,7 @@ class SacredPromotionTest(unittest.TestCase):
   self.assertEqual(x["settings"],y["settings"])
   self.assertEqual(y["biome_source"]["type"],"realscale:sky_ocean")
   self.assertEqual(y["biome_source"]["source"]["type"],"realscale:geo_wonders_opt_in")
-  self.assertEqual(y["biome_source"]["source"]["source"],x["biome_source"]["source"])
+  self.assertEqual(y["biome_source"]["source"]["source"],x["biome_source"]["source"]["source"])
  def test_no_unverified_features_can_run_without_explicit_opt_in(self):
   guard=(S/"TVAWorldGuard.java").read_text()
   self.assertIn("hasExperimentalWonders",guard)

@@ -44,6 +44,17 @@ public final class RareEarthBiomeSource extends BiomeSource {
             rare.put(id,biomes.getOrThrow(ResourceKey.create(Registries.BIOME,
                 ResourceLocation.fromNamespaceAndPath("realscale",id))));
     }
+    // Preserve existing SkyOcean spawn-island and invasion semantics when
+    // inserted transparently between SkyOcean and its previous child source.
+    boolean containsCrossRealm() {
+        return source instanceof CrossRealmBiomeSource
+                || source instanceof CrossRealmShowcaseBiomeSource
+                || source instanceof GeoWondersBiomeSource wonders
+                   && wonders.containsCrossRealm();
+    }
+    boolean containsGeoWonders() {
+        return source instanceof GeoWondersBiomeSource;
+    }
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),rare.values().stream()).distinct();
     }
@@ -65,12 +76,15 @@ public final class RareEarthBiomeSource extends BiomeSource {
                 ^ (long)Math.floorDiv(qz,64)*0x632be59bd9b4e019L
                 ^ 0x193a4ef1L);
         if(Math.floorMod(h,8)!=0)return original;
+        // Low three hash bits are zero for admitted districts; use *higher*
+        // bits for variants or half the rare ecosystems become unreachable.
+        int variant=(int)((h>>>3)&3L);
         String target=switch(id){
-            case "badlands","eroded_badlands" -> (h&1)==0
+            case "badlands","eroded_badlands" -> (variant&1)==0
                     ?"geothermal_sulfur_basin":"acidic_geothermal_mudflat";
-            case "desert" -> (h&3)==0?"white_dune_lagoon":
-                    (h&1)==0?"namib_fog_desert":"limestone_island_scrub";
-            case "savanna","savanna_plateau" -> (h&1)==0
+            case "desert" -> variant==0?"white_dune_lagoon":
+                    (variant&1)==0?"namib_fog_desert":"limestone_island_scrub";
+            case "savanna","savanna_plateau" -> (variant&1)==0
                     ?"socotra_dragonblood_woodland":"socotra_endemic_scrub";
             case "mangrove_swamp" -> "sundarbans_tidal_mangrove";
             case "swamp" -> "congo_peat_swamp_forest";

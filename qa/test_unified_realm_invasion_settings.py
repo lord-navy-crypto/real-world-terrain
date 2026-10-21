@@ -204,7 +204,7 @@ class UnifiedRealmInvasionTests(unittest.TestCase):
                         profile, language = export(jar, draft, output)
                         self.assertEqual(profile,
                             "realscale:unified_" + source +
-                            ("_invasion_showcase_v1" if showcase else "_invasion_v1"))
+                            ("_invasion_showcase_v1" if showcase else "_invasion_v1") + "_ecology_v1")
                         with zipfile.ZipFile(output) as archive:
                             preset_files = [name for name in archive.namelist()
                                             if "/world_preset/" in name
@@ -222,6 +222,23 @@ class UnifiedRealmInvasionTests(unittest.TestCase):
                                 self.assertEqual(
                                     preset["dimensions"][dim]["generator"]["settings"],
                                     original["dimensions"][dim]["generator"]["settings"])
+                            src=preset["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+                            if showcase:
+                                self.assertEqual(src["type"],"realscale:cross_realm_showcase")
+                                src=src["source"]
+                            stack=[]
+                            while "source" in src:
+                                stack.append(src["type"])
+                                src=src["source"]
+                            stack.append(src["type"])
+                            self.assertEqual(stack,[
+                                "realscale:sky_ocean",
+                                "realscale:rare_earth_biomes_v1",
+                                "realscale:geo_wonders_opt_in",
+                                "realscale:cross_realm_invasion",
+                                "realscale:natural_ecotones_diverse_v3",
+                                "minecraft:multi_noise",
+                            ])
                             for tag in ("normal", "extended"):
                                 path = "data/minecraft/tags/worldgen/world_preset/" + tag + ".json"
                                 info = json.loads(archive.read(path))

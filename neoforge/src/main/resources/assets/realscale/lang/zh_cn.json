@@ -50,10 +50,15 @@
   "biome.realscale.coastal_pine_barrens": "海岸松林荒原",
   "biome.realscale.frost_heath_moor": "寒霜石楠荒原",
   "biome.realscale.arid_rocksteppe": "干旱岩砾草原",
-  "generator.realscale.tva_sacred_biodiversity_end3_spawn3_v3": "RealScale 神圣时间线 · 14 种新增生态群系 + 天空群岛 + 末地入侵（实验）",
+  "generator.realscale.tva_sacred_biodiversity_end3_spawn3_v3": "RealScale 自然探索 · 丰富生态与跨维度奇遇",
   "generator.realscale.tva_measured_biodiversity_end3_spawn3_v3": "RealScale 实测地形 / USGS · 14 种新增生态群系 + 天空群岛 + 末地入侵（实验）",
   "generator.realscale.tva_regional_landform_expedition_three_realms": "RealScale 全球高原探险 · 青藏、安第斯、四川、重庆、云贵地貌（实验）",
   "generator.realscale.tva_regional_landform_expedition_v2_three_realms": "RealScale 全球高原探险 v2 · 16 种青藏/安第斯/云贵/四川区域地貌（实验）",
   "generator.realscale.tva_global_landform_expedition_v3_three_realms": "RealScale 全球奇特地貌探险 v3 · 24种世界地貌（实验）",
-  "generator.realscale.tva_measured_global_landforms_three_realms": "RealScale USGS 实测融合世界 · 实测常规地形 + 24 种奇特地貌（实验）"
+  "generator.realscale.tva_measured_global_landforms_three_realms": "RealScale 地球实测 · USGS 与全球特色地貌",
+  "generator.realscale.tva_alpine_three_realms": "RealScale 高山世界 · 山脉与雪线",
+  "generator.realscale.tva_canyon_three_realms": "RealScale 峡谷世界 · 岩层与深切河谷",
+  "generator.realscale.tva_natural_hypsometry_v1_three_realms": "自然探索 · 全球海拔比例优化",
+  "generator.realscale.tva_measured_usgs_fitted_v1_three_realms": "USGS 实测探索 · 连续地貌拟合（试验版）",
+  "generator.realscale.tva_measured_usgs_fitted_v2_three_realms": "USGS 实测探索 · 全量连续拟合 V2（试验版）"
 }

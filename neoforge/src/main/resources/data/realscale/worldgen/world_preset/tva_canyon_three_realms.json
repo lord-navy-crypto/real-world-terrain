@@ -3,14 +3,21 @@
     "minecraft:overworld": {
       "generator": {
         "biome_source": {
-          "type": "realscale:rare_earth_biomes_v1",
+          "type": "realscale:sky_ocean",
           "source": {
-            "type": "realscale:sky_ocean",
+            "type": "realscale:rare_earth_biomes_v1",
             "source": {
-              "type": "realscale:natural_ecotones",
+              "type": "realscale:geo_wonders_opt_in",
               "source": {
-                "preset": "minecraft:overworld",
-                "type": "minecraft:multi_noise"
+                "type": "realscale:cross_realm_free_spawn_v1",
+                "target": "overworld",
+                "source": {
+                  "type": "realscale:natural_ecotones_diverse_v3",
+                  "source": {
+                    "preset": "minecraft:overworld",
+                    "type": "minecraft:multi_noise"
+                  }
+                }
               }
             }
           }
@@ -23,7 +30,13 @@
     "minecraft:the_end": {
       "generator": {
         "biome_source": {
-          "type": "minecraft:the_end"
+          "type": "realscale:end_accents",
+          "source": {
+            "type": "realscale:cross_realm_invasion",
+            "source": {
+              "type": "minecraft:the_end"
+            }
+          }
         },
         "settings": "realscale:grand_end",
         "type": "minecraft:noise"
@@ -33,8 +46,11 @@
     "minecraft:the_nether": {
       "generator": {
         "biome_source": {
-          "preset": "minecraft:nether",
-          "type": "minecraft:multi_noise"
+          "type": "realscale:cross_realm_invasion",
+          "source": {
+            "preset": "minecraft:nether",
+            "type": "minecraft:multi_noise"
+          }
         },
         "settings": "realscale:grand_nether",
         "type": "minecraft:noise"

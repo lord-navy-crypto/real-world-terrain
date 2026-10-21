@@ -126,7 +126,7 @@ class MarineZonationQA(unittest.TestCase):
 
     def test_all_registered_realscale_overworld_presets_are_eligible(self):
         presets=read(ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")["values"]
-        self.assertEqual(len(presets),13)
+        self.assertEqual(len(presets),4)
         for preset in presets:
             name=preset.split(":",1)[1]
             data=read(WG/"world_preset"/(name+".json"))
@@ -147,9 +147,9 @@ class MarineZonationQA(unittest.TestCase):
         self.assertEqual(historic["dimensions"]["minecraft:overworld"]["generator"]["settings"],
                          "realscale:usgs_big_sur_v2")
         options=read(ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")["values"]
-        self.assertEqual(len(options),13)
-        self.assertEqual(len(set(options)),13)
-        self.assertEqual(options[-1],"realscale:tva_measured_global_landforms_three_realms")
+        self.assertEqual(len(options),4)
+        self.assertEqual(len(set(options)),4)
+        self.assertIn("realscale:tva_measured_usgs_fitted_v2_three_realms",options)
         self.assertEqual(read(WG/"noise_settings/usgs_global_hybrid_marine.json")["sea_level"],63)
         self.assertTrue((WG/"noise_settings/usgs_global_hybrid.json").is_file())
         self.assertTrue((WG/"noise_settings/usgs_big_sur_v2.json").is_file())

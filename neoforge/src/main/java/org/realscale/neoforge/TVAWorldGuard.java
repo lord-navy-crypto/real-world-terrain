@@ -17,12 +17,24 @@ public final class TVAWorldGuard {
                 .map(key -> "realscale".equals(key.location().getNamespace()))
                 .orElse(false);
     }
+    /** The unlisted Northern Fjord v4 preset is the only experimental ecology gate. */
+    public static boolean hasNorthernFjordV4(FeaturePlaceContext<?> ctx) {
+        if(!hasRealScaleGenerator(ctx))return false;
+        if(!(ctx.chunkGenerator() instanceof NoiseBasedChunkGenerator generator))
+            return false;
+        return generator.generatorSettings().unwrapKey()
+            .map(key->"realscale:tva_cinematic_landforms_v4"
+                .equals(key.location().toString())).orElse(false);
+    }
+
     /** Opt-in wonder experiments, never enabled on the sacred timeline. */
     public static boolean hasExperimentalWonders(FeaturePlaceContext<?> context) {
         if (!hasRealScaleGenerator(context)) return false;
         BiomeSource source=context.chunkGenerator().getBiomeSource();
         return source instanceof GeoWondersBiomeSource
-            || source instanceof SkyOceanBiomeSource sky && sky.containsGeoWonders();
+            || source instanceof SkyOceanBiomeSource sky && sky.containsGeoWonders()
+            || source instanceof CrossRealmShowcaseBiomeSource showcase
+               && showcase.containsGeoWonders();
     }
 
     /** Opt-in cross-realm invasion, not an implicit effect of any RealScale preset. */

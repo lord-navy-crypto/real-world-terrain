@@ -14,20 +14,8 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  */
 public final class RegionalGlobalLandformDensity implements DensityFunction.SimpleFunction {
     private final DensityFunction base, continents, selector;
-    private final ThreadLocal<SiteCache> cached = ThreadLocal.withInitial(SiteCache::new);
-
-    private static final class SiteCache {
-        int cellX = Integer.MIN_VALUE, cellZ = Integer.MIN_VALUE;
-        int kind;
-        boolean hasKind;
-        void resetIfDifferent(int x, int z) {
-            if (cellX != x || cellZ != z) {
-                cellX = x;
-                cellZ = z;
-                hasKind = false;
-            }
-        }
-    }
+    private final ThreadLocal<RegionalGlobalLandformCellMemo> cached =
+            ThreadLocal.withInitial(RegionalGlobalLandformCellMemo::new);
 
     public RegionalGlobalLandformDensity(DensityFunction base,
                                           DensityFunction continents,
@@ -58,24 +46,24 @@ public final class RegionalGlobalLandformDensity implements DensityFunction.Simp
         final int x = ctx.blockX(), z = ctx.blockZ();
         final int cellX = Math.floorDiv(x, RegionalLandformMath.CELL_V3);
         final int cellZ = Math.floorDiv(z, RegionalLandformMath.CELL_V3);
-        final long hash = RegionalLandformMath.hashV3(cellX, cellZ);
-        final int siteX = RegionalLandformMath.centerXV3(cellX, hash);
-        final int siteZ = RegionalLandformMath.centerZV3(cellZ, hash);
-        final double dx = (double)x-siteX, dz = (double)z-siteZ;
-        final double radius = RegionalLandformMath.radiusV3(hash);
-        if (dx*dx+dz*dz >= 1.166400001*radius*radius) return current;
+        // Never rehash the same 12-km cell for hundreds of Y samples.
+        RegionalGlobalLandformCellMemo site=cached.get();
+        site.at(cellX,cellZ);
+        final double dx=(double)x-site.siteX, dz=(double)z-site.siteZ;
+        if(dx*dx+dz*dz>=site.edgeSquared)return current;
 
-        final double continental = continents.compute(ctx);
-        if (RegionalLandformMath.gate(continental, current) <= 0) return current;
-        SiteCache site = cached.get();
-        site.resetIfDifferent(cellX, cellZ);
-        if (!site.hasKind) {
+        final double continental=continents.compute(ctx);
+        if(RegionalLandformMath.gate(continental,current)<=0)return current;
+        // Selection stays lazy and tied to the SAME seed-remapped selector.
+        if(!site.hasKind){
             DensityFunction.SinglePointContext anchor =
-                    new DensityFunction.SinglePointContext(siteX, 0, siteZ);
-            site.kind = RegionalLandformMath.kindV3(hash, selector.compute(anchor));
-            site.hasKind = true;
+                    new DensityFunction.SinglePointContext(site.siteX,0,site.siteZ);
+            site.kind=RegionalLandformMath.kindV3(
+                    site.hash,selector.compute(anchor));
+            site.hasKind=true;
         }
-        return RegionalLandformMath.apply(site.kind, current, dx, dz, radius, continental);
+        return RegionalLandformMath.apply(site.kind,current,dx,dz,
+                site.radius,continental);
     }
 
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {

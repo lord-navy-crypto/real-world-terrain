@@ -45,6 +45,17 @@ public final class CrossRealmBiomeSource extends BiomeSource {
         ).apply(i, (source, target, registry) ->
             new CrossRealmBiomeSource(source, target, true, registry)));
 
+    // Modern selectable presets use a separate codec so their origin is ordinary
+    // Overworld terrain, while every older saved spawn3 codec remains unchanged.
+    public static final MapCodec<CrossRealmBiomeSource> FREE_SPAWN_CODEC =
+        RecordCodecBuilder.mapCodec(i -> i.group(
+            BiomeSource.CODEC.fieldOf("source").forGetter(CrossRealmBiomeSource::source),
+            Codec.STRING.optionalFieldOf("target", "overworld")
+                .forGetter(CrossRealmBiomeSource::target),
+            RegistryOps.retrieveGetter(Registries.BIOME)
+        ).apply(i, (source, target, registry) ->
+            new CrossRealmBiomeSource(source, target, false, false, registry)));
+
     private static final int CELL=512;
     // A 192-block radius covers the origin spawn platform and vanilla
     // randomized 1st-spawn offsets. It deliberately does NOT turn the whole
@@ -57,14 +68,21 @@ public final class CrossRealmBiomeSource extends BiomeSource {
     private final BiomeSource source;
     private final String target;
     private final boolean spawnEndHabitats;
+    private final boolean forceOriginInvasion;
     private final Holder<Biome> forest, plains, meadow, cherry, taiga, netherWastes, endHighlands;
     private final Holder<Biome> chorusGardens, crystalBarrens, shatteredGlades;
 
     private CrossRealmBiomeSource(BiomeSource source,String target,
                                  boolean spawnEndHabitats,HolderGetter<Biome> registry) {
+        this(source, target, spawnEndHabitats, true, registry);
+    }
+    private CrossRealmBiomeSource(BiomeSource source,String target,
+                                 boolean spawnEndHabitats,boolean forceOriginInvasion,
+                                 HolderGetter<Biome> registry) {
         this.source=source;
         this.target=target;
         this.spawnEndHabitats=spawnEndHabitats;
+        this.forceOriginInvasion=forceOriginInvasion;
         forest=get(registry,"forest");
         plains=get(registry,"plains");
         meadow=get(registry,"meadow");
@@ -87,7 +105,10 @@ public final class CrossRealmBiomeSource extends BiomeSource {
     private BiomeSource source(){return source;}
     private String target(){return target;}
     private boolean spawnEndHabitats(){return spawnEndHabitats;}
-    @Override protected MapCodec<? extends BiomeSource> codec(){return spawnEndHabitats ? SPAWN3_CODEC : CODEC;}
+    @Override protected MapCodec<? extends BiomeSource> codec(){
+        return !forceOriginInvasion ? FREE_SPAWN_CODEC
+                : spawnEndHabitats ? SPAWN3_CODEC : CODEC;
+    }
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),
             Stream.of(forest,plains,meadow,cherry,taiga,netherWastes,endHighlands,
@@ -102,10 +123,23 @@ public final class CrossRealmBiomeSource extends BiomeSource {
     @Override public Holder<Biome> getNoiseBiome(int quartX,int quartY,int quartZ,
                                                   Climate.Sampler sampler) {
         Holder<Biome> original=source.getNoiseBiome(quartX,quartY,quartZ,sampler);
+        // Most of the 2096-high overworld is outside the rare invasion's
+        // 56..196 Y band. Do not unwrap registry keys or hash site geometry
+        // for columns that must delegate unchanged. Historical forced-spawn
+        // worlds still cover EVERY Y in their initial 192-block circle.
+        if("overworld".equals(target)){
+            boolean originZone=isSpawnInvasionZone(quartX,quartZ);
+            if(!forceOriginInvasion && originZone)return original;
+            if((quartY<14||quartY>49)
+                    && !(forceOriginInvasion && originZone))return original;
+        }
         // Only extend an actual Nether or End biome; never overwrite ocean,
         // rivers or overworld climate, even if somebody wraps the wrong source.
         String biome=original.unwrapKey().map(k->k.location().toString()).orElse("");
         if("overworld".equals(target) && isSpawnInvasionZone(quartX, quartZ)) {
+            // Free-spawn worlds never overwrite the central vanilla spawn biome.
+            // The rare invasion patches beyond the origin still generate.
+            if (!forceOriginInvasion) return original;
             // Locked rule: the NEW WORLD's starting biome is EXACTLY one of
             // RealScale's three original End habitats, never a vanilla Nether
             // biome or a vanilla End biome. Determine the choice from a fixed

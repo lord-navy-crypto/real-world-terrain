@@ -40,7 +40,8 @@ class WovenOptionalFeaturesTest(unittest.TestCase):
     def test_opt_in_wrapper_order_preserves_sky_reefs_climate_and_invasions(self):
         o = self.combined["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
         self.assertEqual(o["type"], "realscale:sky_ocean")
-        wonder = o["source"]
+        self.assertEqual(o["source"]["type"],"realscale:rare_earth_biomes_v1")
+        wonder = o["source"]["source"]
         self.assertEqual(wonder["type"], "realscale:geo_wonders_opt_in")
         invasion = wonder["source"]
         self.assertEqual(invasion["type"], "realscale:cross_realm_invasion")
@@ -64,10 +65,14 @@ class WovenOptionalFeaturesTest(unittest.TestCase):
             with self.subTest(tag=tag_name):
                 entry = load(TAGS/(tag_name+".json"))
                 self.assertFalse(entry["replace"])
-                self.assertEqual(entry["values"][0], "realscale:"+CANONICAL)
-                self.assertEqual(entry["values"].count("realscale:"+COMBINED), 1)
+                self.assertEqual(entry["values"][0],
+                                 "realscale:tva_natural_hypsometry_v1_three_realms")
+                self.assertEqual(len(entry["values"]),4)
+                # The archived opt-in world stays in the registry but its
+                # features are now included in the four featured worlds.
+                self.assertNotIn("realscale:"+COMBINED,entry["values"])
                 for required in ("tva_alpine_three_realms", "tva_canyon_three_realms",
-                                 "tva_measured_three_realms"):
+                                 "tva_measured_usgs_fitted_v2_three_realms"):
                     self.assertIn("realscale:"+required,entry["values"])
 
     def test_nested_java_guards_activate_both_feature_families(self):
@@ -91,7 +96,9 @@ class WovenOptionalFeaturesTest(unittest.TestCase):
         for token in ("QuartBiomeResultCache", "cache.resolved.get",
                       "cache.resolved.put", "cache.prepare(sampler)"):
             self.assertIn(token, ecotone)
-        self.assertIn("SLOTS = 2048", cache)
+        self.assertIn("static final int SLOTS=8192;", cache)
+        self.assertIn("int index=bucket<<1;", cache)
+        self.assertIn("victim[bucket]^=1;", cache)
         self.assertIn("realscale.worldgen.profile",profiler)
         self.assertIn("static final boolean ENABLED",profiler)
 

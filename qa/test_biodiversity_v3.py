@@ -62,37 +62,57 @@ class BiomeDiversityV3(unittest.TestCase):
         self.assertIn('V3_MAX_WIDTH_BY_BIOME',java)
         self.assertIn('protectedWater(current)',java)
 
-    def test_presets_only_change_inner_ecotone_and_extend_normal_menu(self):
+    def test_historical_versions_are_not_player_facing(self):
         normal=read(TAGS/"normal.json")["values"]
         extended=read(TAGS/"extended.json")["values"]
-        self.assertEqual(len(normal),13)
-        self.assertEqual(len(extended),5)
-        self.assertEqual(len(set(normal)),len(normal))
-        self.assertEqual(normal[:5],extended)
+        expected=[
+            "realscale:tva_natural_hypsometry_v1_three_realms",
+            "realscale:tva_measured_usgs_fitted_v2_three_realms",
+            "realscale:tva_alpine_three_realms",
+            "realscale:tva_canyon_three_realms"
+        ]
+        self.assertEqual(normal,expected)
+        self.assertEqual(extended,expected)
+        # Historical v2/v3 files remain valid as test fixtures and for
+        # old exported profiles, not as duplicate menu entries.
         for family,legacy in zip(("sacred","measured"),BASE):
-            with self.subTest(family=family):
-                v2="tva_"+family+"_biodiversity_end3_spawn3_v2"
-                v3="tva_"+family+"_biodiversity_end3_spawn3_v3"
-                self.assertIn("realscale:"+v2,normal)
-                self.assertIn("realscale:"+v3,normal)
-                self.assertLess(normal.index("realscale:"+v2),normal.index("realscale:"+v3))
-                old=read(PRESETS/(legacy+".json"))
-                prev=read(PRESETS/(v2+".json"))
-                new=read(PRESETS/(v3+".json"))
-                self.assertEqual(new["dimensions"]["minecraft:the_nether"],prev["dimensions"]["minecraft:the_nether"])
-                self.assertEqual(new["dimensions"]["minecraft:the_end"],prev["dimensions"]["minecraft:the_end"])
-                for realm in old["dimensions"]:
-                    self.assertEqual(new["dimensions"][realm]["generator"]["settings"],
-                                     old["dimensions"][realm]["generator"]["settings"])
-                    self.assertEqual(new["dimensions"][realm]["type"],old["dimensions"][realm]["type"])
-                p=prev["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
-                q=new["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
-                self.assertEqual(q["type"],"realscale:sky_ocean")
-                self.assertEqual(q["source"]["type"],"realscale:cross_realm_spawn3")
-                self.assertEqual(q["source"]["target"],"overworld")
-                self.assertEqual(q["source"]["source"]["type"],"realscale:natural_ecotones_diverse_v3")
-                self.assertEqual(p["source"]["source"]["type"],"realscale:natural_ecotones_diverse_v2")
-                self.assertEqual(q["source"]["source"]["source"],p["source"]["source"]["source"])
+            v2="tva_"+family+"_biodiversity_end3_spawn3_v2"
+            v3="tva_"+family+"_biodiversity_end3_spawn3_v3"
+            self.assertNotIn("realscale:"+v2,normal)
+            old=read(PRESETS/(legacy+".json"))
+            prev=read(PRESETS/(v2+".json"))
+            new=read(PRESETS/(v3+".json"))
+            self.assertEqual(new["dimensions"]["minecraft:the_nether"],prev["dimensions"]["minecraft:the_nether"])
+            self.assertEqual(new["dimensions"]["minecraft:the_end"],prev["dimensions"]["minecraft:the_end"])
+            for realm in old["dimensions"]:
+                expected_setting=old["dimensions"][realm]["generator"]["settings"]
+                # Featured Sacred v3 is now a new versioned macro noise profile.
+                # This must not mutate any historical Sacred setting/fixture.
+                if family=="sacred" and realm=="minecraft:overworld":
+                    expected_setting="realscale:tva_cinematic_integrated_v1"
+                self.assertEqual(new["dimensions"][realm]["generator"]["settings"],
+                                 expected_setting)
+                self.assertEqual(new["dimensions"][realm]["type"],old["dimensions"][realm]["type"])
+            p=prev["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+            q=new["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+            self.assertEqual(q["type"],"realscale:sky_ocean")
+            self.assertEqual(q["source"]["type"],"realscale:rare_earth_biomes_v1")
+            invasion=q["source"]["source"]
+            if family=="sacred":
+                # Geological wonders from the removed menu option now remain
+                # reachable in the featured Natural Exploration preset.
+                self.assertEqual(invasion["type"],"realscale:geo_wonders_opt_in")
+                invasion=invasion["source"]
+            self.assertEqual(invasion["type"],
+                "realscale:cross_realm_free_spawn_v1" if family=="sacred"
+                else "realscale:cross_realm_spawn3")
+            # Archived v2 keeps its persisted forced-spawn codec unchanged.
+            self.assertEqual(p["source"]["source"]["type"],"realscale:cross_realm_spawn3")
+            self.assertEqual(invasion["target"],"overworld")
+            self.assertEqual(invasion["source"]["type"],"realscale:natural_ecotones_diverse_v3")
+            self.assertEqual(p["source"]["source"]["source"]["type"],"realscale:natural_ecotones_diverse_v2")
+            self.assertEqual(invasion["source"]["source"],
+                             p["source"]["source"]["source"]["source"])
 
     def test_unique_labels_for_world_and_biomes(self):
         for lang in ("en_us","zh_cn"):
@@ -102,10 +122,17 @@ class BiomeDiversityV3(unittest.TestCase):
             for family in ("sacred","measured"):
                 self.assertTrue(labels["generator.realscale.tva_"+family+"_biodiversity_end3_spawn3_v3"])
 
-    def test_all_84_biome_ids_are_unique_and_unchanged_legacy_count(self):
+    def test_all_biome_ids_preserve_legacy_catalog_and_rare_ecology(self):
         ids={p.stem for p in BIOMES.glob("*.json")}
-        self.assertEqual(len(ids),84)
-        self.assertEqual(len(ids-set(NAMES)),76)
+        rare={"geothermal_sulfur_basin","socotra_dragonblood_woodland",
+              "white_dune_lagoon","sundarbans_tidal_mangrove",
+              "congo_peat_swamp_forest","steppe_saline_lake",
+              "acidic_geothermal_mudflat","montane_mist_forest",
+              "permafrost_fen","limestone_island_scrub",
+              "namib_fog_desert","serpentine_barrens","socotra_endemic_scrub"}
+        self.assertEqual(len(ids),97)
+        self.assertTrue(rare <= ids)
+        self.assertEqual(len(ids-set(NAMES)-rare),76)
 
 
 if __name__=="__main__":unittest.main()

@@ -61,6 +61,18 @@ public final class SkyIslandLayout {
         return Math.abs((long)x-base.x())<=MAX_SITE_REACH
                 && Math.abs((long)z-base.z())<=MAX_SITE_REACH;
     }
+    /** Conservative chunk-local rejection of all satellites of one parent.
+     * Exact per-island AABB checks are still performed by the feature.
+     * Tests verify no omitted blocks at negative coords and grid edges.
+     */
+    public static boolean mayIntersectChunk(Site base,int chunkX,int chunkZ) {
+        long minX=(long)chunkX*16,minZ=(long)chunkZ*16;
+        long maxX=minX+15,maxZ=minZ+15;
+        return ((long)base.x()+MAX_SITE_REACH>=minX
+                 &&(long)base.x()-MAX_SITE_REACH<=maxX)
+            && ((long)base.z()+MAX_SITE_REACH>=minZ
+                 &&(long)base.z()-MAX_SITE_REACH<=maxZ);
+    }
     public static Site satellite(Site base,int slot) {
         if(slot<0||slot>=SLOTS) throw new IllegalArgumentException("invalid sky slot");
         if(slot==0)return base;

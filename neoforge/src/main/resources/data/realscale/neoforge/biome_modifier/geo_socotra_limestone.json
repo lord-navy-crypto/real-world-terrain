@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:socotra_dragonblood_woodland",
+    "realscale:socotra_endemic_scrub"
+  ],
+  "features": "realscale:geo_socotra_limestone",
+  "step": "vegetal_decoration"
+}

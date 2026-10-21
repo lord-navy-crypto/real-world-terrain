@@ -54,18 +54,30 @@ class RegionalLandformAtlasQA(unittest.TestCase):
         self.assertEqual(nowDims["minecraft:overworld"]["type"],origDims["minecraft:overworld"]["type"])
         oldGenerator=origDims["minecraft:overworld"]["generator"]
         newGenerator=nowDims["minecraft:overworld"]["generator"]
-        self.assertEqual(newGenerator["biome_source"],oldGenerator["biome_source"])
+        base_source=json.loads(json.dumps(oldGenerator["biome_source"]))
+        # The player-facing Natural Exploration preset now also preserves
+        # historical geological wonders; regional archive did not opt in.
+        if base_source["source"]["source"]["type"]=="realscale:geo_wonders_opt_in":
+            base_source["source"]["source"]=base_source["source"]["source"]["source"]
+        # The archived regional test world retains the older saved spawn3 codec.
+        # Only newly player-selected presets adopt the separate free-spawn codec.
+        if base_source["source"]["source"]["type"]=="realscale:cross_realm_free_spawn_v1":
+            base_source["source"]["source"]["type"]="realscale:cross_realm_spawn3"
+        self.assertEqual(newGenerator["biome_source"],base_source)
         self.assertEqual(newGenerator["type"],oldGenerator["type"])
         self.assertEqual(newGenerator["settings"],"realscale:"+NAME)
-        self.assertEqual(oldGenerator["settings"],"realscale:tva_natural_smoothed")
+        self.assertEqual(oldGenerator["settings"],"realscale:tva_cinematic_integrated_v1")
         self.assertEqual(load(DATA/"world_preset/tva_measured_biodiversity_end3_spawn3_v3.json")[
                          "dimensions"]["minecraft:overworld"]["generator"]["settings"],
                          "realscale:usgs_big_sur_v2")
         menu=load(ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
-        self.assertEqual(menu["values"][-4],"realscale:"+PRESET)
-        self.assertEqual(menu["values"][-3],"realscale:tva_regional_landform_expedition_v2_three_realms")
-        self.assertEqual(len(menu["values"]),13)
-        self.assertEqual(len(set(menu["values"])),13)
+        # Legacy regional experiments remain inspectable, but are not
+        # duplicate choices in the four-mode player menu.
+        self.assertNotIn("realscale:"+PRESET,menu["values"])
+        self.assertNotIn("realscale:tva_regional_landform_expedition_v2_three_realms",menu["values"])
+        self.assertIn("realscale:tva_measured_usgs_fitted_v2_three_realms",menu["values"])
+        self.assertEqual(len(menu["values"]),4)
+        self.assertEqual(len(set(menu["values"])),4)
 
     def test_density_codec_and_eight_distinct_geometry_kinds(self):
         code=(JAVA/"RealScaleMod.java").read_text(encoding="utf-8")

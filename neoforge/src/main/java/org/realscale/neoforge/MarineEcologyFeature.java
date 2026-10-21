@@ -78,6 +78,12 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
                     r.nextBoolean()?Blocks.TUFF.defaultBlockState():Blocks.ANDESITE.defaultBlockState();
             case COLD_CORAL_GARDEN -> r.nextBoolean()
                     ? Blocks.CALCITE.defaultBlockState():Blocks.TUFF.defaultBlockState();
+            case COLD_SEEP -> r.nextBoolean()
+                    ? Blocks.CLAY.defaultBlockState():Blocks.CALCITE.defaultBlockState();
+            case VENT_MINERAL_FIELD -> r.nextBoolean()
+                    ? Blocks.BASALT.defaultBlockState():Blocks.TUFF.defaultBlockState();
+            case ROCKY_SEAMOUNT -> r.nextBoolean()
+                    ? Blocks.TUFF.defaultBlockState():Blocks.ANDESITE.defaultBlockState();
             case DEEP_SILTY_FLOOR -> r.nextBoolean()
                     ? Blocks.CLAY.defaultBlockState():Blocks.GRAVEL.defaultBlockState();
             case NONE -> existing;
@@ -180,6 +186,10 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
                 && relief<2 && patch<0.77){
             h=MarineEcologyZonationMath.Habitat.DEEP_SILTY_FLOOR;
         }
+        MarineEcologyZonationMath.Habitat geological=
+                MarineEcologyZonationMath.geologicalDeepHabitat(
+                        x,z,w.getSeed(),depth,isHardSeafloor(support),relief);
+        if(geological!=MarineEcologyZonationMath.Habitat.NONE)h=geological;
         // Deep-sea communities are scattered oases, not uniform seafloor carpets.
         BlockState target=switch(h){
             case TROPICAL_REEF -> random.nextInt(5)==0 ? pickle(random)
@@ -195,6 +205,9 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
             case POLAR_BENTHIC -> random.nextInt(3)==0
                     ? Blocks.WET_SPONGE.defaultBlockState()
                     : coral(random,true);
+            case ROCKY_SEAMOUNT -> random.nextBoolean()
+                    ? Blocks.WET_SPONGE.defaultBlockState() : coral(random,true);
+            case VENT_MINERAL_FIELD,COLD_SEEP -> null;
             case TEMPERATE_KELP -> null;
             case DEEP_SILTY_FLOOR,NONE -> null;
         };
@@ -207,7 +220,9 @@ public final class MarineEcologyFeature extends Feature<NoneFeatureConfiguration
         }
         if(target==null){
             // Muddy abyss: sparse gravel/clay variation rather than coral carpets.
-            if(h==MarineEcologyZonationMath.Habitat.DEEP_SILTY_FLOOR
+            if((h==MarineEcologyZonationMath.Habitat.DEEP_SILTY_FLOOR
+                    ||h==MarineEcologyZonationMath.Habitat.COLD_SEEP
+                    ||h==MarineEcologyZonationMath.Habitat.VENT_MINERAL_FIELD)
                     && random.nextInt(4)==0){
                 seabedAccent(w,p.below(),h,random);
                 return true;

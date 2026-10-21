@@ -177,7 +177,7 @@ class GrandEndThreeBiomeTests(unittest.TestCase):
                     "endBiomeAccents":True}))
                 path=root/(family+".zip")
                 profile,_=export(jar,draft,path,include_resource_pack=False)
-                self.assertTrue(profile.endswith("_invasion_v1_end3"))
+                self.assertTrue(profile.endswith("_invasion_v1_end3_ecology_v1"))
                 with zipfile.ZipFile(path) as out:
                     obj=json.loads(out.read("data/realscale/worldgen/world_preset/"+
                                             profile.split(":")[1]+".json"))

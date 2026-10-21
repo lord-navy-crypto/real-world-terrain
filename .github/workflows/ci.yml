@@ -331,6 +331,24 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java \
             neoforge/src/test/java/org/realscale/neoforge/RealDemColumnCacheSmoke.java
           java -cp build/dem-cache-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemColumnCacheSmoke
+      - name: Verify northern V4 fixed-Y surface memo and sampled cave-biome parity
+        run: python3 -m unittest discover -s qa -p 'test_northern_cave_surface_memo_v6.py' -v
+      - name: Prove exact 12km worldwide landform site math via JDK 21
+        run: python3 -m unittest discover -s qa -p 'test_global_landform_cell_memo_v5.py' -v
+      - name: Test task-local bounded World Atlas Anvil decoding cache
+        run: python3 -m unittest discover -s qa -p 'test_world_atlas_height_cache_v5.py' -v
+      - name: Prove landmark water-source memo preserves all original 7x7 queries
+        run: python3 -m unittest discover -s qa -p 'test_landmark_water_memo_v4.py' -v
+      - name: Prove sky-island and wonder chunk spatial culling preserves all blocks
+        run: python3 -m unittest discover -s qa -p 'test_chunk_spatial_culling_v3.py' -v
+      - name: Verify ecological biome-result cache against original holder identities
+        run: python3 -m unittest discover -s qa -p 'test_quart_result_cache_perf.py' -v
+      - name: Verify V2 fitted XZ cache in real Java across 131k vertical samples
+        run: python3 -m unittest discover -s qa -p 'test_usgs_fitted_perf_v2.py' -v
+      - name: Verify V2 pure fitted interior, no discrete grid chunks and exact older-world preservation
+        run: python3 -m unittest discover -s qa -p 'test_usgs_fitted_full_v2.py' -v
+      - name: Verify DEM-conditioned USGS fitted continuation and four-side seam continuity
+        run: python3 -m unittest discover -s qa -p 'test_usgs_fitted_v1.py' -v
       - name: Regress USGS v2 DEM grid fidelity and exterior continuity
         run: |
           mkdir -p build/usgs-v2-smoke
@@ -403,9 +421,47 @@ jobs:
         run: python3 -m unittest discover -s qa -p test_all_worldgen_graphs.py -v
       - name: Verify TVA Terrain Lab independent families, Grand realms and saved-world menu stability
         run: python3 -m unittest discover -s qa -p test_tva_terrain_lab.py -v
+      - name: Compile single-file integrated geomorphology and verify bit-exact legacy math
+        run: python3 -m unittest discover -s qa -p 'test_cinematic_integrated_all_in_one.py' -v
+      - name: Verify land-only hypsometry, old worlds and unchanged USGS/ocean data
+        run: python3 -m unittest discover -s qa -p 'test_land_hypsometry_v1.py' -v
+      - name: Verify v4 caves and sky island variation in production Java
+        run: python3 -m unittest discover -s qa -p 'test_northern_caves_sky_v4.py' -v
+      - name: Verify experimental v4 coastal fjord JDK geometry and preserved old worldgen
+        run: python3 -m unittest discover -s qa -p 'test_coastal_fjord_v4.py' -v
       - name: Build readable NeoForge project
         working-directory: neoforge
         run: gradle --no-daemon --stacktrace build
+      - name: Verify compiled integrated terrain Java class and all four noise resources in JAR
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from zipfile import ZipFile
+          jars=sorted(Path("neoforge/build/libs").glob("*.jar"),key=lambda p:p.stat().st_size,reverse=True)
+          assert jars,"No compiled NeoForge JAR"
+          with ZipFile(jars[0]) as z:
+            entries=set(z.namelist())
+            namespace="org/realscale/neoforge/RealScaleCinematicIntegrated"
+            for suffix in (".class","$V1.class","$V2.class","$V3.class","$Site.class"):
+              assert namespace+suffix in entries, f"Missing integrated Java bytecode: {suffix}"
+            base="data/realscale/worldgen/"
+            for v in ("v1","v2","v3"):
+              assert base+f"noise_settings/tva_cinematic_landforms_{v}.json" in entries
+            fjord="org/realscale/neoforge/CoastalFjordDensityV4"
+            for suffix in (".class","$Site.class","$FjordMath.class"):
+              assert fjord+suffix in entries, f"Missing experimental fjord code: {suffix}"
+            for resource in ("noise_settings/tva_cinematic_landforms_v4.json",
+              "density_function/tva_cinematic_landforms_v4/height_signal.json",
+              "world_preset/tva_northern_fjord_experiment_v4_three_realms.json"):
+              assert base+resource in entries, f"Missing v4 registry resource: {resource}"
+            noise=base+"noise_settings/tva_cinematic_integrated_v1.json"
+            height=base+"density_function/tva_cinematic_integrated_v1/height_signal.json"
+            assert noise in entries and height in entries
+            obj=json.loads(z.read(height))
+            assert obj["argument"]["type"]=="realscale:cinematic_landforms_integrated_v1"
+          print("INTEGRATED_TERRAIN_JAR_PASS",jars[0],jars[0].stat().st_size)
+          PY
       - name: Verify RealScale JAR contains selectable structure packs and Config integration
         run: python3 -m unittest discover -s qa -p 'test_builtin_structure_packs.py' -v
       - name: Export real TVA YACL Terrain Lab datapack from compiled JAR
@@ -422,6 +478,7 @@ jobs:
           name: RealScale-NeoForge-build-and-replay
           path: |
             neoforge/build/libs/*.jar
+            neoforge/src/main/java/org/realscale/neoforge/RealScaleCinematicIntegrated.java
             build/saved-world-replay.json
             build/tva-exporter/*.pyz
           if-no-files-found: error

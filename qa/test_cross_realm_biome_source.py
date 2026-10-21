@@ -40,5 +40,23 @@ class CrossRealmBiomeSourceTests(unittest.TestCase):
         self.assertIn('biome.endsWith("ocean")',source)
         self.assertIn('biome.endsWith("river")',source)
         self.assertIn("if(Math.floorMod(hash,24L)!=0)return original;",source)
+        # Fast-path exactly matches the old overworld altitude window. Legacy
+        # forced-spawn Y columns must never be short-circuited.
+        self.assertIn("if(!forceOriginInvasion && originZone)return original;",source)
+        self.assertIn("if((quartY<14||quartY>49)",source)
+        self.assertIn("&& !(forceOriginInvasion && originZone))return original;",source)
+        for forced in (False,True):
+            for at_origin in (False,True):
+                for quart_y in range(-16,508):
+                    fast_skip=(not forced and at_origin) or (
+                        (quart_y<14 or quart_y>49)
+                        and not (forced and at_origin))
+                    # The original behavior delegates in the free origin
+                    # or outside the surface band except forced legacy spawn.
+                    expected=(not forced and at_origin) or (
+                        (quart_y*4<56 or quart_y*4>196)
+                        and not (forced and at_origin))
+                    self.assertEqual(fast_skip,expected)
+
 
 if __name__=="__main__": unittest.main()

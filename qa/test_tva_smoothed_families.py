@@ -46,20 +46,28 @@ class CoreSmoothing(unittest.TestCase):
       "realscale:"+smoothed+"/terrain_density")
     self.assertTrue((R/"noise_settings"/(legacy+".json")).is_file())
     self.assertTrue((R/"density_function"/legacy/"height_signal.json").is_file())
- def test_four_curated_families_and_separate_combined_opt_in(self):
-  stable=["realscale:"+x for x,_,_ in FAMILIES]+["realscale:tva_measured_three_realms"]
-  optional="realscale:tva_wonders_invasion_three_realms"
-  biodiversity=["realscale:tva_sacred_biodiversity_end3_spawn3_v2",
-                "realscale:tva_measured_biodiversity_end3_spawn3_v2",
-                "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
-                "realscale:tva_measured_biodiversity_end3_spawn3_v3",
-                "realscale:tva_regional_landform_expedition_three_realms",
-                "realscale:tva_regional_landform_expedition_v2_three_realms",
-                "realscale:tva_global_landform_expedition_v3_three_realms",
-                "realscale:tva_measured_global_landforms_three_realms"]
+ def test_four_curated_player_modes_preserve_archived_family_graphs(self):
+  active=[
+   "realscale:tva_natural_hypsometry_v1_three_realms",
+   "realscale:tva_measured_usgs_fitted_v2_three_realms",
+   "realscale:tva_alpine_three_realms",
+   "realscale:tva_canyon_three_realms",
+  ]
   for tag in ("normal","extended"):
    path=ROOT/"minecraft/tags/worldgen/world_preset"/(tag+".json")
-   expected=stable+[optional]+(biodiversity if tag=="normal" else [])
-   self.assertEqual(read(path)["values"],expected)
-   self.assertEqual(len(read(path)["values"]),len(set(read(path)["values"])))
+   self.assertEqual(read(path)["values"],active)
+   self.assertEqual(len(read(path)["values"]),len(set(read(path)["values"])) )
+  legacy=[x for x,_,_ in FAMILIES]+[
+   "tva_measured_three_realms","tva_wonders_invasion_three_realms",
+   "tva_sacred_biodiversity_end3_spawn3_v2",
+   "tva_measured_biodiversity_end3_spawn3_v2",
+   "tva_measured_biodiversity_end3_spawn3_v3",
+   "tva_regional_landform_expedition_three_realms",
+   "tva_regional_landform_expedition_v2_three_realms",
+   "tva_global_landform_expedition_v3_three_realms",
+  ]
+  for old in legacy:
+   self.assertTrue((R/"world_preset"/(old+".json")).is_file(),old)
+  for selected in active:
+   self.assertTrue((R/"world_preset"/(selected.split(":",1)[1]+".json")).is_file(),selected)
 if __name__=="__main__": unittest.main()

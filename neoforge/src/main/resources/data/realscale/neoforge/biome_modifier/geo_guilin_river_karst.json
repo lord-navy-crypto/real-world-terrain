@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:jungle",
+    "minecraft:sparse_jungle",
+    "minecraft:swamp",
+    "realscale:cool_temperate_rainforest"
+  ],
+  "features": "realscale:geo_guilin_river_karst",
+  "step": "vegetal_decoration"
+}
