@@ -58,5 +58,6 @@
   "generator.realscale.tva_measured_global_landforms_three_realms": "RealScale Measured Earth - USGS & Global Landforms",
   "generator.realscale.tva_alpine_three_realms": "RealScale Alpine World - Mountains & Snowlines",
   "generator.realscale.tva_canyon_three_realms": "RealScale Canyon World - Rock Strata & Valleys",
-  "generator.realscale.tva_natural_hypsometry_v1_three_realms": "Natural Exploration · Balanced Land Elevations"
+  "generator.realscale.tva_natural_hypsometry_v1_three_realms": "Natural Exploration · Balanced Land Elevations",
+  "generator.realscale.tva_measured_usgs_fitted_v1_three_realms": "USGS Measured Exploration · Seamless Fitted Terrain (Experimental)"
 }
