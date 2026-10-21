@@ -143,6 +143,13 @@ jobs:
             "$RUNNER_TEMP/realscale-before/neoforge/build/rcon_distant_route_server.log"
           grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=true' \
             "$RUNNER_TEMP/realscale-control/neoforge/build/rcon_distant_route_server.log"
+      - name: Assert baseline/control really used Y-only flags
+        run: |
+          for variant in before control; do
+            log="$RUNNER_TEMP/realscale-$variant/neoforge/build/rcon_distant_route_server.log"
+            grep -q 'realscale.experimental.beardifier.ycull=true' "$log"
+            grep -q 'realscale.experimental.beardifier.xzcull=false' "$log"
+          done
       - name: Investigate Y-only vs Y-only saved-block variation
         continue-on-error: true
         run: |
