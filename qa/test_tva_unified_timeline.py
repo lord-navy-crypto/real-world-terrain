@@ -24,8 +24,9 @@ class UnifiedTimelineTests(unittest.TestCase):
             data=json.loads((DATA/"noise_settings"/(name+".json")).read_text())
             self.assertEqual(data["noise"]["height"],2096)
         sacred=json.loads((DATA/"density_function/tva_natural_smoothed/height_signal.json").read_text())
-        self.assertEqual(sacred["type"],"minecraft:cache_2d")
-        self.assertEqual(sacred["argument"]["type"],"realscale:mountain_relief")
+        self.assertEqual(sacred["type"],"realscale:measured_horizontal_memo")
+        self.assertEqual(sacred["input"]["type"],"minecraft:cache_2d")
+        self.assertEqual(sacred["input"]["argument"]["type"],"realscale:mountain_relief")
         measured=json.loads((DATA/"noise_settings/usgs_big_sur_v2.json").read_text())
         final=measured["noise_router"]["final_density"]
         self.assertEqual(final["type"],"realscale:grand_overworld_caverns")
