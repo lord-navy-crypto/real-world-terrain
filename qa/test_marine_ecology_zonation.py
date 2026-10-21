@@ -149,7 +149,7 @@ class MarineZonationQA(unittest.TestCase):
         options=read(ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")["values"]
         self.assertEqual(len(options),4)
         self.assertEqual(len(set(options)),4)
-        self.assertIn("realscale:tva_measured_global_landforms_three_realms",options)
+        self.assertIn("realscale:tva_measured_usgs_fitted_v1_three_realms",options)
         self.assertEqual(read(WG/"noise_settings/usgs_global_hybrid_marine.json")["sea_level"],63)
         self.assertTrue((WG/"noise_settings/usgs_global_hybrid.json").is_file())
         self.assertTrue((WG/"noise_settings/usgs_big_sur_v2.json").is_file())
