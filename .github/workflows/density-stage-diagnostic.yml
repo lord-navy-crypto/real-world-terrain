@@ -6,6 +6,7 @@ on:
       - '.github/workflows/density-stage-diagnostic.yml'
       - 'neoforge/src/main/java/org/realscale/neoforge/DensityPerfSampler.java'
       - 'qa/neoforge/parse_density_profile.py'
+      - 'neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java'
   workflow_dispatch:
 permissions:
   contents: read

@@ -38,6 +38,14 @@ public final class DensityPerfSamplerSmoke {
             DensityPerfSampler.finish(sky,DensityPerfSampler.begin(sky));
         check(DensityPerfSampler.snapshot(sky).contains("samples=1"),
                 "Sky sampling should remain independent");
+        DensityPerfSampler.ecotoneCacheProbe(true,true);
+        DensityPerfSampler.ecotoneCacheProbe(true,false);
+        DensityPerfSampler.ecotoneCacheProbe(false,true);
+        DensityPerfSampler.ecotoneCacheProbe(false,false);
+        String cache=DensityPerfSampler.ecotoneCacheSnapshot();
+        check(cache.contains("resolved_hits=1 resolved_misses=1")&&
+                cache.contains("base_hits=1 base_misses=1"),
+                "Wrong independent ecotone cache counters: "+cache);
         System.out.println("TVA_DENSITY_SAMPLER_ENABLED_PASS "+snap);
     }
 }

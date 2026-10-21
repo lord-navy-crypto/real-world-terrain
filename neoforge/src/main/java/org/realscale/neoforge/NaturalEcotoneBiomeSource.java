@@ -209,6 +209,8 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
                                     Climate.Sampler sampler, SamplingCache cache) {
         long key = BlockPos.asLong(quartX, quartY, quartZ);
         Holder<Biome> existing = cache.positions.get(key);
+        if(DensityPerfSampler.ENABLED)
+            DensityPerfSampler.ecotoneCacheProbe(false,existing!=null);
         if (existing != null) return existing;
         Holder<Biome> found = source.getNoiseBiome(quartX, quartY, quartZ, sampler);
         cache.positions.put(key, found);
@@ -274,6 +276,8 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         cache.prepare(sampler);
         long key = BlockPos.asLong(quartX, quartY, quartZ);
         Holder<Biome> previous = cache.resolved.get(key);
+        if(DensityPerfSampler.ENABLED)
+            DensityPerfSampler.ecotoneCacheProbe(true,previous!=null);
         if (previous != null) return previous;
 
         Holder<Biome> result = resolveUncached(quartX, quartY, quartZ, sampler, cache);
