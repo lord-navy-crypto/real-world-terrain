@@ -72,7 +72,7 @@ class WovenOptionalFeaturesTest(unittest.TestCase):
                 # features are now included in the four featured worlds.
                 self.assertNotIn("realscale:"+COMBINED,entry["values"])
                 for required in ("tva_alpine_three_realms", "tva_canyon_three_realms",
-                                 "tva_measured_usgs_fitted_v1_three_realms"):
+                                 "tva_measured_usgs_fitted_v2_three_realms"):
                     self.assertIn("realscale:"+required,entry["values"])
 
     def test_nested_java_guards_activate_both_feature_families(self):
