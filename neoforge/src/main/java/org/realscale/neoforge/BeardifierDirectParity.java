@@ -15,15 +15,18 @@ public final class BeardifierDirectParity {
     private static final LongAdder SKIPPED=new LongAdder();
     private static final LongAdder XZ_ONLY=new LongAdder();
     private static final LongAdder XZ_SAMPLES=new LongAdder();
+    private static final LongAdder SPARSE_ONLY=new LongAdder();
+    private static final LongAdder SPARSE_SAMPLES=new LongAdder();
     private static final class State {
-        long yCount,xzCount;
+        long yCount,xzCount,sparseCount;
         boolean replaying;
     }
     static {
         if(VERIFY)Runtime.getRuntime().addShutdownHook(new Thread(()->{
             System.err.println("REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS samples="+
                     VERIFIED.sum()+" skipped="+SKIPPED.sum()+
-                    " xz_only="+XZ_ONLY.sum()+" xz_samples="+XZ_SAMPLES.sum());
+                    " xz_only="+XZ_ONLY.sum()+" xz_samples="+XZ_SAMPLES.sum()+
+                    " sparse_only="+SPARSE_ONLY.sum()+" sparse_samples="+SPARSE_SAMPLES.sum());
         },"realscale-experimental-beardifier-parity"));
     }
     private BeardifierDirectParity(){}
@@ -38,7 +41,17 @@ public final class BeardifierDirectParity {
         }
         return (++s.yCount & 4095L)==0;
     }
+    public static boolean shouldVerifySparseSkip(){
+        if(!VERIFY)return false;
+        SKIPPED.increment();
+        SPARSE_ONLY.increment();
+        return (++STATE.get().sparseCount & 63L)==0;
+    }
     public static void setReplaying(boolean enabled){STATE.get().replaying=enabled;}
+    public static void assertSparseZero(double actual,int x,int y,int z){
+        assertZero(actual,x,y,z,true);
+        SPARSE_SAMPLES.increment();
+    }
     public static void assertZero(double actual,int x,int y,int z,boolean xzOnly){
         if(Double.doubleToRawLongBits(actual)!=Double.doubleToRawLongBits(0.0))
             throw new AssertionError("Beardifier spatial zero-cull was WRONG at "+
