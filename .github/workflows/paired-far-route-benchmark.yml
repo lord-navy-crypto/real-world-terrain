@@ -9,6 +9,7 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaverns.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/SkyOceanBiomeSource.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java'
   workflow_dispatch:
 permissions:
@@ -43,7 +44,7 @@ jobs:
           gradle-version: '8.14.3'
       - name: Prepare separate clean worktrees on the same runner
         env:
-          BEFORE_SHA: '9efbfe6d53aae28c0bf49cb814b496d2b6459621'
+          BEFORE_SHA: '690dc0050109e34427b9de7662d8501a7bc21f49'
           AFTER_SHA: ${{ github.sha }}
           PRESET: ${{ matrix.preset }}
           SEED: ${{ matrix.seed }}

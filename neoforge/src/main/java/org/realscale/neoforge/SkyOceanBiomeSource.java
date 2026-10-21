@@ -114,8 +114,15 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         // Only the central island needs a remote-ocean eligibility scan
         // before satellite checks. Once resolved, a tier 1/2 site skips
         // distant slots entirely. Preserve exactly the same biome result.
-        int tier=-1;
-        int eligibleSlots=SkyIslandLayout.SLOTS;
+        // Once a site's ocean tier has been measured for this climate
+        // sampler, it cannot change while this worker visits nearby quart
+        // coordinates. A tier-0 site has NO islands at all; avoid constructing
+        // /testing any of its five satellites on every subsequent biome call.
+        // Tier 1/2 sites similarly scan only their eligible satellites.
+        int tier=site.tier;
+        if(tier==0)return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
+        int eligibleSlots=tier>0
+                ? SkyIslandLayout.countForTier(tier) : SkyIslandLayout.SLOTS;
         for(int slot=0;slot<eligibleSlots;slot++){
             SkyIslandLayout.Site island=site.satellite(slot);
             if(!SkyIslandLayout.insideBiome(island,x,y,z))continue;

@@ -23,6 +23,14 @@ public final class SkyIslandLayout {
     public static final int MIN_BIOME_Y = 167;
     public static final int MAX_BIOME_Y = 214;
     private static final int DIRECTIONS = 16;
+    // Within each offshore radius ring, the tier depends only on whether
+    // ANY sample is land, never which angle fails first. Spread early probes
+    // across opposite coasts instead of scanning clockwise into 16 nearby
+    // samples. This ends coastal checks sooner with zero geometry changes.
+    // Covers each of the original 16 compass indices exactly once.
+    private static final int[] COAST_FIRST_ORDER = {
+            0,8,4,12,2,6,10,14,1,5,9,13,3,7,11,15
+    };
     // More numerous small near-shore islets and denser far-ocean clusters.
     // Ocean probes progressively increase the required offshore isolation.
     private static final int[] PROBE_RADII = {64,128,192,256,352,448,544,640};
@@ -83,8 +91,8 @@ public final class SkyIslandLayout {
         for(int ring=0;ring<PROBE_RADII.length;ring++) {
             int first=ring*DIRECTIONS;
             for(int i=0;i<DIRECTIONS;i++)
-                if(!ocean.test(base.x()+PROBE_X[first+i],
-                               base.z()+PROBE_Z[first+i]))
+                if(!ocean.test(base.x()+PROBE_X[first+COAST_FIRST_ORDER[i]],
+                               base.z()+PROBE_Z[first+COAST_FIRST_ORDER[i]]))
                     return ring<4?0:ring<6?1:2;
         }
         return 3;

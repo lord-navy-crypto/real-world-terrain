@@ -156,6 +156,8 @@ jobs:
           java -cp build/pr25-single-pole-climate org.realscale.neoforge.SinglePoleAreaLatitudeSmoke
       - name: Test RealScale feature-profile log comparison
         run: python3 -m unittest discover -s qa -p 'test_worldgen_profile_compare.py' -v
+      - name: Prove sampler-scoped ocean tier zero/partial sites skip unnecessary satellites
+        run: python3 -m unittest discover -s qa -p 'test_sky_cached_tier_fastpath.py' -v
       - name: Prove sky ocean classification bypass preserves all ecotone water predicates
         run: python3 -m unittest discover -s qa -p 'test_sky_ocean_classification_bypass.py' -v
       - name: Guard climate sampler reuse within complete ecotone ray searches
@@ -311,8 +313,10 @@ jobs:
           mkdir -p build/tva-sky
           javac -d build/tva-sky \
             neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
-            neoforge/src/test/java/org/realscale/neoforge/SkyIslandLayoutSmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/SkyIslandLayoutSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/SkyIslandOceanTierProbeOrderSmoke.java
           java -cp build/tva-sky org.realscale.neoforge.SkyIslandLayoutSmoke
+          java -cp build/tva-sky org.realscale.neoforge.SkyIslandOceanTierProbeOrderSmoke
       - name: Verify cached sky archipelago cell and tier isolation
         run: |
           mkdir -p build/tva-sky-cache
