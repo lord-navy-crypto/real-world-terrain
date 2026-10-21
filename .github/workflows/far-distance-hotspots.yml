@@ -1,0 +1,86 @@
+name: RealScale far-distance hotspots strict 180s
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/far-distance-hotspots.yml'
+      - 'neoforge/build.gradle'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaverns.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/MountainReliefDensity.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/MeasuredHorizontalMemoDensity.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/RangeMinDensity.java'
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: far-distance-hotspots-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verified-full-chunk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - preset: tva_sacred_timeline_three_realms
+            seed: 2
+          - preset: tva_sacred_timeline_three_realms
+            seed: 42
+          - preset: tva_natural_smoothing_probe
+            seed: 2
+    name: Far chunk / ${{ matrix.preset }} / seed ${{ matrix.seed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Preserve structures, seed and baseline dimensions
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=world
+          level-type=realscale:${{ matrix.preset }}
+          level-seed=${{ matrix.seed }}
+          generate-structures=true
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Verify virgin distant chunk is actually loaded within 180s
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . 'realscale:${{ matrix.preset }}' distant
+      - name: Verify persisted ground and cave continuity
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/check_realism_continuity.py . '${{ matrix.preset }}'
+      - name: Retain real server logs and stall evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Far-distance-${{ matrix.preset }}-seed-${{ matrix.seed }}
+          path: |
+            neoforge/realism_continuity_qa.json
+            neoforge/build/rcon_distant_server.log
+            neoforge/build/rcon_distant_thread_dump_*.txt
+            neoforge/build/rcon_distant_stall_fingerprint.json
+            neoforge/run/**/level.dat
+            neoforge/run/**/region/*.mca
+          if-no-files-found: warn
