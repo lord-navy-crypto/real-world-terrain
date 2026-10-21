@@ -23,11 +23,12 @@ class DensityProfileParserTests(unittest.TestCase):
         self.assertEqual(submicro["sampled_inclusive_stages"]["OVERWORLD_CAVE"]["mean_nanoseconds"],123)
         self.assertIn("NOT wall-clock",r["interpretation"])
         self.assertIsNone(r["ecotone_cache"])
-        c=extract(text+"""[RealScale ecotone cache profile] resolved_hits=300 resolved_misses=100 base_hits=1000 base_misses=250
+        c=extract(text+"""[RealScale ecotone cache profile] resolution_calls=400 base_hits=1000 base_misses=250
 """)["ecotone_cache"]
-        self.assertEqual(c["resolved_hit_pct"],75)
+        self.assertEqual(c["resolution_calls"],400)
         self.assertEqual(c["underlying_hit_pct"],80)
         self.assertEqual(c["underlying_climate_calls"],250)
+        self.assertEqual(c["full_output_cache"],"disabled_due_to_0.03pct_real_hit_rate")
         with self.assertRaises(ValueError):
             extract("[RealScale density profile] MOUNTAIN_RELIEF samples=1 stride=1024 mean_ns=7000 mean_us=7 p95_bucket_upper_us=15 max_us=20")
 

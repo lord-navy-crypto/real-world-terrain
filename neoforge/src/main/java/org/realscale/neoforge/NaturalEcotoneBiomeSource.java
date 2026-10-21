@@ -173,7 +173,6 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     /** Bounded per-thread climate cache, invalidated when the climate sampler changes. */
     private static final class SamplingCache {
         Climate.Sampler sampler;
-        final QuartBiomeResultCache<Holder<Biome>> resolved = new QuartBiomeResultCache<>();
         // Two-way primitive-key cache avoids Long boxing and linked-map
         // node allocations for high-altitude worldgen's frequent quart rays.
         final QuartBiomeBaseCache<Holder<Biome>> positions = new QuartBiomeBaseCache<>();
@@ -182,8 +181,6 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
             if (sampler == nextSampler) return;
             sampler = nextSampler;
             positions.clear();
-            // A new sampler may resolve the same quart coordinate differently.
-            resolved.clear();
         }
     }
 
@@ -210,7 +207,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         long key = BlockPos.asLong(quartX, quartY, quartZ);
         Holder<Biome> existing = cache.positions.get(key);
         if(DensityPerfSampler.ENABLED)
-            DensityPerfSampler.ecotoneCacheProbe(false,existing!=null);
+            DensityPerfSampler.ecotoneCacheProbe(existing!=null);
         if (existing != null) return existing;
         Holder<Biome> found = source.getNoiseBiome(quartX, quartY, quartZ, sampler);
         cache.positions.put(key, found);
@@ -274,20 +271,20 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
             int quartX,int quartY,int quartZ,Climate.Sampler sampler) {
         SamplingCache cache = cached.get();
         cache.prepare(sampler);
-        long key = BlockPos.asLong(quartX, quartY, quartZ);
-        Holder<Biome> previous = cache.resolved.get(key);
+        // On a real Sacred 42 distant route the resolved cache hit only
+        // 1,434 of 4,949,232 queries (0.029%). Each miss cost a packed-key
+        // hash, table probes and a store. The UNDERLYING 8192-entry climate
+        // sample memo hit 74.1% and stays intact; it preserves actual reuse
+        // in all eight ecotone rays.
         if(DensityPerfSampler.ENABLED)
-            DensityPerfSampler.ecotoneCacheProbe(true,previous!=null);
-        if (previous != null) return previous;
-
-        Holder<Biome> result = resolveUncached(quartX, quartY, quartZ, sampler, cache);
-        cache.resolved.put(key, result);
-        return result;
+            DensityPerfSampler.ecotoneResolution();
+        return resolveUncached(quartX, quartY, quartZ, sampler, cache);
     }
 
     /**
      * Original ecotone algorithm: unchanged priority, boundary search, water
-     * preservation and final holder resolution. Only callers memoize output.
+     * preservation and final holder resolution. Underlying climate reads
+     * remain cached per worker; this method does not cache whole outputs.
      */
     private Holder<Biome> resolveUncached(
             int quartX, int quartY, int quartZ, Climate.Sampler sampler,

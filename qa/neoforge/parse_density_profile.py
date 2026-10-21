@@ -10,9 +10,8 @@ import re
 import sys
 
 CACHE_PATTERN=re.compile(
-    r"\[RealScale ecotone cache profile\]\s+resolved_hits=(\d+)"
-    r"\s+resolved_misses=(\d+)\s+base_hits=(\d+)"
-    r"\s+base_misses=(\d+)"
+    r"\[RealScale ecotone cache profile\]\s+resolution_calls=(\d+)"
+    r"\s+base_hits=(\d+)\s+base_misses=(\d+)"
 )
 
 PATTERN=re.compile(
@@ -41,13 +40,13 @@ def extract(text):
     cache_details=None
     matches=CACHE_PATTERN.findall(text)
     if matches:
-        rh,rm,bh,bm=(int(v) for v in matches[-1])
+        requests,bh,bm=(int(v) for v in matches[-1])
         cache_details={
-            "resolved_hits":rh,"resolved_misses":rm,
+            "resolution_calls":requests,
             "underlying_biome_hits":bh,"underlying_biome_misses":bm,
             "underlying_climate_calls":bm,
-            "resolved_hit_pct":round(100*rh/(rh+rm),2) if rh+rm else 0,
-            "underlying_hit_pct":round(100*bh/(bh+bm),2) if bh+bm else 0
+            "underlying_hit_pct":round(100*bh/(bh+bm),2) if bh+bm else 0,
+            "full_output_cache":"disabled_due_to_0.03pct_real_hit_rate"
         }
     return {"ecotone_cache":cache_details,
             "sampled_inclusive_stages":dict(sorted(stages.items(),

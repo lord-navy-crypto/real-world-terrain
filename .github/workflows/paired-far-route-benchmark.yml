@@ -43,7 +43,7 @@ jobs:
           gradle-version: '8.14.3'
       - name: Prepare separate clean worktrees on the same runner
         env:
-          BEFORE_SHA: '9efbfe6d53aae28c0bf49cb814b496d2b6459621'
+          BEFORE_SHA: '9d8aae88e23f023abec4693321c9b618e5af17e8'
           AFTER_SHA: ${{ github.sha }}
           PRESET: ${{ matrix.preset }}
           SEED: ${{ matrix.seed }}
@@ -75,7 +75,8 @@ jobs:
           PROPERTIES
             done
           done
-      # Before = last green commit without the offshore ocean-probe bypass.
+      # Before is the last fully green baseline WITH the 0.03% hit-rate
+      # complete-resolution cache; after removes only that cache.
       # Both presets use sky_ocean -> natural_ecotones -> vanilla multi_noise.
       - name: Run original real server first (fresh saved world)
         env:

@@ -15,9 +15,10 @@ class EcotoneContextReuseTests(unittest.TestCase):
                   s.index("/**\n     * Original ecotone algorithm:")]
         self.assertIn("SamplingCache cache = cached.get();",resolve)
         self.assertIn("cache.prepare(sampler);",resolve)
-        self.assertLess(resolve.index("cache.prepare(sampler);"),
-                        resolve.index("cache.resolved.get(key);"))
         self.assertIn("resolveUncached(quartX, quartY, quartZ, sampler, cache)",resolve)
+        self.assertNotIn("cache.resolved",resolve)
+        self.assertNotIn("BlockPos.asLong(",resolve)
+        self.assertIn("DensityPerfSampler.ecotoneResolution();",resolve)
         sample=s[s.index("private Holder<Biome> sampleBase("):
                  s.index("private BiomeSource source()")]
         self.assertIn("Climate.Sampler sampler, SamplingCache cache)",sample)
