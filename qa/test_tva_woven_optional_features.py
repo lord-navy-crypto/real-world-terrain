@@ -96,7 +96,9 @@ class WovenOptionalFeaturesTest(unittest.TestCase):
         for token in ("QuartBiomeResultCache", "cache.resolved.get",
                       "cache.resolved.put", "cache.prepare(sampler)"):
             self.assertIn(token, ecotone)
-        self.assertIn("SLOTS = 2048", cache)
+        self.assertIn("static final int SLOTS=8192;", cache)
+        self.assertIn("int index=bucket<<1;", cache)
+        self.assertIn("victim[bucket]^=1;", cache)
         self.assertIn("realscale.worldgen.profile",profiler)
         self.assertIn("static final boolean ENABLED",profiler)
 
