@@ -17,20 +17,20 @@ def nodes(value):
         for x in value:yield from nodes(x)
 
 class SacredHorizontalMemoTest(unittest.TestCase):
-    def test_native_horizontal_cache_directly_wraps_unchanged_relief(self):
+    def test_only_outer_horizontal_memo_is_new(self):
         graph=read("density_function/tva_natural_smoothed/height_signal.json")
         self.assertEqual(graph, {
-            # JFR showed the redundant outer per-thread memo was a material
-            # worker-CPU hot path. Cache2D itself memoizes the identical XZ
-            # signal and does not change any Y/surface/cave density input.
-            "type":"minecraft:cache_2d",
-            "argument":{
-                "type":"realscale:mountain_relief",
-                "base":"realscale:tva_natural_smoothed/original_height_signal",
-                "continents":"realscale:realism_max/continental_field",
-                "selector":{"type":"minecraft:noise","noise":"minecraft:erosion",
-                            "xz_scale":0.006,"y_scale":0},
-                "basin_depth":0.9,"plateau_rise":0.65
+            "type":"realscale:measured_horizontal_memo",
+            "input":{
+                "type":"minecraft:cache_2d",
+                "argument":{
+                    "type":"realscale:mountain_relief",
+                    "base":"realscale:tva_natural_smoothed/original_height_signal",
+                    "continents":"realscale:realism_max/continental_field",
+                    "selector":{"type":"minecraft:noise","noise":"minecraft:erosion",
+                                "xz_scale":0.006,"y_scale":0},
+                    "basin_depth":0.9,"plateau_rise":0.65
+                }
             }
         })
 

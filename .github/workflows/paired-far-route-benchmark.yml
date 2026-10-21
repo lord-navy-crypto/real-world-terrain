@@ -11,7 +11,6 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/SkyOceanBiomeSource.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/QuartBiomeBaseCache.java'
-      - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/tva_natural_smoothed/height_signal.json'
   workflow_dispatch:
 permissions:
   contents: read
@@ -45,7 +44,7 @@ jobs:
           gradle-version: '8.14.3'
       - name: Prepare separate clean worktrees on the same runner
         env:
-          BEFORE_SHA: 'a52dfe64e21746f137e819205c6b4022505ed6ed'
+          BEFORE_SHA: '9d8aae88e23f023abec4693321c9b618e5af17e8'
           AFTER_SHA: ${{ github.sha }}
           PRESET: ${{ matrix.preset }}
           SEED: ${{ matrix.seed }}
