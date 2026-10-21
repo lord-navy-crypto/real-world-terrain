@@ -10,7 +10,7 @@ PRESETS=BASE/"data/realscale/worldgen/world_preset"
 
 PLAYER_PRESETS=(
  "realscale:tva_natural_hypsometry_v1_three_realms",
- "realscale:tva_measured_global_landforms_three_realms",
+ "realscale:tva_measured_usgs_fitted_v1_three_realms",
  "realscale:tva_alpine_three_realms",
  "realscale:tva_canyon_three_realms",
 )
@@ -52,7 +52,7 @@ class PlayerWorldPresets(unittest.TestCase):
     def test_four_modes_restore_all_old_worldgen_layers(self):
         expected_noise={
             "tva_natural_hypsometry_v1_three_realms":"realscale:tva_natural_hypsometry_v1",
-            "tva_measured_global_landforms_three_realms":"realscale:usgs_global_hybrid_marine",
+            "tva_measured_usgs_fitted_v1_three_realms":"realscale:usgs_fitted_continuation_v1",
             "tva_alpine_three_realms":"realscale:tva_alpine_smoothed",
             "tva_canyon_three_realms":"realscale:tva_canyon_smoothed",
         }
