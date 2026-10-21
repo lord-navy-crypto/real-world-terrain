@@ -66,7 +66,7 @@ class BiomeDiversityV3(unittest.TestCase):
         normal=read(TAGS/"normal.json")["values"]
         extended=read(TAGS/"extended.json")["values"]
         expected=[
-            "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
+            "realscale:tva_natural_hypsometry_v1_three_realms",
             "realscale:tva_measured_global_landforms_three_realms",
             "realscale:tva_alpine_three_realms",
             "realscale:tva_canyon_three_realms"
