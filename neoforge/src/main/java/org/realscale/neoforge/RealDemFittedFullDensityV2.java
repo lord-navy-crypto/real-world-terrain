@@ -13,7 +13,7 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  *
  * The only procedural classification that remains is existing continentalness
  * to protect the coastline and ocean floor; coastlines have a smooth fade.
- * RealDemFittedMathV1 uses globally defined coordinates and continuously
+ * RealDemFittedMathV2 uses globally defined coordinates and continuously
  * interpolated multi-scale noise, never chunk-local/random per-cell block IDs.
  *
  * Uses its own CODEC ID so older V1 save data remain unchanged.
@@ -49,9 +49,9 @@ public final class RealDemFittedFullDensityV2 implements DensityFunction.SimpleF
         final Column c=columns.get();
         if(!c.valid||c.x!=x||c.z!=z){
             c.x=x;c.z=z;c.valid=true;
-            c.distance=RealDemFittedMathV1.distanceOutside(x,z);
+            c.distance=RealDemFittedMathV2.distanceOutside(x,z);
             c.fittedSurfaceHeight=c.distance>0.0
-                ?RealDemFittedMathV1.predictedHeight(x,z):0.0;
+                ?RealDemFittedMathV2.predictedHeight(x,z):0.0;
         }
         // Keep exact measured USGS and its natural block terrain.
         if(c.distance<=0.0)return base.compute(ctx);
