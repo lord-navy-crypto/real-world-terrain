@@ -200,9 +200,13 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         }
     }
 
-    private Holder<Biome> sampleBase(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
-        SamplingCache cache = cached.get();
-        cache.prepare(sampler);
+    /** Cache is prepared once at the top of the biome resolution.
+     * A boundary search samples many neighbors with the SAME climate sampler.
+     * Re-entering ThreadLocal/get + sampler identity check on every ray step
+     * is unnecessary; keep the exact original underlying samples and keys.
+     */
+    private Holder<Biome> sampleBase(int quartX, int quartY, int quartZ,
+                                    Climate.Sampler sampler, SamplingCache cache) {
         long key = BlockPos.asLong(quartX, quartY, quartZ);
         Holder<Biome> existing = cache.positions.get(key);
         if (existing != null) return existing;
@@ -258,7 +262,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         Holder<Biome> previous = cache.resolved.get(key);
         if (previous != null) return previous;
 
-        Holder<Biome> result = resolveUncached(quartX, quartY, quartZ, sampler);
+        Holder<Biome> result = resolveUncached(quartX, quartY, quartZ, sampler, cache);
         cache.resolved.put(key, result);
         return result;
     }
@@ -268,8 +272,9 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
      * preservation and final holder resolution. Only callers memoize output.
      */
     private Holder<Biome> resolveUncached(
-            int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
-        Holder<Biome> original = sampleBase(quartX, quartY, quartZ, sampler);
+            int quartX, int quartY, int quartZ, Climate.Sampler sampler,
+            SamplingCache cache) {
+        Holder<Biome> original = sampleBase(quartX, quartY, quartZ, sampler, cache);
         // Surface ecotones must not be painted across caves or deep aquifers.
         if (quartY < 12) return original;
         String current = vanillaId(original);
@@ -291,7 +296,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
                 // stop once a heading cannot beat the best existing border.
                 if (distanceSquared >= closestDistanceSquared) break;
                 String next = vanillaId(sampleBase(quartX + direction[0] * step,
-                        quartY, quartZ + direction[1] * step, sampler));
+                        quartY, quartZ + direction[1] * step, sampler, cache));
                 if (current.equals(next)) continue;
                 Rule rule = findPair(current, next);
                 if (rule != null && EcotoneMath.withinRadialBand(

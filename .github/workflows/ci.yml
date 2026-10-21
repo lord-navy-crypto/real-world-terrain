@@ -156,6 +156,8 @@ jobs:
           java -cp build/pr25-single-pole-climate org.realscale.neoforge.SinglePoleAreaLatitudeSmoke
       - name: Test RealScale feature-profile log comparison
         run: python3 -m unittest discover -s qa -p 'test_worldgen_profile_compare.py' -v
+      - name: Guard climate sampler reuse within complete ecotone ray searches
+        run: python3 -m unittest discover -s qa -p 'test_ecotone_sampler_context_reuse.py' -v
       - name: Verify bounded ecotone resolution cache and parallel sampler isolation
         run: |
           mkdir -p build/ecotone-result-cache-smoke

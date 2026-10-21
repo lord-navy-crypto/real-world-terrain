@@ -5,6 +5,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/QuartBiomeBaseCache.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/QuartBiomeResultCache.java'
+      - '.github/workflows/ecotone-world.yml'
   pull_request:
     paths:
       - 'neoforge/**'
