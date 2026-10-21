@@ -30,6 +30,17 @@ jobs:
         run: python3 scripts/check_custom_biomes.py
       - name: Validate Grand Ecology registrations and preserved dimensions
         run: python3 scripts/check_grand_ecology.py
+      - name: Experimental vanilla Beardifier Y and XZ exact support guards
+        if: github.head_ref == 'experiment/vanilla-beardifier-xz-cull'
+        run: |
+          mkdir -p build/beardifier-spatial-smoke
+          javac -d build/beardifier-spatial-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/BeardifierYExtent.java \
+            neoforge/src/main/java/org/realscale/neoforge/BeardifierXZExtent.java \
+            neoforge/src/test/java/org/realscale/neoforge/BeardifierYExtentSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/BeardifierXZExtentSmoke.java
+          java -cp build/beardifier-spatial-smoke org.realscale.neoforge.BeardifierYExtentSmoke
+          java -cp build/beardifier-spatial-smoke org.realscale.neoforge.BeardifierXZExtentSmoke
       - name: Deterministic macro-ecology density and elevation smoke
         run: |
           mkdir -p build/ecology-math-smoke
