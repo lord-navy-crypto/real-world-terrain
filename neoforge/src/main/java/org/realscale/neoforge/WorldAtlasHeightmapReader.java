@@ -32,6 +32,11 @@ public final class WorldAtlasHeightmapReader {
     // Keep region handles bounded while drawing raster rows. Without this
     // cache, a 48x48 map can reopen the same few .mca files hundreds of times.
     private static final int MAX_OPEN_REGIONS = 32;
+    // Read-only map pixels frequently sample identical saved chunks when
+    // zoomed in. One sampler task caches only POSITIVE NBT decode results:
+    // an absent/unfinished chunk is always rechecked so newly generated
+    // terrain remains visible while the offline map paints.
+    private static final int HEIGHT_CACHE_SLOTS = 2048;
 
     public record Sample(int surfaceY, int oceanFloorY) {
         // Conservative coastal-water hint: tree canopies must not turn alpine forests blue.
@@ -44,17 +49,45 @@ public final class WorldAtlasHeightmapReader {
         private final LinkedHashMap<Path,RandomAccessFile> regions =
                 new LinkedHashMap<>(16,0.75f,true);
         private boolean closed;
+        private final long[] decodedKeys=new long[HEIGHT_CACHE_SLOTS];
+        private final Sample[] decodedHeights=new Sample[HEIGHT_CACHE_SLOTS];
+        long decodedHits, decodedMisses;
 
         private Sampler(Path world) { this.world=world; }
 
         public Sample read(int chunkX,int chunkZ) throws IOException {
             if(closed)throw new IOException("Heightmap sampler is closed");
+            // Signed world coordinate keys, no cached null or incomplete NBT.
+            long key=((long)chunkX<<32)|(chunkZ&0xffffffffL);
+            int slot=(int)mixChunkKey(key)&(HEIGHT_CACHE_SLOTS-1);
+            Sample previous=decodedHeights[slot];
+            if(previous!=null && decodedKeys[slot]==key){
+                decodedHits++;
+                return previous;
+            }
+            decodedMisses++;
+            Sample found=readUncached(chunkX,chunkZ);
+            if(found!=null){
+                decodedKeys[slot]=key;
+                decodedHeights[slot]=found;
+            }
+            return found;
+        }
+        private static long mixChunkKey(long h){
+            h^=h>>>33;h*=0xff51afd7ed558ccdL;
+            h^=h>>>33;h*=0xc4ceb9fe1a85ec53L;
+            return h^(h>>>33);
+        }
+
+        private Sample readUncached(int chunkX,int chunkZ) throws IOException {
             Path file=world.resolve("region").resolve("r."
                     +Math.floorDiv(chunkX,32)+"."
                     +Math.floorDiv(chunkZ,32)+".mca");
-            if(!Files.isRegularFile(file,LinkOption.NOFOLLOW_LINKS))return null;
             RandomAccessFile in=regions.get(file);
             if(in==null) {
+                // An already open, validated region needs no repeated stat;
+                // missing regions remain uncached and can appear during paint.
+                if(!Files.isRegularFile(file,LinkOption.NOFOLLOW_LINKS))return null;
                 in=new RandomAccessFile(file.toFile(),"r");
                 regions.put(file,in);
                 trimRegions();
@@ -104,6 +137,7 @@ public final class WorldAtlasHeightmapReader {
                 }
             }
             regions.clear();
+            java.util.Arrays.fill(decodedHeights,null);
             if(failure!=null)throw failure;
         }
     }
