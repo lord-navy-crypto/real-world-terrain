@@ -92,12 +92,14 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
         };
     }
     private static boolean sourceWaterNearby(WorldGenLevel world,BlockPos at,
-                                             ChunkPos chunk) {
+                                             ChunkPos chunk,LandmarkWaterMemo memo) {
+        // Preserve the exact old scan order, chunk guard and water predicate.
+        // Identical X/Y/Z checks from overlapping 7x7 squares are reused
+        // during preflight; no block is written until preflight succeeds.
         for(int dx=-3;dx<=3;dx++)for(int dz=-3;dz<=3;dz++) {
             BlockPos p=at.offset(dx,-1,dz);
             if(!inside(chunk,p))continue;
-            if(world.getBlockState(p).is(Blocks.WATER)
-                    &&world.getFluidState(p).isSource())return true;
+            if(memo.isSourceWater(p.getX(),p.getY(),p.getZ()))return true;
         }
         return false;
     }
@@ -157,6 +159,18 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
                 ^(long)Math.floorDiv(chunk.z,6)*0x632be59bd9b4e019L
                 ^(long)kind.ordinal()*0x516de55dL);
         if(Math.floorMod(district,7L)!=0L)return false;
+        // Water adjacency matters only for these three landmark kinds. A
+        // placement never mutates the world until its shape is fully
+        // preflighted and then immediately returns, so this short-lived
+        // memo cannot return stale fluid/block state from earlier features.
+        LandmarkWaterMemo waterMemo=(kind==Kind.ASWAN_GRANITE
+                ||kind==Kind.HUANGLONG_TRAVERTINE
+                ||kind==Kind.GUILIN_RIVER_KARST)
+            ?new LandmarkWaterMemo((x,y,z)->{
+                BlockPos pos=new BlockPos(x,y,z);
+                return world.getBlockState(pos).is(Blocks.WATER)
+                        &&world.getFluidState(pos).isSource();
+            }):null;
         // Several short columns follow local topography, not a flat pasted slab.
         for(int attempt=0;attempt<3;attempt++) {
             int anchorX=chunk.getMinBlockX()+4+ctx.random().nextInt(8);
@@ -183,7 +197,7 @@ public final class GeographicLandmarkFeature extends Feature<NoneFeatureConfigur
                 if(kind==Kind.ASWAN_GRANITE
                         ||kind==Kind.HUANGLONG_TRAVERTINE
                         ||kind==Kind.GUILIN_RIVER_KARST)
-                    riverAdjacency |= sourceWaterNearby(world,foot,chunk);
+                    riverAdjacency |= sourceWaterNearby(world,foot,chunk,waterMemo);
                 int height=switch(kind) {
                     case WULINGYUAN_SANDSTONE -> 4+(int)Math.floorMod(mix(district+column*37L),5L);
                     case SOUTH_CHINA_KARST -> 3+(int)Math.floorMod(mix(district+column*43L),4L);
