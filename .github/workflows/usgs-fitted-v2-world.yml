@@ -44,56 +44,17 @@ jobs:
           simulation-distance=3
           view-distance=3
           online-mode=true
+          enable-rcon=true
+          rcon.password=realscale_fitted_v2_ci_only
+          rcon.port=25575
           SETTINGS
           done
-      - name: Boot server and prove a far-distance generated chunk
+      - name: RCON-authenticated far chunk, saved Anvil proof, and latency profile
         working-directory: neoforge
-        run: |
-          python3 - <<'PY'
-          import subprocess,threading,time,pathlib,os,signal,gzip
-          logfile=pathlib.Path('build/usgs-fitted-v2-world.log')
-          logfile.parent.mkdir(parents=True,exist_ok=True)
-          p=subprocess.Popen(['gradle','--no-daemon','runServer','--stacktrace'],
-               stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,
-               text=True,bufsize=1,start_new_session=True)
-          lines=[];ready=threading.Event()
-          def read():
-              for line in p.stdout:
-                  lines.append(line)
-                  if 'Done (' in line and 'For help' in line:ready.set()
-          t=threading.Thread(target=read,daemon=True);t.start()
-          try:
-              limit=time.monotonic()+500
-              while p.poll() is None and not ready.is_set() and time.monotonic()<limit:time.sleep(1)
-              if not ready.is_set():raise RuntimeError('USGS fitted Minecraft server did not boot')
-              p.stdin.write('forceload add 2048 0\n');p.stdin.flush()
-              time.sleep(65)
-              p.stdin.write('save-all flush\n');p.stdin.flush()
-              time.sleep(7)
-              p.stdin.write('stop\n');p.stdin.flush()
-              p.wait(timeout=100)
-          finally:
-              if p.poll() is None:
-                  os.killpg(p.pid,signal.SIGINT)
-                  try:p.wait(timeout=12)
-                  except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGKILL);p.wait()
-              t.join(timeout=3)
-              logfile.write_text(''.join(lines),encoding='utf-8')
-              print('USGS_FITTED_SERVER_READY',ready.is_set(),'LOG_TAIL',logfile.read_text()[-6000:])
-          saved=list(pathlib.Path('run').glob('**/usgs-fitted-v2-world/level.dat'))
-          assert saved,'No Minecraft saved world'
-          assert b'realscale:usgs_fitted_continuation_v2' in gzip.decompress(saved[0].read_bytes()),'Wrong terrain profile'
-          regions=list(pathlib.Path('run').glob('**/usgs-fitted-v2-world/region/r.*.*.mca'))
-          total=0;far=False
-          for region in regions:
-              with region.open('rb') as f:header=f.read(4096)
-              n=sum(any(header[i:i+4]) for i in range(0,len(header),4))
-              total+=n
-              if region.name=='r.4.0.mca' and n>0:far=True
-          print('USGS_FITTED_ANVIL_CHUNKS',total,'2048_FAR_REGION',far)
-          assert total>0 and far,'Distant region must be physically saved, not only ticket ACK'
-          print('USGS_FITTED_V2_REAL_SERVER_PASS')
-          PY
+        timeout-minutes: 13
+        env:
+          JAVA_TOOL_OPTIONS: "-Drealscale.density.profile=true"
+        run: python3 ../qa/neoforge/usgs_fitted_far_chunk_probe.py
       - name: Upload real-world diagnostics
         uses: actions/upload-artifact@v4
         if: always()
@@ -101,6 +62,8 @@ jobs:
           name: USGS-Fitted-v2-Real-Minecraft-World
           path: |
             neoforge/build/usgs-fitted-v2-world.log
+            neoforge/build/usgs-fitted-v2-perf-report.json
+            neoforge/build/usgs-fitted-v2-thread-dump.txt
             neoforge/run/**/usgs-fitted-v2-world/level.dat
             neoforge/run/**/usgs-fitted-v2-world/region/r.*.*.mca
           if-no-files-found: warn
