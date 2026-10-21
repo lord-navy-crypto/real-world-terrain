@@ -4,58 +4,84 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Tiny bounded, allocation-free-on-hit memo table for a worker's fully
- * resolved quart-coordinate biome queries.
+ * Bounded two-way quart-coordinate biome-result memo for one BiomeSource and
+ * one worker thread. High (2096-block) worlds revisit many biome quart
+ * columns while caves, surfaces, structures and feature checks interleave.
  *
- * <p>Ownership: one instance per BiomeSource and worldgen thread. The owner
- * MUST clear() whenever the Climate.Sampler identity changes. Keys are the
- * exact packed quart coordinates already used by NaturalEcotoneBiomeSource,
- * and values are the same registry Holder instances returned by that source.
+ * v2: 8192 entries / 4096 buckets, two candidates in each bucket, avoids
+ * direct-mapped churn when adjacent noisy-biome queries hash together.
+ * No biome approximation: a miss always recomputes the exact original Holder.
  *
- * <p>Collisions replace cache entries, NEVER biome results. All misses fall
- * back to the existing biome-selection algorithm. The hot last-result slot
- * avoids probing the array for identical consecutive coordinates.
+ * The owner MUST clear() when Climate.Sampler identity changes. No global
+ * sharing between dimensions, world seeds, or generation threads.
  */
 final class QuartBiomeResultCache<V> {
-    static final int SLOTS = 2048; // power of two; bounded memory per worker
-
-    private final long[] coordinates = new long[SLOTS];
-    private final Object[] results = new Object[SLOTS];
+    static final int SLOTS=8192;
+    private static final int BUCKETS=SLOTS/2;
+    private final long[] coordinates=new long[SLOTS];
+    private final Object[] results=new Object[SLOTS];
+    private final byte[] victim=new byte[BUCKETS];
     private long lastCoordinate;
     private Object lastValue;
 
     @SuppressWarnings("unchecked")
     V get(long coordinate) {
-        if (lastValue != null && lastCoordinate == coordinate)
-            return (V) lastValue;
-        final int index = slot(coordinate);
-        final Object result = results[index];
-        if (result == null || coordinates[index] != coordinate)
-            return null;
-        lastCoordinate = coordinate;
-        lastValue = result;
-        return (V) result;
+        if(lastValue!=null && lastCoordinate==coordinate)
+            return (V)lastValue;
+        final int index=bucket(coordinate)<<1;
+        Object result=results[index];
+        if(result!=null && coordinates[index]==coordinate) {
+            lastCoordinate=coordinate;
+            lastValue=result;
+            return (V)result;
+        }
+        result=results[index+1];
+        if(result!=null && coordinates[index+1]==coordinate){
+            lastCoordinate=coordinate;
+            lastValue=result;
+            return (V)result;
+        }
+        return null;
     }
 
-    void put(long coordinate, V value) {
-        Objects.requireNonNull(value, "biome resolution must return a holder");
-        final int index = slot(coordinate);
-        coordinates[index] = coordinate;
-        results[index] = value;
-        lastCoordinate = coordinate;
-        lastValue = value;
+    void put(long coordinate,V value) {
+        Objects.requireNonNull(value,"biome resolution must return a Holder");
+        final int bucket=bucket(coordinate);
+        int index=bucket<<1;
+        if((results[index]!=null && coordinates[index]==coordinate)
+                ||results[index]==null) {
+            // Update existing left entry, otherwise fill empty slot.
+        }else if((results[index+1]!=null && coordinates[index+1]==coordinate)
+                ||results[index+1]==null) {
+            index++;
+        }else{
+            // Two competing quart keys get independent places; when full,
+            // alternate victim. Eviction never changes source biome results.
+            index+=victim[bucket]&1;
+            victim[bucket]^=1;
+        }
+        coordinates[index]=coordinate;
+        results[index]=value;
+        lastCoordinate=coordinate;
+        lastValue=value;
     }
 
     void clear() {
-        Arrays.fill(results, null);
-        lastValue = null;
+        Arrays.fill(results,null);
+        Arrays.fill(victim,(byte)0);
+        lastValue=null;
     }
 
-    // Include the high, middle and low bits of Minecraft's packed BlockPos.
-    // Hash collisions only affect hit rates, not deterministic correctness.
+    static int bucket(long coordinate) {
+        long h=coordinate^(coordinate>>>21)^(coordinate>>>42);
+        h^=h>>>33;
+        h*=0xff51afd7ed558ccdL;
+        h^=h>>>33;
+        return (int)h&(BUCKETS-1);
+    }
+
+    // Used by CI to detect pathological aliasing without retaining coordinates.
     static int slot(long coordinate) {
-        long h = coordinate ^ (coordinate >>> 21) ^ (coordinate >>> 42);
-        h ^= h >>> 32;
-        return ((int) h ^ ((int) h >>> 16)) & (SLOTS - 1);
+        return bucket(coordinate)<<1;
     }
 }
