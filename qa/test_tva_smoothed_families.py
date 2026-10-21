@@ -48,7 +48,7 @@ class CoreSmoothing(unittest.TestCase):
     self.assertTrue((R/"density_function"/legacy/"height_signal.json").is_file())
  def test_four_curated_player_modes_preserve_archived_family_graphs(self):
   active=[
-   "realscale:tva_sacred_biodiversity_end3_spawn3_v3",
+   "realscale:tva_natural_hypsometry_v1_three_realms",
    "realscale:tva_measured_global_landforms_three_realms",
    "realscale:tva_alpine_three_realms",
    "realscale:tva_canyon_three_realms",
