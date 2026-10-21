@@ -66,7 +66,7 @@ class GlobalRareGeomorphologyV3(unittest.TestCase):
         self.assertEqual(len(set(menu["values"])),4)
         self.assertNotIn("realscale:tva_global_landform_expedition_v3_three_realms",menu["values"])
         self.assertNotIn("realscale:tva_regional_landform_expedition_v2_three_realms",menu["values"])
-        self.assertIn("realscale:tva_measured_usgs_fitted_v1_three_realms",menu["values"])
+        self.assertIn("realscale:tva_measured_usgs_fitted_v2_three_realms",menu["values"])
         self.assertEqual(load(DATA/"world_preset/tva_measured_biodiversity_end3_spawn3_v3.json")[
                          "dimensions"]["minecraft:overworld"]["generator"]["settings"],
                          "realscale:usgs_big_sur_v2")
