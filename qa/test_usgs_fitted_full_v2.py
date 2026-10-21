@@ -44,9 +44,10 @@ class USGSFittedFullV2(unittest.TestCase):
         self.assertIn("if(weight>=1.0)return fitted;",wrapper)
         self.assertIn("if(weight<=0.0)return base.compute(ctx);",wrapper)
         self.assertIn("if(distance>0.0)",wrapper)
-        self.assertIn("if(fittedWeight>0.0)",wrapper)
-        self.assertIn("cache.keys[slot]=key;cache.valid[slot]=true;",wrapper)
-        self.assertIn("final ThreadLocal<Columns> columns",wrapper)
+        self.assertIn("if(weight>0.0)height=RealDemFittedMathV2.predictedHeight",wrapper)
+        self.assertIn("ThreadLocal.withInitial(RealDemFittedColumnCache::new)",wrapper)
+        self.assertIn("if(!memo.lookup(x,z))",wrapper)
+        self.assertIn("memo.store(x,z,weight,height)",wrapper)
         # Far inland must not read the slow, old procedural graph.
         self.assertLess(wrapper.index("if(weight>=1.0)return fitted;"),
                         wrapper.index("final double original=base.compute(ctx);"))
