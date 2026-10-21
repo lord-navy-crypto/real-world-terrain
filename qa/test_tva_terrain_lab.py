@@ -21,7 +21,7 @@ TVA={
 }
 PLAYER_MENU=(
  "realscale:tva_natural_hypsometry_v1_three_realms",
- "realscale:tva_measured_global_landforms_three_realms",
+ "realscale:tva_measured_usgs_fitted_v1_three_realms",
  "realscale:tva_alpine_three_realms",
  "realscale:tva_canyon_three_realms",
 )
