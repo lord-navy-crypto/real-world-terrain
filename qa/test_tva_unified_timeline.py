@@ -14,7 +14,13 @@ class UnifiedTimelineTests(unittest.TestCase):
             self.assertTrue((SRC/p).is_file(),p)
         for p in ("RealScaleAdaptiveVisibilityClient.java","RealScaleClientFrameProfiler.java"):
             code=(SRC/p).read_text()
-            self.assertIn("Boolean.getBoolean(",code)
+            # Release builds use default-OFF Boolean.getBoolean. The
+            # separately versioned integrated TEST build intentionally uses
+            # Boolean.parseBoolean(System.getProperty(flag,"true")) and
+            # supports an explicit false override for faithful A/B tests.
+            self.assertTrue("Boolean.getBoolean(" in code
+                            or ("Boolean.parseBoolean(System.getProperty(" in code
+                                and '"true"' in code),p)
             self.assertIn("Dist.CLIENT",code)
             self.assertNotIn("setRenderDistance",code)
             self.assertNotIn("setSimulationDistance",code)
