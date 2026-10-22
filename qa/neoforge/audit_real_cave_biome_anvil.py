@@ -22,18 +22,27 @@ for region in root.glob("run/**/region/r.*.*.mca"):
         files.append(region)
 assert files,"No saved Overworld Anvil regions"
 counts=Counter()
+chunks_by_biome=Counter()
 full_chunks=0
 for region in files:
     for chunk in iter_region_chunks(region):
         if chunk.get("Status")!="minecraft:full":continue
         full_chunks+=1
+        seen=set()
         for section in chunk.get("sections",[]):
             for biome in section.get("biomes",{}).get("palette",[]):
                 counts[biome]+=1
+                if biome in VALID:
+                    seen.add(biome)
+        for biome in seen:
+            chunks_by_biome[biome]+=1
 evidence={name:counts[name] for name in sorted(VALID) if counts[name]>0}
 print("REALSCALE_ACTUAL_CAVE_BIOME_ANVIL",json.dumps({
     "full_chunks":full_chunks,"region_files":len(files),
     "custom_cave_palette_counts":evidence,
+    "custom_cave_full_chunk_counts":{name:chunks_by_biome[name]
+        for name in sorted(VALID) if chunks_by_biome[name]>0},
+    "missing_custom_cave_ids":sorted(VALID-set(evidence)),
     "vanilla_deep_dark_palette_counts":counts.get("minecraft:deep_dark",0),
     "vanilla_ocean_palette_counts":sum(counts[x] for x in counts if x.endswith("_ocean") or x=="minecraft:ocean")
 },sort_keys=True),flush=True)
@@ -47,4 +56,11 @@ if "--require-new" in sys.argv:
         {name:counts[name] for name in new_ids})
     print("REALSCALE_NEW_CAVE_BIOME_ANVIL_PASS",{
         name:counts[name] for name in new_ids if counts[name]>0},flush=True)
+if "--require-fossil" in sys.argv:
+    name="realscale:fossil_limestone_caves"
+    assert chunks_by_biome[name]>0,(
+        "Fossil limestone biome not observed in actual saved Anvil chunks",
+        {"full_chunks":full_chunks,"observed":chunks_by_biome[name]})
+    print("REALSCALE_ACTUAL_FOSSIL_CAVE_ID_PASS",
+          {"full_chunks":chunks_by_biome[name]},flush=True)
 print("REALSCALE_REAL_CAVE_BIOME_ANVIL_PASS",flush=True)
