@@ -26,15 +26,19 @@ def main():
             "data/realscale/worldgen/world_preset/tva_sacred_timeline_three_realms.json"))
         core=json.loads(source.read(
             "data/minecraft/tags/worldgen/world_preset/normal.json"))
+        cave_test=("data/realscale/worldgen/world_preset/"
+            "tva_cave_ocean_ecology_test_three_realms.json") in source.namelist()
     original=[
         "realscale:tva_sacred_timeline_three_realms",
         "realscale:tva_alpine_three_realms",
         "realscale:tva_canyon_three_realms",
         "realscale:tva_measured_three_realms",
     ]
-    require(core["replace"] is False and core["values"]==
-            original+["realscale:tva_wonders_invasion_three_realms"],
-            "TVA built mod must keep the four core choices and additive opt-in")
+    optional=["realscale:tva_wonders_invasion_three_realms"]
+    if cave_test:
+        optional.append("realscale:tva_cave_ocean_ecology_test_three_realms")
+    require(core["replace"] is False and core["values"]==original+optional,
+            "TVA built mod must retain four original presets plus explicit opt-in experiments")
     with tempfile.TemporaryDirectory(prefix="tva-lab-export-") as temporary:
         directory=Path(temporary)
         draft=directory/"profile.json"
@@ -76,7 +80,7 @@ def main():
             pass
         else:
             raise AssertionError("Exporter unexpectedly overwrote a pre-existing pack")
-    print("TVA_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, 4 stable + 1 opt-in menu and immutable export")
+    print("TVA_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, 4 stable + permitted optional test menu and immutable export")
 
 if __name__=="__main__":
     main()
