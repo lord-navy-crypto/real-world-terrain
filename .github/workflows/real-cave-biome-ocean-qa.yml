@@ -1,7 +1,7 @@
-name: EXPERIMENT actual six cave biome IDs and marine integrity
+name: EXPERIMENT actual eight cave biome IDs and marine integrity
 on:
   push:
-    branches: [test/real-cave-biomes-advanced-ocean-20261022]
+    branches: [test/real-cave-biomes-advanced-ocean-20261022, test/caves-oceans-ecology-v2-20261022]
     paths:
       - ".github/workflows/real-cave-biome-ocean-qa.yml"
       - "neoforge/src/main/java/org/realscale/neoforge/CaveBiomeRegionMath.java"
@@ -69,7 +69,7 @@ jobs:
         run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
       - name: Decode actual saved Anvil cave biome palettes
         working-directory: neoforge
-        run: python3 ../qa/neoforge/audit_real_cave_biome_anvil.py .
+        run: python3 ../qa/neoforge/audit_real_cave_biome_anvil.py . --require-new
       - name: Save original server logs, cave palettes and noise integrity
         if: always()
         uses: actions/upload-artifact@v4
