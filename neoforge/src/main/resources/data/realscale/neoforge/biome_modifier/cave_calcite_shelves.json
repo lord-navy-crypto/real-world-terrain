@@ -5,7 +5,9 @@
     "realscale:dry_karst_caves",
     "realscale:damp_limestone_caverns",
     "minecraft:stony_peaks",
-    "minecraft:windswept_hills"
+    "minecraft:windswept_hills",
+    "minecraft:plains",
+    "minecraft:meadow"
   ],
   "features": "realscale:cave_calcite_shelves",
   "step": "underground_decoration"

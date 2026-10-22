@@ -4,7 +4,9 @@
     "minecraft:lush_caves",
     "realscale:deep_fungal_caverns",
     "realscale:damp_limestone_caverns",
-    "minecraft:meadow"
+    "minecraft:meadow",
+    "minecraft:forest",
+    "minecraft:plains"
   ],
   "features": "realscale:cave_fungal_grottos",
   "step": "underground_decoration"

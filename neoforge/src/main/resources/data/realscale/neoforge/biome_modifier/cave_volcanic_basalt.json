@@ -4,7 +4,8 @@
     "minecraft:deep_dark",
     "realscale:volcanic_caverns",
     "minecraft:stony_peaks",
-    "minecraft:badlands"
+    "minecraft:badlands",
+    "minecraft:dripstone_caves"
   ],
   "features": "realscale:cave_volcanic_basalt",
   "step": "underground_decoration"
