@@ -51,6 +51,23 @@ class RealCaveBiomeTests(unittest.TestCase):
                 self.assertIn("water_fog_color",biome["effects"])
                 self.assertEqual(len(biome["features"]),11)
 
+    def test_new_cave_palette_and_visual_geology_are_distinct(self):
+        self.assertEqual(len(CAVES),8)
+        glow=load(DATA/"worldgen/biome/glowing_moss_grottos.json")
+        fossil=load(DATA/"worldgen/biome/fossil_limestone_caves.json")
+        self.assertNotEqual(glow["effects"]["fog_color"],fossil["effects"]["fog_color"])
+        self.assertNotEqual(glow["effects"]["water_color"],fossil["effects"]["water_color"])
+        code=(JAVA/"CaveMarineHabitatFeature.java").read_text()
+        self.assertIn("CAVE_GLOW",code)
+        self.assertIn("CAVE_FOSSIL",code)
+        self.assertIn("BlockStateProperties.DOWN,true",code)
+        self.assertIn("Blocks.DEAD_BRAIN_CORAL_FAN",code)
+        self.assertIn("Blocks.DEAD_HORN_CORAL_FAN",code)
+        self.assertIn("fan.getFluidState().is(FluidTags.WATER)",code)
+        self.assertIn("fan.canSurvive(w,water)",code)
+        self.assertIn("Blocks.POINTED_DRIPSTONE",code)
+        self.assertIn("spike.canSurvive(w,p)",code)
+
     def test_only_special_test_preset_remaps_cave_biomes(self):
         presets=DATA/"worldgen/world_preset"
         experiment=load(presets/"tva_cave_ocean_ecology_test_three_realms.json")
