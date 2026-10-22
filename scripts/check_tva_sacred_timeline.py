@@ -53,7 +53,10 @@ for part in ("terrain_density","preliminary_density","cave_density"):
 
 catalog=read(R/"neoforge/ecotones/catalog.json")["entries"]
 assert len(catalog)==60
-assert len(list((D/"worldgen/biome").glob("*.json")))==67
+# The separate TEST ecology expansion adds 2 cave IDs; stable main is 67.
+new_biomes=all((D/"worldgen/biome"/(n+".json")).is_file()
+    for n in ("glowing_moss_grottos","fossil_limestone_caves"))
+assert len(list((D/"worldgen/biome").glob("*.json")))==(69 if new_biomes else 67)
 for e in catalog:
     assert (D/"worldgen/biome"/(e["id"]+".json")).exists(),e["id"]
 guard=R/"neoforge/src/main/java/org/realscale/neoforge/TVAWorldGuard.java"

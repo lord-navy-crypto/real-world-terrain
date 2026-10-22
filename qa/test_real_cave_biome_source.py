@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""6 actual underground biome ids and ore-safe source checks, not only decorations."""
+"""8 actual underground biome ids and ore-safe source checks, not only decorations."""
 import json
 import unittest
 from pathlib import Path
@@ -10,12 +10,13 @@ JAVA=R/"neoforge/src/main/java/org/realscale/neoforge"
 CAVES=(
     "damp_limestone_caverns","deep_fungal_caverns","dry_karst_caves",
     "underground_springs","volcanic_caverns","glacial_subsurface",
+    "glowing_moss_grottos","fossil_limestone_caves",
 )
 
 def load(path):return json.loads(path.read_text())
 
 class RealCaveBiomeTests(unittest.TestCase):
-    def test_six_original_cave_biomes_are_runtime_generatable(self):
+    def test_eight_cave_biomes_are_runtime_generatable(self):
         registry=(JAVA/"RealScaleMod.java").read_text()
         self.assertIn('"cave_depth_habitats"',registry)
         self.assertIn("CaveDepthBiomeSource.CODEC",registry)
@@ -86,6 +87,13 @@ class RealCaveBiomeTests(unittest.TestCase):
         self.assertIn("plant.getFluidState().is(FluidTags.WATER)",java)
         self.assertIn("naturalSeabed(substrate)",java)
         self.assertNotIn("Blocks.SPONGE",java)
+        for coral in ("DEAD_BRAIN_CORAL_FAN","DEAD_HORN_CORAL_FAN"):
+            self.assertIn("Blocks."+coral,java)
+        self.assertIn("fan.canSurvive(w,water)",java)
+        self.assertIn("fan.getFluidState().is(FluidTags.WATER)",java)
+        self.assertIn("Blocks.POINTED_DRIPSTONE",java)
+        self.assertIn("Blocks.GLOW_LICHEN",java)
+        self.assertIn("Blocks.BONE_BLOCK",java)
 
 if __name__=="__main__":
     unittest.main()

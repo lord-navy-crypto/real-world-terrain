@@ -12,7 +12,8 @@ from realscale_headless_qa import iter_region_chunks
 
 VALID={"realscale:"+x for x in (
     "damp_limestone_caverns","deep_fungal_caverns","dry_karst_caves",
-    "underground_springs","volcanic_caverns","glacial_subsurface")}
+    "underground_springs","volcanic_caverns","glacial_subsurface",
+    "glowing_moss_grottos","fossil_limestone_caves")}
 root=Path(sys.argv[1])
 files=[]
 for region in root.glob("run/**/region/r.*.*.mca"):

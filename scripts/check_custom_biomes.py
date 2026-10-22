@@ -135,7 +135,9 @@ def test_supported_microstructures():
 def test_all_custom_biome_carvers():
     # Minecraft 1.21.1 expects a carving-stage map, not the later-version list.
     all_biomes = list(BIOMES.glob("*.json"))
-    assert len(all_biomes) == 67, len(all_biomes)
+    more=all((BIOMES/(n+".json")).is_file()
+        for n in ("glowing_moss_grottos","fossil_limestone_caves"))
+    assert len(all_biomes)==(69 if more else 67),len(all_biomes)
     for path in all_biomes:
         biome = load(path)
         assert isinstance(biome.get("carvers"), dict), path

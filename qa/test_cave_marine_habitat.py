@@ -16,6 +16,8 @@ CAVES={
     "cave_volcanic_basalt":"CAVE_VOLCANIC",
     "cave_glacial_rock":"CAVE_GLACIAL",
     "cave_spring_moss":"CAVE_SPRING",
+    "cave_glow_lichen":"CAVE_GLOW",
+    "cave_fossil_matrix":"CAVE_FOSSIL",
 }
 MARINE={
     "cold_water_reef":"COLD_WATER_REEF",
