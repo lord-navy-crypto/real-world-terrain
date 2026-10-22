@@ -1,7 +1,7 @@
 # RealScale Integrated TEST MAIN — 2026-10-22
 
 **Branch:** `test/main-optimization-integration-20261022`  
-**Distinct test build:** `2.0.0-tva-preview.2-test.4`, Minecraft 1.21.1, NeoForge 21.1.249 / Java 21.  
+**Distinct test build:** `2.0.0-tva-preview.2-test.5`, Minecraft 1.21.1, NeoForge 21.1.249 / Java 21.  
 **Parent stable main:** `0d03e228044ceb513adfc06b357253a6e3878d61`. Production main is unchanged.
 
 ## Default-enabled tests in this version
@@ -59,3 +59,9 @@ Integrated source PR [#84](https://github.com/lord-navy-crypto/real-world-terrai
 REAL saved Anvil evidence: [Actions 39748780779](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39748780779), both seeds succeeded, 124 complete chunks each, 5/6 custom biome IDs seen across 2 seeds, with original Deep Dark intact. Tests [39749697310](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39749697310) full build passed, [39749697398](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39749697398) both vanilla-ocean continuity QA passed.
 
 The 6th cave-biome option is TEST-ONLY, not a migration of previous world IDs. Use virgin worlds/backups, particularly because Y256 Beardifier parity and physical-client FPS and coral rendering are still release-blocked. Cave-origin lithology and actual spring activity cannot be inferred at BiomeSource stage; actual decorative placement requires confirmed dry air and a real water boundary. Do not claim all 6 biome IDs have been directly observed in samples: volcanic_caverns ID still needs targeted region coverage.
+
+## Cave + Ocean Ecology V2 — preview.2-test.5
+
+Experimental [PR #86](https://github.com/lord-navy-crypto/real-world-terrain/pull/86) was tested and merged into TEST ONLY: 2 additional actual cave biome types (Glowing Moss Grottos, Fossil Limestone Caves), true survivable glow lichen and upward pointed dripstone, occasional calcite/bone-rich fossil matrix, deeper cold-water reefs using underwater waterlogged inert coral-skeleton fans and seagrass. Existing cold reef's calcite/tuff geology remains. This is a Minecraft block-level scenic approximation, not new marine mobs or aquatic physics. Original vanilla cave ores, carvers and spawns preserved for BOTH new biome JSON files; original four canonical presets remain unchanged.
+
+**Independent verified evidence:** complete source+NeoForge build [39760108452](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39760108452) PASS. Two real ocean saved-water column checks [39760108634](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39760108634) PASS, deep ocean kelp meadow 26/26. Actual completed independent cave Anvil seeds 2 & 42 [39760097034](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39760097034) BOTH PASS, Glowing Moss Grottos IDs in the saved palette (seed2 2, seed42 19). Actual cave glow lichen feature placements seed42 1; fossil matrix placements seed2 2. Fossil Limestone Caves ID is NOT yet demonstrated in these sample areas; cold-water reef decorations likewise not sampled in these ocean seeds. The test.5 integration CI now explicitly requires at least one of the two new biome IDs in real saved Anvil sections. No production main change, test only; back up saves and physical client visual checks remain required.

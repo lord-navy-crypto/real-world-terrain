@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.146'
 }
-version='2.0.0-tva-preview.2-test.4'
+version='2.0.0-tva-preview.2-test.5'
 group='org.realscale'
 base { archivesName = 'RealScale-TVA-Ultimate-NeoForge-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
