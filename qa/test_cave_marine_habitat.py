@@ -52,6 +52,28 @@ class CaveMarineHabitatQA(unittest.TestCase):
                                   [f["type"] for f in placed["placement"]])
                     self.assertTrue(all("ocean" in biome for biome in rule["biomes"]))
 
+    def test_deep_and_highland_cave_layers_are_independently_placed(self):
+        for name in CAVES:
+            with self.subTest(name=name):
+                low=json.loads((DATA/f"worldgen/placed_feature/{name}.json").read_text())
+                highname=name+"_highland"
+                high=json.loads((DATA/f"worldgen/placed_feature/{highname}.json").read_text())
+                high_modifier=json.loads((DATA/f"neoforge/biome_modifier/{highname}.json").read_text())
+                lowheight=next(p["height"] for p in low["placement"]
+                               if p["type"]=="minecraft:height_range")
+                highheight=next(p["height"] for p in high["placement"]
+                               if p["type"]=="minecraft:height_range")
+                self.assertEqual((lowheight["min_inclusive"]["absolute"],
+                                  lowheight["max_inclusive"]["absolute"]),(-56,192))
+                self.assertEqual((highheight["min_inclusive"]["absolute"],
+                                  highheight["max_inclusive"]["absolute"]),(192,1472))
+                self.assertEqual(high["feature"],"realscale:"+name)
+                self.assertEqual(high_modifier["type"],"neoforge:add_features")
+                self.assertEqual(high_modifier["features"],"realscale:"+highname)
+                self.assertEqual(high_modifier["step"],"underground_decoration")
+                self.assertIn("minecraft:biome",[p["type"] for p in high["placement"]])
+                self.assertTrue(high_modifier["biomes"])
+
     def test_cold_reef_and_warm_reef_never_share_a_biome(self):
         cold=json.loads((DATA/"neoforge/biome_modifier/cold_water_reef.json").read_text())
         warm=json.loads((DATA/"neoforge/biome_modifier/warm_reef_garden.json").read_text())
@@ -63,7 +85,7 @@ class CaveMarineHabitatQA(unittest.TestCase):
         for token in ("TVAWorldGuard.hasRealScaleGenerator(context)",
                       '"minecraft:overworld"', "sameChunk(origin,p)",
                       "sameChunk(origin,column)", "cavePocket",
-                      "surface-ROOF_DEPTH", "GrandOverworldCaveNetwork.MIN_Y",
+                      "surface-ROOF_DEPTH", "w.getMinBuildHeight()+4",
                       "GrandOverworldCaveNetwork.MAX_Y",
                       "Heightmap.Types.WORLD_SURFACE_WG",
                       "Heightmap.Types.OCEAN_FLOOR_WG",
