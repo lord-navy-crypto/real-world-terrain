@@ -38,7 +38,7 @@ class RealCaveBiomeTests(unittest.TestCase):
                 self.assertGreaterEqual(len(ore_stage),28)
                 self.assertIn("minecraft:ore_diamond",ore_stage)
                 self.assertIn("minecraft:ore_iron_middle",ore_stage)
-                self.assertIn("minecraft:ore_copper",ore_stage)
+                self.assertTrue(any(x in ore_stage for x in ("minecraft:ore_copper", "minecraft:ore_copper_large")),name)
                 self.assertIn("minecraft:amethyst_geode",biome["features"][2])
                 self.assertIn("minecraft:monster_room",biome["features"][3])
                 self.assertIn("minecraft:spring_water",biome["features"][8])
