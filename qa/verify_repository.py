@@ -14,12 +14,17 @@ modified_density='neoforge/src/main/java/org/realscale/neoforge/RealDemDensity.j
 for name,want in checks.items():
  if name==modified_preset_tag:
   tag=json.loads((ROOT/name).read_text())
-  assert tag.get('values',[]) == [
+  expected=[
    'realscale:tva_sacred_timeline_three_realms',
    'realscale:tva_alpine_three_realms',
    'realscale:tva_canyon_three_realms',
    'realscale:tva_measured_three_realms',
    'realscale:tva_wonders_invasion_three_realms']
+  trial=(ROOT/'neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json')
+  if trial.is_file():
+   expected.append('realscale:tva_cave_ocean_ecology_test_three_realms')
+  assert tag.get('values',[])==expected,(name,tag.get('values'))
+
   print('INTENTIONAL MODIFICATION: four curated TVA families plus opt-in woven features')
   continue
  if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):

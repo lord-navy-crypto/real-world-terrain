@@ -26,6 +26,14 @@ jobs:
           python-version: '3.12'
       - name: Verify recovered source, artifacts and actual saved world
         run: python3 qa/verify_repository.py
+      - name: Verify six real underground cave biomes keep all vanilla ores and structures
+        run: |
+          python3 -m unittest discover -s qa -p 'test_real_cave_biome_source.py' -v
+          mkdir -p build/cave-region-smoke
+          javac -d build/cave-region-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/CaveBiomeRegionMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/CaveBiomeRegionMathSmoke.java
+          java -cp build/cave-region-smoke org.realscale.neoforge.CaveBiomeRegionMathSmoke
       - name: Validate custom biome registry resources (static)
         run: python3 scripts/check_custom_biomes.py
       - name: Verify new cave microhabitats and diversified ocean worldgen safety

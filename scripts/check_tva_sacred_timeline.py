@@ -19,14 +19,18 @@ FAMILIES={
  "tva_measured_three_realms":"realscale:usgs_big_sur_v2",
 }
 expected=["realscale:"+k for k in FAMILIES]
-# Preserve the exact four stable entries and expose experimental weaving only
-# as a separately selected fifth world, never by mutating a canonical preset.
+# Four canonical presets always preserve their IDs and source configs.
+# This TEST build additionally lists two independently selected experiments:
+# original Wonders/invasion and new cave biome ecology. Stable main retains
+# the historical five-item menu without the experimental cave source.
 opt_in="realscale:tva_wonders_invasion_three_realms"
-menu=expected+[opt_in]
+cave_trial="realscale:tva_cave_ocean_ecology_test_three_realms"
+cave_trial_available=(D/"worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json").is_file()
+menu=expected+[opt_in]+([cave_trial] if cave_trial_available else [])
 for name in ("normal","extended"):
     tag=read(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset"/(name+".json"))
     assert tag["replace"] is False and tag["values"]==menu,(name,tag)
-    assert len(tag["values"])==len(set(tag["values"]))==5
+    assert len(tag["values"])==len(set(tag["values"]))==(6 if cave_trial_available else 5)
 for name,settings in FAMILIES.items():
     world=read(D/"worldgen/world_preset"/(name+".json"))
     assert world["dimensions"]["minecraft:overworld"]["generator"]["settings"]==settings,name

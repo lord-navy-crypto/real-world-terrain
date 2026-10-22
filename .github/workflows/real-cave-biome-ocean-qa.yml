@@ -1,0 +1,81 @@
+name: EXPERIMENT actual six cave biome IDs and marine integrity
+on:
+  push:
+    branches: [test/real-cave-biomes-advanced-ocean-20261022]
+    paths:
+      - ".github/workflows/real-cave-biome-ocean-qa.yml"
+      - "neoforge/src/main/java/org/realscale/neoforge/CaveBiomeRegionMath.java"
+      - "neoforge/src/main/java/org/realscale/neoforge/CaveDepthBiomeSource.java"
+      - "neoforge/src/main/resources/data/realscale/worldgen/biome/**"
+      - "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json"
+      - "qa/neoforge/audit_real_cave_biome_anvil.py"
+      - "qa/test_real_cave_biome_source.py"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-biome-ids-in-saved-minecraft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - seed: 2
+          - seed: 42
+    name: Real cave biomes in Anvil / seed ${{ matrix.seed }}
+    env:
+      SEED: ${{ matrix.seed }}
+      PRESET: tva_cave_ocean_ecology_test_three_realms
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: "21"}
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: "8.14.3"}
+      - name: Verify source allows protected original Deep Dark and oceans
+        run: |
+          python3 -m unittest discover -s qa -p 'test_real_cave_biome_source.py' -v
+          mkdir -p build/cave-biome-pure
+          javac -d build/cave-biome-pure \
+            neoforge/src/main/java/org/realscale/neoforge/CaveBiomeRegionMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/CaveBiomeRegionMathSmoke.java
+          java -cp build/cave-biome-pure org.realscale.neoforge.CaveBiomeRegionMathSmoke
+      - name: Configure isolated virgin 2096-height three-realm Minecraft test world
+        working-directory: neoforge
+        run: |
+          for d in run run/server run/gametestserver; do
+            mkdir -p "$d"
+            printf 'eula=true\n' > "$d/eula.txt"
+            cat > "$d/server.properties" <<PROPERTIES
+          level-name=world
+          level-type=realscale:$PRESET
+          level-seed=$SEED
+          generate-structures=true
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Boot REAL NeoForge and save complete distant cave regions
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Decode actual saved Anvil cave biome palettes
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/audit_real_cave_biome_anvil.py .
+      - name: Save original server logs, cave palettes and noise integrity
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Real-Underground-Cave-Biomes-${{ matrix.seed }}
+          path: |
+            neoforge/build/rcon_distant_route_server.log
+            neoforge/build/rcon_distant_route_timing.json
+          if-no-files-found: warn

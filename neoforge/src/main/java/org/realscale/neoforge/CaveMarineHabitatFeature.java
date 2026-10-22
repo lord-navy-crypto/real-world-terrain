@@ -3,6 +3,7 @@ package org.realscale.neoforge;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -199,11 +200,30 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
                 if(!substrate.equals(rock)&&w.setBlock(bottom,rock,2))
                     changed++;
             }else{
-                // Kelp and sea pickles retain vanilla water FluidState,
-                // rather than carving or damming ocean columns.
-                BlockState plant=kind==Kind.KELP_MEADOW
-                        ? Blocks.KELP.defaultBlockState()
-                        : Blocks.SEA_PICKLE.defaultBlockState();
+                // All plant placements replace ONLY standing vanilla water
+                // with an underwater block whose FluidState remains water.
+                // Warm reefs gain several different live CORAL FANS instead
+                // of a uniform sea-pickle monoculture. Sea grass and kelp
+                // form a mixed temperate shelf meadow. Neither can displace
+                // water, reefs, wrecks, fish or source aquifer blocks.
+                BlockState plant;
+                if(kind==Kind.KELP_MEADOW){
+                    plant=random.nextInt(3)==0
+                            ? Blocks.SEAGRASS.defaultBlockState()
+                            : Blocks.KELP.defaultBlockState();
+                }else{
+                    int choice=random.nextInt(9);
+                    plant=switch(choice){
+                        case 0->Blocks.TUBE_CORAL_FAN.defaultBlockState();
+                        case 1->Blocks.BRAIN_CORAL_FAN.defaultBlockState();
+                        case 2->Blocks.BUBBLE_CORAL_FAN.defaultBlockState();
+                        case 3->Blocks.FIRE_CORAL_FAN.defaultBlockState();
+                        case 4->Blocks.HORN_CORAL_FAN.defaultBlockState();
+                        default->Blocks.SEA_PICKLE.defaultBlockState();
+                    };
+                    if(plant.hasProperty(BlockStateProperties.WATERLOGGED))
+                        plant=plant.setValue(BlockStateProperties.WATERLOGGED,true);
+                }
                 if(!plant.canSurvive(w,water))continue;
                 if(!plant.getFluidState().is(FluidTags.WATER))continue;
                 if(w.setBlock(water,plant,2))changed++;
