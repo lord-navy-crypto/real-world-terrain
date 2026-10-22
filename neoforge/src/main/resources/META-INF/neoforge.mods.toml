@@ -28,3 +28,8 @@ type="required"
 versionRange="[3.8.1,)"
 ordering="NONE"
 side="CLIENT"
+
+# EXPERIMENT ONLY: read-only return sampling is disabled unless the JVM
+# explicitly sets -Drealscale.experimental.aquifer.audit=true.
+[[mixins]]
+config="realscale.aquifer.audit.mixins.json"
