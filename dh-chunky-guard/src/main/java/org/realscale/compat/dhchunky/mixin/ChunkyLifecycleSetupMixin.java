@@ -30,6 +30,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ChunkyLifecycleSetupMixin {
     @Shadow(remap = false) private boolean listenerBound;
     @Unique private static final AtomicBoolean realscale$warned = new AtomicBoolean();
+    @Unique private static final AtomicBoolean realscale$hookSeen = new AtomicBoolean();
 
     @Inject(method = "tryRunFirstTimeSetup()V", at = @At("HEAD"),
             cancellable = true, remap = false)
@@ -42,6 +43,9 @@ public abstract class ChunkyLifecycleSetupMixin {
         // After first successful binding, this method is called for EVERY
         // full chunk update. Never reflect on every completed chunk.
         if (listenerBound) return;
+        if (realscale$hookSeen.compareAndSet(false, true)) {
+            System.err.println("REALSCALE_DH_CHUNKY_GUARD_HOOK_ENTERED");
+        }
 
         if (!realscale$isChunkyProviderReady()) {
             // Cancel BEFORE DH flips listenerBound; retry at next real chunk
