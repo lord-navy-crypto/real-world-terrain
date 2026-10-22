@@ -12,5 +12,8 @@
   "generator.realscale.tva_canyon_three_realms": "TVA 神圣时间线 · 峡谷与河谷",
   "generator.realscale.tva_measured_three_realms": "TVA 神圣时间线 · 实测地形 USGS v2",
   "generator.realscale.usgs_big_sur_v2": "RealScale | USGS Big Sur v2（实测地形兼容）",
-  "generator.realscale.tva_wonders_invasion_three_realms": "TVA 神圣时间线 · 自然奇观与维度入侵（完整实验版）"
+  "generator.realscale.tva_wonders_invasion_three_realms": "TVA 神圣时间线 · 自然奇观与维度入侵（完整实验版）",
+  "generator.realscale.tva_cave_ocean_ecology_test_three_realms": "TVA · 洞穴与海洋生态试验（八种地下群系）",
+  "biome.realscale.glowing_moss_grottos": "荧光苔藓溶洞",
+  "biome.realscale.fossil_limestone_caves": "化石石灰岩洞穴"
 }

@@ -12,5 +12,8 @@
   "generator.realscale.tva_canyon_three_realms": "TVA | Canyon — Grand Valleys",
   "generator.realscale.tva_measured_three_realms": "TVA | Real-World — USGS Big Sur v2",
   "generator.realscale.usgs_big_sur_v2": "RealScale | USGS Big Sur v2 (legacy-compatible measured)",
-  "generator.realscale.tva_wonders_invasion_three_realms": "TVA | Complete Experiments — Natural Wonders + Realm Invasions"
+  "generator.realscale.tva_wonders_invasion_three_realms": "TVA | Complete Experiments — Natural Wonders + Realm Invasions",
+  "generator.realscale.tva_cave_ocean_ecology_test_three_realms": "TVA | Cave & Ocean Ecology Test — 8 Underground Biomes",
+  "biome.realscale.glowing_moss_grottos": "Glowing Moss Grottos",
+  "biome.realscale.fossil_limestone_caves": "Fossil Limestone Caves"
 }

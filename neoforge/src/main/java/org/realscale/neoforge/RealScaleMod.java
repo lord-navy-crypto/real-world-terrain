@@ -219,6 +219,10 @@ public final class RealScaleMod {
                     new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.KELP_MEADOW));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "warm_reef_garden"),
                     new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.WARM_REEF_GARDEN));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_glow_lichen"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_GLOW));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_fossil_matrix"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_FOSSIL));
         });
     }
 }

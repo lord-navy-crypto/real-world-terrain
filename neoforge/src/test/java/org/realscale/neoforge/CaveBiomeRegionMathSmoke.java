@@ -17,7 +17,7 @@ public final class CaveBiomeRegionMathSmoke {
         boolean[] covered=new boolean[CaveBiomeRegionMath.Region.values().length];
         for(int x=-600;x<=600;x+=5)for(int z=-600;z<=600;z+=7)
             for(String id:new String[]{"lush_caves","dripstone_caves","snowy_plains",
-                "badlands","jungle","plains"}){
+                "badlands","jungle","plains","desert","stony_peaks"}){
                 var r=CaveBiomeRegionMath.select(x,-4,z,id);
                 covered[r.ordinal()]=true;
                 if(r!=CaveBiomeRegionMath.select(x,-4,z,id))

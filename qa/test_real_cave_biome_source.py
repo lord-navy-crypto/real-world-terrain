@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""6 actual underground biome ids and ore-safe source checks, not only decorations."""
+"""8 actual underground biome ids and ore-safe source checks, not only decorations."""
 import json
 import unittest
 from pathlib import Path
@@ -10,12 +10,13 @@ JAVA=R/"neoforge/src/main/java/org/realscale/neoforge"
 CAVES=(
     "damp_limestone_caverns","deep_fungal_caverns","dry_karst_caves",
     "underground_springs","volcanic_caverns","glacial_subsurface",
+    "glowing_moss_grottos","fossil_limestone_caves",
 )
 
 def load(path):return json.loads(path.read_text())
 
 class RealCaveBiomeTests(unittest.TestCase):
-    def test_six_original_cave_biomes_are_runtime_generatable(self):
+    def test_eight_cave_biomes_are_runtime_generatable(self):
         registry=(JAVA/"RealScaleMod.java").read_text()
         self.assertIn('"cave_depth_habitats"',registry)
         self.assertIn("CaveDepthBiomeSource.CODEC",registry)
@@ -49,6 +50,23 @@ class RealCaveBiomeTests(unittest.TestCase):
                 self.assertIn("grass_color",biome["effects"])
                 self.assertIn("water_fog_color",biome["effects"])
                 self.assertEqual(len(biome["features"]),11)
+
+    def test_new_cave_palette_and_visual_geology_are_distinct(self):
+        self.assertEqual(len(CAVES),8)
+        glow=load(DATA/"worldgen/biome/glowing_moss_grottos.json")
+        fossil=load(DATA/"worldgen/biome/fossil_limestone_caves.json")
+        self.assertNotEqual(glow["effects"]["fog_color"],fossil["effects"]["fog_color"])
+        self.assertNotEqual(glow["effects"]["water_color"],fossil["effects"]["water_color"])
+        code=(JAVA/"CaveMarineHabitatFeature.java").read_text()
+        self.assertIn("CAVE_GLOW",code)
+        self.assertIn("CAVE_FOSSIL",code)
+        self.assertIn("BlockStateProperties.DOWN,true",code)
+        self.assertIn("Blocks.DEAD_BRAIN_CORAL_FAN",code)
+        self.assertIn("Blocks.DEAD_HORN_CORAL_FAN",code)
+        self.assertIn("fan.getFluidState().is(FluidTags.WATER)",code)
+        self.assertIn("fan.canSurvive(w,water)",code)
+        self.assertIn("Blocks.POINTED_DRIPSTONE",code)
+        self.assertIn("spike.canSurvive(w,p)",code)
 
     def test_only_special_test_preset_remaps_cave_biomes(self):
         presets=DATA/"worldgen/world_preset"
@@ -86,6 +104,13 @@ class RealCaveBiomeTests(unittest.TestCase):
         self.assertIn("plant.getFluidState().is(FluidTags.WATER)",java)
         self.assertIn("naturalSeabed(substrate)",java)
         self.assertNotIn("Blocks.SPONGE",java)
+        for coral in ("DEAD_BRAIN_CORAL_FAN","DEAD_HORN_CORAL_FAN"):
+            self.assertIn("Blocks."+coral,java)
+        self.assertIn("fan.canSurvive(w,water)",java)
+        self.assertIn("fan.getFluidState().is(FluidTags.WATER)",java)
+        self.assertIn("Blocks.POINTED_DRIPSTONE",java)
+        self.assertIn("Blocks.GLOW_LICHEN",java)
+        self.assertIn("Blocks.BONE_BLOCK",java)
 
 if __name__=="__main__":
     unittest.main()
