@@ -1,0 +1,169 @@
+name: EXPERIMENT Vanilla Perlin memo A-B-A real worldgen
+on:
+  push:
+    branches: [experiment/vanilla-perlin-exact-memo]
+    paths:
+      - '.github/workflows/experimental-perlin-ab.yml'
+      - 'neoforge/src/main/java/org/realscale/neoforge/ExactPerlinNoiseMemo.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/mixin/PerlinExactMemoMixin.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/mixin/ExperimentalPerlinMixinPlugin.java'
+      - 'neoforge/src/main/resources/realscale.perlin.experiment.mixins.json'
+      - 'neoforge/src/main/resources/META-INF/neoforge.mods.toml'
+      - 'qa/neoforge/compare_perlin_three_runs.py'
+      - 'qa/test_perlin_three_runs.py'
+      - 'qa/neoforge/triage_vanilla_three_worlds.py'
+      - 'qa/neoforge/compare_vanilla_worldgen_saved_regions.py'
+      - 'qa/test_perlin_three_way_triage.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  perlin-exact-aba:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - preset: tva_measured_three_realms
+            seed: 2
+          - preset: tva_sacred_timeline_three_realms
+            seed: 42
+    name: Perlin exact memo 4 servers / ${{ matrix.preset }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Test exact memo arguments, worker isolation and raw double equality
+        run: |
+          mkdir -p build/perlin-memo-smoke
+          javac -d build/perlin-memo-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/ExactPerlinNoiseMemo.java \
+            neoforge/src/test/java/org/realscale/neoforge/ExactPerlinNoiseMemoSmoke.java
+          java -cp build/perlin-memo-smoke org.realscale.neoforge.ExactPerlinNoiseMemoSmoke
+      - name: Unit test same-runner three-run timing comparator
+        run: python3 -m unittest discover -s qa -p 'test_perlin_three_runs.py' -v
+      - name: Unit-test actual three-way semantic NBT classification
+        run: python3 -m unittest discover -s qa -p 'test_perlin_three_way_triage.py' -v
+      - name: Prepare FOUR virgin 2096-block high server worlds (same SHA)
+        env:
+          PRESET: ${{ matrix.preset }}
+          SEED: ${{ matrix.seed }}
+        run: |
+          for variant in before after control verify; do
+            git worktree add --detach "$RUNNER_TEMP/realscale-$variant" "$GITHUB_SHA"
+            root="$RUNNER_TEMP/realscale-$variant/neoforge"
+            for dir in run run/server run/gametestserver; do
+              mkdir -p "$root/$dir"
+              printf 'eula=true\n' > "$root/$dir/eula.txt"
+              cat > "$root/$dir/server.properties" <<PROPERTIES
+          level-name=world
+          level-type=realscale:$PRESET
+          level-seed=$SEED
+          generate-structures=true
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+            done
+          done
+      - name: Baseline 1 original vanilla Perlin (Mixin disabled)
+        env:
+          PRESET: ${{ matrix.preset }}
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.perlin.instrument=false
+        run: |
+          cd "$RUNNER_TEMP/realscale-before/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Candidate original Perlin with exact-bit memo
+        env:
+          PRESET: ${{ matrix.preset }}
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.perlin.instrument=true -Drealscale.experimental.perlin.cache=true -Drealscale.experimental.perlin.verify=false
+        run: |
+          cd "$RUNNER_TEMP/realscale-after/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Baseline 2 original vanilla Perlin (Mixin disabled)
+        env:
+          PRESET: ${{ matrix.preset }}
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.perlin.instrument=false
+        run: |
+          cd "$RUNNER_TEMP/realscale-control/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Compare three FULL chunk-complete routes
+        run: |
+          python3 qa/neoforge/compare_perlin_three_runs.py \
+            "$RUNNER_TEMP/realscale-before/neoforge/build/rcon_distant_route_timing.json" \
+            "$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_timing.json" \
+            "$RUNNER_TEMP/realscale-control/neoforge/build/rcon_distant_route_timing.json" \
+            "$RUNNER_TEMP/realscale-perlin-aba.json"
+      - name: Diagnose original/memo/original semantic block and fluid changes
+        continue-on-error: true
+        run: |
+          python3 qa/neoforge/triage_vanilla_three_worlds.py \
+            "$RUNNER_TEMP/realscale-before/neoforge" \
+            "$RUNNER_TEMP/realscale-after/neoforge" \
+            "$RUNNER_TEMP/realscale-control/neoforge" \
+            "$RUNNER_TEMP/realscale-perlin-three-way-anvil.json"
+      - name: Independent cache correctness verifier (NOT a timed A-B-A run)
+        env:
+          PRESET: ${{ matrix.preset }}
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.perlin.instrument=true -Drealscale.experimental.perlin.cache=true -Drealscale.experimental.perlin.verify=true
+        run: |
+          cd "$RUNNER_TEMP/realscale-verify/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Require real cache hits and direct unmodified Perlin sampled replays
+        run: |
+          logfile="$RUNNER_TEMP/realscale-verify/neoforge/build/rcon_distant_route_server.log"
+          grep 'REALSCALE_PERLIN_EXACT_MEMO calls=' "$logfile"
+          grep -q 'REALSCALE_PERLIN_EXACT_MIXIN_DECISION.*enabled=true' "$logfile"
+          python3 - "$logfile" <<'PY'
+          import re,sys
+          txt=open(sys.argv[1],encoding="utf-8",errors="replace").read()
+          match=re.search(r'REALSCALE_PERLIN_EXACT_MEMO calls=(\d+) hits=(\d+) misses=(\d+) replay_samples=(\d+)',txt)
+          assert match is not None,"Missing actual 6-arg Perlin memo report"
+          calls,hits,misses,samples=map(int,match.groups())
+          assert calls>0 and misses>0 and hits>0 and samples>0,match.groups()
+          print("REALSCALE_PERLIN_EXACT_REPLAY_VERIFIED:",match.groups(),flush=True)
+          PY
+      - name: Verify baseline / A-B-A candidate flags are faithful
+        run: |
+          for name in before control; do
+            logfile="$RUNNER_TEMP/realscale-$name/neoforge/build/rcon_distant_route_server.log"
+            grep -q 'realscale.experimental.perlin.instrument=false' "$logfile"
+            if grep -q 'REALSCALE_PERLIN_EXACT_MEMO calls=' "$logfile"; then
+              echo "Vanilla baseline incorrectly instrumented" >&2; exit 1
+            fi
+          done
+          logfile="$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_server.log"
+          grep -q 'realscale.experimental.perlin.verify=false' "$logfile"
+          grep 'REALSCALE_PERLIN_EXACT_MEMO calls=' "$logfile"
+      - name: Preserve real complete-load timings and independent replay logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Experimental-Perlin-Exact-${{ matrix.preset }}
+          path: |
+            ${{ runner.temp }}/realscale-perlin-three-way-anvil.json
+            ${{ runner.temp }}/realscale-perlin-aba.json
+            ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-control/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-verify/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_timing.json
+            ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_timing.json
+            ${{ runner.temp }}/realscale-control/neoforge/build/rcon_distant_route_timing.json
+            ${{ runner.temp }}/realscale-verify/neoforge/build/rcon_distant_route_timing.json
+          if-no-files-found: warn
