@@ -7,6 +7,7 @@ import org.realscale.neoforge.ClientChunkUploadBudget;
 import org.realscale.neoforge.RealScaleChunkUploadClient;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -20,12 +21,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value=SectionRenderDispatcher.class,remap=false)
 public abstract class VanillaSectionUploadBudgetMixin {
     @Shadow @Final private Queue<Runnable> toUpload;
+    @Unique private boolean realscale$drainSynchronously;
+
+    /**
+     * Vanilla may synchronously await queue completion on world reload or
+     * renderer teardown. Never defer uploads inside a blocking drain.
+     */
+    @Inject(method="blockUntilClear",at=@At("HEAD"),remap=false)
+    private void realscale$enterBlockingDrain(CallbackInfo callback){
+        realscale$drainSynchronously=true;
+    }
+
+    @Inject(method="blockUntilClear",at=@At("RETURN"),remap=false)
+    private void realscale$exitBlockingDrain(CallbackInfo callback){
+        realscale$drainSynchronously=false;
+    }
 
     @Inject(method="uploadAllPendingUploads",at=@At("HEAD"),
             cancellable=true,remap=false)
     private void realscale$limitPendingUploadFrame(CallbackInfo callback) {
         ClientChunkUploadBudget budget=RealScaleChunkUploadClient.BUDGET;
-        if(!budget.active())return;
+        if(realscale$drainSynchronously || !budget.active())return;
         // Never interfere with initialization, menus or pause transitions.
         Minecraft mc=Minecraft.getInstance();
         if(mc.level==null||mc.player==null||mc.screen!=null)return;
