@@ -102,6 +102,15 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_distant_rcon_completion.py' -v
       - name: Verify far-distance JVM stall fingerprint parser
         run: python3 -m unittest discover -s qa -p 'test_diagnose_worldgen_threads.py' -v
+      - name: Verify opt-in vanilla section upload budget has no lost tasks
+        if: github.head_ref == 'experiment/client-chunk-upload-budget'
+        run: |
+          mkdir -p build/client-chunk-upload-budget-smoke
+          javac -d build/client-chunk-upload-budget-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/ClientChunkUploadBudget.java \
+            neoforge/src/test/java/org/realscale/neoforge/ClientChunkUploadBudgetSmoke.java
+          java -cp build/client-chunk-upload-budget-smoke \
+            org.realscale.neoforge.ClientChunkUploadBudgetSmoke
       - name: Verify adaptive visibility classification and conservative budget parity
         run: |
           mkdir -p build/visibility-budget-smoke
