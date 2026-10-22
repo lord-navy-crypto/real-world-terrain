@@ -54,9 +54,12 @@ public final class CaveBiomeRegionMath {
                     :type<9?Region.UNDERGROUND_SPRINGS:Region.GLOW_GROTTO;
         }
         if(original.equals("dripstone_caves")){
+            // Test-only: fossil limestone grows from 2 to 3 of 11 selected
+            // region types. The total fraction of vanilla sites replaced is
+            // UNCHANGED; reduce volcanic weight rather than expanding caves.
             return type<4?Region.DRY_KARST
                     :type<7?Region.DAMP_LIMESTONE
-                    :type<9?Region.VOLCANIC:Region.FOSSIL_CAVES;
+                    :type==7?Region.VOLCANIC:Region.FOSSIL_CAVES;
         }
         boolean frozen=original.startsWith("snowy")
                 ||original.contains("frozen")||original.equals("ice_spikes")
@@ -65,14 +68,17 @@ public final class CaveBiomeRegionMath {
         boolean arid=original.contains("badlands")||original.equals("desert")
                 ||original.equals("stony_peaks")||original.startsWith("windswept");
         if(arid)return type<5?Region.VOLCANIC
-                :type<9?Region.DRY_KARST:Region.FOSSIL_CAVES;
+                :type<8?Region.DRY_KARST:Region.FOSSIL_CAVES;
         boolean moist=original.contains("jungle")||original.contains("swamp")
                 ||original.equals("dark_forest")||original.equals("mangrove_swamp");
         if(moist)return type<3?Region.DEEP_FUNGAL
                 :type<6?Region.UNDERGROUND_SPRINGS
                 :type<9?Region.DAMP_LIMESTONE:Region.GLOW_GROTTO;
+        // Ordinary climate retains the glowing grotto at type 9; a
+        // second fossil slot takes only one of the dry-karst slots.
         return type<4?Region.DAMP_LIMESTONE
-                :type<7?Region.DRY_KARST
+                :type<6?Region.DRY_KARST
+                :type==6?Region.FOSSIL_CAVES
                 :type<9?Region.DEEP_FUNGAL
                 :type==9?Region.GLOW_GROTTO:Region.FOSSIL_CAVES;
     }

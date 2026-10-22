@@ -171,8 +171,33 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
                             .setValue(BlockStateProperties.DOWN,true);
                 }
                 case CAVE_FOSSIL -> {
-                    // Scattered bone-rich rock matrix; not a claimed intact
-                    // fossil skeleton or a replacement for vanilla fossils.
+                    // Show matrix on existing natural walls, not just buried
+                    // floor patches. Preserve cave air, ores, aquifers, and
+                    // boundary chunks; this is NOT a fossil skeleton.
+                    if(random.nextInt(3)==0) {
+                        Direction wallDirection=switch(random.nextInt(4)){
+                            case 0 -> Direction.NORTH;
+                            case 1 -> Direction.SOUTH;
+                            case 2 -> Direction.EAST;
+                            default -> Direction.WEST;
+                        };
+                        BlockPos wallPos=p.relative(wallDirection);
+                        if(sameChunk(origin,wallPos)) {
+                            BlockState wall=w.getBlockState(wallPos);
+                            if((wall.is(Blocks.STONE)||wall.is(Blocks.DEEPSLATE)
+                                    ||wall.is(Blocks.TUFF))
+                                    &&w.getFluidState(wallPos).isEmpty()){
+                                BlockState exposed=random.nextInt(3)==0
+                                        ?Blocks.BONE_BLOCK.defaultBlockState()
+                                        :Blocks.CALCITE.defaultBlockState();
+                                if(w.setBlock(wallPos,exposed,2)){
+                                    changed++;
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                    // Scattered floor-rock matrix: natural stone only.
                     if(original.is(Blocks.STONE)||original.is(Blocks.DEEPSLATE)
                             ||original.is(Blocks.TUFF)){
                         deposit=random.nextInt(4)==0

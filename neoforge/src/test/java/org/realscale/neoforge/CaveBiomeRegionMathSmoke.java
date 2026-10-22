@@ -30,6 +30,30 @@ public final class CaveBiomeRegionMathSmoke {
             if(r!=CaveBiomeRegionMath.select(dx,-4,z,"plains"))
                 throw new AssertionError("cache/order dependence");
         }
+        // Coverage is counted per 48x48-block region CELL, not per
+        // contiguous biome palette entry. Every sample is below ground.
+        // This test detects accidental loss of fossil habitat after edits
+        // while requiring most ordinary sites to remain vanilla.
+        String[] hosts={"dripstone_caves","badlands","plains"};
+        int[] fossilSites=new int[hosts.length],replacedSites=new int[hosts.length];
+        int totalCells=0;
+        for(int x=-960;x<960;x+=12)for(int z=-960;z<960;z+=12){
+            totalCells++;
+            for(int i=0;i<hosts.length;i++){
+                var r=CaveBiomeRegionMath.select(x,-4,z,hosts[i]);
+                if(r!=CaveBiomeRegionMath.Region.NONE)replacedSites[i]++;
+                if(r==CaveBiomeRegionMath.Region.FOSSIL_CAVES)fossilSites[i]++;
+            }
+        }
+        for(int i=0;i<hosts.length;i++){
+            if(fossilSites[i]<150 || fossilSites[i]>=replacedSites[i])
+                throw new AssertionError("Fossil coverage "+hosts[i]+"="+fossilSites[i]);
+        }
+        if(replacedSites[2]*4>=totalCells)
+            throw new AssertionError("Too much ordinary biome replacement");
+        System.out.println("REALSCALE_FOSSIL_CAVE_DISTRIBUTION_PASS cells="+totalCells
+                +" dripstone="+fossilSites[0]+" arid="+fossilSites[1]
+                +" temperate="+fossilSites[2]);
         System.out.println("REALSCALE_REAL_CAVE_BIOMES_SMOKE_PASS regions="+covered.length);
     }
 }

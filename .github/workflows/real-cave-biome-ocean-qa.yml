@@ -1,15 +1,17 @@
 name: EXPERIMENT actual eight cave biome IDs and marine integrity
 on:
   push:
-    branches: [test/real-cave-biomes-advanced-ocean-20261022, test/caves-oceans-ecology-v2-20261022]
+    branches: [test/real-cave-biomes-advanced-ocean-20261022, test/caves-oceans-ecology-v2-20261022, test/fossil-cave-coverage-20261022]
     paths:
       - ".github/workflows/real-cave-biome-ocean-qa.yml"
       - "neoforge/src/main/java/org/realscale/neoforge/CaveBiomeRegionMath.java"
+      - "neoforge/src/main/java/org/realscale/neoforge/CaveMarineHabitatFeature.java"
       - "neoforge/src/main/java/org/realscale/neoforge/CaveDepthBiomeSource.java"
       - "neoforge/src/main/resources/data/realscale/worldgen/biome/**"
       - "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json"
       - "qa/neoforge/audit_real_cave_biome_anvil.py"
       - "qa/test_real_cave_biome_source.py"
+      - "qa/test_cave_marine_habitat.py"
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,6 +25,10 @@ jobs:
         include:
           - seed: 2
           - seed: 42
+          # Independent worlds: assess fossil-biome actual saved coverage,
+          # not only deterministic pure-Java region allocation.
+          - seed: 314159
+          - seed: 271828
     name: Real cave biomes in Anvil / seed ${{ matrix.seed }}
     env:
       SEED: ${{ matrix.seed }}
@@ -36,6 +42,7 @@ jobs:
       - name: Verify source allows protected original Deep Dark and oceans
         run: |
           python3 -m unittest discover -s qa -p 'test_real_cave_biome_source.py' -v
+          python3 -m unittest discover -s qa -p 'test_cave_marine_habitat.py' -v
           mkdir -p build/cave-biome-pure
           javac -d build/cave-biome-pure \
             neoforge/src/main/java/org/realscale/neoforge/CaveBiomeRegionMath.java \
@@ -69,7 +76,12 @@ jobs:
         run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
       - name: Decode actual saved Anvil cave biome palettes
         working-directory: neoforge
-        run: python3 ../qa/neoforge/audit_real_cave_biome_anvil.py . --require-new
+        run: |
+          if [ "$SEED" = "2" ] || [ "$SEED" = "42" ]; then
+            python3 ../qa/neoforge/audit_real_cave_biome_anvil.py . --require-new
+          else
+            python3 ../qa/neoforge/audit_real_cave_biome_anvil.py .
+          fi
       - name: Save original server logs, cave palettes and noise integrity
         if: always()
         uses: actions/upload-artifact@v4
