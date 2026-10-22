@@ -32,13 +32,23 @@ def audit(log_text: str, expect_dh: bool, real_probe: str):
     # logging may differ between minor versions; retain a report for review.
     has_dh = bool(DH_ACTIVE.search(log_text))
     completed = CHUNK_COMPLETE in real_probe
+    # Actual Mac 1.21.1/NeoForge 21.1.262 crash report and independent
+    # upstream issue #1329 show this failure inside the DH <-> Chunky
+    # accessor. It is not evidence of a RealScale density/height fault.
+    chunky_unloaded = "java.lang.IllegalStateException: Chunky is not loaded." in log_text
+    chunky_dh_bridge = "ChunkyAccessor.bindOnGenerationProgressEvent" in log_text
+    known_upstream_chunky_failure = chunky_unloaded and chunky_dh_bridge
     return {
         "expected_distant_horizons": expect_dh,
         "distant_horizons_log_marker": has_dh,
         "real_minecraft_chunk_generated": completed,
         "fingerprints": fingerprints,
+        "dh_chunky_bridge_unavailable": known_upstream_chunky_failure,
+        "triage": "DH-Chunky provider lifecycle (#1329)" if known_upstream_chunky_failure else
+                  "No proven Chunky lifecycle crash",
         "log_lines": len(log_text.splitlines()),
         "pass": completed and (has_dh if expect_dh else not has_dh)
+                and not known_upstream_chunky_failure
                 and not any(fingerprints[k] for k in ("mixin", "resource")),
         "note": "Headless server boot + saved chunk, NOT LOD rendering or GPU compatibility",
     }

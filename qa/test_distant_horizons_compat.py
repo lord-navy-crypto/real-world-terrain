@@ -36,6 +36,24 @@ class DistantHorizonsCompatibilityTests(unittest.TestCase):
                 "QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS: PASS")
         self.assertFalse(x["pass"])
 
+    def test_known_dh_chunky_access_failure_is_classified_as_upstream(self):
+        representative = """
+java.lang.IllegalStateException: Chunky is not loaded.
+ at org.popcraft.chunky.ChunkyProvider.get(ChunkyProvider.java:12)
+ at com.seibel.distanthorizons.neoforge.wrappers.modAccessor.ChunkyAccessor.bindOnGenerationProgressEvent(ChunkyAccessor.java:55)
+"""
+        r=audit(representative,True,
+                "QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS: PASS")
+        self.assertTrue(r["dh_chunky_bridge_unavailable"])
+        self.assertIn("DH-Chunky",r["triage"])
+        self.assertFalse(r["pass"])
+
+    def test_chunky_presence_without_bridge_exception_is_not_false_positive(self):
+        r=audit("DistantHorizons registered accessor for [chunky]",
+                True,"QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS: PASS")
+        self.assertFalse(r["dh_chunky_bridge_unavailable"])
+        self.assertTrue(r["pass"])
+
     def test_base_world_height_is_not_silently_reduced(self):
         import json
         p=ROOT / "neoforge/src/main/resources/data/realscale/dimension_type/realism_max_overworld.json"
