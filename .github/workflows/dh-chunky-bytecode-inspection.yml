@@ -5,6 +5,10 @@ on:
     paths:
       - ".github/workflows/dh-chunky-bytecode-inspection.yml"
       - "qa/neoforge/inspect_dh_chunky_bytecode.py"
+  pull_request:
+    paths:
+      - ".github/workflows/dh-chunky-bytecode-inspection.yml"
+      - "qa/neoforge/inspect_dh_chunky_bytecode.py"
   workflow_dispatch:
 permissions:
   contents: read
