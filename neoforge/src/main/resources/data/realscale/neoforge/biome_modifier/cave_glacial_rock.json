@@ -1,0 +1,13 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:glacial_subsurface",
+    "minecraft:frozen_peaks",
+    "minecraft:jagged_peaks",
+    "minecraft:snowy_slopes",
+    "minecraft:snowy_taiga",
+    "minecraft:grove"
+  ],
+  "features": "realscale:cave_glacial_rock",
+  "step": "underground_decoration"
+}

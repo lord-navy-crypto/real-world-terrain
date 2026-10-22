@@ -55,7 +55,7 @@ for e in catalog:
 guard=R/"neoforge/src/main/java/org/realscale/neoforge/TVAWorldGuard.java"
 assert guard.is_file()
 assert "generator.generatorSettings().unwrapKey()" in guard.read_text()
-for f in ("GrandEcologyFeature","GroundMicrostructureFeature","HabitatPatchFeature"):
+for f in ("GrandEcologyFeature","GroundMicrostructureFeature","HabitatPatchFeature","CaveMarineHabitatFeature"):
     impl=(R/"neoforge/src/main/java/org/realscale/neoforge"/(f+".java")).read_text()
     assert "TVAWorldGuard.hasRealScaleGenerator(context)" in impl,f
 code=(R/"neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
@@ -65,8 +65,21 @@ for symbol in ("grand_nether_caverns","grand_end_density","sky_ocean",
 assert (R/"neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java").exists()
 build=(R/"neoforge/build.gradle").read_text()
 meta=(R/"neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text()
-assert "2.0.0-tva-preview.1" in build and "2.0.0-tva-preview.1" in meta
-assert "RealScale-TVA-Ultimate" in build and "Sacred Timeline Ultimate" in meta
+# Production remains the original preview. A separately versioned TEST
+# branch deliberately changes its display name and version while retaining
+# the exact same mod ID, dependencies, canonical TVA menu and dimensions.
+import re
+gradle_version=re.search(r"(?m)^version='([^']+)'",build)
+mod_version=re.search(r'(?m)^version="([^"]+)"',meta)
+assert gradle_version and mod_version
+version=gradle_version.group(1)
+assert version==mod_version.group(1),("Gradle/NeoForge version mismatch",version)
+assert "RealScale-TVA-Ultimate" in build
+if version.startswith("2.0.0-tva-preview.2-test."):
+    assert 'displayName="RealScale TVA - Integrated Optimization TEST"' in meta
+else:
+    assert version=="2.0.0-tva-preview.1"
+    assert "Sacred Timeline Ultimate" in meta
 for p in (D/"neoforge/biome_modifier").glob("*.json"):
     m=read(p)
     if m.get("type")!="neoforge:add_features":continue
