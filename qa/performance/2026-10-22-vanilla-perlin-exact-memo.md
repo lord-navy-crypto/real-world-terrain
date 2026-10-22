@@ -11,3 +11,7 @@ Performance: four clean full-height real NeoForge servers per seed: vanilla, cac
 Aquifer remains entirely vanilla. Its NoiseBasedAquifer.computeSubstance mutates fluid tick scheduling state; caching a returned BlockState without reconstructing every side effect risks fluid updates and caves. Use independent JFR method-stack classification before considering any aquifer changes.
 
 No structures, octaves, density formula, aquifer, cave, water, rendering or world height changed. No speed claim before actual runs.
+
+## Independent saved-block attribution (additional protection)
+
+New `triage_vanilla_three_worlds.py` decodes persisted Anvil palettes and checks the same actual voxel, biome quart, Heightmap and structure metadata at all three virgin distant waypoints for original vanilla #1, Perlin memo candidate, original vanilla #2. It distinguishes differences already seen between vanilla/vanilla controls from candidate-only or third-value divergences, records real block coordinates and JSON reports, and **does not wave through candidate-only changes**. Saved-world difference analysis is diagnostic and non-gating until natural feature-order nondeterminism is properly understood. A release still requires deterministic structural parity and no unexplained candidate-only fluid/block changes.

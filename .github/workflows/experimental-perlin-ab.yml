@@ -11,6 +11,9 @@ on:
       - 'neoforge/src/main/resources/META-INF/neoforge.mods.toml'
       - 'qa/neoforge/compare_perlin_three_runs.py'
       - 'qa/test_perlin_three_runs.py'
+      - 'qa/neoforge/triage_vanilla_three_worlds.py'
+      - 'qa/neoforge/compare_vanilla_worldgen_saved_regions.py'
+      - 'qa/test_perlin_three_way_triage.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -47,6 +50,8 @@ jobs:
           java -cp build/perlin-memo-smoke org.realscale.neoforge.ExactPerlinNoiseMemoSmoke
       - name: Unit test same-runner three-run timing comparator
         run: python3 -m unittest discover -s qa -p 'test_perlin_three_runs.py' -v
+      - name: Unit-test actual three-way semantic NBT classification
+        run: python3 -m unittest discover -s qa -p 'test_perlin_three_way_triage.py' -v
       - name: Prepare FOUR virgin 2096-block high server worlds (same SHA)
         env:
           PRESET: ${{ matrix.preset }}
@@ -104,6 +109,14 @@ jobs:
             "$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_timing.json" \
             "$RUNNER_TEMP/realscale-control/neoforge/build/rcon_distant_route_timing.json" \
             "$RUNNER_TEMP/realscale-perlin-aba.json"
+      - name: Diagnose original/memo/original semantic block and fluid changes
+        continue-on-error: true
+        run: |
+          python3 qa/neoforge/triage_vanilla_three_worlds.py \
+            "$RUNNER_TEMP/realscale-before/neoforge" \
+            "$RUNNER_TEMP/realscale-after/neoforge" \
+            "$RUNNER_TEMP/realscale-control/neoforge" \
+            "$RUNNER_TEMP/realscale-perlin-three-way-anvil.json"
       - name: Independent cache correctness verifier (NOT a timed A-B-A run)
         env:
           PRESET: ${{ matrix.preset }}
@@ -143,6 +156,7 @@ jobs:
         with:
           name: Experimental-Perlin-Exact-${{ matrix.preset }}
           path: |
+            ${{ runner.temp }}/realscale-perlin-three-way-anvil.json
             ${{ runner.temp }}/realscale-perlin-aba.json
             ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_server.log
             ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_server.log

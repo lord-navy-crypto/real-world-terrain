@@ -112,6 +112,9 @@ jobs:
           java -cp build/experimental-perlin \
             org.realscale.neoforge.ExactPerlinNoiseMemoSmoke
           python3 -m unittest discover -s qa -p 'test_perlin_three_runs.py' -v
+      - name: Verify 3-way semantic vanilla-noise block/biome parity classification
+        if: github.head_ref == 'experiment/vanilla-perlin-exact-memo'
+        run: python3 -m unittest discover -s qa -p 'test_perlin_three_way_triage.py' -v
       - name: Verify exact JFR hotspot categorization and non-overlap contracts
         if: github.head_ref == 'experiment/vanilla-perlin-exact-memo'
         run: python3 -m unittest discover -s qa -p 'test_classify_vanilla_jfr_hotspots.py' -v
