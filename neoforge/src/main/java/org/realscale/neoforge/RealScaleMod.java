@@ -199,6 +199,22 @@ public final class RealScaleMod {
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.CORAL_REEF_FLOOR));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "estuary_shallows"),
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.ESTUARY_SHALLOWS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_fungal_grottos"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_FUNGAL));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_calcite_shelves"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_CALCITE));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_volcanic_basalt"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_VOLCANIC));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_glacial_rock"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_GLACIAL));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_spring_moss"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_SPRING));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cold_water_reef"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.COLD_WATER_REEF));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "kelp_meadow"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.KELP_MEADOW));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "warm_reef_garden"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.WARM_REEF_GARDEN));
         });
     }
 }
