@@ -12,9 +12,9 @@ MOD=RES/"META-INF/neoforge.mods.toml"
 class TestIntegratedMain(unittest.TestCase):
     def test_version_is_test_specific_and_gradle_matches(self):
         mods=tomllib.loads(MOD.read_text())
-        self.assertEqual(mods["mods"][0]["version"],"2.0.0-tva-preview.2-test.1")
+        self.assertEqual(mods["mods"][0]["version"],"2.0.0-tva-preview.2-test.2")
         self.assertIn("TEST",mods["mods"][0]["displayName"])
-        self.assertIn("version='2.0.0-tva-preview.2-test.1'",
+        self.assertIn("version='2.0.0-tva-preview.2-test.2'",
                       (ROOT/"neoforge/build.gradle").read_text())
 
     def test_three_unique_optin_mixin_configs(self):
@@ -29,20 +29,39 @@ class TestIntegratedMain(unittest.TestCase):
             self.assertTrue((RES/name).is_file())
             self.assertTrue(json.loads((RES/name).read_text())["required"])
 
-    def test_three_plugins_remain_default_disabled(self):
-        flags={
+    def test_three_plugins_are_default_on_but_explicitly_overridable(self):
+        switches={
             "mixin/ExperimentalVanillaMixinPlugin.java":
                  "realscale.experimental.beardifier.ycull",
             "mixin/AquiferReadOnlyAuditMixinPlugin.java":
                  "realscale.experimental.aquifer.audit",
             "mixin/ClientSectionUploadMixinPlugin.java":
                  "realscale.experimental.client.uploadbudget"}
-        for path,flag in flags.items():
-            contents=(PKG/path).read_text()
-            self.assertIn(flag,contents)
-            self.assertTrue('Boolean.getBoolean("'+flag+'")' in contents
-                            or ('Boolean.getBoolean(FLAG)' in contents
-                                and ('FLAG="'+flag+'"' in contents)),path)
+        for path,flag in switches.items():
+            code=(PKG/path).read_text()
+            self.assertIn(flag,code,path)
+            self.assertIn('Boolean.parseBoolean(System.getProperty(',code,path)
+            self.assertIn('"true"',code,path)
+            self.assertNotIn("Boolean.getBoolean(",code,path)
+        for path,flag in {
+            "RealScaleChunkUploadClient.java":
+                "realscale.experimental.client.uploadbudget",
+            "BeardifierDirectParity.java":
+                "realscale.experimental.beardifier.verify",
+            "RealScaleClientFrameProfiler.java":
+                "realscale.client.fps.profile"}.items():
+            code=(PKG/path).read_text()
+            self.assertIn('"'+flag+'","true"',code.replace("\\n","").replace(" ",""),path)
+            self.assertIn("Boolean.parseBoolean(System.getProperty(",code,path)
+
+    def test_prod_flags_can_explicitly_disable_each_candidate(self):
+        for path in ("mixin/ExperimentalVanillaMixinPlugin.java",
+                     "mixin/AquiferReadOnlyAuditMixinPlugin.java",
+                     "mixin/ClientSectionUploadMixinPlugin.java"):
+            code=(PKG/path).read_text()
+            self.assertIn('System.getProperty(',code)
+            self.assertIn('Boolean.parseBoolean(',code)
+            self.assertNotIn('Boolean.getBoolean(',code)
 
     def test_client_mixin_does_not_load_on_server(self):
         m=json.loads((RES/"realscale.client.experiment.mixins.json").read_text())
