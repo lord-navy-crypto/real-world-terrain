@@ -1,7 +1,7 @@
-name: EXPERIMENT Vanilla Perlin memo A-B-A real worldgen
+name: EXPERIMENT Perlin single-last-value A-B-A real worldgen
 on:
   push:
-    branches: [experiment/vanilla-perlin-exact-memo]
+    branches: [experiment/vanilla-perlin-last-value]
     paths:
       - '.github/workflows/experimental-perlin-ab.yml'
       - 'neoforge/src/main/java/org/realscale/neoforge/ExactPerlinNoiseMemo.java'
@@ -29,7 +29,7 @@ jobs:
             seed: 2
           - preset: tva_sacred_timeline_three_realms
             seed: 42
-    name: Perlin exact memo 4 servers / ${{ matrix.preset }}
+    name: Perlin last-value cache 4 servers / ${{ matrix.preset }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,7 +88,7 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/realscale-before/neoforge"
           python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
-      - name: Candidate original Perlin with exact-bit memo
+      - name: Candidate Perlin single-last-value cache (no hash)
         env:
           PRESET: ${{ matrix.preset }}
           JAVA_TOOL_OPTIONS: -Drealscale.experimental.perlin.instrument=true -Drealscale.experimental.perlin.cache=true -Drealscale.experimental.perlin.verify=false
@@ -108,7 +108,7 @@ jobs:
             "$RUNNER_TEMP/realscale-before/neoforge/build/rcon_distant_route_timing.json" \
             "$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_timing.json" \
             "$RUNNER_TEMP/realscale-control/neoforge/build/rcon_distant_route_timing.json" \
-            "$RUNNER_TEMP/realscale-perlin-aba.json"
+            "$RUNNER_TEMP/realscale-perlin-last-aba.json"
       - name: Diagnose original/memo/original semantic block and fluid changes
         continue-on-error: true
         run: |
@@ -154,10 +154,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Experimental-Perlin-Exact-${{ matrix.preset }}
+          name: Experimental-Perlin-Last-${{ matrix.preset }}
           path: |
             ${{ runner.temp }}/realscale-perlin-three-way-anvil.json
-            ${{ runner.temp }}/realscale-perlin-aba.json
+            ${{ runner.temp }}/realscale-perlin-last-aba.json
             ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_server.log
             ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_server.log
             ${{ runner.temp }}/realscale-control/neoforge/build/rcon_distant_route_server.log

@@ -103,7 +103,7 @@ jobs:
       - name: Verify far-distance JVM stall fingerprint parser
         run: python3 -m unittest discover -s qa -p 'test_diagnose_worldgen_threads.py' -v
       - name: Verify Perlin noise exact 64-slot cache and benchmark comparator
-        if: github.head_ref == 'experiment/vanilla-perlin-exact-memo'
+        if: (github.head_ref == 'experiment/vanilla-perlin-exact-memo' || github.head_ref == 'experiment/vanilla-perlin-last-value')
         run: |
           mkdir -p build/experimental-perlin
           javac -d build/experimental-perlin \
@@ -113,10 +113,10 @@ jobs:
             org.realscale.neoforge.ExactPerlinNoiseMemoSmoke
           python3 -m unittest discover -s qa -p 'test_perlin_three_runs.py' -v
       - name: Verify 3-way semantic vanilla-noise block/biome parity classification
-        if: github.head_ref == 'experiment/vanilla-perlin-exact-memo'
+        if: (github.head_ref == 'experiment/vanilla-perlin-exact-memo' || github.head_ref == 'experiment/vanilla-perlin-last-value')
         run: python3 -m unittest discover -s qa -p 'test_perlin_three_way_triage.py' -v
       - name: Verify exact JFR hotspot categorization and non-overlap contracts
-        if: github.head_ref == 'experiment/vanilla-perlin-exact-memo'
+        if: (github.head_ref == 'experiment/vanilla-perlin-exact-memo' || github.head_ref == 'experiment/vanilla-perlin-last-value')
         run: python3 -m unittest discover -s qa -p 'test_classify_vanilla_jfr_hotspots.py' -v
       - name: Verify adaptive visibility classification and conservative budget parity
         run: |
