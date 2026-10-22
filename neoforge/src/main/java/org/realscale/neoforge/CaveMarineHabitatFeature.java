@@ -95,7 +95,7 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
     private static BlockPos findCave(WorldGenLevel w,BlockPos origin){
         int surface=w.getHeight(Heightmap.Types.WORLD_SURFACE_WG,
                 origin.getX(),origin.getZ())-1;
-        int min=Math.max(w.getMinBuildHeight()+4,GrandOverworldCaveNetwork.MIN_Y);
+        int min=w.getMinBuildHeight()+4; // Include vanilla caves below the grand-network floor.
         int max=Math.min(w.getMaxBuildHeight()-4,
                 Math.min(GrandOverworldCaveNetwork.MAX_Y,surface-ROOF_DEPTH));
         if(min>max)return null;
