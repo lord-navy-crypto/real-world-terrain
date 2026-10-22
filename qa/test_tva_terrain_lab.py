@@ -23,7 +23,11 @@ CORE=("realscale:tva_sacred_timeline_three_realms",
       "realscale:tva_alpine_three_realms",
       "realscale:tva_canyon_three_realms",
       "realscale:tva_measured_three_realms")
-MENU=CORE+("realscale:tva_wonders_invasion_three_realms",)
+# The independently selected cave-biome variant exists only in the
+# integration TEST branch; stable release keeps its original 5-item menu.
+CAVE_TEST=(SOURCES/"data/realscale/worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json").exists()
+MENU=CORE+("realscale:tva_wonders_invasion_three_realms",)+(
+    ("realscale:tva_cave_ocean_ecology_test_three_realms",) if CAVE_TEST else ())
 
 def read(path):
     return json.loads(path.read_text(encoding="utf-8"))
