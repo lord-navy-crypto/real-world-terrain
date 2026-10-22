@@ -9,6 +9,8 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/BeardifierYExtent.java'
       - 'neoforge/src/test/java/org/realscale/neoforge/BeardifierYTightGuardSmoke.java'
       - 'qa/neoforge/compare_beardifier_tight_y_three_runs.py'
+      - 'qa/neoforge/triage_beardifier_three_worlds.py'
+      - 'qa/test_beardifier_three_way_triage.py'
       - 'neoforge/src/main/java/org/realscale/neoforge/BeardifierDirectParity.java'
       - 'neoforge/src/main/resources/realscale.experimental.mixins.json'
       - 'neoforge/src/main/resources/META-INF/neoforge.mods.toml'
@@ -54,6 +56,8 @@ jobs:
           java -Drealscale.experimental.beardifier.tight_y=true -cp build/experimental-vanilla org.realscale.neoforge.BeardifierYTightGuardSmoke
       - name: Unit-test semantic Anvil parity comparator
         run: python3 -m unittest discover -s qa -p 'test_beardifier_anvil_semantics.py' -v
+      - name: Test three-world voxel classification and heightmap diagnostics
+        run: python3 -m unittest discover -s qa -p 'test_beardifier_three_way_triage.py' -v
       - name: Unit-test three-run performance comparison and drift guard
         run: python3 -m unittest discover -s qa -p 'test_beardifier_three_runs.py' -v
       - name: Prepare identical fresh servers from this one experiment commit
@@ -183,12 +187,21 @@ jobs:
           python3 qa/neoforge/compare_beardifier_saved_regions.py \
             "$RUNNER_TEMP/realscale-before/neoforge" \
             "$RUNNER_TEMP/realscale-after/neoforge"
+      - name: Classify Y64 differences against TWO independent Y256 worlds
+        continue-on-error: true
+        run: |
+          python3 qa/neoforge/triage_beardifier_three_worlds.py \
+            "$RUNNER_TEMP/realscale-before/neoforge" \
+            "$RUNNER_TEMP/realscale-after/neoforge" \
+            "$RUNNER_TEMP/realscale-control/neoforge" \
+            "$RUNNER_TEMP/realscale-y64-three-way-variation.json"
       - name: Preserve logs, NBT parity, and same-runner complete-load timings
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Experimental-Beardifier-Y64-${{ matrix.preset }}
           path: |
+            ${{ runner.temp }}/realscale-y64-three-way-variation.json
             ${{ runner.temp }}/realscale-beardifier-y64-ab.json
             ${{ runner.temp }}/realscale-beardifier-y64-three-runs.json
             ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_server.log
