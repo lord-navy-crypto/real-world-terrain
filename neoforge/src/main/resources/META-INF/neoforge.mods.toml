@@ -28,3 +28,9 @@ type="required"
 versionRange="[3.8.1,)"
 ordering="NONE"
 side="CLIENT"
+
+# EXPERIMENTAL CLIENT ONLY: the plugin omits this Mixin unless
+# -Drealscale.experimental.client.uploadbudget=true is set at JVM startup.
+# It never loads on a dedicated physical server.
+[[mixins]]
+config="realscale.client.experiment.mixins.json"
