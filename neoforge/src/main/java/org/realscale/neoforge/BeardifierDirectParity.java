@@ -10,7 +10,8 @@ import java.util.concurrent.atomic.LongAdder;
  */
 public final class BeardifierDirectParity {
     private static final boolean VERIFY=
-            Boolean.getBoolean("realscale.experimental.beardifier.verify");
+            Boolean.parseBoolean(System.getProperty(
+                    "realscale.experimental.beardifier.verify","true"));
     private static final ThreadLocal<State> STATE=ThreadLocal.withInitial(State::new);
     private static final LongAdder VERIFIED=new LongAdder();
     private static final LongAdder SKIPPED=new LongAdder();

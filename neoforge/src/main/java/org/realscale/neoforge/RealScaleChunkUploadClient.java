@@ -20,8 +20,8 @@ import net.neoforged.neoforge.client.event.RenderFrameEvent;
 public final class RealScaleChunkUploadClient {
     private RealScaleChunkUploadClient(){}
 
-    public static final boolean ENABLED=Boolean.getBoolean(
-            "realscale.experimental.client.uploadbudget");
+    public static final boolean ENABLED=Boolean.parseBoolean(System.getProperty(
+            "realscale.experimental.client.uploadbudget","true"));
     private static final boolean PROFILE=ENABLED ||
             Boolean.getBoolean("realscale.client.chunkqueue.profile");
     public static final ClientChunkUploadBudget BUDGET =

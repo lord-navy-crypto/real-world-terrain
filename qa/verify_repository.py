@@ -38,7 +38,7 @@ for name,want in checks.items():
  if name=='neoforge/src/main/resources/META-INF/neoforge.mods.toml':
   descriptor=(ROOT/name).read_text()
   for required in ('modLoader="javafml"','modId="realscale"',
-                   'version="2.0.0-tva-preview.2-test.1"',
+                   'version="2.0.0-tva-preview.2-test.2"',
                    'versionRange="[21.1.0,)"',
                    'versionRange="[1.21.1,1.21.2)"',
                    'modId="yet_another_config_lib_v3"'):

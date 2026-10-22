@@ -6,14 +6,14 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-/** Opt-in at process startup; disabled means the mixin is NOT installed. */
+/** Test build defaults ON. Set -Drealscale.experimental.beardifier.ycull=false to opt out. */
 public final class ExperimentalVanillaMixinPlugin implements IMixinConfigPlugin {
     private static final String FLAG="realscale.experimental.beardifier.ycull";
     @Override public void onLoad(String mixinPackage) {}
     @Override public String getRefMapperConfig(){return null;}
     @Override public boolean shouldApplyMixin(String target,String mixin) {
         boolean enabled=mixin.endsWith(".BeardifierYHeightCullMixin")
-                && Boolean.getBoolean(FLAG);
+                && Boolean.parseBoolean(System.getProperty(FLAG,"true"));
         System.err.println("REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: "+
                 mixin+" enabled="+enabled);
         return enabled;
