@@ -50,6 +50,8 @@ block_palettes=Counter()
 sampled_full=0
 ocean_columns=0
 wet_columns=0
+ice_capped_columns=0
+ice_water_verified_below=0
 dry_examples=[]
 regions=sorted((world/"region").glob("r.*.*.mca"))
 assert regions,"Marine coverage audit has no actual saved Anvil region files"
@@ -83,7 +85,19 @@ for region in regions:
                 if name.startswith("minecraft:") and name.endswith("ocean"):
                     ocean_columns+=1
                     actual=get_block(chunk,x,62,z)
-                    if actual in wet:wet_columns+=1
+                    if actual in wet:
+                        wet_columns+=1
+                    elif (name in {"minecraft:frozen_ocean",
+                                   "minecraft:deep_frozen_ocean"}
+                          and actual in {"minecraft:ice","minecraft:packed_ice",
+                                         "minecraft:blue_ice","minecraft:frosted_ice"}):
+                        # Frozen sea surface is an intact ice cap, NOT a dry
+                        # column. Do not silently misclassify it as liquid:
+                        # separately try to prove subsurface water at depth.
+                        ice_capped_columns+=1
+                        if any(get_block(chunk,x,y,z) in wet
+                               for y in (61,60,58,54,48)):
+                            ice_water_verified_below+=1
                     elif len(dry_examples)<10:
                         dry_examples.append({
                             "x":chunk.get("xPos",0)*16+x,
@@ -112,7 +126,12 @@ report={
  "interest_block_palette_sections":dict(sorted(block_palettes.items())),
  "ocean_columns":ocean_columns,
  "wet_ocean_columns_y62":wet_columns,
+ "ice_capped_ocean_columns_y62":ice_capped_columns,
+ "ice_capped_with_verified_subsurface_water":ice_water_verified_below,
  "wet_fraction_y62":round(wet_columns/ocean_columns,5) if ocean_columns else None,
+ "water_or_natural_ice_surface_fraction":round(
+    (wet_columns+ice_capped_columns)/ocean_columns,5) if ocean_columns else None,
+ "unverified_surface_columns":ocean_columns-wet_columns-ice_capped_columns,
  "dry_ocean_examples":dry_examples,
  "coverage_conclusion":{
      "cold_feature_confirmed":attempts["COLD_WATER_REEF"]["successful_calls"]>0,
@@ -126,7 +145,9 @@ out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
 print("REALSCALE_TARGETED_MARINE_ECOLOGY_COVERAGE",json.dumps(report,sort_keys=True),flush=True)
 assert sampled_full>=8,"Insufficient actually completed Minecraft world chunks"
 if ocean_columns>=16:
-    assert wet_columns/ocean_columns>=0.85,(
-        "Generated ocean biome has too many missing water columns",
-        wet_columns,ocean_columns,dry_examples)
+    # Frozen ocean ice caps are expected vanilla behavior, not missing water;
+    # surface fluid and solid ice counts must remain DISTINCT in the report.
+    assert (wet_columns+ice_capped_columns)/ocean_columns>=0.85,(
+        "Generated ocean biome has too many genuinely uncovered columns",
+        wet_columns,ice_capped_columns,ocean_columns,dry_examples)
 print("REALSCALE_TARGETED_MARINE_OCEAN_INTEGRITY_PASS",flush=True)
