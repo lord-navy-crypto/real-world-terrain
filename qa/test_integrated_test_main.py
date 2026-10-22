@@ -12,9 +12,9 @@ MOD=RES/"META-INF/neoforge.mods.toml"
 class TestIntegratedMain(unittest.TestCase):
     def test_version_is_test_specific_and_gradle_matches(self):
         mods=tomllib.loads(MOD.read_text())
-        self.assertEqual(mods["mods"][0]["version"],"2.0.0-tva-preview.2-test.2")
+        self.assertEqual(mods["mods"][0]["version"],"2.0.0-tva-preview.2-test.3")
         self.assertIn("TEST",mods["mods"][0]["displayName"])
-        self.assertIn("version='2.0.0-tva-preview.2-test.2'",
+        self.assertIn("version='2.0.0-tva-preview.2-test.3'",
                       (ROOT/"neoforge/build.gradle").read_text())
 
     def test_three_unique_optin_mixin_configs(self):

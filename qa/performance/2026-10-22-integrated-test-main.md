@@ -1,7 +1,7 @@
 # RealScale Integrated TEST MAIN — 2026-10-22
 
 **Branch:** `test/main-optimization-integration-20261022`  
-**Distinct test build:** `2.0.0-tva-preview.2-test.2`, Minecraft 1.21.1, NeoForge 21.1.249 / Java 21.  
+**Distinct test build:** `2.0.0-tva-preview.2-test.3`, Minecraft 1.21.1, NeoForge 21.1.249 / Java 21.  
 **Parent stable main:** `0d03e228044ceb513adfc06b357253a6e3878d61`. Production main is unchanged.
 
 ## Default-enabled tests in this version
