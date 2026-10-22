@@ -27,6 +27,26 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
     private static final int MAX_RADIUS=3;
     private static final int ROOF_DEPTH=24;
     private final Kind kind;
+    private static final java.util.concurrent.atomic.LongAdder[] ATTEMPTS=newCounters();
+    private static final java.util.concurrent.atomic.LongAdder[] PLACEMENTS=newCounters();
+    private static java.util.concurrent.atomic.LongAdder[] newCounters(){
+        Kind[] kinds=Kind.values();
+        java.util.concurrent.atomic.LongAdder[] counts=
+                new java.util.concurrent.atomic.LongAdder[kinds.length];
+        for(int i=0;i<counts.length;i++)
+            counts[i]=new java.util.concurrent.atomic.LongAdder();
+        return counts;
+    }
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(()->{
+            StringBuilder s=new StringBuilder("REALSCALE_CAVE_MARINE_HABITATS");
+            for(Kind k:Kind.values())
+                s.append(' ').append(k.name()).append("=")
+                 .append(ATTEMPTS[k.ordinal()].sum()).append(":")
+                 .append(PLACEMENTS[k.ordinal()].sum());
+            System.err.println(s);
+        },"realscale-cave-marine-report"));
+    }
 
     public CaveMarineHabitatFeature(Kind kind) {
         super(NoneFeatureConfiguration.CODEC);
@@ -198,9 +218,12 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
         if(!w.getLevel().dimension().location().toString()
                 .equals("minecraft:overworld"))return false;
         BlockPos origin=context.origin();
+        ATTEMPTS[kind.ordinal()].increment();
         boolean cave=kind.ordinal()<=Kind.CAVE_SPRING.ordinal();
-        return cave ? decorateCave(w,origin,context.random())
+        boolean changed=cave ? decorateCave(w,origin,context.random())
                 : decorateMarine(w,origin,context.chunkGenerator().getSeaLevel(),
                         context.random());
+        if(changed)PLACEMENTS[kind.ordinal()].increment();
+        return changed;
     }
 }
