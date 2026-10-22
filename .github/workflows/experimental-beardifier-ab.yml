@@ -1,12 +1,16 @@
-name: EXPERIMENT Vanilla Beardifier height cull A-B
+name: EXPERIMENT Beardifier Y64 unbiased A-B-A plus separate parity
 on:
   push:
     branches:
-      - experiment/vanilla-beardifier-height-cull
+      - experiment/vanilla-beardifier-tight-y
     paths:
       - '.github/workflows/experimental-beardifier-ab.yml'
       - 'neoforge/src/main/java/org/realscale/neoforge/mixin/**'
       - 'neoforge/src/main/java/org/realscale/neoforge/BeardifierYExtent.java'
+      - 'neoforge/src/test/java/org/realscale/neoforge/BeardifierYTightGuardSmoke.java'
+      - 'qa/neoforge/compare_beardifier_tight_y_three_runs.py'
+      - 'qa/neoforge/triage_beardifier_three_worlds.py'
+      - 'qa/test_beardifier_three_way_triage.py'
       - 'neoforge/src/main/java/org/realscale/neoforge/BeardifierDirectParity.java'
       - 'neoforge/src/main/resources/realscale.experimental.mixins.json'
       - 'neoforge/src/main/resources/META-INF/neoforge.mods.toml'
@@ -29,7 +33,7 @@ jobs:
             seed: 42
           - preset: tva_measured_three_realms
             seed: 2
-    name: Vanilla beardifier disabled/enabled ${{ matrix.preset }}
+    name: Beardifier Y256 versus Y64 ${{ matrix.preset }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,8 +50,14 @@ jobs:
           mkdir -p build/experimental-vanilla
           javac -d build/experimental-vanilla neoforge/src/main/java/org/realscale/neoforge/BeardifierYExtent.java neoforge/src/test/java/org/realscale/neoforge/BeardifierYExtentSmoke.java
           java -cp build/experimental-vanilla org.realscale.neoforge.BeardifierYExtentSmoke
+      - name: Test tighter vertical envelope and raw-original guard
+        run: |
+          javac -d build/experimental-vanilla neoforge/src/test/java/org/realscale/neoforge/BeardifierYTightGuardSmoke.java neoforge/src/main/java/org/realscale/neoforge/BeardifierYExtent.java
+          java -Drealscale.experimental.beardifier.tight_y=true -cp build/experimental-vanilla org.realscale.neoforge.BeardifierYTightGuardSmoke
       - name: Unit-test semantic Anvil parity comparator
         run: python3 -m unittest discover -s qa -p 'test_beardifier_anvil_semantics.py' -v
+      - name: Test three-world voxel classification and heightmap diagnostics
+        run: python3 -m unittest discover -s qa -p 'test_beardifier_three_way_triage.py' -v
       - name: Unit-test three-run performance comparison and drift guard
         run: python3 -m unittest discover -s qa -p 'test_beardifier_three_runs.py' -v
       - name: Prepare identical fresh servers from this one experiment commit
@@ -58,7 +68,8 @@ jobs:
           git worktree add --detach "$RUNNER_TEMP/realscale-before" "$GITHUB_SHA"
           git worktree add --detach "$RUNNER_TEMP/realscale-after" "$GITHUB_SHA"
           git worktree add --detach "$RUNNER_TEMP/realscale-control" "$GITHUB_SHA"
-          for variant in before after control; do
+          git worktree add --detach "$RUNNER_TEMP/realscale-verify" "$GITHUB_SHA"
+          for variant in before after control verify; do
             root="$RUNNER_TEMP/realscale-$variant/neoforge"
             for dir in run run/server run/gametestserver; do
               mkdir -p "$root/$dir"
@@ -81,17 +92,17 @@ jobs:
           PROPERTIES
             done
           done
-      - name: Real dedicated-server baseline (mixin not applied)
+      - name: Real dedicated-server baseline (Y256, Mixin ON)
         env:
           PRESET: ${{ matrix.preset }}
-          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=false
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=true -Drealscale.experimental.beardifier.tight_y=false
         run: |
           cd "$RUNNER_TEMP/realscale-before/neoforge"
           python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
-      - name: Real dedicated-server variant (conservative Beardifier Mixin)
+      - name: Real dedicated-server candidate (Y64, parity replay OFF for fair timing)
         env:
           PRESET: ${{ matrix.preset }}
-          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=true -Drealscale.experimental.beardifier.verify=true
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=true -Drealscale.experimental.beardifier.tight_y=true -Drealscale.experimental.beardifier.verify=false
         run: |
           cd "$RUNNER_TEMP/realscale-after/neoforge"
           python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
@@ -100,56 +111,105 @@ jobs:
           python3 qa/neoforge/compare_paired_far_route.py \
             "$RUNNER_TEMP/realscale-before/neoforge/build/rcon_distant_route_timing.json" \
             "$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_timing.json" \
-            "$RUNNER_TEMP/realscale-beardifier-ab.json"
-      - name: Require sampled same-context vanilla Beardifier zero-contribution parity
-        run: |
-          logfile="$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_server.log"
-          grep -E 'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS samples=[1-9][0-9]*' "$logfile"
-          grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=true' "$logfile"
-      - name: Repeat vanilla server with exact same startup flag (control)
+            "$RUNNER_TEMP/realscale-beardifier-y64-ab.json"
+      - name: Repeat Y256 server with exact same startup flags (control)
         env:
           PRESET: ${{ matrix.preset }}
-          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=false
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=true -Drealscale.experimental.beardifier.tight_y=false
         run: |
           cd "$RUNNER_TEMP/realscale-control/neoforge"
           python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
       - name: Compare original, optimized, repeated-original loading times
         run: |
-          python3 qa/neoforge/compare_beardifier_three_runs.py \
+          python3 qa/neoforge/compare_beardifier_tight_y_three_runs.py \
             "$RUNNER_TEMP/realscale-before/neoforge/build/rcon_distant_route_timing.json" \
             "$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_timing.json" \
             "$RUNNER_TEMP/realscale-control/neoforge/build/rcon_distant_route_timing.json" \
-            "$RUNNER_TEMP/realscale-beardifier-three-runs.json"
-      - name: Require disabled mixin in both vanilla/control worlds
+            "$RUNNER_TEMP/realscale-beardifier-y64-three-runs.json"
+      - name: Dedicated Y64 parity verifier (excluded from A-B-A timings)
+        env:
+          PRESET: ${{ matrix.preset }}
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=true -Drealscale.experimental.beardifier.tight_y=true -Drealscale.experimental.beardifier.verify=true
         run: |
-          grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=false' \
+          cd "$RUNNER_TEMP/realscale-verify/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Require separate same-context vanilla Beardifier zero-contribution parity
+        run: |
+          logfile="$RUNNER_TEMP/realscale-verify/neoforge/build/rcon_distant_route_server.log"
+          grep -E 'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS samples=[1-9][0-9]*' "$logfile"
+          grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=true' "$logfile"
+          grep -q 'realscale.experimental.beardifier.tight_y=true' "$logfile"
+          python3 - "$logfile" <<'PY'
+          import re,sys
+          data=open(sys.argv[1],encoding='utf-8',errors='replace').read()
+          evidence=re.search(r'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS samples=(\d+) skipped=(\d+) tight_only=(\d+) tight_samples=(\d+)',data)
+          assert evidence is not None, "Missing direct vanilla parity report"
+          verified,skipped,new_skips,new_samples=map(int,evidence.groups())
+          assert verified>0 and skipped>0 and new_skips>0 and new_samples>0, evidence.groups()
+          print("REALSCALE_BEARDIFIER_TIGHT_Y_DIRECT_PARITY_VERIFIED",evidence.groups())
+          PY
+      - name: Require enabled Mixin in both Y256 control worlds
+        run: |
+          grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=true' \
             "$RUNNER_TEMP/realscale-before/neoforge/build/rcon_distant_route_server.log"
-          grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=false' \
+          grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=true' \
             "$RUNNER_TEMP/realscale-control/neoforge/build/rcon_distant_route_server.log"
-      - name: Investigate vanilla-vs-vanilla saved-block variation
+      - name: Verify performance candidate has NO replay overhead
+        run: |
+          logfile="$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_server.log"
+          grep -q 'realscale.experimental.beardifier.ycull=true' "$logfile"
+          grep -q 'realscale.experimental.beardifier.tight_y=true' "$logfile"
+          grep -q 'realscale.experimental.beardifier.verify=false' "$logfile"
+          if grep -q 'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS' "$logfile"; then
+            echo "Performance candidate improperly enabled vanilla replay" >&2
+            exit 1
+          fi
+      - name: Assert reference/control Y256 startup flags
+        run: |
+          for variant in before control; do
+            logfile="$RUNNER_TEMP/realscale-$variant/neoforge/build/rcon_distant_route_server.log"
+            grep -q 'realscale.experimental.beardifier.ycull=true' "$logfile"
+            grep -q 'realscale.experimental.beardifier.tight_y=false' "$logfile"
+            if grep -q 'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS' "$logfile"; then
+              echo "Reference/control incorrectly enabled parity replay" >&2
+              exit 1
+            fi
+          done
+      - name: Investigate Y256 vs Y256 saved-block variation
         continue-on-error: true
         run: |
           python3 qa/neoforge/compare_beardifier_saved_regions.py \
             "$RUNNER_TEMP/realscale-before/neoforge" \
             "$RUNNER_TEMP/realscale-control/neoforge"
-      - name: Investigate vanilla-vs-experiment saved-block variation
+      - name: Investigate Y256 vs Y64 saved-block variation
         continue-on-error: true
         run: |
           python3 qa/neoforge/compare_beardifier_saved_regions.py \
             "$RUNNER_TEMP/realscale-before/neoforge" \
             "$RUNNER_TEMP/realscale-after/neoforge"
+      - name: Classify Y64 differences against TWO independent Y256 worlds
+        continue-on-error: true
+        run: |
+          python3 qa/neoforge/triage_beardifier_three_worlds.py \
+            "$RUNNER_TEMP/realscale-before/neoforge" \
+            "$RUNNER_TEMP/realscale-after/neoforge" \
+            "$RUNNER_TEMP/realscale-control/neoforge" \
+            "$RUNNER_TEMP/realscale-y64-three-way-variation.json"
       - name: Preserve logs, NBT parity, and same-runner complete-load timings
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Experimental-Beardifier-${{ matrix.preset }}
+          name: Experimental-Beardifier-Y64-${{ matrix.preset }}
           path: |
-            ${{ runner.temp }}/realscale-beardifier-ab.json
-            ${{ runner.temp }}/realscale-beardifier-three-runs.json
+            ${{ runner.temp }}/realscale-y64-three-way-variation.json
+            ${{ runner.temp }}/realscale-beardifier-y64-ab.json
+            ${{ runner.temp }}/realscale-beardifier-y64-three-runs.json
             ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_server.log
             ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_server.log
             ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_timing.json
             ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_timing.json
             ${{ runner.temp }}/realscale-control/neoforge/build/rcon_distant_route_timing.json
             ${{ runner.temp }}/realscale-control/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-verify/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-verify/neoforge/build/rcon_distant_route_timing.json
           if-no-files-found: warn
