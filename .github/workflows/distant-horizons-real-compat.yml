@@ -1,0 +1,103 @@
+name: EXPERIMENT RealScale plus Distant Horizons actual NeoForge 1.21.1
+on:
+  push:
+    branches: [experiment/distant-horizons-neoforge-1211-20261022]
+    paths:
+      - ".github/workflows/distant-horizons-real-compat.yml"
+      - "qa/neoforge/install_distant_horizons.py"
+      - "qa/neoforge/audit_distant_horizons_compat.py"
+      - "qa/test_distant_horizons_compat.py"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dh-realscale-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-dual-mod-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - preset: tva_measured_three_realms
+            mode: baseline
+            seed: 2
+          - preset: tva_measured_three_realms
+            mode: with_dh
+            seed: 2
+          - preset: tva_sacred_timeline_three_realms
+            mode: baseline
+            seed: 42
+          - preset: tva_sacred_timeline_three_realms
+            mode: with_dh
+            seed: 42
+    name: ${{ matrix.mode }} / ${{ matrix.preset }} / ${{ matrix.seed }}
+    env:
+      PRESET: ${{ matrix.preset }}
+      SEED: ${{ matrix.seed }}
+      MODE: ${{ matrix.mode }}
+      # Disable independent Beardifier candidate to isolate this incompatibility;
+      # the original test.5 all-on behavior must be assessed separately.
+      JAVA_TOOL_OPTIONS: "-Drealscale.experimental.beardifier.ycull=false -Drealscale.experimental.aquifer.audit=false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: "8.14.3" }
+      - name: Validate official version pin and diagnostic methodology
+        run: python3 -m unittest discover -s qa -p 'test_distant_horizons_compat.py' -v
+      - name: Install exact official DH version into isolated NeoForge server
+        if: matrix.mode == 'with_dh'
+        run: python3 qa/neoforge/install_distant_horizons.py neoforge
+      - name: Prepare separate virgin world, same preset and seed per A/B
+        working-directory: neoforge
+        run: |
+          for d in run run/server run/gametestserver; do
+            mkdir -p "$d"
+            printf 'eula=true\n' > "$d/eula.txt"
+            cat > "$d/server.properties" <<PROPERTIES
+          level-name=world
+          level-type=realscale:$PRESET
+          level-seed=$SEED
+          generate-structures=true
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Run real Minecraft startup, remote full chunk and saved Anvil
+        working-directory: neoforge
+        run: |
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant 2>&1 | tee build/dh-compat-rcon-runner.log
+      - name: Check actual DH initialization and worldgen evidence
+        if: always()
+        run: |
+          python3 qa/neoforge/audit_distant_horizons_compat.py \
+            neoforge/build/rcon_distant_server.log \
+            neoforge/build/dh-compat-rcon-runner.log \
+            "$MODE" \
+            "neoforge/build/dh-compat-$MODE-$PRESET.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RealScale-DH-Compatibility-${{ matrix.mode }}-${{ matrix.preset }}
+          path: |
+            neoforge/build/dh-compat-*.json
+            neoforge/build/rcon_distant_server.log
+            neoforge/build/dh-compat-rcon-runner.log
+            neoforge/build/rcon_distant_stall_fingerprint.json
+            neoforge/build/rcon_distant_thread_dump_*.txt
+          if-no-files-found: warn
