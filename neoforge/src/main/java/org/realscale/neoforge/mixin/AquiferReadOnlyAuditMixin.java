@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Opt-in and observational. Runs AFTER all original vanilla aquifer code.
  * No cancellation, no return modifications, no state writes or fluid changes.
  */
-@Mixin(value=Aquifer.NoiseBasedAquifer.class,remap=false)
+@Mixin(targets="net.minecraft.world.level.levelgen.Aquifer$NoiseBasedAquifer",remap=false)
 public abstract class AquiferReadOnlyAuditMixin {
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(()->System.err.println(
