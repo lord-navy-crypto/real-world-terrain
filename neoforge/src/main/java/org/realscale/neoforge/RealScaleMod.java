@@ -55,6 +55,10 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_ocean"),
                     SkyOceanBiomeSource.CODEC)
         );
+        event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_depth_habitats"),
+                    CaveDepthBiomeSource.CODEC)
+        );
         event.register(Registries.FEATURE, helper -> {
             // Terrain Lab's bank-protected, source-only river channels. The
             // feature itself rejects vanilla/foreign noise settings.
