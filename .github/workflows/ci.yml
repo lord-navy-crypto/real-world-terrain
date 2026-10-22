@@ -102,6 +102,14 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_distant_rcon_completion.py' -v
       - name: Verify far-distance JVM stall fingerprint parser
         run: python3 -m unittest discover -s qa -p 'test_diagnose_worldgen_threads.py' -v
+      - name: Verify Aquifer read-only probe sampling invariants
+        if: github.head_ref == 'experiment/vanilla-aquifer-readonly-audit'
+        run: |
+          mkdir -p build/aquifer-readonly
+          javac -d build/aquifer-readonly \
+            neoforge/src/main/java/org/realscale/neoforge/AquiferReadOnlyStats.java \
+            neoforge/src/test/java/org/realscale/neoforge/AquiferReadOnlyStatsSmoke.java
+          java -cp build/aquifer-readonly org.realscale.neoforge.AquiferReadOnlyStatsSmoke
       - name: Verify adaptive visibility classification and conservative budget parity
         run: |
           mkdir -p build/visibility-budget-smoke
