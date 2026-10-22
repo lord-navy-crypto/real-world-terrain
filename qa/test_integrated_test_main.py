@@ -39,7 +39,10 @@ class TestIntegratedMain(unittest.TestCase):
                  "realscale.experimental.client.uploadbudget"}
         for path,flag in flags.items():
             contents=(PKG/path).read_text()
-            self.assertIn('Boolean.getBoolean("'+flag+'")',contents)
+            self.assertIn(flag,contents)
+            self.assertTrue('Boolean.getBoolean("'+flag+'")' in contents
+                            or ('Boolean.getBoolean(FLAG)' in contents
+                                and ('FLAG="'+flag+'"' in contents)),path)
 
     def test_client_mixin_does_not_load_on_server(self):
         m=json.loads((RES/"realscale.client.experiment.mixins.json").read_text())
