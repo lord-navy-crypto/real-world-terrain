@@ -1,0 +1,83 @@
+name: EXPERIMENT targeted cold and warm RealScale marine coverage
+on:
+  push:
+    branches: [test/caves-oceans-ecology-v2-20261022]
+    paths:
+      - ".github/workflows/ecology-marine-coverage.yml"
+      - "qa/neoforge/audit_ecology_marine_coverage.py"
+      - "neoforge/src/main/java/org/realscale/neoforge/CaveMarineHabitatFeature.java"
+      - "neoforge/src/main/resources/data/realscale/neoforge/biome_modifier/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  marine-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          # Java 1.21 seed references: actual Anvil biomes/Feature counters
+          # decide outcomes, not vanilla seed descriptions.
+          - seed: "300746916"
+            label: cold-deep-reference
+          - seed: "1000"
+            label: frozen-ocean-reference
+          - seed: "5005"
+            label: warm-coral-reference
+          - seed: "9705"
+            label: warm-desert-reference
+          - seed: "4025804172371830787"
+            label: prior-deep-ocean-control
+    name: Marine actual features / ${{ matrix.label }} / ${{ matrix.seed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Prepare pristine RealScale overworld using candidate marine seed
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<PROPERTIES
+          level-name=marine-ocean-proof
+          level-type=realscale:tva_sacred_timeline_three_realms
+          level-seed=${{ matrix.seed }}
+          view-distance=4
+          simulation-distance=3
+          max-tick-time=-1
+          online-mode=true
+          enable-rcon=true
+          rcon.password=realscale-ci-only
+          rcon.port=25575
+          PROPERTIES
+          done
+      - name: Generate real fresh ocean seed and flush saved Anvil
+        working-directory: neoforge
+        env:
+          TVA_OCEAN_SEED: ${{ matrix.seed }}
+        run: python3 ../qa/neoforge/ocean_seed_worldgen.py
+      - name: Record actual cold/warm ocean and marine Feature successes
+        working-directory: neoforge
+        run: |
+          python3 ../qa/neoforge/audit_ecology_marine_coverage.py \
+            run/marine-ocean-proof \
+            "build/ocean-seed-${{ matrix.seed }}.log" \
+            "build/ecology-marine-${{ matrix.seed }}.json" \
+            "${{ matrix.seed }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Actual-Marine-Ecology-${{ matrix.label }}-${{ matrix.seed }}
+          path: |
+            neoforge/build/ecology-marine-*.json
+            neoforge/build/ocean-seed-*.log
+          if-no-files-found: warn
