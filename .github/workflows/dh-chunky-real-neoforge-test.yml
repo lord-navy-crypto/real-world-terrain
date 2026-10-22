@@ -85,6 +85,7 @@ jobs:
       - name: Boot real Minecraft + all mods, observe FULL distant chunk and exceptions
         working-directory: neoforge
         run: |
+          mkdir -p build
           set +e
           python3 ../qa/neoforge/rcon_worldgen_smoke.py . realscale:tva_sacred_timeline_three_realms distant > build/dh-chunky-runner.log 2>&1
           rc=$?
