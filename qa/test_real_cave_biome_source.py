@@ -23,7 +23,7 @@ class RealCaveBiomeTests(unittest.TestCase):
         for biome in CAVES:
             self.assertTrue((DATA/f"worldgen/biome/{biome}.json").is_file(),biome)
             self.assertIn('"'+biome+'"',(JAVA/"CaveDepthBiomeSource.java").read_text())
-        self.assertIn("original.equals(\\"deep_dark\\")",math)
+        self.assertIn('original.equals("deep_dark")',math)
         self.assertIn('original.endsWith("ocean")',math)
         self.assertIn('original.contains("river")',math)
         self.assertIn("Math.floorDiv(quartX,12)",math)
