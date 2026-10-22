@@ -97,6 +97,13 @@ class CaveMarineHabitatQA(unittest.TestCase):
                       "naturalRock", "naturalSeabed",
                       "w.getFluidState(bottom).isEmpty()"):
             self.assertIn(token,FEATURE,token)
+        # Exposed-wall fossils are strictly original natural rock and within
+        # the feature's own generating chunk, never changing liquid or air.
+        for token in ("sameChunk(origin,wallPos)",
+                      "w.getFluidState(wallPos).isEmpty()",
+                      "wall.is(Blocks.STONE)", "wall.is(Blocks.DEEPSLATE)",
+                      "wall.is(Blocks.TUFF)", "w.setBlock(wallPos,exposed,2)"):
+            self.assertIn(token,FEATURE)
         # The only underwater substrate decoration is in solid bed.
         self.assertIn("w.setBlock(bottom,rock,2)",FEATURE)
         self.assertNotIn("Blocks.SPONGE",FEATURE)

@@ -5,6 +5,7 @@ This is a **test-only** follow-up to `2.0.0-tva-preview.2-test.5` and draft PR #
 ## What changed (not yet a release claim)
 - Rebalance existing 11-type cave region selection to make fossil limestone more likely **where the custom cave test biome source is active**. The overall rarity gate (1/4 for original cave biomes, 1/9 for eligible ordinary underground climate) is unchanged; Deep Dark, oceans, rivers, overworld surfaces and canonical preset biome sources are still protected.
 - Increase low-altitude **fossil matrix feature attempts** from 1/3 to 1/2 eligible placement invocations. Each invocation must still find natural stone next to existing carved cave air, and never replaces ore or liquid.
+- Add a bounded *exposed-wall* fossil matrix: some original cave-side stone/deepslate/tuff faces become visible calcite or bone-rock; existing cave air remains untouched. All placements check original chunk and water state.
 - Report both palette incidences and distinct full-chunk incidences in ACTUAL saved Minecraft Anvil. A block palette observation is **not** proof of a beautiful visual fossil structure or of a 3D formation volume.
 
 ## Automatic QA
