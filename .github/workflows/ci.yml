@@ -102,6 +102,16 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_distant_rcon_completion.py' -v
       - name: Verify far-distance JVM stall fingerprint parser
         run: python3 -m unittest discover -s qa -p 'test_diagnose_worldgen_threads.py' -v
+      - name: Verify Perlin noise exact 64-slot cache and benchmark comparator
+        if: github.head_ref == 'experiment/vanilla-perlin-exact-memo'
+        run: |
+          mkdir -p build/experimental-perlin
+          javac -d build/experimental-perlin \
+            neoforge/src/main/java/org/realscale/neoforge/ExactPerlinNoiseMemo.java \
+            neoforge/src/test/java/org/realscale/neoforge/ExactPerlinNoiseMemoSmoke.java
+          java -cp build/experimental-perlin \
+            org.realscale.neoforge.ExactPerlinNoiseMemoSmoke
+          python3 -m unittest discover -s qa -p 'test_perlin_three_runs.py' -v
       - name: Verify adaptive visibility classification and conservative budget parity
         run: |
           mkdir -p build/visibility-budget-smoke
