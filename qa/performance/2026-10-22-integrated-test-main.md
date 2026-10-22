@@ -1,7 +1,7 @@
 # RealScale Integrated TEST MAIN — 2026-10-22
 
 **Branch:** `test/main-optimization-integration-20261022`  
-**Distinct test build:** `2.0.0-tva-preview.2-test.3`, Minecraft 1.21.1, NeoForge 21.1.249 / Java 21.  
+**Distinct test build:** `2.0.0-tva-preview.2-test.4`, Minecraft 1.21.1, NeoForge 21.1.249 / Java 21.  
 **Parent stable main:** `0d03e228044ceb513adfc06b357253a6e3878d61`. Production main is unchanged.
 
 ## Default-enabled tests in this version
@@ -51,3 +51,11 @@ Server tests cannot validate a physical GPU, shaders, Sodium/Embeddium compatibi
 1. Use the test JAR only with fresh worlds or backed-up saves. Never overwrite main-version saves for trial validation.
 2. Do not merge this integrated test branch to production main until reproducible saved-Anvil blocks/biomes/heightmaps/structure parity and independent rendering tests are verified. A green CI run does not waive these release blockers.
 3. A further version bump and explicit release go/no-go are needed before a stable main merge; three integrated test experiments ARE enabled by default; production main remains unchanged.
+
+## Cave + ocean expansion — test.4
+
+Integrated source PR [#84](https://github.com/lord-navy-crypto/real-world-terrain/pull/84) (5 cave microhabitats, 3 real-ocean undersea microhabitats, including mixed kelp/seagrass and waterlogged warm coral fan gardens), plus [#85](https://github.com/lord-navy-crypto/real-world-terrain/pull/85) (6 genuine registered underground cave biomes). Existing six custom cave biome JSONs were previously unusable for selection due to EMPTY vanilla ore/structure feature stages. Now they inherit all 11 1.21.1 vanilla lush/dripstone feature steps and appropriate mob pools. The original 4 canonical world presets DO NOT change. **Sixth menu world:** `TVA Cave Ocean Ecology Test` (`realscale:tva_cave_ocean_ecology_test_three_realms`) selects this new cave-region biome source explicitly; its Nether and End are unchanged. No world height, tunnel network, aquatic fluid rules, shoreline baseline or original Deep Dark is rewritten.
+
+REAL saved Anvil evidence: [Actions 39748780779](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39748780779), both seeds succeeded, 124 complete chunks each, 5/6 custom biome IDs seen across 2 seeds, with original Deep Dark intact. Tests [39749697310](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39749697310) full build passed, [39749697398](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39749697398) both vanilla-ocean continuity QA passed.
+
+The 6th cave-biome option is TEST-ONLY, not a migration of previous world IDs. Use virgin worlds/backups, particularly because Y256 Beardifier parity and physical-client FPS and coral rendering are still release-blocked. Cave-origin lithology and actual spring activity cannot be inferred at BiomeSource stage; actual decorative placement requires confirmed dry air and a real water boundary. Do not claim all 6 biome IDs have been directly observed in samples: volcanic_caverns ID still needs targeted region coverage.
