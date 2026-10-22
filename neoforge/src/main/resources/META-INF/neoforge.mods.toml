@@ -28,3 +28,8 @@ type="required"
 versionRange="[3.8.1,)"
 ordering="NONE"
 side="CLIENT"
+
+# EXPERIMENT BRANCH ONLY. Plugin keeps the vanilla noise method completely
+# untouched unless -Drealscale.experimental.perlin.instrument=true.
+[[mixins]]
+config="realscale.perlin.experiment.mixins.json"
