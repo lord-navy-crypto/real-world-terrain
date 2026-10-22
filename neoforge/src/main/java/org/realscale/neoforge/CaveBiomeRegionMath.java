@@ -13,7 +13,7 @@ package org.realscale.neoforge;
 public final class CaveBiomeRegionMath {
     private CaveBiomeRegionMath(){}
     public enum Region { NONE, DAMP_LIMESTONE, DEEP_FUNGAL, DRY_KARST,
-        UNDERGROUND_SPRINGS, VOLCANIC, GLACIAL }
+        UNDERGROUND_SPRINGS, VOLCANIC, GLACIAL, GLOW_GROTTO, FOSSIL_CAVES }
     private static long avalanche(long x) {
         x^=x>>>30;x*=0xbf58476d1ce4e5b9L;
         x^=x>>>27;x*=0x94d049bb133111ebL;
@@ -45,16 +45,18 @@ public final class CaveBiomeRegionMath {
                 ^0x647a1683ef22a1b7L);
         // Most input biome sites stay vanilla. Spatially grouped sites:
         // same 48x48x32 patch never depends on order or chunk boundary.
-        int rarity=cave?5:11;
+        int rarity=cave?4:9;
         if(Math.floorMod(h,rarity)!=0)return Region.NONE;
         int type=(int)Math.floorMod(h>>>15,11L);
         if(original.equals("lush_caves")){
-            return type<4 ? Region.DAMP_LIMESTONE
-                    :type<7?Region.DEEP_FUNGAL:Region.UNDERGROUND_SPRINGS;
+            return type<3?Region.DAMP_LIMESTONE
+                    :type<6?Region.DEEP_FUNGAL
+                    :type<9?Region.UNDERGROUND_SPRINGS:Region.GLOW_GROTTO;
         }
         if(original.equals("dripstone_caves")){
-            return type<5 ? Region.DRY_KARST
-                    :type<9?Region.DAMP_LIMESTONE:Region.VOLCANIC;
+            return type<4?Region.DRY_KARST
+                    :type<7?Region.DAMP_LIMESTONE
+                    :type<9?Region.VOLCANIC:Region.FOSSIL_CAVES;
         }
         boolean frozen=original.startsWith("snowy")
                 ||original.contains("frozen")||original.equals("ice_spikes")
@@ -62,12 +64,16 @@ public final class CaveBiomeRegionMath {
         if(frozen)return Region.GLACIAL;
         boolean arid=original.contains("badlands")||original.equals("desert")
                 ||original.equals("stony_peaks")||original.startsWith("windswept");
-        if(arid)return type<3?Region.VOLCANIC:Region.DRY_KARST;
+        if(arid)return type<5?Region.VOLCANIC
+                :type<9?Region.DRY_KARST:Region.FOSSIL_CAVES;
         boolean moist=original.contains("jungle")||original.contains("swamp")
                 ||original.equals("dark_forest")||original.equals("mangrove_swamp");
-        if(moist)return type<4?Region.DEEP_FUNGAL
-                :type<8?Region.UNDERGROUND_SPRINGS:Region.DAMP_LIMESTONE;
-        return type<5?Region.DAMP_LIMESTONE
-                :type<8?Region.DRY_KARST:Region.DEEP_FUNGAL;
+        if(moist)return type<3?Region.DEEP_FUNGAL
+                :type<6?Region.UNDERGROUND_SPRINGS
+                :type<9?Region.DAMP_LIMESTONE:Region.GLOW_GROTTO;
+        return type<4?Region.DAMP_LIMESTONE
+                :type<7?Region.DRY_KARST
+                :type<9?Region.DEEP_FUNGAL
+                :type==9?Region.GLOW_GROTTO:Region.FOSSIL_CAVES;
     }
 }

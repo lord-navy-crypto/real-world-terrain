@@ -46,6 +46,8 @@ public final class CaveDepthBiomeSource extends BiomeSource {
                 case UNDERGROUND_SPRINGS->"underground_springs";
                 case VOLCANIC->"volcanic_caverns";
                 case GLACIAL->"glacial_subsurface";
+                case GLOW_GROTTO->"glowing_moss_grottos";
+                case FOSSIL_CAVES->"fossil_limestone_caves";
                 default->throw new IllegalStateException("NONE is never target");
             };
             targets.put(region,biomes.getOrThrow(ResourceKey.create(Registries.BIOME,

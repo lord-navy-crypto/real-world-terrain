@@ -23,10 +23,12 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfiguration> {
     public enum Kind {
         CAVE_FUNGAL, CAVE_CALCITE, CAVE_VOLCANIC, CAVE_GLACIAL, CAVE_SPRING,
+        CAVE_GLOW, CAVE_FOSSIL,
         COLD_WATER_REEF, KELP_MEADOW, WARM_REEF_GARDEN
     }
     private static final int MAX_RADIUS=3;
     private static final int ROOF_DEPTH=24;
+    private static final int CAVE_KINDS=Kind.CAVE_FOSSIL.ordinal();
     private final Kind kind;
     private static final java.util.concurrent.atomic.LongAdder[] ATTEMPTS=newCounters();
     private static final java.util.concurrent.atomic.LongAdder[] PLACEMENTS=newCounters();
@@ -132,9 +134,14 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
                 case CAVE_CALCITE -> {
                     if(original.is(Blocks.STONE)||original.is(Blocks.DEEPSLATE)
                             ||original.is(Blocks.TUFF)){
-                        deposit=random.nextInt(3)==0
-                                ? Blocks.DRIPSTONE_BLOCK.defaultBlockState()
-                                : Blocks.CALCITE.defaultBlockState();
+                        if(random.nextInt(5)==0){
+                            BlockState spike=Blocks.POINTED_DRIPSTONE.defaultBlockState();
+                            if(spike.canSurvive(w,p))plant=spike;
+                        }
+                        if(plant==null)
+                            deposit=random.nextInt(3)==0
+                                    ?Blocks.DRIPSTONE_BLOCK.defaultBlockState()
+                                    :Blocks.CALCITE.defaultBlockState();
                     }
                 }
                 case CAVE_VOLCANIC -> {
@@ -155,6 +162,23 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
                 case CAVE_SPRING -> {
                     if(!nearWater(w,p))continue;
                     plant=Blocks.MOSS_CARPET.defaultBlockState();
+                }
+                case CAVE_GLOW -> {
+                    // Downward lichen face attaches to solid natural cave floor.
+                    // Only place if the actual surviving vanilla block state
+                    // is valid, and never displace a fluid or carved tunnel.
+                    plant=Blocks.GLOW_LICHEN.defaultBlockState()
+                            .setValue(BlockStateProperties.DOWN,true);
+                }
+                case CAVE_FOSSIL -> {
+                    // Scattered bone-rich rock matrix; not a claimed intact
+                    // fossil skeleton or a replacement for vanilla fossils.
+                    if(original.is(Blocks.STONE)||original.is(Blocks.DEEPSLATE)
+                            ||original.is(Blocks.TUFF)){
+                        deposit=random.nextInt(4)==0
+                                ?Blocks.BONE_BLOCK.defaultBlockState()
+                                :Blocks.CALCITE.defaultBlockState();
+                    }
                 }
                 default -> {continue;}
             }
@@ -189,11 +213,30 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
             if(!naturalSeabed(substrate)
                     ||!w.getFluidState(bottom).isEmpty())continue;
             if(kind==Kind.COLD_WATER_REEF) {
-                // Cold deep reefs represented with inert calcite/tuff hard
-                // substrate. Unlike a sponge block, these do not absorb water.
+                // Cold-water assemblage: non-absorbing mineral hardground,
+                // sparse coral-skeleton fan analogues and seagrass.
+                // Dead vanilla fans are visual skeletal forms, not a claim
+                // that the reef hosts living tropical reef species.
                 if(!(substrate.is(Blocks.STONE)||substrate.is(Blocks.DEEPSLATE)
                         ||substrate.is(Blocks.ANDESITE)||substrate.is(Blocks.TUFF)
                         ||substrate.is(Blocks.GRAVEL)))continue;
+                if(random.nextInt(4)==0){
+                    BlockState fan=random.nextBoolean()
+                            ?Blocks.DEAD_BRAIN_CORAL_FAN.defaultBlockState()
+                            :Blocks.DEAD_HORN_CORAL_FAN.defaultBlockState();
+                    if(fan.hasProperty(BlockStateProperties.WATERLOGGED))
+                        fan=fan.setValue(BlockStateProperties.WATERLOGGED,true);
+                    if(fan.getFluidState().is(FluidTags.WATER)
+                            &&fan.canSurvive(w,water)&&w.setBlock(water,fan,2)){
+                        changed++;continue;
+                    }
+                }
+                if(random.nextInt(5)==0){
+                    BlockState grass=Blocks.SEAGRASS.defaultBlockState();
+                    if(grass.getFluidState().is(FluidTags.WATER)
+                            &&grass.canSurvive(w,water)
+                            &&w.setBlock(water,grass,2)){changed++;continue;}
+                }
                 BlockState rock=random.nextInt(3)==0
                         ? Blocks.CALCITE.defaultBlockState()
                         : Blocks.TUFF.defaultBlockState();
@@ -239,7 +282,7 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
                 .equals("minecraft:overworld"))return false;
         BlockPos origin=context.origin();
         ATTEMPTS[kind.ordinal()].increment();
-        boolean cave=kind.ordinal()<=Kind.CAVE_SPRING.ordinal();
+        boolean cave=kind.ordinal()<=CAVE_KINDS;
         boolean changed=cave ? decorateCave(w,origin,context.random())
                 : decorateMarine(w,origin,context.chunkGenerator().getSeaLevel(),
                         context.random());
