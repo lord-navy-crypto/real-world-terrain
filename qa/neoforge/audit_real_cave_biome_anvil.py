@@ -39,4 +39,12 @@ print("REALSCALE_ACTUAL_CAVE_BIOME_ANVIL",json.dumps({
 },sort_keys=True),flush=True)
 assert full_chunks>=15,"Insufficient persisted completed world chunks"
 assert evidence,"No custom cave biomes in ACTUAL saved Minecraft chunks"
+if "--require-new" in sys.argv:
+    new_ids=("realscale:glowing_moss_grottos",
+             "realscale:fossil_limestone_caves")
+    assert any(counts[name]>0 for name in new_ids),(
+        "New glow/fossil cave biomes did not reach real saved Anvil sections",
+        {name:counts[name] for name in new_ids})
+    print("REALSCALE_NEW_CAVE_BIOME_ANVIL_PASS",{
+        name:counts[name] for name in new_ids if counts[name]>0},flush=True)
 print("REALSCALE_REAL_CAVE_BIOME_ANVIL_PASS",flush=True)
