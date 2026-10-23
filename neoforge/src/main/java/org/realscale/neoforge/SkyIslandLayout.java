@@ -118,6 +118,33 @@ public final class SkyIslandLayout {
         }
         return 3;
     }
+    /**
+     * Production ocean classification probes always use primitive block
+     * coordinates. BiPredicate<Integer,Integer> boxes two integers for each
+     * probe; the primitive contract avoids those conversions while keeping
+     * exactly the same tested rings, heading order and early return.
+     *
+     * The boxed overload above is retained unchanged as an independent
+     * reference for compatibility and step-by-step parity verification.
+     */
+    @FunctionalInterface
+    public interface IntOceanProbe {
+        boolean test(int x,int z);
+    }
+
+    public static int oceanTierPrimitive(Site base,
+            IntOceanProbe deep, IntOceanProbe ocean) {
+        if(!deep.test(base.x(),base.z()))return 0;
+        for(int ring=0;ring<PROBE_RADII.length;ring++) {
+            int first=ring*DIRECTIONS;
+            for(int i=0;i<DIRECTIONS;i++)
+                if(!ocean.test(base.x()+PROBE_X[first+i],
+                               base.z()+PROBE_Z[first+i]))
+                    return ring<4?0:ring<6?1:2;
+        }
+        return 3;
+    }
+
     public static int countForTier(int tier) {
         return switch(tier) {
             case 1 -> 1;
