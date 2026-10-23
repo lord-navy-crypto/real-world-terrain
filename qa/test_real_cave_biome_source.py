@@ -31,6 +31,20 @@ class RealCaveBiomeTests(unittest.TestCase):
         self.assertIn("Math.floorDiv(quartZ,12)",math)
         self.assertIn("Math.floorDiv(quartY,8)",math)
 
+    def test_high_altitude_short_circuit_preserves_original_biome(self):
+        source=(JAVA/"CaveDepthBiomeSource.java").read_text()
+        math=(JAVA/"CaveBiomeRegionMath.java").read_text()
+        marker="final int blockY=y*4;"
+        self.assertIn(marker,source)
+        original=source.index("Holder<Biome> original=source.getNoiseBiome(x,y,z,sampler);")
+        early=source.index("if(blockY>64 || blockY < -60) return original;")
+        lookup=source.index("String id=original.unwrapKey().map(")
+        self.assertLess(original,early)
+        self.assertLess(early,lookup)
+        # Must match CaveBiomeRegionMath.select's exact strict boundaries.
+        self.assertIn("if(y>64||y < -60",math)
+        self.assertIn("int y=quartY*4;",math)
+
     def test_custom_cave_biomes_retain_vanilla_ore_carver_and_spawns(self):
         for name in CAVES:
             with self.subTest(name=name):
