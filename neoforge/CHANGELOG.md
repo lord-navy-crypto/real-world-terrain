@@ -2,6 +2,18 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.8 — 2026-10-23 — Experimental Generation Optimizations
+
+### Optimized
+- Converted the existing 4,096-entry USGS X/Z elevation-and-blend cache from direct-mapped to **two-way set associative** storage, keeping the *same total entry capacity*. Two frequently revisited columns whose hashes collide can now coexist without repeatedly rerunning DEM interpolation. Both coordinate and blend-width keys are verified on every cache hit; collisions can never substitute terrain values.
+- Added an exact-height early return in the optional cave biome decorator. Above Y64 and below Y-60, return the original biome immediately without performing holder-key/namespace lookups. This matches the existing cave-region selection boundaries exactly.
+- Retained Test.7's default-OFF frame/queue/Aquifer diagnostics. Neither change modifies noise equations, elevation samples, biome selection inside caves, saved preset IDs, ores, cave carving, ocean habitats or Minecraft's render distance.
+
+### Verification
+- Extended the pure-Java USGS DEM smoke test with a deliberately colliding pair that must retain *both* cached objects while matching original interpolation results bit-for-bit.
+- Added static regression coverage for the cave-depth shortcut's unchanged boundary and original source delegation.
+- Runtime speedups and client FPS changes are **not claimed** without matched worldgen and physical-client A/B measurements.
+
 ## 2.0.0-preview.2-test.7 — 2026-10-23 — Experimental
 
 ### 新增 / Added

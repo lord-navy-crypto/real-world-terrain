@@ -62,6 +62,12 @@ public final class CaveDepthBiomeSource extends BiomeSource {
     }
     @Override public Holder<Biome> getNoiseBiome(int x,int y,int z,Climate.Sampler sampler){
         Holder<Biome> original=source.getNoiseBiome(x,y,z,sampler);
+        // The original CaveBiomeRegionMath.select() never replaces a biome
+        // above Y64 or below Y-60. Most RealScale vertical quart samples
+        // therefore need neither a Holder key/Optional lookup nor ID parsing.
+        // Use identical Java int multiplication semantics as select().
+        final int blockY=y*4;
+        if(blockY>64 || blockY < -60) return original;
         String id=original.unwrapKey().map(key->
                 "minecraft".equals(key.location().getNamespace())
                         ?key.location().getPath():"").orElse("");
