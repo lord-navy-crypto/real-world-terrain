@@ -225,12 +225,17 @@ final class RealDemSeamlessMath {
         int ix=Math.min(GRID-2,(int)Math.floor(gx));
         int iz=Math.min(GRID-2,(int)Math.floor(gz));
         double a=gx-ix,b=gz-iz;
-        double r0=sampleRow(iz-1,ix,a);
+        // The north/south edge splines extrapolate from the two real
+        // rows: at iz==0 the old r0 was computed then discarded, while
+        // at iz==GRID-2 the old r3 was computed then discarded.
+        // Evaluate the two essential rows first; load exterior rows
+        // only when their result actually contributes to interpolation.
+        // Preserve exactly the same row values, extrapolation expressions
+        // and final smoothSegment operand order for byte-identical terrain.
         double r1=sampleRow(iz,ix,a);
         double r2=sampleRow(iz+1,ix,a);
-        double r3=sampleRow(iz+2,ix,a);
-        double lower=iz>0?r0:2*r1-r2;
-        double upper=iz<GRID-2?r3:2*r2-r1;
+        double lower=iz>0?sampleRow(iz-1,ix,a):2*r1-r2;
+        double upper=iz<GRID-2?sampleRow(iz+2,ix,a):2*r2-r1;
         return smoothSegment(lower,r1,r2,upper,b);
     }
 
