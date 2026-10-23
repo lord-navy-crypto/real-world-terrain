@@ -10,6 +10,8 @@ RealScale 与 Distant Horizons / Chunky 的独立兼容补丁统一在本仓库�
 
 详细说明请见 [品牌命名与旧世界迁移约定](docs/REAL_SCALE_BRANDING_COMPATIBILITY.md)。实验性优化尚未完成全部旧存档等价性及 Mac 光影实测，**不应以 Stable 名义发布**。
 
+主模组各版本更新请参阅 [RealScale 更新日志](neoforge/CHANGELOG.md)。DH–Chunky 独立补丁的更新记录请参阅 [兼容补丁更新日志](dh-chunky-guard/CHANGELOG.md)。
+
 ## 当前交付与边界
 
 - `neoforge/`：从已成功构建的原始快照恢复的完整可读 Java 模组源码、Gradle 配置、世界生成 JSON、DEM 与独立 Java 测试。
