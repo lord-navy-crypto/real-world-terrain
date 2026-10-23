@@ -2,6 +2,19 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.15 — 2026-10-23 — USGS DEM Row Interpolation Hot-Path Cleanup (Experimental)
+
+### Optimized
+- Select a clamped source raster row **once** in `RealDemSeamlessMath.sampleRow`, instead of doing the same 2–4 row/column boundary clamps for every corner read in the cubic row interpolation.
+- Preserve sample ordering, Hermite smoothing, endpoint extrapolation, monotone slopes, measured DEM inputs, 2,048-block fades, cache size and hashing, source validation and world height.
+- No changes to underlying vanilla Perlin/Noise, Beardifier, Aquifer, oceans, caves, biome registries, sky islands, fluids, structures, world generation RNG or save data.
+
+### QA / release gates
+- Independent Java comparison reconstructs original `corner(row,col)` calls and `smoothSegment()`; all 210 row/column/fraction combinations require raw IEEE-754 bit equality, including both raster edges.
+- Existing measured DEM tile fidelity, cache-collision/eviction, ocean, cave, sky Anvil and server checks remain required. Test.15 remains stacked on Test.14 and **Draft**, not merged into stable main.
+- Local spline arithmetic reduction is a candidate micro-optimization, not an independently demonstrated increase in cold chunk generation throughput. Require matched multi-seed A/B on the same hardware before claiming speedup.
+- Separate optional DH–Chunky Guard remains `0.3.1-experimental`.
+
 ## 2.0.0-preview.2-test.14 — 2026-10-23 — Conservative Sky Island Candidate Group Culling (Experimental)
 
 ### Optimized
