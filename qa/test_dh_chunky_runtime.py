@@ -54,8 +54,8 @@ class RuntimeVerdictTests(unittest.TestCase):
         # so the SQLite report existed but json.loads failed with Extra data.
         code=(Path(__file__).resolve().parents[0]/"neoforge"/
               "rcon_worldgen_smoke.py").read_text()
-        self.assertIn('json.dumps(storage,sort_keys=True,indent=2)+"\n"',code)
-        self.assertNotIn('json.dumps(storage,sort_keys=True,indent=2)+"\\n"',code)
+        self.assertIn(r'json.dumps(storage,sort_keys=True,indent=2)+"\n"',code)
+        self.assertNotIn(r'json.dumps(storage,sort_keys=True,indent=2)+"\\n"',code)
 
     def test_other_unpatched_crash_is_failure(self):
         self.assertFalse(evaluate("OutOfMemoryError","", "unpatched",1)["pass_gate"])
