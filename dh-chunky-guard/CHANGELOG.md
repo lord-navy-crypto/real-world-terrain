@@ -2,6 +2,20 @@
 
 本文件记录独立 NeoForge 兼容补丁的变更。RealScale 主模组的版本说明位于 `neoforge/CHANGELOG.md`。兼容补丁独立编译、独立安装，不会取代 RealScale 主模组。
 
+## 0.3.1-experimental — 2026-10-23 — Hot-Path Maintenance
+
+### Improved
+- Moved the native DH listener-already-bound check to the **first operation** of the Mixin callback, so normal completed-chunk events return without checking JVM properties, invoking reflection or updating metrics.
+- Cache the opt-out JVM flag `realscale.dhchunky.guard.enabled` once during Mixin class initialization instead of parsing a system property on every full-chunk event.
+- Retained the original exact-version guard, native DH listener binding verification and targeted Chunky provider readiness retry. No change to Minecraft chunk data or DH's scheduler.
+- Added hot-path regression assertions and separate standalone addon CI coverage.
+
+### Important
+- This is a small CPU-overhead cleanup, **not** a measured FPS boost.
+- The cached JVM flag must be set **before Minecraft launches**, not changed at runtime.
+- DH 3.3.3, Chunky 1.4.23, Minecraft 1.21.1, NeoForge 21.1.x are still the only pinned test combination.
+- v0.3.1 remains experimental until physical DH/Sodium/Iris rendering and multiple launches have been verified.
+
 ## 0.3.0-experimental — 2026-10-23
 
 ### 新增 / Added
