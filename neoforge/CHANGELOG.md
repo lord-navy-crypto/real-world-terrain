@@ -2,6 +2,19 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.14 — 2026-10-23 — Conservative Sky Island Candidate Group Culling (Experimental)
+
+### Optimized
+- Before hashing and allocating five satellite sites for each of the nine neighboring sky-island lattice bases, cheaply reject an entire base group when the existing maximum satellite reach cannot touch the decorating 16×16 chunk.
+- Use the existing 94-block conservative axis limit (actual base radius <=14; satellite offsets 80 plus radius <=11) and 64-bit comparisons. Near Java integer overflow boundaries, fall back to the complete original enumeration instead of changing legacy behavior.
+- Preserve original satellite site math and order, chunk candidate tests, biome gating, validation reads, immutable block writes, rock/decor/beacon palette and RNG sequence. No new cache or background worker.
+
+### Validation and limitations
+- Add an independent Java 21 oracle that re-evaluates the **original** five-site candidate overlap for each base group and rejects any false-negative shortcut across signed boundaries, world-border chunks and integer extremes.
+- Retain all existing sky-island, DEM, cave, ocean, Nether, End, Anvil and server tests. Test.14 remains experimental until CI and real server saved-block comparison prove it safe.
+- This targets sky-island feature generation overhead, not vanilla Perlin, Beardifier, Aquifer or rendering. No measured chunks/second, TPS or FPS claim without matched actual worldgen A/B data.
+- DH–Chunky Guard is separate and unchanged at `0.3.1-experimental`.
+
 ## 2.0.0-preview.2-test.13 — 2026-10-23 — Sky Island Validation Allocation Cleanup (Experimental)
 
 ### Optimized
