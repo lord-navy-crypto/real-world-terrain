@@ -2,6 +2,19 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.25 — 2026-10-24 — Grand Nether Tube Bend and Orientation Constant Reuse (Experimental)
+
+### Actual worldgen hot-path work reduction
+- After Test.20 cached immutable tunnel endpoints/vectors/AABBs and Test.24 avoided repeated mask lookups, the Grand Nether's per-voxel `tube()` still recalculated two seeded `Math.floorMod(long,...)` bend values, determined its dominant axis with multiple `Math.abs` calls, and multiplied the same radius by itself on every cave sample.
+- Move those constant calculations into the existing region-local `TubeSegment` constructor: signed `bendSeed1` and `bendSeed2`, original ordered `bendAxis` selection (including tie semantics) and `radiusSquared`. The existing four-snapshot worker-local region graph automatically reuses these values.
+- The density hot path still calculates `curve=4.0*t*(1.0-t)`, multiplies the unchanged integer bend seeds by the curve, computes the precise same per-axis displacements, and divides the same squared-distance numerator by the same radius square. No reciprocal multiplication, approximate trigonometry, changed floating-point evaluation order or RNG.
+- The original `GrandNetherTubeGeometrySmoke` frozen pre-Test.20 tube equation remains unchanged and independently checks the actual optimized private `tube` on tens of thousands of fractional positions across all 13 links/shafts and 25 source regions. No impacts on Overworld, ocean, sky, Nether structures/lava/roof, Aquifer, Beardifier, seed, blocks or save format.
+
+### Verification and release criteria
+- Added `GrandNetherTubeBendConstantsSmoke`: assert exact unsigned-shift/signed-modulo bend constants, original axis comparison/tie selection and raw IEEE-754 radius-square parity for 31x31 region graphs (12,493 segments), including horizontal and vertical axes. CI runs the entire frozen reference, region cache, 19-component mask and single-mask tests as before.
+- Keep all source integrity, NeoForge, multi-seed actual worldgen, Anvil saved-world, 180-second distant-chunk, ocean, sky and three-realm server gates. A pass validates covered behavior **not** a claimed throughput gain.
+- Draft stacked on Test.24: compare Test.24 vs Test.25 cold same-seed chunk generation throughput, p95 generation time and GC/heap. Discard this optimization if real measurements do not justify extra per-segment constant storage. Stable main is unchanged.
+
 ## 2.0.0-preview.2-test.24 — 2026-10-23 — Grand Nether Single Candidate Mask Per Density Voxel (Experimental)
 
 ### Optimization
