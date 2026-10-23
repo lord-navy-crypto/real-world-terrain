@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.19 — 2026-10-23 — Bounded Multi-Region Grand Nether Cavern Graph Reuse (Experimental)
+
+### Optimized
+- Replace Grand Nether's single mutable per-worker 256x256 cave cell snapshot with **four lazy, bounded, two-way region snapshots**. Repeated region A -> B -> A height queries can reuse already-generated halls, galleries, corridor bend keys and the matching 512-column broad-phase masks instead of rebuilding the entire procedural cave graph after every switch.
+- Retain the existing CellCache.initialize() contents, seeds, corridor keys, mask geometry and exact strength() arithmetic. Cache eviction only forces deterministic recalculation; a different worker never accesses another worker's graph.
+- Explicitly select the correct region in both the column-mask lookup and strength evaluation so no stale site can be mistaken for the queried X/Z region. Lazy allocation bounds the cost to four snapshots per worldgen worker, rather than an unbounded world cache.
+- No vanilla Perlin/Noise, Beardifier or Aquifer mixin; no changes to Y144..440 protected bands, lower Nether lava, upper bedrock, portals, structures, blocks, saved worlds, biomes or dimensions. The Overworld remains unchanged.
+
+### QA and release gate
+- New pure Java `GrandNetherRegionCacheSmoke` validates A/B/A retention, two-way hash collision handling, epoch/column-mask retention, forced eviction, four concurrent worker isolation and raw IEEE-754 equality with the independently frozen legacy Grand Nether cave reference.
+- Continue running the comprehensive preexisting `GrandNetherCaveNetworkSmoke` and `GrandNetherCaveNetworkParitySmoke`, including >100k warped column parity samples, and all real-server, Nether/End, saved Anvil, overworld, ocean and sky regression workflows.
+- Experimental, stacked on Test.18: **do not merge into main** without all new SHA CI checks, matching saved-world samples and a real alternating-jigsaw / cold chunk-generation A/B throughput and p95 memory/GC comparison. Cache retention is a reproducible work avoidance, not by itself proof of TPS/FPS/chunks-per-second gain.
+- Optional DH–Chunky Guard remains separate `0.3.1-experimental`.
+
 ## 2.0.0-preview.2-test.18 — 2026-10-23 — Exact USGS DEM Boundary Row Elimination (Experimental)
 
 ### Optimized
