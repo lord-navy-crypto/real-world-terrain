@@ -169,6 +169,10 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
             {1,0},{-1,0},{0,1},{0,-1},
             {1,1},{1,-1},{-1,1},{-1,-1}
     };
+    // No chunk, biome, climate or seed dependencies: each ray's squared
+    // distance is fixed for its heading and step. Compute only once.
+    private static final EcotoneRayTable RAY_DISTANCES =
+            new EcotoneRayTable(DIRECTIONS, MAX_SEARCH_QUARTS);
 
     /** Bounded per-thread climate cache, invalidated when the climate sampler changes. */
     private static final class SamplingCache {
@@ -304,10 +308,10 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         Rule nearest = null;
         int closestDistanceSquared = Integer.MAX_VALUE;
         int maxLocalQuarts = (MAX_WIDTH_BY_BIOME.getOrDefault(current, 0) + 7) / 8;
-        for (int[] direction : DIRECTIONS) {
+        for (int heading = 0; heading < DIRECTIONS.length; heading++) {
+            int[] direction = DIRECTIONS[heading];
             for (int step = 1; step <= maxLocalQuarts; step++) {
-                int distanceSquared = EcotoneMath.quartDistanceSquared(
-                        direction[0], direction[1], step);
+                int distanceSquared = RAY_DISTANCES.squared(heading, step);
                 // No rule can be wider than the configured global search span.
                 if (distanceSquared > 16 * maxLocalQuarts * maxLocalQuarts) break;
                 // Rays are visited from closest to farthest. We can safely
@@ -317,8 +321,8 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
                         quartY, quartZ + direction[1] * step, sampler, cache));
                 if (current.equals(next)) continue;
                 Rule rule = findPair(current, next);
-                if (rule != null && EcotoneMath.withinRadialBand(
-                        direction[0], direction[1], step, rule.widthBlocks())) {
+                if (rule != null && EcotoneRayTable.withinBand(
+                        distanceSquared, rule.widthBlocks())) {
                     nearest = rule;
                     closestDistanceSquared = distanceSquared;
                 }
