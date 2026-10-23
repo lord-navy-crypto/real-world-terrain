@@ -6,6 +6,8 @@ on:
       - "dh-chunky-guard/**"
       - "qa/neoforge/verify_dh_chunky_guard_runtime.py"
       - "qa/test_dh_chunky_runtime.py"
+      - "qa/test_dh_lod_evidence_gate.py"
+      - "qa/neoforge/audit_dh_lod_sqlite.py"
       - "qa/test_dh_chunky_status.py"
       - "qa/neoforge/rcon_worldgen_smoke.py"
       - ".github/workflows/dh-chunky-real-neoforge-test.yml"
@@ -14,6 +16,8 @@ on:
       - "dh-chunky-guard/**"
       - "qa/neoforge/verify_dh_chunky_guard_runtime.py"
       - "qa/test_dh_chunky_runtime.py"
+      - "qa/test_dh_lod_evidence_gate.py"
+      - "qa/neoforge/audit_dh_lod_sqlite.py"
       - ".github/workflows/dh-chunky-real-neoforge-test.yml"
   workflow_dispatch:
 permissions:
@@ -102,7 +106,8 @@ jobs:
           tail -n 60 build/dh-chunky-runner.log
           python3 ../qa/neoforge/verify_dh_chunky_guard_runtime.py \
             build/rcon_distant_server.log build/dh-chunky-runner.log "$MODE" "$rc" \
-            build/dh-chunky-$MODE-result.json
+            build/dh-chunky-$MODE-result.json \
+            build/dh-chunky-lod-storage.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

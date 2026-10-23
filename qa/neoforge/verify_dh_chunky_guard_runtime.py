@@ -49,6 +49,51 @@ def evaluate(game_log, runner, mode, rc):
                 verdict=verdict,pass_gate=passed,
                 note="Real headless NeoForge; not a macOS client GPU test")
 
+def verify_lod_storage(storage):
+    """Validate independent persisted-DH evidence, NOT GPU rendering.
+
+    Only require at least one likely LOD table in any dimension; overworld
+    often contains rows while the untouched Nether and End only have metadata.
+    Any WAL snapshot, truncated scan, or unhealthy database invalidates the
+    persistence gate. Do not open raw user data here.
+    """
+    if not isinstance(storage, dict):
+        return False, "missing_or_invalid_report"
+    state=storage.get("state")
+    files=storage.get("files")
+    if state!="candidate_lod_records_present":
+        return False, state if isinstance(state,str) and state in (
+            "no_lod_database_found", "incomplete_due_to_sqlite_wal",
+            "database_read_or_integrity_problem",
+            "sqlite_records_found_lod_payload_not_verified",
+            "sqlite_opened_no_table_records") else "invalid_state"
+    if not isinstance(files,list) or not files:
+        return False,"missing_file_records"
+    discovered=storage.get("dh_sqlite_files_discovered")
+    scanned=storage.get("dh_sqlite_files_scanned")
+    if (type(discovered) is not int or type(scanned) is not int
+            or scanned<1 or discovered!=scanned
+            or storage.get("scan_truncated") is not False):
+        return False,"database_scan_incomplete"
+    if (type(storage.get("healthy_sqlite_files")) is not int or
+            storage["healthy_sqlite_files"]!=scanned or
+            len(files)!=scanned):
+        return False,"unhealthy_sqlite"
+    for item in files:
+        if not isinstance(item,dict) or (
+                item.get("sqlite_open_ok") is not True
+                or item.get("integrity_check")!="ok"
+                or item.get("incomplete_snapshot") is not False):
+            return False,"sqlite_integrity_or_wal_uncertain"
+    if (type(storage.get("candidate_lod_data_tables_with_records")) is not int
+            or storage["candidate_lod_data_tables_with_records"]<1):
+        return False,"no_candidate_lod_data"
+    if (storage.get("lod_payload_verified") is not False
+            or storage.get("gpu_lod_visible")!="unverified"):
+        return False,"misleading_proof_claim"
+    return True,"candidate_lod_storage_verified_metadata_only"
+
+
 def main():
     game=Path(sys.argv[1])
     runner=Path(sys.argv[2])
@@ -58,6 +103,27 @@ def main():
     result=evaluate(game.read_text(errors="replace") if game.exists() else "",
                     runner.read_text(errors="replace") if runner.exists() else "",
                     mode,rc)
+    if mode=="patched":
+        # This is a second, independent gate in addition to full chunks,
+        # DH's native listener and its generation queue.
+        source=Path(sys.argv[6]) if len(sys.argv)>6 else None
+        try:
+            evidence=json.loads(source.read_text(encoding="utf-8")) if source else None
+        except (OSError,ValueError):
+            evidence=None
+        lod_ok,lod_reason=verify_lod_storage(evidence)
+        result["lod_storage_gate"]=lod_ok
+        result["lod_storage_reason"]=lod_reason
+        result["lod_storage_level"]="candidate_table_presence_only"
+        result["gpu_lod_visible"]="unverified"
+        result["pass_gate"]=bool(result["pass_gate"] and lod_ok)
+        if not result["pass_gate"]:
+            result["verdict"]="patch_or_lod_storage_not_proven"
+    else:
+        # The unpatched arm is for reproducing the original crash only.
+        # Requiring LOD storage when the game intentionally crashes would
+        # make the comparator invalid.
+        result["lod_storage_gate"]="not_required_for_unpatched_baseline"
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
     print("REALSCALE_REAL_DH_CHUNKY_PATCH_RESULT",json.dumps(result,sort_keys=True),flush=True)
