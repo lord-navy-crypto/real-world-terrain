@@ -95,6 +95,47 @@ public final class RealDemSeamlessMathSmoke {
         }
     }
 
+
+    /**
+     * Independent frozen original corner interpolation compared at raw
+     * IEEE-754 bit level to the optimized sampler. The production sampler
+     * cannot change DEM heights at raster rows, endpoints, or fractions.
+     */
+    private static void checkRowSamplerParity() throws Exception {
+        Class<?> type=RealDemSeamlessMath.class;
+        java.lang.reflect.Field gridField=type.getDeclaredField("GRID");
+        gridField.setAccessible(true);
+        int grid=gridField.getInt(null);
+        java.lang.reflect.Method corner=type.getDeclaredMethod("corner",int.class,int.class);
+        java.lang.reflect.Method smooth=type.getDeclaredMethod("smoothSegment",
+                double.class,double.class,double.class,double.class,double.class);
+        java.lang.reflect.Method sampler=type.getDeclaredMethod("sampleRow",
+                int.class,int.class,double.class);
+        corner.setAccessible(true);
+        smooth.setAccessible(true);
+        sampler.setAccessible(true);
+        int checks=0;
+        for(int row:new int[]{-1,0,1,grid-3,grid-2,grid-1,grid}) {
+            for(int ix:new int[]{0,1,grid/2,grid-3,grid-2}) {
+                double p0=(double)corner.invoke(null,row,ix);
+                double p1=(double)corner.invoke(null,row,ix+1);
+                double pm=ix>0?(double)corner.invoke(null,row,ix-1):2*p0-p1;
+                double pp=ix<grid-2?(double)corner.invoke(null,row,ix+2):2*p1-p0;
+                for(double a:new double[]{0.0,Math.nextUp(0.0),0.137,0.5,
+                                          Math.nextDown(1.0),1.0}) {
+                    double expected=(double)smooth.invoke(null,pm,p0,p1,pp,a);
+                    double actual=(double)sampler.invoke(null,row,ix,a);
+                    require(Double.doubleToRawLongBits(expected)
+                            ==Double.doubleToRawLongBits(actual),
+                            "USGS sampleRow changed interpolation bits row="+row
+                            +" x="+ix+" fraction="+a);
+                    checks++;
+                }
+            }
+        }
+        require(checks==210,"Missing sampler boundary tests");
+    }
+
     public static void main(String[] args) throws Exception {
         RealDemTile source = RealDemTile.load();
         int n = 0;
@@ -187,6 +228,7 @@ public final class RealDemSeamlessMathSmoke {
                         "DEM cache churn changed height at "+px[k]+","+pz[k]);
         }
         checkCollisionRetained(source);
-        System.out.println("REALSCALE_USGS_V2_TWO_WAY_PARITY_PASS: 256 measured elevations, four fade sides, bitwise parity, height/fade collision retention");
+        checkRowSamplerParity();
+        System.out.println("REALSCALE_USGS_V2_TWO_WAY_PARITY_PASS: 256 measured elevations, four fade sides, bitwise parity, height/fade collision retention, 210 row raw-bit checks");
     }
 }
