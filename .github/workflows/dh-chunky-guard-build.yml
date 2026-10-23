@@ -27,7 +27,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.14.3' }
       - name: Run patch safety, version and targeted-injection tests
-        run: python3 -m unittest discover -s qa -p test_dh_chunky_patch.py -v
+        run: |
+          python3 -m unittest discover -s qa -p test_dh_chunky_patch.py -v
           python3 -m unittest discover -s qa -p test_dh_chunky_runtime.py -v
           python3 -m unittest discover -s qa -p test_realscale_dh_client_safety.py -v
           python3 -m unittest discover -s qa -p test_lod_stack_audit.py -v
