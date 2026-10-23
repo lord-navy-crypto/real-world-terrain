@@ -2,6 +2,19 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.9 — 2026-10-23 — Seamless USGS Cache Maintenance (Experimental)
+
+### Improved
+- Updated the existing **USGS Big Sur seamless bicubic-height cache (4,096 entries)** to bounded, per-worldgen-thread, two-way sets. Alternating coordinates that collide in the hash can now remain cached simultaneously; total capacity and world-height computations stay unchanged.
+- Applied the same collision-tolerant scheme to the existing **1,024-entry USGS transition/fade-weight cache**, preserving all fade widths, transition-boundary rules and original floating-point expressions.
+- Existing last-column fast paths, overflow-safe far-field rejection, and thread isolation remain unchanged; misses and evictions only recompute exactly the same original interpolations.
+- No changes to worldgen density equations, mountain and cave geometry, sea level, dimension height, Minecraft renderer, biome IDs or save formats.
+
+### Verification
+- Existing USGS seam/slope/transition test now adds deliberate colliding-pair tests that check **both cache entries survive** and values remain raw-bit identical to original uncached calculations.
+- Run the established Java 21, NeoForge, USGS test and real server CI before release. **No actual FPS or whole-world chunkgen speedup is asserted without matched tests.**
+- Independently built DH–Chunky Guard remains v0.3.1; not included in the RealScale JAR.
+
 ## 2.0.0-preview.2-test.8 — 2026-10-23 — Experimental Generation Optimizations
 
 ### Optimized
