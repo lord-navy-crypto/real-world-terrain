@@ -2,6 +2,17 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.11 — 2026-10-23 — USGS Sampler Index Cleanup (Experimental)
+
+### Changed
+- In the already-bounded USGS bicubic row sampler, select and clamp the DEM row **once per sampleRow call** rather than re-clamping row and column for each corner. Column indices were already bounded by measuredHeight; interpolation weights, monotone slopes and edge extrapolation are deliberately unchanged.
+- Preserve both two-way per-thread USGS caches, existing collision behavior, exact terrain equations, blend widths, world presets and saved-world formats. DH–Chunky Guard remains separate v0.3.1.
+
+### Verification
+- Added comparison against original corner-indexing for 210 row/column/fraction boundary combinations, requiring exact **raw IEEE-754 bits**; earlier DEM/fade/cache tests remain.
+- Added an explicit USGS Java 21 smoke before the NeoForge build in the integration workflow. An independent local Java 21 reproduction passed 182,400 raw-bit comparisons over randomized height grids.
+- **No speedup claim** until matched server/client measurements; retain Draft status pending CI and saved-world checks.
+
 ## 2.0.0-preview.2-test.10 — 2026-10-23 — Cave/Marine Worldgen Hot-Path Cleanup (Experimental)
 
 ### Performance improvements
