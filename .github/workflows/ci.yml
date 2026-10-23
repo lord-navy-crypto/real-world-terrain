@@ -44,6 +44,8 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_cave_marine_habitat.py' -v
       - name: Verify cave and marine decoration uses low-allocation hot paths
         run: python3 -m unittest discover -s qa -p 'test_habitat_hotpath.py' -v
+      - name: Verify cave and marine allocation fastpaths and original RNG order
+        run: python3 -m unittest discover -s qa -p 'test_habitat_allocation_fastpaths.py' -v
       - name: Validate Grand Ecology registrations and preserved dimensions
         run: python3 scripts/check_grand_ecology.py
       - name: Deterministic macro-ecology density and elevation smoke
