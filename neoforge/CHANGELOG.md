@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.22 — 2026-10-23 — Cached Grand Overworld Cave-Column Broad-Phase Bounds (Experimental)
+
+### Worldgen optimization
+- The 2096-high Grand Overworld cave density's per-X/Z broad-phase checks up to **47 room/tunnel components** to identify whether any giant cave can affect a warped column. On mask-cache misses, `columnComponentMask` recomputed horizontal endpoint min/max and radius reach for every eligible tunnel, despite Test.21 precomputing the identical bounds per cave region.
+- Use the existing immutable `TunnelGeometry.minX/maxX/minZ/maxZ` from Test.21 in the column-mask scan. Keep exactly the original comparison inclusivity, mask bit positions, 768-block cell choices, height bounds and fallback near warp-cell boundaries.
+- Retain the complete previous `tunnelCouldTouch(Hall,Hall,Passage,...)` formula untouched as a frozen reference. The new overload only compares the cached endpoints, with no floating-point approximation and no extra per-column heap allocation.
+- No changes to cave geometry, RNG, Perlin/Noise, Beardifier, Aquifer, fluid updates, structures, biome identities, 2096-height world limits, chunk saves or existing Nether/End/sky/ocean features.
+
+### Tests and gate
+- New standalone Java 21 `GrandOverworldMaskAabbParitySmoke` independently constructs the original 47-component long mask from the original hall and passage AABBs and compares every bit to the Test.22 optimized mask across more than 5,000 positive/negative, empty, near-hall and boundary-oriented probes.
+- All existing Overworld cave geometry, mask collision, full strength/warp, 4-family multiseed real server, 180-second distant chunk generation, Anvil saved-block and ecosystem tests remain enabled.
+- A passed exact-mask test demonstrates equivalent candidates, **not** a measured throughput improvement. Keep stacked Draft until full latest SHA CI and a matched Test.21/Test.22 cold-chunk throughput, p95 and GC comparison confirms benefit, and saved blocks remain identical.
+- Stable main and separate DH–Chunky Guard `0.3.1-experimental` are unchanged.
+
 ## 2.0.0-preview.2-test.21 — 2026-10-23 — Grand Overworld Cave Corridor Geometry Reuse (Experimental)
 
 ### Optimized world generation
