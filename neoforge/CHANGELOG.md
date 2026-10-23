@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.18 — 2026-10-23 — Exact USGS DEM Boundary Row Elimination (Experimental)
+
+### Optimized
+- In `RealDemSeamlessMath.measuredHeight`, the original four-row spline always evaluated `sampleRow(iz-1)` and `sampleRow(iz+2)`, but ignored the first row at the north edge (`iz==0`) and the last row at the south edge (`iz==GRID-2`).
+- Compute the two essential in-bounds rows first. Evaluate the outer rows **only if selected by the existing boundary extrapolation ternary**. At those dataset boundaries, this avoids one of four cubic `sampleRow` calculations per measured-height query.
+- Retain original X/Z clamps, row samples, endpoint extrapolation coefficients, `smoothSegment` evaluation order, output bits, USGS source rasters, cache keys/capacity, world height and 2048-block transition interpolation.
+- No changes to Perlin/Noise, Beardifier, Aquifer, structures, fluids, dimension codecs, caves, oceans, biome identities, sky islands or RNG.
+
+### Validation and limitations
+- New Java 21 `RealDemEdgeRowSmoke` reconstructs the **frozen Test.17 original four-row formula** using the production row spline, clamps and smoothstep. It compares raw IEEE-754 bits at over 14,000 deterministic USGS interior, north/south boundary, fractional and out-of-raster input coordinates.
+- Integrated the new smoke into the existing `RealDemSeamlessMathSmoke` CI compile/run step; all other NeoForge, multi-seed real-server/Anvil, ocean, sky, Nether and End gates remain in place.
+- Test.18 is a draft stacked on Test.17 and must NOT merge into main before green workflows, saved-world comparison and matched real-worldgen cold-chunk A/B evidence. This is a reduction of unused edge interpolations, **not a measured FPS/TPS/chunks-per-second gain**.
+- DH–Chunky Guard remains independent v0.3.1-experimental.
+
 ## 2.0.0-preview.2-test.17 — 2026-10-23 — Primitive Offshore Ocean Eligibility Probes (Experimental)
 
 ### Optimized
