@@ -46,6 +46,14 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_habitat_hotpath.py' -v
       - name: Verify cave and marine allocation fastpaths and original RNG order
         run: python3 -m unittest discover -s qa -p 'test_habitat_allocation_fastpaths.py' -v
+      - name: Verify bounded cave patch search and low-allocation positions
+        run: |
+          python3 -m unittest discover -s qa -p 'test_habitat_patch_low_allocation.py' -v
+          mkdir -p build/habitat-floor-smoke
+          javac -d build/habitat-floor-smoke \
+            neoforge/src/main/java/org/realscale/neoforge/HabitatFloorSearch.java \
+            neoforge/src/test/java/org/realscale/neoforge/HabitatFloorSearchSmoke.java
+          java -cp build/habitat-floor-smoke org.realscale.neoforge.HabitatFloorSearchSmoke
       - name: Validate Grand Ecology registrations and preserved dimensions
         run: python3 scripts/check_grand_ecology.py
       - name: Deterministic macro-ecology density and elevation smoke

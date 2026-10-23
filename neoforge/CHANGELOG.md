@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.12 — 2026-10-23 — Cave and Seabed Patch Search Optimization (Experimental)
+
+### Optimized
+- Reuse one local `BlockPos.MutableBlockPos` for synchronous bounded vertical cave-floor searches in `HabitatPatchFeature`. Up to 81 candidate height probes now avoid creating a separate immutable coordinate for each tested Y position; the original search order, roof protection, highland radius, and return value remain unchanged.
+- Reuse the above position during a cave-floor air/fluid validation without changing the original short-circuit read order.
+- Replace per-candidate `new int[]{0,1,-1}` arrays with a single private static offset array. The sequence **0, +1, -1** and all RNG draw points are unchanged.
+- Reuse the validated marine seabed `BlockPos` when applying sediment decoration, avoiding a second seabed coordinate allocation. Water, block/structure protection, and random rock choice remain unchanged.
+
+### Validation and limitations
+- Added source-regression tests for cave height limits, allocation behavior, strict cave-floor read order, unchanged RNG points, and marine water-before-sediment validation.
+- Added a Java 21 `HabitatFloorSearchSmoke` gate checking high-altitude caves, descent ties, empty caves, and roof-restricted bounds.
+- Same caves, oceans, biomes, ores, sea level, USGS terrain, save/registry IDs and dimension height.
+- No measured FPS/TPS uplift is claimed. Real server generation checks and matched client A/B tests are still necessary. Independently distributed DH–Chunky Guard remains v0.3.1-experimental.
+
 ## 2.0.0-preview.2-test.11 — 2026-10-23 — Low-Allocation Cave and Marine Decoration (Experimental)
 
 ### Performance
