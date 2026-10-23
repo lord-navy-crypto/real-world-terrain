@@ -2,6 +2,19 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.17 — 2026-10-23 — Primitive Sky-Ocean Isolation Probes (Experimental)
+
+### Optimized
+- Classify offshore sky-island isolation tiers with a new `IntOceanProbe` primitive (int X, int Z) callback instead of the boxed `BiPredicate<Integer,Integer>` interface. This eliminates repeated coordinate boxing at the predicate boundary during up to 129 climate lookups for each newly eligible island lattice site.
+- Keep original `oceanTier` implementation unchanged as the legacy reference. The production code now calls `oceanTierPrimitive`, retaining identical 8 rings × 16 compass probes, center-deep-water gate, short-circuit order, thresholds 0–3 and sampled world coordinates.
+- No change to real DEM, cave/ocean density, coastal isolation decisions, sky-island positions, climate sampler identity cache, ecology, dimension/seed/RNG, block palettes, structure placement or persistence.
+
+### Verification and release limitations
+- New independent Java 21 `SkyOceanPrimitiveTierSmoke` compares the existing boxed method and primitive method **sample for sample**: every ocean ring, all first-failed probes, negative and near-int-extreme coordinates, deterministic random lattice sites and full 128-ray passes. Both tier and ordered X/Z/scan type must be identical.
+- Test added to CI without relaxing any existing source/NeoForge/Anvil/multi-seed/worldgen checks. Previous Test.16 Python source inspection was updated to recognize the semantically identical indexed ecotone loop after discovering an outdated syntax-only assertion.
+- Potential reduction in garbage-collection pressure is not an established real chunk-generation improvement. No FPS/TPS/chunks-per-second claim until matched full-world A/B and saved-world comparison. Remains Draft, main branch untouched.
+- DH–Chunky Guard stays separate at `0.3.1-experimental`.
+
 ## 2.0.0-preview.2-test.16 — 2026-10-23 — Ecotone Climate-Ray Geometry Lookup (Experimental)
 
 ### Optimized
