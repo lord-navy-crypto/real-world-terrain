@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.10 — 2026-10-23 — Cave/Marine Worldgen Hot-Path Cleanup (Experimental)
+
+### Performance improvements
+- Reuse one local `BlockPos.MutableBlockPos` while searching for a real cave pocket, instead of allocating a separate immutable origin position for every depth probe. The exact `HabitatFloorSearch.nearest` visit order, height bounds and pocket validity checks are unchanged.
+- Replace four repeated `Math.floorDiv(x, 16)` calls during cave and marine decoration's same-chunk checks with signed arithmetic shifts (`x >> 4`), which give the same result for positive, negative and extreme world coordinates.
+- Compare the already available overworld dimension `ResourceKey` directly against `Level.OVERWORLD` rather than allocating a string representation on every feature placement.
+- Turn per-placement `LongAdder` tracking and the end-of-process summary hook into **explicitly enabled QA diagnostics**. By default the feature no longer performs atomic attempt/placement increments or installs the reporting shutdown hook. Enable when testing with `-Drealscale.habitat.report=true`.
+
+### Unchanged gameplay behavior
+- The original cave floor search sequence, positions, feature attempts and RNG calls remain unchanged.
+- No cave biome, marine coral, vegetation, ores, protected structures, fluid checks, dimension settings, height or seed calculations have been removed or altered.
+- No claim of a measured FPS/TPS improvement: source and NeoForge regression tests establish basic correctness, but full client and dedicated-server performance A/B measurements are still required.
+- The separately installed DH–Chunky Guard remains **0.3.1-experimental**, with no added background monitoring.
+
 ## 2.0.0-preview.2-test.9 — 2026-10-23 — Seamless USGS Cache Maintenance (Experimental)
 
 ### Improved
