@@ -1,11 +1,11 @@
 {
   "replace": false,
   "values": [
-    "realscale:tva_sacred_timeline_three_realms",
-    "realscale:tva_alpine_three_realms",
-    "realscale:tva_canyon_three_realms",
-    "realscale:tva_measured_three_realms",
-    "realscale:tva_wonders_invasion_three_realms",
-    "realscale:tva_cave_ocean_ecology_test_three_realms"
+    "realscale:natural_three_realms",
+    "realscale:alpine_three_realms",
+    "realscale:canyon_three_realms",
+    "realscale:measured_three_realms",
+    "realscale:wonders_invasion_three_realms",
+    "realscale:cave_ocean_ecology_three_realms"
   ]
 }

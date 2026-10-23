@@ -427,28 +427,28 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
             if "continentalness" in target:
                 target["continentalness"][0]=0.12
     # The original Terrain Lab used legacy presets and VANILLA Nether/End.
-    # Every NEW generated TVA profile must inherit the merged three realms
+    # Every NEW generated RealScale profile must inherit the merged three realms
     # and ocean-aware ecotones, never silently regress to vanilla dimensions.
-    tva_families={
+    realscale_families={
         "landscape":"tva_sacred_timeline_three_realms",
         "alpine":"tva_alpine_three_realms",
         "canyon":"tva_canyon_three_realms",
     }
-    if preset in tva_families:
-        original_preset=jread(root,GEO_ROOT/"world_preset"/(tva_families[preset]+".json"))
+    if preset in realscale_families:
+        original_preset=jread(root,GEO_ROOT/"world_preset"/(realscale_families[preset]+".json"))
     else:
         original_preset=jread(root,GEO_ROOT/"world_preset"/(source+".json"))
     world_preset=copy.deepcopy(original_preset)
     world_preset["dimensions"]["minecraft:overworld"]["generator"]["settings"]="realscale:"+name
     # Legacy fantasyDimensions drafts remain readable, but must not downgrade
-    # the selected TVA Grand Nether/End from 512 blocks back to 256.
+    # the RealScale Grand Nether/End from 512 blocks back to 256.
     # The optional 256-height fantasy presets remain in the registry as
-    # independent historical experiments, never replacing the canonical TVA.
+    # independent historical experiments, never replacing the canonical RealScale presets.
     if fantasy_dimensions and preset in tva_families:
         assert world_preset["dimensions"]["minecraft:the_nether"]["generator"]["settings"]=="realscale:grand_nether"
         assert world_preset["dimensions"]["minecraft:the_end"]["generator"]["settings"]=="realscale:grand_end"
     elif fantasy_dimensions:
-        raise ValueError("Legacy fantasy dimension overrides require TVA family settings")
+        raise ValueError("Legacy fantasy dimension overrides require RealScale family settings")
     output={
         GEO_ROOT/"density_function"/density_folder/"height_signal.json":height,
         GEO_ROOT/"density_function"/density_folder/"terrain_density.json":terrain,
@@ -727,7 +727,7 @@ def main(argv=None):
         print("Legacy compatible algorithms:",", ".join(LEGACY_EDITABLE))
         print("Tuning modes:",", ".join(PROFILES))
         print("Adjustable: mix 0..50%, ridge 0..40, erosion 0..30, strata 0..20, biome cooling 0..100, valley warming 0..100, latitude mode off/earth/preview/radial_earth/radial_preview/radial_balanced/radial_equal_area/radial_equal_area_single_pole, latitude strength 0..100, equator-z, basin warming 0..100, relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
-        print("USGS Big Sur v2 is the read-only measured DEM. TVA's 512-block realms remain enabled.")
+        print("USGS Big Sur v2 is the read-only measured DEM. RealScale's 512-block dimension layouts remain enabled.")
         print("Optional Lithostitched terrain blending: --lithostitched-blend (merged families).")
         print("Deep geology suite: --lithostitched-geology (nonzero merged blend required).")
         return 0
