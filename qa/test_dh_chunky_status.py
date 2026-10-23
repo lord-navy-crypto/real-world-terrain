@@ -23,12 +23,12 @@ class BridgeStatusTests(unittest.TestCase):
         self.assertIn('GPU_LOD=unverified',src)
         self.assertIn('nativeBindsSinceLaunch=',src)
         self.assertNotIn('Minecraft.getInstance(',src)
-    def test_live_rcon_triggers_only_opted_in(self):
-        runner=(ROOT/"qa/neoforge/rcon_worldgen_smoke.py").read_text()
-        self.assertIn('REALSCALE_DH_CHUNKY_REQUIRE_STATUS',runner)
-        self.assertIn('rcon.send("dhchunkyguard status")',runner)
-        self.assertIn('REALSCALE_DH_CHUNKY_STATUS_COMMAND_OK',runner)
-        self.assertIn('rcon.send("dhchunkyguard advice")',runner)
+    def test_client_status_commands_do_not_mutate_scheduler(self):
+        source=(JAVA/"DhChunkyGuardMod.java").read_text()
+        self.assertIn('Commands.literal("status")',source)
+        self.assertIn('Commands.literal("advice")',source)
+        self.assertNotIn('Commands.literal("start")',source)
+        self.assertNotIn('Commands.literal("stop")',source)
     def test_exact_known_versions(self):
         toml=(ROOT/"dh-chunky-guard/src/main/resources/META-INF/neoforge.mods.toml").read_text()
         self.assertIn('version="0.3.0-experimental"',toml)
