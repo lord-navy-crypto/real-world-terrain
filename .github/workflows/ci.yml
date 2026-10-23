@@ -353,6 +353,13 @@ jobs:
           java -cp build/sky-candidate-prune org.realscale.neoforge.SkyIslandChunkCandidateSmoke
       - name: Verify Java/Python sky-island hash and five-island coordinate parity
         run: python3 -m unittest discover -s qa -p 'test_sky_island_fixture_parity.py' -v
+      - name: Compare boxed and primitive offshore ocean tier with exact climate probe visit parity
+        run: |
+          mkdir -p build/sky-ocean-primitive
+          javac -d build/sky-ocean-primitive \
+            neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
+            neoforge/src/test/java/org/realscale/neoforge/SkyOceanPrimitiveTierSmoke.java
+          java -cp build/sky-ocean-primitive org.realscale.neoforge.SkyOceanPrimitiveTierSmoke
       - name: Validate concentric offshore sky island geometry
         run: |
           mkdir -p build/tva-sky
