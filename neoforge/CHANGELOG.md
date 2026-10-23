@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.23 — 2026-10-23 — Grand Nether Column Mask AABB Reuse (Experimental)
+
+### Optimized
+- The Grand Nether density source builds an up-to-19-bit, per-X/Z cave candidate mask before computing expensive noise warp and 3D rooms/corridors. Until Test.23, every mask-cache miss recomputed up to 13 tunnels' endpoint min/max bounds and expansion radii, although Test.20 already stored exactly these tunnel AABBs inside its region-local `TubeSegment` descriptors.
+- Replace only the *horizontal candidate test* for eight neighbor corridors, four satellite branches and one interlayer shaft with comparisons against the stored `TubeSegment.minX/maxX/minZ/maxZ`. All hall candidate tests, bit ordering, region selection, near-cell boundary fallback and cached masks remain unchanged.
+- Retain the original `tubeCouldTouch(Hall,Hall,double,...)` equation verbatim for independent parity reference. No new per-column allocations, persistent world caches or per-voxel approximation.
+- All Nether dimensions, lava, bedrock, structures, seeded noise, cave topology, original block content, overworld biomes, DEM, aquifers, sky and ocean features remain unchanged.
+
+### Validation and release gate
+- Add `GrandNetherMaskAabbParitySmoke` (standalone Java 21) to independently reconstruct the full old 19-bit component mask for more than 19,000 negative/positive, empty, hall-adjacent and fractional-coordinate cases using the **pre-Test.23 Hall/endpoints/radius formula**, and compare each bit to the new cached-AABB mask.
+- Preserve all existing frozen Nether bit parity, continuous tunnels, four-worker region cache, 39k tube raw-double-bit, 100k+ seeded-warp column parity, full server/Anvil, multi-seed, far-chunk, sky, ocean, Nether and End CI suites.
+- Draft stacked on Test.22 PR #115. Green CI proves covered behavior equivalence, **not** a measured worldgen speed increase. Require same-seed/same-hardware fresh chunk Test.22-vs-Test.23 throughput, p95, GC and saved-block parity before promotion; reject if benefit is absent or memory regresses.
+- The stable `main` and optional separate DH–Chunky Guard are untouched.
+
 ## 2.0.0-preview.2-test.22 — 2026-10-23 — Cached Grand Overworld Cave-Column Broad-Phase Bounds (Experimental)
 
 ### Worldgen optimization
