@@ -63,11 +63,11 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
     }
     public Kind kind(){return kind;}
 
-    private static boolean sameChunk(BlockPos origin,BlockPos candidate){
-        // Arithmetic right-shift by 4 is exactly floorDiv(x,16) for all
-        // signed Minecraft block coordinates, including negative chunk edges.
-        return (origin.getX()>>4)==(candidate.getX()>>4)
-                && (origin.getZ()>>4)==(candidate.getZ()>>4);
+    private static boolean sameChunk(BlockPos origin,int x,int z){
+        // Check signed X/Z chunk boundaries BEFORE allocating a candidate.
+        // >>4 is exactly Math.floorDiv(value,16), even on negative edges.
+        return (origin.getX()>>4)==(x>>4)
+                && (origin.getZ()>>4)==(z>>4);
     }
     private static boolean naturalRock(BlockState s){
         return s.is(Blocks.STONE)||s.is(Blocks.DEEPSLATE)
@@ -81,18 +81,28 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
                 ||s.is(Blocks.CLAY)||s.is(Blocks.SAND);
     }
     private static boolean cavePocket(WorldGenLevel w,BlockPos p) {
-        return w.getBlockState(p).isAir()
-                && w.getBlockState(p.above()).isAir()
-                && w.getFluidState(p).isEmpty()
-                && w.getFluidState(p.above()).isEmpty()
-                && naturalRock(w.getBlockState(p.below()))
-                && w.getFluidState(p.below()).isEmpty();
+        // Keep the exact original short-circuit/read order while constructing
+        // each adjacent coordinate at most once. Many probes fail at the
+        // first air check, so do not create adjacent positions beforehand.
+        if(!w.getBlockState(p).isAir())return false;
+        BlockPos above=p.above();
+        if(!w.getBlockState(above).isAir())return false;
+        if(!w.getFluidState(p).isEmpty()
+                ||!w.getFluidState(above).isEmpty())return false;
+        BlockPos below=p.below();
+        return naturalRock(w.getBlockState(below))
+                && w.getFluidState(below).isEmpty();
     }
     private static boolean nearWater(WorldGenLevel w,BlockPos p) {
+        // One ephemeral probe instead of a new neighbor and below position
+        // for each of the four directions. Keep the same directional order,
+        // fluid read short-circuit and one-block-below depth.
+        final int x=p.getX(),y=p.getY(),z=p.getZ();
+        final BlockPos.MutableBlockPos neighbor=new BlockPos.MutableBlockPos();
         for(Direction d:Direction.Plane.HORIZONTAL) {
-            BlockPos n=p.relative(d);
-            if(w.getFluidState(n).is(FluidTags.WATER)
-                    ||w.getFluidState(n.below()).is(FluidTags.WATER))
+            int nx=x+d.getStepX(),nz=z+d.getStepZ();
+            if(w.getFluidState(neighbor.set(nx,y,nz)).is(FluidTags.WATER)
+                    ||w.getFluidState(neighbor.set(nx,y-1,nz)).is(FluidTags.WATER))
                 return true;
         }
         return false;
@@ -130,8 +140,11 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
             int dx=random.nextInt(MAX_RADIUS*2+1)-MAX_RADIUS;
             int dz=random.nextInt(MAX_RADIUS*2+1)-MAX_RADIUS;
             if(dx*dx+dz*dz>MAX_RADIUS*MAX_RADIUS)continue;
-            BlockPos p=anchor.offset(dx,0,dz);
-            if(!sameChunk(origin,p))continue;
+            final int x=anchor.getX()+dx,z=anchor.getZ()+dz;
+            // A cross-chunk attempt never reads the world or draws any
+            // additional random values: skip it before allocating BlockPos.
+            if(!sameChunk(origin,x,z))continue;
+            BlockPos p=new BlockPos(x,anchor.getY(),z);
             // Do not overwrite bedrock, veins, existing plants or structures.
             if(!cavePocket(w,p))continue;
             BlockPos ground=p.below();
@@ -212,9 +225,8 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
         int changed=0;
         for(int attempt=0;attempt<18 && changed<7;attempt++){
             int dx=random.nextInt(11)-5, dz=random.nextInt(11)-5;
-            BlockPos column=origin.offset(dx,0,dz);
-            if(!sameChunk(origin,column))continue;
-            int x=column.getX(),z=column.getZ();
+            final int x=origin.getX()+dx,z=origin.getZ()+dz;
+            if(!sameChunk(origin,x,z))continue;
             int seabed=w.getHeight(Heightmap.Types.OCEAN_FLOOR_WG,x,z)-1;
             if(seabed<=w.getMinBuildHeight()+3
                     ||seabed>=seaLevel-10)continue;

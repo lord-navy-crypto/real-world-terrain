@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.11 — 2026-10-23 — Low-Allocation Cave and Marine Decoration (Experimental)
+
+### Performance
+- Avoid constructing temporary cave and marine `BlockPos` candidate objects for placement attempts outside the originating chunk. Candidate X/Z are compared against chunk bounds **before** creating world positions; the same Java signed-int arithmetic, radii, attempts and random draws are preserved.
+- Reuse the existing "above" and "below" cave-pocket locations when checking block and fluid states. Preserve the original short-circuit ordering: air at target and above, fluid emptiness, then natural support rock and dry floor.
+- Replace per-direction neighbor/below position allocations during cave spring water checks with one local mutable probe. Preserve the original four-direction enumeration and the standing-water / one-block-below checks.
+- These are allocation/memory-pressure reductions, not new biome types or terrain algorithms. No extra caches, background threads or default profiling.
+
+### Verification and release status
+- Added static and signed-integer parity regression coverage for negative/extreme block coordinates, early chunk rejection, cave-pocket read order, water-check semantics and random-draw placement.
+- Retain existing terrain, ecology, mountain height, underground ores, ocean floor and save-format behavior.
+- **No measured FPS/TPS or chunk-generation speedup is claimed**; real server replay and client A/B validation remain required before stable release.
+- The separate optional DH–Chunky Guard remains version `0.3.1-experimental`.
+
 ## 2.0.0-preview.2-test.10 — 2026-10-23 — Cave/Marine Worldgen Hot-Path Cleanup (Experimental)
 
 ### Performance improvements
