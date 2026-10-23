@@ -41,7 +41,7 @@ public final class ChunkyBridgeMetrics {
         boolean enabled = Boolean.parseBoolean(System.getProperty(
             "realscale.dhchunky.guard.enabled", "true"));
         return String.format(Locale.ROOT,
-            "DHChunkyGuard v0.3 enabled=%s probes=%d notReady=%d deferred=%d "
+            "DHChunkyGuard v0.3.1 enabled=%s probes=%d notReady=%d deferred=%d "
                 + "readySignals=%d nativeBindsSinceLaunch=%d avgProbeUs=%.1f maxProbeUs=%.1f "
                 + "GPU_LOD=unverified",
             enabled, checks, failedProbes.get(), deferredCallbacks.get(),
