@@ -46,7 +46,7 @@ public final class GrandOverworldCaveNetwork {
      * as tunnelStrength(), retained below as the independent reference.
      */
     private static final class TunnelGeometry {
-        final Hall a;
+        final Hall a,b;
         final Passage section;
         final double vx,vy,vz,len,horiz;
         final double minX,maxX,minZ,maxZ,minY,maxY;
@@ -59,6 +59,7 @@ public final class GrandOverworldCaveNetwork {
                 Hall tmp=a;a=b;b=tmp;
             }
             this.a=a;
+            this.b=b;
             this.section=section;
             double horizontalReach=section.radius()+17;
             double verticalReach=section.radius()*section.verticalScale()+16;
