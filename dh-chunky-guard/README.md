@@ -4,6 +4,10 @@ This independent NeoForge addon lives **in the same RealScale repository** at
 `dh-chunky-guard/`. It produces a **separate JAR**: do not bundle it in the
 RealScale terrain mod or force players to install DH and Chunky.
 
+### Version history
+
+See [CHANGELOG.md](CHANGELOG.md) for v0.1 → v0.2 → v0.3 changes, verified behavior and current limitations.
+
 ### Supported test combination
 - Minecraft 1.21.1 / Java 21 / NeoForge 21.1.x
 - Distant Horizons 3.3.3
