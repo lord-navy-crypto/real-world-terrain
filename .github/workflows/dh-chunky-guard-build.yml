@@ -1,10 +1,11 @@
 name: EXPERIMENT build isolated DH Chunky crash guard JAR
 on:
   push:
-    branches: [experiment/realscale-dh-chunky-iris-sodium-bridge-20261023]
+    branches: [experiment/dh-chunky-bridge-status-v03-20261023]
     paths:
       - "dh-chunky-guard/**"
       - "qa/test_dh_chunky_patch.py"
+      - "qa/test_dh_chunky_status.py"
       - ".github/workflows/dh-chunky-guard-build.yml"
   pull_request:
     paths:
@@ -32,6 +33,7 @@ jobs:
           python3 -m unittest discover -s qa -p test_dh_chunky_runtime.py -v
           python3 -m unittest discover -s qa -p test_realscale_dh_client_safety.py -v
           python3 -m unittest discover -s qa -p test_lod_stack_audit.py -v
+          python3 -m unittest discover -s qa -p test_dh_chunky_status.py -v
       - name: Build tiny self-contained NeoForge patch JAR
         working-directory: dh-chunky-guard
         run: gradle --no-daemon --stacktrace build
@@ -47,6 +49,7 @@ jobs:
             assert "META-INF/neoforge.mods.toml" in names
             assert "dhchunkyguard.mixins.json" in names
             assert "org/realscale/compat/dhchunky/mixin/ChunkyLifecycleSetupMixin.class" in names
+            assert "org/realscale/compat/dhchunky/ChunkyBridgeMetrics.class" in names
             assert not any(x.startswith("org/popcraft/") or x.startswith("com/seibel/") for x in names)
           print("DH_CHUNKY_GUARD_PATCH_JAR_VALID",jars[0])
           PY
@@ -54,5 +57,5 @@ jobs:
         if: success()
         with:
           name: RealScale-DH-Chunky-Guard-EXPERIMENTAL-NeoForge-1.21.1
-          path: dh-chunky-guard/build/libs/RealScale-DH-Chunky-Guard-NeoForge-1.21.1-0.2.0-experimental.jar
+          path: dh-chunky-guard/build/libs/RealScale-DH-Chunky-Guard-NeoForge-1.21.1-0.3.0-experimental.jar
           if-no-files-found: error
