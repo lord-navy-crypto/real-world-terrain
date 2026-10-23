@@ -30,6 +30,7 @@ jobs:
         run: python3 -m unittest discover -s qa -p test_dh_chunky_patch.py -v
           python3 -m unittest discover -s qa -p test_dh_chunky_runtime.py -v
           python3 -m unittest discover -s qa -p test_realscale_dh_client_safety.py -v
+          python3 -m unittest discover -s qa -p test_lod_stack_audit.py -v
       - name: Build tiny self-contained NeoForge patch JAR
         working-directory: dh-chunky-guard
         run: gradle --no-daemon --stacktrace build
