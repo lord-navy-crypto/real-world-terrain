@@ -210,8 +210,12 @@ public final class GrandNetherCaveNetwork {
      */
     private static final class TubeSegment {
         final Hall a, b;
-        final double radius, vx, vy, vz, lenSq;
+        final double radius, radiusSquared, vx, vy, vz, lenSq;
         final double minX, maxX, minY, maxY, minZ, maxZ;
+        // Original fixed-seed floorMod and axis selection are identical
+        // for every voxel traversing this segment. Calculate once per
+        // cave-cell graph, without changing the floating-point curve order.
+        final int bendSeed1, bendSeed2, bendAxis;
         final long key;
         TubeSegment(Hall first, Hall second, double radius, long key) {
             Hall a=first,b=second;
@@ -231,6 +235,11 @@ public final class GrandNetherCaveNetwork {
             this.vy=b.y()-a.y();
             this.vz=b.z()-a.z();
             this.lenSq=vx*vx+vy*vy+vz*vz;
+            this.radiusSquared=radius*radius;
+            this.bendSeed1=(int)Math.floorMod(key,9L)-4;
+            this.bendSeed2=(int)Math.floorMod(key >>> 24,7L)-3;
+            this.bendAxis=Math.abs(vx)>=Math.abs(vz) && Math.abs(vx)>=Math.abs(vy)
+                    ? 0 : Math.abs(vz)>=Math.abs(vy) ? 1 : 2;
         }
     }
 
@@ -247,18 +256,18 @@ public final class GrandNetherCaveNetwork {
         if (t <= 0 || t >= 1) return 0;
 
         double curve=4.0*t*(1.0-t);
-        double bend1=((int)Math.floorMod(segment.key,9L)-4)*curve;
-        double bend2=((int)Math.floorMod(segment.key >>> 24,7L)-3)*curve;
+        double bend1=segment.bendSeed1*curve;
+        double bend2=segment.bendSeed2*curve;
         double cx=a.x()+t*vx, cy=a.y()+t*vy, cz=a.z()+t*vz;
-        if (Math.abs(vx)>=Math.abs(vz) && Math.abs(vx)>=Math.abs(vy)) {
+        if (segment.bendAxis==0) {
             cy+=bend2; cz+=bend1;
-        } else if (Math.abs(vz)>=Math.abs(vy)) {
+        } else if (segment.bendAxis==1) {
             cx+=bend1; cy+=bend2;
         } else {
             cx+=bend1*0.5; cz+=bend2*0.5;
         }
         double dx=x-cx, dy=y-cy, dz=z-cz;
-        double ratio=(dx*dx+dy*dy+dz*dz)/(segment.radius*segment.radius);
+        double ratio=(dx*dx+dy*dy+dz*dz)/segment.radiusSquared;
         return ratio>=1 ? 0 : 1-ratio;
     }
 
