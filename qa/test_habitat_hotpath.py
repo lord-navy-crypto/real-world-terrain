@@ -38,7 +38,7 @@ class HabitatHotPathTests(unittest.TestCase):
         for token in (
             'TVAWorldGuard.hasRealScaleGenerator(context)',
             'w.getLevel().dimension().equals(Level.OVERWORLD)',
-            'sameChunk(origin,p)', 'sameChunk(origin,column)',
+            'sameChunk(origin,x,z)', 'final int x=origin.getX()+dx,z=origin.getZ()+dz',
             'surface-ROOF_DEPTH',
             'GrandOverworldCaveNetwork.MAX_Y',
             'Heightmap.Types.OCEAN_FLOOR_WG',
