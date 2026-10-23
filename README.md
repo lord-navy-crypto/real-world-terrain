@@ -1,6 +1,16 @@
 # RealScale Terrain
 
-Minecraft 1.21.1 / NeoForge / Java 21 的真实尺度地形实验项目。当前可安装成果为 **v1.1 测试候选版**：USGS Big Sur 高程覆盖层 + 七个程序化世界预设。地表单位为 1 方块 = 1 米；这不意味着原始观测分辨率为 1 米。
+Minecraft 1.21.1 / NeoForge / Java 21 的真实尺度地形实验项目。仓库保留 **v1.1 历史测试候选版**：USGS Big Sur 高程覆盖层 + 七个程序化世界预设。地表单位为 1 方块 = 1 米；这不意味着原始观测分辨率为 1 米。
+
+## 当前实验预览与兼容组件（2026-10-23）
+
+最新实验性主模组采用 **RealScale 2.0.0-preview.2-test.6** 命名，下载 JAR 的前缀为 **RealScale-NeoForge-1.21.1**。游戏菜单提供 RealScale 自然地貌、高山、峡谷、实测地形、自然奇观及洞穴海洋生态六项命名。原有世界注册 ID 在技术层保留作**存档兼容别名**，创建新世界不再显示旧的电影梗名称。对已有世界，请先备份再测试新版本。
+
+RealScale 与 Distant Horizons / Chunky 的独立兼容补丁统一在本仓库的 [`dh-chunky-guard/`](dh-chunky-guard/) 管理。它拥有**单独的 Java / Mixin / Gradle 和 JAR 构建**，不是 RealScale 主模组必需依赖；需要使用精确匹配的 DH 3.3.3、Chunky 1.4.23、NeoForge 1.21.1。不要把两款 RealScale 主模组 JAR 同时安装，也不要同时安装两个 Guard 版本。
+
+详细说明请见 [品牌命名与旧世界迁移约定](docs/REAL_SCALE_BRANDING_COMPATIBILITY.md)。实验性优化尚未完成全部旧存档等价性及 Mac 光影实测，**不应以 Stable 名义发布**。
+
+主模组各版本更新请参阅 [RealScale 更新日志](neoforge/CHANGELOG.md)。DH–Chunky 独立补丁的更新记录请参阅 [兼容补丁更新日志](dh-chunky-guard/CHANGELOG.md)。
 
 ## 当前交付与边界
 

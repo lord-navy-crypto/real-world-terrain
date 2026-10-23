@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TVA core families must use independent interpolated density graphs, while
+"""RealScale core families must use independent interpolated density graphs, while
 every legacy generator registry remains available unchanged.
 """
 import json
@@ -49,12 +49,12 @@ class CoreSmoothing(unittest.TestCase):
     self.assertTrue((R/"noise_settings"/(legacy+".json")).is_file())
     self.assertTrue((R/"density_function"/legacy/"height_signal.json").is_file())
  def test_four_curated_families_and_separate_combined_opt_in(self):
-  stable=["realscale:"+x for x,_,_ in FAMILIES]+["realscale:tva_measured_three_realms"]
-  optional="realscale:tva_wonders_invasion_three_realms"
+  stable=["realscale:"+x for x in ("natural_three_realms","alpine_three_realms","canyon_three_realms","measured_three_realms")]
+  optional="realscale:wonders_invasion_three_realms"
   # Only this separately opt-in TEST build exposes the new cave ecosystem.
   # Production still has the original 5-item menu and all stable presets.
   trial=(R/"world_preset/tva_cave_ocean_ecology_test_three_realms.json").is_file()
-  cave=["realscale:tva_cave_ocean_ecology_test_three_realms"] if trial else []
+  cave=["realscale:cave_ocean_ecology_three_realms"] if trial else []
   for tag in ("normal","extended"):
    path=ROOT/"minecraft/tags/worldgen/world_preset"/(tag+".json")
    self.assertEqual(read(path)["values"],stable+[optional]+cave)

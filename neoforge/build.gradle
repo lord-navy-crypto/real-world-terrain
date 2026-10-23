@@ -2,9 +2,9 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.146'
 }
-version='2.0.0-tva-preview.2-test.5'
+version='2.0.0-preview.2-test.6'
 group='org.realscale'
-base { archivesName = 'RealScale-TVA-Ultimate-NeoForge-1.21.1' }
+base { archivesName = 'RealScale-NeoForge-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 neoForge {
     version = '21.1.249'
@@ -31,7 +31,7 @@ neoForge {
 // Dedicated original v1.3 Terrain Lab dependencies. YACL is CLIENT-ONLY in
 // metadata; the server must remain playable without any YACL installation.
 // Lithostitched is used only when the player explicitly exports a Lab profile
-// that contains its codecs, never by the canonical TVA world presets.
+// that contains its codecs, never by the legacy world-presets (including saved-world compatibility IDs).
 repositories {
     // Use YACL's author-maintained Maven rather than a brittle Modrinth
     // short-ID/version artifact endpoint. This is the exact 1.21.1 NeoForge

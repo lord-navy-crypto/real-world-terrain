@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Actual cross-branch regression: former YACL Lab exports must inherit TVA's
+"""Actual cross-branch regression: former YACL Lab exports must inherit RealScale's
 four stable choices plus an opt-in fifth, and three enlarged dimensions without old-ID changes.
 """
 import importlib.util
@@ -19,20 +19,20 @@ TVA={
  "alpine":"tva_alpine_three_realms",
  "canyon":"tva_canyon_three_realms",
 }
-CORE=("realscale:tva_sacred_timeline_three_realms",
-      "realscale:tva_alpine_three_realms",
-      "realscale:tva_canyon_three_realms",
-      "realscale:tva_measured_three_realms")
+CORE=("realscale:natural_three_realms",
+      "realscale:alpine_three_realms",
+      "realscale:canyon_three_realms",
+      "realscale:measured_three_realms")
 # The independently selected cave-biome variant exists only in the
 # integration TEST branch; stable release keeps its original 5-item menu.
 CAVE_TEST=(SOURCES/"data/realscale/worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json").exists()
-MENU=CORE+("realscale:tva_wonders_invasion_three_realms",)+(
-    ("realscale:tva_cave_ocean_ecology_test_three_realms",) if CAVE_TEST else ())
+MENU=CORE+("realscale:wonders_invasion_three_realms",)+(
+    ("realscale:cave_ocean_ecology_three_realms",) if CAVE_TEST else ())
 
 def read(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
-class TVARecoveredTerrainLab(unittest.TestCase):
+class RealScaleRecoveredTerrainLab(unittest.TestCase):
     def setUp(self):
         temp=tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)

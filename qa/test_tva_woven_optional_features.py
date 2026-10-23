@@ -64,10 +64,10 @@ class WovenOptionalFeaturesTest(unittest.TestCase):
             with self.subTest(tag=tag_name):
                 entry = load(TAGS/(tag_name+".json"))
                 self.assertFalse(entry["replace"])
-                self.assertEqual(entry["values"][0], "realscale:"+CANONICAL)
-                self.assertEqual(entry["values"].count("realscale:"+COMBINED), 1)
-                for required in ("tva_alpine_three_realms", "tva_canyon_three_realms",
-                                 "tva_measured_three_realms"):
+                self.assertEqual(entry["values"][0], "realscale:natural_three_realms")
+                self.assertEqual(entry["values"].count("realscale:wonders_invasion_three_realms"), 1)
+                for required in ("alpine_three_realms", "canyon_three_realms",
+                                 "measured_three_realms"):
                     self.assertIn("realscale:"+required,entry["values"])
 
     def test_nested_java_guards_activate_both_feature_families(self):

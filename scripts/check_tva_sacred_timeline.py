@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static TVA integrated preset contract, not an actual saved-world proof."""
+"""Static RealScale integrated preset contract, not an actual saved-world proof."""
 import json
 from pathlib import Path
 R=Path(__file__).resolve().parents[1]
@@ -18,13 +18,13 @@ FAMILIES={
  "tva_canyon_three_realms":"realscale:tva_canyon_smoothed",
  "tva_measured_three_realms":"realscale:usgs_big_sur_v2",
 }
-expected=["realscale:"+k for k in FAMILIES]
+expected=["realscale:"+k for k in ("natural_three_realms","alpine_three_realms","canyon_three_realms","measured_three_realms")]
 # Four canonical presets always preserve their IDs and source configs.
 # This TEST build additionally lists two independently selected experiments:
 # original Wonders/invasion and new cave biome ecology. Stable main retains
 # the historical five-item menu without the experimental cave source.
-opt_in="realscale:tva_wonders_invasion_three_realms"
-cave_trial="realscale:tva_cave_ocean_ecology_test_three_realms"
+opt_in="realscale:wonders_invasion_three_realms"
+cave_trial="realscale:cave_ocean_ecology_three_realms"
 cave_trial_available=(D/"worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json").is_file()
 menu=expected+[opt_in]+([cave_trial] if cave_trial_available else [])
 for name in ("normal","extended"):
@@ -74,16 +74,16 @@ build=(R/"neoforge/build.gradle").read_text()
 meta=(R/"neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text()
 # Production remains the original preview. A separately versioned TEST
 # branch deliberately changes its display name and version while retaining
-# the exact same mod ID, dependencies, canonical TVA menu and dimensions.
+# the same mod ID, dependencies, RealScale menu and dimensions.
 import re
 gradle_version=re.search(r"(?m)^version='([^']+)'",build)
 mod_version=re.search(r'(?m)^version="([^"]+)"',meta)
 assert gradle_version and mod_version
 version=gradle_version.group(1)
 assert version==mod_version.group(1),("Gradle/NeoForge version mismatch",version)
-assert "RealScale-TVA-Ultimate" in build
-if version.startswith("2.0.0-tva-preview.2-test."):
-    assert 'displayName="RealScale TVA - Integrated Optimization TEST"' in meta
+assert "RealScale-NeoForge-1.21.1" in build
+if version.startswith("2.0.0-preview.2-test."):
+    assert 'displayName="RealScale — Terrain, Caves & Oceans (Experimental)"' in meta
 else:
     assert version=="2.0.0-tva-preview.1"
     assert "Sacred Timeline Ultimate" in meta
@@ -92,4 +92,4 @@ for p in (D/"neoforge/biome_modifier").glob("*.json"):
     if m.get("type")!="neoforge:add_features":continue
     features=m["features"] if isinstance(m["features"],list) else [m["features"]]
     assert "realscale:ocean_sediment_stones" not in features,p
-print("TVA_STATIC_PASS: FOUR unchanged canonical families + one opt-in woven world, legacy-safe IDs, 60 ecotones, APES, Grand Nether/End and skylands")
+print("REALSCALE_STATIC_PASS: FOUR unchanged canonical families + one opt-in woven world, legacy-safe IDs, 60 ecotones, APES, Grand Nether/End and skylands")

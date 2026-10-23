@@ -15,17 +15,17 @@ for name,want in checks.items():
  if name==modified_preset_tag:
   tag=json.loads((ROOT/name).read_text())
   expected=[
-   'realscale:tva_sacred_timeline_three_realms',
-   'realscale:tva_alpine_three_realms',
-   'realscale:tva_canyon_three_realms',
-   'realscale:tva_measured_three_realms',
-   'realscale:tva_wonders_invasion_three_realms']
+   'realscale:natural_three_realms',
+   'realscale:alpine_three_realms',
+   'realscale:canyon_three_realms',
+   'realscale:measured_three_realms',
+   'realscale:wonders_invasion_three_realms']
   trial=(ROOT/'neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json')
   if trial.is_file():
-   expected.append('realscale:tva_cave_ocean_ecology_test_three_realms')
+   expected.append('realscale:cave_ocean_ecology_three_realms')
   assert tag.get('values',[])==expected,(name,tag.get('values'))
 
-  print('INTENTIONAL MODIFICATION: four curated TVA families plus opt-in woven features')
+  print('INTENTIONAL MODIFICATION: four curated RealScale families plus opt-in woven features')
   continue
  if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):
   # Preserve the exact historical text for every legacy ID while allowing
@@ -35,20 +35,20 @@ for name,want in checks.items():
    old=json.loads(oldjar.read(rel))
   new=json.loads((ROOT/name).read_text())
   assert all(new.get(key)==value for key,value in old.items()),name
-  for preset in ('tva_sacred_timeline_three_realms','tva_alpine_three_realms',
-                 'tva_canyon_three_realms','tva_measured_three_realms'):
+  for preset in ('natural_three_realms','alpine_three_realms',
+                 'canyon_three_realms','measured_three_realms'):
    assert new.get('generator.realscale.'+preset), (name,preset)
-  print('INTENTIONAL MODIFICATION: additive TVA labels, historical labels unchanged')
+  print('INTENTIONAL MODIFICATION: additive RealScale labels, historical labels unchanged')
   continue
  if name=='neoforge/src/main/resources/META-INF/neoforge.mods.toml':
   descriptor=(ROOT/name).read_text()
   for required in ('modLoader="javafml"','modId="realscale"',
-                   'version="2.0.0-tva-preview.2-test.5"',
+                   'version="2.0.0-preview.2-test.6"',
                    'versionRange="[21.1.0,)"',
                    'versionRange="[1.21.1,1.21.2)"',
                    'modId="yet_another_config_lib_v3"'):
    assert required in descriptor,(name,required)
-  print('INTENTIONAL MODIFICATION: TVA preview metadata with intact mod/dependency IDs')
+  print('INTENTIONAL MODIFICATION: RealScale preview metadata with intact mod/dependency IDs')
   continue
  if name==modified_density:
   source=(ROOT/name).read_text()

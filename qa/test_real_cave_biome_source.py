@@ -91,7 +91,7 @@ class RealCaveBiomeTests(unittest.TestCase):
             self.assertNotIn("cave_depth_habitats",json.dumps(p))
         menu=load(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
         self.assertEqual(menu["values"][-1],
-                         "realscale:tva_cave_ocean_ecology_test_three_realms")
+                         "realscale:cave_ocean_ecology_three_realms")
         self.assertEqual(len(menu["values"]),6)
 
     def test_warm_reef_has_waterlogged_coral_and_temperate_seagrass(self):
