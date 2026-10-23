@@ -18,8 +18,8 @@ class HabitatHotPathTests(unittest.TestCase):
             for y in edge:
                 self.assertEqual((x>>4)==(y>>4),
                                  (x//16)==(y//16),(x,y))
-        self.assertIn('(origin.getX()>>4)==(candidate.getX()>>4)',SOURCE)
-        self.assertIn('(origin.getZ()>>4)==(candidate.getZ()>>4)',SOURCE)
+        self.assertIn('(origin.getX()>>4)==(x>>4)',SOURCE)
+        self.assertIn('(origin.getZ()>>4)==(z>>4)',SOURCE)
 
     def test_cave_probe_reuses_mutable_position_without_changing_scan(self):
         self.assertIn('final BlockPos.MutableBlockPos probe=new BlockPos.MutableBlockPos();',SOURCE)
