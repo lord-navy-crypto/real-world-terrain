@@ -34,7 +34,12 @@ class EcotoneContextReuseTests(unittest.TestCase):
         self.assertIn("if (distanceSquared >= closestDistanceSquared) break;",s)
         self.assertIn("if (current.equals(next)) continue;",s)
         self.assertIn("Rule rule = findPair(current, next);",s)
-        self.assertIn("if (rule != null && EcotoneMath.withinRadialBand(",s)
+        # The optimized ray search uses an already-computed squared
+        # distance for its width gate. The Java trace parity smoke verifies
+        # equivalence to the original EcotoneMath.withinRadialBand call.
+        self.assertIn("int distanceSquared = RAY_DISTANCES.squared(heading, step);",s)
+        self.assertIn("if (rule != null && EcotoneRayTable.withinBand(",s)
+        self.assertIn("distanceSquared, rule.widthBlocks()))",s)
         self.assertIn("if (nearest == null",s) if False else None
         self.assertIn("return nearest == null ? original : transitionBiomes.get(nearest.target());",s)
         self.assertEqual(s.count("cache.prepare(sampler);"),1)
