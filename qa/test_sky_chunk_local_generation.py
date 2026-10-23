@@ -11,6 +11,9 @@ class SkyLocalChunkGeneration(unittest.TestCase):
         self.assertIn("for (int gx=-1;gx<=1;gx++)",source)
         self.assertIn("for(int gz=-1;gz<=1;gz++)",source)
         self.assertIn("placeIsland(world,island,chunkX,chunkZ)",source)
+        self.assertIn("if (!SkyIslandLayout.mayIntersectChunk(base,chunkX,chunkZ))",source)
+        self.assertLess(source.index("SkyIslandLayout.mayIntersectChunk(base,chunkX,chunkZ)"),
+                        source.index("SkyIslandLayout.satellite(base,slot)"))
         self.assertIn("int referenceX=chunkX*16+8;",source)
         self.assertIn("int referenceZ=chunkZ*16+8;",source)
         self.assertNotIn("origin.getX()+gx*SkyIslandLayout.GRID",source)

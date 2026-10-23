@@ -71,6 +71,35 @@ public final class SkyIslandLayout {
                 base.topY()+(int)Math.floorMod(hash,7L)-3,
                 7+(int)Math.floorMod(hash>>>27,5L));
     }
+    /**
+     * Cheap conservative filter for a whole 16x16 decorating chunk.
+     * The base island extends <=14 blocks; four satellites are at most
+     * 80+11=91 blocks away on either axis. MAX_SITE_REACH (94) covers
+     * every original candidate, including the inclusive chunk edges.
+     *
+     * Near Java-int extremes, preserve the original enumeration instead
+     * of risking changes from int overflow in legacy AABB expressions.
+     * This filter only skips entire groups with no intersecting islands:
+     * it never changes geometry, random calls or placement ordering.
+     */
+    public static boolean mayIntersectChunk(Site base,int chunkX,int chunkZ) {
+        final long minX=(long)chunkX*16L, minZ=(long)chunkZ*16L;
+        final long maxX=minX+15L, maxZ=minZ+15L;
+        final long guard=2L*MAX_SITE_REACH;
+        if ((long)base.x() <= (long)Integer.MIN_VALUE+guard
+                || (long)base.x() >= (long)Integer.MAX_VALUE-guard
+                || (long)base.z() <= (long)Integer.MIN_VALUE+guard
+                || (long)base.z() >= (long)Integer.MAX_VALUE-guard
+                || minX <= (long)Integer.MIN_VALUE+guard
+                || maxX >= (long)Integer.MAX_VALUE-guard
+                || minZ <= (long)Integer.MIN_VALUE+guard
+                || maxZ >= (long)Integer.MAX_VALUE-guard)
+            return true;
+        return (long)base.x()+MAX_SITE_REACH>=minX
+                && (long)base.x()-MAX_SITE_REACH<=maxX
+                && (long)base.z()+MAX_SITE_REACH>=minZ
+                && (long)base.z()-MAX_SITE_REACH<=maxZ;
+    }
     /** 0 absent, 1 sparse, 2 a three-island group, 3 a five-island cluster.
      * Returns only a *sampled lower bound* on coast isolation, NOT an exact
      * shortest distance to every land block. The first failed ring stops

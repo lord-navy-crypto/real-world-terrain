@@ -53,6 +53,10 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
             SkyIslandLayout.Site base=SkyIslandLayout.at(
                 referenceX+gx*SkyIslandLayout.GRID,
                 referenceZ+gz*SkyIslandLayout.GRID);
+            // Avoid five satellite hashes/objects for a group whose entire
+            // conservative footprint lies outside this decorating chunk.
+            if (!SkyIslandLayout.mayIntersectChunk(base,chunkX,chunkZ))
+                continue;
             for (int slot=0;slot<SkyIslandLayout.SLOTS;slot++) {
                 SkyIslandLayout.Site island=SkyIslandLayout.satellite(base,slot);
                 int r=island.radius();
