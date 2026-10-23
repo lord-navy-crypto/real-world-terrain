@@ -92,6 +92,13 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
         int maxDx=Math.min(r,chunkX*16+15-site.x());
         int minDz=Math.max(-r,chunkZ*16-site.z());
         int maxDz=Math.min(r,chunkZ*16+15-site.z());
+        // These preflight lookups never escape WorldGenLevel or schedule
+        // callbacks. Reuse one mutable coordinate for repeated block/fluid
+        // reads (potentially thousands per intersecting island) instead of
+        // allocating an immutable BlockPos for every sampled height.
+        // Keep immutable BlockPos writes below unchanged for conservative
+        // placement semantics and exact saved-world parity.
+        final BlockPos.MutableBlockPos validationPos = new BlockPos.MutableBlockPos();
         for (int dx=minDx; dx<=maxDx; dx++) for (int dz=minDz; dz<=maxDz; dz++) {
             double ratio = (double)(dx * dx + dz * dz) / (r * r);
             if (ratio > 1.0) continue;
@@ -100,25 +107,25 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
             int x = site.x() + dx, z = site.z() + dz;
             boolean clear=true;
             for (int y=top-thickness;y<=top;y++) {
-                BlockPos check=new BlockPos(x,y,z);
-                BlockState existing=world.getBlockState(check);
+                validationPos.set(x,y,z);
+                BlockState existing=world.getBlockState(validationPos);
                 // Complete partially generated islands without overwriting
                 // anything other than our own known stone/soil palette.
                 if (!existing.isAir() && !isIslandMaterial(existing)) {
                     clear=false;
                     break;
                 }
-                if (!world.getFluidState(check).isEmpty()) {
+                if (!world.getFluidState(validationPos).isEmpty()) {
                     clear=false;
                     break;
                 }
             }
-            BlockPos above=new BlockPos(x,top+1,z);
-            BlockState overhead=world.getBlockState(above);
+            validationPos.set(x,top+1,z);
+            BlockState overhead=world.getBlockState(validationPos);
             // Existing island beacons and flowers are legitimate; all other
             // solid obstacles prevent replacing their support columns.
             if (!overhead.isAir() && !isIslandDecoration(overhead)) clear=false;
-            if (!world.getFluidState(above).isEmpty()) clear=false;
+            if (!world.getFluidState(validationPos).isEmpty()) clear=false;
             if (!clear) continue;
             for (int y = top - thickness; y <= top; ++y) {
                 int depth = top - y;
@@ -143,6 +150,9 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
                     world.setBlock(flower, plant, 2);
             }
         }
+        // An island that placed no blocks cannot place a beacon. Do not
+        // construct beacon/neighbor coordinates for the common rejected site.
+        if (!placed) return false;
         // A glowing violet beacon makes the sky island recognizably fictional.
         BlockPos beacon = new BlockPos(site.x(), surface(site, 0, 0, 0) + 1, site.z());
         if (placed && Math.floorDiv(beacon.getX(),16)==chunkX

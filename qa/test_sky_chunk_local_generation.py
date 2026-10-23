@@ -14,9 +14,15 @@ class SkyLocalChunkGeneration(unittest.TestCase):
         self.assertIn("int referenceX=chunkX*16+8;",source)
         self.assertIn("int referenceZ=chunkZ*16+8;",source)
         self.assertNotIn("origin.getX()+gx*SkyIslandLayout.GRID",source)
-        self.assertEqual(source.count("Math.floorDiv(site.x()+dx,16)!=chunkX"),1)
-        self.assertEqual(source.count("Math.floorDiv(site.z()+dz,16)!=chunkZ"),1)
-        self.assertEqual(source.count("for (int dx = -r; dx <= r; dx++)"),1)
+        # Candidate ranges are already clipped to the decorating chunk;
+        # no out-of-chunk candidate should be inspected.
+        self.assertIn("int minDx=Math.max(-r,chunkX*16-site.x());",source)
+        self.assertIn("int maxDx=Math.min(r,chunkX*16+15-site.x());",source)
+        self.assertIn("int minDz=Math.max(-r,chunkZ*16-site.z());",source)
+        self.assertIn("int maxDz=Math.min(r,chunkZ*16+15-site.z());",source)
+        self.assertIn("for (int dx=minDx; dx<=maxDx; dx++)",source)
+        self.assertIn("for (int dz=minDz; dz<=maxDz; dz++)",source)
+        self.assertNotIn("for (int dx = -r; dx <= r; dx++)",source)
         self.assertIn("world.setBlock(new BlockPos(x, y, z), state, 2)",source)
         self.assertIn("if (!clear) continue;",source)
         self.assertIn("return placed;",source)
