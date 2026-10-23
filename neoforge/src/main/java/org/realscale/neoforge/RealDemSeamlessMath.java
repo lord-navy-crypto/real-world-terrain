@@ -16,20 +16,22 @@ final class RealDemSeamlessMath {
      * Bicubic DEM interpolation depends ONLY on X/Z. Avoid repeating four
      * spline evaluations for each of ~2096 vertical sample heights.
      *
-     * Fixed-size direct-mapped per-thread cache: no unbounded world state,
+     * Fixed-size two-way set associative per-thread cache: no unbounded world state,
      * no synchronization on multi-threaded worldgen, no seed dependence.
      * Hash collisions can only lower hit rate, not alter a computed value.
      */
-    // Jigsaw height probes touch many columns while repeatedly revisiting
-    // existing ones. Keep a bounded 4096-slot working set (up from 256)
-    // plus a zero-hash last-column fast path. Cache miss always evaluates
-    // the EXACT original bicubic function, preserving DEM heights bitwise.
+    // Jigsaw height probes can alternate coordinates with identical hashes.
+    // Two-way buckets retain both sites WITHOUT increasing total capacity.
+    // Misses evaluate the EXACT original bicubic function and retain bitwise
+    // identity; eviction changes cache hit rate only.
     private static final int CACHE_SIZE = 4096;
+    private static final int HEIGHT_BUCKETS = CACHE_SIZE / 2;
     private static final class HeightCache {
         final int[] xs = new int[CACHE_SIZE];
         final int[] zs = new int[CACHE_SIZE];
         final double[] values = new double[CACHE_SIZE];
         final boolean[] valid = new boolean[CACHE_SIZE];
+        final byte[] victim = new byte[HEIGHT_BUCKETS];
         boolean lastValid;
         int lastX, lastZ;
         double lastValue;
@@ -37,17 +39,33 @@ final class RealDemSeamlessMath {
     private static final ThreadLocal<HeightCache> HEIGHT_CACHE =
         ThreadLocal.withInitial(HeightCache::new);
 
+    // Package-visible so parity tests can select real colliding columns.
+    static int heightBucket(int x,int z) {
+        int hash=x*0x9e3779b9 ^ Integer.rotateLeft(z*0x85ebca6b,13);
+        return (hash^(hash>>>16))&(HEIGHT_BUCKETS-1);
+    }
+
     static double cachedExtendedHeight(int x, int z) {
         HeightCache cache = HEIGHT_CACHE.get();
         if (cache.lastValid && cache.lastX==x && cache.lastZ==z)
             return cache.lastValue;
-        int hash=x*0x9e3779b9 ^ Integer.rotateLeft(z*0x85ebca6b,13);
-        int slot=(hash^(hash>>>16))&(CACHE_SIZE-1);
+        final int bucket=heightBucket(x,z);
+        final int first=bucket<<1,second=first+1;
         final double height;
-        if (cache.valid[slot] && cache.xs[slot]==x && cache.zs[slot]==z) {
-            height=cache.values[slot];
+        if (cache.valid[first] && cache.xs[first]==x && cache.zs[first]==z) {
+            height=cache.values[first];
+        } else if (cache.valid[second] && cache.xs[second]==x
+                && cache.zs[second]==z) {
+            height=cache.values[second];
         } else {
             height=extendedHeight(x,z);
+            final int slot;
+            if (!cache.valid[first]) slot=first;
+            else if (!cache.valid[second]) slot=second;
+            else {
+                slot=first+(cache.victim[bucket]&1);
+                cache.victim[bucket]^=1;
+            }
             cache.valid[slot]=true;
             cache.xs[slot]=x;
             cache.zs[slot]=z;
@@ -67,15 +85,17 @@ final class RealDemSeamlessMath {
      * - at or beyond the fade distance it is exactly 0.0;
      * - the ring retains the original weightOutside() arithmetic on misses.
      *
-     * Per-thread, fixed-size direct mapping is lock-free and bounded. Hash
+     * Per-thread, fixed-size two-way buckets are lock-free and bounded. Hash
      * collisions can affect performance but never alter terrain results.
      */
     private static final int WEIGHT_CACHE_SIZE = 1024;
+    private static final int WEIGHT_BUCKETS = WEIGHT_CACHE_SIZE / 2;
     private static final class WeightCache {
         final long[] coordinates = new long[WEIGHT_CACHE_SIZE];
         final int[] fadeWidths = new int[WEIGHT_CACHE_SIZE];
         final double[] weights = new double[WEIGHT_CACHE_SIZE];
         final boolean[] valid = new boolean[WEIGHT_CACHE_SIZE];
+        final byte[] victim = new byte[WEIGHT_BUCKETS];
         boolean lastValid;
         long lastCoordinate;
         int lastFadeWidth;
@@ -83,6 +103,14 @@ final class RealDemSeamlessMath {
     }
     private static final ThreadLocal<WeightCache> WEIGHT_CACHE =
             ThreadLocal.withInitial(WeightCache::new);
+
+    // Cache set membership has no effect on the original fade arithmetic.
+    static int weightBucket(int x,int z,int fadeMeters) {
+        int hash = x * 0x9e3779b9
+                ^ Integer.rotateLeft(z * 0x85ebca6b, 13)
+                ^ fadeMeters * 0xc2b2ae35;
+        return (hash ^ (hash >>> 16)) & (WEIGHT_BUCKETS - 1);
+    }
 
     static double cachedWeightOutside(int x, int z, int fadeMeters) {
         // The codec requires positive widths; fall back to the original
@@ -109,16 +137,24 @@ final class RealDemSeamlessMath {
                 && cache.lastFadeWidth == fadeMeters)
             return cache.lastWeight;
 
-        final int hash = x * 0x9e3779b9
-                ^ Integer.rotateLeft(z * 0x85ebca6b, 13)
-                ^ fadeMeters * 0xc2b2ae35;
-        final int slot = (hash ^ (hash >>> 16)) & (WEIGHT_CACHE_SIZE - 1);
+        final int bucket=weightBucket(x,z,fadeMeters);
+        final int first=bucket<<1,second=first+1;
         final double result;
-        if (cache.valid[slot] && cache.coordinates[slot] == coordinate
-                && cache.fadeWidths[slot] == fadeMeters) {
-            result = cache.weights[slot];
+        if (cache.valid[first] && cache.coordinates[first] == coordinate
+                && cache.fadeWidths[first] == fadeMeters) {
+            result = cache.weights[first];
+        } else if (cache.valid[second] && cache.coordinates[second] == coordinate
+                && cache.fadeWidths[second] == fadeMeters) {
+            result = cache.weights[second];
         } else {
             result = weightOutside(x, z, fadeMeters);
+            final int slot;
+            if (!cache.valid[first]) slot=first;
+            else if (!cache.valid[second]) slot=second;
+            else {
+                slot=first+(cache.victim[bucket]&1);
+                cache.victim[bucket]^=1;
+            }
             cache.coordinates[slot] = coordinate;
             cache.fadeWidths[slot] = fadeMeters;
             cache.weights[slot] = result;

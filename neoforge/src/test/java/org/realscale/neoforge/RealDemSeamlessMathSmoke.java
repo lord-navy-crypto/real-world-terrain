@@ -6,7 +6,96 @@ public final class RealDemSeamlessMathSmoke {
     private static void require(boolean ok, String message) {
         if (!ok) throw new AssertionError(message);
     }
-    public static void main(String[] args) {
+    /**
+     * Stronger than numerical parity alone: prove that two actual colliding
+     * coordinate keys occupy both ways of the same cache set and stay
+     * available during alternating reads, including in the fade ring.
+     * Reflection is confined to this standalone test, never production.
+     */
+    private static int[] findHeightCollision() {
+        java.util.Map<Integer,int[]> first=new java.util.HashMap<>();
+        for(int z=-2200;z<=2200;z+=13)
+            for(int x=-2200;x<=2200;x+=11) {
+                int bucket=RealDemSeamlessMath.heightBucket(x,z);
+                int[] a=first.putIfAbsent(bucket,new int[]{x,z});
+                if(a!=null && (a[0]!=x||a[1]!=z))
+                    return new int[]{a[0],a[1],x,z};
+            }
+        throw new AssertionError("Unable to find a height cache collision");
+    }
+
+    private static int[] findWeightCollision(RealDemTile tile,int fade) {
+        java.util.Map<Integer,int[]> first=new java.util.HashMap<>();
+        for(int z=tile.originZ()+16;z<tile.maxZ()-16;z+=7)
+            for(int x=tile.maxX()+8;x<tile.maxX()+fade-8;x+=7) {
+                int bucket=RealDemSeamlessMath.weightBucket(x,z,fade);
+                int[] a=first.putIfAbsent(bucket,new int[]{x,z});
+                if(a!=null && (a[0]!=x||a[1]!=z))
+                    return new int[]{a[0],a[1],x,z};
+            }
+        throw new AssertionError("Unable to find a fade cache collision");
+    }
+
+    private static Object privateField(Object target,String name) throws Exception {
+        java.lang.reflect.Field field=target.getClass().getDeclaredField(name);
+        field.setAccessible(true);
+        return field.get(target);
+    }
+
+    private static void checkCollisionRetained(RealDemTile tile) throws Exception {
+        int[] hp=findHeightCollision();
+        int hBucket=RealDemSeamlessMath.heightBucket(hp[0],hp[1]);
+        require(hBucket==RealDemSeamlessMath.heightBucket(hp[2],hp[3]),
+                "Height collision setup invalid");
+        for(int n=0;n<4;n++){
+            int x=hp[2*(n&1)], z=hp[2*(n&1)+1];
+            long expected=Double.doubleToRawLongBits(RealDemSeamlessMath.extendedHeight(x,z));
+            long actual=Double.doubleToRawLongBits(RealDemSeamlessMath.cachedExtendedHeight(x,z));
+            require(expected==actual,"Height collision changed USGS bits");
+        }
+        java.lang.reflect.Field hField=RealDemSeamlessMath.class.getDeclaredField("HEIGHT_CACHE");
+        hField.setAccessible(true);
+        Object hc=((ThreadLocal<?>)hField.get(null)).get();
+        int[] xs=(int[])privateField(hc,"xs"), zs=(int[])privateField(hc,"zs");
+        boolean[] valid=(boolean[])privateField(hc,"valid");
+        int hFirst=hBucket*2;
+        for(int n=0;n<2;n++){
+            int x=hp[n*2],z=hp[n*2+1];
+            require((valid[hFirst]&&xs[hFirst]==x&&zs[hFirst]==z)
+                    ||(valid[hFirst+1]&&xs[hFirst+1]==x&&zs[hFirst+1]==z),
+                    "Colliding height column was not retained in two-way set");
+        }
+
+        int fade=2048;
+        int[] wp=findWeightCollision(tile,fade);
+        int wBucket=RealDemSeamlessMath.weightBucket(wp[0],wp[1],fade);
+        require(wBucket==RealDemSeamlessMath.weightBucket(wp[2],wp[3],fade),
+                "Fade collision setup invalid");
+        for(int n=0;n<4;n++){
+            int x=wp[2*(n&1)],z=wp[2*(n&1)+1];
+            long expected=Double.doubleToRawLongBits(RealDemSeamlessMath.weightOutside(x,z,fade));
+            long actual=Double.doubleToRawLongBits(RealDemSeamlessMath.cachedWeightOutside(x,z,fade));
+            require(expected==actual,"Fade collision changed USGS bits");
+        }
+        java.lang.reflect.Field wField=RealDemSeamlessMath.class.getDeclaredField("WEIGHT_CACHE");
+        wField.setAccessible(true);
+        Object wc=((ThreadLocal<?>)wField.get(null)).get();
+        long[] coordinates=(long[])privateField(wc,"coordinates");
+        int[] fadeWidths=(int[])privateField(wc,"fadeWidths");
+        boolean[] flags=(boolean[])privateField(wc,"valid");
+        int wFirst=wBucket*2;
+        for(int n=0;n<2;n++){
+            int x=wp[n*2],z=wp[n*2+1];
+            long coordinate=((long)x<<32)|(z&0xffffffffL);
+            require((flags[wFirst]&&coordinates[wFirst]==coordinate
+                        &&fadeWidths[wFirst]==fade)
+                    ||(flags[wFirst+1]&&coordinates[wFirst+1]==coordinate
+                        &&fadeWidths[wFirst+1]==fade),
+                    "Colliding fade column was not retained in two-way set");
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
         RealDemTile source = RealDemTile.load();
         int n = 0;
         for (int x = source.originX(); x <= source.maxX(); x += 32) {
@@ -97,6 +186,7 @@ public final class RealDemSeamlessMathSmoke {
                         ==originalBits[k],
                         "DEM cache churn changed height at "+px[k]+","+pz[k]);
         }
-        System.out.println("TVA_USGS_V2_SMOKE_PASS: 256 measured elevations, four 2048m fade sides, cache fidelity");
+        checkCollisionRetained(source);
+        System.out.println("REALSCALE_USGS_V2_TWO_WAY_PARITY_PASS: 256 measured elevations, four fade sides, bitwise parity, height/fade collision retention");
     }
 }
