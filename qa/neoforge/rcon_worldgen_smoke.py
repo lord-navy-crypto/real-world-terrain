@@ -298,6 +298,25 @@ def main(root,expected_preset,profile):
                                      timeout_seconds=remaining)
                 print("QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS: PASS",
                       flush=True)
+                # Standalone DH-Chunky v0.3 command is ONLY required for the
+                # new triple-mod patched test arms. All other worldgen tests
+                # (including vanilla, no-addon, USGS, etc.) stay unaffected.
+                if os.getenv("REALSCALE_DH_CHUNKY_REQUIRE_STATUS")=="1":
+                    status=rcon.send("dhchunkyguard status")
+                    if not (
+                        "DHChunkyGuard v0.3" in status
+                        and "nativeBindsSinceLaunch=" in status
+                        and "probes=" in status
+                        and "GPU_LOD=unverified" in status
+                    ):
+                        raise RuntimeError("DH-Chunky bridge status missing or incomplete")
+                    # Report only the bounded status string, no credentials,
+                    # command arguments containing paths or player identifiers.
+                    print("REALSCALE_DH_CHUNKY_STATUS_COMMAND_OK:",status,
+                          flush=True)
+                    advice=rcon.send("dhchunkyguard advice")
+                    if not advice.startswith("DHChunkyGuard:"):
+                        raise RuntimeError("DH-Chunky status advice not available")
             elif profile=="distant_route":
                 results=[]
                 result_file=root/"build"/"rcon_distant_route_timing.json"
