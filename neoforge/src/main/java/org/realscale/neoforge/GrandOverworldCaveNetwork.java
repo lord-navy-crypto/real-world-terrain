@@ -640,6 +640,19 @@ public final class GrandOverworldCaveNetwork {
             && hiZ>=Math.min(a.z(),b.z())-reach;
     }
 
+    /**
+     * Test.22: broad-phase mask for one new X/Z column. Test.21 already
+     * constructed identical horizontal AABBs per seeded tunnel. Reusing them
+     * removes repeated reach/min/max math for up to 47 candidate components
+     * on every mask-cache miss. Inclusive comparisons and bit positions are
+     * identical to the frozen Hall+Passage overload below.
+     */
+    private static boolean tunnelCouldTouch(TunnelGeometry g,
+            double loX,double hiX,double loZ,double hiZ) {
+        return loX<=g.maxX && hiX>=g.minX
+            && loZ<=g.maxZ && hiZ>=g.minZ;
+    }
+
     private static long columnComponentMask(Cache c,
             double loX,double hiX,double loZ,double hiZ) {
         long mask=0L;
@@ -649,29 +662,28 @@ public final class GrandOverworldCaveNetwork {
             if(hallCouldTouch(center,loX,hiX,loZ,hiZ))
                 mask|=1L<<shift;
             for(int dir=0;dir<4;dir++) {
-                if(tunnelCouldTouch(center,c.halls[layer][dir+1],
-                        c.widths[layer][dir],loX,hiX,loZ,hiZ))
+                if(tunnelCouldTouch(c.corridorTubes[layer][dir],
+                        loX,hiX,loZ,hiZ))
                     mask|=1L<<(shift+1+dir);
             }
             for(int i=0;i<2;i++) {
                 Hall satellite=c.galleries[layer][i];
                 if(hallCouldTouch(satellite,loX,hiX,loZ,hiZ))
                     mask|=1L<<(shift+5+2*i);
-                if(tunnelCouldTouch(center,satellite,
-                        c.sideWidths[layer][i],loX,hiX,loZ,hiZ))
+                if(tunnelCouldTouch(c.sideTubes[layer][i],
+                        loX,hiX,loZ,hiZ))
                     mask|=1L<<(shift+6+2*i);
             }
         }
         for(int layer=0;layer<LAYERS-1;layer++) {
-            if(tunnelCouldTouch(c.halls[layer][0],c.halls[layer+1][0],
-                    c.shafts[layer],loX,hiX,loZ,hiZ))
+            if(tunnelCouldTouch(c.shaftTubes[layer],
+                    loX,hiX,loZ,hiZ))
                 mask|=1L<<(36+layer);
         }
         for(int tier=0;tier<2;tier++) for(int axis=0;axis<2;axis++)
             for(int group=0;group<2;group++) {
                 Hall a=c.arteryA[tier][axis][group];
-                if(a!=null && tunnelCouldTouch(a,c.arteryB[tier][axis][group],
-                        c.arteryWidth[tier][axis][group],
+                if(a!=null && tunnelCouldTouch(c.arteryTubes[tier][axis][group],
                         loX,hiX,loZ,hiZ))
                     mask|=1L<<(39+tier*4+axis*2+group);
             }
