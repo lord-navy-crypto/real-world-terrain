@@ -321,7 +321,7 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java \
             neoforge/src/test/java/org/realscale/neoforge/RealDemColumnCacheSmoke.java
           java -cp build/dem-cache-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemColumnCacheSmoke
-      - name: Regress USGS v2 DEM grid fidelity and exterior continuity
+      - name: Prove USGS v2 DEM exact-bit row sampler parity, grid fidelity and exterior continuity
         run: |
           mkdir -p build/usgs-v2-smoke
           javac -d build/usgs-v2-smoke \
