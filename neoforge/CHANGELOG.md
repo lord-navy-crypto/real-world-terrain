@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.20 — 2026-10-23 — Grand Nether Tunnel Constant Geometry Precomputation (Experimental)
+
+### Worldgen CPU path
+- In the Grand Nether density path, `tube()` previously re-canonicalized its hall endpoints and recomputed the conservative AABB, 3D direction vector and squared centerline length for **each carved density sample**. Those quantities depend on static per-256-block cave regions, not the sampled block.
+- Construct 13 immutable `TubeSegment` descriptors once per regenerated cave region: eight center-to-neighbor corridors, four center-to-gallery branches and one interlayer shaft. They are retained with Test.19's four per-worker cached region snapshots.
+- The per-voxel algorithm still performs exactly the original projection, uses division by the **identical squared length** (no inverse approximation), calculates bend phase with the original key, preserves the old operation order, and checks precisely the same inclusive bounds. The frozen `tubeBendKey`, component-mask logic, noise warp, source cell and 3D carving formula are unchanged.
+- Precomputation is deterministic for any world seed or region. The four-snapshot worker-local bound remains; no global world cache or main-thread synchronization, and no change to lava, structures, bedrock, cave topology, aquifers, overworld, biomes or files.
+
+### Verification and promotion policy
+- Add standalone Java 21 `GrandNetherTubeGeometrySmoke`: reconstruct the previous release's tube formula (including canonical order and operation precision) and assert raw double-bit parity for **39,000** synthetic positions across 25 regions, their 13 corridors and shafts.
+- Keep all existing independent Nether frozen-reference full-strength, >100k seeded-warp column-mask, region A/B/A cache retention, full NeoForge and real-server saved-world CI gates.
+- The experiment does not claim higher chunks/second until same-seed, same-hardware, cold-generation A/B measurements compare Test.20 against Test.19, including p95/GC and complete saved-block equality. If the extra 13 objects per region offset CPU savings, reject rather than promote.
+- Stable `main` remains untouched; DH–Chunky Guard remains separately distributed `0.3.1-experimental`.
+
 ## 2.0.0-preview.2-test.19 — 2026-10-23 — Bounded Multi-Region Grand Nether Cavern Graph Reuse (Experimental)
 
 ### Optimized

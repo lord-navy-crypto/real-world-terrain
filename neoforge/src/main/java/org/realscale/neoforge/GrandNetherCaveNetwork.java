@@ -36,6 +36,12 @@ public final class GrandNetherCaveNetwork {
         final long[][] corridorKeys = new long[2][4];
         final long[][] satelliteKeys = new long[2][2];
         long interlayerKey;
+        // The tunnel endpoints, axis bounds and squared centerline length
+        // depend solely on this region's generated hall graph. Keep these
+        // alongside the keys rather than recomputing them at every voxel.
+        final TubeSegment[][] corridors = new TubeSegment[2][4];
+        final TubeSegment[][] branches = new TubeSegment[2][2];
+        TubeSegment interlayer;
         void initialize(int x, int z) {
             if (gx == x && gz == z) return;
             gx = x; gz = z;
@@ -53,8 +59,15 @@ public final class GrandNetherCaveNetwork {
                     corridorKeys[layer][i] = tubeBendKey(halls[layer][0], halls[layer][i+1]);
                 for (int i = 0; i < 2; i++)
                     satelliteKeys[layer][i] = tubeBendKey(halls[layer][0], satellites[layer][i]);
+                for (int i = 0; i < 4; i++)
+                    corridors[layer][i] = new TubeSegment(
+                            halls[layer][0], halls[layer][i+1], 11, corridorKeys[layer][i]);
+                for (int i = 0; i < 2; i++)
+                    branches[layer][i] = new TubeSegment(
+                            halls[layer][0], satellites[layer][i], 7, satelliteKeys[layer][i]);
             }
             interlayerKey = tubeBendKey(halls[0][0], halls[1][0]);
+            interlayer = new TubeSegment(halls[0][0], halls[1][0], 10, interlayerKey);
         }
     }
     /**
@@ -189,47 +202,65 @@ public final class GrandNetherCaveNetwork {
         return mix(keyA ^ Long.rotateLeft(keyB,21));
     }
 
-    private static double tube(double x, double y, double z, Hall a, Hall b,
-                               double radius, long key) {
-        // Canonicalize the direction: each side of a chunk boundary must use
-        // exactly the same curved centerline, independent of which hall owns it.
-        if (a.x() > b.x() || (a.x() == b.x() && a.z() > b.z())
-                || (a.x() == b.x() && a.z() == b.z() && a.y() > b.y())) {
-            Hall temp = a; a = b; b = temp;
+    /**
+     * Immutable per-corridor geometry. All arithmetic is the original tube()
+     * arithmetic in the SAME order; crucially, retain division by lenSq
+     * instead of replacing it with multiplication by an approximate inverse.
+     * The segment is rebuilt only when CellCache.initialize changes regions.
+     */
+    private static final class TubeSegment {
+        final Hall a, b;
+        final double radius, vx, vy, vz, lenSq;
+        final double minX, maxX, minY, maxY, minZ, maxZ;
+        final long key;
+        TubeSegment(Hall first, Hall second, double radius, long key) {
+            Hall a=first,b=second;
+            if (a.x() > b.x() || (a.x() == b.x() && a.z() > b.z())
+                    || (a.x() == b.x() && a.z() == b.z() && a.y() > b.y())) {
+                Hall temp=a; a=b; b=temp;
+            }
+            this.a=a;this.b=b;this.radius=radius;this.key=key;
+            double reach=radius+4.0;
+            this.minX=Math.min(a.x(),b.x())-reach;
+            this.maxX=Math.max(a.x(),b.x())+reach;
+            this.minY=Math.min(a.y(),b.y())-reach;
+            this.maxY=Math.max(a.y(),b.y())+reach;
+            this.minZ=Math.min(a.z(),b.z())-reach;
+            this.maxZ=Math.max(a.z(),b.z())+reach;
+            this.vx=b.x()-a.x();
+            this.vy=b.y()-a.y();
+            this.vz=b.z()-a.z();
+            this.lenSq=vx*vx+vy*vy+vz*vz;
         }
-        // Bends never exceed four blocks, so expand the early rejection box.
-        double reach = radius + 4.0;
-        if (x < Math.min(a.x(),b.x())-reach
-                || x > Math.max(a.x(),b.x())+reach
-                || y < Math.min(a.y(),b.y())-reach
-                || y > Math.max(a.y(),b.y())+reach
-                || z < Math.min(a.z(),b.z())-reach
-                || z > Math.max(a.z(),b.z())+reach) return 0;
-        double vx=b.x()-a.x(), vy=b.y()-a.y(), vz=b.z()-a.z();
+    }
+
+    private static double tube(double x, double y, double z, TubeSegment segment) {
+        // Same canonical endpoints and inclusive boundary box as the
+        // original method. Bounds are calculated once, not per voxel.
+        if (x < segment.minX || x > segment.maxX
+                || y < segment.minY || y > segment.maxY
+                || z < segment.minZ || z > segment.maxZ) return 0;
+        Hall a=segment.a;
+        double vx=segment.vx,vy=segment.vy,vz=segment.vz;
         double t=((x-a.x())*vx+(y-a.y())*vy+(z-a.z())*vz)
-                  /(vx*vx+vy*vy+vz*vz);
+                /segment.lenSq;
         if (t <= 0 || t >= 1) return 0;
 
-        // One deterministic, smooth sideways bend per passage. The parabola
-        // goes to zero at both halls, retaining the original continuous graph.
         double curve=4.0*t*(1.0-t);
-        double bend1=((int)Math.floorMod(key,9L)-4)*curve;
-        double bend2=((int)Math.floorMod(key >>> 24,7L)-3)*curve;
+        double bend1=((int)Math.floorMod(segment.key,9L)-4)*curve;
+        double bend2=((int)Math.floorMod(segment.key >>> 24,7L)-3)*curve;
         double cx=a.x()+t*vx, cy=a.y()+t*vy, cz=a.z()+t*vz;
         if (Math.abs(vx)>=Math.abs(vz) && Math.abs(vx)>=Math.abs(vy)) {
             cy+=bend2; cz+=bend1;
         } else if (Math.abs(vz)>=Math.abs(vy)) {
             cx+=bend1; cy+=bend2;
         } else {
-            // Narrower diagonal shafts also receive the seeded noise warp.
-            // Halve their lateral bend to keep the original core traversable.
             cx+=bend1*0.5; cz+=bend2*0.5;
         }
         double dx=x-cx, dy=y-cy, dz=z-cz;
-        double ratio=(dx*dx+dy*dy+dz*dz)/(radius*radius);
+        double ratio=(dx*dx+dy*dy+dz*dz)/(segment.radius*segment.radius);
         return ratio>=1 ? 0 : 1-ratio;
     }
-
 
     /**
      * Conservative X/Z broad-phase test, independent of world seed and Y.
@@ -291,9 +322,7 @@ public final class GrandNetherCaveNetwork {
             if(answer>=1)return 1;
             for(int edge=0;edge<4;edge++) {
                 if((mask&(1<<(shift+1+edge)))!=0)
-                    answer=Math.max(answer,tube(x,y,z,center,
-                            cache.halls[layer][edge+1],11,
-                            cache.corridorKeys[layer][edge]));
+                    answer=Math.max(answer,tube(x,y,z,cache.corridors[layer][edge]));
             }
             if(Math.abs(x-center.x())<=80&&Math.abs(z-center.z())<=80
                     && Math.abs(y-center.y())<=30) {
@@ -303,14 +332,12 @@ public final class GrandNetherCaveNetwork {
                             && Math.abs(y-side.y())<side.radiusY()+1)
                         answer=Math.max(answer,chamber(x,y,z,side));
                     if((mask&(1<<(shift+6+gallery*2)))!=0)
-                        answer=Math.max(answer,tube(x,y,z,center,side,7,
-                                cache.satelliteKeys[layer][gallery]));
+                        answer=Math.max(answer,tube(x,y,z,cache.branches[layer][gallery]));
                 }
             }
         }
         if((mask&(1<<18))!=0)
-            answer=Math.max(answer,tube(x,y,z,cache.halls[0][0],
-                    cache.halls[1][0],10,cache.interlayerKey));
+            answer=Math.max(answer,tube(x,y,z,cache.interlayer));
         return answer;
     }
 
@@ -372,8 +399,7 @@ public final class GrandNetherCaveNetwork {
                 answer=Math.max(answer,chamber(x,y,z,center));
             if(answer>=1)return 1;
             for(int edge=0;edge<4;edge++)
-                answer=Math.max(answer,tube(x,y,z,center,
-                          cache.halls[layer][edge+1],11,cache.corridorKeys[layer][edge]));
+                answer=Math.max(answer,tube(x,y,z,cache.corridors[layer][edge]));
             // All satellite chambers and connectors lie within ±80 X/Z and
             // ±30 Y of their parent. Skip secondary graph work far from them.
             if (Math.abs(x-center.x())<=80 && Math.abs(z-center.z())<=80
@@ -382,15 +408,13 @@ public final class GrandNetherCaveNetwork {
                     Hall side=cache.satellites[layer][gallery];
                     if(Math.abs(y-side.y())<side.radiusY()+1)
                         answer=Math.max(answer,chamber(x,y,z,side));
-                    answer=Math.max(answer,tube(x,y,z,center,side,7,
-                            cache.satelliteKeys[layer][gallery]));
+                    answer=Math.max(answer,tube(x,y,z,cache.branches[layer][gallery]));
                 }
             }
         }
         // A diagonal chimney links low and high halls. The edge is evaluated
         // only from its own cell, so no additional worldgen/chunk access occurs.
-        answer=Math.max(answer,tube(x,y,z,cache.halls[0][0],
-                                    cache.halls[1][0],10,cache.interlayerKey));
+        answer=Math.max(answer,tube(x,y,z,cache.interlayer));
         return answer;
     }
 }

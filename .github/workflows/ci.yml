@@ -309,10 +309,12 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkReference.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkSmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkParitySmoke.java \
-            neoforge/src/test/java/org/realscale/neoforge/GrandNetherRegionCacheSmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherRegionCacheSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherTubeGeometrySmoke.java
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkSmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkParitySmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherRegionCacheSmoke
+          java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherTubeGeometrySmoke
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
