@@ -9,14 +9,23 @@ EXACT_PATH = "ChunkyAccessor.bindOnGenerationProgressEvent"
 FULL_CHUNK = "QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS: PASS"
 PATCH_LOADED = "REALSCALE_DH_CHUNKY_GUARD_MOD_LOADED"
 PATCH_HOOK = "REALSCALE_DH_CHUNKY_GUARD_HOOK_ENTERED"
+PATCH_DEFERRED = "REALSCALE_DH_CHUNKY_GUARD_DEFERRED"
+PATCH_READY = "REALSCALE_DH_CHUNKY_GUARD_READY"
+DH_WORLDGEN_QUEUE = "Created world gen queue"
 
 def evaluate(game_log, runner, mode, rc):
     original_failure = EXACT_CRASH in game_log and EXACT_PATH in game_log
     complete = FULL_CHUNK in runner and rc == 0
     patch_loaded = PATCH_LOADED in game_log
     hook_executed = PATCH_HOOK in game_log
+    deferred = PATCH_DEFERRED in game_log
+    ready_after_defer = PATCH_READY in game_log
+    listener_not_stuck = (not deferred or ready_after_defer)
+    dh_generation_queue_initialized = DH_WORLDGEN_QUEUE in game_log
     if mode == "patched":
-        passed = complete and patch_loaded and hook_executed and not original_failure
+        passed = (complete and patch_loaded and hook_executed and
+                  listener_not_stuck and dh_generation_queue_initialized
+                  and not original_failure)
         verdict = "patch_runtime_pass" if passed else "patch_not_proven_or_failed"
     elif mode == "unpatched":
         # This is a genuine observation, not a forced green: unpatched
@@ -31,6 +40,9 @@ def evaluate(game_log, runner, mode, rc):
                 known_upstream_crash=original_failure,
                 patch_mod_loaded=patch_loaded,
                 patch_mixin_entered=hook_executed,
+                deferred=deferred,ready_after_defer=ready_after_defer,
+                listener_not_stuck=listener_not_stuck,
+                dh_generation_queue_initialized=dh_generation_queue_initialized,
                 verdict=verdict,pass_gate=passed,
                 note="Real headless NeoForge; not a macOS client GPU test")
 

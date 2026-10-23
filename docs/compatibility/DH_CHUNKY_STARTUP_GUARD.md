@@ -51,3 +51,40 @@ A headless server can prove mod initialization and saved full chunks but CANNOT
 prove the fix works on macOS 27 / ARM64 or client GPU render LOD. Current
 RealScale test branch uses NeoForge 21.1.249, while the user’s reported
 client uses 21.1.262; exact client parity needs confirmation.
+
+## Visibility troubleshooting after startup crash has been prevented
+An actual macOS 1.21.1 player reported entering the world with this v0.1.0 guard,
+but saw no usable distant LOD (empty unloaded-distance horizon). **Do not claim
+this is solved by the crash guard alone.** The guard does not set
+`enableDistantGeneration`, does not disable DH's normal renderer or generate
+LOD data. This symptom requires a separate check.
+
+The earlier crash-isolation experiment deliberately disabled independent DH
+world generation. If that setting remains disabled, a new world with no
+pre-existing outer chunks has nothing for DH to render at distance. In
+**a fresh test world only**, check DH home screen **Enable Rendering = ON**,
+then **Enable Distant Generation = ON**, and
+**Distant Generator Mode = SURFACE**. Turn shaders off, stop any concurrently
+running Chunky pre-generation job, and allow DH to accumulate LOD. Confirm
+that its F3 task queue is progressing. If `SURFACE` is visibly incompatible
+with RealScale's custom generator, isolate `INTERNAL_SERVER` at a modest
+range separately; this is slower and generates saved Minecraft chunks.
+
+For the exact uploaded Mac instance, Iris was installed alongside DH,
+and macOS/OpenGL are untested by Linux server QA. Disable active shader
+packs when making this A/B comparison. Check for Distant Horizons renderer
+errors in the client `latest.log` and `debug.log`.
+
+### Hardened runtime pass criteria
+The headless 3-mod verification now also demands that DH's real
+`Created world gen queue` marker appears. If the crash guard logged
+`GUARD_DEFERRED`, it **must later log `GUARD_READY`** before the
+run passes; this prevents inadvertently treating permanently blocked
+Chunky event listeners as a successful fix. This proves DH server
+generation queue setup and bridge recovery, **not client LOD rendering**.
+Server artifacts in Actions run 39792666204 already show
+`GUARD_DEFERRED` followed by `GUARD_READY` and started generation
+queues.
+
+Official DH troubleshooting:
+https://gitlab.com/distant-horizons-team/distant-horizons/-/wikis/1-user-guide/1-frequently-asked-questions/2-problems-and-solutions/Problems-and-Solutions
