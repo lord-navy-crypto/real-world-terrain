@@ -2,6 +2,19 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.16 — 2026-10-23 — Ecotone Climate-Ray Geometry Lookup (Experimental)
+
+### Optimized
+- Precompute all fixed quart-to-block squared distances for the existing eight ecotone scan headings and six possible step distances. During each biome-border search, read the table instead of re-evaluating direction validation, multiplications and distance arithmetic.
+- Reuse that same squared distance for both nearest-border tie breaking and transition-width membership instead of calculating it twice.
+- Preserve the original ordered cardinal/diagonal scan, first-different-biome stop, exact integer distance formula, radial-band width limits, `>=` tie priority, climate sampler queries, biome registry choices and protected oceans/rivers. No additional caching of biome identity or new worldgen threads.
+
+### Validation and release gates
+- Add `EcotoneRayTableSmoke`: direct old-math equality for all headings, steps and width thresholds; 50,000 deterministic synthetic first-boundary arrangements checked against the original search and tie rules.
+- Retain NeoForge build, ecotone/cave unit checks, measured terrain, oceans, multi-seed server Anvil, Nether/End and sky-island regression. This test is stacked after Test.15 and remains **Draft**, separate from stable main.
+- Reduction of per-ray integer operations is a hypothesis, **not yet a measured real-world chunk-generation speedup**. Compare matched seeds/chunk workloads and save parity before any merge or performance claim.
+- Optional DH–Chunky Guard stays separately installable at `0.3.1-experimental`.
+
 ## 2.0.0-preview.2-test.15 — 2026-10-23 — USGS DEM Row Interpolation Hot-Path Cleanup (Experimental)
 
 ### Optimized

@@ -63,6 +63,14 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/EcologyDistributionMath.java \
             neoforge/src/test/java/org/realscale/neoforge/EcologyDistributionMathSmoke.java
           java -cp build/ecology-math-smoke org.realscale.neoforge.EcologyDistributionMathSmoke
+      - name: Verify fixed ecotone ray distance table and 50k old/new boundary scans
+        run: |
+          mkdir -p build/ecotone-ray-table
+          javac -d build/ecotone-ray-table \
+            neoforge/src/main/java/org/realscale/neoforge/EcotoneMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/EcotoneRayTable.java \
+            neoforge/src/test/java/org/realscale/neoforge/EcotoneRayTableSmoke.java
+          java -cp build/ecotone-ray-table org.realscale.neoforge.EcotoneRayTableSmoke
       - name: Compile and execute ecotone and cave classifier smoke tests
         run: |
           mkdir -p build/habitat-smoke
