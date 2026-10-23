@@ -1,4 +1,4 @@
-name: TVA Gradle 9.8 client task and NeoForge build compatibility
+name: RealScale Gradle 9.8 client task and NeoForge build compatibility
 on:
   pull_request:
     paths:
