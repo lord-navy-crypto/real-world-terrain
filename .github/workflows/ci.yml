@@ -336,6 +336,13 @@ jobs:
         run: |
           python3 -m unittest discover -s qa -p 'test_sky_island_validation_fastpath.py' -v
           python3 -m unittest discover -s qa -p 'test_sky_chunk_local_generation.py' -v
+      - name: Prove conservative sky-island chunk candidate pruning matches old AABB candidates
+        run: |
+          mkdir -p build/sky-candidate-prune
+          javac -d build/sky-candidate-prune \
+            neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
+            neoforge/src/test/java/org/realscale/neoforge/SkyIslandChunkCandidateSmoke.java
+          java -cp build/sky-candidate-prune org.realscale.neoforge.SkyIslandChunkCandidateSmoke
       - name: Verify Java/Python sky-island hash and five-island coordinate parity
         run: python3 -m unittest discover -s qa -p 'test_sky_island_fixture_parity.py' -v
       - name: Validate concentric offshore sky island geometry
