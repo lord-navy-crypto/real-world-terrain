@@ -42,7 +42,12 @@ public record GrandNetherCaverns(DensityFunction base,DensityFunction warp)
         // If the worker-local, warp-inclusive X/Z bounds exclude every
         // chamber and corridor, strength is exactly zero at any altitude.
         // Keep original vanilla noise and all old cave geometries intact.
-        if(!GrandNetherCaveNetwork.mayContainVoidNearColumn(x,z))
+        // Look up the 19-bit region/column mask ONCE. The old path first
+        // queried it through mayContainVoidNearColumn and then queried it
+        // again inside strengthFromColumn after computing the noise warp.
+        // Carry the identical mask to the geometry evaluator instead.
+        int candidateMask=GrandNetherCaveNetwork.componentMaskForColumn(x,z);
+        if(candidateMask==0)
             return original;
         // Gently distort ideal ellipsoids and straight corridors using a
         // smooth world-seeded 3D noise field. Less than the radius of a
@@ -50,9 +55,9 @@ public record GrandNetherCaverns(DensityFunction base,DensityFunction warp)
         // Keep the seeded warp continuous: rounding to whole blocks caused
         // artificial, stair-stepped cave walls in the first prototype.
         double displacement=Math.max(-1.0,Math.min(1.0,warp.compute(context)));
-        double strength=GrandNetherCaveNetwork.strengthFromColumn(
+        double strength=GrandNetherCaveNetwork.strengthFromColumnWithMask(
                 x,z,x+displacement*5.0, y+displacement*2.0,
-                z-displacement*4.0);
+                z-displacement*4.0,candidateMask);
         return strength<=0 ? original : Math.min(original,-1.8*strength);
     }
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {

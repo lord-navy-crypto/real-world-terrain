@@ -274,7 +274,7 @@ public final class GrandNetherCaveNetwork {
         return componentMaskForColumn(x,z)!=0;
     }
 
-    private static int componentMaskForColumn(int x,int z) {
+    static int componentMaskForColumn(int x,int z) {
         int dx=Math.floorMod(x,CELL),dz=Math.floorMod(z,CELL);
         // A +/-5 or +/-4 seeded warp can choose a different cave cell.
         if(dx<=5 || dx>=CELL-6 || dz<=4 || dz>=CELL-5)return -1;
@@ -299,13 +299,36 @@ public final class GrandNetherCaveNetwork {
      */
     static double strengthFromColumn(int originalX,int originalZ,
                                      double x,double y,double z) {
+        // Compatibility/reference entrypoint: resolve the mask as before.
+        // The production density wrapper passes its already known mask to
+        // the exact same evaluator, avoiding a second column-cache lookup.
         if(y<MIN_Y||y>MAX_Y)return 0;
         if(x<originalX-5.0||x>originalX+5.0
                 ||z<originalZ-4.0||z>originalZ+4.0
                 ||Math.floorDiv(originalX,CELL)!=(int)Math.floor(x/CELL)
                 ||Math.floorDiv(originalZ,CELL)!=(int)Math.floor(z/CELL))
             return strength(x,y,z);
-        int mask=componentMaskForColumn(originalX,originalZ);
+        return strengthFromColumnWithMask(originalX,originalZ,x,y,z,
+                componentMaskForColumn(originalX,originalZ));
+    }
+
+    /**
+     * Use the 19-bit candidate mask already obtained in the same
+     * GrandNetherCaverns.compute call. This mask is only valid for its exact
+     * source X/Z and worker's region graph. Validate the full requested warp
+     * and Y BEFORE trusting even a zero mask, so unsupported warps always
+     * run the original full-strength fallback.
+     *
+     * No mask caching across threads or distinct source-column queries.
+     */
+    static double strengthFromColumnWithMask(int originalX,int originalZ,
+            double x,double y,double z,int mask) {
+        if(y<MIN_Y||y>MAX_Y)return 0;
+        if(x<originalX-5.0||x>originalX+5.0
+                ||z<originalZ-4.0||z>originalZ+4.0
+                ||Math.floorDiv(originalX,CELL)!=(int)Math.floor(x/CELL)
+                ||Math.floorDiv(originalZ,CELL)!=(int)Math.floor(z/CELL))
+            return strength(x,y,z);
         if(mask==-1)return strength(x,y,z);
         if(mask==0)return 0;
         // Always select the source cell explicitly; another height probe

@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.24 — 2026-10-23 — Grand Nether Single Candidate Mask Per Density Voxel (Experimental)
+
+### Optimization
+- `GrandNetherCaverns.computeUnprofiled` previously fetched the 19-bit, warp-inclusive X/Z component mask twice for most non-empty density voxels: once through `mayContainVoidNearColumn` to decide whether to skip noise, and once inside `strengthFromColumn` before testing the 3D caverns. Despite Test.23's faster mask construction, both checks repeated column cache hashing, region lookup and coordinate division.
+- Compute the same candidate mask once; return immediately if it is zero. For all other cases, pass the integer mask through `GrandNetherCaveNetwork.strengthFromColumnWithMask` without re-querying the column cache.
+- Preserve original `strengthFromColumn` as the compatibility entrypoint, including its original full fallback for Y and warp outside the permitted support. The new known-mask evaluator **validates the full 5-block X / 4-block Z warp and cave-cell coordinates before trusting any supplied mask, even zero**; its `-1` cell-edge behavior and original 19-component evaluation sequence are unchanged.
+- No persistent mask sharing across source columns or worker threads, no changes to world seeds, biome/registry identifiers, Nether lava and bedrock, structures, noise equations, cave geometry, existing worlds or save files. Test.23's AABB fast path and Test.20's immutable region geometry stay enabled.
+
+### Evidence / promotion
+- New standalone `GrandNetherSingleMaskParitySmoke` checks more than 200,000 baseline double-mask vs single-mask raw IEEE-754 density outputs at negative/positive cell boundaries, distant coordinates, old and new cave levels, and seven exact warp fractions. Tests known positive hall cores and unsupported-warp full-strength fallback even when provided a zero mask.
+- Continue the previously existing 19-bit frozen AABB, 39k tube geometry, 100k+ warped mask, multi-worker region reuse, NeoForge server/Anvil, sky/ocean/Nether/End and multi-seed overworld tests.
+- Experimental stacked Draft: only promote after full newest-head CI, saved-block identity and matched Test.23-vs-Test.24 same-seed/cold Nether fresh-chunk throughput, CPU, p95 and GC measurement. Eliminating duplicate bookkeeping is a known logical saving, **not** yet a measured chunks-per-second improvement.
+- Stable `main` and independent DH–Chunky Guard remain unchanged.
+
 ## 2.0.0-preview.2-test.23 — 2026-10-23 — Grand Nether Column Mask AABB Reuse (Experimental)
 
 ### Optimized
