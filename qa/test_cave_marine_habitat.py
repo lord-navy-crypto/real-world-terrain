@@ -85,8 +85,8 @@ class CaveMarineHabitatQA(unittest.TestCase):
 
     def test_world_dimension_chunk_and_ore_guards(self):
         for token in ("TVAWorldGuard.hasRealScaleGenerator(context)",
-                      "w.getLevel().dimension().equals(Level.OVERWORLD)", "sameChunk(origin,p)",
-                      "sameChunk(origin,column)", "cavePocket",
+                      "w.getLevel().dimension().equals(Level.OVERWORLD)", "sameChunk(origin,x,z)",
+                      "final int x=origin.getX()+dx,z=origin.getZ()+dz", "cavePocket",
                       "surface-ROOF_DEPTH", "w.getMinBuildHeight()+4",
                       "GrandOverworldCaveNetwork.MAX_Y",
                       "Heightmap.Types.WORLD_SURFACE_WG",
