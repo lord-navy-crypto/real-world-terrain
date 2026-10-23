@@ -1,11 +1,13 @@
 name: EXPERIMENT build isolated DH Chunky crash guard JAR
 on:
   push:
-    branches: [experiment/dh-chunky-bridge-status-v03-20261023]
+    branches: [experiment/dh-lod-persistence-qa-v04-20261023]
     paths:
       - "dh-chunky-guard/**"
       - "qa/test_dh_chunky_patch.py"
       - "qa/test_dh_chunky_status.py"
+      - "qa/test_dh_lod_sqlite.py"
+      - "qa/neoforge/audit_dh_lod_sqlite.py"
       - ".github/workflows/dh-chunky-guard-build.yml"
   pull_request:
     paths:
@@ -34,6 +36,7 @@ jobs:
           python3 -m unittest discover -s qa -p test_realscale_dh_client_safety.py -v
           python3 -m unittest discover -s qa -p test_lod_stack_audit.py -v
           python3 -m unittest discover -s qa -p test_dh_chunky_status.py -v
+          python3 -m unittest discover -s qa -p test_dh_lod_sqlite.py -v
       - name: Build tiny self-contained NeoForge patch JAR
         working-directory: dh-chunky-guard
         run: gradle --no-daemon --stacktrace build
