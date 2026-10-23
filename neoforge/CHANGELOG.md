@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.21 — 2026-10-23 — Grand Overworld Cave Corridor Geometry Reuse (Experimental)
+
+### Optimized world generation
+- Applied fixed geometry reuse to the actual Grand Overworld cave network (2096-height worlds). The four-layer, 768-block cellular network had already cached halls and seeded passage shapes, but every candidate tunnel voxel recomputed endpoint canonicalization, conservative 3D AABBs, direction-vector lengths, bend-key modulo arithmetic and the costly horizontal `Math.hypot(vx,vz)` call.
+- At region initialization, build immutable `TunnelGeometry` descriptors for 16 cardinal links, 8 side galleries, 3 interlayer shafts and up to 8 arterial connections. The eight-slot, per-worker, two-way region graph cache retains these descriptors; eviction only recomputes identical geometry.
+- Both full `strength()` and the 47-component masked `strengthFromColumnWithMask()` use identical descriptors. Unchanged: the original `tunnelStrength()` formula (retained as a frozen oracle), the projection numerator/division, bend and sin cross-sections, density warp, XY/Z limits, cave entrances, water/aquifers, noise, biome identities, terrain heights and block/save format.
+- Per-voxel distance math keeps IEEE-754 operation order rather than replacing divisions with reciprocal multiplication. Region cache remains bounded and independent for every generation thread.
+
+### QA/release limits
+- Added `GrandOverworldTubeGeometrySmoke`, invoking the original per-voxel `tunnelStrength()` as an independent oracle and comparing raw IEEE-754 bits with the precomputed production function on more than 75,000 seeded locations, including main corridors, satellite tunnels, vertical shafts and long arteries.
+- Retain all pre-existing Grand Overworld broad-phase mask, corridor-sine, cache-collision and saved-world parity tests alongside full NeoForge, multi-seed real chunk, ocean, sky, Nether and End workflows.
+- **Draft only:** CI passing establishes correctness for covered cases, not a faster measured cold chunk-generation rate. Benchmark same-seed/same-hardware Test.20 vs Test.21 overworld fresh-chunk throughput, p95, heap/GC and saved Anvil block identity before any merge. Reject if extra precomputation/regional allocations cost more than repeated geometry.
+- Stable `main` and separate DH–Chunky Guard remain untouched.
+
 ## 2.0.0-preview.2-test.20 — 2026-10-23 — Grand Nether Tunnel Constant Geometry Precomputation (Experimental)
 
 ### Worldgen CPU path
