@@ -38,6 +38,85 @@ public final class GrandOverworldCaveNetwork {
     public record Hall(double x, double y, double z,
                        double radiusX, double radiusY, double radiusZ) {}
     public record Passage(double radius, double verticalScale, int kind) {}
+    /**
+     * Immutable precomputation of the original corridor math. Hall positions,
+     * axis classification, AABB, bend amplitudes and hypot depend only on the
+     * seeded 768x768 cave graph, not the queried density voxel.
+     * Cached arithmetic uses the SAME division and left-to-right expressions
+     * as tunnelStrength(), retained below as the independent reference.
+     */
+    private static final class TunnelGeometry {
+        final Hall a,b;
+        final Passage section;
+        final double vx,vy,vz,len,horiz;
+        final double minX,maxX,minZ,maxZ,minY,maxY;
+        final boolean vertical,xDominant;
+        final int bendA,bendB;
+        final long key;
+        TunnelGeometry(Hall first,Hall second,Passage section,long key) {
+            Hall a=first,b=second;
+            if(a.x()>b.x()||(a.x()==b.x()&&a.z()>b.z())||
+                    (a.x()==b.x()&&a.z()==b.z()&&a.y()>b.y())) {
+                Hall tmp=a;a=b;b=tmp;
+            }
+            this.a=a;
+            this.b=b;
+            this.section=section;
+            this.key=key;
+            double horizontalReach=section.radius()+17;
+            double verticalReach=section.radius()*section.verticalScale()+16;
+            minX=Math.min(a.x(),b.x())-horizontalReach;
+            maxX=Math.max(a.x(),b.x())+horizontalReach;
+            minZ=Math.min(a.z(),b.z())-horizontalReach;
+            maxZ=Math.max(a.z(),b.z())+horizontalReach;
+            minY=Math.min(a.y(),b.y())-verticalReach;
+            maxY=Math.max(a.y(),b.y())+verticalReach;
+            vx=b.x()-a.x();vy=b.y()-a.y();vz=b.z()-a.z();
+            len=vx*vx+vy*vy+vz*vz;
+            vertical=Math.abs(vy)>Math.max(Math.abs(vx),Math.abs(vz));
+            xDominant=Math.abs(vx)>=Math.abs(vz);
+            bendA=(int)Math.floorMod(key>>>19,29L)-14;
+            bendB=(int)Math.floorMod(key>>>39,21L)-10;
+            horiz=Math.hypot(vx,vz);
+        }
+    }
+
+    private static double cachedTunnelStrength(double x,double y,double z,
+                                               TunnelGeometry g) {
+        if(x<g.minX||x>g.maxX||z<g.minZ||z>g.maxZ||
+                y<g.minY||y>g.maxY)return 0;
+        double vx=g.vx,vy=g.vy,vz=g.vz;
+        if(g.len<1)return 0;
+        Hall a=g.a;
+        double t=((x-a.x())*vx+(y-a.y())*vy+(z-a.z())*vz)/g.len;
+        if(t<=0||t>=1)return 0;
+        double curve=4*t*(1-t);
+        double displacementA=g.bendA*curve;
+        double displacementB=g.bendB*curve;
+        double cx=a.x()+t*vx,cy=a.y()+t*vy,cz=a.z()+t*vz;
+        if(g.vertical) {
+            cx+=displacementA*0.6;cz+=displacementB*0.6;
+        } else if(g.xDominant) {
+            cz+=displacementA;cy+=displacementB;
+        } else {
+            cx+=displacementA;cy+=displacementB;
+        }
+        double sinPiT=Math.sin(Math.PI*t);
+        double widthScale=0.80+0.20*sinPiT*sinPiT;
+        double width=g.section.radius()*widthScale;
+        double height=width*g.section.verticalScale();
+        double xx=x-cx, yy=y-cy, zz=z-cz;
+        double q;
+        if(g.vertical) {
+            q=(xx*xx+zz*zz)/(width*width)+yy*yy/(height*height);
+        } else {
+            if(g.horiz<1)return 0;
+            double lateral=(-vz*xx+vx*zz)/g.horiz;
+            q=(lateral*lateral)/(width*width)+(yy*yy)/(height*height);
+        }
+        return q>=1?0:1-q;
+    }
+
     private static final class Cache {
         int gx=Integer.MIN_VALUE,gz=Integer.MIN_VALUE;
         // Direct-mapped, epoch-tagged per-worker X/Z reject cache. An entry
@@ -61,11 +140,15 @@ public final class GrandOverworldCaveNetwork {
         final Passage[][] sideWidths=new Passage[LAYERS][2];
         final long[] shaftKeys=new long[LAYERS-1];
         final Passage[] shafts=new Passage[LAYERS-1];
+        final TunnelGeometry[][] corridorTubes=new TunnelGeometry[LAYERS][4];
+        final TunnelGeometry[][] sideTubes=new TunnelGeometry[LAYERS][2];
+        final TunnelGeometry[] shaftTubes=new TunnelGeometry[LAYERS-1];
         // Two tiers, two axes, and the current or previous 3-cell group.
         final Hall[][][] arteryA=new Hall[2][2][2];
         final Hall[][][] arteryB=new Hall[2][2][2];
         final Passage[][][] arteryWidth=new Passage[2][2][2];
         final long[][][] arteryKey=new long[2][2][2];
+        final TunnelGeometry[][][] arteryTubes=new TunnelGeometry[2][2][2];
         void load(int x,int z) {
             if(gx==x && gz==z)return;
             gx=x;gz=z;
@@ -84,6 +167,8 @@ public final class GrandOverworldCaveNetwork {
                     long key=passageKey(center,other);
                     corridorKeys[layer][i]=key;
                     widths[layer][i]=passage(key,false);
+                    corridorTubes[layer][i]=new TunnelGeometry(
+                            center,other,widths[layer][i],key);
                 }
                 for(int i=0;i<2;i++) {
                     Hall side=satellite(x,z,layer,i);
@@ -91,11 +176,15 @@ public final class GrandOverworldCaveNetwork {
                     long key=passageKey(center,side);
                     sideKeys[layer][i]=key;
                     sideWidths[layer][i]=passage(key,true);
+                    sideTubes[layer][i]=new TunnelGeometry(
+                            center,side,sideWidths[layer][i],key);
                 }
             }
             for(int layer=0;layer<LAYERS-1;layer++) {
                 shaftKeys[layer]=passageKey(halls[layer][0],halls[layer+1][0]);
                 shafts[layer]=new Passage(20+Math.floorMod(shaftKeys[layer]>>>12,17L),1.0,3);
+                shaftTubes[layer]=new TunnelGeometry(halls[layer][0],
+                        halls[layer+1][0],shafts[layer],shaftKeys[layer]);
             }
             for(int tier=0;tier<2;tier++) for(int axis=0;axis<2;axis++)
                 for(int previous=0;previous<2;previous++) {
@@ -110,10 +199,13 @@ public final class GrandOverworldCaveNetwork {
                         arteryKey[tier][axis][previous]=key;
                         arteryWidth[tier][axis][previous]=
                                 new Passage(47+Math.floorMod(key>>>11,37L),1.65,4);
+                        arteryTubes[tier][axis][previous]=new TunnelGeometry(
+                                a,b,arteryWidth[tier][axis][previous],key);
                     } else {
                         arteryA[tier][axis][previous]=null;
                         arteryB[tier][axis][previous]=null;
                         arteryWidth[tier][axis][previous]=null;
+                        arteryTubes[tier][axis][previous]=null;
                     }
                 }
         }
@@ -504,9 +596,7 @@ public final class GrandOverworldCaveNetwork {
                 value=Math.max(value,hallStrength(x,y,z,center));
             for(int direction=0;direction<4;direction++) {
                 if((mask&(1L<<(shift+1+direction)))!=0)
-                    value=Math.max(value,tunnelStrength(x,y,z,center,
-                            c.halls[layer][direction+1],c.widths[layer][direction],
-                            c.corridorKeys[layer][direction]));
+                    value=Math.max(value,cachedTunnelStrength(x,y,z,c.corridorTubes[layer][direction]));
             }
             if(Math.abs(x-center.x())<225&&Math.abs(z-center.z())<225&&
                     Math.abs(y-center.y())<150) {
@@ -514,16 +604,13 @@ public final class GrandOverworldCaveNetwork {
                     if((mask&(1L<<(shift+5+g*2)))!=0)
                         value=Math.max(value,hallStrength(x,y,z,c.galleries[layer][g]));
                     if((mask&(1L<<(shift+6+g*2)))!=0)
-                        value=Math.max(value,tunnelStrength(x,y,z,center,
-                                c.galleries[layer][g],c.sideWidths[layer][g],
-                                c.sideKeys[layer][g]));
+                        value=Math.max(value,cachedTunnelStrength(x,y,z,c.sideTubes[layer][g]));
                 }
             }
         }
         for(int layer=0;layer<LAYERS-1;layer++) {
             if((mask&(1L<<(36+layer)))!=0)
-                value=Math.max(value,tunnelStrength(x,y,z,c.halls[layer][0],
-                        c.halls[layer+1][0],c.shafts[layer],c.shaftKeys[layer]));
+                value=Math.max(value,cachedTunnelStrength(x,y,z,c.shaftTubes[layer]));
         }
         for(int tier=0;tier<2;tier++) for(int axis=0;axis<2;axis++)
             for(int group=0;group<2;group++) {
@@ -531,10 +618,7 @@ public final class GrandOverworldCaveNetwork {
                 if((mask&(1L<<shift))==0)continue;
                 Hall a=c.arteryA[tier][axis][group];
                 if(a!=null)
-                    value=Math.max(value,tunnelStrength(x,y,z,a,
-                            c.arteryB[tier][axis][group],
-                            c.arteryWidth[tier][axis][group],
-                            c.arteryKey[tier][axis][group]));
+                    value=Math.max(value,cachedTunnelStrength(x,y,z,c.arteryTubes[tier][axis][group]));
             }
         return value;
     }
@@ -611,34 +695,27 @@ public final class GrandOverworldCaveNetwork {
             if(Math.abs(y-center.y())>350 && layer==3)continue;
             value=Math.max(value,hallStrength(x,y,z,center));
             for(int direction=0;direction<4;direction++) {
-                value=Math.max(value,tunnelStrength(x,y,z,center,
-                    cache.halls[layer][direction+1],cache.widths[layer][direction],
-                    cache.corridorKeys[layer][direction]));
+                value=Math.max(value,cachedTunnelStrength(x,y,z,cache.corridorTubes[layer][direction]));
             }
             if(Math.abs(x-center.x())<225&&Math.abs(z-center.z())<225&&
                     Math.abs(y-center.y())<150) {
                 for(int g=0;g<2;g++) {
                     Hall gallery=cache.galleries[layer][g];
                     value=Math.max(value,hallStrength(x,y,z,gallery));
-                    value=Math.max(value,tunnelStrength(x,y,z,center,gallery,
-                        cache.sideWidths[layer][g],cache.sideKeys[layer][g]));
+                    value=Math.max(value,cachedTunnelStrength(x,y,z,cache.sideTubes[layer][g]));
                 }
             }
         }
         // Interlayer vertical chimneys: travel through the mountain interior
         // instead of disconnected stacks of flat horizontal passageways.
         for(int layer=0;layer<LAYERS-1;layer++) {
-            value=Math.max(value,tunnelStrength(x,y,z,cache.halls[layer][0],
-                    cache.halls[layer+1][0],cache.shafts[layer],cache.shaftKeys[layer]));
+            value=Math.max(value,cachedTunnelStrength(x,y,z,cache.shaftTubes[layer]));
         }
         for(int tier=0;tier<2;tier++) for(int axis=0;axis<2;axis++)
             for(int group=0;group<2;group++) {
                 Hall a=cache.arteryA[tier][axis][group];
                 if(a!=null)
-                    value=Math.max(value,tunnelStrength(x,y,z,a,
-                            cache.arteryB[tier][axis][group],
-                            cache.arteryWidth[tier][axis][group],
-                            cache.arteryKey[tier][axis][group]));
+                    value=Math.max(value,cachedTunnelStrength(x,y,z,cache.arteryTubes[tier][axis][group]));
             }
         return value;
     }
