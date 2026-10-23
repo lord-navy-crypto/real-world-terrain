@@ -6,7 +6,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-/** TEST-only client upload override defaults OFF for DH/Sodium/Iris compatibility. */
+/** Client upload override defaults OFF. RenderFrame telemetry uses the same default. */
 public final class ClientSectionUploadMixinPlugin implements IMixinConfigPlugin {
     @Override public void onLoad(String mixinPackage){}
     @Override public String getRefMapperConfig(){return null;}
