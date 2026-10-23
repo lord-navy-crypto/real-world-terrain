@@ -444,7 +444,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     # the RealScale Grand Nether/End from 512 blocks back to 256.
     # The optional 256-height fantasy presets remain in the registry as
     # independent historical experiments, never replacing the canonical RealScale presets.
-    if fantasy_dimensions and preset in tva_families:
+    if fantasy_dimensions and preset in realscale_families:
         assert world_preset["dimensions"]["minecraft:the_nether"]["generator"]["settings"]=="realscale:grand_nether"
         assert world_preset["dimensions"]["minecraft:the_end"]["generator"]["settings"]=="realscale:grand_end"
     elif fantasy_dimensions:
