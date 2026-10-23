@@ -1,7 +1,7 @@
 name: EXPERIMENT build isolated DH Chunky crash guard JAR
 on:
   push:
-    branches: [experiment/dh-chunky-provider-guard-20261022]
+    branches: [experiment/realscale-dh-chunky-iris-sodium-bridge-20261023]
     paths:
       - "dh-chunky-guard/**"
       - "qa/test_dh_chunky_patch.py"
@@ -27,7 +27,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.14.3' }
       - name: Run patch safety, version and targeted-injection tests
-        run: python3 -m unittest discover -s qa -p test_dh_chunky_patch.py -v
+        run: |
+          python3 -m unittest discover -s qa -p test_dh_chunky_patch.py -v
+          python3 -m unittest discover -s qa -p test_dh_chunky_runtime.py -v
+          python3 -m unittest discover -s qa -p test_realscale_dh_client_safety.py -v
+          python3 -m unittest discover -s qa -p test_lod_stack_audit.py -v
       - name: Build tiny self-contained NeoForge patch JAR
         working-directory: dh-chunky-guard
         run: gradle --no-daemon --stacktrace build
@@ -50,5 +54,5 @@ jobs:
         if: success()
         with:
           name: RealScale-DH-Chunky-Guard-EXPERIMENTAL-NeoForge-1.21.1
-          path: dh-chunky-guard/build/libs/RealScale-DH-Chunky-Guard-NeoForge-1.21.1-0.1.0-experimental.jar
+          path: dh-chunky-guard/build/libs/RealScale-DH-Chunky-Guard-NeoForge-1.21.1-0.2.0-experimental.jar
           if-no-files-found: error
