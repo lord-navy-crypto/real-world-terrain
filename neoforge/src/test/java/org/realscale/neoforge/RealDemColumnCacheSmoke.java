@@ -46,13 +46,38 @@ public final class RealDemColumnCacheSmoke {
                 }
             }
         }
-        // Direct-mapped collisions must not return stale values for other columns.
+        // Two-way bucket collisions must not return stale values for other columns.
         for (int i = 0; i < 8192; i++) {
             int x = tile.originX() + 1 + Math.floorMod(i * 103, 478);
             int z = tile.originZ() + 1 + Math.floorMod(i * 53, 478);
             RealDemColumnCache.Column c = cache.sample(x, z, 96);
             sameBits(tile.worldSolidYAt(x, z), c.elevation(), "collision " + i);
         }
+        // Find an actual collision pair inside the bundled tile, then
+        // alternate them repeatedly. The two-way cache must retain BOTH
+        // original Column object identities even though they share a bucket.
+        java.util.Map<Integer,int[]> firstByBucket=new java.util.HashMap<>();
+        int[] one=null,two=null;
+        outer: for(int z=tile.originZ()+1;z<tile.maxZ();z+=2)
+            for(int x=tile.originX()+1;x<tile.maxX();x+=2) {
+                int hash=RealDemColumnCache.bucket(x,z,96);
+                int[] prior=firstByBucket.putIfAbsent(hash,new int[]{x,z});
+                if(prior!=null && (prior[0]!=x||prior[1]!=z)) {
+                    one=prior;
+                    two=new int[]{x,z};
+                    break outer;
+                }
+            }
+        if(one==null || two==null)throw new AssertionError("No DEM bucket collision found");
+        RealDemColumnCache pairCache=new RealDemColumnCache(tile);
+        var a=pairCache.sample(one[0],one[1],96);
+        var b=pairCache.sample(two[0],two[1],96);
+        if(pairCache.sample(one[0],one[1],96)!=a
+                || pairCache.sample(two[0],two[1],96)!=b
+                || pairCache.sample(one[0],one[1],96)!=a)
+            throw new AssertionError("Alternating colliding DEM columns were recomputed");
+        sameBits(tile.worldSolidYAt(one[0],one[1]),a.elevation(),"collision A");
+        sameBits(tile.worldSolidYAt(two[0],two[1]),b.elevation(),"collision B");
         return samples;
     }
 
