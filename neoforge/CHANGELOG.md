@@ -2,6 +2,21 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.13 — 2026-10-23 — Sky Island Validation Allocation Cleanup (Experimental)
+
+### Optimized
+- Use a single local `BlockPos.MutableBlockPos` for repeated read-only sky-island column validation (block/fluid/overhead checks), rather than allocating a new immutable coordinate for each visited height.
+- Preserve the exact original **immutable BlockPos writes** for all solid columns, flowers and beacon blocks; the mutable probe is never used with `WorldGenLevel.setBlock` or stored beyond synchronous preflight.
+- Avoid constructing an amethyst-beacon coordinate for an island site that placed no blocks (where the previous boolean guard always prevented beacon placement).
+- No new caches, background workers, world-height changes, extra RNG, render hooks or new dependencies.
+
+### Validation and limitations
+- The island lattice, chunk-clipped candidate iteration, biome check, floating-point geometry, block palette, flower rules, beacon conditions and original worldgen outcome are intended to remain unchanged.
+- Added a candidate-order parity test comparing complete full-radius vs chunk-clipped scans across positive and negative coordinates; added explicit read-only mutable probe and immutable-write assertions.
+- Fixed a stale sky-island source test that still demanded a deprecated out-of-chunk full-radius loop.
+- Real dedicated-server saved-world checks and client FPS/TPS benchmarks remain separate. No actual speedup percentage is claimed.
+- Optional DH–Chunky Guard remains version `0.3.1-experimental`.
+
 ## 2.0.0-preview.2-test.12 — 2026-10-23 — Cave and Seabed Patch Search Optimization (Experimental)
 
 ### Optimized

@@ -332,6 +332,10 @@ jobs:
           java -cp build/usgs-v2-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemSeamlessMathSmoke
       - name: TVA multi-branch integration contract
         run: python3 scripts/check_tva_sacred_timeline.py
+      - name: Verify sky island read-only probe reuse and local placement parity
+        run: |
+          python3 -m unittest discover -s qa -p 'test_sky_island_validation_fastpath.py' -v
+          python3 -m unittest discover -s qa -p 'test_sky_chunk_local_generation.py' -v
       - name: Verify Java/Python sky-island hash and five-island coordinate parity
         run: python3 -m unittest discover -s qa -p 'test_sky_island_fixture_parity.py' -v
       - name: Validate concentric offshore sky island geometry
