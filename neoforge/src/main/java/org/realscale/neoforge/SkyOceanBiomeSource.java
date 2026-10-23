@@ -72,7 +72,10 @@ public final class SkyOceanBiomeSource extends BiomeSource {
     }
     private int isolationTier(SkyIslandSiteCache.Entry site,Climate.Sampler sampler) {
         if(site.tier>=0)return site.tier;
-        int value=SkyIslandLayout.oceanTier(site.base(),
+        // Primitive X/Z climate probes avoid repeated Integer boxing across
+        // the fixed 16-direction, eight-ring offshore classification.
+        // Retain exactly the original deep-ocean and ocean predicates.
+        int value=SkyIslandLayout.oceanTierUnboxed(site.base(),
                 (x,z)->{
                     String id=underlying(x,z,sampler);
                     return id.startsWith("deep_")&&id.endsWith("ocean");
