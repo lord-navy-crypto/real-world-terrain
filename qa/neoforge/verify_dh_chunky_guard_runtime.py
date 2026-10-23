@@ -11,6 +11,7 @@ PATCH_LOADED = "REALSCALE_DH_CHUNKY_GUARD_MOD_LOADED"
 PATCH_HOOK = "REALSCALE_DH_CHUNKY_GUARD_HOOK_ENTERED"
 PATCH_DEFERRED = "REALSCALE_DH_CHUNKY_GUARD_DEFERRED"
 PATCH_READY = "REALSCALE_DH_CHUNKY_GUARD_READY"
+PATCH_BOUND = "REALSCALE_DH_CHUNKY_GUARD_BOUND"
 DH_WORLDGEN_QUEUE = "Created world gen queue"
 
 def evaluate(game_log, runner, mode, rc):
@@ -21,10 +22,11 @@ def evaluate(game_log, runner, mode, rc):
     deferred = PATCH_DEFERRED in game_log
     ready_after_defer = PATCH_READY in game_log
     listener_not_stuck = (not deferred or ready_after_defer)
+    native_listener_bound = PATCH_BOUND in game_log
     dh_generation_queue_initialized = DH_WORLDGEN_QUEUE in game_log
     if mode == "patched":
         passed = (complete and patch_loaded and hook_executed and
-                  listener_not_stuck and dh_generation_queue_initialized
+                  listener_not_stuck and native_listener_bound and dh_generation_queue_initialized
                   and not original_failure)
         verdict = "patch_runtime_pass" if passed else "patch_not_proven_or_failed"
     elif mode == "unpatched":
@@ -42,6 +44,7 @@ def evaluate(game_log, runner, mode, rc):
                 patch_mixin_entered=hook_executed,
                 deferred=deferred,ready_after_defer=ready_after_defer,
                 listener_not_stuck=listener_not_stuck,
+                native_listener_bound=native_listener_bound,
                 dh_generation_queue_initialized=dh_generation_queue_initialized,
                 verdict=verdict,pass_gate=passed,
                 note="Real headless NeoForge; not a macOS client GPU test")
