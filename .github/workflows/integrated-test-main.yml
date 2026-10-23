@@ -58,7 +58,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           from zipfile import ZipFile
-          jars=list(Path("neoforge/build/libs").glob("*2.0.0-preview.2-test.22.jar"))
+          jars=list(Path("neoforge/build/libs").glob("*2.0.0-preview.2-test.23.jar"))
           assert len(jars)==1,jars
           with ZipFile(jars[0]) as archive:
               names=set(archive.namelist())
@@ -70,7 +70,7 @@ jobs:
                   "org/realscale/neoforge/AquiferReadOnlyStats.class",
                   "org/realscale/neoforge/ClientChunkUploadBudget.class"):
                   assert expected in names,expected
-              assert b"2.0.0-preview.2-test.22" in archive.read("META-INF/neoforge.mods.toml")
+              assert b"2.0.0-preview.2-test.23" in archive.read("META-INF/neoforge.mods.toml")
               assert not any("PerlinExactMemoMixin.class" in x for x in names)
           print("REALSCALE_INTEGRATION_JAR_VALID",jars[0])
           PY
@@ -78,7 +78,7 @@ jobs:
         if: success()
         with:
           name: RealScale-Integrated-TEST-MAIN-NeoForge-1.21.1-JAR
-          path: neoforge/build/libs/*2.0.0-preview.2-test.22.jar
+          path: neoforge/build/libs/*2.0.0-preview.2-test.23.jar
           if-no-files-found: error
 
   dedicated-worldgen-boot:
