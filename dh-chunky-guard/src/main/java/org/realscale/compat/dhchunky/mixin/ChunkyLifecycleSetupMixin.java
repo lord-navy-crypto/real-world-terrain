@@ -31,6 +31,8 @@ public abstract class ChunkyLifecycleSetupMixin {
     @Shadow(remap = false) private boolean listenerBound;
     @Unique private static final AtomicBoolean realscale$warned = new AtomicBoolean();
     @Unique private static final AtomicBoolean realscale$hookSeen = new AtomicBoolean();
+    @Unique private static volatile Method realscale$providerGet;
+    @Unique private boolean realscale$boundConfirmed;
 
     @Inject(method = "tryRunFirstTimeSetup()V", at = @At("HEAD"),
             cancellable = true, remap = false)
@@ -64,14 +66,37 @@ public abstract class ChunkyLifecycleSetupMixin {
         }
     }
 
+    /** Only report success AFTER Distant Horizons' original listener binding returns. */
+    @Inject(method = "tryRunFirstTimeSetup()V", at = @At("RETURN"), remap = false)
+    private void realscale$confirmNativeDhListener(CallbackInfo ci) {
+        if (listenerBound && !realscale$boundConfirmed) {
+            realscale$boundConfirmed = true;
+            System.err.println("REALSCALE_DH_CHUNKY_GUARD_BOUND: native DH listener initialized");
+        }
+    }
+
+    /** Resolve ChunkyProvider.get once; never repeatedly scan classes on chunk updates. */
+    @Unique
+    private static Method realscale$resolveChunkyGetter() throws ReflectiveOperationException {
+        Method getter = realscale$providerGet;
+        if (getter != null) return getter;
+        synchronized (realscale$hookSeen) {
+            getter = realscale$providerGet;
+            if (getter == null) {
+                Class<?> provider = Class.forName("org.popcraft.chunky.ChunkyProvider");
+                getter = provider.getMethod("get");
+                realscale$providerGet = getter;
+            }
+        }
+        return getter;
+    }
+
     @Unique
     private static boolean realscale$isChunkyProviderReady() {
         // Avoid directly linking Chunky classes from this standalone addon,
         // which makes class initialization robust while game registries load.
         try {
-            Class<?> provider = Class.forName("org.popcraft.chunky.ChunkyProvider");
-            Method get = provider.getMethod("get");
-            return get.invoke(null) != null;
+            return realscale$resolveChunkyGetter().invoke(null) != null;
         } catch (InvocationTargetException ex) {
             Throwable root = ex.getCause();
             if (root instanceof IllegalStateException &&
