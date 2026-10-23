@@ -1,0 +1,30 @@
+name: EXPERIMENT inspect exact DH 3.3.3 / Chunky 1.4.23 method contracts
+on:
+  push:
+    branches: [experiment/dh-chunky-provider-guard-20261022]
+    paths:
+      - ".github/workflows/dh-chunky-bytecode-inspection.yml"
+      - "qa/neoforge/inspect_dh_chunky_bytecode.py"
+  pull_request:
+    paths:
+      - ".github/workflows/dh-chunky-bytecode-inspection.yml"
+      - "qa/neoforge/inspect_dh_chunky_bytecode.py"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - name: Inspect actual official jar method descriptors (before writing compatibility Mixin)
+        run: python3 qa/neoforge/inspect_dh_chunky_bytecode.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dh-chunky-exact-bytecode-contract
+          path: build/dh-chunky-contract/
+          if-no-files-found: warn

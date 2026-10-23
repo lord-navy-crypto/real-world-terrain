@@ -1,0 +1,106 @@
+name: EXPERIMENT REAL 3-mod worldgen DH Chunky startup patch A/B
+on:
+  push:
+    branches: [experiment/dh-chunky-provider-guard-20261022]
+    paths:
+      - "dh-chunky-guard/**"
+      - "qa/neoforge/verify_dh_chunky_guard_runtime.py"
+      - "qa/test_dh_chunky_runtime.py"
+      - ".github/workflows/dh-chunky-real-neoforge-test.yml"
+  pull_request:
+    paths:
+      - "dh-chunky-guard/**"
+      - "qa/neoforge/verify_dh_chunky_guard_runtime.py"
+      - "qa/test_dh_chunky_runtime.py"
+      - ".github/workflows/dh-chunky-real-neoforge-test.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dh-chunky-realscale-triple-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-triple-mod-worldgen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [unpatched, patched]
+    env:
+      MODE: ${{ matrix.mode }}
+      JAVA_TOOL_OPTIONS: "-Drealscale.experimental.beardifier.ycull=false -Drealscale.experimental.aquifer.audit=false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.14.3' }
+      - name: Unit-test truthful expected-failure and successful-guard verdicts
+        run: python3 -m unittest discover -s qa -p test_dh_chunky_runtime.py -v
+      - name: Obtain official pinned DH and Chunky JARs with SHA512 validation
+        run: |
+          mkdir -p build
+          python3 qa/neoforge/inspect_dh_chunky_bytecode.py > build/dh-chunky-mod-inspect.log
+      - name: Compile independent compatibility addon
+        if: matrix.mode == 'patched'
+        working-directory: dh-chunky-guard
+        run: gradle --no-daemon build
+      - name: Copy exact combined mod list into NeoForge dedicated server
+        run: |
+          for d in neoforge/run/mods neoforge/run/server/mods neoforge/run/gametestserver/mods; do
+            mkdir -p "$d"
+            cp build/dh-chunky-contract/DistantHorizons*.jar "$d/"
+            cp build/dh-chunky-contract/Chunky-NeoForge*.jar "$d/"
+            if [ "$MODE" = "patched" ]; then
+              cp dh-chunky-guard/build/libs/RealScale-DH-Chunky-Guard-NeoForge-1.21.1-0.1.0-experimental.jar "$d/"
+            fi
+          done
+      - name: Configure fresh Sacred Timeline world seed 42
+        working-directory: neoforge
+        run: |
+          for d in run run/server run/gametestserver; do
+            mkdir -p "$d"
+            printf 'eula=true\n' > "$d/eula.txt"
+            cat > "$d/server.properties" <<PROPERTIES
+          level-name=world
+          level-type=realscale:tva_sacred_timeline_three_realms
+          level-seed=42
+          generate-structures=true
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Boot real Minecraft + all mods, observe FULL distant chunk and exceptions
+        working-directory: neoforge
+        run: |
+          mkdir -p build
+          set +e
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . realscale:tva_sacred_timeline_three_realms distant > build/dh-chunky-runner.log 2>&1
+          rc=$?
+          set -e
+          tail -n 60 build/dh-chunky-runner.log
+          python3 ../qa/neoforge/verify_dh_chunky_guard_runtime.py \
+            build/rcon_distant_server.log build/dh-chunky-runner.log "$MODE" "$rc" \
+            build/dh-chunky-$MODE-result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: DH-Chunky-RealScale-real-server-${{ matrix.mode }}
+          path: |
+            neoforge/build/dh-chunky-*.json
+            neoforge/build/dh-chunky-runner.log
+            neoforge/build/rcon_distant_server.log
+            neoforge/build/rcon_distant_stall_fingerprint.json
+          if-no-files-found: warn
