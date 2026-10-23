@@ -1,7 +1,7 @@
 name: EXPERIMENT REAL 3-mod worldgen DH Chunky startup patch A/B
 on:
   push:
-    branches: [experiment/dh-chunky-provider-guard-20261022]
+    branches: [experiment/realscale-dh-chunky-iris-sodium-bridge-20261023]
     paths:
       - "dh-chunky-guard/**"
       - "qa/neoforge/verify_dh_chunky_guard_runtime.py"
@@ -27,9 +27,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [unpatched, patched]
+        include:
+          - {mode: unpatched, preset: tva_measured_three_realms, seed: 2}
+          - {mode: patched, preset: tva_measured_three_realms, seed: 2}
+          - {mode: unpatched, preset: tva_sacred_timeline_three_realms, seed: 42}
+          - {mode: patched, preset: tva_sacred_timeline_three_realms, seed: 42}
     env:
       MODE: ${{ matrix.mode }}
+      PRESET: ${{ matrix.preset }}
+      SEED: ${{ matrix.seed }}
       JAVA_TOOL_OPTIONS: "-Drealscale.experimental.beardifier.ycull=false -Drealscale.experimental.aquifer.audit=false"
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +62,7 @@ jobs:
             cp build/dh-chunky-contract/DistantHorizons*.jar "$d/"
             cp build/dh-chunky-contract/Chunky-NeoForge*.jar "$d/"
             if [ "$MODE" = "patched" ]; then
-              cp dh-chunky-guard/build/libs/RealScale-DH-Chunky-Guard-NeoForge-1.21.1-0.1.0-experimental.jar "$d/"
+              cp dh-chunky-guard/build/libs/RealScale-DH-Chunky-Guard-NeoForge-1.21.1-0.2.0-experimental.jar "$d/"
             fi
           done
       - name: Configure fresh Sacred Timeline world seed 42
@@ -67,8 +73,8 @@ jobs:
             printf 'eula=true\n' > "$d/eula.txt"
             cat > "$d/server.properties" <<PROPERTIES
           level-name=world
-          level-type=realscale:tva_sacred_timeline_three_realms
-          level-seed=42
+          level-type=realscale:$PRESET
+          level-seed=$SEED
           generate-structures=true
           spawn-protection=0
           view-distance=3
@@ -87,7 +93,7 @@ jobs:
         run: |
           mkdir -p build
           set +e
-          python3 ../qa/neoforge/rcon_worldgen_smoke.py . realscale:tva_sacred_timeline_three_realms distant > build/dh-chunky-runner.log 2>&1
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . realscale:$PRESET distant > build/dh-chunky-runner.log 2>&1
           rc=$?
           set -e
           tail -n 60 build/dh-chunky-runner.log
@@ -97,7 +103,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: DH-Chunky-RealScale-real-server-${{ matrix.mode }}
+          name: DH-Chunky-RealScale-${{ matrix.preset }}-${{ matrix.mode }}
           path: |
             neoforge/build/dh-chunky-*.json
             neoforge/build/dh-chunky-runner.log
