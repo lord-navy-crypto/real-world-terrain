@@ -2,6 +2,19 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.17 — 2026-10-23 — Primitive Offshore Ocean Eligibility Probes (Experimental)
+
+### Optimized
+- Use a primitive-coordinate `SkyIslandLayout.IntCoordinatePredicate` in the **actual** `SkyOceanBiomeSource` ocean-tier classification to avoid boxing two integers for each remote climate probe. Eight rings of 16 fixed sample sites can require up to 128 callbacks per examined archipelago site.
+- Keep the established `BiPredicate<Integer,Integer>` overload unchanged for existing callers and as a frozen reference; the new `oceanTierUnboxed` uses the same base deep-ocean gate, absolute X/Z sample positions, sampled ring order, cutoff indexes and tier `0/1/2/3` formula.
+- No caching or changes to biome source inputs, RNG, skyland footprints, elevations, ocean floor, caves, structures, fluids, world height, saved world format or dimensions.
+
+### Validation and limitations
+- Add a pure Java 21 reference comparison over more than 5,000 curated and pseudorandom coast cases including negative coordinates and integer extremes, comparing *every climate coordinate visited* and the exact stop position alongside tier equality.
+- Retain the multi-seed NeoForge server, ocean ecosystems, all sky/Anvil, ecotone, caves and far-worldgen QA; keep this version Draft until the newest complete CI run passes.
+- Eliminating Java integer boxing is an allocation-pressure optimization hypothesis, **not proof of faster whole-world chunk generation**. Match same-seed real cold worldgen A/B and saved-block parity before promotion.
+- Separate DH–Chunky Guard stays version `0.3.1-experimental`.
+
 ## 2.0.0-preview.2-test.16 — 2026-10-23 — Ecotone Climate-Ray Geometry Lookup (Experimental)
 
 ### Optimized
