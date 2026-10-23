@@ -33,19 +33,22 @@ public abstract class ChunkyLifecycleSetupMixin {
     @Unique private static final AtomicBoolean realscale$warned = new AtomicBoolean();
     @Unique private static final AtomicBoolean realscale$hookSeen = new AtomicBoolean();
     @Unique private static volatile Method realscale$providerGet;
+    // JVM flags are immutable for this mod lifetime. Avoid system property
+    // parsing on every Minecraft full-chunk event after DH has bound.
+    @Unique private static final boolean realscale$guardEnabled =
+            Boolean.parseBoolean(System.getProperty(
+                    "realscale.dhchunky.guard.enabled", "true"));
     @Unique private boolean realscale$boundConfirmed;
 
     @Inject(method = "tryRunFirstTimeSetup()V", at = @At("HEAD"),
             cancellable = true, remap = false)
     private void realscale$deferChunkyBindingUntilReady(CallbackInfo ci) {
         // Explicit opt-out for A/B verification or a future upstream DH fix.
-        if (!Boolean.parseBoolean(
-                System.getProperty("realscale.dhchunky.guard.enabled", "true"))) {
-            return;
-        }
-        // After first successful binding, this method is called for EVERY
-        // full chunk update. Never reflect on every completed chunk.
+        // After native DH binding this injection is still called on every
+        // full-chunk event. Its normal-gameplay hot path must be one cheap
+        // field test, without System.getProperty, reflection or allocations.
         if (listenerBound) return;
+        if (!realscale$guardEnabled) return;
         if (realscale$hookSeen.compareAndSet(false, true)) {
             System.err.println("REALSCALE_DH_CHUNKY_GUARD_HOOK_ENTERED");
         }
@@ -77,7 +80,7 @@ public abstract class ChunkyLifecycleSetupMixin {
     /** Only report success AFTER Distant Horizons' original listener binding returns. */
     @Inject(method = "tryRunFirstTimeSetup()V", at = @At("RETURN"), remap = false)
     private void realscale$confirmNativeDhListener(CallbackInfo ci) {
-        if (listenerBound && !realscale$boundConfirmed) {
+        if (!realscale$boundConfirmed && listenerBound) {
             realscale$boundConfirmed = true;
             ChunkyBridgeMetrics.bound();
             System.err.println("REALSCALE_DH_CHUNKY_GUARD_BOUND: native DH listener initialized");
