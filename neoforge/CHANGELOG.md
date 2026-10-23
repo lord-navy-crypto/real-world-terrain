@@ -2,7 +2,7 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
-## 2.0.0-preview.2-test.6 — 2026-10-23 — Experimental
+## 2.0.0-preview.2-test.7 — 2026-10-23 — Experimental
 
 ### 新增 / Added
 - 新建世界菜单提供六个 **RealScale 自有品牌预设**：自然地貌、高山地貌、峡谷与河谷、USGS 实测地形、自然奇观与跨维度生态、洞穴与海洋生态（实验）。
@@ -11,7 +11,7 @@
 
 ### 变更 / Changed
 - 模组显示名称：`RealScale — Terrain, Caves & Oceans (Experimental)`。
-- JAR 文件名：`RealScale-NeoForge-1.21.1-2.0.0-preview.2-test.6.jar`。
+- JAR 文件名：`RealScale-NeoForge-1.21.1-2.0.0-preview.2-test.7.jar`。
 - 更新中英文世界创建界面、项目说明、Terrain Lab 描述和构建检查。
 
 ### 修复 / Fixed
@@ -53,7 +53,7 @@
 - 保留历史内部 ID 是为了保护已有存档；新版本仍需真实世界和多模组联合验证。
 - 稳定发布前还需关注区块内容一致性、RealScale 高地形高度、长距离区块、DH 远景及 Iris/Sodium/光影客户端实际呈现。
 
-### English release summary — 2.0.0-preview.2-test.6
+### English release summary — 2.0.0-preview.2-test.7
 
 - **Added:** Six RealScale-branded Create World presets, matching historical worldgen configurations without deleting legacy saved-world identifiers.
 - **Changed:** Mod title, artifact filename, and English/Chinese player-facing preset labels.

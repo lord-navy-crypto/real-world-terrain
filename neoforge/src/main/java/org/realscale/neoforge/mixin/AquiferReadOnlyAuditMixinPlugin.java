@@ -11,7 +11,7 @@ public final class AquiferReadOnlyAuditMixinPlugin implements IMixinConfigPlugin
     @Override public String getRefMapperConfig(){return null;}
     @Override public boolean shouldApplyMixin(String target,String mixin){
         boolean enabled=mixin.endsWith(".AquiferReadOnlyAuditMixin")
-                &&Boolean.parseBoolean(System.getProperty("realscale.experimental.aquifer.audit","true"));
+                &&Boolean.parseBoolean(System.getProperty("realscale.experimental.aquifer.audit","false"));
         System.err.println("REALSCALE_AQUIFER_READONLY_MIXIN_DECISION "+
                 mixin+" enabled="+enabled);
         return enabled;

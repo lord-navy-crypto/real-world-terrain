@@ -14,13 +14,12 @@ class UnifiedTimelineTests(unittest.TestCase):
             self.assertTrue((SRC/p).is_file(),p)
         for p in ("RealScaleAdaptiveVisibilityClient.java","RealScaleClientFrameProfiler.java"):
             code=(SRC/p).read_text()
-            # Release builds use default-OFF Boolean.getBoolean. The
-            # separately versioned integrated TEST build intentionally uses
-            # Boolean.parseBoolean(System.getProperty(flag,"true")) and
-            # supports an explicit false override for faithful A/B tests.
+            # Low-overhead Test.7 disables collection unless explicitly
+            # requested. The prior Test.6 FPS default-on instrumentation was
+            # measuring every rendered frame during ordinary gameplay.
             self.assertTrue("Boolean.getBoolean(" in code
                             or ("Boolean.parseBoolean(System.getProperty(" in code
-                                and '"true"' in code),p)
+                                and '"false"' in code),p)
             self.assertIn("Dist.CLIENT",code)
             self.assertNotIn("setRenderDistance",code)
             self.assertNotIn("setSimulationDistance",code)

@@ -28,6 +28,8 @@ jobs:
         run: python3 qa/verify_repository.py
       - name: Verify new RealScale branding and legacy save preset aliases
         run: python3 -m unittest discover -s qa -p 'test_realscale_branding_compat.py' -v
+      - name: Verify no default-on client frame / upload or Aquifer diagnostic overhead
+        run: python3 -m unittest discover -s qa -p 'test_low_overhead_defaults.py' -v
       - name: Verify six real underground cave biomes keep all vanilla ores and structures
         run: |
           python3 -m unittest discover -s qa -p 'test_real_cave_biome_source.py' -v
