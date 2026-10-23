@@ -3,7 +3,7 @@ loaderVersion="[4,)"
 license="MIT"
 [[mods]]
 modId="dhchunkyguard"
-version="0.1.0-experimental"
+version="0.2.0-experimental"
 displayName="DH + Chunky Startup Guard (Experimental)"
 authors="RealScale Compatibility Research"
 description="Guards Distant Horizons 3.3.3 Chunky event binding until Chunky 1.4.23 finishes initialization. Never modifies terrain, height, or saved chunks."
