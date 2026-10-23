@@ -52,6 +52,7 @@ public final class GrandOverworldCaveNetwork {
         final double minX,maxX,minZ,maxZ,minY,maxY;
         final boolean vertical,xDominant;
         final int bendA,bendB;
+        final long key;
         TunnelGeometry(Hall first,Hall second,Passage section,long key) {
             Hall a=first,b=second;
             if(a.x()>b.x()||(a.x()==b.x()&&a.z()>b.z())||
@@ -61,6 +62,7 @@ public final class GrandOverworldCaveNetwork {
             this.a=a;
             this.b=b;
             this.section=section;
+            this.key=key;
             double horizontalReach=section.radius()+17;
             double verticalReach=section.radius()*section.verticalScale()+16;
             minX=Math.min(a.x(),b.x())-horizontalReach;
