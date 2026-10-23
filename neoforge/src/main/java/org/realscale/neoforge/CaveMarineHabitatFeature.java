@@ -94,10 +94,15 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
                 && w.getFluidState(below).isEmpty();
     }
     private static boolean nearWater(WorldGenLevel w,BlockPos p) {
+        // One ephemeral probe instead of a new neighbor and below position
+        // for each of the four directions. Keep the same directional order,
+        // fluid read short-circuit and one-block-below depth.
+        final int x=p.getX(),y=p.getY(),z=p.getZ();
+        final BlockPos.MutableBlockPos neighbor=new BlockPos.MutableBlockPos();
         for(Direction d:Direction.Plane.HORIZONTAL) {
-            BlockPos n=p.relative(d);
-            if(w.getFluidState(n).is(FluidTags.WATER)
-                    ||w.getFluidState(n.below()).is(FluidTags.WATER))
+            int nx=x+d.getStepX(),nz=z+d.getStepZ();
+            if(w.getFluidState(neighbor.set(nx,y,nz)).is(FluidTags.WATER)
+                    ||w.getFluidState(neighbor.set(nx,y-1,nz)).is(FluidTags.WATER))
                 return true;
         }
         return false;
