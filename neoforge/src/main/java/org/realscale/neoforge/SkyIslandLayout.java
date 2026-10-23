@@ -118,6 +118,31 @@ public final class SkyIslandLayout {
         }
         return 3;
     }
+    /**
+     * Worldgen hot path: climate probes are absolute block-coordinate ints.
+     * BiPredicate<Integer,Integer> autoboxes those two ints on each sampled
+     * ocean point. Keep the existing boxed API below for reference callers
+     * and use this primitive interface only in the real sky biome source.
+     * It does not cache climate, alter predicates, or change ring order.
+     */
+    @FunctionalInterface
+    public interface IntCoordinatePredicate {
+        boolean test(int x, int z);
+    }
+
+    public static int oceanTierUnboxed(Site base,
+            IntCoordinatePredicate deep, IntCoordinatePredicate ocean) {
+        if(!deep.test(base.x(),base.z()))return 0;
+        for(int ring=0;ring<PROBE_RADII.length;ring++) {
+            int first=ring*DIRECTIONS;
+            for(int i=0;i<DIRECTIONS;i++)
+                if(!ocean.test(base.x()+PROBE_X[first+i],
+                               base.z()+PROBE_Z[first+i]))
+                    return ring<4?0:ring<6?1:2;
+        }
+        return 3;
+    }
+
     public static int countForTier(int tier) {
         return switch(tier) {
             case 1 -> 1;
