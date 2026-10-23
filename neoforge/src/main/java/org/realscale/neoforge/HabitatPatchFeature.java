@@ -125,9 +125,13 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
             } else {
                 // Require a submerged column above natural sediment. This stops
                 // decoration from replacing air, plants, coral, shipwrecks or fish.
-                if (!w.getFluidState(p).is(FluidTags.WATER)
-                        || !w.getFluidState(p.above()).is(FluidTags.WATER)) continue;
-                BlockState floor = w.getBlockState(p.below());
+                if (!w.getFluidState(p).is(FluidTags.WATER)) continue;
+                BlockPos above = p.above();
+                if (!w.getFluidState(above).is(FluidTags.WATER)) continue;
+                // Reuse the seabed coordinate for both validation and
+                // placement. Keep validation before the RNG rock choice.
+                BlockPos below = p.below();
+                BlockState floor = w.getBlockState(below);
                 if (!(floor.is(Blocks.SAND) || floor.is(Blocks.GRAVEL)
                         || floor.is(Blocks.CLAY) || floor.is(Blocks.DIRT))) continue;
                 if (kind == Kind.OCEAN_SEAGRASS) {
@@ -141,7 +145,7 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
                     BlockState rock = context.random().nextBoolean()
                             ? Blocks.TUFF.defaultBlockState()
                             : Blocks.ANDESITE.defaultBlockState();
-                    w.setBlock(p.below(), rock, 2);
+                    w.setBlock(below, rock, 2);
                 }
                 changed++;
             }
