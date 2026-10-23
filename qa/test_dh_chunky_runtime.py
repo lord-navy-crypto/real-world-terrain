@@ -40,6 +40,15 @@ class RuntimeVerdictTests(unittest.TestCase):
         r=evaluate("DistantHorizons Chunky initialized",FULL_CHUNK,"unpatched",0)
         self.assertTrue(r["pass_gate"])
         self.assertEqual(r["verdict"],"baseline_started_no_reproduction")
+    def test_real_server_writes_noninvasive_lod_storage_report_after_stop(self):
+        code=(Path(__file__).resolve().parents[0]/"neoforge"/
+              "rcon_worldgen_smoke.py").read_text()
+        self.assertIn('from audit_dh_lod_sqlite import scan',code)
+        self.assertIn('dh-chunky-lod-storage.json',code)
+        self.assertIn('REALSCALE_DH_LOD_PERSISTENCE_AFTER_STOP',code)
+        self.assertLess(code.index('proc.wait(timeout=125)'),
+                        code.index('storage=scan(scan_root)'))
+
     def test_other_unpatched_crash_is_failure(self):
         self.assertFalse(evaluate("OutOfMemoryError","", "unpatched",1)["pass_gate"])
 

@@ -457,6 +457,27 @@ def main(root,expected_preset,profile):
         log.write_text("".join(lines),encoding="utf-8")
         print("SERVER LOG:",log,flush=True)
         print("SERVER LOG TAIL:",log.read_text(encoding="utf-8")[-4500:],flush=True)
+    # LOD conversion and persistence are NOT guaranteed by a successful
+    # Minecraft /forceload. Collect independent SQLite persistence evidence
+    # after the server has exited. This is a read-only audit that never
+    # mutates or assumes the DH GPU renderer worked. Unknown/empty is
+    # reported, not silently promoted to success.
+    if profile=="distant":
+        from audit_dh_lod_sqlite import scan
+        scan_root=root/"run"
+        if scan_root.is_dir():
+            storage=scan(scan_root)
+            destination=root/"build"/"dh-chunky-lod-storage.json"
+            destination.parent.mkdir(parents=True,exist_ok=True)
+            destination.write_text(
+                json.dumps(storage,sort_keys=True,indent=2)+"\\n",
+                encoding="utf-8")
+            print("REALSCALE_DH_LOD_PERSISTENCE_AFTER_STOP:",
+                  json.dumps({k:v for k,v in storage.items() if k!="files"},
+                             sort_keys=True),flush=True)
+        else:
+            print("REALSCALE_DH_LOD_PERSISTENCE_AFTER_STOP: run directory unavailable",
+                  flush=True)
     if failed is not None:raise failed
     if not ready.is_set():raise RuntimeError("Server did not boot")
     if profile=="fantasy":
