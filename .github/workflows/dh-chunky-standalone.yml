@@ -6,12 +6,14 @@ on:
       - "dh-chunky-guard/**"
       - "qa/test_dh_chunky_patch.py"
       - "qa/test_dh_chunky_status.py"
+      - "qa/test_dh_chunky_guard_hotpath.py"
       - ".github/workflows/dh-chunky-standalone.yml"
   pull_request:
     paths:
       - "dh-chunky-guard/**"
       - "qa/test_dh_chunky_patch.py"
       - "qa/test_dh_chunky_status.py"
+      - "qa/test_dh_chunky_guard_hotpath.py"
       - ".github/workflows/dh-chunky-standalone.yml"
   workflow_dispatch:
 permissions:
@@ -32,6 +34,7 @@ jobs:
         run: |
           python3 -m unittest discover -s qa -p test_dh_chunky_patch.py -v
           python3 -m unittest discover -s qa -p test_dh_chunky_status.py -v
+          python3 -m unittest discover -s qa -p test_dh_chunky_guard_hotpath.py -v
       - name: Build standalone NeoForge JAR
         working-directory: dh-chunky-guard
         run: gradle --no-daemon build
