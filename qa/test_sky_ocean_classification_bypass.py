@@ -24,7 +24,17 @@ class OffshoreClassificationTest(unittest.TestCase):
         self.assertRegex(eco,r"BiomeSource offshoreOceanClassificationSource\(\)\s*\{\s*return source;")
         # The protected ocean branch precedes all ecotone candidate/ray work.
         begin=eco.index("Holder<Biome> original = sampleBase(")
-        boundary=eco.index("for (int[] direction : DIRECTIONS)",begin)
+        # The ecotone scan may use either a for-each direction loop or
+        # an indexed heading loop with a precomputed geometric lookup.
+        # Validate that water protection precedes whichever real loop exists,
+        # rather than requiring one obsolete spelling of that loop.
+        ray_heads=(
+            "for (int[] direction : DIRECTIONS)",
+            "for (int heading = 0; heading < DIRECTIONS.length; heading++)",
+        )
+        found=[eco.index(head,begin) for head in ray_heads if head in eco[begin:]]
+        self.assertEqual(len(found),1,"Expected exactly one active ecotone ray scan")
+        boundary=found[0]
         early=eco.index("protectedWater(current)",begin)
         self.assertLess(early,boundary)
 
