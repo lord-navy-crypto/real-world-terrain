@@ -206,9 +206,14 @@ final class RealDemSeamlessMath {
     }
 
     private static double sampleRow(int row,int ix,double a) {
-        double p0=corner(row,ix),p1=corner(row,ix+1);
-        double pm=ix>0?corner(row,ix-1):2*p0-p1;
-        double pp=ix<GRID-2?corner(row,ix+2):2*p1-p0;
+        // ix is always in [0, GRID-2] after measuredHeight clamps the
+        // input. Every corner of this spline uses the same clamped row:
+        // select that array just once instead of clamping 2-4 times.
+        // Keep endpoint extrapolation and smoothSegment arithmetic exact.
+        final double[] heights = HEIGHTS[Math.max(0, Math.min(GRID-1, row))];
+        double p0=heights[ix],p1=heights[ix+1];
+        double pm=ix>0?heights[ix-1]:2*p0-p1;
+        double pp=ix<GRID-2?heights[ix+2]:2*p1-p0;
         return smoothSegment(pm,p0,p1,pp,a);
     }
 

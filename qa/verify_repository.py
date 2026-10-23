@@ -43,7 +43,7 @@ for name,want in checks.items():
  if name=='neoforge/src/main/resources/META-INF/neoforge.mods.toml':
   descriptor=(ROOT/name).read_text()
   for required in ('modLoader="javafml"','modId="realscale"',
-                   'version="2.0.0-preview.2-test.10"',
+                   'version="2.0.0-preview.2-test.11"',
                    'versionRange="[21.1.0,)"',
                    'versionRange="[1.21.1,1.21.2)"',
                    'modId="yet_another_config_lib_v3"'):
@@ -76,6 +76,15 @@ with tempfile.TemporaryDirectory() as tmp:
  classes=tmp/'classes';classes.mkdir()
  run(['javac','-d',str(classes),str(ROOT/'neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java'),str(ROOT/'neoforge/src/test/java/org/realscale/neoforge/RealDemTileSmoke.java')])
  run(['java','-cp',str(classes)+os.pathsep+str(ROOT/'neoforge/src/main/resources'),'org.realscale.neoforge.RealDemTileSmoke'])
+ # Run actual optimized bicubic DEM interpolation against the preserved
+ # original corner() path in every source-integrity CI, not only in the
+ # separately dispatched integrated-test-main workflow.
+ run(['javac','-cp',str(classes),'-d',str(classes),
+      str(ROOT/'neoforge/src/main/java/org/realscale/neoforge/RealDemDataSource.java'),
+      str(ROOT/'neoforge/src/main/java/org/realscale/neoforge/RealDemSeamlessMath.java'),
+      str(ROOT/'neoforge/src/test/java/org/realscale/neoforge/RealDemSeamlessMathSmoke.java')])
+ run(['java','-cp',str(classes)+os.pathsep+str(ROOT/'neoforge/src/main/resources'),
+      'org.realscale.neoforge.RealDemSeamlessMathSmoke'])
  artifact=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'evidence/v1.1/server-qa.zip'
  if artifact.exists():
   # Re-scan the genuine saved world, not synthetic heights.
