@@ -357,6 +357,19 @@ public final class GrandNetherCaveNetwork {
             && hiZ>=Math.min(a.z(),b.z())-reach;
     }
 
+    /**
+     * The Test.20 corridor descriptor already contains the conservative
+     * horizontal reach used by the original Hall/Hall/radius overload.
+     * Avoid recomputing min/max and radius for all 13 corridor candidates
+     * each time a new source X/Z column needs its 19-component mask.
+     * Keep the original overload above as the frozen arithmetic reference.
+     */
+    private static boolean tubeCouldTouch(TubeSegment segment,
+            double loX,double hiX,double loZ,double hiZ) {
+        return loX<=segment.maxX && hiX>=segment.minX
+            && loZ<=segment.maxZ && hiZ>=segment.minZ;
+    }
+
     private static int componentMask(CellCache c,
             double loX,double hiX,double loZ,double hiZ) {
         int bits=0;
@@ -365,17 +378,17 @@ public final class GrandNetherCaveNetwork {
             Hall center=c.halls[layer][0];
             if(roomCouldTouch(center,loX,hiX,loZ,hiZ))bits|=1<<shift;
             for(int dir=0;dir<4;dir++)
-                if(tubeCouldTouch(center,c.halls[layer][dir+1],11,
+                if(tubeCouldTouch(c.corridors[layer][dir],
                         loX,hiX,loZ,hiZ))bits|=1<<(shift+1+dir);
             for(int gallery=0;gallery<2;gallery++) {
                 Hall satellite=c.satellites[layer][gallery];
                 if(roomCouldTouch(satellite,loX,hiX,loZ,hiZ))
                     bits|=1<<(shift+5+gallery*2);
-                if(tubeCouldTouch(center,satellite,7,loX,hiX,loZ,hiZ))
-                    bits|=1<<(shift+6+gallery*2);
+                if(tubeCouldTouch(c.branches[layer][gallery],
+                        loX,hiX,loZ,hiZ))bits|=1<<(shift+6+gallery*2);
             }
         }
-        if(tubeCouldTouch(c.halls[0][0],c.halls[1][0],10,
+        if(tubeCouldTouch(c.interlayer,
                 loX,hiX,loZ,hiZ))bits|=1<<18;
         return bits;
     }
