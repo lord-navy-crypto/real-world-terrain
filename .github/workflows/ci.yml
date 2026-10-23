@@ -336,8 +336,10 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
             neoforge/src/main/java/org/realscale/neoforge/RealDemDataSource.java \
             neoforge/src/main/java/org/realscale/neoforge/RealDemSeamlessMath.java \
-            neoforge/src/test/java/org/realscale/neoforge/RealDemSeamlessMathSmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/RealDemSeamlessMathSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/RealDemEdgeRowSmoke.java
           java -cp build/usgs-v2-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemSeamlessMathSmoke
+          java -cp build/usgs-v2-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemEdgeRowSmoke
       - name: TVA multi-branch integration contract
         run: python3 scripts/check_tva_sacred_timeline.py
       - name: Verify sky island read-only probe reuse and local placement parity
