@@ -1,11 +1,13 @@
 name: EXPERIMENT REAL 3-mod worldgen DH Chunky startup patch A/B
 on:
   push:
-    branches: [experiment/realscale-dh-chunky-iris-sodium-bridge-20261023]
+    branches: [experiment/dh-chunky-bridge-status-v03-20261023]
     paths:
       - "dh-chunky-guard/**"
       - "qa/neoforge/verify_dh_chunky_guard_runtime.py"
       - "qa/test_dh_chunky_runtime.py"
+      - "qa/test_dh_chunky_status.py"
+      - "qa/neoforge/rcon_worldgen_smoke.py"
       - ".github/workflows/dh-chunky-real-neoforge-test.yml"
   pull_request:
     paths:
@@ -34,6 +36,7 @@ jobs:
           - {mode: patched, preset: tva_sacred_timeline_three_realms, seed: 42}
     env:
       MODE: ${{ matrix.mode }}
+      REALSCALE_DH_CHUNKY_REQUIRE_STATUS: ${{ matrix.mode == 'patched' && '1' || '0' }}
       PRESET: ${{ matrix.preset }}
       SEED: ${{ matrix.seed }}
       JAVA_TOOL_OPTIONS: "-Drealscale.experimental.beardifier.ycull=false -Drealscale.experimental.aquifer.audit=false"
@@ -62,7 +65,7 @@ jobs:
             cp build/dh-chunky-contract/DistantHorizons*.jar "$d/"
             cp build/dh-chunky-contract/Chunky-NeoForge*.jar "$d/"
             if [ "$MODE" = "patched" ]; then
-              cp dh-chunky-guard/build/libs/RealScale-DH-Chunky-Guard-NeoForge-1.21.1-0.2.0-experimental.jar "$d/"
+              cp dh-chunky-guard/build/libs/RealScale-DH-Chunky-Guard-NeoForge-1.21.1-0.3.0-experimental.jar "$d/"
             fi
           done
       - name: Configure fresh Sacred Timeline world seed 42

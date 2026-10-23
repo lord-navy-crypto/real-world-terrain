@@ -3,6 +3,7 @@ package org.realscale.compat.dhchunky.mixin;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.realscale.compat.dhchunky.ChunkyBridgeMetrics;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -49,7 +50,13 @@ public abstract class ChunkyLifecycleSetupMixin {
             System.err.println("REALSCALE_DH_CHUNKY_GUARD_HOOK_ENTERED");
         }
 
-        if (!realscale$isChunkyProviderReady()) {
+        // Timed only during the pre-bind handshake, never on ordinary chunk
+        // updates after listenerBound flips. DH still owns its generator plan.
+        long started = System.nanoTime();
+        boolean providerReady = realscale$isChunkyProviderReady();
+        ChunkyBridgeMetrics.probe(providerReady, System.nanoTime() - started);
+        if (!providerReady) {
+            ChunkyBridgeMetrics.deferred();
             // Cancel BEFORE DH flips listenerBound; retry at next real chunk
             // update. This also ensures an exception cannot escape chunk load.
             if (realscale$warned.compareAndSet(false, true)) {
@@ -59,6 +66,7 @@ public abstract class ChunkyLifecycleSetupMixin {
             }
             ci.cancel();
         } else if (realscale$warned.get()) {
+            ChunkyBridgeMetrics.ready();
             System.err.println(
                 "REALSCALE_DH_CHUNKY_GUARD_READY: Chunky provider is now registered; "
                 + "allowing native DH event registration");
@@ -71,6 +79,7 @@ public abstract class ChunkyLifecycleSetupMixin {
     private void realscale$confirmNativeDhListener(CallbackInfo ci) {
         if (listenerBound && !realscale$boundConfirmed) {
             realscale$boundConfirmed = true;
+            ChunkyBridgeMetrics.bound();
             System.err.println("REALSCALE_DH_CHUNKY_GUARD_BOUND: native DH listener initialized");
         }
     }
