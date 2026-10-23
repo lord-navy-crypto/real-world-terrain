@@ -6,13 +6,13 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-/** TEST-only client default ON; -Drealscale.experimental.client.uploadbudget=false disables. */
+/** TEST-only client upload override defaults OFF for DH/Sodium/Iris compatibility. */
 public final class ClientSectionUploadMixinPlugin implements IMixinConfigPlugin {
     @Override public void onLoad(String mixinPackage){}
     @Override public String getRefMapperConfig(){return null;}
     @Override public boolean shouldApplyMixin(String target,String mixin){
         boolean enabled=mixin.endsWith(".VanillaSectionUploadBudgetMixin")
-                &&Boolean.parseBoolean(System.getProperty("realscale.experimental.client.uploadbudget","true"));
+                &&Boolean.parseBoolean(System.getProperty("realscale.experimental.client.uploadbudget","false"));
         System.err.println("REALSCALE_CLIENT_UPLOAD_MIXIN_DECISION "+mixin+
                 " enabled="+enabled);
         return enabled;
