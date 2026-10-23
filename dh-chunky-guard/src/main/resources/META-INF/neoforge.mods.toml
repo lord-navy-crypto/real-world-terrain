@@ -3,7 +3,7 @@ loaderVersion="[4,)"
 license="All rights reserved; project license pending"
 [[mods]]
 modId="dhchunkyguard"
-version="0.3.0-experimental"
+version="0.3.1-experimental"
 displayName="DH + Chunky Startup Guard (Experimental)"
 authors="RealScale Compatibility Research"
 description="Guards DH 3.3.3 / Chunky 1.4.23 startup; supplies a read-only /dhchunkyguard status and advice command. Does not modify terrain, render pipeline or saved chunks."

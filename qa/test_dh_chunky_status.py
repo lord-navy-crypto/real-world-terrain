@@ -31,7 +31,7 @@ class BridgeStatusTests(unittest.TestCase):
         self.assertNotIn('Commands.literal("stop")',source)
     def test_exact_known_versions(self):
         toml=(ROOT/"dh-chunky-guard/src/main/resources/META-INF/neoforge.mods.toml").read_text()
-        self.assertIn('version="0.3.0-experimental"',toml)
+        self.assertIn('version="0.3.1-experimental"',toml)
         self.assertIn('versionRange="[3.3.3,3.3.4)"',toml)
         self.assertIn('versionRange="[1.4.23,1.4.24)"',toml)
 if __name__=="__main__":

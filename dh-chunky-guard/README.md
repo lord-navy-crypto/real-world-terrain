@@ -6,7 +6,7 @@ RealScale terrain mod or force players to install DH and Chunky.
 
 ### Version history
 
-See [CHANGELOG.md](CHANGELOG.md) for v0.1 → v0.2 → v0.3 changes, verified behavior and current limitations.
+See [CHANGELOG.md](CHANGELOG.md) for v0.1 → v0.2 → v0.3.1 changes, verified behavior and current limitations.
 
 ### Supported test combination
 - Minecraft 1.21.1 / Java 21 / NeoForge 21.1.x

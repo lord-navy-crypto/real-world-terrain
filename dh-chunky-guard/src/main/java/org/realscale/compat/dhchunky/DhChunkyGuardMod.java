@@ -15,7 +15,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 public final class DhChunkyGuardMod {
     public DhChunkyGuardMod() {
         NeoForge.EVENT_BUS.addListener(DhChunkyGuardMod::registerCommands);
-        System.err.println("REALSCALE_DH_CHUNKY_GUARD_MOD_LOADED (experimental v0.3)");
+        System.err.println("REALSCALE_DH_CHUNKY_GUARD_MOD_LOADED (experimental v0.3.1)");
     }
 
     private static void registerCommands(RegisterCommandsEvent event) {
