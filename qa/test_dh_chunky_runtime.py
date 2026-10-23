@@ -18,15 +18,15 @@ class RuntimeVerdictTests(unittest.TestCase):
         self.assertFalse(evaluate(PATCH_LOADED+"\n"+PATCH_HOOK,"",
                                   "patched",0)["pass_gate"])
     def test_listener_must_resume_after_initial_defer(self):
-        log = "\\n".join((PATCH_LOADED,PATCH_HOOK,PATCH_DEFERRED,DH_WORLDGEN_QUEUE))
+        log = "\n".join((PATCH_LOADED,PATCH_HOOK,PATCH_DEFERRED,DH_WORLDGEN_QUEUE))
         stuck = evaluate(log,FULL_CHUNK,"patched",0)
         self.assertFalse(stuck["pass_gate"])
         self.assertFalse(stuck["listener_not_stuck"])
-        restored = evaluate(log+"\\n"+PATCH_READY,FULL_CHUNK,"patched",0)
+        restored = evaluate(log+"\n"+PATCH_READY,FULL_CHUNK,"patched",0)
         self.assertTrue(restored["pass_gate"])
         self.assertTrue(restored["listener_not_stuck"])
     def test_dh_generator_queue_must_initialize(self):
-        log="\\n".join((PATCH_LOADED,PATCH_HOOK))
+        log="\n".join((PATCH_LOADED,PATCH_HOOK))
         self.assertFalse(evaluate(log,FULL_CHUNK,"patched",0)["pass_gate"])
 
     def test_patched_world_must_not_hide_known_original_exception(self):
