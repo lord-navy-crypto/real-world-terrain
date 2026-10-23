@@ -1,0 +1,58 @@
+name: Build RealScale DH Chunky compatibility module
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dh-chunky-guard/**"
+      - "qa/test_dh_chunky_patch.py"
+      - "qa/test_dh_chunky_status.py"
+      - ".github/workflows/dh-chunky-standalone.yml"
+  pull_request:
+    paths:
+      - "dh-chunky-guard/**"
+      - "qa/test_dh_chunky_patch.py"
+      - "qa/test_dh_chunky_status.py"
+      - ".github/workflows/dh-chunky-standalone.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile-addon:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '21'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.14.3'}
+      - name: Validate exact startup guard
+        run: |
+          python3 -m unittest discover -s qa -p test_dh_chunky_patch.py -v
+          python3 -m unittest discover -s qa -p test_dh_chunky_status.py -v
+      - name: Build standalone NeoForge JAR
+        working-directory: dh-chunky-guard
+        run: gradle --no-daemon build
+      - name: Verify third-party binaries are not bundled
+        run: |
+          python3 - <<'PY'
+          from glob import glob
+          from zipfile import ZipFile
+          jars=glob("dh-chunky-guard/build/libs/*.jar")
+          assert len(jars)==1,jars
+          with ZipFile(jars[0]) as z:
+            names=set(z.namelist())
+            for required in ("META-INF/neoforge.mods.toml","dhchunkyguard.mixins.json",
+                "org/realscale/compat/dhchunky/mixin/ChunkyLifecycleSetupMixin.class",
+                "org/realscale/compat/dhchunky/ChunkyBridgeMetrics.class"):
+                assert required in names,required
+            assert not any(x.startswith(("com/seibel/","org/popcraft/")) for x in names)
+          print("REALSCALE_STANDALONE_COMPAT_JAR_VALID")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-DH-Chunky-Guard-NeoForge-1.21.1
+          path: dh-chunky-guard/build/libs/*.jar
+          if-no-files-found: error
