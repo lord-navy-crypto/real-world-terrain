@@ -316,13 +316,15 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherRegionCacheSmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherTubeGeometrySmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherMaskAabbParitySmoke.java \
-            neoforge/src/test/java/org/realscale/neoforge/GrandNetherSingleMaskParitySmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherSingleMaskParitySmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherTubeBendConstantsSmoke.java
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkSmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkParitySmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherRegionCacheSmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherTubeGeometrySmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherMaskAabbParitySmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherSingleMaskParitySmoke
+          java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherTubeBendConstantsSmoke
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
