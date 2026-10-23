@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -29,6 +30,11 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
     private static final int MAX_RADIUS=3;
     private static final int ROOF_DEPTH=24;
     private static final int CAVE_KINDS=Kind.CAVE_FOSSIL.ordinal();
+    // Optional release diagnostics must not take atomic hot-path updates during
+    // normal world generation. Enable only for a targeted server QA session:
+    // -Drealscale.habitat.report=true
+    private static final boolean REPORT_HABITATS =
+            Boolean.getBoolean("realscale.habitat.report");
     private final Kind kind;
     private static final java.util.concurrent.atomic.LongAdder[] ATTEMPTS=newCounters();
     private static final java.util.concurrent.atomic.LongAdder[] PLACEMENTS=newCounters();
@@ -41,7 +47,7 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
         return counts;
     }
     static {
-        Runtime.getRuntime().addShutdownHook(new Thread(()->{
+        if(REPORT_HABITATS) Runtime.getRuntime().addShutdownHook(new Thread(()->{
             StringBuilder s=new StringBuilder("REALSCALE_CAVE_MARINE_HABITATS");
             for(Kind k:Kind.values())
                 s.append(' ').append(k.name()).append("=")
@@ -58,8 +64,10 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
     public Kind kind(){return kind;}
 
     private static boolean sameChunk(BlockPos origin,BlockPos candidate){
-        return Math.floorDiv(origin.getX(),16)==Math.floorDiv(candidate.getX(),16)
-                && Math.floorDiv(origin.getZ(),16)==Math.floorDiv(candidate.getZ(),16);
+        // Arithmetic right-shift by 4 is exactly floorDiv(x,16) for all
+        // signed Minecraft block coordinates, including negative chunk edges.
+        return (origin.getX()>>4)==(candidate.getX()>>4)
+                && (origin.getZ()>>4)==(candidate.getZ()>>4);
     }
     private static boolean naturalRock(BlockState s){
         return s.is(Blocks.STONE)||s.is(Blocks.DEEPSLATE)
@@ -102,8 +110,14 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
         int max=Math.min(w.getMaxBuildHeight()-4,
                 Math.min(GrandOverworldCaveNetwork.MAX_Y,surface-ROOF_DEPTH));
         if(min>max)return null;
+        // Keep the EXACT original nearest-floor visit order, but reuse one
+        // mutable coordinate instead of allocating up to 73 immutable
+        // BlockPos objects for each failed candidate in tall cave searches.
+        // The predicate is synchronous and no position escapes the probe.
+        final int x=origin.getX(),z=origin.getZ();
+        final BlockPos.MutableBlockPos probe=new BlockPos.MutableBlockPos();
         int y=HabitatFloorSearch.nearest(origin.getY(),min,max,36,
-                v->cavePocket(w,new BlockPos(origin.getX(),v,origin.getZ())));
+                v->cavePocket(w,probe.set(x,v,z)));
         return y==HabitatFloorSearch.NOT_FOUND ? null
                 : new BlockPos(origin.getX(),y,origin.getZ());
     }
@@ -278,15 +292,15 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
     @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context){
         if(!TVAWorldGuard.hasRealScaleGenerator(context))return false;
         WorldGenLevel w=context.level();
-        if(!w.getLevel().dimension().location().toString()
-                .equals("minecraft:overworld"))return false;
+        // Avoid ResourceLocation.toString() allocation per placed feature.
+        if(!w.getLevel().dimension().equals(Level.OVERWORLD))return false;
         BlockPos origin=context.origin();
-        ATTEMPTS[kind.ordinal()].increment();
+        if(REPORT_HABITATS)ATTEMPTS[kind.ordinal()].increment();
         boolean cave=kind.ordinal()<=CAVE_KINDS;
         boolean changed=cave ? decorateCave(w,origin,context.random())
                 : decorateMarine(w,origin,context.chunkGenerator().getSeaLevel(),
                         context.random());
-        if(changed)PLACEMENTS[kind.ordinal()].increment();
+        if(REPORT_HABITATS && changed)PLACEMENTS[kind.ordinal()].increment();
         return changed;
     }
 }
