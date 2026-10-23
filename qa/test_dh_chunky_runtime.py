@@ -49,6 +49,14 @@ class RuntimeVerdictTests(unittest.TestCase):
         self.assertLess(code.index('proc.wait(timeout=125)'),
                         code.index('storage=scan(scan_root)'))
 
+    def test_dh_sqlite_audit_json_uses_real_newline_not_literal_escape(self):
+        # An earlier run wrote literal backslash+n after closing JSON brace,
+        # so the SQLite report existed but json.loads failed with Extra data.
+        code=(Path(__file__).resolve().parents[0]/"neoforge"/
+              "rcon_worldgen_smoke.py").read_text()
+        self.assertIn(r'json.dumps(storage,sort_keys=True,indent=2)+"\n"',code)
+        self.assertNotIn(r'json.dumps(storage,sort_keys=True,indent=2)+"\\n"',code)
+
     def test_other_unpatched_crash_is_failure(self):
         self.assertFalse(evaluate("OutOfMemoryError","", "unpatched",1)["pass_gate"])
 

@@ -470,7 +470,7 @@ def main(root,expected_preset,profile):
             destination=root/"build"/"dh-chunky-lod-storage.json"
             destination.parent.mkdir(parents=True,exist_ok=True)
             destination.write_text(
-                json.dumps(storage,sort_keys=True,indent=2)+"\\n",
+                json.dumps(storage,sort_keys=True,indent=2)+"\n",
                 encoding="utf-8")
             print("REALSCALE_DH_LOD_PERSISTENCE_AFTER_STOP:",
                   json.dumps({k:v for k,v in storage.items() if k!="files"},
