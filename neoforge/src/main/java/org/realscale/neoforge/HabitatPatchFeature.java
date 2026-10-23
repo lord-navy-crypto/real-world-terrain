@@ -20,6 +20,9 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
     private static final int CAVE_SCAN_RADIUS_Y = 18;
     private static final int HIGHLAND_SCAN_RADIUS_Y = 40;
     private static final int MIN_ROOF_DEPTH = 20;
+    // Preserve the existing cave patch trial order without allocating a new
+    // three-element array for every decorated candidate column.
+    private static final int[] FLOOR_OFFSETS = {0, 1, -1};
     public HabitatPatchFeature(Kind kind) {
         super(NoneFeatureConfiguration.CODEC);
         this.kind = kind;
@@ -38,10 +41,13 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
     }
 
     private static boolean dryCaveFloor(WorldGenLevel w, BlockPos pos, boolean requireDripstone) {
-        return w.getBlockState(pos).isAir()
-                && w.getBlockState(pos.above()).isAir()
-                && w.getFluidState(pos).isEmpty()
-                && w.getFluidState(pos.above()).isEmpty()
+        // Preserve the original short-circuit order, while reusing the one
+        // above position for the air and fluid probes.
+        if (!w.getBlockState(pos).isAir()) return false;
+        final BlockPos above = pos.above();
+        if (!w.getBlockState(above).isAir()) return false;
+        return w.getFluidState(pos).isEmpty()
+                && w.getFluidState(above).isEmpty()
                 && caveSupport(w.getBlockState(pos.below()), requireDripstone);
     }
 
@@ -63,9 +69,14 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
         if (max < min) return null;
         int search = origin.getY() > 60
                 ? HIGHLAND_SCAN_RADIUS_Y : CAVE_SCAN_RADIUS_Y;
+        // Keep the exact nearest-floor traversal and all depth/roof guards.
+        // An air-pocket rejection can occur dozens of times in solid rock:
+        // one locally scoped mutable position avoids repeated BlockPos
+        // allocation and never escapes synchronous predicate invocation.
+        final int x = origin.getX(), z = origin.getZ();
+        final BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
         int resultY = HabitatFloorSearch.nearest(origin.getY(), min, max,
-                search, y -> dryCaveFloor(w,
-                    new BlockPos(origin.getX(), y, origin.getZ()), dripstone));
+                search, y -> dryCaveFloor(w, probe.set(x, y, z), dripstone));
         return resultY == HabitatFloorSearch.NOT_FOUND
                 ? null : new BlockPos(origin.getX(), resultY, origin.getZ());
     }
@@ -97,7 +108,7 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
                 // Permit a one-block rise or dip on uneven natural cave floors.
                 BlockPos target = null;
                 boolean dripstone = kind == Kind.CAVE_DRIPSTONE;
-                for (int step : new int[]{0, 1, -1}) {
+                for (int step : FLOOR_OFFSETS) {
                     BlockPos trial = p.above(step);
                     if (dryCaveFloor(w, trial, dripstone)) {
                         target = trial;
