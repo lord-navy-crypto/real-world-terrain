@@ -2,6 +2,21 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.30 — 2026-10-24 — Fused Grand Nether Source-Column XYZ Candidate Lookup (Experimental)
+
+### Real world generation hot path
+- In Test.29, `GrandNetherCaverns.computeUnprofiled` called `componentMaskForColumn(x,z)` and `mayContainVoidAtHeight(x,y,z,mask)` separately on cave-bearing source columns. Both performed a worker-local region lookup, including coordinate floorDiv and cache probe, although their graph coordinates were identical.
+- Move the existing **unchanged** 512-slot/two-way 19-bit X/Z column mask access into a private `cachedColumnMask(CellCache,x,z)` helper. Keep the original `componentMaskForColumn` unchanged in behavior as a compatibility and test oracle.
+- New `componentMaskForColumnAtHeight(x,y,z)` performs the original safe border test, obtains **one** worker-local cave graph, reuses the original X/Z mask, then performs the exact cached height bit intersection in that same snapshot. Return `0` only when either old check proves cave strength absent, and preserve `-1` for source columns near a 256-block cell edge (the displaced sample may touch another cave graph).
+- The production density wrapper uses this combined mask to skip unnecessary noise warp, but still passes the **original horizontal mask** into `strengthFromColumnWithMask` for non-empty reachable samples. Original per-voxel floating-point cave, noise, radius, seed and structure calculations are unchanged.
+- No additional primitive arrays, region memory, threads or global state. The bounded Test.26 two-way column cache, Test.29 lazy interval-filled Y table, vanilla Nether lava/bedrock/structures, all other dimensions and Anvil save format remain intact.
+
+### Independent parity, performance and promotion
+- Add `GrandNetherFusedColumnHeightMaskSmoke` comparing the exact original two-step mask against the fused mask across signed far coordinates, 256-block cell boundaries, cave-rich halls and heights inside/outside the protected band. For each sampled warp and any zero candidate, require the full reference `GrandNetherCaveNetwork.strength` to be **raw IEEE-754 zero**; for nonzero candidates, require raw-bit equality with `strengthFromColumnWithMask`. Repeat cross-worker.
+- Include a warmed, same-JVM informational old split-vs-fused *gate-only* nanosecond comparison. This does **not** claim a real Minecraft chunk throughput win and does not have a speed threshold.
+- Continue Test.29's frozen Y interval parity, Test.28 complete 19-bit Y masks, Test.27 3D density zero-exclusion, Test.26 cache collision, Test.24 single-mask parity, original tube geometry and full NeoForge dedicated-server, multi-seed, ocean, sky, End and Anvil saved-world CI gates.
+- Stacked Draft on Test.29 (#122); stable `main` remains unchanged. Require newest SHA CI and matched same-hardware/cold-world Test.29-vs-Test.30 Nether chunk/s, p95, CPU, heap/GC and identical saved blocks before promotion. The reduced cache lookup is a logical work saving, not yet a measured whole-world speed improvement.
+
 ## 2.0.0-preview.2-test.29 — 2026-10-24 — Nether Cave Height Interval Fill and Build-Time Microbenchmark (Experimental)
 
 ### Worldgen region initialization speed
