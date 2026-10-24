@@ -2,6 +2,18 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.39 — 2026-10-24 — Conservative Overworld Pre-Sine Lateral and Shaft Radial Rejection (Experimental)
+
+### Avoid expensive per-voxel trigonometry in 47-component giant caves
+- Test.38's pre-sine vertical-centerline guard safely skips some impossible 3D tunnel samples, but voxels outside the maximum cross-axis horizontal width still reach `Math.sin(Math.PI*t)` and the expensive cross-section formula. Their final tunnel strength is known to be exactly zero.
+- Test.39 uses the same original seeded bent 3D centerline `cx, cy, cz` and freezes the maximum positive tunnel half-width as `section.radius()+1.0`, with a full block of conservative slack at curved cross-section and floating-point boundaries. For **vertical shafts**, a source sample farther than that bound in **either** X or Z cannot carve. For **nonvertical galleries, large corridors and 2-tier artery tunnels**, compute the identical original `lateral=(-vz*xx+vx*zz)/g.horiz` once before the sine and early-return exactly positive zero when `abs(lateral)` exceeds this conservative bound. The original lateral double is REUSED by the unchanged final `q` formula, so all eligible carved positions keep their exact original double rounding and `Math.max` traversal.
+- The original external 3D AABB, `t` interval, length, bend displacement and Test.38 vertical reject run first; the new lateral/radial guard only skips `Math.sin` after these preconditions. The original full `tunnelStrength(Hall, Passage, key)` reference remains untouched. All procedural seeds, halls/tunnels, small caves, water/lava, world heights, biome generation, structures, noise/Aquifer/Beardifier, Nether/End/sky and Anvil saved blocks are unchanged, and no new per-voxel allocations are introduced.
+
+### Independent bitwise proof and release gate
+- New `GrandOverworldPreSineRadialRejectSmoke` independently reconstructs the exact bent tube centerline and radial distance from immutable source geometry, then compares **75k+** samples to the frozen unoptimized `tunnelStrength` using `Double.doubleToRawLongBits`. Test four cavern strata, galleries, corridors, vertical shafts, distant arterial tubes, actual carved samples, seeded signed regions and offsets near the conservative radius; every new early-rejected sample must yield raw IEEE-754 **positive zero** in the original complete formula.
+- Retain all old original tunnel bit-parity, Test.38 pre-sine Y rejection, Test.37 frozen whole-evaluator raw-double, Test.33 full 47-bit XYZ mask and Test.31 altitude reach regression, original full NeoForge build, multi-seed actual servers, saved Anvil, distant chunk 180s, ocean/sky/End/Nether proof and Test.35 opt-in matched cold-worldgen A/B.
+- Test.39 is an independent stacked Draft based on Test.38 (#131); stable `main` is untouched. Reduced sine calls in a targeted smoke-test workload **do not establish Minecraft chunk throughput gains**. Require newest-head full CI plus same-hardware same-seed cold Test.38/Test.39 Overworld new-chunk throughput/p95, CPU and heap/GC, and exact saved-block parity before promotion. Roll back if the guard outweighs sine savings.
+
 ## 2.0.0-preview.2-test.38 — 2026-10-24 — Conservative Overworld Tunnel Pre-Sine Vertical Rejection (Experimental)
 
 ### Avoid expensive trig in giant-cave world generation
