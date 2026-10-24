@@ -75,7 +75,7 @@ class WorldAtlasBackgroundPainterTests(unittest.TestCase):
         self.assertIn("WorldAtlasBackgroundPainter.start(",gui)
         self.assertIn("WorldAtlasHeightmapReader.openSampler(task.world)",backend)
         self.assertIn("newFarSavedY=1100",smoke)
-        self.assertIn("STale".upper().lower().replace("stale","STALE"),smoke)
+        self.assertIn("STALE center block height color",smoke)
         self.assertIn("Refreshed map omitted genuinely new far saved region",smoke)
         for forbidden in ("new ServerChunkCache", "getChunkAtAsync(",
                           "runServer(", "ProcessBuilder("):
