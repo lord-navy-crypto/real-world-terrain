@@ -86,8 +86,7 @@ public final class GrandNetherHeightIntervalFillSmoke {
                 double.class,double.class,int.class);
         fill.setAccessible(true);
 
-        List<Object> cells=new ArrayList<>();
-        List<Component[]> graphs=new ArrayList<>();
+        int graphCells=0;
         for(int gx=-5;gx<=5;gx++)for(int gz=-5;gz<=5;gz++) {
             Object cell=getRegion.invoke(regions,gx,gz);
             Component[] components=extract(cell);
@@ -96,8 +95,7 @@ public final class GrandNetherHeightIntervalFillSmoke {
             populate.invoke(null,cell,candidate);
             yes(Arrays.equals(prior,candidate),
                     "Whole-height old/new table differs in 256-cell "+gx+","+gz);
-            cells.add(cell);
-            graphs.add(components);
+            graphCells++;
             checked+=297L*19;
         }
 
@@ -127,29 +125,33 @@ public final class GrandNetherHeightIntervalFillSmoke {
         // identical component graphs and reused preallocated arrays.
         // Warm both branches before timing and report raw ns, NOT speedup
         // percentages or end-to-end real Minecraft new-chunk claims.
-        int[][] buffers=new int[cells.size()][297];
-        for(int warm=0;warm<6;warm++)for(int i=0;i<cells.size();i++) {
-            oldScan(graphs.get(i),buffers[i]);
-            Arrays.fill(buffers[i],0);
-            populate.invoke(null,cells.get(i),buffers[i]);
+        // The production RegionCache has only four re-used snapshots:
+        // old references collected for 121 regions would be stale after
+        // eviction. Time one live cell with its own *matching* geometry
+        // repeatedly, not different frozen data from an earlier occupant.
+        Object benchCell=getRegion.invoke(regions,0,0);
+        Component[] benchGraph=extract(benchCell);
+        int[] benchBuffer=new int[297];
+        for(int warm=0;warm<240;warm++) {
+            oldScan(benchGraph,benchBuffer);
+            Arrays.fill(benchBuffer,0);
+            populate.invoke(null,benchCell,benchBuffer);
         }
         long oldNanos=0,newNanos=0;
-        for(int pass=0;pass<16;pass++) {
+        for(int pass=0;pass<1800;pass++) {
             long start=System.nanoTime();
-            for(int i=0;i<cells.size();i++)
-                oldScan(graphs.get(i),buffers[i]);
+            oldScan(benchGraph,benchBuffer);
             oldNanos+=System.nanoTime()-start;
-            for(int i=0;i<cells.size();i++)Arrays.fill(buffers[i],0);
+            Arrays.fill(benchBuffer,0);
             start=System.nanoTime();
-            for(int i=0;i<cells.size();i++)
-                populate.invoke(null,cells.get(i),buffers[i]);
+            populate.invoke(null,benchCell,benchBuffer);
             newNanos+=System.nanoTime()-start;
-            sink^=buffers[pass%buffers.length][pass%297];
+            sink^=benchBuffer[pass%297];
         }
         yes(checked>600_000 && randomChecks>1_300_000,
                 "Insufficient graph or fractional-boundary coverage");
         System.out.println("NETHER_HEIGHT_INTERVAL_FILL_RAW_MASK_PASS graphCells="
-                +cells.size()+" originalComparisons="+checked
+                +graphCells+" originalComparisons="+checked
                 +" fractionalBoundaryChecks="+randomChecks
                 +" frozenScan_ns="+oldNanos+" candidateIntervalFill_ns="
                 +newNanos+" microbenchmarkOnly=true");
