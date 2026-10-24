@@ -86,26 +86,158 @@ def server_run(root: Path, preset: str, label: str) -> list[dict]:
     return waypoints
 
 
-def block_payload_digest(chunk: dict) -> str:
-    sections = chunk.get("sections", [])
+# Minecraft's PalettedContainer may serialize EQUAL world blocks with a
+# different palette insertion order (or a different palette index packing).
+# Test.39's first cold A/B failures were raw-palette hash mismatches; they
+# did NOT distinguish that representation difference from real terrain drift.
+# Expand the actual 4096 block states and 64 biomes PER SECTION and hash
+# the canonical voxel content instead. Do not ignore actual block differences.
+LONG_MASK=(1<<64)-1
+
+
+def _palette_indices(palette, words, count: int, min_bits: int):
+    if not palette:
+        raise AssertionError("Saved paletted container has no palette")
+    if len(palette)==1:
+        # Minecraft may omit packed data for a single-entry palette.
+        return [0]*count
+    bits=max(min_bits,(len(palette)-1).bit_length())
+    per_long=64//bits
+    if per_long==0 or not isinstance(words,list):
+        raise AssertionError("Unsupported saved PalettedContainer bit packing")
+    required=(count+per_long-1)//per_long
+    if len(words)<required:
+        raise AssertionError(
+            f"Truncated saved palette packing: bits={bits} "
+            f"need={required} actual={len(words)}")
+    indices=[]
+    for i in range(count):
+        word=int(words[i//per_long])&LONG_MASK
+        index=(word>>((i%per_long)*bits))&((1<<bits)-1)
+        if index>=len(palette):
+            raise AssertionError(
+                f"Illegal palette index {index} out of {len(palette)}")
+        indices.append(index)
+    return indices
+
+
+def _normalized_block(state):
+    if not isinstance(state,dict) or not isinstance(state.get("Name"),str):
+        raise AssertionError(f"Malformed Minecraft block state: {state!r}")
+    return json.dumps({
+        "Name":state["Name"],
+        "Properties":state.get("Properties",{}),
+    },sort_keys=True,separators=(",",":"),ensure_ascii=True).encode("ascii")
+
+
+def _digest_expanded_palette(container,count,min_bits,default):
+    if not container or not container.get("palette"):
+        palette=[default]
+        packed=[]
+    else:
+        palette=container["palette"]
+        packed=container.get("data",[])
+    entries=([_normalized_block(x) for x in palette] if min_bits==4 else [
+        str(x).encode("utf-8") for x in palette
+    ])
+    indices=_palette_indices(palette,packed,count,min_bits)
+    h=hashlib.sha256()
+    for index in indices:
+        h.update(entries[index])
+        h.update(b"\n")
+    return h.hexdigest()
+
+
+def _digest_heightmaps(maps):
+    normalized={}
+    # Decode numeric 2096-height 1.21.1 Overworld values, not storage
+    # layout bytes. Heightmap names are compared independently.
+    bits=(2096+1).bit_length()
+    per_long=64//bits
+    padded=(256+per_long-1)//per_long
+    compact=(256*bits+63)//64
+    for name,values in sorted(maps.items()):
+        if not isinstance(values,list):
+            raise AssertionError(f"Malformed heightmap {name}")
+        # Heightmaps commonly use Minecraft SimpleBitStorage's
+        # contiguous packing (values may cross a 64-bit boundary).
+        # Some custom/legacy generators emit padded storage like
+        # PalettedContainer. Accept either known length, never infer
+        # a mixed or truncated layout. Equal lengths have same layout
+        # for the common divisors of 64.
+        if len(values)==compact and compact!=padded:
+            mode="compact"
+        elif len(values)==padded:
+            mode="padded"
+        else:
+            raise AssertionError(
+                f"Unexpected saved heightmap {name} longs={len(values)} "
+                f"expectedCompact={compact} expectedPadded={padded}")
+        unpacked=[]
+        for i in range(256):
+            if mode=="padded":
+                word=int(values[i//per_long])&LONG_MASK
+                value=word>>((i%per_long)*bits)
+            else:
+                offset=i*bits
+                index=offset//64
+                shift=offset%64
+                word=int(values[index])&LONG_MASK
+                value=word>>shift
+                if shift+bits>64:
+                    extra=int(values[index+1])&LONG_MASK
+                    value|=extra<<(64-shift)
+            unpacked.append(value&((1<<bits)-1))
+        normalized[name]=unpacked
+    return hashlib.sha256(json.dumps(
+        normalized,sort_keys=True,separators=(",",":")
+    ).encode("utf-8")).hexdigest()
+
+
+def block_payload_digest(chunk: dict) -> dict:
+    sections=chunk.get("sections",[])
     if not sections:
         raise AssertionError("Target chunk has no Anvil section data")
-    # Only actual saved block, biome and heightmap data: not timestamps,
-    # entity positions, block tick queues, random heightmap metadata, etc.
-    canonical = {
-        "sections": [
-            {"Y": sec["Y"],
-             "block_states": sec.get("block_states", {}),
-             "biomes": sec.get("biomes", {})}
-            for sec in sorted(sections, key=lambda s:s["Y"])
-        ],
-        "heightmaps": chunk.get("Heightmaps", chunk.get("heightmaps",{})),
+    section_details={}
+    for sec in sections:
+        y=int(sec["Y"])
+        if y in section_details:
+            raise AssertionError(f"Duplicate saved chunk section Y={y}")
+        section_details[y]={
+            "blocks":_digest_expanded_palette(
+                sec.get("block_states",{}),4096,4,{"Name":"minecraft:air"}),
+            "biomes":_digest_expanded_palette(
+                sec.get("biomes",{}),64,1,"minecraft:plains"),
+        }
+    def combine(category):
+        h=hashlib.sha256()
+        for y,values in sorted(section_details.items()):
+            h.update(f"{y}:".encode("ascii"))
+            h.update(values[category].encode("ascii"))
+            h.update(b"\n")
+        return h.hexdigest()
+    # Retain the old storage-layout hash only as a DIAGNOSTIC:
+    # never fail on palette ordering when physical voxels are equal.
+    old_storage={
+        "sections":[{
+            "Y":sec["Y"],
+            "block_states":sec.get("block_states",{}),
+            "biomes":sec.get("biomes",{}),
+        } for sec in sorted(sections,key=lambda v:v["Y"])],
+        "heightmaps":chunk.get("Heightmaps",chunk.get("heightmaps",{})),
     }
-    encoded = json.dumps(canonical, sort_keys=True, separators=(",",":"))
-    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+    return {
+        "blocks":combine("blocks"),
+        "biomes":combine("biomes"),
+        "heightmaps":_digest_heightmaps(old_storage["heightmaps"]),
+        "raw_storage_diagnostic":hashlib.sha256(json.dumps(
+            old_storage,sort_keys=True,separators=(",",":")
+        ).encode("utf-8")).hexdigest(),
+        "sections":{str(y):x for y,x in sorted(section_details.items())},
+    }
 
 
-def target_chunk_digests(root: Path) -> dict[str,str]:
+def target_chunk_digests(root: Path) -> dict[str,dict]:
     targets={(x//16,z//16) for x,z in FAR_ROUTE_SITES}
     found={}
     for region in root.glob("run/**/region/*.mca"):
@@ -125,6 +257,29 @@ def target_chunk_digests(root: Path) -> dict[str,str]:
             f"Missing actual persisted distant target chunks: "
             f"found={sorted(found)} expected={sorted(targets)}")
     return found
+
+
+def saved_world_differences(baseline: dict, candidate: dict) -> list[dict]:
+    errors=[]
+    for chunk_id in sorted(set(baseline)|set(candidate)):
+        a=baseline.get(chunk_id)
+        b=candidate.get(chunk_id)
+        if a is None or b is None:
+            errors.append({"chunk":chunk_id,"category":"missing"})
+            continue
+        for category in ("blocks","biomes","heightmaps"):
+            if a[category]!=b[category]:
+                problem={"chunk":chunk_id,"category":category}
+                if category in ("blocks","biomes"):
+                    ys=sorted(set(a["sections"])|set(b["sections"]),
+                              key=lambda y:int(y))
+                    problem["changed_section_Y"]=[
+                        y for y in ys if
+                        a["sections"].get(y,{}).get(category)!=
+                        b["sections"].get(y,{}).get(category)
+                    ]
+                errors.append(problem)
+    return errors
 
 
 def main() -> None:
@@ -151,7 +306,15 @@ def main() -> None:
                 "order":order,"partial":results},indent=2)+"\n",encoding="utf-8")
     original=results["baseline"]["blocks"]
     current=results["candidate"]["blocks"]
-    parity=original==current
+    differences=saved_world_differences(original,current)
+    parity=not differences
+    storage_only=[
+        key for key in original
+        if key in current and original[key]["raw_storage_diagnostic"]
+            !=current[key]["raw_storage_diagnostic"] and
+           all(original[key][category]==current[key][category]
+               for category in ("blocks","biomes","heightmaps"))
+    ]
     before=results["baseline"]["route"]
     after=results["candidate"]["route"]
     comparisons=[{
@@ -163,7 +326,11 @@ def main() -> None:
     } for a,b in zip(before,after)]
     summary={"seed":args.seed,"preset":args.preset,"order":order,
              "pairs":comparisons,"target_anvil_parity":parity,
-             "saved_target_sha256":results["candidate"]["blocks"],
+             "semantic_mismatches":differences,
+             "storage_only_differences":storage_only,
+             "saved_target_sha256":{
+                 key:{c:v[c] for c in ("blocks","biomes","heightmaps")}
+                 for key,v in results["candidate"]["blocks"].items()},
              "note":"Single matched same-runner seed, order-sensitive and noisy;"
                     " not a reliable percentage acceleration claim."}
     report.write_text(json.dumps(summary,indent=2)+"\n",encoding="utf-8")
@@ -171,8 +338,8 @@ def main() -> None:
           json.dumps(summary,sort_keys=True),flush=True)
     if not parity:
         raise AssertionError(
-            "The old and optimized versions generated DIFFERENT saved "
-            "block/biome/heightmap contents for the same distant chunks.")
+            "Real saved voxel/biome/heightmap difference by category "
+            +json.dumps(differences,sort_keys=True))
 
 
 if __name__=="__main__":
