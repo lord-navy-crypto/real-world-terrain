@@ -51,13 +51,15 @@ public final class GrandNetherCaveNetwork {
         // the bits identify which of the 19 components could intersect a
         // fully +/-2 Y-warped sample. Built once per seeded cell graph;
         // no per-voxel scanning/allocation and no change to cached columns.
-        final int[] heightComponents = new int[MAX_Y - MIN_Y + 1];
+        int[] heightComponents;
         boolean heightComponentsReady;
         void ensureHeightComponents() {
             if(heightComponentsReady)return;
-            // A one-off worldgen probe pays no 297-height setup unless its
-            // source column actually has a cave candidate. Thread-local
-            // snapshots prevent concurrent reads of partially built tables.
+            // A one-off worldgen probe pays neither the 297-int allocation
+            // nor the vertical scan unless its source column is positive.
+            // Recycled snapshots reuse their existing primitive storage.
+            if(heightComponents==null)
+                heightComponents=new int[MAX_Y-MIN_Y+1];
             for(int y=MIN_Y;y<=MAX_Y;y++)
                 heightComponents[y-MIN_Y]=verticalComponentMask(this,y);
             heightComponentsReady=true;
