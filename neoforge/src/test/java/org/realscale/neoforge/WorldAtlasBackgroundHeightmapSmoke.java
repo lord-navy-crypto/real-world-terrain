@@ -25,6 +25,19 @@ public final class WorldAtlasBackgroundHeightmapSmoke {
         return values;
     }
 
+    private static void insertCompact(long[] data,int bits,int column,int encoded) {
+        int offset=column*bits,word=offset>>>6,shift=offset&63;
+        data[word]|=((long)encoded)<<shift;
+        if(shift+bits>64)
+            data[word+1]|=((long)encoded)>>>(64-shift);
+    }
+
+    private static long[] packedHeightCompact(int y,int bits) {
+        long[] values=new long[(256*bits+63)/64];
+        insertCompact(values,bits,8+8*16,y+64);
+        return values;
+    }
+
     private static void writeLongs(DataOutputStream out,String name,long[] array)
             throws IOException {
         out.writeByte(12);
@@ -34,15 +47,17 @@ public final class WorldAtlasBackgroundHeightmapSmoke {
     }
 
     private static byte[] nbt(int surface,int oceanFloor,
-                              boolean withLevel) throws IOException {
+                              boolean withLevel,boolean compact) throws IOException {
         ByteArrayOutputStream raw=new ByteArrayOutputStream();
         try(DataOutputStream out=new DataOutputStream(raw)) {
             out.writeByte(10);out.writeUTF("");
             out.writeByte(3);out.writeUTF("DataVersion");out.writeInt(3955);
             if(withLevel){out.writeByte(10);out.writeUTF("Level");}
             out.writeByte(10);out.writeUTF("Heightmaps");
-            writeLongs(out,"WORLD_SURFACE",packedHeight(surface,12));
-            writeLongs(out,"OCEAN_FLOOR",packedHeight(oceanFloor,12));
+            writeLongs(out,"WORLD_SURFACE",compact?
+                    packedHeightCompact(surface,12):packedHeight(surface,12));
+            writeLongs(out,"OCEAN_FLOOR",compact?
+                    packedHeightCompact(oceanFloor,12):packedHeight(oceanFloor,12));
             out.writeByte(0); // Heightmaps compound
             if(withLevel)out.writeByte(0);
             out.writeByte(0); // root
@@ -53,7 +68,13 @@ public final class WorldAtlasBackgroundHeightmapSmoke {
     private static void place(Path world,int chunkX,int chunkZ,int height,
                               int floor,int compression,boolean oldLayout)
             throws IOException {
-        byte[] body=nbt(height,floor,oldLayout);
+        place(world,chunkX,chunkZ,height,floor,compression,oldLayout,false);
+    }
+
+    private static void place(Path world,int chunkX,int chunkZ,int height,
+                              int floor,int compression,boolean oldLayout,
+                              boolean compact) throws IOException {
+        byte[] body=nbt(height,floor,oldLayout,compact);
         ByteArrayOutputStream compressed=new ByteArrayOutputStream();
         if(compression==1) {
             try(GZIPOutputStream zip=new GZIPOutputStream(compressed)){
@@ -93,10 +114,23 @@ public final class WorldAtlasBackgroundHeightmapSmoke {
             place(world,-1,-1,63,42,1,true); // older gzip Level wrapper
             place(world,32,32,210,210,3,false); // uncompressed NBT
 
-            check(WorldAtlasHeightmapReader.bitsFor(52)==12,
-                    "2096-tall heightmap needs 12 packed bits");
-            check(WorldAtlasHeightmapReader.bitsFor(37)==9,
-                    "Vanilla 384-height map still needs 9 bits");
+            check(WorldAtlasHeightmapReader.bitsFor(52)==12
+                    && WorldAtlasHeightmapReader.bitsFor(48)==12,
+                    "RealScale 2096-height map needs both compact/padded 12-bit layouts");
+            check(WorldAtlasHeightmapReader.bitsFor(37)==9
+                    && WorldAtlasHeightmapReader.bitsFor(36)==9,
+                    "Vanilla 384-height map needs both compact/padded 9-bit layouts");
+            long[] compact12=packedHeightCompact(1490,12);
+            insertCompact(compact12,12,5,1234);
+            insertCompact(compact12,12,10,2047);
+            check(WorldAtlasHeightmapReader.unpack(compact12,5,12)==1234
+                    &&WorldAtlasHeightmapReader.unpack(compact12,10,12)==2047
+                    &&WorldAtlasHeightmapReader.unpack(compact12,136,12)==1554,
+                    "Failed actual compact 12-bit height values across long boundaries");
+            long[] compact9=packedHeightCompact(65,9);
+            insertCompact(compact9,9,7,321);
+            check(WorldAtlasHeightmapReader.unpack(compact9,7,9)==321,
+                    "Failed compact 9-bit vanilla heightmap long-boundary crossing");
             byte[] original=Files.readAllBytes(
                     world.resolve("region/r.0.0.mca"));
 
@@ -140,6 +174,55 @@ public final class WorldAtlasBackgroundHeightmapSmoke {
                     "Background drawing must NEVER modify the world");
             check(!WorldAtlasBackgroundPainter.pause(),
                     "Can't pause a finished task");
+
+            // Test.42: Chunky (or Minecraft) can save NEW distant chunks
+            // after the first read-only raster finishes. Refresh must
+            // open fresh Anvil file handles and redraw both changed
+            // existing heights and newly available far-region pixels,
+            // without holding onto the previous stale raster or writes.
+            int formerCenter=picture.color(24,24);
+            int formerAvailable=picture.available();
+            place(world,0,0,75,75,2,false);
+            place(world,-32,0,1100,1100,2,false,true);
+            check(WorldAtlasHeightmapReader.read(world,0,0).surfaceY()==75,
+                    "Updated stored mountain sample was not persisted");
+            check(WorldAtlasHeightmapReader.read(world,-32,0).surfaceY()==1100,
+                    "New far-region Anvil sample was not persisted");
+            byte[] refreshedBytes=Files.readAllBytes(
+                    world.resolve("region/r.0.0.mca"));
+            byte[] farBytes=Files.readAllBytes(
+                    world.resolve("region/r.-1.0.mca"));
+            check(WorldAtlasBackgroundPainter.start(world,0,0,512),
+                    "Completed Atlas draw must permit a fresh saved-world rescan");
+            WorldAtlasBackgroundPainter.View refreshed=null;
+            deadline=System.nanoTime()+15_000_000_000L;
+            while(System.nanoTime()<deadline) {
+                refreshed=WorldAtlasBackgroundPainter.current();
+                if(refreshed!=null && refreshed.state().equals("DONE"))break;
+                if(refreshed!=null && refreshed.state().equals("FAILED"))
+                    throw new AssertionError("Saved distant raster refresh failed");
+                Thread.sleep(10);
+            }
+            check(refreshed!=null && refreshed.state().equals("DONE"),
+                    "Refreshed distant saved region map never completed");
+            check(refreshed.color(24,24)==
+                    WorldAtlasBackgroundPainter.heightColor(
+                            new WorldAtlasHeightmapReader.Sample(75,75)),
+                    "Refreshed map retained STALE center block height color");
+            check(refreshed.color(24,24)!=formerCenter,
+                    "Refreshed mountain color must change after real save");
+            check(refreshed.available()>formerAvailable,
+                    "Refreshed map omitted genuinely new far saved region");
+            check(Arrays.equals(refreshedBytes,Files.readAllBytes(
+                    world.resolve("region/r.0.0.mca"))),
+                    "Refresh must NEVER rewrite updated real Anvil terrain");
+            check(Arrays.equals(farBytes,Files.readAllBytes(
+                    world.resolve("region/r.-1.0.mca"))),
+                    "Refresh must NEVER modify newly generated far region");
+            System.out.println("TVA_ATLAS_REAL_SAVED_FAR_REFRESH_PASS "
+                    +"previousPixels="+formerAvailable
+                    +" refreshedPixels="+refreshed.available()
+                    +" updatedY=75 newFarSavedY=1100 compact48=pass noWrite=true");
             System.out.println("TVA_ATLAS_BACKGROUND_NBT_PASS saved samples="+
                     picture.available()+" pixels="+picture.finished()
                     +" real y=1577, gzip/zlib/raw, no-write, async task");

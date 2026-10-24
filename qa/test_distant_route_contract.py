@@ -23,7 +23,7 @@ class RouteContract(unittest.TestCase):
 
     def test_route_observes_full_chunk_and_saves_before_next_waypoint(self):
         src=SOURCE.read_text(encoding="utf-8")
-        start=src.index('            elif profile=="distant_route":\n                results=[]')
+        start=src.index('            elif profile in ("distant_route","distant_refresh"):\n                results=[]')
         end=src.index('            else:\n                for command in commands:',start)
         route=src[start:end]
         self.assertIn("for x,z in FAR_ROUTE_SITES:",route)

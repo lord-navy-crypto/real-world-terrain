@@ -30,6 +30,8 @@ jobs:
         run: |
           python3 -m py_compile qa/neoforge/paired_cold_worldgen_ab.py
           python3 -m unittest discover -s qa -p 'test_paired_cold_worldgen_semantic.py' -v
+          python3 -m py_compile qa/neoforge/rcon_worldgen_smoke.py
+          python3 -m unittest discover -s qa -p 'test_distant_saved_refresh.py' -v
           python3 qa/neoforge/paired_cold_worldgen_ab.py --help
           python3 - <<'PY'
           from pathlib import Path

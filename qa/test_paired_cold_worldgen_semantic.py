@@ -1,11 +1,13 @@
 """Cold-worldgen A/B must compare actual decoded voxels, not palette order."""
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0,str(Path(__file__).parent/"neoforge"))
 from paired_cold_worldgen_ab import (
     _digest_expanded_palette, block_payload_digest, saved_world_differences,
+    target_chunk_digests,
 )
 
 def packed(indices,bits):
@@ -63,6 +65,19 @@ def packed_compact(indices,bits):
 
 
 class TestDecodedAnvilSemanticParity(unittest.TestCase):
+    def test_unrelated_partial_region_does_not_break_far_targets(self):
+        # CI detected a transient <8 KiB region unrelated to all three
+        # selected far locations. It must not be inspected, but actual
+        # missing target chunks still fail the semantic parity gate.
+        with tempfile.TemporaryDirectory() as base:
+            root=Path(base)
+            region=root/"run"/"world"/"region"
+            region.mkdir(parents=True)
+            (region/"r.-1.0.mca").write_bytes(b"incomplete unrelated file")
+            with self.assertRaisesRegex(
+                    AssertionError,"Missing actual persisted distant target chunks"):
+                target_chunk_digests(root)
+
     def test_palette_order_is_storage_not_terrain(self):
         a=block_payload_digest(saved_chunk())
         b=block_payload_digest(saved_chunk(

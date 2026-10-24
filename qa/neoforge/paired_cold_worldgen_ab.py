@@ -239,9 +239,20 @@ def block_payload_digest(chunk: dict) -> dict:
 
 def target_chunk_digests(root: Path) -> dict[str,dict]:
     targets={(x//16,z//16) for x,z in FAR_ROUTE_SITES}
+    target_region_names={
+        f"r.{cx//32}.{cz//32}.mca" for cx,cz in targets
+    }
     found={}
     for region in root.glob("run/**/region/*.mca"):
         if {"DIM-1","DIM1"}.intersection(region.parts):
+            continue
+        # Full 2096-high worldgen can leave transient header-only,
+        # empty or partially flushed MCA files unrelated to the three
+        # far probe targets. Scanning EVERY region (old path) falsely
+        # failed both seed 2 and 42 at a different non-target region.
+        # Read ONLY the specific persisted target region files; missing
+        # or corrupt actual target chunks still fail below.
+        if region.name not in target_region_names:
             continue
         for chunk in iter_region_chunks(region):
             pos=(chunk.get("xPos"),chunk.get("zPos"))

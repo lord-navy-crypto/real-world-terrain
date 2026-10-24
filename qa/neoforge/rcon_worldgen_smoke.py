@@ -157,7 +157,7 @@ def main(root,expected_preset,profile):
         rcon=None
         for attempt in range(12):
             try:
-                rcon=Rcon(timeout=180 if profile in ("usgs","distant","distant_route","structures") else 75)
+                rcon=Rcon(timeout=180 if profile in ("usgs","distant","distant_route","distant_refresh","structures") else 75)
                 break
             except (ConnectionError,OSError,TimeoutError):
                 time.sleep(1)
@@ -208,8 +208,8 @@ def main(root,expected_preset,profile):
                 # Spawn already loads many chunks. Avoid starting two
                 # expensive remote regions concurrently in high-relief maps.
                 commands=["execute in minecraft:overworld run forceload add 1024 1024"]
-            elif profile=="distant_route":
-                commands=[]  # verified sequentially below, never enqueued as a batch
+            elif profile in ("distant_route","distant_refresh"):
+                commands=[]  # new chunks stay strictly sequential; never ticket batch
             elif profile=="packs":
                 # A real NeoForge server must load ALL THREE optional datapacks.
                 # Static JSON/ZIP tests alone cannot establish registry or
@@ -317,9 +317,10 @@ def main(root,expected_preset,profile):
                     advice=rcon.send("dhchunkyguard advice")
                     if not advice.startswith("DHChunkyGuard:"):
                         raise RuntimeError("DH-Chunky status advice not available")
-            elif profile=="distant_route":
+            elif profile in ("distant_route","distant_refresh"):
                 results=[]
-                result_file=root/"build"/"rcon_distant_route_timing.json"
+                result_file=root/"build"/("rcon_distant_refresh_timing.json"
+                    if profile=="distant_refresh" else "rcon_distant_route_timing.json")
                 for x,z in FAR_ROUTE_SITES:
                     started=time.monotonic()
                     command=f"execute in minecraft:overworld run forceload add {x} {z}"
@@ -351,6 +352,52 @@ def main(root,expected_preset,profile):
                     raise AssertionError("Far route did not complete every waypoint")
                 print("QA_DISTANT_ROUTE_ALL_SAVED_PASS:",len(results),
                       "waypoints",flush=True)
+                if profile=="distant_refresh":
+                    # Deliberate second pass over the 3 already persisted
+                    # distant chunks, in reverse travel order. This probes
+                    # ticket release and reacquisition and a FULL chunk
+                    # acknowledgement without demanding new generation.
+                    # Both saved snapshots are SEMANTIC decoded Anvil:
+                    # palette ordering alone is not a worldgen mismatch.
+                    # This does not assert GPU Distant Horizons LOD output.
+                    from paired_cold_worldgen_ab import (
+                        target_chunk_digests,saved_world_differences)
+                    before=target_chunk_digests(root)
+                    refreshed=[]
+                    for x,z in reversed(FAR_ROUTE_SITES):
+                        started=time.monotonic()
+                        rcon.send(f"execute in minecraft:overworld run forceload add {x} {z}")
+                        remaining=75.0-(time.monotonic()-started)
+                        if remaining<=0:
+                            raise TimeoutError(f"Far refresh {x},{z}: ticket ACK exhausted 75s")
+                        await_full_chunk(rcon,x,z,timeout_seconds=remaining)
+                        reload_seconds=time.monotonic()-started
+                        if reload_seconds>75:
+                            raise TimeoutError(f"Far refresh {x},{z}: full acknowledgement over 75s")
+                        rcon.send("save-all flush")
+                        rcon.send(f"execute in minecraft:overworld run forceload remove {x} {z}")
+                        refreshed.append({
+                            "x":x,"z":z,"reacquired_full_seconds":round(reload_seconds,3),
+                            "saved":True,"ticket_released_again":True})
+                        print("QA_FAR_REFRESH_REACQUIRED_FULL_CHUNK:",x,z,
+                              f"seconds={reload_seconds:.3f}",flush=True)
+                    after=target_chunk_digests(root)
+                    differences=saved_world_differences(before,after)
+                    report={
+                        "preset":expected_preset,"initial_virgin_waypoints":results,
+                        "refreshed_existing_waypoints":refreshed,
+                        "same_server_anvil_semantic_parity":not differences,
+                        "semantic_mismatches":differences,
+                        "gpu_dh_lod_rendering_verified":False,
+                        "note":"Server full-chunk re-ticket, disk persistence and save parity only."
+                    }
+                    result_file.write_text(json.dumps(report,indent=2)+"\n",
+                                           encoding="utf-8")
+                    if differences:
+                        raise AssertionError("Distant reload changed saved Anvil "
+                                             +json.dumps(differences))
+                    print("QA_FAR_REFRESH_EXISTING_ANVIL_PARITY_PASS:",len(refreshed),
+                          "reacquired chunk tickets; GPU LOD not verified",flush=True)
             else:
                 for command in commands:
                     rcon.send(command)
@@ -549,5 +596,5 @@ def main(root,expected_preset,profile):
 
 if __name__=="__main__":
     if len(sys.argv)!=4:
-        raise SystemExit("usage: rcon_worldgen_smoke.py neoForgeRoot preset usgs|distant|distant_route|fantasy|structures|packs")
+        raise SystemExit("usage: rcon_worldgen_smoke.py neoForgeRoot preset usgs|distant|distant_route|distant_refresh|fantasy|structures|packs")
     main(pathlib.Path(sys.argv[1]).resolve(),sys.argv[2],sys.argv[3])

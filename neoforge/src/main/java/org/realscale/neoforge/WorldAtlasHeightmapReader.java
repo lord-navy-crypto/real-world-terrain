@@ -226,12 +226,17 @@ public final class WorldAtlasHeightmapReader {
         }
     }
 
-    /** Minecraft 1.18+ padded-packed heightmap: whole entries per long. */
+    /**
+     * Minecraft 1.21.1 saved heightmaps may use compact SimpleBitStorage
+     * (entries may STRADDLE a long boundary) or padded packed storage.
+     * Recognize 2096-high RealScale and normal 384-high worlds explicitly.
+     * The old padded-only reader silently lost compact far-chunk heights.
+     */
     static int bitsFor(int count) {
-        // Vanilla Overworld: 384-high => 9 bits / 37 longs.
-        // RealScale Overworld: 2096-high => 12 bits / 52 longs.
-        // b=11 also needs 52 longs, but RealScale's 2096-high world uses b=12.
-        if(count==52)return 12;
+        // 2096-high: 12 bits x 256 = 48 compact longs or 52 padded longs.
+        if(count==48 || count==52)return 12;
+        // Vanilla 384-high: 9 bits x 256 = 36 compact or 37 padded.
+        if(count==36 || count==37)return 9;
         for(int bits=1;bits<=16;bits++) {
             int entries=64/bits;
             if((256+entries-1)/entries==count)return bits;
@@ -242,10 +247,24 @@ public final class WorldAtlasHeightmapReader {
     static int unpack(long[] data,int column,int bits) {
         if(bits<1 || bits>16 || column<0 || column>=256)
             throw new IllegalArgumentException("Heightmap out of bounds");
+        final long mask=(1L<<bits)-1;
+        boolean compact=(bits==12 && data.length==48)
+                ||(bits==9 && data.length==36);
+        if(compact) {
+            int start=column*bits;
+            int word=start>>>6,shift=start&63;
+            if(word>=data.length)throw new IllegalArgumentException("Incomplete heightmap");
+            long value=data[word]>>>shift;
+            if(shift+bits>64) {
+                if(word+1>=data.length)
+                    throw new IllegalArgumentException("Truncated compact heightmap");
+                value|=data[word+1]<<(64-shift);
+            }
+            return (int)(value&mask);
+        }
         int perLong=64/bits;
         int word=column/perLong;
         if(word>=data.length)throw new IllegalArgumentException("Incomplete heightmap");
-        return (int)((data[word]>>>(bits*(column%perLong)))
-                &((1L<<bits)-1));
+        return (int)((data[word]>>>(bits*(column%perLong)))&mask);
     }
 }

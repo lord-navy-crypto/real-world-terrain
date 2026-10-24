@@ -541,6 +541,17 @@ public final class WorldAtlasOfflinePregenerator {
         Session s=active;
         return s==null?null:s.status;
     }
+
+    /**
+     * FAILED may be published before the supervisor finishes gracefully
+     * stopping the launched server process. A read-only Atlas scan or
+     * render must not race an actual writer just because status is terminal.
+     */
+    public static boolean isWriterActive() {
+        Session session=active;
+        Process process=session==null?null:session.process;
+        return process!=null && process.isAlive();
+    }
     public static boolean pause() { return send("chunky pause minecraft:overworld","PAUSE_REQUESTED"); }
     public static boolean resume() { return send("chunky continue minecraft:overworld","CONTINUE_REQUESTED"); }
     public static boolean pollProgress() {

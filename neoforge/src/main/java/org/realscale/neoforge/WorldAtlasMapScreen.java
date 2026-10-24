@@ -29,6 +29,10 @@ public final class WorldAtlasMapScreen extends Screen {
     private String message="";
     private boolean chunkyLoaded;
     private Button pauseDrawButton;
+    // A process-global offline Chunky run may finish while Atlas is open.
+    // Remember only an actually observed nonterminal run for this world:
+    // an unrelated or long-completed server must not trigger a redraw.
+    private boolean observedLocalGeneration;
 
     public WorldAtlasMapScreen(Screen parent,Path save) {
         super(Component.translatable("realscale.atlas.title"));
@@ -119,7 +123,7 @@ public final class WorldAtlasMapScreen extends Screen {
                 b -> onClose()).bounds(8,y,91,20).build());
         addRenderableWidget(Button.builder(
                 Component.translatable("realscale.atlas.refresh"),
-                b -> requestScan()).bounds(width-102,y,94,20).build());
+                b -> refreshSavedMap()).bounds(width-102,y,94,20).build());
         if(pending==null)requestScan();
     }
 
@@ -143,7 +147,8 @@ public final class WorldAtlasMapScreen extends Screen {
 
     private boolean hasActiveGeneration() {
         var job=visibleGeneration();
-        return job!=null && !job.terminal();
+        return WorldAtlasOfflinePregenerator.isWriterActive()
+                || (job!=null && !job.terminal());
     }
 
     private void startOfflinePregeneration() {
@@ -191,6 +196,21 @@ public final class WorldAtlasMapScreen extends Screen {
         }
     }
 
+    /**
+     * Unlike the old Refresh action, update BOTH header-only saved coverage
+     * and the independently sampled REAL persisted height colors. Never
+     * force chunks to load: a new draw opens fresh bounded Anvil handles
+     * only after the preceding task is terminal.
+     */
+    private void refreshSavedMap() {
+        if(hasActiveGeneration() || hasActivePainting()) {
+            message=Component.translatable("realscale.atlas.busy_shared_io").getString();
+            return;
+        }
+        requestScan();
+        startDrawing();
+    }
+
     private void startDrawing() {
         if(hasActiveGeneration()) {
             message=Component.translatable("realscale.atlas.busy_shared_io").getString();
@@ -232,6 +252,21 @@ public final class WorldAtlasMapScreen extends Screen {
                     :"realscale.atlas.draw_pause"));
         }
         var serverStatus=visibleGeneration();
+        if(serverStatus!=null && serverStatus.world().equals(save)) {
+            if(!serverStatus.terminal()) {
+                observedLocalGeneration=true;
+            } else if(observedLocalGeneration) {
+                // The dedicated pregen server has STOPPED/FAILED and closed
+                // its writer. Refresh disk-backed coverage and painted
+                // height tiles ONCE, without loading or changing chunks.
+                observedLocalGeneration=false;
+                // STOPPED is set only after a verified clean save and
+                // completed process.waitFor(). FAILED may mean the writer
+                // is still closing, so never auto-read in that state.
+                if("STOPPED".equals(serverStatus.state()))
+                    refreshSavedMap();
+            }
+        }
         if(serverStatus!=null && serverStatus.terminal() &&
                 (message.equals(Component.translatable(
                         "realscale.atlas.pregen_starting").getString()) ||
