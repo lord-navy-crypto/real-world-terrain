@@ -1,8 +1,11 @@
-name: RealScale paired cold-new-chunk version A/B (manual only)
+name: RealScale paired cold-new-chunk version A/B (opt-in)
 
 # Intentionally opt-in: each arm launches a full 2096-height NeoForge server
-# and three virgin far-chunk loads. Do not add this to every pull request.
+# and three virgin far-chunk loads. The PR path runs ONLY when someone adds
+# the label run-cold-worldgen-ab; no expensive jobs run on every commit.
 on:
+  pull_request:
+    types: [labeled]
   workflow_dispatch:
     inputs:
       baseline_ref:
@@ -29,6 +32,7 @@ permissions:
 
 jobs:
   same-runner-virgin-world:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.label.name == 'run-cold-worldgen-ab' }}
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -44,11 +48,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.baseline_ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.baseline_ref || github.event.pull_request.base.sha }}
           path: baseline
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.candidate_ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_ref || github.event.pull_request.head.sha }}
           path: candidate
       - uses: actions/setup-java@v4
         with:
@@ -63,7 +67,7 @@ jobs:
           set -euo pipefail
           python3 candidate/qa/neoforge/paired_cold_worldgen_ab.py baseline candidate \
             --seed '${{ matrix.seed }}' \
-            --preset '${{ inputs.preset }}' \
+            --preset '${{ inputs.preset || 'tva_measured_three_realms' }}' \
             --order '${{ matrix.order }}'
       - name: Publish explicit single-run limitations and target chunk hashes
         if: always()
