@@ -140,6 +140,55 @@ public final class WorldAtlasBackgroundHeightmapSmoke {
                     "Background drawing must NEVER modify the world");
             check(!WorldAtlasBackgroundPainter.pause(),
                     "Can't pause a finished task");
+
+            // Test.42: Chunky (or Minecraft) can save NEW distant chunks
+            // after the first read-only raster finishes. Refresh must
+            // open fresh Anvil file handles and redraw both changed
+            // existing heights and newly available far-region pixels,
+            // without holding onto the previous stale raster or writes.
+            int formerCenter=picture.color(24,24);
+            int formerAvailable=picture.available();
+            place(world,0,0,75,75,2,false);
+            place(world,-32,0,1100,1100,2,false);
+            check(WorldAtlasHeightmapReader.read(world,0,0).surfaceY()==75,
+                    "Updated stored mountain sample was not persisted");
+            check(WorldAtlasHeightmapReader.read(world,-32,0).surfaceY()==1100,
+                    "New far-region Anvil sample was not persisted");
+            byte[] refreshedBytes=Files.readAllBytes(
+                    world.resolve("region/r.0.0.mca"));
+            byte[] farBytes=Files.readAllBytes(
+                    world.resolve("region/r.-1.0.mca"));
+            check(WorldAtlasBackgroundPainter.start(world,0,0,512),
+                    "Completed Atlas draw must permit a fresh saved-world rescan");
+            WorldAtlasBackgroundPainter.View refreshed=null;
+            deadline=System.nanoTime()+15_000_000_000L;
+            while(System.nanoTime()<deadline) {
+                refreshed=WorldAtlasBackgroundPainter.current();
+                if(refreshed!=null && refreshed.state().equals("DONE"))break;
+                if(refreshed!=null && refreshed.state().equals("FAILED"))
+                    throw new AssertionError("Saved distant raster refresh failed");
+                Thread.sleep(10);
+            }
+            check(refreshed!=null && refreshed.state().equals("DONE"),
+                    "Refreshed distant saved region map never completed");
+            check(refreshed.color(24,24)==
+                    WorldAtlasBackgroundPainter.heightColor(
+                            new WorldAtlasHeightmapReader.Sample(75,75)),
+                    "Refreshed map retained STALE center block height color");
+            check(refreshed.color(24,24)!=formerCenter,
+                    "Refreshed mountain color must change after real save");
+            check(refreshed.available()>formerAvailable,
+                    "Refreshed map omitted genuinely new far saved region");
+            check(Arrays.equals(refreshedBytes,Files.readAllBytes(
+                    world.resolve("region/r.0.0.mca"))),
+                    "Refresh must NEVER rewrite updated real Anvil terrain");
+            check(Arrays.equals(farBytes,Files.readAllBytes(
+                    world.resolve("region/r.-1.0.mca"))),
+                    "Refresh must NEVER modify newly generated far region");
+            System.out.println("TVA_ATLAS_REAL_SAVED_FAR_REFRESH_PASS "
+                    +"previousPixels="+formerAvailable
+                    +" refreshedPixels="+refreshed.available()
+                    +" updatedY=75 newFarSavedY=1100 noWrite=true");
             System.out.println("TVA_ATLAS_BACKGROUND_NBT_PASS saved samples="+
                     picture.available()+" pixels="+picture.finished()
                     +" real y=1577, gzip/zlib/raw, no-write, async task");
