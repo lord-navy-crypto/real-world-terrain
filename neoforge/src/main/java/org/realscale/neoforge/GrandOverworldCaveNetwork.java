@@ -117,6 +117,21 @@ public final class GrandOverworldCaveNetwork {
         return q>=1?0:1-q;
     }
 
+    /**
+     * Horizontal room extents depend only on the immutable seeded Hall.
+     * One constructor calculation replaces four x/z +/- radius operations
+     * on every new column-mask cache miss, across 12 halls per cave cell.
+     */
+    private static final class RoomXZBounds {
+        final double minX,maxX,minZ,maxZ;
+        RoomXZBounds(Hall h) {
+            minX=h.x()-h.radiusX();
+            maxX=h.x()+h.radiusX();
+            minZ=h.z()-h.radiusZ();
+            maxZ=h.z()+h.radiusZ();
+        }
+    }
+
     private static final class Cache {
         int gx=Integer.MIN_VALUE,gz=Integer.MIN_VALUE;
         // Direct-mapped, epoch-tagged per-worker X/Z reject cache. An entry
@@ -134,6 +149,8 @@ public final class GrandOverworldCaveNetwork {
         int epoch=1;
         final Hall[][] halls=new Hall[LAYERS][5];
         final Hall[][] galleries=new Hall[LAYERS][2];
+        final RoomXZBounds[] centerXZ=new RoomXZBounds[LAYERS];
+        final RoomXZBounds[][] galleryXZ=new RoomXZBounds[LAYERS][2];
         final long[][] corridorKeys=new long[LAYERS][4];
         final long[][] sideKeys=new long[LAYERS][2];
         final Passage[][] widths=new Passage[LAYERS][4];
@@ -174,6 +191,7 @@ public final class GrandOverworldCaveNetwork {
             for(int layer=0;layer<LAYERS;layer++) {
                 Hall center=hall(x,z,layer);
                 halls[layer][0]=center;
+                centerXZ[layer]=new RoomXZBounds(center);
                 for(int i=0;i<4;i++) {
                     Hall other=hall(x+DIR_X[i],z+DIR_Z[i],layer);
                     halls[layer][i+1]=other;
@@ -186,6 +204,7 @@ public final class GrandOverworldCaveNetwork {
                 for(int i=0;i<2;i++) {
                     Hall side=satellite(x,z,layer,i);
                     galleries[layer][i]=side;
+                    galleryXZ[layer][i]=new RoomXZBounds(side);
                     long key=passageKey(center,side);
                     sideKeys[layer][i]=key;
                     sideWidths[layer][i]=passage(key,true);
@@ -722,6 +741,14 @@ public final class GrandOverworldCaveNetwork {
             && loZ<=hall.z()+hall.radiusZ() && hiZ>=hall.z()-hall.radiusZ();
     }
 
+    private static boolean roomCouldTouch(RoomXZBounds bounds,
+            double loX,double hiX,double loZ,double hiZ) {
+        // Same inclusive comparisons and short-circuit order as the
+        // frozen hallCouldTouch(Hall,...), which remains the reference.
+        return loX<=bounds.maxX && hiX>=bounds.minX
+            && loZ<=bounds.maxZ && hiZ>=bounds.minZ;
+    }
+
     private static boolean tunnelCouldTouch(Hall a,Hall b,Passage section,
             double loX,double hiX,double loZ,double hiZ) {
         // tunnelStrength uses exactly this conservative horizontal reach,
@@ -752,7 +779,7 @@ public final class GrandOverworldCaveNetwork {
         for(int layer=0;layer<LAYERS;layer++) {
             int shift=layer*9;
             Hall center=c.halls[layer][0];
-            if(hallCouldTouch(center,loX,hiX,loZ,hiZ))
+            if(roomCouldTouch(c.centerXZ[layer],loX,hiX,loZ,hiZ))
                 mask|=1L<<shift;
             for(int dir=0;dir<4;dir++) {
                 if(tunnelCouldTouch(c.corridorTubes[layer][dir],
@@ -761,7 +788,7 @@ public final class GrandOverworldCaveNetwork {
             }
             for(int i=0;i<2;i++) {
                 Hall satellite=c.galleries[layer][i];
-                if(hallCouldTouch(satellite,loX,hiX,loZ,hiZ))
+                if(roomCouldTouch(c.galleryXZ[layer][i],loX,hiX,loZ,hiZ))
                     mask|=1L<<(shift+5+2*i);
                 if(tunnelCouldTouch(c.sideTubes[layer][i],
                         loX,hiX,loZ,hiZ))
