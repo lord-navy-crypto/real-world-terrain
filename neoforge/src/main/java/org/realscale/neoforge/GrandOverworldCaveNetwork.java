@@ -163,12 +163,9 @@ public final class GrandOverworldCaveNetwork {
         double widthScale=0.80+0.20*sinPiT*sinPiT;
         double width=g.section.radius()*widthScale;
         double height=width*g.section.verticalScale();
-        double q;
-        if(g.vertical) {
-            q=radialSq/(width*width)+yySq/(height*height);
-        } else {
-            q=radialSq/(width*width)+yySq/(height*height);
-        }
+        // Both orientations use the original identical q formula once
+        // their respective unchanged radial numerator has been computed.
+        double q=radialSq/(width*width)+yySq/(height*height);
         return q>=1?0:1-q;
     }
 
