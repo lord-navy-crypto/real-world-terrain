@@ -32,11 +32,16 @@ public final class GrandNetherXYZStrengthPerfSmoke {
             oldMask[i]=GrandNetherCaveNetwork.componentMaskForColumn(x[i],z[i]);
             xyzMask[i]=GrandNetherCaveNetwork.componentMaskForColumnAtHeight(
                     x[i],y[i],z[i]);
-            need((oldMask[i]==0)==(xyzMask[i]==0)
-                         && (oldMask[i]==-1)==(xyzMask[i]==-1)
+            // A positive X/Z column can legitimately become ZERO when
+            // its Y envelope has no candidates. The NEW mask must be a
+            // subset, NEVER require identical zero/nonzero decisions.
+            // Full original strength parity for every sampled warp is
+            // asserted after this mask-support validation.
+            need((oldMask[i]!=0 || xyzMask[i]==0)
+                         && (oldMask[i]!=-1 || xyzMask[i]==-1)
                          && (oldMask[i]==-1
                              || (xyzMask[i]&~oldMask[i])==0),
-                    "XYZ gate changed original candidate support");
+                    "XYZ mask introduced foreign components or lost border fallback");
             if(oldMask[i]>0 && xyzMask[i]>0 && oldMask[i]!=xyzMask[i])
                 partial++;
         }
