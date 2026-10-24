@@ -1,0 +1,95 @@
+name: RealScale far-distance saved chunk refresh and reacquisition (opt-in)
+
+# Explicit opt-in only. True 2096-high worldgen is expensive; do not queue
+# this on every ordinary PR. It validates disk, server full-chunk reacquire,
+# AND unchanged real saved blocks — NOT client GPU DH/Sodium/Iris LOD output.
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  far-region-save-refresh:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.label.name == 'run-far-refresh' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - seed: 2
+            preset: tva_measured_three_realms
+          - seed: 42
+            preset: tva_sacred_timeline_three_realms
+    name: seed ${{ matrix.seed }} / ${{ matrix.preset }} / virgin and re-ticket
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Prepare one fresh world with vanilla structures
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=world
+          level-type=realscale:${{ matrix.preset }}
+          level-seed=${{ matrix.seed }}
+          generate-structures=true
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Generate 3 virgin distant chunks then reload and verify semantic saved blocks
+        id: refresh
+        working-directory: neoforge
+        continue-on-error: true
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . 'realscale:${{ matrix.preset }}' distant_refresh
+      - name: Record explicit generation/rendering boundary
+        if: always()
+        run: |
+          echo "Three distant 2096-high chunks must first reach FULL and be saved; then tickets are reacquired in reverse order and saved blocks/biomes/heightmaps compared." >> "$GITHUB_STEP_SUMMARY"
+          echo "Server full-chunk status and saved Anvil parity do NOT prove client GPU Distant Horizons LOD rendering or visual shaders." >> "$GITHUB_STEP_SUMMARY"
+          if [ -f neoforge/build/rcon_distant_refresh_timing.json ]; then
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat neoforge/build/rcon_distant_refresh_timing.json >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload true distant reload evidence, saved world, and stall diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-Far-Refresh-${{ matrix.preset }}-seed-${{ matrix.seed }}
+          path: |
+            neoforge/build/rcon_distant_refresh_timing.json
+            neoforge/build/rcon_distant_refresh_server.log
+            neoforge/build/rcon_distant_refresh_thread_dump_*.txt
+            neoforge/build/rcon_distant_refresh_stall_fingerprint.json
+            neoforge/run/**/level.dat
+          if-no-files-found: warn
+      - name: Enforce reload and saved-block parity after artifact upload
+        if: always() && steps.refresh.outcome != 'success'
+        run: |
+          echo "::error::Far region re-ticket or saved Anvil semantic parity failed; inspect artifacts."
+          exit 1
