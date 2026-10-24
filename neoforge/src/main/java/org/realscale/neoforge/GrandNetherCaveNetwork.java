@@ -319,6 +319,55 @@ public final class GrandNetherCaveNetwork {
     }
 
     /**
+     * Conservative vertical reach for the same 19-component source-column
+     * mask. The caller's seeded noise can only shift Y by +/-2. Reject only
+     * when EVERY horizontally reachable room and tube has a vertical AABB
+     * disjoint from that entire interval. A source near a 256-cell border
+     * uses mask=-1 and MUST retain the original displaced-cell evaluator.
+     *
+     * Never removes a cave voxel: a false result proves that the 3D graph
+     * is zero for any supported seeded warp, so the density wrapper can
+     * avoid calling its expensive warp noise at this height.
+     */
+    static boolean mayContainVoidAtHeight(int sourceX,int y,int sourceZ,int mask) {
+        if(mask==-1)return true;
+        if(mask==0)return false;
+        CellCache c=CACHED_HALLS.get().get(
+                Math.floorDiv(sourceX,CELL),Math.floorDiv(sourceZ,CELL));
+        double lowY=(double)y-2.0, highY=(double)y+2.0;
+        for(int layer=0;layer<2;layer++) {
+            int shift=layer*9;
+            Hall center=c.halls[layer][0];
+            if((mask&(1<<shift))!=0 &&
+                    highY>=center.y()-center.radiusY() &&
+                    lowY<=center.y()+center.radiusY())
+                return true;
+            for(int direction=0;direction<4;direction++) {
+                if((mask&(1<<(shift+1+direction)))!=0) {
+                    TubeSegment tube=c.corridors[layer][direction];
+                    if(highY>=tube.minY && lowY<=tube.maxY)return true;
+                }
+            }
+            for(int gallery=0;gallery<2;gallery++) {
+                Hall side=c.satellites[layer][gallery];
+                if((mask&(1<<(shift+5+gallery*2)))!=0 &&
+                        highY>=side.y()-side.radiusY() &&
+                        lowY<=side.y()+side.radiusY())
+                    return true;
+                if((mask&(1<<(shift+6+gallery*2)))!=0) {
+                    TubeSegment tube=c.branches[layer][gallery];
+                    if(highY>=tube.minY && lowY<=tube.maxY)return true;
+                }
+            }
+        }
+        if((mask&(1<<18))!=0) {
+            TubeSegment tube=c.interlayer;
+            if(highY>=tube.minY && lowY<=tube.maxY)return true;
+        }
+        return false;
+    }
+
+    /**
      * Re-evaluates the original 3D network in its exact component order,
      * but only for the 19 chambers and tubes whose broad-phase bounds
      * can intersect the seeded-warped X/Z source column. Original strength()
