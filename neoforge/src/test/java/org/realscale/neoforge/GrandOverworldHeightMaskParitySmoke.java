@@ -85,7 +85,10 @@ public final class GrandOverworldHeightMaskParitySmoke {
             getRegion.setAccessible(true);
             Object c=getRegion.invoke(region,Math.floorDiv(x,768),
                     Math.floorDiv(z,768));
-            if((horizontal&frozenHeight(geometry(c),y))==0)expected=0L;
+            // Test.33 passes every exact intersecting component onward,
+            // not just a Boolean present/absent answer. Frozen Test.31
+            // bounds remain independent from the cached height table.
+            expected=horizontal&frozenHeight(geometry(c),y);
         }
         yes(expected==observed,"Overworld fused 47-bit Y mask changed at "
                 +x+","+y+","+z+" original="+expected+" new="+observed);

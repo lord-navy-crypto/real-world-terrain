@@ -297,7 +297,8 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldTubeGeometrySmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldMaskAabbParitySmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldHeightMaskParitySmoke.java \
-            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldRoomBoundsParitySmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldRoomBoundsParitySmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldXYZComponentParitySmoke.java
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldCaveNetworkSmoke
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldEntranceCacheParitySmoke
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldRegionCacheCollisionSmoke
@@ -308,6 +309,7 @@ jobs:
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldMaskAabbParitySmoke
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldHeightMaskParitySmoke
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldRoomBoundsParitySmoke
+          java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldXYZComponentParitySmoke
           python3 -m unittest discover -s qa -p 'test_grand_overworld_cave_integration.py' -v
       - name: Validate giant connected Grand Nether caverns and bit-exact optimization parity
         run: |
