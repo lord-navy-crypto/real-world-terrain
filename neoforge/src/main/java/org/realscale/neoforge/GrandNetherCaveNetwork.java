@@ -306,6 +306,17 @@ public final class GrandNetherCaveNetwork {
             cx+=bend1*0.5; cz+=bend2*0.5;
         }
         double dx=x-cx, dy=y-cy, dz=z-cz;
+        // Test.41: a bent tunnel's original q is the sum of three
+        // nonnegative coordinate squares, divided by positive radius^2.
+        // If ONE coordinate alone exceeds radius by a full block, its
+        // original 3D strength is provably positive zero. Reject before
+        // three squares and a division. The one-block slack protects
+        // exact tangencies and leaves original arithmetic untouched for
+        // every potentially carved sample, even near the tube surface.
+        double conservativeRadius=segment.radius+1.0;
+        if(Math.abs(dx)>conservativeRadius
+                ||Math.abs(dy)>conservativeRadius
+                ||Math.abs(dz)>conservativeRadius)return 0;
         double ratio=(dx*dx+dy*dy+dz*dz)/segment.radiusSquared;
         return ratio>=1 ? 0 : 1-ratio;
     }
