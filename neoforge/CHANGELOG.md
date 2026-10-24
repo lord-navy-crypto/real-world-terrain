@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.27 — 2026-10-24 — Conservative Nether Cave Height Exclusion Before Noise Warp (Experimental)
+
+### Real world generation CPU reduction
+- The protected Nether cavern density previously skipped warp noise only if the horizontal source-column's 19-component cave mask was empty, or if base density already lay below -1.8. Many source columns whose X/Z overlaps a tunnel or chamber still have hundreds of unaffected Y voxels: the old path sampled the seeded noise warp and 3D cave graph at all of those heights.
+- Add a strictly conservative, per-voxel **vertical reach check** for the current 19-bit source-column mask. The already-cached two-layer halls, four galleries and 13 immutable tube AABBs bound all possible 3D cave influence. If the entire allowed `[Y-2,Y+2]` seeded warp interval is disjoint from every horizontally eligible 3D component, return the original base density *before invoking `warp.compute(context)`*.
+- At source X/Z locations where a +/-5 X / +/-4 Z warp might enter another 256-block cave region, the existing `mask=-1` sentinel forces the original complete warp and cave graph evaluation without pruning. Any possible cave intersection, including a tangent boundary, falls through to the original branch. All operations use the original non-approximated bounds; no new cache entries or shared thread state.
+- Keep intact all original cave void strengths, seeded noise, Java double calculation order, vanilla Nether lava/bedrock/structures, saved-world blocks, realm heights, Overworld, ocean, sky and End. The optimization does not touch Perlin/Noise, Beardifier or Aquifer math.
+
+### Testing and promotion
+- New standalone Java 21 `GrandNetherWarpHeightPruneSmoke` probes more than 35k source X/Z/Y combinations including 256-cell edges, cave-rich hall centers, signed far coordinates, both Nether cave strata and all protected Y bands. For every **positive-mask Y-pruned position**, the test evaluates the *full original `strength()`* over nine fractions of the full seeded +/-5 X, +/-2 Y, +/-4 Z displacement, requiring exact raw IEEE-754 zero, not an approximation. It also checks mask parity and forced no-pruning on cell edges.
+- Preserve all previous frozen Nether cave, 19-component column mask, collision retention, 200k single-mask, 39k tunnel arithmetic and real server/Anvil three-realm tests. The new gate must pass on newest Test.27 SHA before any promotion.
+- Draft stacked on Test.26 PR #119. This test documents **how many potential warp calls are safely avoided on sampled positions**; it is not a true measured whole-world or all-seed speedup. Require matched same-hardware cold Nether chunk throughput, CPU, p95 and heap/GC against Test.26 with exact Anvil saved-block parity before merging.
+- Stable `main` and separate DH–Chunky Guard remain unchanged.
+
 ## 2.0.0-preview.2-test.26 — 2026-10-24 — Two-Way Nether Cave-Column Mask Retention (Experimental)
 
 ### CPU worldgen experiment
