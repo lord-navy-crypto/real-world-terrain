@@ -314,6 +314,16 @@ public final class GrandNetherCaveNetwork {
         if(dx<=5 || dx>=CELL-6 || dz<=4 || dz>=CELL-5)return -1;
         CellCache c=CACHED_HALLS.get().get(
                 Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
+        return cachedColumnMask(c,x,z);
+    }
+
+    /**
+     * Test.30: the stable two-way X/Z mask lookup lives in one helper so
+     * the production fused column+altitude query can reuse the SAME graph
+     * without another ThreadLocal/RegionCache lookup. Retain the old
+     * componentMaskForColumn as an exact reference and compatibility API.
+     */
+    private static int cachedColumnMask(CellCache c,int x,int z) {
         int bucket=(x*0x9e3779b9 ^ z*0x85ebca6b)
                 &(CellCache.COLUMN_BUCKETS-1);
         int first=bucket<<1, second=first+1;
@@ -322,8 +332,7 @@ public final class GrandNetherCaveNetwork {
         if(c.columnEpoch[second]==c.epoch && c.columnX[second]==x
                 && c.columnZ[second]==z)return c.columnComponents[second];
         int mask=componentMask(c,x-5.0,x+5.0,z-4.0,z+4.0);
-        // Prefer a free way. A third conflicting column replaces one way
-        // deterministically, but never returns a mask for a different X/Z.
+        // Preserve Test.26 free-way and deterministic victim decisions.
         int target;
         if(c.columnEpoch[first]!=c.epoch)target=first;
         else if(c.columnEpoch[second]!=c.epoch)target=second;
@@ -336,6 +345,28 @@ public final class GrandNetherCaveNetwork {
         c.columnZ[target]=z;
         c.columnComponents[target]=mask;
         return mask;
+    }
+
+    /**
+     * Combined conservative 3D candidate check for real density voxels.
+     * Instead of two lookups for identical region coordinates, select a
+     * cave graph once, find the unchanged 19-bit horizontal column mask,
+     * and intersect its lazily built altitude bits in that same snapshot.
+     *
+     * Return 0 ONLY when either the exact X/Z mask or the exact Test.29
+     * vertical test proves no cave at this source Y. Otherwise return the
+     * ORIGINAL horizontal mask, including -1 at region-crossing boundaries
+     * so strengthFromColumnWithMask can use its complete legacy fallback.
+     */
+    static int componentMaskForColumnAtHeight(int x,int y,int z) {
+        int dx=Math.floorMod(x,CELL),dz=Math.floorMod(z,CELL);
+        if(dx<=5 || dx>=CELL-6 || dz<=4 || dz>=CELL-5)return -1;
+        CellCache c=CACHED_HALLS.get().get(
+                Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
+        int mask=cachedColumnMask(c,x,z);
+        if(mask==0 || y<MIN_Y || y>MAX_Y)return mask;
+        c.ensureHeightComponents();
+        return (mask & c.heightComponents[y-MIN_Y])==0 ? 0 : mask;
     }
 
     /**
