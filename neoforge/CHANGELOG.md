@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.31 — 2026-10-24 — Conservative 47-Component Overworld Cave Height Pruning (Experimental)
+
+### World generation CPU avoidance
+- Unlike the Nether Test.30 path, the 2096-high Overworld `GrandOverworldCaverns` previously only skipped seeded cave warp noise when the **entire X/Z source column** had no horizontally reachable giant cave or world Y exceeded the global geometric top. Cave-bearing horizontal columns still evaluated warp noise at unrelated vertical bands through four enormous cave tiers.
+- Test.31 combines the original cached 47-bit X/Z cave candidate mask with a **conservative source-height reach mask**, using exactly the frozen Hall vertical radii, TunnelGeometry minY/maxY and the full +/-2 block seeded Y warp interval. If none of the X/Z candidates can reach this integer sampled Y, return the original X/Z giant cave strength as exactly zero **without computing the giant-cave warp noise or full 3D corridor graph**.
+- Lazily allocate a 1743-long (about 13.6 KiB) vertical component table only on the first positive source-column cave candidate for a worker-local 768-block cave graph. Initialize by each component's actual inclusive height range, not a 1743x47 full scan. Reuse primitive backing storage across region cache lifetimes; invalidate when a region snapshot is replaced, with no global or unbounded world cache.
+- At X/Z source positions where any +/-6 X or +/-5 Z seeded displacement may enter another 768-block cave graph, return the unchanged `-1` sentinel and execute the original full giant-cave path. The known-mask density evaluator still verifies displaced position support and preserves the original warp and cave strength formula.
+- **Small caves and rare surface entrances are always computed exactly as before**, even when the giant-cave height gate says zero; the existing upper-Y test and final density `carve`/aquifer behavior are unchanged. No modifications to seeded procedural terrain, original Perlin/Noise, Beardifier, Aquifer, structures, bodies of water, ocean, sky, Nether, End, world height or saved blocks.
+
+### Exact proof and promotion
+- New `GrandOverworldHeightMaskParitySmoke` builds an **independent** 47-component reference from original Hall radii and cached immutable TubeSegment Y bounds and checks all 1743 integer source heights across 25 seeded graphs, plus more than 40k signed/far X/Z source samples, cave-rich columns and cell edges. For any formerly nonempty X/Z column newly rejected at an altitude, sample multiple warped points and require full original `strength` returns raw-double bit-exact **zero**. Assert region-edge -1 fallback is unchanged.
+- Keep the existing frozen original Overworld cave tube geometry raw-bit tests (>75k positions), mask AABB parity, cache collision retention, 350k one-mask parity, full NeoForge build and multi-seed 4-family real dedicated server/Anvil, ocean, sky, Nether/End, distant-chunk suites.
+- Stacked experimental Draft based on Test.30 PR #123, stable `main` untouched. Need all newest-SHA CI, saved block identity and matched same-hardware, same-seed cold fresh Overworld chunk/s, p95 time, CPU and heap/GC against Test.30 before any promotion. An avoided warp is logical work saving, **not** yet a proven FPS/TPS or percent chunk throughput improvement.
+
 ## 2.0.0-preview.2-test.30 — 2026-10-24 — Fused Grand Nether Source-Column XYZ Candidate Lookup (Experimental)
 
 ### Real world generation hot path
