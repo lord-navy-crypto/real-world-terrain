@@ -49,6 +49,14 @@ public record GrandNetherCaverns(DensityFunction base,DensityFunction warp)
         int candidateMask=GrandNetherCaveNetwork.componentMaskForColumn(x,z);
         if(candidateMask==0)
             return original;
+        // The seeded warp can only move Y by two blocks. If none of the
+        // horizontally reachable 19 cave components intersects that entire
+        // vertical interval, cave strength is provably zero. Avoid noise
+        // sampling even on columns whose other heights contain caverns.
+        // The -1 boundary mask always follows the original full path.
+        if(!GrandNetherCaveNetwork.mayContainVoidAtHeight(
+                x,y,z,candidateMask))
+            return original;
         // Gently distort ideal ellipsoids and straight corridors using a
         // smooth world-seeded 3D noise field. Less than the radius of a
         // connector, preserving walkable links across all chunk borders.
