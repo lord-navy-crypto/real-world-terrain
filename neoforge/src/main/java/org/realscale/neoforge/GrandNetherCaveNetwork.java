@@ -500,29 +500,50 @@ public final class GrandNetherCaveNetwork {
         double answer=0;
         for(int layer=0;layer<2;layer++) {
             int shift=layer*9;
+            // Test.36: the complete nine-component layer may be absent
+            // after XYZ mask narrowing. Avoid entering any of its geometry,
+            // loops or distance checks; preserve the original layer order.
+            if((mask&(0x1FF<<shift))==0)continue;
             Hall center=cache.halls[layer][0];
             if((mask&(1<<shift))!=0
                     && Math.abs(y-center.y())<center.radiusY()+1)
                 answer=Math.max(answer,chamber(x,y,z,center));
             if(answer>=1)return 1;
-            for(int edge=0;edge<4;edge++) {
-                if((mask&(1<<(shift+1+edge)))!=0)
-                    answer=Math.max(answer,tube(x,y,z,cache.corridors[layer][edge]));
+            int corridors=(mask>>>(shift+1))&0xF;
+            if(corridors!=0) {
+                for(int edge=0;edge<4;edge++) {
+                    if((corridors&(1<<edge))!=0) {
+                        TubeSegment segment=cache.corridors[layer][edge];
+                        // This is the original tube() inclusive Y rejection
+                        // moved before the call. Negated comparisons preserve
+                        // even Java NaN behavior of the original condition.
+                        if(!(y<segment.minY || y>segment.maxY))
+                            answer=Math.max(answer,tube(x,y,z,segment));
+                    }
+                }
             }
-            if(Math.abs(x-center.x())<=80&&Math.abs(z-center.z())<=80
+            int galleries=(mask>>>(shift+5))&0xF;
+            if(galleries!=0
+                    && Math.abs(x-center.x())<=80&&Math.abs(z-center.z())<=80
                     && Math.abs(y-center.y())<=30) {
                 for(int gallery=0;gallery<2;gallery++) {
                     Hall side=cache.satellites[layer][gallery];
-                    if((mask&(1<<(shift+5+gallery*2)))!=0
+                    if((galleries&(1<<(gallery*2)))!=0
                             && Math.abs(y-side.y())<side.radiusY()+1)
                         answer=Math.max(answer,chamber(x,y,z,side));
-                    if((mask&(1<<(shift+6+gallery*2)))!=0)
-                        answer=Math.max(answer,tube(x,y,z,cache.branches[layer][gallery]));
+                    if((galleries&(1<<(gallery*2+1)))!=0) {
+                        TubeSegment segment=cache.branches[layer][gallery];
+                        if(!(y<segment.minY || y>segment.maxY))
+                            answer=Math.max(answer,tube(x,y,z,segment));
+                    }
                 }
             }
         }
-        if((mask&(1<<18))!=0)
-            answer=Math.max(answer,tube(x,y,z,cache.interlayer));
+        if((mask&(1<<18))!=0) {
+            TubeSegment segment=cache.interlayer;
+            if(!(y<segment.minY || y>segment.maxY))
+                answer=Math.max(answer,tube(x,y,z,segment));
+        }
         return answer;
     }
 

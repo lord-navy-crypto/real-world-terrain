@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.36 — 2026-10-24 — Nether Component-Evaluator Call Pruning (Experimental)
+
+### Avoid unnecessary 3D tube evaluation in actual final-density worldgen
+- Test.34 intersected the 19-bit Nether horizontal candidate mask with conservative world-Y component reach, reducing the set of halls and corridors reaching the final-density evaluator. However the remaining candidate corridors and branch tubes may lie beyond the exact displaced sample Y, yet the evaluator still enters `tube()` before the existing 3D AABB returns zero.
+- Test.36 checks **the identical immutable TubeSegment minY/maxY** in `strengthFromColumnWithMask` before entering `tube()`, and skips both entire nine-component layers and empty four-component corridor/gallery groups based on the already-computed candidate mask. Its traversal preserves the exact original 19-bit order, identical complete graph and `Math.max` arithmetic for all evaluated components.
+- The guard uses `!(y<minY || y>maxY)` rather than reversing comparisons, matching the original `tube()` rejection even for IEEE-754 NaN inputs. The original X/Z 256-cell edge sentinel -1, unsupported warped-query fallback, Java double bend/projection calculation, worker-local graph cache and 512-entry two-way column masks are unchanged. No new state, allocation, generated blocks, cave noise, lava/bedrock, Nether structures, or other dimension changes.
+- Micro-optimization tradeoff: explicit precheck/group conditions themselves consume cycles, and modern JITs may already inline AABB checks. **Do not assume faster end-to-end worldgen.** Drop this experiment if matched cold chunk performance is neutral or worse.
+
+### Exact frozen reference and release-quality regression
+- New standalone `GrandNetherEvaluatorCallPruneSmoke` recreates the pre-Test.36 `strengthFromColumnWithMask` traversal independently using the existing original `chamber()` and `tube()` functions through reflection. Require raw IEEE-754 bit-identical output against the optimized evaluator for over 13,000 warp samples, including both giant cave strata, signed/far coordinates, positive actual carving, 256-cell cross-region full-strength fallback, zero/partial/all-component masks, and strictly unchanged original unmasked `strength()` where the supplied mask is valid.
+- Track actual old `tube()` invocations versus eligible calls after the new exact Y guard, plus empty layers/corridor/gallery groups. Those counts prove reduced function entry **for this test workload only**, not measured chunks/s or FPS.
+- Retain frozen Nether 19-bit candidate mask / 297-height table / exact original density, cached room/tube parity, Test.34 function-only A/B, Test.33 full Overworld 47-bit checks, NeoForge Gradle build, multiseed real server / saved Anvil, far-chunk, ocean/sky/End regressions, and Test.35's opt-in same-runner Overworld cold route comparison.
+- Stacked Draft on Test.35 (#128); stable `main` unchanged. Need all 14 newest-SHA CI successes and matched same-seed same-hardware Test.35/Test.36 cold virgin Nether chunk throughput/p95, CPU, allocations/heap/GC and preserved saved block data before promotion.
+
 ## 2.0.0-preview.2-test.35 — 2026-10-24 — Primitive Grand Nether Hall X/Z Bounds Reuse (Experimental)
 
 ### Real worldgen source-column mask cache misses
