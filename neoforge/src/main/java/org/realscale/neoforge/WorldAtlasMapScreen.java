@@ -147,7 +147,8 @@ public final class WorldAtlasMapScreen extends Screen {
 
     private boolean hasActiveGeneration() {
         var job=visibleGeneration();
-        return job!=null && !job.terminal();
+        return WorldAtlasOfflinePregenerator.isWriterActive()
+                || (job!=null && !job.terminal());
     }
 
     private void startOfflinePregeneration() {
