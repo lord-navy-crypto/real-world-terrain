@@ -50,6 +50,18 @@ def saved_chunk(reverse_blocks=False,reverse_biomes=False,
     }
 
 
+def packed_compact(indices,bits):
+    data=[0]*((len(indices)*bits+63)//64)
+    for i,index in enumerate(indices):
+        offset=i*bits
+        word=offset//64
+        shift=offset%64
+        data[word]|=(index<<shift)&((1<<64)-1)
+        if shift+bits>64:
+            data[word+1]|=index>>(64-shift)
+    return [x if x<(1<<63) else x-(1<<64) for x in data]
+
+
 class TestDecodedAnvilSemanticParity(unittest.TestCase):
     def test_palette_order_is_storage_not_terrain(self):
         a=block_payload_digest(saved_chunk())
@@ -61,6 +73,21 @@ class TestDecodedAnvilSemanticParity(unittest.TestCase):
             self.assertEqual(a[category],b[category])
         self.assertEqual(saved_world_differences({"64,64":a},
                                                  {"64,64":b}),[])
+
+    def test_identical_compact_and_padded_heightmap_values(self):
+        a=saved_chunk()
+        b=saved_chunk()
+        # 12 bits cross 64-bit boundaries at voxel index 5, 10, ...
+        vals=[((i*37)%2097) for i in range(256)]
+        a["Heightmaps"]["WORLD_SURFACE"]=packed(vals,12)
+        b["Heightmaps"]["WORLD_SURFACE"]=packed_compact(vals,12)
+        self.assertEqual(len(a["Heightmaps"]["WORLD_SURFACE"]),52)
+        self.assertEqual(len(b["Heightmaps"]["WORLD_SURFACE"]),48)
+        pa=block_payload_digest(a)
+        pb=block_payload_digest(b)
+        self.assertEqual(pa["heightmaps"],pb["heightmaps"])
+        self.assertEqual(saved_world_differences({"64,64":pa},
+                                                 {"64,64":pb}),[])
 
     def test_changed_real_block_is_not_ignored(self):
         a=block_payload_digest(saved_chunk())
