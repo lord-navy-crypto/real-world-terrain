@@ -2,6 +2,18 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.38 — 2026-10-24 — Conservative Overworld Tunnel Pre-Sine Vertical Rejection (Experimental)
+
+### Avoid expensive trig in giant-cave world generation
+- Prior tests removed X/Z/Y-disjoint rooms and tunnels. However, remaining 3D candidate `cachedTunnelStrength` samples may be farther vertically from the already-computed **bent tunnel centerline** than the maximum possible tunnel cross-section. The frozen algorithm always evaluates `Math.sin(Math.PI*t)` and subsequent width/height math first, despite an inevitable final zero-strength result.
+- Test.38 precomputes one conservative scalar, `preSineMaxAbsY=radius*verticalScale+1.0`, per immutable `TunnelGeometry` in the existing eight worker-local cave region graphs. After computing the **unchanged exact bent centerline**, if `Math.abs(y-cy)` exceeds this upper bound then tunnel strength is provably zero: the original `width = radius * (0.80 + 0.20 * sin(PI*t)^2)` cannot exceed the seeded positive radius, and the cross-section's vertical half-height cannot exceed radius*verticalScale. The extra full-block slack deliberately handles near-boundary floating-point tangencies.
+- The early zero is placed BEFORE `Math.sin` and only after the original broad AABB, 3D projection / t segment support, bend displacement and nonpositive-length checks. All candidate points remain subject to the untouched original trigonometry, X/Z cross-axis and q calculation in exactly the same arithmetic order. Test.37 evaluator mask rules, seed/hall/tube/bend geometry, height bands, structures, Aquifer, Beardifier, fluids, small caves, other dimensions and Anvil chunk writes are unchanged. No per-voxel allocation or growing global cache.
+
+### Independent safety and performance expectations
+- Add `GrandOverworldPreSineVerticalRejectSmoke`: over 75,000 full 3D density comparisons between the independent original `tunnelStrength(x,y,z, Hall a, Hall b, Passage section, key)` and the optimized `cachedTunnelStrength`, spanning all four main cavern layers, corridors, side tunnels, shafts, arteries, true carved values and fine points near the pre-sine envelope. For every rejected sample, require raw IEEE-754 **positive zero** from the frozen original formula; also check the cached scalar against the original input radius and vertical scale.
+- Keep existing Test.21 frozen geometry 75k+ raw-double parity, Test.37 frozen evaluator, Test.33 47-bit XYZ masks and all source/Gradle/NeoForge real multi-seed server, saved-world Anvil, sky/ocean/Nether/End and 180s distant-chunk regressions.
+- This is an experimental branch stacked on Test.37 (#130), stable main untouched. Saving `Math.sin` evaluations in the guarded workload is **not** enough to claim real chunks/s improvement. Require newest-head all-green CI and matched Test.37/Test.38 same-seed same-hardware cold new Overworld chunks, p95, CPU/heap/GC and saved-block parity before promotion. If added guard checks outweigh trig savings, reject the change.
+
 ## 2.0.0-preview.2-test.37 — 2026-10-24 — Overworld 47-Component Evaluator Call Pruning (Experimental)
 
 ### Main-world large-cave density CPU experiment

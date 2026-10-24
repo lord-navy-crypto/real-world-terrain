@@ -50,6 +50,11 @@ public final class GrandOverworldCaveNetwork {
         final Passage section;
         final double vx,vy,vz,len,horiz;
         final double minX,maxX,minZ,maxZ,minY,maxY;
+        // Guaranteed wider than the maximum original sinusoid-driven
+        // tunnel cross-section height (all seeded passages have positive
+        // width/verticalScale). A full-block margin makes the early
+        // rejection conservative even at near-tangent FP boundaries.
+        final double preSineMaxAbsY;
         final boolean vertical,xDominant;
         final int bendA,bendB;
         final long key;
@@ -71,6 +76,7 @@ public final class GrandOverworldCaveNetwork {
             maxZ=Math.max(a.z(),b.z())+horizontalReach;
             minY=Math.min(a.y(),b.y())-verticalReach;
             maxY=Math.max(a.y(),b.y())+verticalReach;
+            preSineMaxAbsY=section.radius()*section.verticalScale()+1.0;
             vx=b.x()-a.x();vy=b.y()-a.y();vz=b.z()-a.z();
             len=vx*vx+vy*vy+vz*vz;
             vertical=Math.abs(vy)>Math.max(Math.abs(vx),Math.abs(vz));
@@ -101,11 +107,20 @@ public final class GrandOverworldCaveNetwork {
         } else {
             cx+=displacementA;cy+=displacementB;
         }
+        // Test.38: in the original tube cross-section:
+        // width=radius*(0.80+0.20*sin(PI*t)^2) <= radius
+        // height=width*verticalScale <= radius*verticalScale.
+        // If the signed vertical displacement exceeds the conservative
+        // maximum PLUS a full block, q must exceed 1 regardless of sine.
+        // Check before Math.sin(), preserving the original 3D calculation
+        // and raw-double bits for every sample that can actually carve.
+        double yy=y-cy;
+        if(Math.abs(yy)>g.preSineMaxAbsY)return 0;
         double sinPiT=Math.sin(Math.PI*t);
         double widthScale=0.80+0.20*sinPiT*sinPiT;
         double width=g.section.radius()*widthScale;
         double height=width*g.section.verticalScale();
-        double xx=x-cx, yy=y-cy, zz=z-cz;
+        double xx=x-cx, zz=z-cz;
         double q;
         if(g.vertical) {
             q=(xx*xx+zz*zz)/(width*width)+yy*yy/(height*height);
