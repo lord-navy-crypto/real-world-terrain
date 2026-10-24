@@ -353,10 +353,11 @@ public final class GrandNetherCaveNetwork {
      * cave graph once, find the unchanged 19-bit horizontal column mask,
      * and intersect its lazily built altitude bits in that same snapshot.
      *
-     * Return 0 ONLY when either the exact X/Z mask or the exact Test.29
-     * vertical test proves no cave at this source Y. Otherwise return the
-     * ORIGINAL horizontal mask, including -1 at region-crossing boundaries
-     * so strengthFromColumnWithMask can use its complete legacy fallback.
+     * Return the exact nonnegative intersection of the X/Z candidates
+     * and the source-Y +/-2 reach table. Test.34 skips impossible tubes
+     * and halls INSIDE strengthFromColumnWithMask, not only when the
+     * entire intersection is empty. Retain -1 at crossing boundaries
+     * so strengthFromColumnWithMask uses the complete legacy fallback.
      */
     static int componentMaskForColumnAtHeight(int x,int y,int z) {
         int dx=Math.floorMod(x,CELL),dz=Math.floorMod(z,CELL);
@@ -366,7 +367,10 @@ public final class GrandNetherCaveNetwork {
         int mask=cachedColumnMask(c,x,z);
         if(mask==0 || y<MIN_Y || y>MAX_Y)return mask;
         c.ensureHeightComponents();
-        return (mask & c.heightComponents[y-MIN_Y])==0 ? 0 : mask;
+        // Components outside this intersection cannot reach the
+        // displaced source Y, and therefore contribute exact zero to
+        // the original chamber/tube 3D evaluator at this voxel.
+        return mask & c.heightComponents[y-MIN_Y];
     }
 
     /**
