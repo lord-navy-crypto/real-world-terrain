@@ -149,6 +149,19 @@ public final class GrandOverworldCaveNetwork {
         final Passage[][][] arteryWidth=new Passage[2][2][2];
         final long[][][] arteryKey=new long[2][2][2];
         final TunnelGeometry[][][] arteryTubes=new TunnelGeometry[2][2][2];
+        // Exact conservative Y reach for the same 47 X/Z cave candidates.
+        // Lazy per worker/region: 1743 longs (~13.7 KiB), only allocated
+        // when an actual nonempty source column needs the height gate.
+        long[] heightComponents;
+        boolean heightComponentsReady;
+        void ensureHeightComponents() {
+            if(heightComponentsReady)return;
+            if(heightComponents==null)
+                heightComponents=new long[MAX_GEOMETRY_Y+3-MIN_Y];
+            java.util.Arrays.fill(heightComponents,0L);
+            populateHeightComponents(this,heightComponents);
+            heightComponentsReady=true;
+        }
         void load(int x,int z) {
             if(gx==x && gz==z)return;
             gx=x;gz=z;
@@ -208,6 +221,9 @@ public final class GrandOverworldCaveNetwork {
                         arteryTubes[tier][axis][previous]=null;
                     }
                 }
+            // Region slot can be recycled: any prior Y table is invalid
+            // until reconstructed from this region's current cave graph.
+            heightComponentsReady=false;
         }
     }
     /**
@@ -520,6 +536,10 @@ public final class GrandOverworldCaveNetwork {
         if(localX<=6 || localX>=CELL-7 || localZ<=5 || localZ>=CELL-6)
             return -1L;
         Cache c=LOCAL.get().get(Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
+        return cachedColumnMask(c,x,z);
+    }
+
+    private static long cachedColumnMask(Cache c,int x,int z) {
         int bucket=columnBucket(x,z);
         int first=bucket<<1,second=first+1;
         if(c.columnEpoch[first]==c.epoch && c.columnX[first]==x
@@ -541,6 +561,79 @@ public final class GrandOverworldCaveNetwork {
         c.columnZ[target]=z;
         c.columnComponents[target]=mask;
         return mask;
+    }
+
+    /**
+     * Populate a vertical candidate mask using the exact inclusive bounding
+     * box used by the frozen hallStrength / tunnelStrength geometry. For
+     * every sampled integer source height y, a seeded warp can shift Y by
+     * at most +/-2, so it may touch [minimum,maximum] iff
+     * y+2 >= minimum && y-2 <= maximum. Integer floor/ceil is an outward
+     * scan window only; the exact double tests decide each bit.
+     */
+    private static void markHeightInterval(long[] table,double minimum,
+            double maximum,long componentBit) {
+        int first=Math.max(MIN_Y,(int)Math.floor(minimum-2.0));
+        int last=Math.min(MAX_GEOMETRY_Y+2,(int)Math.ceil(maximum+2.0));
+        for(int y=first;y<=last;y++)
+            if((double)y+2.0>=minimum && (double)y-2.0<=maximum)
+                table[y-MIN_Y]|=componentBit;
+    }
+
+    private static void populateHeightComponents(Cache c,long[] table) {
+        for(int layer=0;layer<LAYERS;layer++) {
+            int shift=layer*9;
+            Hall center=c.halls[layer][0];
+            markHeightInterval(table,center.y()-center.radiusY(),
+                    center.y()+center.radiusY(),1L<<shift);
+            for(int direction=0;direction<4;direction++) {
+                TunnelGeometry tunnel=c.corridorTubes[layer][direction];
+                markHeightInterval(table,tunnel.minY,tunnel.maxY,
+                        1L<<(shift+1+direction));
+            }
+            for(int gallery=0;gallery<2;gallery++) {
+                Hall side=c.galleries[layer][gallery];
+                markHeightInterval(table,side.y()-side.radiusY(),
+                        side.y()+side.radiusY(),1L<<(shift+5+2*gallery));
+                TunnelGeometry tunnel=c.sideTubes[layer][gallery];
+                markHeightInterval(table,tunnel.minY,tunnel.maxY,
+                        1L<<(shift+6+2*gallery));
+            }
+        }
+        for(int layer=0;layer<LAYERS-1;layer++) {
+            TunnelGeometry shaft=c.shaftTubes[layer];
+            markHeightInterval(table,shaft.minY,shaft.maxY,1L<<(36+layer));
+        }
+        for(int tier=0;tier<2;tier++) for(int axis=0;axis<2;axis++)
+            for(int group=0;group<2;group++) {
+                TunnelGeometry artery=c.arteryTubes[tier][axis][group];
+                if(artery!=null)
+                    markHeightInterval(table,artery.minY,artery.maxY,
+                            1L<<(39+tier*4+axis*2+group));
+            }
+    }
+
+    /**
+     * Test.31 combines the ORIGINAL 47-bit horizontal mask and the
+     * conservative warped-Y candidate filter in one region-cache lookup.
+     * Return zero only when all eligible components are geometrically
+     * unreachable. Leave the X/Z cross-region -1 sentinel untouched:
+     * displaced samples there may use a different seeded cell graph.
+     *
+     * The caller MUST still compute small-cave noise and rare entrances
+     * when the giant-cave mask is zero, just as it did before.
+     */
+    static long componentMaskForColumnAtHeight(int x,int y,int z) {
+        if(y>MAX_GEOMETRY_Y+2)return 0L;
+        int localX=Math.floorMod(x,CELL),localZ=Math.floorMod(z,CELL);
+        if(localX<=6 || localX>=CELL-7 || localZ<=5 || localZ>=CELL-6)
+            return -1L;
+        Cache c=LOCAL.get().get(Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
+        long horizontal=cachedColumnMask(c,x,z);
+        if(horizontal==0L)return 0L;
+        if(y<MIN_Y || y>MAX_GEOMETRY_Y+2)return horizontal;
+        c.ensureHeightComponents();
+        return (horizontal&c.heightComponents[y-MIN_Y])==0L?0L:horizontal;
     }
 
     /**
