@@ -154,15 +154,40 @@ def _digest_heightmaps(maps):
     # layout bytes. Heightmap names are compared independently.
     bits=(2096+1).bit_length()
     per_long=64//bits
+    padded=(256+per_long-1)//per_long
+    compact=(256*bits+63)//64
     for name,values in sorted(maps.items()):
         if not isinstance(values,list):
             raise AssertionError(f"Malformed heightmap {name}")
-        if len(values)<(256+per_long-1)//per_long:
-            raise AssertionError(f"Truncated heightmap {name}")
+        # Heightmaps commonly use Minecraft SimpleBitStorage's
+        # contiguous packing (values may cross a 64-bit boundary).
+        # Some custom/legacy generators emit padded storage like
+        # PalettedContainer. Accept either known length, never infer
+        # a mixed or truncated layout. Equal lengths have same layout
+        # for the common divisors of 64.
+        if len(values)==compact and compact!=padded:
+            mode="compact"
+        elif len(values)==padded:
+            mode="padded"
+        else:
+            raise AssertionError(
+                f"Unexpected saved heightmap {name} longs={len(values)} "
+                f"expectedCompact={compact} expectedPadded={padded}")
         unpacked=[]
         for i in range(256):
-            word=int(values[i//per_long])&LONG_MASK
-            unpacked.append((word>>((i%per_long)*bits))&((1<<bits)-1))
+            if mode=="padded":
+                word=int(values[i//per_long])&LONG_MASK
+                value=word>>((i%per_long)*bits)
+            else:
+                offset=i*bits
+                index=offset//64
+                shift=offset%64
+                word=int(values[index])&LONG_MASK
+                value=word>>shift
+                if shift+bits>64:
+                    extra=int(values[index+1])&LONG_MASK
+                    value|=extra<<(64-shift)
+            unpacked.append(value&((1<<bits)-1))
         normalized[name]=unpacked
     return hashlib.sha256(json.dumps(
         normalized,sort_keys=True,separators=(",",":")
