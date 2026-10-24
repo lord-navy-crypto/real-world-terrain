@@ -79,22 +79,29 @@ public final class GrandNetherHeightBitsParitySmoke {
             Object cell=select.invoke(regions,gx,gz);
             int cx=gx*GrandNetherCaveNetwork.CELL+128;
             int cz=gz*GrandNetherCaveNetwork.CELL+128;
-            int[] table=(int[])get(cell,"heightComponents");
-            require(table.length==GrandNetherCaveNetwork.MAX_Y-
-                    GrandNetherCaveNetwork.MIN_Y+1,
-                    "Wrong bounded Nether height table");
             Field ready=field(cell.getClass(),"heightComponentsReady");
             require(!ready.getBoolean(cell),
                     "A newly loaded cell must not eagerly build all 297 heights");
+            // First creation is also delayed; a reused snapshot can retain
+            // its fixed 297-int array but MUST reset its ready/epoch flag.
+            boolean hadStorage=get(cell,"heightComponents")!=null;
             // Empty masks MUST NOT build the lazy table.
             require(!GrandNetherCaveNetwork.mayContainVoidAtHeight(
                     cx,205,cz,0),"Zero source mask retained a cave");
             require(!ready.getBoolean(cell),
                     "Zero source mask must not initialize the height table");
+            if(!hadStorage)
+                require(get(cell,"heightComponents")==null,
+                        "Empty source column eagerly allocated height masks");
             // The first candidate creates the table, all following
             // per-Y samples reuse the same exact primitive bit array.
             GrandNetherCaveNetwork.mayContainVoidAtHeight(cx,205,cz,1);
             require(ready.getBoolean(cell),"Lazy first-use table missing");
+            int[] table=(int[])get(cell,"heightComponents");
+            require(table!=null &&
+                    table.length==GrandNetherCaveNetwork.MAX_Y-
+                        GrandNetherCaveNetwork.MIN_Y+1,
+                    "Wrong bounded Nether height table");
             lazyRebuilds++;
             for(int y=GrandNetherCaveNetwork.MIN_Y;
                     y<=GrandNetherCaveNetwork.MAX_Y;y++) {
