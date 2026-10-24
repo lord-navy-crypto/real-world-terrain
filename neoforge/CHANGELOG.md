@@ -2,6 +2,19 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.28 — 2026-10-24 — Lazy Precomputed Nether Cave-Height Candidate Bits (Experimental)
+
+### Hot-path optimization
+- Test.27 safely avoided unnecessary seeded noise warp on Nether density voxels outside the vertical influence of the source column's 19-component cave mask, but determined that reach by scanning up to 19 caves and tubes **on every Y sample**. Because Nether region graph geometry is immutable, those comparisons produce the same result for all subsequent calls at the same integer world Y.
+- Test.28 replaces repeated Y bound scans with a worker-local primitive table: `CellCache.heightComponents[Y-MIN_Y]` is an exact 19-bit mask of all rooms/tunnels that could touch the full seeded +/-2 Y warp interval. The actual candidate check becomes `(sourceColumnMask & heightComponents[index]) != 0`. This preserves Test.27's inclusive comparisons, cave topology, 19 bit positions, and exact original zero-strength guarantee.
+- Lazily populate the height table only on the first **nonzero source column mask** in a 256-block cave graph, avoiding setup in one-off/empty regions. The table uses **297 primitive ints (~1.2 KB) per initialized snapshot**, bounded by Test.19's four per-worker region snapshots. On cache eviction/reinitialization, invalidate and safely recompute from the new seeded graph; never share the table between threads or cave regions.
+- The `mask=-1` edge sentinel always bypasses the height table and runs the original density path: X/Z warp can enter another region. The out-of-band Y helper also keeps conservative fallback instead of indexing invalid ranges. Vanilla noise math, Nether lava and structures, actual world blocks, saved Anvil chunks, and all Overworld/ocean/sky/End presets are unchanged.
+
+### Independent proof, quality and promotion
+- New `GrandNetherHeightBitsParitySmoke` independently reconstructs Test.27's original room and tube vertical AABB tests for each of 297 protected heights over 49 seeded region graphs. It verifies the **entire 19-bit table per height**, all 19 individual component masks, additional random masks, no eager setup on zero masks, `-1` boundary safety and reset under region eviction (more than 300,000 exact comparisons).
+- Retains original `GrandNetherWarpHeightPruneSmoke` checking the **full frozen 3D strength** at every pruned position across multiple seeded X/Z/Y displacements, plus the Nether double-bit reference, cave topology, 19-bit column mask, A/B cache, multi-worker, real-server multi-seed saved-world and NeoForge tests.
+- Draft based on Test.27 (#120), stable main untouched. All-green CI proves covered equivalence but does **not** prove faster chunk generation: compare Test.27 vs Test.28 using same-seed cold Nether chunk throughput/p95, CPU, memory/GC and saved-block parity before merging. Lazy precomputation has startup and memory costs, so reject if no measured net benefit.
+
 ## 2.0.0-preview.2-test.27 — 2026-10-24 — Conservative Nether Cave Height Exclusion Before Noise Warp (Experimental)
 
 ### Real world generation CPU reduction
