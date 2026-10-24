@@ -18,6 +18,10 @@ class WorldAtlasBackgroundPainterTests(unittest.TestCase):
         self.assertIn("MAX_CHUNK_NBT = 4*1024*1024",source)
         self.assertIn("bitsFor(int count)",source)
         self.assertIn("return 12;",source)
+        self.assertIn("count==48 || count==52",source)
+        self.assertIn("count==36 || count==37",source)
+        self.assertIn("if(shift+bits>64)",source)
+        self.assertIn("data[word+1]<<(64-shift)",source)
         for forbidden in ("Files.write(", "new FileOutputStream(",
                           "Files.newOutputStream(", "getChunk(", "ServerLevel"):
             self.assertNotIn(forbidden,source)
@@ -80,6 +84,8 @@ class WorldAtlasBackgroundPainterTests(unittest.TestCase):
         self.assertIn("public static boolean isWriterActive()",backendSafety)
         self.assertIn("process.isAlive()",backendSafety)
         self.assertIn("newFarSavedY=1100",smoke)
+        self.assertIn("compact48=pass",smoke)
+        self.assertIn("Failed actual compact 12-bit height values",smoke)
         self.assertIn("STALE center block height color",smoke)
         self.assertIn("Refreshed map omitted genuinely new far saved region",smoke)
         for forbidden in ("new ServerChunkCache", "getChunkAtAsync(",
