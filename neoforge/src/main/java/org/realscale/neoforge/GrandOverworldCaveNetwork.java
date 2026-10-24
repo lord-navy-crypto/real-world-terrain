@@ -696,6 +696,14 @@ public final class GrandOverworldCaveNetwork {
      * Never store the mask across distinct context calls, thread switches,
      * or seeded density instances. Passing a stale mask is not supported.
      */
+    /**
+     * Test.37: preserve the frozen 47-component evaluator and its ordered
+     * Math.max updates, but skip zero-bit groups before entering their
+     * loops. Each eligible tunnel's immutable exact AABB Y rejection is
+     * tested before the cachedTunnelStrength() call. The same check inside
+     * cachedTunnelStrength() remains as the independent safe fallback.
+     * Negated disjointness is intentional: it preserves NaN semantics.
+     */
     static double strengthFromColumnWithMask(int sourceX,int sourceZ,
             double x,double y,double z,long mask) {
         if(y<MIN_Y || y>MAX_GEOMETRY_Y)return 0;
@@ -709,38 +717,64 @@ public final class GrandOverworldCaveNetwork {
         Cache c=LOCAL.get().get(Math.floorDiv(sourceX,CELL),Math.floorDiv(sourceZ,CELL));
         double value=0;
         for(int layer=0;layer<LAYERS;layer++) {
+            int shift=layer*9;
+            // Four groups of nine cave candidates can be absent entirely
+            // after the existing 47-bit XYZ intersection.
+            if((mask&(0x1FFL<<shift))==0L)continue;
             Hall center=c.halls[layer][0];
             if(Math.abs(y-center.y())>235 && layer<3)continue;
             if(Math.abs(y-center.y())>350 && layer==3)continue;
-            int shift=layer*9;
             if((mask&(1L<<shift))!=0)
                 value=Math.max(value,hallStrength(x,y,z,center));
-            for(int direction=0;direction<4;direction++) {
-                if((mask&(1L<<(shift+1+direction)))!=0)
-                    value=Math.max(value,cachedTunnelStrength(x,y,z,c.corridorTubes[layer][direction]));
+
+            int corridors=(int)((mask>>>(shift+1))&0xFL);
+            if(corridors!=0) {
+                for(int direction=0;direction<4;direction++) {
+                    if((corridors&(1<<direction))!=0) {
+                        TunnelGeometry tube=c.corridorTubes[layer][direction];
+                        if(!(y<tube.minY||y>tube.maxY))
+                            value=Math.max(value,cachedTunnelStrength(x,y,z,tube));
+                    }
+                }
             }
-            if(Math.abs(x-center.x())<225&&Math.abs(z-center.z())<225&&
-                    Math.abs(y-center.y())<150) {
+            int galleryMask=(int)((mask>>>(shift+5))&0xFL);
+            if(galleryMask!=0
+                    && Math.abs(x-center.x())<225
+                    && Math.abs(z-center.z())<225
+                    && Math.abs(y-center.y())<150) {
                 for(int g=0;g<2;g++) {
-                    if((mask&(1L<<(shift+5+g*2)))!=0)
+                    if((galleryMask&(1<<(g*2)))!=0)
                         value=Math.max(value,hallStrength(x,y,z,c.galleries[layer][g]));
-                    if((mask&(1L<<(shift+6+g*2)))!=0)
-                        value=Math.max(value,cachedTunnelStrength(x,y,z,c.sideTubes[layer][g]));
+                    if((galleryMask&(1<<(g*2+1)))!=0) {
+                        TunnelGeometry tube=c.sideTubes[layer][g];
+                        if(!(y<tube.minY||y>tube.maxY))
+                            value=Math.max(value,cachedTunnelStrength(x,y,z,tube));
+                    }
                 }
             }
         }
-        for(int layer=0;layer<LAYERS-1;layer++) {
-            if((mask&(1L<<(36+layer)))!=0)
-                value=Math.max(value,cachedTunnelStrength(x,y,z,c.shaftTubes[layer]));
-        }
-        for(int tier=0;tier<2;tier++) for(int axis=0;axis<2;axis++)
-            for(int group=0;group<2;group++) {
-                int shift=39+tier*4+axis*2+group;
-                if((mask&(1L<<shift))==0)continue;
-                Hall a=c.arteryA[tier][axis][group];
-                if(a!=null)
-                    value=Math.max(value,cachedTunnelStrength(x,y,z,c.arteryTubes[tier][axis][group]));
+        if((mask&(7L<<36))!=0L) {
+            for(int layer=0;layer<LAYERS-1;layer++) {
+                if((mask&(1L<<(36+layer)))!=0) {
+                    TunnelGeometry tube=c.shaftTubes[layer];
+                    if(!(y<tube.minY||y>tube.maxY))
+                        value=Math.max(value,cachedTunnelStrength(x,y,z,tube));
+                }
             }
+        }
+        if((mask&(0xFFL<<39))!=0L) {
+            for(int tier=0;tier<2;tier++) for(int axis=0;axis<2;axis++)
+                for(int group=0;group<2;group++) {
+                    int shift=39+tier*4+axis*2+group;
+                    if((mask&(1L<<shift))==0)continue;
+                    Hall a=c.arteryA[tier][axis][group];
+                    if(a!=null) {
+                        TunnelGeometry tube=c.arteryTubes[tier][axis][group];
+                        if(!(y<tube.minY||y>tube.maxY))
+                            value=Math.max(value,cachedTunnelStrength(x,y,z,tube));
+                    }
+                }
+        }
         return value;
     }
 
