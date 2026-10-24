@@ -633,14 +633,20 @@ public final class GrandOverworldCaveNetwork {
     }
 
     /**
-     * Test.31 combines the ORIGINAL 47-bit horizontal mask and the
-     * conservative warped-Y candidate filter in one region-cache lookup.
-     * Return zero only when all eligible components are geometrically
-     * unreachable. Leave the X/Z cross-region -1 sentinel untouched:
-     * displaced samples there may use a different seeded cell graph.
+     * Test.33 tightens Test.31's safe XY/Z gate: return the ACTUAL bitwise
+     * intersection of immutable 47-component horizontal and warped-Y
+     * candidate masks, not merely the original full horizontal mask after
+     * testing whether its intersection was nonzero.
      *
-     * The caller MUST still compute small-cave noise and rare entrances
-     * when the giant-cave mask is zero, just as it did before.
+     * When passed to strengthFromColumnWithMask, this saves evaluating
+     * corridors, distant arteries and rooms whose Y AABB cannot intersect
+     * the current source voxel's full +/-2 Y noise-warp envelope.
+     * It cannot remove a real cave contribution: hall/tube evaluators
+     * themselves start by requiring their exact full 3D bounds.
+     *
+     * The -1 sentinel still triggers unmasked full-graph evaluation near
+     * a 768-block border, and zero still skips only the giant cave warp:
+     * smallCaves and rare surface entrances remain independent.
      */
     static long componentMaskForColumnAtHeight(int x,int y,int z) {
         if(y>MAX_GEOMETRY_Y+2)return 0L;
@@ -652,7 +658,10 @@ public final class GrandOverworldCaveNetwork {
         if(horizontal==0L)return 0L;
         if(y<MIN_Y || y>MAX_GEOMETRY_Y+2)return horizontal;
         c.ensureHeightComponents();
-        return (horizontal&c.heightComponents[y-MIN_Y])==0L?0L:horizontal;
+        // Also hand the narrowed component set to the 3D evaluator.
+        // Mask bits for every other altitude would be provably zero after
+        // the actual seeded Y displacement, so this changes CPU work only.
+        return horizontal&c.heightComponents[y-MIN_Y];
     }
 
     /**
