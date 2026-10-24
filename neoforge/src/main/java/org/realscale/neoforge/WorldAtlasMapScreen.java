@@ -260,7 +260,11 @@ public final class WorldAtlasMapScreen extends Screen {
                 // its writer. Refresh disk-backed coverage and painted
                 // height tiles ONCE, without loading or changing chunks.
                 observedLocalGeneration=false;
-                refreshSavedMap();
+                // STOPPED is set only after a verified clean save and
+                // completed process.waitFor(). FAILED may mean the writer
+                // is still closing, so never auto-read in that state.
+                if("STOPPED".equals(serverStatus.state()))
+                    refreshSavedMap();
             }
         }
         if(serverStatus!=null && serverStatus.terminal() &&
