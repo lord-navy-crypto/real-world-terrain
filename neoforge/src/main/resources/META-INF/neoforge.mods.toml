@@ -3,7 +3,7 @@ loaderVersion="[4,)"
 license="Source research implementation; retains Minecraft's own vanilla assets/data references"
 [[mods]]
 modId="realscale"
-version="2.0.0-preview.2-test.26"
+version="2.0.0-preview.2-test.27"
 displayName="RealScale — Terrain, Caves & Oceans (Experimental)"
 authors="RealScale Research"
 description="Experimental four-family three-realm terrain: Natural, Alpine, Canyon, USGS Big Sur v2; Grand Nether/End, ecotones, APES ecology and offshore skylands."
