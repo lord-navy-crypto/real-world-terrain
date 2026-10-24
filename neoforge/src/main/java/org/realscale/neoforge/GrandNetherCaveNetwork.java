@@ -52,6 +52,16 @@ public final class GrandNetherCaveNetwork {
         // fully +/-2 Y-warped sample. Built once per seeded cell graph;
         // no per-voxel scanning/allocation and no change to cached columns.
         final int[] heightComponents = new int[MAX_Y - MIN_Y + 1];
+        boolean heightComponentsReady;
+        void ensureHeightComponents() {
+            if(heightComponentsReady)return;
+            // A one-off worldgen probe pays no 297-height setup unless its
+            // source column actually has a cave candidate. Thread-local
+            // snapshots prevent concurrent reads of partially built tables.
+            for(int y=MIN_Y;y<=MAX_Y;y++)
+                heightComponents[y-MIN_Y]=verticalComponentMask(this,y);
+            heightComponentsReady=true;
+        }
         void initialize(int x, int z) {
             if (gx == x && gz == z) return;
             gx = x; gz = z;
@@ -78,10 +88,9 @@ public final class GrandNetherCaveNetwork {
             }
             interlayerKey = tubeBendKey(halls[0][0], halls[1][0]);
             interlayer = new TubeSegment(halls[0][0], halls[1][0], 10, interlayerKey);
-            // Exactly the same inclusive vertical AABB tests as Test.27,
-            // but amortized over the entire life of this region snapshot.
-            for(int y=MIN_Y;y<=MAX_Y;y++)
-                heightComponents[y-MIN_Y]=verticalComponentMask(this,y);
+            // The next eligible nonempty source-column query will lazily
+            // refresh the height table; no stale previous-region values leak.
+            heightComponentsReady=false;
         }
     }
     /**
@@ -380,6 +389,7 @@ public final class GrandNetherCaveNetwork {
         if(y<MIN_Y || y>MAX_Y)return true;
         CellCache c=CACHED_HALLS.get().get(
                 Math.floorDiv(sourceX,CELL),Math.floorDiv(sourceZ,CELL));
+        c.ensureHeightComponents();
         return (mask & c.heightComponents[y-MIN_Y])!=0;
     }
 
