@@ -2,6 +2,19 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.34 — 2026-10-24 — Narrowed Grand Nether 19-Component XYZ Cave Density Candidates (Experimental)
+
+### Avoid expensive 3D tunnel evaluations in real chunk generation
+- Test.30 fused the cached horizontal 19-component Nether cave candidates with the Test.29 conservative source-height filter, but when even a single component was vertically possible, it still returned the ENTIRE original horizontal candidate mask for costly 3D `chamber()` and `tube()` evaluations. Each candidate tube may require projections, bends and squares on every final-density sample.
+- Test.34 now returns the **exact bitwise intersection** of the frozen original source X/Z candidate mask with the full +/-2 Y warped-interval reach bits. Every excluded component has a vertical AABB provably disjoint from the warped 3D position and must contribute exact zero. The original positive candidates keep their identical floating-point expressions, ordering, constant geometry and short-circuit behavior.
+- The `-1` region-edge sentinel still invokes the full original seeded graph, allowing a +/-5 X / +/-4 Z warp to cross a 256-block boundary. Source Y outside the protected Nether cavern band keeps the original candidate semantics. The wrapper's small-cave, lava, bedrock, structure and 3-realm generation logic is untouched. No new long-lived memory, global caches, registry names, changed world seed or Anvil format.
+
+### Exact parity, measured function timings, promotion policy
+- Upgrade the existing Test.30 frozen two-lookup `GrandNetherFusedColumnHeightMaskSmoke` gate test: require exact zero/nonzero, cross-region -1 semantics and that each new 19-bit candidate mask is a strict subset of the original positive horizontal candidate. For each sampled seeded warp, compare the original full graph, Test.30 horizontal candidate and Test.34 reduced candidate `strengthFromColumnWithMask` with **raw IEEE-754 bit equality**. Report original/reduced component counts and at least 100 nontrivial narrowed nonzero masks. Keep four independent worker caches.
+- Add `GrandNetherXYZStrengthPerfSmoke`: warm and repeatedly compare identical live cave-rich x/y/z density queries with old full horizontal mask and new XYZ mask. Require >7,000 raw-bit parity triples against the unmasked original full graph and actual nonzero cave coverage. Report each arm's isolated **3D density function nanoseconds**, without claiming that those nanoseconds equal cold Minecraft chunk throughput or reliable percent speedup.
+- All previous Nether frozen geometry/19-bit candidates/altitude table, Test.33 complete Overworld 47-bit mask proof, NeoForge build, multi-seed dedicated server, ocean, sky, End, Anvil and 180s far-chunk checks continue. Do not merge unless all newest-head CI is green.
+- Test.34 remains an experimental stacked Draft based on Test.33 (#126); stable `main` is unchanged. Compare same-hardware Test.33 vs Test.34 cold virgin-Nether chunk/s, p95, CPU, heap/GC and identical saved blocks before promotion.
+
 ## 2.0.0-preview.2-test.33 — 2026-10-24 — Narrowed 47-Component Overworld XYZ Cave Mask (Experimental)
 
 ### Real cave worldgen hot-path optimization
