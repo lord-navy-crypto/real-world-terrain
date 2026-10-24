@@ -2,6 +2,19 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.32 — 2026-10-24 — Cached Room X/Z Broad-Phase Bounds for Giant Overworld Cave Columns (Experimental)
+
+### Worldgen CPU experiment
+- The 47-bit cave candidate mask uses Test.21's already-cached `TunnelGeometry` axis-aligned bounds for corridor/galleries, shafts and rare distant arteries. However the four center halls and eight satellites still recomputed `hall.x/z +/- radiusX/Z` up to 12 times per source-column mask-cache miss.
+- Cache the **exact** four X/Z bounds for each of the 12 immutable rooms in `RoomXZBounds` when the worker-local 768-block cave graph is initially constructed. Only the 12 horizontal room candidate probes now read their already-computed minX/maxX/minZ/maxZ doubles. The original `hallCouldTouch(Hall,...)` remains unchanged as the frozen formula reference; X/Z inequalities, inclusive boundary tangencies, boolean short-circuit order, 47-bit positions, mask cache eviction and height-reach logic are unchanged.
+- This is a CPU-vs-small-fixed-region-memory experiment, not a change to Perlin/Noise, Beardifier, Aquifer, tunnel arithmetic, cave topology, seeded hashes, world heights, lava, fluid updates, saved blocks, oceans, sky, Nether or End. The cache adds just 12 small descriptors per live region and stays within Test.18's eight worker-local region snapshots.
+- Main remains untouched; Test.32 is stacked as a separate Draft on Test.31 (#124).
+
+### Independent correctness and performance gates
+- New `GrandOverworldRoomBoundsParitySmoke` recreates the original direct Hall +/-radius math and checks raw IEEE-754 bits for all four horizontal bounds across 121 seeded cave graphs (12 rooms each). It compares more than 70,000 old-vs-new overlap decisions, including exact min/max tangencies and fractional offset positions. Previously existing full 47-bit column-mask frozen reference, Test.31 Y pruning proof, complete room/corridor/surface cave geometry and >75k raw-double tube density parity remain enabled.
+- Keep all NeoForge source/Gradle, real saved-world Anvil, four-family multi-seed actual server/sky/ocean/Nether/End and distant chunk 180s regression checks. A green CI validates covered math parity, **not** chunks-per-second improvement.
+- Promotion requires same-seed same-hardware cold Overworld fresh-chunk throughput, p95 latency, CPU, heap/GC and saved-block parity against Test.31. Reject this minor precomputation if allocations or memory outweigh real per-column savings.
+
 ## 2.0.0-preview.2-test.31 — 2026-10-24 — Conservative 47-Component Overworld Cave Height Pruning (Experimental)
 
 ### World generation CPU avoidance
