@@ -116,17 +116,34 @@ public final class GrandOverworldCaveNetwork {
         // and raw-double bits for every sample that can actually carve.
         double yy=y-cy;
         if(Math.abs(yy)>g.preSineMaxAbsY)return 0;
+        // Test.39: the existing smooth cross-section has
+        // width=radius*(0.80+0.20*sin(PI*t)^2), never wider than its
+        // immutable positive radius. A full block of conservatism keeps
+        // exact boundary/tangency values in the frozen original formula.
+        // Reject a voxel outside this bound BEFORE computing Math.sin.
+        // In the nonvertical case, compute the SAME original lateral
+        // expression once and reuse its raw double in the unchanged q math.
+        double xx=x-cx,zz=z-cz;
+        double lateral=0;
+        double maxHorizontalReach=g.section.radius()+1.0;
+        if(g.vertical) {
+            // Each of these individually exceeds the maximum original
+            // circular cross-section; no sqrt or expensive trig required.
+            if(Math.abs(xx)>maxHorizontalReach
+                    ||Math.abs(zz)>maxHorizontalReach)return 0;
+        } else {
+            if(g.horiz<1)return 0;
+            lateral=(-vz*xx+vx*zz)/g.horiz;
+            if(Math.abs(lateral)>maxHorizontalReach)return 0;
+        }
         double sinPiT=Math.sin(Math.PI*t);
         double widthScale=0.80+0.20*sinPiT*sinPiT;
         double width=g.section.radius()*widthScale;
         double height=width*g.section.verticalScale();
-        double xx=x-cx, zz=z-cz;
         double q;
         if(g.vertical) {
             q=(xx*xx+zz*zz)/(width*width)+yy*yy/(height*height);
         } else {
-            if(g.horiz<1)return 0;
-            double lateral=(-vz*xx+vx*zz)/g.horiz;
             q=(lateral*lateral)/(width*width)+(yy*yy)/(height*height);
         }
         return q>=1?0:1-q;
