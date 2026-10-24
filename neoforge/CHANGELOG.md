@@ -2,6 +2,19 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.37 — 2026-10-24 — Overworld 47-Component Evaluator Call Pruning (Experimental)
+
+### Main-world large-cave density CPU experiment
+- Extend the proven Test.36 Nether evaluator group-skip pattern to all **four giant Overworld cave strata, 47 candidate components**. Test.33 already passes a narrowed X/Z/Y component mask into the frozen 3D evaluator, but the evaluator still enters empty corridors/gallery loops and calls cachedTunnelStrength even when the final *warped* Y lies outside an individual immutable tube's exact minY/maxY AABB.
+- Test.37 skips each wholly empty nine-component layer and empty four-bit corridor/gallery group before its loop. It tests the **same original strict tube Y-disjoint predicate** before calling cachedTunnelStrength for corridors, satellite links, interlayer shafts and rare artery tubes. The existing tube's full X/Z/Y AABB remains untouched as a correctness fallback. The guard `!(y < minY || y > maxY)` intentionally preserves the original behavior for NaN values.
+- Preserve the original 47-bit bit positions, Hall checks, altitude band guards, artery-null gating, original Math.max update and iteration order, seed and geometry arithmetic, worker-local eight-snapshot region caches and original source-cell `-1` full-strength fallback. No new production allocations, state, noise, terrain, structures, fluids, ocean, sky, Nether/End, Aquifer, Beardifier or Anvil format changes.
+
+### Frozen old evaluator proof and benchmark limits
+- New `GrandOverworldEvaluatorCallPruneSmoke` independently reproduces the **entire Test.36 original 47-bit evaluator traversal**, invoking the unchanged private Hall and TunnelGeometry strength functions. Compare the new production evaluator against this frozen implementation AND the full original unmasked strength using raw IEEE-754 bits on >20,000 3D samples across four cave layers, cave-rich and sparse Y values, edge `-1`, empty masks, negative/far coordinates and deliberately broad 47-bit masks.
+- Count the *original actual tunnel function invocations* versus calls admissible by Test.37's exact Y guard, and separately record absent nine-component strata and corridor/gallery groups. These are call counts, NOT demonstrated overall Minecraft chunk generation throughput; the additional branch predicates may cost cycles on some workloads.
+- Retain all Test.33 47-bit narrowed XYZ mask and Test.31 conservative full-strength zero proofs, Test.32 room bounds parity, Test.36 Nether frozen evaluator test, complete NeoForge source/Gradle/JAR, actual multi-seed dedicated server, sky/ocean/End/Nether/Anvil saved-world and 180-second distant-chunk CI. The Test.35 opt-in same-runner cold-worldgen A/B harness remains available.
+- Experimental stacked Draft based on Test.36 (#129); stable main untouched. Promotion requires latest-head complete CI plus same-hardware/cold-seed Test.36/Test.37 **virgin Overworld chunks/s, p95 latency, CPU, heap/GC and preserved saved blocks**. Revert if measured throughput does not justify branch overhead.
+
 ## 2.0.0-preview.2-test.36 — 2026-10-24 — Nether Component-Evaluator Call Pruning (Experimental)
 
 ### Avoid unnecessary 3D tube evaluation in actual final-density worldgen
