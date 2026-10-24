@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.33 — 2026-10-24 — Narrowed 47-Component Overworld XYZ Cave Mask (Experimental)
+
+### Real cave worldgen hot-path optimization
+- Test.31 uses a conservative Y envelope to skip entire giant-cave warp calls when the current altitude cannot touch any 47-component horizontal candidate. But whenever even ONE cave component could reach a source Y, it passed the original full horizontal mask to the costly 3D evaluator, including many corridors, galleries, shafts and arteries whose exact fixed vertical bounds exclude that altitude.
+- Test.33 passes **the exact nonzero intersection** of the original 47-bit X/Z column candidate and Test.31's conservative +/-2 Y reach bitfield into `GrandOverworldCaveNetwork.strengthFromColumnWithMask`. Components outside that intersection cannot influence any supported seeded warp; the evaluator therefore skips their 3D geometry, trigonometry and expensive tunnel projections entirely. All retained candidates still use the identical frozen floating-point calculations and traversal order.
+- The X/Z near-region-edge `-1` sentinel remains untouched and forces the full original cave graph whenever a +/-6 X, +/-5 Z warp might choose another 768-block cave cell. Unsupported warps still force original full-graph evaluation BEFORE trusting any input mask. Source Y out of range and true zero cave candidates follow the existing behavior. No new cache, object allocation, geometry change, random seed, data version or world-save migration.
+- The 4 giant Overworld cave tiers, small-cave noise, rare surface openings, Minecraft noise, Beardifier, Aquifer, structures, fluids, Nether, End, sky islands and marine biomes remain identical. Test.32's cached room X/Z bounds and Test.31's lazy Y table remain intact.
+
+### Strong correctness and benchmark gates
+- Existing `GrandOverworldHeightMaskParitySmoke` now requires equality to an **independently reconstructed EXACT 47-bit X/Z-and-height intersection**, instead of Test.31's original Boolean-only height gate. It still replays all 1743 protected heights in 25 cave cells and directly checks that any fully rejected source position has exactly zero unoptimized full-graph strength across seeded +/-6 X / +/-2 Y / +/-5 Z shifts.
+- New `GrandOverworldXYZComponentParitySmoke`: for >30k source XYZ probes, collect the original full horizontal candidate and new reduced XYZ bits; independently evaluate *both* original-mask and narrowed-mask full 3D strength at many warped positions and compare them to the complete unmasked network using **raw IEEE-754 double equality**. Cover all four tier hall centers, negative/far coordinates, actual carved voxels, region-edge sentinels and four-worker graph isolation; record original vs reduced candidate bit counts as source of avoided per-voxel work, NOT as a fabricated chunks/s claim.
+- Keep Test.21's >75k original tunnel bitwise reference, Test.22 frozen full 47-bit column mask, Test.31 source-altitude protection, Test.32 room AABB reference and all real NeoForge server, Anvil save, sky/ocean/Nether/End and multiseed 180s distant-chunk checks.
+- Experimental Draft stacked on Test.32 (#125), stable `main` untouched. Promotion needs newest-head green CI AND same-seed matched Test.32 vs Test.33 cold new-Overworld-chunk throughput/p95, CPU, allocations/GC and saved-block parity. Reduced candidate checks alone do not establish a percentage speed increase.
+
 ## 2.0.0-preview.2-test.32 — 2026-10-24 — Cached Room X/Z Broad-Phase Bounds for Giant Overworld Cave Columns (Experimental)
 
 ### Worldgen CPU experiment
