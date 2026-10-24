@@ -12,7 +12,7 @@ public final class GrandNetherFusedColumnHeightMaskSmoke {
     private GrandNetherFusedColumnHeightMaskSmoke() {}
 
     private static long checked,oldZero,oldPositive,oldBoundary,verticalPruned,
-            fallbackCompared;
+            fallbackCompared,partialCandidates,originalBits,optimizedBits;
     private static volatile int timingSink;
     private static final int[] HEIGHTS={-40,120,143,144,160,190,205,240,280,
             310,348,399,420,440,441,490};
@@ -37,8 +37,13 @@ public final class GrandNetherFusedColumnHeightMaskSmoke {
         int horizontal=GrandNetherCaveNetwork.componentMaskForColumn(x,z);
         int baseline=oldTwoStepMask(x,y,z);
         int candidate=GrandNetherCaveNetwork.componentMaskForColumnAtHeight(x,y,z);
-        require(baseline==candidate,
-                "Original split gate versus fused gate differs at "
+        // Test.34 deliberately returns a smaller nonzero 19-bit mask:
+        // preserve the old gate decision while removing only components
+        // that cannot reach the entire seeded +/-2 Y warp interval.
+        require((baseline==0)==(candidate==0)
+                    && (baseline==-1)==(candidate==-1)
+                    && (baseline==-1 || (candidate&~baseline)==0),
+                "Original split cave gate vs reduced 19-bit XYZ mask differs at "
                 +x+","+y+","+z+" horizontal="+horizontal
                 +" old="+baseline+" new="+candidate);
         checked++;
@@ -47,6 +52,9 @@ public final class GrandNetherFusedColumnHeightMaskSmoke {
         else {
             oldPositive++;
             if(candidate==0)verticalPruned++;
+            else if(candidate!=baseline)partialCandidates++;
+            originalBits+=Integer.bitCount(baseline);
+            optimizedBits+=Integer.bitCount(candidate);
         }
         if(compareCave && y>=GrandNetherCaveNetwork.MIN_Y
                 && y<=GrandNetherCaveNetwork.MAX_Y) {
@@ -55,6 +63,10 @@ public final class GrandNetherFusedColumnHeightMaskSmoke {
                 double wy=y+displacement*2.0;
                 double wz=z-displacement*4.0;
                 double full=GrandNetherCaveNetwork.strength(wx,wy,wz);
+                double oldMasked=GrandNetherCaveNetwork.strengthFromColumnWithMask(
+                        x,z,wx,wy,wz,baseline);
+                require(raw(oldMasked)==raw(full),
+                        "Original split candidate mask differs from unmasked cave");
                 if(candidate==0)
                     require(raw(full)==raw(0.0),
                             "Fused zero candidate omitted real full cave at "
@@ -63,7 +75,8 @@ public final class GrandNetherFusedColumnHeightMaskSmoke {
                     double optimized=
                             GrandNetherCaveNetwork.strengthFromColumnWithMask(
                                     x,z,wx,wy,wz,candidate);
-                    require(raw(optimized)==raw(full),
+                    require(raw(optimized)==raw(full)
+                                    && raw(optimized)==raw(oldMasked),
                             "Fused masked cave strength differs from frozen"
                             +" full graph at "+x+","+y+","+z);
                 }
@@ -108,7 +121,8 @@ public final class GrandNetherFusedColumnHeightMaskSmoke {
             }
         require(checked>40_000 && oldZero>1000
                         && oldPositive>3000 && oldBoundary>500
-                        && verticalPruned>1000 && fallbackCompared>12000,
+                        && verticalPruned>1000 && fallbackCompared>12000
+                        && partialCandidates>100 && originalBits>optimizedBits,
                 "Missing horizontal empty/nonempty, height exclusion, "
                         +"region edge or cave-strength comparison coverage: "
                         +"checked="+checked+" zero="+oldZero
@@ -146,6 +160,9 @@ public final class GrandNetherFusedColumnHeightMaskSmoke {
                 +" horizontalEmpty="+oldZero+" positive="+oldPositive
                 +" boundary="+oldBoundary+" heightPruned="+verticalPruned
                 +" exactCaveDensityProbes="+fallbackCompared
+                +" partial19bitMasks="+partialCandidates
+                +" previousComponentBits="+originalBits
+                +" reducedComponentBits="+optimizedBits
                 +" split_gate_ns="+oldNanos+" fused_gate_ns="+fusedNanos
                 +" gateMicrobenchmarkOnly=true");
         // Cross-worker region graphs may never share a column or Y table.
@@ -162,7 +179,10 @@ public final class GrandNetherFusedColumnHeightMaskSmoke {
                         int old=oldTwoStepMask(x,y,z);
                         int fused=GrandNetherCaveNetwork.componentMaskForColumnAtHeight(
                                 x,y,z);
-                        require(old==fused,"Cross-thread fused mask differs");
+                        require((old==0)==(fused==0)
+                                    && (old==-1)==(fused==-1)
+                                    && (old==-1 || (fused&~old)==0),
+                                "Cross-thread 19-bit XYZ mask differs");
                     }
                 }catch(Throwable e){issue.compareAndSet(null,e);}
             },"nether-fused-gate-"+w);
