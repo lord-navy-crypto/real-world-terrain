@@ -50,8 +50,8 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
     def test_mod_name_and_archive_name_are_realscale_only(self):
         gradle=(ROOT/"neoforge/build.gradle").read_text()
         toml=(RES/"META-INF/neoforge.mods.toml").read_text()
-        self.assertIn("2.0.0-preview.2-test.30",gradle)
-        self.assertIn('version="2.0.0-preview.2-test.30"',toml)
+        self.assertIn("2.0.0-preview.2-test.31",gradle)
+        self.assertIn('version="2.0.0-preview.2-test.31"',toml)
         self.assertIn("RealScale-NeoForge-1.21.1",gradle)
         self.assertNotIn("TVA",toml)
         self.assertNotIn("RealScale-TVA",gradle)
