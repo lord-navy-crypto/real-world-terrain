@@ -58,6 +58,29 @@ class WorldAtlasBackgroundPainterTests(unittest.TestCase):
                           "createWorldOpenFlows()","getChunk("):
             self.assertNotIn(forbidden,source)
 
+    def test_refresh_updates_both_real_coverage_and_terrain(self):
+        gui=(SRC/"WorldAtlasMapScreen.java").read_text()
+        backend=(SRC/"WorldAtlasBackgroundPainter.java").read_text()
+        smoke=(ROOT/"neoforge/src/test/java/org/realscale/neoforge/"
+               "WorldAtlasBackgroundHeightmapSmoke.java").read_text()
+        # Refresh must NOT update just the 4096-byte Anvil coverage header
+        # while continuing to display a stale height-color raster.
+        self.assertIn("b -> refreshSavedMap()",gui)
+        self.assertIn("private void refreshSavedMap()",gui)
+        self.assertIn("requestScan();\n        startDrawing();",gui)
+        self.assertIn("observedLocalGeneration",gui)
+        self.assertIn("serverStatus.world().equals(save)",gui)
+        self.assertIn("serverStatus.terminal()",gui)
+        self.assertIn("if(hasActiveGeneration() || hasActivePainting())",gui)
+        self.assertIn("WorldAtlasBackgroundPainter.start(",gui)
+        self.assertIn("WorldAtlasHeightmapReader.openSampler(task.world)",backend)
+        self.assertIn("newFarSavedY=1100",smoke)
+        self.assertIn("STale".upper().lower().replace("stale","STALE"),smoke)
+        self.assertIn("Refreshed map omitted genuinely new far saved region",smoke)
+        for forbidden in ("new ServerChunkCache", "getChunkAtAsync(",
+                          "runServer(", "ProcessBuilder("):
+            self.assertNotIn(forbidden,gui)
+
     def test_bilingual_ui(self):
         keys=("warmup_start","warmup_starting","warmup_busy","busy_shared_io",
               "draw_start","draw_pause","draw_resume","draw_cancel",
