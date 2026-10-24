@@ -24,6 +24,11 @@ public final class GrandNetherCaveNetwork {
     private static final class CellCache {
         int gx = Integer.MIN_VALUE, gz = Integer.MIN_VALUE;
         private static final int COLUMN_SLOTS = 512;
+        private static final int COLUMN_BUCKETS = COLUMN_SLOTS / 2;
+        // A/B columns that hash to the same bucket should not repeatedly
+        // evict each other's 19-component masks. Two ways share the ORIGINAL
+        // 512-slot memory bound; replacement only affects CPU work.
+        final byte[] columnVictim = new byte[COLUMN_BUCKETS];
         final int[] columnX = new int[COLUMN_SLOTS];
         final int[] columnZ = new int[COLUMN_SLOTS];
         final int[] columnEpoch = new int[COLUMN_SLOTS];
@@ -289,14 +294,27 @@ public final class GrandNetherCaveNetwork {
         if(dx<=5 || dx>=CELL-6 || dz<=4 || dz>=CELL-5)return -1;
         CellCache c=CACHED_HALLS.get().get(
                 Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
-        int slot=(x*0x9e3779b9 ^ z*0x85ebca6b)&(CellCache.COLUMN_SLOTS-1);
-        if(c.columnEpoch[slot]==c.epoch && c.columnX[slot]==x
-                && c.columnZ[slot]==z)return c.columnComponents[slot];
+        int bucket=(x*0x9e3779b9 ^ z*0x85ebca6b)
+                &(CellCache.COLUMN_BUCKETS-1);
+        int first=bucket<<1, second=first+1;
+        if(c.columnEpoch[first]==c.epoch && c.columnX[first]==x
+                && c.columnZ[first]==z)return c.columnComponents[first];
+        if(c.columnEpoch[second]==c.epoch && c.columnX[second]==x
+                && c.columnZ[second]==z)return c.columnComponents[second];
         int mask=componentMask(c,x-5.0,x+5.0,z-4.0,z+4.0);
-        c.columnEpoch[slot]=c.epoch;
-        c.columnX[slot]=x;
-        c.columnZ[slot]=z;
-        c.columnComponents[slot]=mask;
+        // Prefer a free way. A third conflicting column replaces one way
+        // deterministically, but never returns a mask for a different X/Z.
+        int target;
+        if(c.columnEpoch[first]!=c.epoch)target=first;
+        else if(c.columnEpoch[second]!=c.epoch)target=second;
+        else {
+            target=first+(c.columnVictim[bucket]&1);
+            c.columnVictim[bucket]^=1;
+        }
+        c.columnEpoch[target]=c.epoch;
+        c.columnX[target]=x;
+        c.columnZ[target]=z;
+        c.columnComponents[target]=mask;
         return mask;
     }
 
