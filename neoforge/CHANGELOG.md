@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.40 — 2026-10-24 — Conservative Combined Elliptic Overworld Cave Pre-Sine Reject (Experimental)
+
+### Main-world worldgen trig work avoidance
+- Tests .38 and .39 reject every warped 3D tunnel sample definitely too far from the original bent cave centerline along Y or an individual shaft/corridor cross-axis. A point can still be too far from the TRUE radial ellipse even if both individual coordinate limits are satisfied, so the existing evaluator unnecessarily calls expensive `Math.sin(Math.PI*t)` and only then discovers original tunnel density is zero.
+- Test.40 derives an explicitly more permissive **2D ellipse** containing the entirety of the original sine-dependent tube cross-section: its horizontal half-width is `radius+1 block`, vertical half-height is `radius*verticalScale+1 block`, and a further **5% cross-multiplied quadratic slack** protects near-tangent values and IEEE-754 rounding. Immutable squared bounds and ellipse threshold are precomputed in `TunnelGeometry` per seeded tunnel graph; no per-voxel allocation or divisions in the conservative exclusion check. For vertical shafts use the original `xx*xx+zz*zz`; for every nonvertical corridor/artery use Test.39's unchanged original `lateral*lateral`; add the vertical `yy*yy` term. If the value exceeds the larger ellipse threshold, return exact positive zero **before Math.sin**.
+- For any potentially carved position, reuse the already-computed original radial and vertical double squares in the exact original `q=radialSq/(width*width)+yySq/(height*height)` order. Original frozen `tunnelStrength`, positive cave results, floating-point bend geometry, 47-bit masks, Overworld strata, caves, height bands, Perlin/Beardifier/Aquifer, all biomes, saved Anvil and Nether/End are unchanged.
+- Extra branch/predicate arithmetic may outweigh skipped sin on some workloads. Test.40 is **an experiment, not a claimed end-to-end speedup**. Candidate must be dropped if actual cold new-chunk throughput is not improved.
+
+### New independent correctness, true-cold performance
+- New `GrandOverworldPreSineEllipseRejectSmoke` compares **85k+ sample positions** against frozen independent original `tunnelStrength(Hall, Passage, key)` with `Double.doubleToRawLongBits`; for every newly eliminated ellipse-corner sample require the original raw IEEE-754 value is **+0.0**, including near-edge offsets, all four cave layers, galleries, shafts, distant artery tubes and true positive-carving voxels. Independently reconstruct the bent source centerline and bound, and verify every immutable squared bound/threshold.
+- Retain Test.39 original radial parity, Test.38 presine Y parity, Test.37 frozen full cave evaluator, Test.33 exact 47-bit source XYZ masks, NeoForge Gradle/JAR build, real multi-seed dedicated servers and Anvil saved-block, sky/ocean/Nether/End and strict 180s distant-chunk regressions.
+- Opt-in same-runner paired cold-worldgen A/B originally introduced in Test.35 was explicitly **started for Test.39 PR #132** with label `run-cold-worldgen-ab`. That tests actual three far virgin Overworld waypoint chunks, matched baseline/candidate revisions, seed 2/42 in reversed arm order and persisted target block/biome/heightmap parity; these results are not yet a claim of durable performance improvement.
+- Test.40 remains a stacked Draft based on Test.39 (#132), stable `main` untouched. Promotion requires newest SHA all-green CI and separately matched Test.39 vs Test.40 same-hardware cold virgin Overworld chunks/s, p95, CPU/heap/GC and exact saved blocks; no speed percentage extrapolation from the ellipse test.
+
 ## 2.0.0-preview.2-test.39 — 2026-10-24 — Conservative Overworld Pre-Sine Lateral and Shaft Radial Rejection (Experimental)
 
 ### Avoid expensive per-voxel trigonometry in 47-component giant caves
