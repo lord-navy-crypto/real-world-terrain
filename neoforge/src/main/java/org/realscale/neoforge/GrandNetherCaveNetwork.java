@@ -60,8 +60,8 @@ public final class GrandNetherCaveNetwork {
             // Recycled snapshots reuse their existing primitive storage.
             if(heightComponents==null)
                 heightComponents=new int[MAX_Y-MIN_Y+1];
-            for(int y=MIN_Y;y<=MAX_Y;y++)
-                heightComponents[y-MIN_Y]=verticalComponentMask(this,y);
+            java.util.Arrays.fill(heightComponents,0);
+            populateHeightComponents(this,heightComponents);
             heightComponentsReady=true;
         }
         void initialize(int x, int z) {
@@ -339,40 +339,49 @@ public final class GrandNetherCaveNetwork {
     }
 
     /**
-     * Build the conservative 19-bit height filter ONCE per worker-local
-     * 256-block cave graph. This is the Test.27 comparison sequence with
-     * the source-column bit tests removed: a bit is set iff the original
-     * inclusive [Y-2,Y+2] check could touch the corresponding component.
-     * It is a superset of all actual +/-2 seeded-warped cave strengths.
+     * Test.29: inverse the Test.28 Y-by-component scan. The 19 immutable
+     * chambers/tunnels each contribute ONE contiguous vertical interval:
+     * mark only the Y entries that may intersect that interval with a
+     * full +/-2 block seeded vertical warp.
+     *
+     * floor(start) and ceil(end) deliberately INCLUDE a possible extra
+     * integer at either boundary. The exact original two inclusive double
+     * comparisons below then remove that overreach; this works even if
+     * bounds later become fractional rather than today's seeded integers.
+     * The final 19-bit table is therefore identical to Test.28, including
+     * endpoint tangencies and negative/far-position cave cells.
      */
-    private static int verticalComponentMask(CellCache c,int y) {
-        double lowY=(double)y-2.0, highY=(double)y+2.0;
-        int bits=0;
+    private static void markHeightInterval(int[] bits,double min,double max,
+                                           int component) {
+        int first=Math.max(MIN_Y,(int)Math.floor(min-2.0));
+        int last=Math.min(MAX_Y,(int)Math.ceil(max+2.0));
+        for(int y=first;y<=last;y++)
+            if((double)y+2.0>=min && (double)y-2.0<=max)
+                bits[y-MIN_Y]|=component;
+    }
+
+    private static void populateHeightComponents(CellCache c,int[] bits) {
         for(int layer=0;layer<2;layer++) {
             int shift=layer*9;
             Hall center=c.halls[layer][0];
-            if(highY>=center.y()-center.radiusY() &&
-                    lowY<=center.y()+center.radiusY())
-                bits|=1<<shift;
+            markHeightInterval(bits,center.y()-center.radiusY(),
+                    center.y()+center.radiusY(),1<<shift);
             for(int direction=0;direction<4;direction++) {
                 TubeSegment tube=c.corridors[layer][direction];
-                if(highY>=tube.minY && lowY<=tube.maxY)
-                    bits|=1<<(shift+1+direction);
+                markHeightInterval(bits,tube.minY,tube.maxY,
+                        1<<(shift+1+direction));
             }
             for(int gallery=0;gallery<2;gallery++) {
                 Hall side=c.satellites[layer][gallery];
-                if(highY>=side.y()-side.radiusY() &&
-                        lowY<=side.y()+side.radiusY())
-                    bits|=1<<(shift+5+gallery*2);
+                markHeightInterval(bits,side.y()-side.radiusY(),
+                        side.y()+side.radiusY(),1<<(shift+5+gallery*2));
                 TubeSegment tube=c.branches[layer][gallery];
-                if(highY>=tube.minY && lowY<=tube.maxY)
-                    bits|=1<<(shift+6+gallery*2);
+                markHeightInterval(bits,tube.minY,tube.maxY,
+                        1<<(shift+6+gallery*2));
             }
         }
         TubeSegment tube=c.interlayer;
-        if(highY>=tube.minY && lowY<=tube.maxY)
-            bits|=1<<18;
-        return bits;
+        markHeightInterval(bits,tube.minY,tube.maxY,1<<18);
     }
 
     /**
