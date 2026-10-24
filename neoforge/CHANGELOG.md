@@ -2,6 +2,21 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.26 — 2026-10-24 — Two-Way Nether Cave-Column Mask Retention (Experimental)
+
+### CPU worldgen experiment
+- Nether cave source columns originally retained one directly mapped 19-bit candidate mask per hash slot. Two different hot X/Z columns with an identical 9-bit hash evicted each other every time, regenerating all 19 chamber/tunnel broad-phase bounds on each alternating density call.
+- Convert the **existing 512 primitive mask slots** to **256 two-way buckets**. On lookup, check both coordinates+epochs before accepting a mask. Insert into a free way first and use a one-byte per-bucket deterministic alternate victim when two entries collide; no mask or geometry is shared between worker threads or different source cells.
+- Keep the exact original 19-component candidate expression, radius/AABB early rejection, world-seed cave graphs, four region snapshots, original 256-block graph boundaries, warp and fallback logic. Replacement changes only how long exact computed masks are retained; safe signed X/Z, cross-region and column-epoch checks remain.
+- This is a fixed-capacity cache, not world-scale memoization: still exactly 512 `int` entries for X, Z, epoch and component bits, plus **256 bytes per live cave-region cache** for victim selection. Cache misses always recalculate the original candidate mask.
+- No change to Nether lava/bedrock/structures or any saved blocks, biomes, dimensions, oceans, surface generation, Aquifer, Beardifier, vanilla noise or other realm behavior.
+
+### QA and decision gate
+- New `GrandNetherColumnMaskTwoWaySmoke` checks 12,000 alternating same-region old-hash-colliding A/B columns: original direct-map model has 12,000 misses while new two-way cache retains both with only two cold misses. This **counts prevented recomputations in a manufactured collision workload, not measured chunk speed**.
+- Verify independently recomputed 19-bit candidate masks, forced third-key collision eviction, full cave strength raw-double parity, worker-local thread isolation, region switches and exactly 512 slots. Existing full Nether reference, 19-bit AABB, 200k source-mask parity, tube geometry and real NeoForge server/Anvil/multiseed tests remain.
+- Keep Draft stacked on Test.25 until all latest-head CI and matched same-hardware, same-seed **cold Nether chunk/s, p95, CPU and allocation/GC** measurements show practical benefit. Two-way hit probes add extra checks and could reduce throughput on collision-free workloads; revert if no reliable gain.
+- Stable `main` and DH–Chunky compatibility patch remain untouched.
+
 ## 2.0.0-preview.2-test.25 — 2026-10-24 — Grand Nether Tube Bend and Orientation Constant Reuse (Experimental)
 
 ### Actual worldgen hot-path work reduction
