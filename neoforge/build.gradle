@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.146'
 }
-version='2.0.0-preview.2-test.34'
+version='2.0.0-preview.2-test.35'
 group='org.realscale'
 base { archivesName = 'RealScale-NeoForge-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)

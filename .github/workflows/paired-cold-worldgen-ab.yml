@@ -1,0 +1,100 @@
+name: RealScale paired cold-new-chunk version A/B (opt-in)
+
+# Intentionally opt-in: each arm launches a full 2096-height NeoForge server
+# and three virgin far-chunk loads. The PR path runs ONLY when someone adds
+# the label run-cold-worldgen-ab; no expensive jobs run on every commit.
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: Frozen base branch/tag/commit
+        required: true
+        type: string
+        default: perf/realscale-test34-nether-xyz-component-mask-20261024
+      candidate_ref:
+        description: Optimized experimental branch/tag/commit
+        required: true
+        type: string
+        default: perf/realscale-test35-nether-room-xz-aabb-20261024
+      preset:
+        description: Identical three-realm world preset for both revisions
+        required: true
+        type: choice
+        options:
+          - tva_measured_three_realms
+          - tva_sacred_timeline_three_realms
+        default: tva_measured_three_realms
+
+permissions:
+  contents: read
+
+jobs:
+  same-runner-virgin-world:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.label.name == 'run-cold-worldgen-ab' }}
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - seed: 2
+            order: baseline-first
+          - seed: 42
+            order: candidate-first
+    name: seed ${{ matrix.seed }} / ${{ matrix.order }} / 3 saved distant chunks
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.baseline_ref || github.event.pull_request.base.sha }}
+          path: baseline
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_ref || github.event.pull_request.head.sha }}
+          path: candidate
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Run same-runner cold A/B and compare actual saved Anvil blocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 candidate/qa/neoforge/paired_cold_worldgen_ab.py baseline candidate \
+            --seed '${{ matrix.seed }}' \
+            --preset '${{ inputs.preset || 'tva_measured_three_realms' }}' \
+            --order '${{ matrix.order }}'
+      - name: Publish explicit single-run limitations and target chunk hashes
+        if: always()
+        shell: bash
+        run: |
+          echo "Two revisions ran on ONE runner, in distinct fresh server worlds" >> "$GITHUB_STEP_SUMMARY"
+          echo "Reversed arm order for seed 42 reduces—but cannot eliminate—runner/JIT variance." >> "$GITHUB_STEP_SUMMARY"
+          echo "The three saved target chunks must be identical in block states, biomes and heightmaps." >> "$GITHUB_STEP_SUMMARY"
+          echo "This is NOT a statistically sufficient claim about Minecraft TPS or percent improvement." >> "$GITHUB_STEP_SUMMARY"
+          if [ -f 'paired-worldgen-summary-seed${{ matrix.seed }}.json' ]; then
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat 'paired-worldgen-summary-seed${{ matrix.seed }}.json' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload timing, full target NBT parity and failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-Matched-Cold-Worldgen-seed-${{ matrix.seed }}
+          path: |
+            paired-worldgen-summary-seed${{ matrix.seed }}.json
+            baseline/neoforge/build/rcon_distant_route_timing.json
+            candidate/neoforge/build/rcon_distant_route_timing.json
+            baseline/neoforge/build/paired-worldgen-console.log
+            candidate/neoforge/build/paired-worldgen-console.log
+            baseline/neoforge/build/rcon_distant_route_server.log
+            candidate/neoforge/build/rcon_distant_route_server.log
+            baseline/neoforge/build/rcon_distant_route_stall_fingerprint.json
+            candidate/neoforge/build/rcon_distant_route_stall_fingerprint.json
+          if-no-files-found: warn

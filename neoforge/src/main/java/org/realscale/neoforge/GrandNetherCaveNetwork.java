@@ -37,6 +37,17 @@ public final class GrandNetherCaveNetwork {
         int epoch=1;
         final Hall[][] halls = new Hall[2][5];
         final Hall[][] satellites = new Hall[2][2];
+        // [layer][0=center,1..2=satellites][minX,maxX,minZ,maxZ]
+        // The Hall graph is immutable for a cell; retain only six small
+        // primitive X/Z AABBs instead of adding per-room objects.
+        final double[][][] roomXZ = new double[2][3][4];
+        void cacheRoomXZ(int layer,int index,Hall hall) {
+            double[] bounds=roomXZ[layer][index];
+            bounds[0]=hall.x()-hall.radiusX();
+            bounds[1]=hall.x()+hall.radiusX();
+            bounds[2]=hall.z()-hall.radiusZ();
+            bounds[3]=hall.z()+hall.radiusZ();
+        }
         // Corridor bend seeds depend only on hall endpoints, never on voxels.
         final long[][] corridorKeys = new long[2][4];
         final long[][] satelliteKeys = new long[2][2];
@@ -73,10 +84,13 @@ public final class GrandNetherCaveNetwork {
             }
             for (int layer = 0; layer < 2; layer++) {
                 halls[layer][0] = hall(x,z,layer);
+                cacheRoomXZ(layer,0,halls[layer][0]);
                 for (int i = 0; i < 4; i++)
                     halls[layer][i+1] = hall(x+DX[i],z+DZ[i],layer);
-                for (int i = 0; i < 2; i++)
+                for (int i = 0; i < 2; i++) {
                     satellites[layer][i] = satellite(halls[layer][0],x,z,layer,i);
+                    cacheRoomXZ(layer,i+1,satellites[layer][i]);
+                }
                 for (int i = 0; i < 4; i++)
                     corridorKeys[layer][i] = tubeBendKey(halls[layer][0], halls[layer][i+1]);
                 for (int i = 0; i < 2; i++)
@@ -518,6 +532,16 @@ public final class GrandNetherCaveNetwork {
             && loZ<=h.z()+h.radiusZ() && hiZ>=h.z()-h.radiusZ();
     }
 
+    /**
+     * Test.35 immutable room-bounds fast path. Compare inclusive edges in
+     * precisely the same order as the frozen Hall-based overload above.
+     */
+    private static boolean roomCouldTouch(double[] bounds,
+            double loX,double hiX,double loZ,double hiZ) {
+        return loX<=bounds[1] && hiX>=bounds[0]
+            && loZ<=bounds[3] && hiZ>=bounds[2];
+    }
+
     private static boolean tubeCouldTouch(Hall a,Hall b,double radius,
             double loX,double hiX,double loZ,double hiZ) {
         // Exactly the reach of tube(), before its projected 3D evaluation.
@@ -547,13 +571,14 @@ public final class GrandNetherCaveNetwork {
         for(int layer=0;layer<2;layer++) {
             int shift=layer*9;
             Hall center=c.halls[layer][0];
-            if(roomCouldTouch(center,loX,hiX,loZ,hiZ))bits|=1<<shift;
+            if(roomCouldTouch(c.roomXZ[layer][0],loX,hiX,loZ,hiZ))
+                bits|=1<<shift;
             for(int dir=0;dir<4;dir++)
                 if(tubeCouldTouch(c.corridors[layer][dir],
                         loX,hiX,loZ,hiZ))bits|=1<<(shift+1+dir);
             for(int gallery=0;gallery<2;gallery++) {
                 Hall satellite=c.satellites[layer][gallery];
-                if(roomCouldTouch(satellite,loX,hiX,loZ,hiZ))
+                if(roomCouldTouch(c.roomXZ[layer][gallery+1],loX,hiX,loZ,hiZ))
                     bits|=1<<(shift+5+gallery*2);
                 if(tubeCouldTouch(c.branches[layer][gallery],
                         loX,hiX,loZ,hiZ))bits|=1<<(shift+6+gallery*2);

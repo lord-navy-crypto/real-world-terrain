@@ -26,6 +26,20 @@ jobs:
           python-version: '3.12'
       - name: Verify recovered source, artifacts and actual saved world
         run: python3 qa/verify_repository.py
+      - name: Validate manual matched cold-worldgen comparison harness
+        run: |
+          python3 -m py_compile qa/neoforge/paired_cold_worldgen_ab.py
+          python3 qa/neoforge/paired_cold_worldgen_ab.py --help
+          python3 - <<'PY'
+          from pathlib import Path
+          w=Path('.github/workflows/paired-cold-worldgen-ab.yml').read_text()
+          assert 'workflow_dispatch:' in w
+          assert 'types: [labeled]' in w
+          assert "run-cold-worldgen-ab" in w
+          assert 'target_anvil_parity' in Path(
+              'qa/neoforge/paired_cold_worldgen_ab.py').read_text()
+          print('REALSCALE_PAIR_COLD_AB_HARNESS_SYNTAX_AND_OPTIN_PASS')
+          PY
       - name: Verify new RealScale branding and legacy save preset aliases
         run: python3 -m unittest discover -s qa -p 'test_realscale_branding_compat.py' -v
       - name: Verify no default-on client frame / upload or Aquifer diagnostic overhead
@@ -329,7 +343,8 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherHeightBitsParitySmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherHeightIntervalFillSmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherFusedColumnHeightMaskSmoke.java \
-            neoforge/src/test/java/org/realscale/neoforge/GrandNetherXYZStrengthPerfSmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherXYZStrengthPerfSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherRoomXZBoundsSmoke.java
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkSmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkParitySmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherRegionCacheSmoke
@@ -343,6 +358,7 @@ jobs:
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherHeightIntervalFillSmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherFusedColumnHeightMaskSmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherXYZStrengthPerfSmoke
+          java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherRoomXZBoundsSmoke
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'

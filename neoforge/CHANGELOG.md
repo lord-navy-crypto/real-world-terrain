@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.35 — 2026-10-24 — Primitive Grand Nether Hall X/Z Bounds Reuse (Experimental)
+
+### Real worldgen source-column mask cache misses
+- Test.34 narrows the Nether 19-bit X/Z/Y cave candidate mask and avoids evaluating irrelevant tunnels inside real 3D density. But on a horizontal mask-cache miss, the **two main chambers and four satellite galleries** still execute original `h.x()/h.z() +/- radiusX/radiusZ` arithmetic for each new source column.
+- Test.35 precomputes their **six 4-double horizontal bounds per 256x256 cave graph** in the existing four worker-local cached regions. `componentMask` reads those primitive extents, preserving exact inclusive X/Z comparisons, short-circuit order, cave component ordering and the previously optimized 13 tunnel AABBs. No per-voxel heap allocation or global state; region eviction refreshes all six descriptors from the new region's halls.
+- The original `roomCouldTouch(Hall,...)` implementation remains untouched as a frozen independent parity oracle. Grand Nether cave geometry, bend, strength, X/Z/Y masks, 19-bit indexing, the original seeded noise warp, vanilla Nether lava/bedrock, structures, other world dimensions and saved Anvil file layout are unchanged.
+- There is a small fixed per-region memory tradeoff (6 x 4 doubles plus primitive array headers), not an asserted overall worldgen speedup. Reject it if cold real Nether chunk throughput and heap/GC do not improve reliably.
+
+### Frozen accuracy and merge requirements
+- New `GrandNetherRoomXZBoundsSmoke` independently reconstructs original Hall extent doubles and checks raw IEEE-754 bits plus **100,000+ exact room overlap decisions**, including corner tangencies, fractional displaced candidate boxes, signed/far region graphs and forced cache eviction/reinitialization over 169 seeded regions. All old frozen 19-bit masks and fully unmasked original Nether 3D strength checks remain active in CI.
+- Retain Test.34's old-vs-new XYZ density A/B function-only timings, complete Overworld cave suite, real NeoForge server and multi-seed saved-world/three-realm/ocean/sky/End generation, 180-second distant chunk gates.
+- Added `qa/neoforge/paired_cold_worldgen_ab.py` and `.github/workflows/paired-cold-worldgen-ab.yml`: opt-in same-runner Test.34-vs-Test.35 real NeoForge **virgin distant-route** comparison, two seeds (2/42, arm order reversed), three separated waypoints per arm, strict 180-second fully loaded checks, and the SHA-256 of actual persisted target chunks' block states, biome palettes and heightmaps. Preserve timing JSON, logs and failed-arm evidence. The PR workflow runs only when explicitly labeled `run-cold-worldgen-ab`; its no-server syntax/opt-in smoke runs in ordinary CI. This tests real generation but does NOT directly isolate Nether density time or prove a statistically stable percentage speedup without repetitions.
+- Test.35 is a stacked experimental Draft on Test.34 (#127), stable `main` untouched. Latest-head all-green CI plus matched same-seed Test.34 vs Test.35 cold virgin **Nether** chunk generation throughput/p95, CPU/heap/GC and identical saved blocks are required before promotion; the current matched distant-route tool measures **Overworld**, so this remains an additional gate, not a substitute for the Nether comparison.
+
 ## 2.0.0-preview.2-test.34 — 2026-10-24 — Narrowed Grand Nether 19-Component XYZ Cave Density Candidates (Experimental)
 
 ### Avoid expensive 3D tunnel evaluations in real chunk generation
