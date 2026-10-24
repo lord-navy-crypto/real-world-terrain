@@ -2,6 +2,20 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.29 — 2026-10-24 — Nether Cave Height Interval Fill and Build-Time Microbenchmark (Experimental)
+
+### Worldgen region initialization speed
+- Test.28 caches a bounded, lazily allocated 297-element Y-to-19-cave-component bitfield so repeated density voxels can skip noisy Nether cave warps with one bit intersection. But the initial table build still checked up to 19 geometry bounds against **every** 297 integer world height, even when the component only influences a small altitude range.
+- Test.29 **inverts the initialization loop**: walk the 19 fixed room/tunnel components once and mark only their potentially reachable Y interval in the existing 297-int table. The same original inclusive warped envelope rule `(y+2 >= minY && y-2 <= maxY)` is applied to entries near conservative floor/ceil boundaries. It remains exactly equivalent even with fractional interval endpoints.
+- Preserve the Test.28 *lazy* allocation/first-candidate table build, re-use fixed storage across region eviction with explicit zero-fill before rebuilding, 4 thread-local geometry snapshots, 19-bit mask ordering and the source-column -1 crossing sentinel. All density math, seeded Perlin warp, room/tunnel geometry, Nether structures, lava/bedrock, saved blocks and other dimensions remain unchanged.
+- Initialization trades 297x19 geometric branch checks for 19 bounded interval calculations and interval-local bitset writes, which may or may not yield a real Nether chunk speedup on a given workload; no global memory or always-on profiling was added.
+
+### Verification and performance evidence
+- Keep Test.28 `GrandNetherHeightBitsParitySmoke` replaying the frozen original 297x19 height rules for 49 seeded cave graphs and >300k exact component intersections.
+- New `GrandNetherHeightIntervalFillSmoke` checks 121 live region graphs with 19x297 exact bitfield equality against the frozen Test.28 scan, plus more than **1.3 million** independent randomized fractional and tangent interval boundary comparisons. It also emits construction-only A/B nanosecond timings after JVM warmup using the same live cave region and reusable arrays; performance results are informational, not an always-faster assertion.
+- Preserve the Test.27 full 3D density zero-strength proof for all pruned warp positions, the old frozen tube formula, four-worker cache isolation, 19-bit candidate mask, RealScale NeoForge JAR, actual server multi-seed worldgen, ocean/sky/Nether/End and Anvil save proofs.
+- Draft stacked on Test.28 PR #121; no stable main mutation. Newest-SHA CI plus matched same-hardware Test.28-vs-Test.29 **cold real Nether chunk/s, p95 generation, heap/GC, CPU and identical Anvil blocks** are required before promotion. An isolated table-build microbenchmark is not whole-world throughput.
+
 ## 2.0.0-preview.2-test.28 — 2026-10-24 — Lazy Precomputed Nether Cave-Height Candidate Bits (Experimental)
 
 ### Hot-path optimization
