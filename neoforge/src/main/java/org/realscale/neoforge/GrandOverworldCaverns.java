@@ -72,10 +72,11 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
         // An upper-layer rejection needs no column mask at all. Otherwise
         // compute the candidate mask ONCE for both fast exclusion and
         // the (potentially expensive) warped 3D cave strength evaluation.
-        // Test.31: use the SAME horizontal 47-bit candidate mask and
-        // a provably conservative +/-2 Y-reach table from one region graph.
-        // A zero mask suppresses only the giant-cave warp/geometry. The
-        // original smallCaves and surface entrance calls stay unchanged.
+        // Test.33: intersect Test.31's conservative horizontal and +/-2 Y
+        // reach masks, and PASS THE NARROWED bits to the 3D evaluator.
+        // Skipped components cannot touch this voxel under any permitted
+        // warp; no giant-cave noise is needed if the mask is zero. Small
+        // caves and rare surface entrances remain unchanged.
         long columnMask=GrandOverworldCaveNetwork.componentMaskForColumnAtHeight(
                 blockX,y,blockZ);
         if (columnMask==0L) {
