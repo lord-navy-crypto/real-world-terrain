@@ -47,6 +47,11 @@ public final class GrandNetherCaveNetwork {
         final TubeSegment[][] corridors = new TubeSegment[2][4];
         final TubeSegment[][] branches = new TubeSegment[2][2];
         TubeSegment interlayer;
+        // For each integer world Y in the protected Nether cavern band,
+        // the bits identify which of the 19 components could intersect a
+        // fully +/-2 Y-warped sample. Built once per seeded cell graph;
+        // no per-voxel scanning/allocation and no change to cached columns.
+        final int[] heightComponents = new int[MAX_Y - MIN_Y + 1];
         void initialize(int x, int z) {
             if (gx == x && gz == z) return;
             gx = x; gz = z;
@@ -73,6 +78,10 @@ public final class GrandNetherCaveNetwork {
             }
             interlayerKey = tubeBendKey(halls[0][0], halls[1][0]);
             interlayer = new TubeSegment(halls[0][0], halls[1][0], 10, interlayerKey);
+            // Exactly the same inclusive vertical AABB tests as Test.27,
+            // but amortized over the entire life of this region snapshot.
+            for(int y=MIN_Y;y<=MAX_Y;y++)
+                heightComponents[y-MIN_Y]=verticalComponentMask(this,y);
         }
     }
     /**
@@ -319,52 +328,59 @@ public final class GrandNetherCaveNetwork {
     }
 
     /**
-     * Conservative vertical reach for the same 19-component source-column
-     * mask. The caller's seeded noise can only shift Y by +/-2. Reject only
-     * when EVERY horizontally reachable room and tube has a vertical AABB
-     * disjoint from that entire interval. A source near a 256-cell border
-     * uses mask=-1 and MUST retain the original displaced-cell evaluator.
+     * Build the conservative 19-bit height filter ONCE per worker-local
+     * 256-block cave graph. This is the Test.27 comparison sequence with
+     * the source-column bit tests removed: a bit is set iff the original
+     * inclusive [Y-2,Y+2] check could touch the corresponding component.
+     * It is a superset of all actual +/-2 seeded-warped cave strengths.
+     */
+    private static int verticalComponentMask(CellCache c,int y) {
+        double lowY=(double)y-2.0, highY=(double)y+2.0;
+        int bits=0;
+        for(int layer=0;layer<2;layer++) {
+            int shift=layer*9;
+            Hall center=c.halls[layer][0];
+            if(highY>=center.y()-center.radiusY() &&
+                    lowY<=center.y()+center.radiusY())
+                bits|=1<<shift;
+            for(int direction=0;direction<4;direction++) {
+                TubeSegment tube=c.corridors[layer][direction];
+                if(highY>=tube.minY && lowY<=tube.maxY)
+                    bits|=1<<(shift+1+direction);
+            }
+            for(int gallery=0;gallery<2;gallery++) {
+                Hall side=c.satellites[layer][gallery];
+                if(highY>=side.y()-side.radiusY() &&
+                        lowY<=side.y()+side.radiusY())
+                    bits|=1<<(shift+5+gallery*2);
+                TubeSegment tube=c.branches[layer][gallery];
+                if(highY>=tube.minY && lowY<=tube.maxY)
+                    bits|=1<<(shift+6+gallery*2);
+            }
+        }
+        TubeSegment tube=c.interlayer;
+        if(highY>=tube.minY && lowY<=tube.maxY)
+            bits|=1<<18;
+        return bits;
+    }
+
+    /**
+     * The Test.27 per-voxel 19-component Y loop is now one primitive
+     * intersection against a frozen region-local vertical component table.
+     * A negative mask means the X/Z warp may reach the NEIGHBOR region,
+     * where using this table would be unsafe: retain the full path.
      *
-     * Never removes a cave voxel: a false result proves that the 3D graph
-     * is zero for any supported seeded warp, so the density wrapper can
-     * avoid calling its expensive warp noise at this height.
+     * Other callers outside the normal Nether Y range also retain the full
+     * path instead of indexing an unsupported table entry. This helper
+     * never mutates a chunk, seeded noise or the original strength formula.
      */
     static boolean mayContainVoidAtHeight(int sourceX,int y,int sourceZ,int mask) {
         if(mask==-1)return true;
         if(mask==0)return false;
+        if(y<MIN_Y || y>MAX_Y)return true;
         CellCache c=CACHED_HALLS.get().get(
                 Math.floorDiv(sourceX,CELL),Math.floorDiv(sourceZ,CELL));
-        double lowY=(double)y-2.0, highY=(double)y+2.0;
-        for(int layer=0;layer<2;layer++) {
-            int shift=layer*9;
-            Hall center=c.halls[layer][0];
-            if((mask&(1<<shift))!=0 &&
-                    highY>=center.y()-center.radiusY() &&
-                    lowY<=center.y()+center.radiusY())
-                return true;
-            for(int direction=0;direction<4;direction++) {
-                if((mask&(1<<(shift+1+direction)))!=0) {
-                    TubeSegment tube=c.corridors[layer][direction];
-                    if(highY>=tube.minY && lowY<=tube.maxY)return true;
-                }
-            }
-            for(int gallery=0;gallery<2;gallery++) {
-                Hall side=c.satellites[layer][gallery];
-                if((mask&(1<<(shift+5+gallery*2)))!=0 &&
-                        highY>=side.y()-side.radiusY() &&
-                        lowY<=side.y()+side.radiusY())
-                    return true;
-                if((mask&(1<<(shift+6+gallery*2)))!=0) {
-                    TubeSegment tube=c.branches[layer][gallery];
-                    if(highY>=tube.minY && lowY<=tube.maxY)return true;
-                }
-            }
-        }
-        if((mask&(1<<18))!=0) {
-            TubeSegment tube=c.interlayer;
-            if(highY>=tube.minY && lowY<=tube.maxY)return true;
-        }
-        return false;
+        return (mask & c.heightComponents[y-MIN_Y])!=0;
     }
 
     /**
