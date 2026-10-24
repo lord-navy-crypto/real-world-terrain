@@ -55,6 +55,12 @@ public final class GrandOverworldCaveNetwork {
         // width/verticalScale). A full-block margin makes the early
         // rejection conservative even at near-tangent FP boundaries.
         final double preSineMaxAbsY;
+        // Test.40: conservative ellipse cross-section product bounds,
+        // computed ONCE per seeded tunnel graph (no per-voxel allocation).
+        // Extra full block on each radius plus 5% quadratic slack prevents
+        // any near-tangent original nonzero from being clipped.
+        final double preSineMaxWidthSq,preSineMaxHeightSq;
+        final double preSineEllipseThreshold;
         final boolean vertical,xDominant;
         final int bendA,bendB;
         final long key;
@@ -77,6 +83,11 @@ public final class GrandOverworldCaveNetwork {
             minY=Math.min(a.y(),b.y())-verticalReach;
             maxY=Math.max(a.y(),b.y())+verticalReach;
             preSineMaxAbsY=section.radius()*section.verticalScale()+1.0;
+            double maxWidth=section.radius()+1.0;
+            preSineMaxWidthSq=maxWidth*maxWidth;
+            preSineMaxHeightSq=preSineMaxAbsY*preSineMaxAbsY;
+            preSineEllipseThreshold=preSineMaxWidthSq
+                    *preSineMaxHeightSq*1.05;
             vx=b.x()-a.x();vy=b.y()-a.y();vz=b.z()-a.z();
             len=vx*vx+vy*vy+vz*vz;
             vertical=Math.abs(vy)>Math.max(Math.abs(vx),Math.abs(vz));
@@ -136,16 +147,25 @@ public final class GrandOverworldCaveNetwork {
             lateral=(-vz*xx+vx*zz)/g.horiz;
             if(Math.abs(lateral)>maxHorizontalReach)return 0;
         }
+        // Test.40: a combined ellipse bound rejects corner points that
+        // pass Test.38's Y limit and Test.39's individual radial limit.
+        // Real width <= radius; real height <= radius*verticalScale,
+        // so both expanded radii (plus extra 5% quadratic slack) contain
+        // the entire original sine-varying tunnel cross-section.
+        // Cross-multiply precomputed positive squared radii instead of
+        // doing two per-voxel divisions. NaN comparisons stay false.
+        double radialSq=g.vertical ? xx*xx+zz*zz : lateral*lateral;
+        double yySq=yy*yy;
+        if(radialSq*g.preSineMaxHeightSq
+                +yySq*g.preSineMaxWidthSq
+                >g.preSineEllipseThreshold)return 0;
         double sinPiT=Math.sin(Math.PI*t);
         double widthScale=0.80+0.20*sinPiT*sinPiT;
         double width=g.section.radius()*widthScale;
         double height=width*g.section.verticalScale();
-        double q;
-        if(g.vertical) {
-            q=(xx*xx+zz*zz)/(width*width)+yy*yy/(height*height);
-        } else {
-            q=(lateral*lateral)/(width*width)+(yy*yy)/(height*height);
-        }
+        // Both orientations use the original identical q formula once
+        // their respective unchanged radial numerator has been computed.
+        double q=radialSq/(width*width)+yySq/(height*height);
         return q>=1?0:1-q;
     }
 

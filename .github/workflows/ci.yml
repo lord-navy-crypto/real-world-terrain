@@ -315,7 +315,8 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldXYZComponentParitySmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldEvaluatorCallPruneSmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldPreSineVerticalRejectSmoke.java \
-            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldPreSineRadialRejectSmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldPreSineRadialRejectSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandOverworldPreSineEllipseRejectSmoke.java
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldCaveNetworkSmoke
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldEntranceCacheParitySmoke
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldRegionCacheCollisionSmoke
@@ -330,6 +331,7 @@ jobs:
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldEvaluatorCallPruneSmoke
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldPreSineVerticalRejectSmoke
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldPreSineRadialRejectSmoke
+          java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldPreSineEllipseRejectSmoke
           python3 -m unittest discover -s qa -p 'test_grand_overworld_cave_integration.py' -v
       - name: Validate giant connected Grand Nether caverns and bit-exact optimization parity
         run: |
