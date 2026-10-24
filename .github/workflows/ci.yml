@@ -353,7 +353,8 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherFusedColumnHeightMaskSmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherXYZStrengthPerfSmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherRoomXZBoundsSmoke.java \
-            neoforge/src/test/java/org/realscale/neoforge/GrandNetherEvaluatorCallPruneSmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherEvaluatorCallPruneSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherTubeAxisRejectSmoke.java
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkSmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkParitySmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherRegionCacheSmoke
@@ -369,6 +370,7 @@ jobs:
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherXYZStrengthPerfSmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherRoomXZBoundsSmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherEvaluatorCallPruneSmoke
+          java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherTubeAxisRejectSmoke
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
