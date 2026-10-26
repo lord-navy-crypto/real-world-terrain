@@ -371,6 +371,7 @@ def synthesize_heightfield(profile: dict, rows: int, cols: int, cell_x: float, c
     anisotropy = float(params["anisotropy_gain"])
     fine_m = float(scales["fine"])
     coarse_m = float(scales["coarse"])
+    extent_m = min((cols - 1) * cell_x, (rows - 1) * cell_z)
     rng = np.random.default_rng(seed)
 
     macro = _spectral_band_noise(rows, cols, cell_x, cell_z, exponent, anisotropy,
