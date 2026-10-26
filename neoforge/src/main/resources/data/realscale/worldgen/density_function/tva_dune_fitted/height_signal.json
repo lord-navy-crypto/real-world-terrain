@@ -2,7 +2,7 @@
   "anisotropy_gain": 1.160985,
   "base": "realscale:tva_dune_fitted/original_height_signal",
   "cliff_index": 0.0,
-  "continents": "realscale:realism_max/continents",
+  "continents": "realscale:realism_max/continental_field",
   "dominant_wavelength_m": 4775.6305,
   "dune_axis_radians": 1.570796,
   "family": "dune",
