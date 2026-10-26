@@ -84,6 +84,31 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
             self.assertTrue((WORLD / (name + ".json")).is_file(), name)
             self.assertNotIn("realscale:" + name, menu)
 
+    def test_six_fitted_profiles_have_real_source_provenance_and_no_raw_grid(self):
+        profile_root = ROOT / "research/v1.1/profiles"
+        provenance = read(profile_root / "terrain-profile-provenance.json")
+        self.assertEqual(provenance["profile_count"], 6)
+        self.assertFalse(provenance["raw_dem_grids_embedded"])
+        targets = {
+            "everest_himalaya": "alpine",
+            "grand_canyon": "canyon",
+            "yosemite_glacial_valley": "glacial",
+            "hawaii_volcanic": "volcanic",
+            "guilin_karst": "karst",
+            "namib_dunes": "dune",
+        }
+        for target, family in targets.items():
+            with self.subTest(target=target):
+                profile = read(profile_root / (target + ".json"))
+                self.assertEqual(profile["family"], family)
+                self.assertEqual(profile["source"]["source_dataset"], "Copernicus DEM GLO-90")
+                self.assertEqual(profile["source"]["vertical_datum"], "EGM2008")
+                self.assertEqual(len(profile["source"]["sha256"]), 64)
+                self.assertEqual(len(profile["source"]["source_tile_sha256"]), 64)
+                self.assertFalse(profile["generation_contract"]["raw_elevation_samples_embedded"])
+                self.assertIn("relief_gain", profile["fit_parameters"])
+                self.assertGreater(profile["observed_statistics"]["relief_p95_minus_p05_m"], 0)
+
     def test_legacy_world_preset_ids_remain_loadable(self):
         for old in OLD:
             self.assertTrue((WORLD / (old + ".json")).is_file(), old)
