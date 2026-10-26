@@ -135,7 +135,7 @@ def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ri
     if river_grade not in (0,3,6,9):
         raise ValueError("River slope must be Off (0), Conservative (3), Standard (6) or Flexible (9)")
 
-def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False):
+def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False, universal_biomes=False):
     validate(preset,relief,elevation,caves,river_grade,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology)
     if type(fantasy_dimensions) is not bool or (fantasy_dimensions and preset not in FAMILIES):
         raise ValueError("Fantasy dimensions require a merged Lab family and a boolean setting")
@@ -173,6 +173,10 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                     options["cold_limit"]=cold_limit
         if basin:
             options["basin"]=basin
+    # Opt-in exported profiles use a new content-addressed ID: do not silently
+    # change the biome-source graph of historically generated saved worlds.
+    if universal_biomes and preset in FAMILIES:
+        options["biome_source_revision"]="canonical_universal_v1"
     checksum=hashlib.sha256(json.dumps(options,sort_keys=True).encode()).hexdigest()[:10]
     name="lab_"+preset+"_"+checksum+"_g"+str(river_grade)
     density_folder="terrain_lab/"+name
@@ -434,6 +438,12 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         "alpine":"tva_alpine_three_realms",
         "canyon":"tva_canyon_three_realms",
     }
+    if universal_biomes:
+        realscale_families = {
+            "landscape": "natural_three_realms",
+            "alpine": "alpine_three_realms",
+            "canyon": "canyon_three_realms",
+        }
     if preset in realscale_families:
         original_preset=jread(root,GEO_ROOT/"world_preset"/(realscale_families[preset]+".json"))
     else:
@@ -535,8 +545,8 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         output[GEO_ROOT/"density_function"/density_folder/"biome_temperature.json"]=temp_value
     return name,options,output
 
-def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False):
-    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology)
+def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False, universal_biomes=False):
+    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology,universal_biomes)
     paths={path:serialized(obj) for path,obj in output.items()}
     preset_id="realscale:"+name
     for tag in ("normal","extended"):
