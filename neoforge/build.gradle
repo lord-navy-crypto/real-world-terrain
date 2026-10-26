@@ -174,7 +174,7 @@ tasks.named("processResources") {
 // these source files are intentionally retained here for tests and future work.
 def stablePlayablePresetEntries = [
     "data/realscale/worldgen/world_preset/natural_three_realms.json",
-    "data/realscale/worldgen/world_preset/usgs_big_sur_v2.json"
+    "data/realscale/worldgen/world_preset/usgs_big_sur.json"
 ] as Set
 
 tasks.named("jar").configure {
@@ -187,7 +187,7 @@ tasks.named("jar").configure {
 
 tasks.register("verifyStablePlayablePresetSurface") {
     group = "verification"
-    description = "Verify the release JAR exposes only Natural and USGS Big Sur V2 world presets."
+    description = "Verify the release JAR exposes only Natural and USGS Big Sur world presets."
     dependsOn(tasks.named("jar"))
     doLast {
         def archive = tasks.named("jar").get().archiveFile.get().asFile
