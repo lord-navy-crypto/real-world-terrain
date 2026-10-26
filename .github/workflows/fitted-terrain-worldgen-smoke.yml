@@ -120,7 +120,7 @@ jobs:
           execute unless entity @e[type=minecraft:marker,tag=realscale_qa_initialized,limit=1] run function realscale:qa_initialize
           FUNCTION
             cat > "$qa_pack/data/realscale/function/qa_initialize.mcfunction" <<'FUNCTION'
-          execute in minecraft:overworld run forceload add 960 960 1088 1088
+          execute in minecraft:overworld run forceload add 976 976 1072 1072
           execute in minecraft:overworld run summon minecraft:marker 1024 80 1024 {Tags:["realscale_qa_initialized"]}
           FUNCTION
           done
@@ -156,8 +156,10 @@ jobs:
               time.sleep(1)
           if ready.is_set():
               print(f"FITTED_{slug.upper()}_SERVER_BOOT_OK")
-              # The enabled QA datapack's tick function force-loads a 9x9 area
-              # centered on the first 2048-block morphology cell. Gradle's
+              # The enabled QA datapack's tick function force-loads a 7x7 area
+              # centered on the first 2048-block morphology cell. This bounded
+              # 49-chunk sample is deliberately smaller for slower archetypes.
+              # Gradle's
               # stdin is not a reliable Minecraft console channel, so the
               # function is the source of truth for chunk requests.
               time.sleep(90)
@@ -212,8 +214,8 @@ jobs:
             --run-root run \
             --world-name "fitted-${PRESET_SLUG}-smoke" \
             --slug "${PRESET_SLUG}" \
-            --target-chunk-min 60 \
-            --target-chunk-max 68 \
+            --target-chunk-min 61 \
+            --target-chunk-max 67 \
             --output "build/fitted-${PRESET_SLUG}-height-summary.json"
       - name: Upload fitted-archetype heightmap summary
         if: always()
