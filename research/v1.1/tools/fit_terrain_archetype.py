@@ -14,7 +14,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 
 RGT_HEADER_BYTES = 40
-FAMILIES = ("natural", "alpine", "canyon")
+FAMILIES = ("natural", "alpine", "canyon", "glacial", "volcanic", "karst", "dune")
 LAGS_PIXELS = (1, 2, 4, 8, 16, 32)
 
 
@@ -220,6 +220,26 @@ def fit_profile(
     anisotropy_raw = float(np.median(corrected_ratios)) if corrected_ratios else 1.0
     anisotropy_gain = _clip(math.sqrt(max(anisotropy_raw, 1e-12)), 0.5, 2.0)
 
+    # Estimate the strongest non-zero spatial wavelength and its orientation
+    # from the observed DEM spectrum. This is especially useful for dune trains
+    # and glacial lineations; it is a measured statistic, not a preset constant.
+    spectrum = np.fft.fft2(centered)
+    spectral_power = np.abs(spectrum) ** 2
+    freq_x = np.fft.fftfreq(cols, d=cell_x)[None, :]
+    freq_z = np.fft.fftfreq(rows, d=cell_z)[:, None]
+    frequency = np.sqrt(freq_x * freq_x + freq_z * freq_z)
+    spectral_mask = (frequency >= 1.0 / max(extent_m / 2.0, 1e-6)) & (frequency <= 1.0 / max(2.0 * cell_mean, 1e-6))
+    spectral_mask[0, 0] = False
+    if np.any(spectral_mask):
+        masked_power = np.where(spectral_mask, spectral_power, -np.inf)
+        dominant_row, dominant_col = np.unravel_index(int(np.argmax(masked_power)), masked_power.shape)
+        dominant_frequency = float(frequency[dominant_row, dominant_col])
+        dominant_wavelength_m = 1.0 / dominant_frequency if dominant_frequency > 0 else mid_m * 4.0
+        dune_axis_radians = math.atan2(float(freq_z[dominant_row, 0]), float(freq_x[0, dominant_col])) + math.pi / 2.0
+    else:
+        dominant_wavelength_m = mid_m * 4.0
+        dune_axis_radians = 0.0
+
     p05, p25, p50, p75, p95 = [float(np.percentile(elevation, p)) for p in (5, 25, 50, 75, 95)]
     relief = p95 - p05
     if relief <= 1e-6:
@@ -239,12 +259,18 @@ def fit_profile(
         "cliff_index": round(_clip((slope_p95 - 20.0) / 70.0, 0.0, 1.0), 6),
         "valley_index": round(_clip(valley_index, 0.0, 1.0), 6),
         "ridge_index": round(_clip(ridge_index, 0.0, 1.0), 6),
+        "dominant_wavelength_m": round(_clip(dominant_wavelength_m, 2.0 * cell_mean, extent_m), 4),
+        "dune_axis_radians": round(float((dune_axis_radians + math.pi) % (2.0 * math.pi) - math.pi), 6),
     }
 
     family_kernel = {
         "natural": "balanced_multiscale",
         "alpine": "ridge_sharpened_multiscale",
         "canyon": "valley_and_cliff_multiscale",
+        "glacial": "u_shaped_glacial_valley_multiscale",
+        "volcanic": "shield_cone_and_caldera_multiscale",
+        "karst": "tower_karst_and_doline_multiscale",
+        "dune": "wind_aligned_aeolian_ridges_multiscale",
     }[family]
     return {
         "schema": "realscale:terrain_archetype_fit/v1",
@@ -358,14 +384,70 @@ def synthesize_heightfield(profile: dict, rows: int, cols: int, cell_x: float, c
         + float(params["meso_amplitude_rms_m"]) * meso
         + float(params["micro_amplitude_rms_m"]) * micro
     )
+    macro_amp = float(params["macro_amplitude_rms_m"])
+    meso_amp = float(params["meso_amplitude_rms_m"])
+    micro_amp = float(params["micro_amplitude_rms_m"])
+    ridge = 1.0 - np.abs(macro)
+    ridge = (ridge - float(np.mean(ridge))) / max(float(np.std(ridge)), 1e-9)
+    valley = np.abs(meso)
+    valley = (valley - float(np.mean(valley))) / max(float(np.std(valley)), 1e-9)
+
     if family == "alpine":
-        ridge = 1.0 - np.abs(macro)
-        ridge = (ridge - float(np.mean(ridge))) / max(float(np.std(ridge)), 1e-9)
-        result += float(params["ridge_sharpness"]) * 0.25 * float(params["macro_amplitude_rms_m"]) * ridge
+        result += float(params["ridge_sharpness"]) * 0.25 * macro_amp * ridge
     elif family == "canyon":
-        valley = np.abs(meso)
-        valley = (valley - float(np.mean(valley))) / max(float(np.std(valley)), 1e-9)
-        result -= float(params["cliff_index"]) * 0.25 * float(params["meso_amplitude_rms_m"]) * valley
+        result -= float(params["cliff_index"]) * 0.25 * meso_amp * valley
+    elif family == "glacial":
+        # A broad, flat-bottomed U-shaped valley with a seed-dependent
+        # meandering centerline. Its amplitude is fitted from observed relief.
+        z_m, x_m = np.mgrid[0:rows, 0:cols]
+        x_m = x_m * cell_x
+        z_m = z_m * cell_z
+        center = (cols * cell_x * 0.5
+                  + 0.12 * cols * cell_x * np.sin(z_m / max(coarse_m * 1.8, 1.0)))
+        width = max(coarse_m * 1.2, cell_mean * 8.0)
+        distance = np.abs(x_m - center) / width
+        trough = 1.0 - np.clip((distance - 0.30) / 0.85, 0.0, 1.0)
+        result -= max(float(params["valley_index"]), 0.25) * 0.55 * macro_amp * trough
+    elif family == "volcanic":
+        # Seeded shield cones with a shallow summit caldera. The fitted slope
+        # and macro relief set cone prominence; the DEM grid is never replayed.
+        z_m, x_m = np.mgrid[0:rows, 0:cols]
+        x_m = x_m * cell_x
+        z_m = z_m * cell_z
+        centers = [
+            (0.34 * cols * cell_x, 0.38 * rows * cell_z),
+            (0.70 * cols * cell_x, 0.68 * rows * cell_z),
+        ]
+        cones = np.zeros((rows, cols), dtype=np.float64)
+        radius = max(min(coarse_m * 1.35, extent_m * 0.28), cell_mean * 10.0)
+        for cx, cz in centers:
+            radial = np.hypot(x_m - cx, z_m - cz) / radius
+            shield = np.clip(1.0 - radial, 0.0, 1.0) ** 1.35
+            caldera = np.exp(-((radial / 0.12) ** 2))
+            cones += shield - 0.20 * caldera * (radial < 0.20)
+        cones = (cones - float(np.mean(cones))) / max(float(np.std(cones)), 1e-9)
+        result += max(float(params["ridge_sharpness"]), 0.25) * 0.65 * macro_amp * cones
+    elif family == "karst":
+        # Positive meso relief becomes tower-like residual hills; negative
+        # micro relief deepens doline-like pockets. Both strengths come from
+        # the measured ridge/valley statistics of the source raster.
+        towers = np.maximum(meso, 0.0) ** 2
+        towers = (towers - float(np.mean(towers))) / max(float(np.std(towers)), 1e-9)
+        dolines = np.maximum(-micro, 0.0) ** 2
+        dolines = (dolines - float(np.mean(dolines))) / max(float(np.std(dolines)), 1e-9)
+        result += max(float(params["ridge_index"]), 0.25) * 0.38 * meso_amp * towers
+        result -= max(float(params["valley_index"]), 0.25) * 0.24 * micro_amp * dolines
+    elif family == "dune":
+        # Wind-aligned aeolian ridges use the dominant wavelength/orientation
+        # fitted from the real DEM's spatial spectrum, with a skewed crest.
+        z_m, x_m = np.mgrid[0:rows, 0:cols]
+        theta = float(params["dune_axis_radians"])
+        wavelength = max(float(params["dominant_wavelength_m"]), 2.0 * cell_mean)
+        across = x_m * cell_x * math.cos(theta) + z_m * cell_z * math.sin(theta)
+        phase = 2.0 * math.pi * across / wavelength + float(rng.uniform(-math.pi, math.pi))
+        wave = np.sin(phase) + 0.28 * np.sin(2.0 * phase + 0.6)
+        wave = (wave - float(np.mean(wave))) / max(float(np.std(wave)), 1e-9)
+        result += max(float(params["anisotropy_gain"]) - 0.25, 0.25) * 0.45 * meso_amp * wave
     result -= float(np.mean(result))
     return result
 
