@@ -231,7 +231,7 @@ tasks.register("verifyStablePlayablePresetSurface") {
             throw new GradleException(
                 "Experimental source presets were unexpectedly removed; keep them on the experimental branch.")
         }
-        logger.lifecycle("STABLE_PRESET_SURFACE_PASS: Natural + USGS Big Sur V2; " +
+        logger.lifecycle("STABLE_PRESET_SURFACE_PASS: Natural + USGS Big Sur; " +
             sourcePresetCount + " source presets retained for experiments.")
     }
 }

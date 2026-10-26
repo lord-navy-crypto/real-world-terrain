@@ -18,6 +18,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: stable-two-preset-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   package-surface:
     name: Build and verify exactly two selectable RealScale presets
