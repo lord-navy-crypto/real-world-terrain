@@ -5,7 +5,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.fml.ModList;
 
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
@@ -15,8 +14,8 @@ import java.util.concurrent.CompletionException;
  * Read-only persisted-chunk atlas. It NEVER opens the world/server or creates
  * a chunk, and never estimates "generated" from a noisy height preview.
  *
- * Chunky integration in v0.1 is guidance/clipboard only: Chunky owns all
- * generation, resume and task status when the player enters the actual world.
+ * The Atlas reports existing save coverage and samples persisted heightmaps.
+ * It does not launch external tools, start a server, or generate chunks.
  */
 public final class WorldAtlasMapScreen extends Screen {
     private static final int[] RADII={512,1024,2048,4096};
@@ -27,7 +26,6 @@ public final class WorldAtlasMapScreen extends Screen {
     private WorldAtlasRegionIndex.Snapshot current;
     private CompletableFuture<WorldAtlasRegionIndex.Snapshot> pending;
     private String message="";
-    private boolean chunkyLoaded;
     private Button pauseDrawButton;
 
     public WorldAtlasMapScreen(Screen parent,Path save) {
@@ -51,7 +49,6 @@ public final class WorldAtlasMapScreen extends Screen {
     }
 
     @Override protected void init() {
-        chunkyLoaded=ModList.get().isLoaded("chunky");
         int mid=width/2;
         int drawingY=height-106;
         addRenderableWidget(Button.builder(
@@ -89,9 +86,6 @@ public final class WorldAtlasMapScreen extends Screen {
                 b -> {radiusIndex=Math.min(RADII.length-1,radiusIndex+1);
                       requestScan();})
                 .bounds(mid-43,y,85,20).build());
-        addRenderableWidget(Button.builder(
-                Component.translatable("realscale.atlas.copy_chunky"),
-                b -> copyChunkyGuide()).bounds(mid+48,y,120,20).build());
         y=height-28;
         addRenderableWidget(Button.builder(
                 Component.translatable("realscale.atlas.back"),
@@ -100,17 +94,6 @@ public final class WorldAtlasMapScreen extends Screen {
                 Component.translatable("realscale.atlas.refresh"),
                 b -> requestScan()).bounds(width-102,y,94,20).build());
         if(pending==null)requestScan();
-    }
-
-    private void copyChunkyGuide() {
-        // Each of these is one **separate in-world chat command**.
-        // No offline world mutation, hidden server process or fake progress.
-        String commands="/chunky center "+centerX+" "+centerZ
-                +"\n/chunky radius "+RADII[radiusIndex]
-                +"\n/chunky shape square"
-                +"\n/chunky start";
-        Minecraft.getInstance().keyboardHandler.setClipboard(commands);
-        message=Component.translatable("realscale.atlas.copied").getString();
     }
 
     private void startDrawing() {
@@ -236,8 +219,7 @@ public final class WorldAtlasMapScreen extends Screen {
         } else if(current!=null) {
             String stats=current.savedChunks()+"/"+current.targetChunks()
                     +" saved ("+String.format(java.util.Locale.ROOT,
-                        "%.1f",current.percentSaved())+"%)"
-                    +(chunkyLoaded?" | Chunky available":" | Chunky optional");
+                        "%.1f",current.percentSaved())+"%)";
             gfx.drawCenteredString(font,Component.literal(
                     font.plainSubstrByWidth(stats,Math.max(130,width-16))),
                     width/2,statusY,0xffc5e6d0);

@@ -28,12 +28,13 @@ class WorldAtlasFeatureTest(unittest.TestCase):
         self.assertNotIn("ChunkGenerator",source)
         self.assertNotIn("server.execute(",source)
 
-    def test_readonly_atlas_and_manual_chunky_guide_no_hidden_server(self):
+    def test_readonly_atlas_has_no_chunky_command_adapter_or_launcher(self):
         screen=(SRC/"WorldAtlasMapScreen.java").read_text()
         self.assertIn("CompletableFuture.supplyAsync(",screen)
-        self.assertIn('ModList.get().isLoaded("chunky")',screen)
-        self.assertIn("keyboardHandler.setClipboard(commands)",screen)
         self.assertIn("WorldAtlasRegionIndex.scan(",screen)
+        self.assertNotIn("Chunky",screen)
+        self.assertNotIn("chunky",screen.lower())
+        self.assertNotIn("setClipboard",screen)
         for unsafe in ("ProcessBuilder(","Runtime.getRuntime().exec(",
                        "createWorldOpenFlows()", "loadLevel(",
                        "getChunk(", "ServerChunkCache"):
@@ -42,8 +43,7 @@ class WorldAtlasFeatureTest(unittest.TestCase):
 
     def test_english_chinese_atlas_labels(self):
         keys=("entry","title","empty","back","refresh","scanning",
-              "coverage_only","chunky_found","chunky_missing",
-              "copy_chunky","copied")
+              "coverage_only")
         for name in ("en_us","zh_cn"):
             data=json.loads((RES/(name+".json")).read_text())
             for key in keys:
