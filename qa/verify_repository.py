@@ -22,7 +22,7 @@ for name,want in checks.items():
     'realscale:alpine_three_realms',
     'realscale:canyon_three_realms',
     'realscale:measured_three_realms']
-   assert tag.get('values',[])==expected,(name,tag.get('values'))
+  assert tag.get('values',[])==expected,(name,tag.get('values'))
 
   print('INTENTIONAL MODIFICATION: four canonical terrain families; optional experiments remain hidden')
   continue
