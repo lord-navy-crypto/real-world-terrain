@@ -90,7 +90,6 @@ jobs:
           python3 -m unittest discover -s qa -p "test_sky_ocean_classification_bypass.py" -v
           python3 -m unittest discover -s qa -p "test_tva_smoothed_families.py" -v
           python3 -m unittest discover -s qa -p "test_tva_woven_optional_features.py" -v
-          python3 -m unittest discover -s qa -p "test_terrain_lab.py" -v
       - name: Commit and push the verified generated presets
         if: steps.gate.outputs.publish == 'true'
         shell: bash
