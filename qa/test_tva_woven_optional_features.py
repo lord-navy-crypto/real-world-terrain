@@ -64,7 +64,10 @@ class WovenOptionalFeaturesTest(unittest.TestCase):
             "realscale:natural_three_realms",
             "realscale:alpine_three_realms",
             "realscale:canyon_three_realms",
-            "realscale:measured_three_realms",
+            "realscale:glacial_three_realms",
+            "realscale:volcanic_three_realms",
+            "realscale:karst_three_realms",
+            "realscale:dune_three_realms",
         ]
         self.assertTrue((PRESETS/"wonders_invasion_three_realms.json").is_file())
         self.assertTrue((PRESETS/"cave_ocean_ecology_three_realms.json").is_file())
