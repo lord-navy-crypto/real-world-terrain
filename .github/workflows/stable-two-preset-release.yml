@@ -1,0 +1,97 @@
+name: Stable Natural + USGS worldgen regression
+
+on:
+  push:
+    branches: [release/natural-usgs-only-20261026]
+    paths:
+      - 'neoforge/**'
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'qa/neoforge/realscale_headless_qa.py'
+      - '.github/workflows/stable-two-preset-release.yml'
+  pull_request:
+    branches: [release/natural-usgs-only-20261026]
+    paths:
+      - 'neoforge/**'
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - '.github/workflows/stable-two-preset-release.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package-surface:
+    name: Build and verify exactly two selectable RealScale presets
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Compile, test, and inspect the release JAR
+        working-directory: neoforge
+        run: gradle --no-daemon check
+
+  playable-worldgen:
+    name: Real server worldgen — ${{ matrix.preset }}
+    needs: package-surface
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        preset: [natural_three_realms, usgs_big_sur_v2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Prepare isolated real-server world
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=world
+          level-type=realscale:${{ matrix.preset }}
+          level-seed=42
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Generate and verify one distant chunk within 180 seconds
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . 'realscale:${{ matrix.preset }}' distant
+      - name: Preserve actual generation time and world evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Stable-${{ matrix.preset }}-worldgen-evidence
+          path: |
+            neoforge/build/rcon_distant_timing.json
+            neoforge/build/rcon_distant_server.log
+            neoforge/build/rcon_distant_thread_dump_*.txt
+            neoforge/build/rcon_distant_stall_fingerprint.json
+            neoforge/build/dh-chunky-lod-storage.json
+            neoforge/run/**/level.dat
+            neoforge/run/**/region/*.mca
+          if-no-files-found: warn
+          retention-days: 30
