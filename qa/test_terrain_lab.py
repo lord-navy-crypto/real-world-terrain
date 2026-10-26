@@ -43,8 +43,9 @@ class TerrainLabTests(unittest.TestCase):
                 self.assertEqual(settings["noise_router"]["depth"],prefix+"/terrain_density")
                 self.assertEqual(settings["noise_router"]["initial_density_without_jaggedness"],prefix+"/preliminary_density")
                 final=settings["noise_router"]["final_density"]
-                self.assertEqual(final["input"],prefix+"/terrain_density")
-                self.assertEqual(final["when_in_range"]["argument2"],prefix+"/cave_density")
+                # Legacy procedural profiles retain a direct density reference;
+                # the extra cave envelope is only injected for merged UI families.
+                self.assertEqual(final,prefix+"/terrain_density")
                 height=lab.jread(self.root,lab.GEO_ROOT/"density_function/terrain_lab"/name/"height_signal.json")
                 self.assertEqual(height["argument1"]["argument2"],"realscale:"+preset+"/height_signal")
                 self.assertEqual(height["argument2"],16/128)
@@ -70,7 +71,7 @@ class TerrainLabTests(unittest.TestCase):
         self.assertEqual(len([x for x in original["values"] if not x.startswith("realscale:lab_")]),7)
         self.assertEqual(original["values"],lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"])
         self.assertEqual([x for x in lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"] if not x.startswith("realscale:lab_")],
-                         ["realscale:natural_three_realms","realscale:alpine_three_realms","realscale:canyon_three_realms","realscale:measured_three_realms"])
+                         ["realscale:natural_three_realms","realscale:alpine_three_realms","realscale:canyon_three_realms","realscale:glacial_three_realms","realscale:volcanic_three_realms","realscale:karst_three_realms","realscale:dune_three_realms"])
 
     def test_merged_families_blend_actual_height_density_functions(self):
         for family,(base,secondary) in lab.FAMILIES.items():
@@ -120,8 +121,8 @@ class TerrainLabTests(unittest.TestCase):
         name,opts,_=lab.apply(self.root,"alpine",1.0,0,50,6)
         self.assertNotIn("mountain_caves_revision",opts)
         settings=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
-        self.assertEqual(settings["noise_router"]["final_density"]["type"],
-                         "minecraft:range_choice")
+        self.assertEqual(settings["noise_router"]["final_density"],
+                         "realscale:terrain_lab/"+name+"/terrain_density")
 
     def test_optional_fantasy_dimension_expansion_isolated_to_new_lab_world(self):
         base,*_=lab.apply(self.root,"landscape",1.0,0,50,6)
@@ -227,7 +228,7 @@ class TerrainLabTests(unittest.TestCase):
         b,*_=lab.apply(self.root,"realism_max",1.1,0,50,6)
         self.assertNotEqual(a,b)
         normal=lab.jread(self.root,lab.TAG_ROOT/"normal.json")
-        expected=["realscale:natural_three_realms","realscale:alpine_three_realms","realscale:canyon_three_realms","realscale:measured_three_realms"]
+        expected=["realscale:natural_three_realms","realscale:alpine_three_realms","realscale:canyon_three_realms","realscale:glacial_three_realms","realscale:volcanic_three_realms","realscale:karst_three_realms","realscale:dune_three_realms"]
         self.assertEqual(normal["values"][:len(expected)],expected)
         self.assertIn("realscale:"+a,normal["values"])
         self.assertIn("realscale:"+b,normal["values"])
@@ -246,7 +247,7 @@ class TerrainLabTests(unittest.TestCase):
         self.assertTrue(name.endswith("_g0"))
 
     def test_dem_pilot_rejects_modification(self):
-        with self.assertRaisesRegex(ValueError,"measured DEM"):
+        with self.assertRaisesRegex(ValueError,"measured, read-only terrain"):
             lab.apply(self.root,"usgs_big_sur",1.1,8,60,3)
 
     def test_rejects_out_of_bound_values(self):
@@ -291,7 +292,7 @@ class TerrainLabTests(unittest.TestCase):
         self.assertIn("dist = Dist.CLIENT",client.read_text())
         self.assertIn("IConfigScreenFactory",client.read_text())
         self.assertIn('side="CLIENT"',metadata)
-        self.assertIn("maven.modrinth:1eAoo2KR:h8Px82QV",build)
+        self.assertIn("dev.isxander:yet-another-config-lib:3.8.1+1.21.1-neoforge",build)
         self.assertIn("prepareTerrainLabDraft",build)
         self.assertIn("dependsOn tasks.named('prepareTerrainLabDraft')",build)
 
