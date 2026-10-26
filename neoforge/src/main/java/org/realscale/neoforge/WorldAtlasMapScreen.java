@@ -113,13 +113,6 @@ public final class WorldAtlasMapScreen extends Screen {
         message=Component.translatable("realscale.atlas.copied").getString();
     }
 
-    private boolean hasActivePainting() {
-        var job=WorldAtlasBackgroundPainter.current();
-        return job!=null && !job.state().equals("DONE")
-                && !job.state().equals("CANCELLED")
-                && !job.state().equals("FAILED");
-    }
-
     private void startDrawing() {
         try {
             boolean started=WorldAtlasBackgroundPainter.start(save,
