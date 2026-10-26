@@ -256,8 +256,8 @@ jobs:
             --run-root run \
             --world-name "fitted-${PRESET_SLUG}-smoke" \
             --slug "${PRESET_SLUG}" \
-            --target-chunk-min 61 \
-            --target-chunk-max 67 \
+            --target-chunk-min 62 \
+            --target-chunk-max 66 \
             --output "build/fitted-${PRESET_SLUG}-height-summary.json"
       - name: Upload fitted-archetype heightmap summary
         if: always()
