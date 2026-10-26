@@ -53,3 +53,6 @@ The controlled `.github/workflows/publish-fitted-terrain-presets.yml` workflow r
 
 
 The publication preflight deliberately runs the focused seven-preset, source-provenance, shared-biome-chain, and worldgen resource contract suites. The separate Terrain Lab suite contains older, unrelated assumptions about experimental dimension toggles; it is not used as a gate for publishing the fitted presets.
+
+
+The first actual NeoForge server smoke exposed a real registry-reference mismatch in the generated settings: the Realism MAX graph names its continentalness, erosion and ridge signals `continental_field`, `erosion_field` and `mountain_axis`, unlike the older Himalayan/Grand Canyon graphs. The compiler now maps those source-specific registry IDs explicitly and the compiler test verifies each target exists before resources can be published.
