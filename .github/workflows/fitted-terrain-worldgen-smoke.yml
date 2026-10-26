@@ -132,12 +132,13 @@ jobs:
               time.sleep(1)
           if ready.is_set():
               print(f"FITTED_{slug.upper()}_SERVER_BOOT_OK")
-              # Force-load a small, bounded Overworld area so the test proves
-              # that chunks are generated and saved, not only that level.dat
-              # contains a selectable preset ID.
-              proc.stdin.write("forceload add 0 0 128 128\n")
+              # Sample the center of the first 2048-block morphology cell.
+              # The volcanic/karst site centers and glacial valley axis are
+              # intentionally around (1024, 1024); sampling spawn at (0, 0)
+              # would miss those fitted landforms and could yield a false pass.
+              proc.stdin.write("forceload add 960 960 1088 1088\n")
               proc.stdin.flush()
-              # Give the 9x9-chunk sample area time to generate and persist.
+              # 9x9 chunks: enough columns to audit the actual persisted surface.
               time.sleep(45)
           try:
               if proc.poll() is None:
