@@ -69,7 +69,7 @@ def build(target_ids, out_dir: Path, seed: int = 42, force_download: bool = Fals
             "This calibration uses the global 90 m DSM baseline; it cannot resolve fine cliffs, small sinkholes, or individual dune ripples."
         )
         profile["limitations"].append(
-            "The profile is a real-data-derived morphology fit, but game runtime integration still requires explicit density-function compilation and worldgen QA."
+            "The six canonical target profiles are compiled into NeoForge density functions by this branch; generated-world QA is tracked separately and must pass before calling the presets release-ready."
         )
         profile_path = profiles_dir / f"{target_id}.json"
         profile_path.write_text(
