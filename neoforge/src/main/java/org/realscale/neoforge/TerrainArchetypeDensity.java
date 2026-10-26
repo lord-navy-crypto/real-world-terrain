@@ -26,6 +26,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
     private final double macroGain;
     private final double mesoGain;
     private final double microGain;
+    private final double reliefGain;
     private final double ridgeSharpness;
     private final double cliffIndex;
     private final double valleyIndex;
@@ -42,6 +43,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
             double macroGain,
             double mesoGain,
             double microGain,
+            double reliefGain,
             double ridgeSharpness,
             double cliffIndex,
             double valleyIndex,
@@ -59,6 +61,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
         this.macroGain = macroGain;
         this.mesoGain = mesoGain;
         this.microGain = microGain;
+        this.reliefGain = reliefGain;
         this.ridgeSharpness = ridgeSharpness;
         this.cliffIndex = cliffIndex;
         this.valleyIndex = valleyIndex;
@@ -81,6 +84,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
     public double macroGain() { return macroGain; }
     public double mesoGain() { return mesoGain; }
     public double microGain() { return microGain; }
+    public double reliefGain() { return reliefGain; }
     public double ridgeSharpness() { return ridgeSharpness; }
     public double cliffIndex() { return cliffIndex; }
     public double valleyIndex() { return valleyIndex; }
@@ -98,6 +102,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
                     Codec.doubleRange(0.0, 1.0).fieldOf("macro_gain").forGetter(TerrainArchetypeDensity::macroGain),
                     Codec.doubleRange(0.0, 1.0).fieldOf("meso_gain").forGetter(TerrainArchetypeDensity::mesoGain),
                     Codec.doubleRange(0.0, 1.0).fieldOf("micro_gain").forGetter(TerrainArchetypeDensity::microGain),
+                    Codec.doubleRange(0.1, 1.0).fieldOf("relief_gain").forGetter(TerrainArchetypeDensity::reliefGain),
                     Codec.doubleRange(0.0, 1.0).fieldOf("ridge_sharpness").forGetter(TerrainArchetypeDensity::ridgeSharpness),
                     Codec.doubleRange(0.0, 1.0).fieldOf("cliff_index").forGetter(TerrainArchetypeDensity::cliffIndex),
                     Codec.doubleRange(0.0, 1.0).fieldOf("valley_index").forGetter(TerrainArchetypeDensity::valleyIndex),
@@ -136,9 +141,9 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
         double highlandGate = smoothstep(0.65, 1.7, original);
 
         return switch (family) {
-            case "alpine" -> original + landGate * highlandGate
+            case "alpine" -> original + landGate * highlandGate * reliefGain
                     * 0.22 * macroGain * ridgeSharpness * (1.0 - Math.abs(signal));
-            case "canyon" -> original - landGate
+            case "canyon" -> original - landGate * reliefGain
                     * 0.28 * mesoGain * cliffIndex * Math.abs(signal);
             case "glacial" -> glacialValley(original, landGate, x, z);
             case "volcanic" -> volcanicShield(original, landGate, x, z);
@@ -156,7 +161,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
         double across = Math.abs(x - centerX);
         // Flat-bottomed center followed by a broad U-shaped valley wall.
         double trough = 1.0 - smoothstep(width * 0.28, width, across);
-        return original - gate * 0.44 * Math.max(valleyIndex, 0.12) * trough;
+        return original - gate * reliefGain * 0.44 * Math.max(valleyIndex, 0.12) * trough;
     }
 
     private double volcanicShield(double original, double gate, double x, double z) {
@@ -172,7 +177,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
         if (radial >= 1.0) return original;
         double shield = Math.pow(Math.max(0.0, 1.0 - radial), 1.35);
         double caldera = 0.16 * Math.exp(-Math.pow(radial / 0.12, 2.0));
-        return original + gate * 0.55 * Math.max(macroGain, 0.12) * (shield - caldera);
+        return original + gate * reliefGain * 0.55 * Math.max(macroGain, 0.12) * (shield - caldera);
     }
 
     private double karstTowers(double original, double gate, double x, double z, double signal) {
@@ -193,7 +198,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
         double sink = 1.0 - smoothstep(sinkRadius * 0.45, sinkRadius,
                 distance(x, z, sinkX, sinkZ));
         double noiseTower = Math.max(0.0, signal) * 0.08 * ridgeGain();
-        return original + gate * (0.36 * Math.max(ridgeIndex, 0.12) * tower
+        return original + gate * reliefGain * (0.36 * Math.max(ridgeIndex, 0.12) * tower
                 + noiseTower - 0.22 * Math.max(valleyIndex, 0.12) * sink);
     }
 
@@ -201,7 +206,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
         double across = x * Math.cos(duneAxisRadians) + z * Math.sin(duneAxisRadians);
         double phase = TAU * across / dominantWavelengthM + signal * 0.12;
         double wave = Math.sin(phase) + 0.28 * Math.sin(2.0 * phase + 0.6);
-        return original + gate * 0.10 * Math.max(mesoGain, 0.12)
+        return original + gate * reliefGain * 0.10 * Math.max(mesoGain, 0.12)
                 * anisotropyGain * wave;
     }
 
@@ -213,7 +218,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
     public DensityFunction mapAll(DensityFunction.Visitor visitor) {
         return visitor.apply(new TerrainArchetypeDensity(
                 base.mapAll(visitor), continents.mapAll(visitor), selector.mapAll(visitor),
-                family, macroGain, mesoGain, microGain, ridgeSharpness, cliffIndex,
+                family, macroGain, mesoGain, microGain, reliefGain, ridgeSharpness, cliffIndex,
                 valleyIndex, ridgeIndex, anisotropyGain, duneAxisRadians, dominantWavelengthM));
     }
 
