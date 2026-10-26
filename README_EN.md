@@ -1,10 +1,10 @@
 # RealScale Terrain
 
-An experimental Minecraft 1.21.1 / NeoForge terrain project. The recovered v1.1 candidate overlays a small USGS-derived Big Sur DEM onto seven existing procedural presets. Java 21 and Gradle 8.14.3 are required.
+An experimental Minecraft 1.21.1 / NeoForge terrain project. The recovered v1.1 candidate overlays a small USGS-derived Big Sur DEM onto seven historical procedural presets. The current development branch narrows the new-world menu to four canonical terrain families and adds an offline DEM-to-archetype fitting prototype. Java 21 and Gradle 8.14.3 are required.
 
 Readable mod sources live in `neoforge/`; historical v0.4–v0.6 datapacks in `archive/`; raw USGS records in `data/`; original successful build artifact and saved-world reports in `evidence/`; installable candidate JAR in `dist/v1.1/`. The original exact delivered v1.1 JAR is [`RealScaleTerrain_NeoForge_1.21.1_FinalBattle_v1.1.jar`](dist/v1.1/RealScaleTerrain_NeoForge_1.21.1_FinalBattle_v1.1.jar) (SHA-256 `638ef85e4b3978e6344ec8b52d37e0c463c21bfd2a7cf7e8564d5b7eab5ada43`).
 
-Run `python3 qa/verify_repository.py`, then `cd neoforge && gradle --no-daemon build`. Install the JAR into a fresh Minecraft 1.21.1 instance with NeoForge 21.1.249. Create a new experimental world with the USGS Big Sur preset, seed 785312, and inspect near the origin. Do not use existing saves or duplicate RealScale mods.
+Run `python3 qa/verify_repository.py`, then `cd neoforge && gradle --no-daemon build`. Install the JAR into a fresh Minecraft 1.21.1 instance with NeoForge 21.1.249. Create a new experimental world with the Measured Terrain preset, seed 785312, and inspect near the origin. Do not use existing saves or duplicate RealScale mods.
 
 The DEM covers approximately 480×480m. Its 32m grid is derived from EPQS service samples spaced approximately 54–67m apart. One block per meter is interpolation, not one-meter survey data. A 96m interior blend transitions back to procedural terrain.
 
