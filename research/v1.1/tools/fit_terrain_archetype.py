@@ -341,9 +341,9 @@ def fit_profile(
         "limitations": [
             "This is a parametric calibration profile, not a neural-network model.",
             "The raw DEM grid is not included and must not be replayed as the infinite-world generator.",
-            "The profile is not yet wired into NeoForge DensityFunctions.",
+            "This JSON is a parameter source, not a Minecraft resource by itself; the repository compiler emits the six target profiles as NeoForge terrain_archetype DensityFunctions.",
+            "Runtime relief is normalized to the existing world-height budget; absolute DEM altitude is not replayed and vertical meters-to-blocks scaling is not yet a calibrated one-to-one mapping.",
             "DEM-derived morphology does not by itself prove tectonic, rainfall, or lithology causes.",
-            "Absolute altitude and vertical scale must be handled explicitly by the eventual generator.",
         ],
     }
 
