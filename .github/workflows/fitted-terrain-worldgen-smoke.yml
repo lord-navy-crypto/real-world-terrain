@@ -98,7 +98,31 @@ jobs:
           max-players=1
           max-tick-time=-1
           online-mode=true
+          initial-enabled-packs=vanilla,mod:realscale,file/realscale-qa
           PROPERTIES
+          done
+          # A datapack tick function is used instead of writing commands to
+          # Gradle's stdin (which is not the Minecraft server console).
+          for world_root in \
+            "run/fitted-$PRESET_SLUG-smoke" \
+            "run/server/fitted-$PRESET_SLUG-smoke" \
+            "run/gametestserver/fitted-$PRESET_SLUG-smoke"; do
+            qa_pack="$world_root/datapacks/realscale-qa"
+            mkdir -p "$qa_pack/data/minecraft/tags/function" \
+                     "$qa_pack/data/realscale/function"
+            cat > "$qa_pack/pack.mcmeta" <<'JSON'
+          {"pack":{"pack_format":48,"description":"RealScale fitted worldgen QA sample loader"}}
+          JSON
+            cat > "$qa_pack/data/minecraft/tags/function/tick.json" <<'JSON'
+          {"values":["realscale:qa_tick"]}
+          JSON
+            cat > "$qa_pack/data/realscale/function/qa_tick.mcfunction" <<'FUNCTION'
+          execute unless entity @e[type=minecraft:marker,tag=realscale_qa_initialized,limit=1] run function realscale:qa_initialize
+          FUNCTION
+            cat > "$qa_pack/data/realscale/function/qa_initialize.mcfunction" <<'FUNCTION'
+          execute in minecraft:overworld run forceload add 960 960 1088 1088
+          execute in minecraft:overworld run summon minecraft:marker 1024 80 1024 {Tags:["realscale_qa_initialized"]}
+          FUNCTION
           done
       - name: Boot NeoForge and persist the fitted generator ID
         working-directory: neoforge
@@ -132,24 +156,22 @@ jobs:
               time.sleep(1)
           if ready.is_set():
               print(f"FITTED_{slug.upper()}_SERVER_BOOT_OK")
-              # Sample the center of the first 2048-block morphology cell.
-              # The volcanic/karst site centers and glacial valley axis are
-              # intentionally around (1024, 1024); sampling spawn at (0, 0)
-              # would miss those fitted landforms and could yield a false pass.
-              proc.stdin.write("forceload add 960 960 1088 1088\n")
-              proc.stdin.flush()
-              # 9x9 chunks: enough columns to audit the actual persisted surface.
-              time.sleep(45)
-          try:
-              if proc.poll() is None:
-                  proc.stdin.write("stop\n")
-                  proc.stdin.flush()
-                  proc.wait(timeout=45)
-          except Exception:
-              if proc.poll() is None:
-                  os.killpg(proc.pid, signal.SIGINT)
+              # The enabled QA datapack's tick function force-loads a 9x9 area
+              # centered on the first 2048-block morphology cell. Gradle's
+              # stdin is not a reliable Minecraft console channel, so the
+              # function is the source of truth for chunk requests.
+              time.sleep(90)
+          # runServer is a Gradle wrapper; its stdin does not reliably forward
+          # "stop" to the Minecraft child. SIGINT the isolated process group so
+          # the server's shutdown hook saves generated Anvil chunks gracefully.
+          if proc.poll() is None:
+              os.killpg(proc.pid, signal.SIGINT)
+              try:
+                  proc.wait(timeout=120)
+              except subprocess.TimeoutExpired:
+                  os.killpg(proc.pid, signal.SIGTERM)
                   try:
-                      proc.wait(timeout=15)
+                      proc.wait(timeout=20)
                   except subprocess.TimeoutExpired:
                       os.killpg(proc.pid, signal.SIGKILL)
                       proc.wait()
@@ -190,6 +212,8 @@ jobs:
             --run-root run \
             --world-name "fitted-${PRESET_SLUG}-smoke" \
             --slug "${PRESET_SLUG}" \
+            --target-chunk-min 60 \
+            --target-chunk-max 68 \
             --output "build/fitted-${PRESET_SLUG}-height-summary.json"
       - name: Upload fitted-archetype heightmap summary
         if: always()
