@@ -305,7 +305,7 @@ def main(root,expected_preset,profile):
                     "elapsed_seconds": round(elapsed_seconds, 3),
                     "limit_seconds": 180,
                     "fully_loaded": True
-                }, indent=2) + "\\n", encoding="utf-8")
+                }, indent=2) + "\n", encoding="utf-8")
                 print("QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS: PASS",
                       f"elapsed_seconds={elapsed_seconds:.3f}", flush=True)
                 # Standalone DH-Chunky v0.3 command is ONLY required for the
