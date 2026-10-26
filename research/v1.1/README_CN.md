@@ -70,3 +70,21 @@ python3 research/v1.1/tools/build_terrain_profiles.py \
 - Copernicus DEM 公共数据集与许可说明：<https://registry.opendata.aws/copernicus-dem/>
 - USGS 3DEP 产品、分辨率和裸地 DEM 说明：<https://www.usgs.gov/3d-elevation-program/about-3dep-products-services>
 - USGS 约 10 米 1/3 arc-second DEM 产品元数据：<https://data.usgs.gov/datacatalog/data/USGS%3A3a81321b-c153-416f-98b7-cc8e5f0e17c3>
+
+
+## 已拟合的六个真实地貌区域（GLO-90）
+
+以下统计来自已下载并裁切的真实 DEM；`P95–P05` 是研究窗口内高程第 95 与第 5 百分位之差。主导波长来自按地貌类别限制频带后的二维频谱峰值，用作宏观空间尺度参数，不等同于单个山峰、峡谷或沙丘的实际宽度。
+
+| 预设 | 研究区域 | P95–P05 高差 | 拟合主导波长 | 归一化起伏系数 |
+|---|---|---:|---:|---:|
+| 高山 | 珠峰/喜马拉雅 | 3,863.39 m | 18.15 km | 0.9658 |
+| 峡谷 | 美国大峡谷 | 1,454.54 m | 34.29 km | 0.3636 |
+| 冰川山谷 | 优胜美地 | 2,854.78 m | 17.31 km | 0.7137 |
+| 火山 | 夏威夷 | 2,942.26 m | 25.04 km | 0.7356 |
+| 喀斯特 | 桂林 | 1,054.56 m | 7.94 km | 0.2636 |
+| 沙丘 | 纳米布沙海 | 590.74 m | 4.78 km | 0.1477 |
+
+归一化起伏系数按 `clip((P95-P05)/4000, 0.10, 1.00)` 计算，作为 Minecraft 密度信号的相对幅度权重；它**不是**把源 DEM 的绝对海拔直接映射到游戏世界。运行时内核将波长与主导方向用于高山脊线、峡谷走向、冰川谷宽、火山盾形尺度、喀斯特峰体/洼地尺度及沙丘脊线，世界种子仍会改变程序化细节。
+
+六个源瓦片与六个裁切栅格的 SHA-256、源 URL、坐标间距和垂直基准都记录在 `research/v1.1/profiles/*.json` 及 `terrain-profile-provenance.json` 中。原始 DEM 瓦片和裁切高度网格不进入仓库；只提交紧凑拟合参数和来源证明。
