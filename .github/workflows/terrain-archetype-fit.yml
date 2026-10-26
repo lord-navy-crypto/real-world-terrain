@@ -43,10 +43,7 @@ jobs:
         run: python -m pip install -r research/v1.1/requirements.txt
       - name: Acquire six real landscape DEM crops and fit parameter-only profiles
         run: |
-          python research/v1.1/tools/build_terrain_profiles.py \\
-            --all \\
-            --seed 42 \\
-            --out-dir build/terrain-archetype-calibration
+          python research/v1.1/tools/build_terrain_profiles.py --all --seed 42 --out-dir build/terrain-archetype-calibration
       - name: Publish fitted profiles and previews without raw DEM tiles
         uses: actions/upload-artifact@v4
         with:
