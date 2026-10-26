@@ -24,7 +24,7 @@ for name,want in checks.items():
     'realscale:measured_three_realms']
   assert tag.get('values',[])==expected,(name,tag.get('values'))
 
-  print('INTENTIONAL MODIFICATION: four canonical terrain families; optional experiments remain hidden')
+  print('INTENTIONAL MODIFICATION: one default plus six data-fitted terrain families; optional experiments remain hidden')
   continue
  if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):
   # Preserve the exact historical text for every legacy ID while allowing
