@@ -65,3 +65,12 @@ The Terrain Lab regression suite is also part of publication preflight. Its lega
 
 
 Publication preflight now also checks that YACL Terrain Lab drafts remain an explicit export operation rather than an automatic Gradle task, so fitted preset publication cannot silently rewrite unrelated experimental worlds.
+
+
+## Current calibration and runtime status
+
+The six public Copernicus DEM GLO-90 crops are fitted to compact multiscale coefficients and compiled into the six NeoForge `realscale:terrain_archetype` density resources. The raw rasters are not replayed in the infinite world. The fitted wavelength, orientation, relief budget, macro/meso/micro ratios, ridge, cliff, and valley statistics parameterize the family kernels.
+
+This is a **morphology-calibrated procedural preset**, not an exact reconstruction of absolute elevations. The existing 2,096-block world-height budget remains in place; a validated meters-to-vertical-blocks mapping and measured generated-terrain error report are still follow-up work. Calibration previews are synthetic outputs from fitted parameters, not screenshots or direct output samples from the NeoForge runtime.
+
+The actual-server smoke matrix now boots all six world presets, checks the saved generator and noise-settings IDs, force-loads a small bounded Overworld area, and requires non-empty saved Anvil region files. This verifies real chunk generation and persistence rather than only checking JSON or a world-menu label.
