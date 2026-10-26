@@ -191,7 +191,7 @@ def compile_profiles(profiles_dir: Path, resources_root: Path, out_dir: Path):
         write_json(density_dir / "height_signal.json", {
             "type": "realscale:terrain_archetype",
             "base": f"realscale:{root_id}/original_height_signal",
-            "continents": f"realscale:{legacy_id}/continents",
+            "continents": continents_id,
             "selector": {
                 "type": "minecraft:noise",
                 "noise": "minecraft:erosion",
