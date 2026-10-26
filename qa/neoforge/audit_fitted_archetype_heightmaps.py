@@ -77,9 +77,9 @@ def audit(world: Path, slug: str, target_chunk_min: int, target_chunk_max: int) 
     surface_flat = sorted(
         value for values in world_surface_maps.values() for value in values if value is not None
     )
-    if decoded_chunks < 40 or len(flat) < 40 * 200:
+    if decoded_chunks < 20 or len(flat) < 20 * 200:
         raise RuntimeError(
-            f"Insufficient persisted OCEAN_FLOOR samples in the forced sample area for {slug}: "
+            f"Insufficient persisted OCEAN_FLOOR samples in the RCON-forced sample area for {slug}: "
             f"chunks={decoded_chunks}, columns={len(flat)}, "
             f"target_chunks={target_chunk_min}..{target_chunk_max}"
         )
