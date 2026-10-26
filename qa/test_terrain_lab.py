@@ -66,8 +66,8 @@ class TerrainLabTests(unittest.TestCase):
         self.assertIn('blendPercent',native)
         self.assertNotIn('"realism_max", "georeal_ultimate", "himalayan", "grand_canyon",',native)
         original=lab.jread(self.root,lab.TAG_ROOT/"extended.json")
-        self.assertEqual([x for x in original["values"] if not x.startswith("realscale:lab_")][-1],"realscale:measured_three_realms")
-        self.assertEqual(len([x for x in original["values"] if not x.startswith("realscale:lab_")]),4)
+        self.assertEqual([x for x in original["values"] if not x.startswith("realscale:lab_")][-1],"realscale:dune_three_realms")
+        self.assertEqual(len([x for x in original["values"] if not x.startswith("realscale:lab_")]),7)
         self.assertEqual(original["values"],lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"])
         self.assertEqual([x for x in lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"] if not x.startswith("realscale:lab_")],
                          ["realscale:natural_three_realms","realscale:alpine_three_realms","realscale:canyon_three_realms","realscale:measured_three_realms"])
