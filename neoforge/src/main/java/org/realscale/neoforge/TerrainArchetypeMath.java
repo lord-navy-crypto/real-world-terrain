@@ -23,6 +23,8 @@ final class TerrainArchetypeMath {
     private final double anisotropyGain;
     private final double duneAxisRadians;
     private final double dominantWavelengthM;
+    private final double axisCos;
+    private final double axisSin;
 
     TerrainArchetypeMath(String family, double macroGain, double mesoGain,
             double microGain, double reliefGain, double ridgeSharpness,
@@ -41,6 +43,8 @@ final class TerrainArchetypeMath {
         this.anisotropyGain = anisotropyGain;
         this.duneAxisRadians = duneAxisRadians;
         this.dominantWavelengthM = dominantWavelengthM;
+        this.axisCos = Math.cos(duneAxisRadians);
+        this.axisSin = Math.sin(duneAxisRadians);
     }
 
     double compute(double original, double continent, double rawSignal,
@@ -49,6 +53,22 @@ final class TerrainArchetypeMath {
         if (landGate <= 0.0) return original;
 
         double signal = unitNoise(rawSignal);
+        // Keep each family's trigonometry and geometric work inside that
+        // family's branch. Density functions are sampled millions of times
+        // during chunk generation; computing canyon waves for a volcano (or
+        // cosine/sine per sample) was wasted CPU work.
+        return switch (family) {
+            case "alpine" -> alpine(original, landGate, signal, x, z);
+            case "canyon" -> canyon(original, landGate, signal, x, z);
+            case "glacial" -> glacialValley(original, landGate, x, z);
+            case "volcanic" -> volcanicShield(original, landGate, x, z);
+            case "karst" -> karstTowers(original, landGate, x, z, signal);
+            case "dune" -> duneRidges(original, landGate, x, z, signal);
+            default -> original;
+        };
+    }
+
+    private double alpine(double original, double landGate, double signal, double x, double z) {
         double highlandGate = smoothstep(0.65, 1.7, original);
         // The dominant orientation and wavelength are fitted from each real
         // DEM crop. Keep these broad signals subtle so the fitted scale guides
@@ -56,25 +76,21 @@ final class TerrainArchetypeMath {
         double across = orientedAcross(x, z);
         double phase = TAU * across / dominantWavelengthM;
         double ridgeBands = 0.85 + 0.15 * Math.pow(Math.max(0.0, Math.cos(phase)), 2.0);
+        return original + landGate * highlandGate * reliefGain
+                * 0.22 * macroGain * ridgeSharpness * ridgeBands
+                * (1.0 - Math.abs(signal));
+    }
+
+    private double canyon(double original, double landGate, double signal, double x, double z) {
+        double across = orientedAcross(x, z);
         double valleyDistance = Math.abs(Math.sin(Math.PI * across / dominantWavelengthM));
         double canyonTrough = 1.0 - smoothstep(0.0, 0.18, valleyDistance);
         double canyonShoulder = smoothstep(0.18, 0.25, valleyDistance)
                 * (1.0 - smoothstep(0.25, 0.42, valleyDistance));
-
-        return switch (family) {
-            case "alpine" -> original + landGate * highlandGate * reliefGain
-                    * 0.22 * macroGain * ridgeSharpness * ridgeBands
-                    * (1.0 - Math.abs(signal));
-            case "canyon" -> original - landGate * reliefGain
-                    * (0.28 * mesoGain * cliffIndex * Math.abs(signal)
-                    + 0.10 * valleyIndex * canyonTrough)
-                    + landGate * reliefGain * 0.025 * cliffIndex * canyonShoulder;
-            case "glacial" -> glacialValley(original, landGate, x, z);
-            case "volcanic" -> volcanicShield(original, landGate, x, z);
-            case "karst" -> karstTowers(original, landGate, x, z, signal);
-            case "dune" -> duneRidges(original, landGate, x, z, signal);
-            default -> original;
-        };
+        return original - landGate * reliefGain
+                * (0.28 * mesoGain * cliffIndex * Math.abs(signal)
+                + 0.10 * valleyIndex * canyonTrough)
+                + landGate * reliefGain * 0.025 * cliffIndex * canyonShoulder;
     }
 
     private static double smoothstep(double edge0, double edge1, double x) {
@@ -92,7 +108,7 @@ final class TerrainArchetypeMath {
     }
 
     private double orientedAcross(double x, double z) {
-        return x * Math.cos(duneAxisRadians) + z * Math.sin(duneAxisRadians);
+        return x * axisCos + z * axisSin;
     }
 
     private double fittedScale(double fraction, double min, double max) {
