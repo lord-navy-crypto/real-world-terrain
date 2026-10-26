@@ -22,9 +22,32 @@ permissions:
   contents: read
 
 jobs:
-  boot-fitted-dune-preset:
+  boot-fitted-terrain-preset:
+    name: Boot ${{ matrix.slug }} preset
     runs-on: ubuntu-latest
     timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - slug: alpine
+            world_preset: realscale:alpine_three_realms
+            noise_settings: realscale:tva_alpine_fitted
+          - slug: canyon
+            world_preset: realscale:canyon_three_realms
+            noise_settings: realscale:tva_canyon_fitted
+          - slug: glacial
+            world_preset: realscale:glacial_three_realms
+            noise_settings: realscale:tva_glacial_fitted
+          - slug: volcanic
+            world_preset: realscale:volcanic_three_realms
+            noise_settings: realscale:tva_volcanic_fitted
+          - slug: karst
+            world_preset: realscale:karst_three_realms
+            noise_settings: realscale:tva_karst_fitted
+          - slug: dune
+            world_preset: realscale:dune_three_realms
+            noise_settings: realscale:tva_dune_fitted
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -36,13 +59,16 @@ jobs:
           gradle-version: "8.14.3"
       - name: Prepare isolated fitted-archetype server world
         working-directory: neoforge
+        env:
+          PRESET_SLUG: ${{ matrix.slug }}
+          WORLD_PRESET_ID: ${{ matrix.world_preset }}
         run: |
           for dir in run run/server run/gametestserver; do
             mkdir -p "$dir"
             printf 'eula=true\n' > "$dir/eula.txt"
-            cat > "$dir/server.properties" <<'PROPERTIES'
-          level-name=fitted-dune-smoke
-          level-type=realscale:dune_three_realms
+            cat > "$dir/server.properties" <<PROPERTIES
+          level-name=fitted-$PRESET_SLUG-smoke
+          level-type=$WORLD_PRESET_ID
           level-seed=42
           spawn-protection=0
           view-distance=3
@@ -52,12 +78,18 @@ jobs:
           online-mode=true
           PROPERTIES
           done
-      - name: Boot real NeoForge server and persist the fitted preset ID
+      - name: Boot NeoForge and persist the fitted generator ID
         working-directory: neoforge
+        env:
+          PRESET_SLUG: ${{ matrix.slug }}
+          NOISE_SETTINGS_ID: ${{ matrix.noise_settings }}
         run: |
           python3 - <<'PY'
-          import gzip, pathlib, signal, subprocess, threading, time, os
-          log = pathlib.Path("build/fitted-dune-server.log")
+          import gzip, os, pathlib, signal, subprocess, threading, time
+          slug = os.environ["PRESET_SLUG"]
+          expected_noise = os.environ["NOISE_SETTINGS_ID"].encode()
+          world_name = f"fitted-{slug}-smoke"
+          log = pathlib.Path(f"build/fitted-{slug}-server.log")
           log.parent.mkdir(parents=True, exist_ok=True)
           proc = subprocess.Popen(
               ["gradle", "--no-daemon", "runServer", "--stacktrace"],
@@ -77,7 +109,7 @@ jobs:
           while time.monotonic() < deadline and proc.poll() is None and not ready.is_set():
               time.sleep(1)
           if ready.is_set():
-              print("FITTED_DUNE_SERVER_BOOT_OK")
+              print(f"FITTED_{slug.upper()}_SERVER_BOOT_OK")
               time.sleep(12)
           try:
               if proc.poll() is None:
@@ -95,12 +127,12 @@ jobs:
           thread.join(timeout=3)
           log.write_text("".join(lines), encoding="utf-8")
           print("SERVER_LOG_TAIL:", log.read_text(encoding="utf-8")[-8000:])
-          saved_worlds = list(pathlib.Path("run").glob("**/fitted-dune-smoke/level.dat"))
+          saved_worlds = list(pathlib.Path("run").glob(f"**/{world_name}/level.dat"))
           valid = False
           for path in saved_worlds:
               try:
                   data = gzip.decompress(path.read_bytes())
-                  if (b"realscale:tva_dune_fitted" in data
+                  if (expected_noise in data
                       and b"realscale:grand_nether" in data
                       and b"realscale:grand_end" in data):
                       print("FITTED_PRESET_PERSISTED:", path)
@@ -108,16 +140,19 @@ jobs:
               except Exception as exc:
                   print("LEVEL_DAT_READ_FAILURE:", path, exc)
           if not ready.is_set() or not valid:
-              raise SystemExit("Fitted dune preset did not boot and persist its fitted noise-settings ID.")
-          print("PASS: fitted density codec registry decode, actual world boot and fitted noise-settings ID")
+              raise SystemExit(
+                  f"Fitted {slug} preset failed to boot or did not persist "
+                  f"expected noise settings {expected_noise.decode()}."
+              )
+          print(f"PASS: {slug} density codec, actual server boot, saved fitted generator ID")
           PY
       - name: Upload fitted-archetype server diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: RealScale-Fitted-Dune-Worldgen-Smoke
+          name: RealScale-Fitted-${{ matrix.slug }}-Worldgen-Smoke
           path: |
-            neoforge/build/fitted-dune-server.log
-            neoforge/run/**/fitted-dune-smoke/level.dat
-            neoforge/run/**/fitted-dune-smoke/region/*.mca
+            neoforge/build/fitted-${{ matrix.slug }}-server.log
+            neoforge/run/**/fitted-${{ matrix.slug }}-smoke/level.dat
+            neoforge/run/**/fitted-${{ matrix.slug }}-smoke/region/*.mca
           if-no-files-found: warn
