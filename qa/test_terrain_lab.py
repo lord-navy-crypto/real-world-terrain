@@ -288,8 +288,12 @@ class TerrainLabTests(unittest.TestCase):
         self.assertIn("IConfigScreenFactory",client.read_text())
         self.assertIn('side="CLIENT"',metadata)
         self.assertIn("dev.isxander:yet-another-config-lib:3.8.1+1.21.1-neoforge",build)
-        self.assertIn("prepareTerrainLabDraft",build)
-        self.assertIn("dependsOn tasks.named('prepareTerrainLabDraft')",build)
+        # Saved YACL drafts are exported explicitly; normal mod builds must not
+        # auto-rewrite or publish experimental terrain presets.
+        self.assertNotIn("prepareTerrainLabDraft",build)
+        exporter=ROOT/"scripts/export_terrain_lab_datapack.py"
+        self.assertTrue(exporter.is_file())
+        self.assertIn("export_terrain_lab_datapack.py",build)
 
 
     def test_lithostitched_mix_opt_in_uses_real_codec_and_new_world_id(self):
