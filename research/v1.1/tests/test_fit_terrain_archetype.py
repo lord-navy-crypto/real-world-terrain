@@ -94,6 +94,28 @@ class TerrainArchetypeFitTests(unittest.TestCase):
         self.assertEqual(natural["fit_parameters"], alpine["fit_parameters"])
         self.assertEqual(alpine["fit_parameters"], canyon["fit_parameters"])
 
+    def test_fitted_profile_generates_new_repeatable_fields_without_source_grid(self):
+        profile = self.fit(synthetic_relief(), family="alpine")
+        first = FIT.synthesize_heightfield(profile, 64, 64, 32.0, 32.0, seed=42)
+        repeat = FIT.synthesize_heightfield(profile, 64, 64, 32.0, 32.0, seed=42)
+        other_seed = FIT.synthesize_heightfield(profile, 64, 64, 32.0, 32.0, seed=43)
+        self.assertEqual(first.shape, (64, 64))
+        self.assertTrue(np.isfinite(first).all())
+        self.assertTrue(np.allclose(first, repeat))
+        self.assertFalse(np.allclose(first, other_seed))
+        self.assertGreater(float(np.std(first)), 0.0)
+
+    def test_family_kernel_changes_synthetic_shape(self):
+        array = synthetic_relief()
+        natural = self.fit(array, "natural")
+        alpine = self.fit(array, "alpine")
+        canyon = self.fit(array, "canyon")
+        n = FIT.synthesize_heightfield(natural, 64, 64, 32.0, 32.0, seed=7)
+        a = FIT.synthesize_heightfield(alpine, 64, 64, 32.0, 32.0, seed=7)
+        c = FIT.synthesize_heightfield(canyon, 64, 64, 32.0, 32.0, seed=7)
+        self.assertFalse(np.allclose(n, a))
+        self.assertFalse(np.allclose(a, c))
+
     def test_rgt_input_keeps_source_hash_and_metric_spacing(self):
         source = self.root / "fixture.rgt.gz"
         array = synthetic_relief()
