@@ -5,10 +5,16 @@
         "biome_source": {
           "type": "realscale:sky_ocean",
           "source": {
-            "type": "realscale:natural_ecotones",
+            "type": "realscale:geo_wonders_opt_in",
             "source": {
-              "preset": "minecraft:overworld",
-              "type": "minecraft:multi_noise"
+              "type": "realscale:natural_ecotones",
+              "source": {
+                "type": "realscale:cave_depth_habitats",
+                "source": {
+                  "preset": "minecraft:overworld",
+                  "type": "minecraft:multi_noise"
+                }
+              }
             }
           }
         },
