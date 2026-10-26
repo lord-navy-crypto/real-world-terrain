@@ -18,5 +18,5 @@
   "realscale.atlas.draw_busy": "已经有绘图任务正在运行",
   "realscale.atlas.draw_real_legend": "已保存区块的抽样高度图",
   "generator.realscale.natural_three_realms": "RealScale 自然地貌 · 三界",
-  "generator.realscale.usgs_big_sur_v2": "RealScale USGS 大苏尔实测地形"
+  "generator.realscale.usgs_big_sur": "RealScale USGS 大苏尔实测地形"
 }
