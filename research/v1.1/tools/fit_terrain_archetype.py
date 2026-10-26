@@ -228,7 +228,20 @@ def fit_profile(
     freq_x = np.fft.fftfreq(cols, d=cell_x)[None, :]
     freq_z = np.fft.fftfreq(rows, d=cell_z)[:, None]
     frequency = np.sqrt(freq_x * freq_x + freq_z * freq_z)
-    spectral_mask = (frequency >= 1.0 / max(extent_m / 2.0, 1e-6)) & (frequency <= 1.0 / max(2.0 * cell_mean, 1e-6))
+    # Choose a morphology-appropriate wavelength band instead of letting the
+    # largest continental trend dominate the dune/karst orientation estimate.
+    family_max_wavelength = {
+        "natural": extent_m / 2.0,
+        "alpine": extent_m / 2.0,
+        "canyon": min(extent_m / 2.0, 42000.0),
+        "glacial": min(extent_m / 2.0, 22000.0),
+        "volcanic": min(extent_m / 2.0, 30000.0),
+        "karst": min(extent_m / 2.0, 8000.0),
+        "dune": min(extent_m / 3.0, 5000.0),
+    }[family]
+    min_wavelength = max(2.0 * cell_mean, 1e-6)
+    max_wavelength = max(min_wavelength * 1.1, family_max_wavelength)
+    spectral_mask = (frequency >= 1.0 / max_wavelength) & (frequency <= 1.0 / min_wavelength)
     spectral_mask[0, 0] = False
     if np.any(spectral_mask):
         masked_power = np.where(spectral_mask, spectral_power, -np.inf)
@@ -237,7 +250,7 @@ def fit_profile(
         dominant_wavelength_m = 1.0 / dominant_frequency if dominant_frequency > 0 else mid_m * 4.0
         dune_axis_radians = math.atan2(float(freq_z[dominant_row, 0]), float(freq_x[0, dominant_col])) + math.pi / 2.0
     else:
-        dominant_wavelength_m = mid_m * 4.0
+        dominant_wavelength_m = min(max_wavelength, mid_m * 4.0)
         dune_axis_radians = 0.0
 
     p05, p25, p50, p75, p95 = [float(np.percentile(elevation, p)) for p in (5, 25, 50, 75, 95)]
@@ -252,6 +265,9 @@ def fit_profile(
         "macro_gain": round(macro_rms / rms_denominator, 6),
         "meso_gain": round(meso_rms / rms_denominator, 6),
         "micro_gain": round(micro_rms / rms_denominator, 6),
+        # Dimensionless vertical-budget proxy: keeps the largest observed
+        # regional relief near unity while retaining relative family differences.
+        "relief_gain": round(_clip(relief / 4000.0, 0.10, 1.0), 6),
         "variogram_exponent": round(variogram_exponent, 6),
         "anisotropy_xz_raw": round(anisotropy_raw, 6),
         "anisotropy_gain": round(anisotropy_gain, 6),
@@ -389,15 +405,16 @@ def synthesize_heightfield(profile: dict, rows: int, cols: int, cell_x: float, c
     macro_amp = float(params["macro_amplitude_rms_m"])
     meso_amp = float(params["meso_amplitude_rms_m"])
     micro_amp = float(params["micro_amplitude_rms_m"])
+    relief_gain = float(params["relief_gain"])
     ridge = 1.0 - np.abs(macro)
     ridge = (ridge - float(np.mean(ridge))) / max(float(np.std(ridge)), 1e-9)
     valley = np.abs(meso)
     valley = (valley - float(np.mean(valley))) / max(float(np.std(valley)), 1e-9)
 
     if family == "alpine":
-        result += float(params["ridge_sharpness"]) * 0.25 * macro_amp * ridge
+        result += relief_gain * float(params["ridge_sharpness"]) * 0.25 * macro_amp * ridge
     elif family == "canyon":
-        result -= float(params["cliff_index"]) * 0.25 * meso_amp * valley
+        result -= relief_gain * float(params["cliff_index"]) * 0.25 * meso_amp * valley
     elif family == "glacial":
         # A broad, flat-bottomed U-shaped valley with a seed-dependent
         # meandering centerline. Its amplitude is fitted from observed relief.
@@ -409,7 +426,7 @@ def synthesize_heightfield(profile: dict, rows: int, cols: int, cell_x: float, c
         width = max(coarse_m * 1.2, cell_mean * 8.0)
         distance = np.abs(x_m - center) / width
         trough = 1.0 - np.clip((distance - 0.30) / 0.85, 0.0, 1.0)
-        result -= max(float(params["valley_index"]), 0.25) * 0.55 * macro_amp * trough
+        result -= relief_gain * max(float(params["valley_index"]), 0.25) * 0.55 * macro_amp * trough
     elif family == "volcanic":
         # Seeded shield cones with a shallow summit caldera. The fitted slope
         # and macro relief set cone prominence; the DEM grid is never replayed.
@@ -428,7 +445,7 @@ def synthesize_heightfield(profile: dict, rows: int, cols: int, cell_x: float, c
             caldera = np.exp(-((radial / 0.12) ** 2))
             cones += shield - 0.20 * caldera * (radial < 0.20)
         cones = (cones - float(np.mean(cones))) / max(float(np.std(cones)), 1e-9)
-        result += max(float(params["ridge_sharpness"]), 0.25) * 0.65 * macro_amp * cones
+        result += relief_gain * max(float(params["ridge_sharpness"]), 0.25) * 0.65 * macro_amp * cones
     elif family == "karst":
         # Positive meso relief becomes tower-like residual hills; negative
         # micro relief deepens doline-like pockets. Both strengths come from
@@ -437,8 +454,8 @@ def synthesize_heightfield(profile: dict, rows: int, cols: int, cell_x: float, c
         towers = (towers - float(np.mean(towers))) / max(float(np.std(towers)), 1e-9)
         dolines = np.maximum(-micro, 0.0) ** 2
         dolines = (dolines - float(np.mean(dolines))) / max(float(np.std(dolines)), 1e-9)
-        result += max(float(params["ridge_index"]), 0.25) * 0.38 * meso_amp * towers
-        result -= max(float(params["valley_index"]), 0.25) * 0.24 * micro_amp * dolines
+        result += relief_gain * max(float(params["ridge_index"]), 0.25) * 0.38 * meso_amp * towers
+        result -= relief_gain * max(float(params["valley_index"]), 0.25) * 0.24 * micro_amp * dolines
     elif family == "dune":
         # Wind-aligned aeolian ridges use the dominant wavelength/orientation
         # fitted from the real DEM's spatial spectrum, with a skewed crest.
@@ -449,7 +466,7 @@ def synthesize_heightfield(profile: dict, rows: int, cols: int, cell_x: float, c
         phase = 2.0 * math.pi * across / wavelength + float(rng.uniform(-math.pi, math.pi))
         wave = np.sin(phase) + 0.28 * np.sin(2.0 * phase + 0.6)
         wave = (wave - float(np.mean(wave))) / max(float(np.std(wave)), 1e-9)
-        result += max(float(params["anisotropy_gain"]) - 0.25, 0.25) * 0.45 * meso_amp * wave
+        result += relief_gain * max(float(params["anisotropy_gain"]) - 0.25, 0.25) * 0.45 * meso_amp * wave
     result -= float(np.mean(result))
     return result
 
