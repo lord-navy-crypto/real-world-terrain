@@ -4,7 +4,7 @@ This branch is the conservative playable candidate for RealScale. Its packaged J
 exposes exactly these two custom world presets:
 
 - `realscale:natural_three_realms` — RealScale Natural Terrain
-- `realscale:usgs_big_sur_v2` — USGS Big Sur measured terrain
+- `realscale:usgs_big_sur` — USGS Big Sur measured terrain (using the v2 terrain settings)
 
 The Gradle `check` task verifies the packaged JAR contains exactly those two
 `world_preset` entries and that both required noise settings are packaged.
