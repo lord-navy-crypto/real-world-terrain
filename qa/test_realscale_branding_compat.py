@@ -78,6 +78,37 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
                 self.assertIn("minecraft:the_nether", world["dimensions"])
                 self.assertIn("minecraft:the_end", world["dimensions"])
 
+    def test_six_fitted_modes_change_only_overworld_noise_settings(self):
+        reference = None
+        for name in (
+            "alpine_three_realms",
+            "canyon_three_realms",
+            "glacial_three_realms",
+            "volcanic_three_realms",
+            "karst_three_realms",
+            "dune_three_realms",
+        ):
+            with self.subTest(preset=name):
+                world = read(WORLD / (name + ".json"))
+                dimensions = world["dimensions"]
+                self.assertEqual(set(dimensions), {
+                    "minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"
+                })
+                self.assertEqual(
+                    dimensions["minecraft:overworld"]["generator"]["biome_source"]["type"],
+                    "realscale:sky_ocean",
+                )
+                comparable = json.loads(json.dumps(dimensions))
+                comparable["minecraft:overworld"]["generator"]["settings"] = "__FITTED_ARCHETYPE__"
+                if reference is None:
+                    reference = comparable
+                else:
+                    self.assertEqual(
+                        comparable,
+                        reference,
+                        "terrain presets must share universal biome/structure and cross-realm wiring",
+                    )
+
     def test_optional_special_presets_are_hidden_not_deleted(self):
         menu = read(TAG_ROOT / "normal.json")["values"]
         for name in ("wonders_invasion_three_realms", "cave_ocean_ecology_three_realms"):
