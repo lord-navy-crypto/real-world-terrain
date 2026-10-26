@@ -50,3 +50,6 @@ Minecraft's current Overworld height budget cannot preserve Everest's absolute e
 ## Publishing the fitted presets
 
 The controlled `.github/workflows/publish-fitted-terrain-presets.yml` workflow regenerates all six profiles from public source tiles, compiles the profile coefficients into the six runtime density graphs, merges the seven-mode menu/localizations, runs the focused regression gates, and commits only the compact profiles plus generated resources after every preflight test passes. It activates only when the head commit subject contains `[publish-terrain-presets]` on a same-repository pull request. Raw DEM tiles and cropped rasters remain build-local and are never committed.
+
+
+The publication preflight deliberately runs the focused seven-preset, source-provenance, shared-biome-chain, and worldgen resource contract suites. The separate Terrain Lab suite contains older, unrelated assumptions about experimental dimension toggles; it is not used as a gate for publishing the fitted presets.
