@@ -4,17 +4,27 @@ on:
   pull_request:
     paths:
       - "neoforge/src/main/java/org/realscale/neoforge/TerrainArchetypeDensity.java"
+      - "neoforge/src/main/java/org/realscale/neoforge/TerrainArchetypeMath.java"
+      - "neoforge/src/test/java/org/realscale/neoforge/TerrainArchetypeDensityTest.java"
+      - "neoforge/build.gradle"
       - "neoforge/src/main/resources/data/realscale/worldgen/**"
       - "neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/**"
       - "research/v1.1/profiles/**"
+      - "qa/neoforge/audit_fitted_archetype_heightmaps.py"
+      - "qa/neoforge/compare_fitted_archetype_heightmaps.py"
       - ".github/workflows/fitted-terrain-worldgen-smoke.yml"
   push:
     branches: [main]
     paths:
       - "neoforge/src/main/java/org/realscale/neoforge/TerrainArchetypeDensity.java"
+      - "neoforge/src/main/java/org/realscale/neoforge/TerrainArchetypeMath.java"
+      - "neoforge/src/test/java/org/realscale/neoforge/TerrainArchetypeDensityTest.java"
+      - "neoforge/build.gradle"
       - "neoforge/src/main/resources/data/realscale/worldgen/**"
       - "neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/**"
       - "research/v1.1/profiles/**"
+      - "qa/neoforge/audit_fitted_archetype_heightmaps.py"
+      - "qa/neoforge/compare_fitted_archetype_heightmaps.py"
       - ".github/workflows/fitted-terrain-worldgen-smoke.yml"
   workflow_dispatch:
 
@@ -30,6 +40,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - slug: natural
+            world_preset: realscale:natural_three_realms
+            noise_settings: realscale:tva_natural_smoothed
           - slug: alpine
             world_preset: realscale:alpine_three_realms
             noise_settings: realscale:tva_alpine_fitted
@@ -113,9 +126,10 @@ jobs:
               # Force-load a small, bounded Overworld area so the test proves
               # that chunks are generated and saved, not only that level.dat
               # contains a selectable preset ID.
-              proc.stdin.write("forceload add 0 0 64 64\n")
+              proc.stdin.write("forceload add 0 0 128 128\n")
               proc.stdin.flush()
-              time.sleep(24)
+              # Give the 9x9-chunk sample area time to generate and persist.
+              time.sleep(45)
           try:
               if proc.poll() is None:
                   proc.stdin.write("stop\n")
@@ -156,8 +170,24 @@ jobs:
                   f"regions={len(generated_regions)}"
               )
           print("GENERATED_ANVIL_REGIONS:", [str(p) for p in generated_regions])
-          print(f"PASS: {slug} density codec, server boot, fitted generator ID, generated and saved chunks")
           PY
+      - name: Audit persisted WORLD_SURFACE heightmaps
+        working-directory: neoforge
+        env:
+          PRESET_SLUG: ${{ matrix.slug }}
+        run: |
+          python3 ../qa/neoforge/audit_fitted_archetype_heightmaps.py \
+            --run-root run \
+            --world-name "fitted-${PRESET_SLUG}-smoke" \
+            --slug "${PRESET_SLUG}" \
+            --output "build/fitted-${PRESET_SLUG}-height-summary.json"
+      - name: Upload fitted-archetype heightmap summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-Fitted-${{ matrix.slug }}-Heightmap-Summary
+          path: neoforge/build/fitted-${{ matrix.slug }}-height-summary.json
+          if-no-files-found: warn
       - name: Upload fitted-archetype server diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -165,6 +195,35 @@ jobs:
           name: RealScale-Fitted-${{ matrix.slug }}-Worldgen-Smoke
           path: |
             neoforge/build/fitted-${{ matrix.slug }}-server.log
+            neoforge/build/fitted-${{ matrix.slug }}-height-summary.json
             neoforge/run/**/fitted-${{ matrix.slug }}-smoke/level.dat
             neoforge/run/**/fitted-${{ matrix.slug }}-smoke/region/*.mca
+          if-no-files-found: warn
+
+  compare-saved-heightmaps:
+    name: Compare persisted heightmaps across seven modes
+    if: always()
+    needs: boot-fitted-terrain-preset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: RealScale-Fitted-*-Heightmap-Summary
+          path: fitted-heightmap-summaries
+          merge-multiple: false
+      - name: Require each fitted mode to change saved surface heights
+        run: |
+          python3 qa/neoforge/compare_fitted_archetype_heightmaps.py \
+            fitted-heightmap-summaries \
+            --output fitted-archetype-heightmap-comparison.json
+      - name: Upload heightmap comparison report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-Fitted-Heightmap-Comparison
+          path: fitted-archetype-heightmap-comparison.json
           if-no-files-found: warn
