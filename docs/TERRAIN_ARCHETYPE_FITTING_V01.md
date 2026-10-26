@@ -45,3 +45,8 @@ Minecraft's current Overworld height budget cannot preserve Everest's absolute e
 - Copernicus DEM public dataset and license: <https://registry.opendata.aws/copernicus-dem/>
 - USGS 3DEP products and resolutions: <https://www.usgs.gov/3d-elevation-program/about-3dep-products-services>
 - USGS 3DEP 1/3 arc-second product metadata: <https://data.usgs.gov/datacatalog/data/USGS%3A3a81321b-c153-416f-98b7-cc8e5f0e17c3>
+
+
+## Publishing the fitted presets
+
+The controlled `.github/workflows/publish-fitted-terrain-presets.yml` workflow can regenerate all six profiles from public source tiles, compile the profile coefficients into the six runtime density graphs, merge the seven-mode menu/localizations, run the focused regression gates, and commit only the compact profiles plus generated resources. It activates only when the head commit subject contains `[publish-terrain-presets]` on a same-repository pull request. Raw DEM tiles and cropped rasters remain build-local and are never committed.
