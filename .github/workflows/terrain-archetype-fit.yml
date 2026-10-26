@@ -58,5 +58,7 @@ jobs:
             build/terrain-archetype-calibration/profiles/*.json
             build/terrain-archetype-calibration/previews/*.npz
             build/terrain-archetype-calibration/compiled-pack/**
+            build/terrain-archetype-calibration/RealScale-Terrain-Archetypes-Datapack.zip
+            build/terrain-archetype-calibration/RealScale-Terrain-Archetypes-Language-Pack.zip
           if-no-files-found: error
           retention-days: 30
