@@ -44,7 +44,12 @@ jobs:
       - name: Acquire six real landscape DEM crops and fit parameter-only profiles
         run: |
           python research/v1.1/tools/build_terrain_profiles.py --all --seed 42 --out-dir build/terrain-archetype-calibration
-      - name: Publish fitted profiles and previews without raw DEM tiles
+      - name: Compile the six real-data profiles into a selectable seven-mode worldgen pack
+        run: |
+          python research/v1.1/tools/compile_terrain_archetype_profiles.py \
+            --profiles-dir build/terrain-archetype-calibration/profiles \
+            --out-dir build/terrain-archetype-calibration/compiled-pack
+      - name: Publish fitted profiles, previews and compiled resources without raw DEM tiles
         uses: actions/upload-artifact@v4
         with:
           name: terrain-archetype-calibration-${{ github.run_id }}
@@ -52,5 +57,6 @@ jobs:
             build/terrain-archetype-calibration/calibration_summary.json
             build/terrain-archetype-calibration/profiles/*.json
             build/terrain-archetype-calibration/previews/*.npz
+            build/terrain-archetype-calibration/compiled-pack/**
           if-no-files-found: error
           retention-days: 30
