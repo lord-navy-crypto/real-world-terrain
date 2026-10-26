@@ -62,3 +62,6 @@ A second runtime registry check caught the same legacy field-name mismatch insid
 
 
 The Terrain Lab regression suite is also part of publication preflight. Its legacy fantasy toggle is explicitly tested to preserve the 512-block Grand Nether/End rather than silently switching a canonical world to the separate 256-block historical experiment.
+
+
+Publication preflight now also checks that YACL Terrain Lab drafts remain an explicit export operation rather than an automatic Gradle task, so fitted preset publication cannot silently rewrite unrelated experimental worlds.
