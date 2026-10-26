@@ -49,8 +49,16 @@ class RealScaleRecoveredTerrainLab(unittest.TestCase):
             self.assertEqual(tuple(j["values"]),MENU)
 
     def test_three_family_exports_keep_512_grand_dimensions_and_biome_sources(self):
+        # Historical IDs retain their original generation graph for saved worlds.
+        legacy={k:read(self.root/"data/realscale/worldgen/world_preset"/(v+".json"))
+                for k,v in TVA.items()}
+        canonical_ids={
+            "landscape":"natural_three_realms",
+            "alpine":"alpine_three_realms",
+            "canyon":"canyon_three_realms",
+        }
         canonical={k:read(self.root/"data/realscale/worldgen/world_preset"/(v+".json"))
-                   for k,v in TVA.items()}
+                   for k,v in canonical_ids.items()}
         for family in TVA:
             with self.subTest(family=family):
                 name,_,paths=lab.apply(self.root,family,1.0,0,50,6)
@@ -61,8 +69,13 @@ class RealScaleRecoveredTerrainLab(unittest.TestCase):
                                  original["dimensions"]["minecraft:the_nether"])
                 self.assertEqual(new["dimensions"]["minecraft:the_end"],
                                  original["dimensions"]["minecraft:the_end"])
+                # Newly exported Lab worlds share the universal ecology,
+                # geology, ecotone and marine biome-source stack.
                 self.assertEqual(new["dimensions"]["minecraft:overworld"]["generator"]["biome_source"],
                                  original["dimensions"]["minecraft:overworld"]["generator"]["biome_source"])
+                self.assertEqual(
+                    read(self.root/"data/realscale/worldgen/world_preset"/(TVA[family]+".json")),
+                    legacy[family])
                 self.assertEqual(new["dimensions"]["minecraft:the_nether"]["generator"]["settings"],
                                  "realscale:grand_nether")
                 self.assertEqual(new["dimensions"]["minecraft:the_end"]["generator"]["settings"],
