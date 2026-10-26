@@ -94,7 +94,8 @@ class RealCaveBiomeTests(unittest.TestCase):
 
         # New canonical presets compose the cave layer with the shared wonder/ecotone stack.
         for canonical in ("natural_three_realms","alpine_three_realms",
-                          "canyon_three_realms","measured_three_realms"):
+                          "canyon_three_realms","glacial_three_realms",
+                          "volcanic_three_realms","karst_three_realms","dune_three_realms"):
             p=load(presets/(canonical+".json"))
             chain=p["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
             self.assertEqual(chain["type"],"realscale:sky_ocean")
@@ -110,7 +111,10 @@ class RealCaveBiomeTests(unittest.TestCase):
             "realscale:natural_three_realms",
             "realscale:alpine_three_realms",
             "realscale:canyon_three_realms",
-            "realscale:measured_three_realms",
+            "realscale:glacial_three_realms",
+            "realscale:volcanic_three_realms",
+            "realscale:karst_three_realms",
+            "realscale:dune_three_realms",
         ])
     def test_warm_reef_has_waterlogged_coral_and_temperate_seagrass(self):
         java=(JAVA/"CaveMarineHabitatFeature.java").read_text()
