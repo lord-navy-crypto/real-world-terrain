@@ -62,7 +62,7 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
         for name in ("normal", "extended"):
             tag = read(TAG_ROOT / (name + ".json"))
             self.assertEqual(tag["values"], menu)
-            self.assertEqual(len(set(menu)), 4)
+            self.assertEqual(len(set(menu)), 7)
 
     def test_canonical_presets_share_universal_biome_layers(self):
         for name, settings_id in CANONICAL.items():
@@ -116,13 +116,14 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
     def test_player_visible_localizations_exclude_unrelated_brand(self):
         for name in ("en_us.json", "zh_cn.json"):
             labels = read(RES / "assets/minecraft/lang" / name)
-            for old, new in zip(OLD, NEW):
-                self.assertEqual(
-                    labels["generator.realscale." + old],
-                    labels["generator.realscale." + new],
-                )
-                self.assertNotIn("TVA", labels["generator.realscale." + new])
-                self.assertIn("RealScale", labels["generator.realscale." + new])
+            # Legacy labels remain available for saved-world compatibility;
+            # canonical fitted presets intentionally add their reference region.
+            for old in OLD:
+                self.assertIn("RealScale", labels["generator.realscale." + old])
+                self.assertNotIn("TVA", labels["generator.realscale." + old])
+            for preset in CANONICAL:
+                self.assertIn("RealScale", labels["generator.realscale." + preset])
+                self.assertNotIn("TVA", labels["generator.realscale." + preset])
 
     def test_mod_name_and_archive_name_are_realscale_only(self):
         gradle = (ROOT / "neoforge/build.gradle").read_text()
