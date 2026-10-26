@@ -21,7 +21,10 @@ for name,want in checks.items():
     'realscale:natural_three_realms',
     'realscale:alpine_three_realms',
     'realscale:canyon_three_realms',
-    'realscale:measured_three_realms']
+    'realscale:glacial_three_realms',
+    'realscale:volcanic_three_realms',
+    'realscale:karst_three_realms',
+    'realscale:dune_three_realms']
   assert tag.get('values',[])==expected,(name,tag.get('values'))
 
   print('INTENTIONAL MODIFICATION: one default plus six data-fitted terrain families; optional experiments remain hidden')
@@ -35,7 +38,7 @@ for name,want in checks.items():
   new=json.loads((ROOT/name).read_text())
   assert all(new.get(key)==value for key,value in old.items()),name
   for preset in ('natural_three_realms','alpine_three_realms',
-                 'canyon_three_realms','measured_three_realms'):
+                 'canyon_three_realms','glacial_three_realms','volcanic_three_realms','karst_three_realms','dune_three_realms'):
    assert new.get('generator.realscale.'+preset), (name,preset)
   print('INTENTIONAL MODIFICATION: additive RealScale labels, historical labels unchanged')
   continue
