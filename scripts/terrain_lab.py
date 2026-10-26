@@ -567,7 +567,7 @@ def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_
             if basin:
                 label+=f" | basin warmth {basin}%"
             if fantasy_dimensions:
-                label+= " | Fantasy Nether + End expansion (EXPERIMENTAL)"
+                label+= " | Experimental variant (keeps 512-block Grand Nether/End)"
             if lithostitched_blend and blend_percent and not lithostitched_geology:
                 label+= " | Lithostitched adaptive mix"
             if lithostitched_geology:
