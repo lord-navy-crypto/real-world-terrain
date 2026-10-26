@@ -167,3 +167,75 @@ sourceSets.main.resources.srcDir(generatedStructureResources)
 tasks.named("processResources") {
     dependsOn("generateBuiltInStructurePacks")
 }
+
+
+// Stable release surface: expose only the two explicitly approved playable
+// world presets. The full preset catalog remains in the experimental branch;
+// these source files are intentionally retained here for tests and future work.
+def stablePlayablePresetEntries = [
+    "data/realscale/worldgen/world_preset/natural_three_realms.json",
+    "data/realscale/worldgen/world_preset/usgs_big_sur_v2.json"
+] as Set
+
+tasks.named("jar").configure {
+    exclude { details ->
+        def resourcePath = details.path.replace('\\\\', '/')
+        resourcePath.startsWith("data/realscale/worldgen/world_preset/") &&
+            !stablePlayablePresetEntries.contains(resourcePath)
+    }
+}
+
+tasks.register("verifyStablePlayablePresetSurface") {
+    group = "verification"
+    description = "Verify the release JAR exposes only Natural and USGS Big Sur V2 world presets."
+    dependsOn(tasks.named("jar"))
+    doLast {
+        def archive = tasks.named("jar").get().archiveFile.get().asFile
+        if (!archive.isFile()) {
+            throw new GradleException("Stable release JAR was not created: " + archive)
+        }
+
+        def zip = new java.util.zip.ZipFile(archive)
+        try {
+            def actualPresetEntries = [] as Set
+            def entries = zip.entries()
+            while (entries.hasMoreElements()) {
+                def entryName = entries.nextElement().name
+                if (entryName.startsWith("data/realscale/worldgen/world_preset/") &&
+                    entryName.endsWith(".json")) {
+                    actualPresetEntries.add(entryName)
+                }
+            }
+            if (actualPresetEntries != stablePlayablePresetEntries) {
+                throw new GradleException(
+                    "Stable release must expose exactly Natural + USGS presets. Expected " +
+                    stablePlayablePresetEntries.sort() + ", found " + actualPresetEntries.sort())
+            }
+
+            [
+                "data/realscale/worldgen/noise_settings/tva_natural_smoothed.json",
+                "data/realscale/worldgen/noise_settings/usgs_big_sur_v2.json"
+            ].each { requiredEntry ->
+                if (zip.getEntry(requiredEntry) == null) {
+                    throw new GradleException("Stable playable preset is missing required terrain settings: " +
+                        requiredEntry)
+                }
+            }
+        } finally {
+            zip.close()
+        }
+
+        def sourcePresetRoot = file("src/main/resources/data/realscale/worldgen/world_preset")
+        def sourcePresetCount = fileTree(sourcePresetRoot).matching { include "*.json" }.files.size()
+        if (sourcePresetCount <= stablePlayablePresetEntries.size()) {
+            throw new GradleException(
+                "Experimental source presets were unexpectedly removed; keep them on the experimental branch.")
+        }
+        logger.lifecycle("STABLE_PRESET_SURFACE_PASS: Natural + USGS Big Sur V2; " +
+            sourcePresetCount + " source presets retained for experiments.")
+    }
+}
+
+tasks.named("check").configure {
+    dependsOn(tasks.named("verifyStablePlayablePresetSurface"))
+}
