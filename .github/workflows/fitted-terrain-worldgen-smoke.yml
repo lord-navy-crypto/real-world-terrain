@@ -99,30 +99,10 @@ jobs:
           max-players=1
           max-tick-time=-1
           online-mode=true
-          initial-enabled-packs=vanilla,file/realscale-qa
+          enable-rcon=true
+          rcon.password=realscale-local-qa-20261026
+          rcon.port=25575
           PROPERTIES
-          done
-          # A datapack tick function is used instead of writing commands to
-          # Gradle's stdin (which is not the Minecraft server console).
-          for world_root in \
-            "run/fitted-$PRESET_SLUG-smoke" \
-            "run/server/fitted-$PRESET_SLUG-smoke" \
-            "run/gametestserver/fitted-$PRESET_SLUG-smoke"; do
-            qa_pack="$world_root/datapacks/realscale-qa"
-            mkdir -p "$qa_pack/data/minecraft/tags/function" \
-                     "$qa_pack/data/realscale/function"
-            cat > "$qa_pack/pack.mcmeta" <<'JSON'
-          {"pack":{"pack_format":48,"description":"RealScale fitted worldgen QA sample loader"}}
-          JSON
-            cat > "$qa_pack/data/minecraft/tags/function/load.json" <<'JSON'
-          {"values":["realscale:qa_schedule"]}
-          JSON
-            cat > "$qa_pack/data/realscale/function/qa_schedule.mcfunction" <<'FUNCTION'
-          schedule function realscale:qa_initialize 1800t replace
-          FUNCTION
-            cat > "$qa_pack/data/realscale/function/qa_initialize.mcfunction" <<'FUNCTION'
-          execute in minecraft:overworld run forceload add 976 976 1072 1072
-          FUNCTION
           done
       - name: Boot NeoForge and persist the fitted generator ID
         working-directory: neoforge
@@ -131,15 +111,16 @@ jobs:
           NOISE_SETTINGS_ID: ${{ matrix.noise_settings }}
         run: |
           python3 - <<'PY'
-          import gzip, os, pathlib, signal, subprocess, threading, time
+          import gzip, os, pathlib, signal, socket, struct, subprocess, threading, time
           slug = os.environ["PRESET_SLUG"]
           expected_noise = os.environ["NOISE_SETTINGS_ID"].encode()
           world_name = f"fitted-{slug}-smoke"
+          rcon_password = "realscale-local-qa-20261026"
           log = pathlib.Path(f"build/fitted-{slug}-server.log")
           log.parent.mkdir(parents=True, exist_ok=True)
           proc = subprocess.Popen(
               ["gradle", "--no-daemon", "runServer", "--stacktrace"],
-              stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+              stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
               stderr=subprocess.STDOUT, text=True, bufsize=1,
               start_new_session=True)
           lines = []
@@ -154,31 +135,90 @@ jobs:
           deadline = time.monotonic() + 480
           while time.monotonic() < deadline and proc.poll() is None and not ready.is_set():
               time.sleep(1)
+
+          rcon_error = None
+          rcon = None
+          def recv_exact(conn, count):
+              data = bytearray()
+              while len(data) < count:
+                  part = conn.recv(count - len(data))
+                  if not part:
+                      raise ConnectionError("RCON closed before the full packet arrived")
+                  data.extend(part)
+              return bytes(data)
+          def rcon_packet(conn, packet_id, packet_type, command):
+              payload = command.encode("utf-8") + b"\x00\x00"
+              conn.sendall(struct.pack("<iii", len(payload) + 8, packet_id, packet_type) + payload)
+              length = struct.unpack("<i", recv_exact(conn, 4))[0]
+              body = recv_exact(conn, length)
+              response_id, response_type = struct.unpack("<ii", body[:8])
+              return response_id, response_type, body[8:-2].decode("utf-8", errors="replace")
+          def rcon_command(conn, command, packet_id):
+              response_id, response_type, response = rcon_packet(conn, packet_id, 2, command)
+              if response_id != packet_id:
+                  raise RuntimeError(f"Unexpected RCON response id {response_id} for {command!r}")
+              return response
+
           if ready.is_set():
               print(f"FITTED_{slug.upper()}_SERVER_BOOT_OK")
-              # The enabled QA datapack's tick function force-loads a 7x7 area
-              # centered on the first 2048-block morphology cell. This bounded
-              # 49-chunk sample is deliberately smaller for slower archetypes.
-              # Gradle's
-              # stdin is not a reliable Minecraft console channel, so the
-              # function is the source of truth for chunk requests.
-              # Let initial spawn preparation settle, then give the bounded
-              # target region time to generate before the graceful server stop.
-              time.sleep(180)
-          # runServer is a Gradle wrapper; its stdin does not reliably forward
-          # "stop" to the Minecraft child. SIGINT the isolated process group so
-          # the server's shutdown hook saves generated Anvil chunks gracefully.
+              try:
+                  last_error = None
+                  for _ in range(30):
+                      try:
+                          rcon = socket.create_connection(("127.0.0.1", 25575), timeout=3)
+                          rcon.settimeout(10)
+                          break
+                      except OSError as exc:
+                          last_error = exc
+                          time.sleep(1)
+                  if rcon is None:
+                      raise RuntimeError(f"Could not connect to local Minecraft RCON: {last_error}")
+                  auth_id, auth_type, auth_text = rcon_packet(rcon, 1, 3, rcon_password)
+                  if auth_id == -1:
+                      raise RuntimeError("Minecraft RCON authentication was rejected")
+                  if auth_id != 1:
+                      raise RuntimeError(f"Unexpected RCON auth response id: {auth_id}")
+                  force_result = rcon_command(rcon, "forceload add 992 992 1071 1071", 2)
+                  print("RCON_FORCELOAD_RESULT:", force_result)
+                  if "Unknown command" in force_result or "Failed" in force_result:
+                      raise RuntimeError(f"Minecraft rejected target forceload: {force_result}")
+                  # Direct RCON starts the target sample immediately after the
+                  # server is ready; it does not depend on scheduled game ticks.
+                  # Five-by-five chunks still provide 6,400 X/Z columns while
+                  # avoiding a large, expensive sample for the slowest modes.
+                  time.sleep(240)
+                  save_result = rcon_command(rcon, "save-all flush", 3)
+                  print("RCON_SAVE_RESULT:", save_result)
+                  try:
+                      print("RCON_STOP_RESULT:", rcon_command(rcon, "stop", 4))
+                  except (OSError, ConnectionError, RuntimeError) as exc:
+                      print("RCON_STOP_CONNECTION_CLOSED:", repr(exc))
+              except Exception as exc:
+                  rcon_error = repr(exc)
+                  print("RCON_QA_FAILURE:", rcon_error)
+              finally:
+                  if rcon is not None:
+                      try:
+                          rcon.close()
+                      except OSError:
+                          pass
+
+          # Prefer the server's RCON stop command; signal the isolated Gradle
+          # process group only if the child does not exit cleanly.
           if proc.poll() is None:
-              os.killpg(proc.pid, signal.SIGINT)
               try:
                   proc.wait(timeout=120)
               except subprocess.TimeoutExpired:
-                  os.killpg(proc.pid, signal.SIGTERM)
+                  os.killpg(proc.pid, signal.SIGINT)
                   try:
-                      proc.wait(timeout=20)
+                      proc.wait(timeout=90)
                   except subprocess.TimeoutExpired:
-                      os.killpg(proc.pid, signal.SIGKILL)
-                      proc.wait()
+                      os.killpg(proc.pid, signal.SIGTERM)
+                      try:
+                          proc.wait(timeout=20)
+                      except subprocess.TimeoutExpired:
+                          os.killpg(proc.pid, signal.SIGKILL)
+                          proc.wait()
           thread.join(timeout=3)
           log.write_text("".join(lines), encoding="utf-8")
           print("SERVER_LOG_TAIL:", log.read_text(encoding="utf-8")[-8000:])
@@ -199,11 +239,11 @@ jobs:
                       )
               except Exception as exc:
                   print("LEVEL_DAT_READ_FAILURE:", path, exc)
-          if not ready.is_set() or not valid or not generated_regions:
+          if not ready.is_set() or rcon_error or not valid or not generated_regions:
               raise SystemExit(
-                  f"Fitted {slug} preset failed to boot, persist expected noise "
-                  f"settings, or save generated Anvil region chunks. "
-                  f"regions={len(generated_regions)}"
+                  f"Fitted {slug} preset failed to boot, RCON-generate target chunks, "
+                  f"persist expected noise settings, or save Anvil region chunks. "
+                  f"regions={len(generated_regions)}, rcon_error={rcon_error}"
               )
           print("GENERATED_ANVIL_REGIONS:", [str(p) for p in generated_regions])
           PY
