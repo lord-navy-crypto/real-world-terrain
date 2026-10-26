@@ -113,7 +113,7 @@ jobs:
               # Force-load a small, bounded Overworld area so the test proves
               # that chunks are generated and saved, not only that level.dat
               # contains a selectable preset ID.
-              proc.stdin.write("forceload add 0 0 64 64\\n")
+              proc.stdin.write("forceload add 0 0 64 64\n")
               proc.stdin.flush()
               time.sleep(24)
           try:
