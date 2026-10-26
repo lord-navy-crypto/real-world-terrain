@@ -433,10 +433,13 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     # The original Terrain Lab used legacy presets and VANILLA Nether/End.
     # Every NEW generated RealScale profile must inherit the merged three realms
     # and ocean-aware ecotones, never silently regress to vanilla dimensions.
+    # New Terrain Lab worlds inherit the canonical RealScale biome-source
+    # graph (sky ocean, geology, ecotones, cave-depth habitats), rather than
+    # the historical preset graph kept only for old saved-world compatibility.
     realscale_families={
-        "landscape":"tva_sacred_timeline_three_realms",
-        "alpine":"tva_alpine_three_realms",
-        "canyon":"tva_canyon_three_realms",
+        "landscape":"natural_three_realms",
+        "alpine":"alpine_three_realms",
+        "canyon":"canyon_three_realms",
     }
     if universal_biomes:
         realscale_families = {
