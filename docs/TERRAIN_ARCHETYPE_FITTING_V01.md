@@ -56,3 +56,6 @@ The publication preflight deliberately runs the focused seven-preset, source-pro
 
 
 The first actual NeoForge server smoke exposed a real registry-reference mismatch in the generated settings: the Realism MAX graph names its continentalness, erosion and ridge signals `continental_field`, `erosion_field` and `mountain_axis`, unlike the older Himalayan/Grand Canyon graphs. The compiler now maps those source-specific registry IDs explicitly and the compiler test verifies each target exists before resources can be published.
+
+
+A second runtime registry check caught the same legacy field-name mismatch inside the custom density kernel's `continents` input (not only in `noise_settings`). The compiler now shares one source-specific registry ID across the noise router, adjusted climate graph and archetype kernel, and the contract test asserts the kernel input is bound.
