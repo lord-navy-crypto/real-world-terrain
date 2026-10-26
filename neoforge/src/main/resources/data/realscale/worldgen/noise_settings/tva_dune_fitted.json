@@ -24,9 +24,9 @@
       "xz_scale": 1,
       "y_scale": 0.5
     },
-    "continents": "realscale:realism_max/continents",
+    "continents": "realscale:realism_max/continental_field",
     "depth": "realscale:tva_dune_fitted/terrain_density",
-    "erosion": "realscale:realism_max/erosion",
+    "erosion": "realscale:realism_max/erosion_field",
     "final_density": {
       "base": "realscale:tva_dune_fitted/terrain_density",
       "small_caves": "realscale:realism_max/cave_core",
@@ -57,7 +57,7 @@
       "xz_scale": 1,
       "y_scale": 1
     },
-    "ridges": "realscale:realism_max/ridges",
+    "ridges": "realscale:realism_max/mountain_axis",
     "temperature": {
       "adjusted": {
         "base": {
@@ -93,7 +93,7 @@
           "strength": 0.58,
           "type": "realscale:radial_latitude_temperature"
         },
-        "continents": "realscale:realism_max/continents",
+        "continents": "realscale:realism_max/continental_field",
         "height_signal": "realscale:tva_dune_fitted/original_height_signal",
         "selector": {
           "noise": "minecraft:erosion",
