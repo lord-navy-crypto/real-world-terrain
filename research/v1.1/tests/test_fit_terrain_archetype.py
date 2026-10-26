@@ -79,7 +79,8 @@ class TerrainArchetypeFitTests(unittest.TestCase):
         self.assertNotIn("elevation_grid", profile)
         self.assertNotIn("raw_samples", profile)
         self.assertGreater(profile["observed_statistics"]["relief_p95_minus_p05_m"], 0)
-        self.assertIn("macro_gain", profile["fit_parameters"])\n        self.assertGreaterEqual(profile["fit_parameters"]["relief_gain"], 0.10)
+        self.assertIn("macro_gain", profile["fit_parameters"])
+        self.assertGreaterEqual(profile["fit_parameters"]["relief_gain"], 0.10)
         self.assertIn("semivariograms", profile["observed_statistics"])
         self.assertIn("vertical_mapping_requires_explicit_choice", profile["generation_contract"])
         self.assertIn("procedural_from_fitted_coefficients", encoded)
@@ -92,7 +93,8 @@ class TerrainArchetypeFitTests(unittest.TestCase):
         for profile in families.values():
             self.assertEqual(profile["fit_parameters"], families["natural"]["fit_parameters"])
         self.assertIn("dominant_wavelength_m", families["dune"]["fit_parameters"])
-        self.assertIn("dune_axis_radians", families["dune"]["fit_parameters"])\n        self.assertLessEqual(families["dune"]["fit_parameters"]["dominant_wavelength_m"], 5000.0)
+        self.assertIn("dune_axis_radians", families["dune"]["fit_parameters"])
+        self.assertLessEqual(families["dune"]["fit_parameters"]["dominant_wavelength_m"], 5000.0)
 
     def test_fitted_profile_generates_new_repeatable_fields_without_source_grid(self):
         profile = self.fit(synthetic_relief(), family="alpine")
