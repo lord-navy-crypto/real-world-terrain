@@ -19,18 +19,14 @@ FAMILIES={
  "tva_measured_three_realms":"realscale:usgs_big_sur_v2",
 }
 expected=["realscale:"+k for k in ("natural_three_realms","alpine_three_realms","canyon_three_realms","measured_three_realms")]
-# Four canonical presets always preserve their IDs and source configs.
-# This TEST build additionally lists two independently selected experiments:
-# original Wonders/invasion and new cave biome ecology. Stable main retains
-# the historical five-item menu without the experimental cave source.
-opt_in="realscale:wonders_invasion_three_realms"
-cave_trial="realscale:cave_ocean_ecology_three_realms"
-cave_trial_available=(D/"worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json").is_file()
-menu=expected+[opt_in]+([cave_trial] if cave_trial_available else [])
+# Only the four canonical terrain modes are exposed to new worlds.
+# Optional invasion/cave experiment resources remain available but hidden.
+assert (D/"worldgen/world_preset/tva_wonders_invasion_three_realms.json").is_file()
+assert (D/"worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json").is_file()
 for name in ("normal","extended"):
     tag=read(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset"/(name+".json"))
-    assert tag["replace"] is False and tag["values"]==menu,(name,tag)
-    assert len(tag["values"])==len(set(tag["values"]))==(6 if cave_trial_available else 5)
+    assert tag["replace"] is False and tag["values"]==expected,(name,tag)
+    assert len(tag["values"])==len(set(tag["values"]))==4
 for name,settings in FAMILIES.items():
     world=read(D/"worldgen/world_preset"/(name+".json"))
     assert world["dimensions"]["minecraft:overworld"]["generator"]["settings"]==settings,name
