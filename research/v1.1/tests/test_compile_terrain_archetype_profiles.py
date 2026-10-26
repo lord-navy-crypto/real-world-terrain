@@ -76,11 +76,12 @@ class TerrainProfileCompilerTests(unittest.TestCase):
                     height = json.loads((out / "data/realscale/worldgen/density_function" / root_id / "height_signal.json").read_text())
                     self.assertEqual(height["type"], "realscale:terrain_archetype")
                     self.assertEqual(height["family"], family)
+                    legacy_id = config["legacy_source"]
+                    signal_fields = COMPILER.LEGACY_SIGNAL_FIELDS[legacy_id]
+                    self.assertEqual(height["continents"], f"realscale:{legacy_id}/{signal_fields['continents']}")
                     self.assertNotIn("height_grid", height)
                     settings = json.loads((out / "data/realscale/worldgen/noise_settings" / f"{root_id}.json").read_text())
                     self.assertEqual(settings["noise_router"]["depth"], f"realscale:{root_id}/terrain_density")
-                    legacy_id = config["legacy_source"]
-                    signal_fields = COMPILER.LEGACY_SIGNAL_FIELDS[legacy_id]
                     router = settings["noise_router"]
                     self.assertEqual(router["continents"], f"realscale:{legacy_id}/{signal_fields['continents']}")
                     self.assertEqual(router["erosion"], f"realscale:{legacy_id}/{signal_fields['erosion']}")
