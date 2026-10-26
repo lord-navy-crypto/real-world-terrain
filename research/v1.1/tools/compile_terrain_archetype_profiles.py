@@ -138,7 +138,7 @@ def compile_profiles(profiles_dir: Path, resources_root: Path, out_dir: Path):
         legacy_id = cfg["legacy_source"]
         fit = profile["fit_parameters"]
         required = (
-            "macro_gain", "meso_gain", "micro_gain", "ridge_sharpness",
+            "macro_gain", "meso_gain", "micro_gain", "relief_gain", "ridge_sharpness",
             "cliff_index", "valley_index", "ridge_index", "anisotropy_gain",
             "dune_axis_radians", "dominant_wavelength_m",
         )
@@ -180,6 +180,7 @@ def compile_profiles(profiles_dir: Path, resources_root: Path, out_dir: Path):
             "macro_gain": float(fit["macro_gain"]),
             "meso_gain": float(fit["meso_gain"]),
             "micro_gain": float(fit["micro_gain"]),
+            "relief_gain": float(fit["relief_gain"]),
             "ridge_sharpness": float(fit["ridge_sharpness"]),
             "cliff_index": float(fit["cliff_index"]),
             "valley_index": float(fit["valley_index"]),
