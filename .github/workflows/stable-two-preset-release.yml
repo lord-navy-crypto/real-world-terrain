@@ -60,7 +60,7 @@ jobs:
         run: |
           for dir in run run/server run/gametestserver; do
             mkdir -p "$dir"
-            printf 'eula=true\\n' > "$dir/eula.txt"
+            printf 'eula=true\n' > "$dir/eula.txt"
             cat > "$dir/server.properties" <<'PROPERTIES'
           level-name=world
           level-type=realscale:${{ matrix.preset }}
