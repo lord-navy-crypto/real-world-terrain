@@ -18,5 +18,5 @@
   "realscale.atlas.draw_busy": "A map task is already running",
   "realscale.atlas.draw_real_legend": "Sampled saved heightmap",
   "generator.realscale.natural_three_realms": "RealScale Natural Terrain — Three Realms",
-  "generator.realscale.usgs_big_sur_v2": "RealScale USGS Big Sur Terrain"
+  "generator.realscale.usgs_big_sur": "RealScale USGS Big Sur Terrain"
 }
