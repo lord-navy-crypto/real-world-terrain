@@ -86,13 +86,13 @@ class TerrainArchetypeFitTests(unittest.TestCase):
 
     def test_family_changes_kernel_not_measured_statistics(self):
         array = synthetic_relief()
-        natural = self.fit(array, "natural")
-        alpine = self.fit(array, "alpine")
-        canyon = self.fit(array, "canyon")
-        self.assertNotEqual(natural["family_kernel"], alpine["family_kernel"])
-        self.assertNotEqual(alpine["family_kernel"], canyon["family_kernel"])
-        self.assertEqual(natural["fit_parameters"], alpine["fit_parameters"])
-        self.assertEqual(alpine["fit_parameters"], canyon["fit_parameters"])
+        families = {family: self.fit(array, family) for family in FIT.FAMILIES}
+        kernels = [profile["family_kernel"] for profile in families.values()]
+        self.assertEqual(len(kernels), len(set(kernels)))
+        for profile in families.values():
+            self.assertEqual(profile["fit_parameters"], families["natural"]["fit_parameters"])
+        self.assertIn("dominant_wavelength_m", families["dune"]["fit_parameters"])
+        self.assertIn("dune_axis_radians", families["dune"]["fit_parameters"])
 
     def test_fitted_profile_generates_new_repeatable_fields_without_source_grid(self):
         profile = self.fit(synthetic_relief(), family="alpine")
@@ -107,14 +107,17 @@ class TerrainArchetypeFitTests(unittest.TestCase):
 
     def test_family_kernel_changes_synthetic_shape(self):
         array = synthetic_relief()
-        natural = self.fit(array, "natural")
-        alpine = self.fit(array, "alpine")
-        canyon = self.fit(array, "canyon")
-        n = FIT.synthesize_heightfield(natural, 64, 64, 32.0, 32.0, seed=7)
-        a = FIT.synthesize_heightfield(alpine, 64, 64, 32.0, 32.0, seed=7)
-        c = FIT.synthesize_heightfield(canyon, 64, 64, 32.0, 32.0, seed=7)
-        self.assertFalse(np.allclose(n, a))
-        self.assertFalse(np.allclose(a, c))
+        array = synthetic_relief()
+        fields = {
+            family: FIT.synthesize_heightfield(
+                self.fit(array, family), 64, 64, 32.0, 32.0, seed=7
+            )
+            for family in FIT.FAMILIES
+        }
+        for i, family_a in enumerate(FIT.FAMILIES):
+            for family_b in FIT.FAMILIES[i + 1:]:
+                with self.subTest(family_a=family_a, family_b=family_b):
+                    self.assertFalse(np.allclose(fields[family_a], fields[family_b]))
 
     def test_rgt_input_keeps_source_hash_and_metric_spacing(self):
         source = self.root / "fixture.rgt.gz"
