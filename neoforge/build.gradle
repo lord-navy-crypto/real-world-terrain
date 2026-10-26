@@ -83,6 +83,13 @@ tasks.named('test', Test) {
     testLogging { events 'passed', 'skipped', 'failed' }
 }
 
+// NeoForge ModDev supplies the mapped Minecraft/NeoForge compile classpath to
+// the main source set. Reuse it for JUnit tests that directly exercise runtime
+// density functions; Gradle's default test classpath otherwise cannot resolve
+// net.minecraft classes during :compileTestJava.
+sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
+
 // YACL stores 3 independent profiles. Converting one selected draft is an
 // explicit export operation, never an automatic edit to the FOUR core presets.
 // See scripts/export_terrain_lab_datapack.py.
