@@ -1,0 +1,89 @@
+import importlib.util
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+import numpy as np
+
+ROOT = Path(__file__).resolve().parents[1]
+TOOLS = ROOT / "tools"
+FIT_SPEC = importlib.util.spec_from_file_location("terrain_archetype_fit", TOOLS / "fit_terrain_archetype.py")
+FIT = importlib.util.module_from_spec(FIT_SPEC)
+FIT_SPEC.loader.exec_module(FIT)
+COMPILER_SPEC = importlib.util.spec_from_file_location("compile_terrain_archetype_profiles", TOOLS / "compile_terrain_archetype_profiles.py")
+COMPILER = importlib.util.module_from_spec(COMPILER_SPEC)
+COMPILER_SPEC.loader.exec_module(COMPILER)
+
+
+def synthetic_relief(rows=64, cols=64, cell=32.0):
+    z, x = np.mgrid[0:rows, 0:cols]
+    return (1200.0 + 70.0 * np.sin(x / 7.0) + 45.0 * np.cos(z / 9.0)
+            + 18.0 * np.sin((x + z) / 2.7) + 7.0 * np.cos((2.0 * x - z) / 1.9))
+
+
+class TerrainProfileCompilerTests(unittest.TestCase):
+    def test_compiler_emits_six_fitted_modes_plus_generic_default(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            profiles = root / "profiles"
+            out = root / "compiled"
+            profiles.mkdir()
+            array = synthetic_relief()
+            input_meta = {
+                "input_format": "test fixture",
+                "crs": "synthetic local metric grid",
+                "native_spacing_m": [32.0, 32.0],
+            }
+            for family, config in COMPILER.FAMILY_CONFIG.items():
+                profile = FIT.fit_profile(
+                    elevation=array.astype(np.float64),
+                    cell_x=32.0,
+                    cell_z=32.0,
+                    family=family,
+                    source_name="Synthetic fixture — test only",
+                    source_url="https://example.invalid/synthetic-fixture",
+                    vertical_datum="synthetic test datum",
+                    source_sha256=(family.encode().hex() * 64)[:64],
+                    source_file="synthetic-not-real.tif",
+                    input_meta=input_meta,
+                )
+                profile["source"]["source_tile_sha256"] = "b" * 64
+                (profiles / f"{config['target']}.json").write_text(
+                    json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8"
+                )
+
+            entries = COMPILER.compile_profiles(
+                profiles, COMPILER.DEFAULT_RESOURCES, out
+            )
+            self.assertEqual(len(entries), 6)
+            for tag_name in ("normal", "extended"):
+                tag = json.loads((out / "data/minecraft/tags/worldgen/world_preset" / f"{tag_name}.json").read_text())
+                self.assertEqual(len(tag["values"]), 7)
+                self.assertEqual(tag["values"][0], "realscale:natural_three_realms")
+                self.assertIn("realscale:dune_three_realms", tag["values"])
+                self.assertNotIn("realscale:measured_three_realms", tag["values"])
+
+            for family, config in COMPILER.FAMILY_CONFIG.items():
+                with self.subTest(family=family):
+                    root_id = config["density_root"]
+                    preset = json.loads((out / "data/realscale/worldgen/world_preset" / f"{config['preset']}.json").read_text())
+                    self.assertEqual(
+                        preset["dimensions"]["minecraft:overworld"]["generator"]["settings"],
+                        "realscale:" + root_id,
+                    )
+                    height = json.loads((out / "data/realscale/worldgen/density_function" / root_id / "height_signal.json").read_text())
+                    self.assertEqual(height["type"], "realscale:terrain_archetype")
+                    self.assertEqual(height["family"], family)
+                    self.assertNotIn("height_grid", height)
+                    settings = json.loads((out / "data/realscale/worldgen/noise_settings" / f"{root_id}.json").read_text())
+                    self.assertEqual(settings["noise_router"]["depth"], f"realscale:{root_id}/terrain_density")
+
+            provenance = json.loads((out / "terrain-profile-provenance.json").read_text())
+            self.assertEqual(provenance["preset_count"], 7)
+            self.assertEqual(provenance["profile_count"], 6)
+            self.assertFalse(provenance["raw_dem_grids_embedded"])
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
