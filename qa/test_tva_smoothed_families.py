@@ -48,15 +48,12 @@ class CoreSmoothing(unittest.TestCase):
       "realscale:"+smoothed+"/terrain_density")
     self.assertTrue((R/"noise_settings"/(legacy+".json")).is_file())
     self.assertTrue((R/"density_function"/legacy/"height_signal.json").is_file())
- def test_four_curated_families_and_separate_combined_opt_in(self):
+ def test_four_canonical_menu_entries_and_hidden_experiment_resources(self):
   stable=["realscale:"+x for x in ("natural_three_realms","alpine_three_realms","canyon_three_realms","measured_three_realms")]
-  optional="realscale:wonders_invasion_three_realms"
-  # Only this separately opt-in TEST build exposes the new cave ecosystem.
-  # Production still has the original 5-item menu and all stable presets.
-  trial=(R/"world_preset/tva_cave_ocean_ecology_test_three_realms.json").is_file()
-  cave=["realscale:cave_ocean_ecology_three_realms"] if trial else []
+  self.assertTrue((R/"world_preset/tva_wonders_invasion_three_realms.json").is_file())
+  self.assertTrue((R/"world_preset/tva_cave_ocean_ecology_test_three_realms.json").is_file())
   for tag in ("normal","extended"):
    path=ROOT/"minecraft/tags/worldgen/world_preset"/(tag+".json")
-   self.assertEqual(read(path)["values"],stable+[optional]+cave)
+   self.assertEqual(read(path)["values"],stable)
    self.assertEqual(len(read(path)["values"]),len(set(read(path)["values"])))
 if __name__=="__main__": unittest.main()
