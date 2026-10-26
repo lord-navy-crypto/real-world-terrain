@@ -59,3 +59,6 @@ The first actual NeoForge server smoke exposed a real registry-reference mismatc
 
 
 A second runtime registry check caught the same legacy field-name mismatch inside the custom density kernel's `continents` input (not only in `noise_settings`). The compiler now shares one source-specific registry ID across the noise router, adjusted climate graph and archetype kernel, and the contract test asserts the kernel input is bound.
+
+
+The Terrain Lab regression suite is also part of publication preflight. Its legacy fantasy toggle is explicitly tested to preserve the 512-block Grand Nether/End rather than silently switching a canonical world to the separate 256-block historical experiment.
