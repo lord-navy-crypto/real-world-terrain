@@ -404,8 +404,23 @@ def main():
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(profile, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if args.preview_out:
+        preview = synthesize_heightfield(
+            profile, args.preview_rows, args.preview_cols,
+            args.preview_cell_m, args.preview_cell_m, args.seed
+        )
+        args.preview_out.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            args.preview_out,
+            height_m=preview.astype(np.float32),
+            cell_x_m=float(args.preview_cell_m),
+            cell_z_m=float(args.preview_cell_m),
+            seed=int(args.seed),
+            family=profile["family"],
+        )
     print(json.dumps({
         "output": str(args.out),
+        "preview_output": str(args.preview_out) if args.preview_out else None,
         "family": profile["family"],
         "source_sha256": profile["source"]["sha256"],
         "relief_p95_minus_p05_m": profile["observed_statistics"]["relief_p95_minus_p05_m"],
