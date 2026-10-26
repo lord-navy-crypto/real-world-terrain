@@ -9,10 +9,13 @@ checks=json.loads((ROOT/'docs/SHA256SUMS.json').read_text())
 # extended in this experimental branch with additional Feature registrations.
 # Check its required historic behavior, and keep all OTHER original hashes strict.
 modified_entrypoint='neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java'
-modified_preset_tag='neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json'
+modified_preset_tags={
+ 'neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json',
+ 'neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/extended.json',
+ }
 modified_density='neoforge/src/main/java/org/realscale/neoforge/RealDemDensity.java'
 for name,want in checks.items():
- if name==modified_preset_tag:
+ if name in modified_preset_tags:
   tag=json.loads((ROOT/name).read_text())
   expected=[
    'realscale:natural_three_realms',
@@ -25,7 +28,7 @@ for name,want in checks.items():
    expected.append('realscale:cave_ocean_ecology_three_realms')
   assert tag.get('values',[])==expected,(name,tag.get('values'))
 
-  print('INTENTIONAL MODIFICATION: four curated RealScale families plus opt-in woven features')
+  print('INTENTIONAL MODIFICATION: four canonical terrain families; optional experiments remain hidden')
   continue
  if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):
   # Preserve the exact historical text for every legacy ID while allowing
