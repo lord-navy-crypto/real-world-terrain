@@ -88,4 +88,4 @@ for p in (D/"neoforge/biome_modifier").glob("*.json"):
     if m.get("type")!="neoforge:add_features":continue
     features=m["features"] if isinstance(m["features"],list) else [m["features"]]
     assert "realscale:ocean_sediment_stones" not in features,p
-print("REALSCALE_STATIC_PASS: FOUR unchanged canonical families + one opt-in woven world, legacy-safe IDs, 60 ecotones, APES, Grand Nether/End and skylands")
+print("REALSCALE_STATIC_PASS: one generic default + six DEM-fitted archetypes, legacy-safe IDs, hidden experiments, 60 ecotones, APES, Grand Nether/End and skylands")
