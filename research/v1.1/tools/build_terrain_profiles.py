@@ -35,7 +35,7 @@ def build(target_ids, out_dir: Path, seed: int = 42, force_download: bool = Fals
         "profile_count": 0,
         "profiles": [],
         "raw_dem_inputs_committed": False,
-        "note": "Profiles are fitted from real Copernicus GLO-90 DSM crops. They are not raw-heightmap playback and are not yet wired into NeoForge density functions.",
+        "note": "Profiles are fitted from real Copernicus GLO-90 DSM crops and compiled by this branch into NeoForge terrain_archetype density functions; they are not raw-heightmap playback. Vertical relief remains normalized to the existing world-height budget and does not reproduce absolute DEM altitude.",
     }
     for target_id in target_ids:
         target = target_by_id[target_id]
