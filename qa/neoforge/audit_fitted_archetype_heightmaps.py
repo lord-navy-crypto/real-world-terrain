@@ -31,7 +31,7 @@ def find_world(run_root: Path, world_name: str) -> Path:
     raise FileNotFoundError(f"Could not find saved world {world_name!r} under {run_root}")
 
 
-def audit(world: Path, slug: str) -> dict:
+def audit(world: Path, slug: str, target_chunk_min: int, target_chunk_max: int) -> dict:
     regions = sorted((world / "region").glob("r.*.*.mca"))
     if not regions:
         raise RuntimeError(f"No Anvil region files under {world / 'region'}")
@@ -44,6 +44,11 @@ def audit(world: Path, slug: str) -> dict:
         for chunk in iter_region_chunks(region):
             cx, cz = chunk.get("xPos"), chunk.get("zPos")
             if not isinstance(cx, int) or not isinstance(cz, int):
+                continue
+            # Only count the explicit forceload sample area. Spawn chunks can
+            # differ between presets, so they must never satisfy this gate.
+            if not (target_chunk_min <= cx <= target_chunk_max
+                    and target_chunk_min <= cz <= target_chunk_max):
                 continue
             heights = [
                 surface_height(chunk, x, z, min_y=-64, height=2096, heightmap="WORLD_SURFACE")
@@ -59,10 +64,11 @@ def audit(world: Path, slug: str) -> dict:
             decoded_chunks += 1
 
     flat = sorted(value for values in heightmaps.values() for value in values if value is not None)
-    if decoded_chunks == 0 or len(flat) < 100:
+    if decoded_chunks < 40 or len(flat) < 40 * 200:
         raise RuntimeError(
-            f"Insufficient persisted WORLD_SURFACE samples for {slug}: "
-            f"chunks={decoded_chunks}, columns={len(flat)}"
+            f"Insufficient persisted WORLD_SURFACE samples in the forced sample area for {slug}: "
+            f"chunks={decoded_chunks}, columns={len(flat)}, "
+            f"target_chunks={target_chunk_min}..{target_chunk_max}"
         )
 
     canonical = json.dumps(
@@ -80,6 +86,8 @@ def audit(world: Path, slug: str) -> dict:
         "world_min_y": -64,
         "world_height": 2096,
         "region_files": len(regions),
+        "target_chunk_min": target_chunk_min,
+        "target_chunk_max": target_chunk_max,
         "decoded_chunks": decoded_chunks,
         "sampled_columns": len(flat),
         "surface_y_min": min(flat),
@@ -99,10 +107,17 @@ def main() -> None:
     parser.add_argument("--run-root", type=Path, required=True)
     parser.add_argument("--world-name", required=True)
     parser.add_argument("--slug", required=True)
+    parser.add_argument("--target-chunk-min", type=int, default=60)
+    parser.add_argument("--target-chunk-max", type=int, default=68)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    report = audit(find_world(args.run_root, args.world_name), args.slug)
+    report = audit(
+        find_world(args.run_root, args.world_name),
+        args.slug,
+        args.target_chunk_min,
+        args.target_chunk_max,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     compact = {key: value for key, value in report.items() if key != "heightmap_by_chunk"}
