@@ -84,6 +84,8 @@ class TerrainArchetypeFitTests(unittest.TestCase):
         self.assertIn("semivariograms", profile["observed_statistics"])
         self.assertIn("vertical_mapping_requires_explicit_choice", profile["generation_contract"])
         self.assertIn("procedural_from_fitted_coefficients", encoded)
+        self.assertIn("parameter source, not a Minecraft resource", encoded)
+        self.assertNotIn("not yet wired into NeoForge", encoded)
 
     def test_family_changes_kernel_not_measured_statistics(self):
         array = synthetic_relief()
