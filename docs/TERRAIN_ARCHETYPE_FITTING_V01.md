@@ -50,8 +50,8 @@ H(x,z) = A_macro · N_macro(x,z) + A_meso · N_meso(x,z) + A_micro · N_micro(x,
 
 ## 5. 数据源候选与准确表述
 
-- **珠峰/喜马拉雅**：可先评估 Copernicus DEM GLO-30（全球约 30 m 网格）作为区域尺度样本。它是数字表面模型，可能包含植被和建筑影响，不等同于裸地 LiDAR。官方说明：<https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM>
-- **美国大峡谷**：优先评估 USGS 3DEP 的裸地 DEM；1/3 arc-second 产品约为 10 m，具体地点可能有更高分辨率的项目数据，必须以下载产品元数据为准。官方说明：<https://www.usgs.gov/3d-elevation-program/about-3dep-products-services>；下载入口：<https://www.usgs.gov/the-national-map-data-delivery/gis-data-download>
+- **珠峰/喜马拉雅**：优先评估 Copernicus DEM GLO-30（名义约 30 m 网格），但它是数字表面模型（DSM），可能包含植被和建筑影响，不等同于裸地 LiDAR。公共 AWS 镜像的 GLO-30 覆盖并非完整全球覆盖；若目标瓦片未公开，应通过 Copernicus Data Space 的合规访问渠道核验，或先用全球覆盖的 GLO-90（约 90 m）做低频形态试验。官方说明：<https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM>；公共镜像说明：<https://registry.opendata.aws/copernicus-dem/>
+- **美国大峡谷**：优先评估 USGS 3DEP 的裸地 DEM；1/3 arc-second 产品约为 10 m，具体地点可能有更高分辨率的项目数据。USGS 说明该产品为裸地地形，且 3DEP 产品属于公共领域；美国本土无缝产品通常使用 NAVD88 垂直基准，但仍必须以实际下载瓦片的元数据为准。官方说明：<https://www.usgs.gov/3d-elevation-program/about-3dep-products-services>；数据集元数据：<https://data.usgs.gov/datacatalog/data/USGS%3A3a81321b-c153-416f-98b7-cc8e5f0e17c3>；下载入口：<https://www.usgs.gov/the-national-map-data-delivery/gis-data-download>
 
 **当前仓库尚未包含已核验的珠峰或大峡谷 DEM，也没有相应拟合配置。** 现有 Big Sur 数据不能代替这两处数据。获取数据后再生成带来源信息的配置；不要先造一组参数再声称它来自真实地貌。
 
