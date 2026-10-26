@@ -109,6 +109,30 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
                 self.assertIn("relief_gain", profile["fit_parameters"])
                 self.assertGreater(profile["observed_statistics"]["relief_p95_minus_p05_m"], 0)
 
+    def test_runtime_density_kernels_use_the_fitted_profile_coefficients(self):
+        profile_targets = {
+            "alpine_three_realms": ("everest_himalaya", "tva_alpine_fitted"),
+            "canyon_three_realms": ("grand_canyon", "tva_canyon_fitted"),
+            "glacial_three_realms": ("yosemite_glacial_valley", "tva_glacial_fitted"),
+            "volcanic_three_realms": ("hawaii_volcanic", "tva_volcanic_fitted"),
+            "karst_three_realms": ("guilin_karst", "tva_karst_fitted"),
+            "dune_three_realms": ("namib_dunes", "tva_dune_fitted"),
+        }
+        profiles_root = ROOT / "research/v1.1/profiles"
+        density_root = RES / "data/realscale/worldgen/density_function"
+        for preset, (target, settings_id) in profile_targets.items():
+            with self.subTest(preset=preset):
+                profile = read(profiles_root / (target + ".json"))
+                density = read(density_root / settings_id / "height_signal.json")
+                fit = profile["fit_parameters"]
+                self.assertEqual(density["family"], profile["family"])
+                self.assertEqual(density["dominant_wavelength_m"], fit["dominant_wavelength_m"])
+                self.assertEqual(density["relief_gain"], fit["relief_gain"])
+                self.assertEqual(density["dune_axis_radians"], fit["dune_axis_radians"])
+                self.assertEqual(density["macro_gain"], fit["macro_gain"])
+                self.assertEqual(density["cliff_index"], fit["cliff_index"])
+                self.assertEqual(density["valley_index"], fit["valley_index"])
+
     def test_legacy_world_preset_ids_remain_loadable(self):
         for old in OLD:
             self.assertTrue((WORLD / (old + ".json")).is_file(), old)
