@@ -83,6 +83,15 @@ class TerrainArchetypeFitTests(unittest.TestCase):
         self.assertGreaterEqual(profile["fit_parameters"]["relief_gain"], 0.10)
         self.assertIn("semivariograms", profile["observed_statistics"])
         self.assertIn("vertical_mapping_requires_explicit_choice", profile["generation_contract"])
+        self.assertEqual(
+            profile["generation_contract"]["runtime_density_function"],
+            "realscale:terrain_archetype",
+        )
+        self.assertEqual(
+            profile["generation_contract"]["runtime_integration"],
+            "relative_morphology_modifier_over_base_density",
+        )
+        self.assertTrue(profile["generation_contract"]["absolute_elevation_is_not_replayed"])
         self.assertIn("procedural_from_fitted_coefficients", encoded)
         self.assertIn("parameter source, not a Minecraft resource", encoded)
         self.assertNotIn("not yet wired into NeoForge", encoded)

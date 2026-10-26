@@ -34,9 +34,11 @@ The preview is a statistical prototype, not a geological process simulator. A fi
 
 ## Runtime integration status
 
-The current pipeline fits real DEMs and creates new parameter-only previews. It does **not yet** compile the profiles into NeoForge DensityFunctions, so the game must not be described as already using the six real-data fits. The next integration gate is to define a stable profile-to-density-function compiler, load each family through its own world-preset/noise-settings ID, and verify generated saved chunks across multiple seeds.
+The six fitted profiles are compiled into six selectable NeoForge density graphs and six world presets. Each graph consumes measured relief, multiscale RMS ratios, slope-derived ridge/cliff/valley indices, spectral wavelength and orientation. The original DEM grids are never replayed or packaged. The seven-mode menu shares the same biome-source chain and keeps the Nether and End definitions identical; only the Overworld noise-settings reference changes among the six fitted modes.
 
-Minecraft's current Overworld height budget cannot preserve Everest's absolute elevation at vertical 1 block = 1 meter. The runtime must explicitly choose relative relief mapping or vertical compression; the profile must not silently claim absolute 1:1 vertical scale.
+The runtime kernel currently applies **relative morphology modifiers over the existing base density field**. This is a procedural parametric model, not a neural network and not an absolute-heightfield renderer. It does not yet map every vertical meter to one Minecraft block or reproduce Everest's exact summit elevation and the Grand Canyon's exact river-floor elevation. Minecraft's finite vertical budget makes that a separate, explicit vertical-compression decision rather than something the fitter should silently guess.
+
+The actual-server smoke matrix boots each fitted world preset, checks the saved fitted noise-settings ID, and requires saved region output. This verifies registry decoding and real chunk persistence; it does not by itself prove visual similarity. The next quality gate is a multi-seed generated-terrain comparison against the source DEM's elevation, slope, relief and wavelength distributions, with the chosen vertical mapping documented before claiming full 1:1 vertical real scale.
 
 ## Official data references
 
@@ -61,7 +63,7 @@ The first actual NeoForge server smoke exposed a real registry-reference mismatc
 A second runtime registry check caught the same legacy field-name mismatch inside the custom density kernel's `continents` input (not only in `noise_settings`). The compiler now shares one source-specific registry ID across the noise router, adjusted climate graph and archetype kernel, and the contract test asserts the kernel input is bound.
 
 
-The Terrain Lab regression suite is also part of publication preflight. Its legacy fantasy toggle is explicitly tested to preserve the 512-block Grand Nether/End rather than silently switching a canonical world to the separate 256-block historical experiment.
+The Terrain Lab regression suite remains a separate QA suite and is not a publication-preflight gate. Its legacy fantasy toggle is tested to preserve the 512-block Grand Nether/End rather than silently switching a canonical world to the separate 256-block historical experiment.
 
 
 Publication preflight now also checks that YACL Terrain Lab drafts remain an explicit export operation rather than an automatic Gradle task, so fitted preset publication cannot silently rewrite unrelated experimental worlds.

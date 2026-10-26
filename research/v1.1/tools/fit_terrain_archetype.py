@@ -335,6 +335,8 @@ def fit_profile(
             "vertical_meters_per_block": None,
             "vertical_mapping_requires_explicit_choice": True,
             "absolute_elevation_is_not_replayed": True,
+            "runtime_density_function": "realscale:terrain_archetype",
+            "runtime_integration": "relative_morphology_modifier_over_base_density",
             "minecraft_height_budget_blocks": 2096,
             "preview_generator": "seeded_multiscale_spectral_noise_prototype",
         },
