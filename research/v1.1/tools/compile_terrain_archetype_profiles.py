@@ -81,6 +81,25 @@ CANONICAL = [
     ("karst_three_realms", "realscale:tva_karst_fitted"),
     ("dune_three_realms", "realscale:tva_dune_fitted"),
 ]
+LEGACY_SIGNAL_FIELDS = {
+    # The historical Realism MAX density graph uses descriptive field names;
+    # the Himalayan and Grand Canyon graphs retain their older short names.
+    "realism_max": {
+        "continents": "continental_field",
+        "erosion": "erosion_field",
+        "ridges": "mountain_axis",
+    },
+    "himalayan": {
+        "continents": "continents",
+        "erosion": "erosion",
+        "ridges": "ridges",
+    },
+    "grand_canyon": {
+        "continents": "continents",
+        "erosion": "erosion",
+        "ridges": "ridges",
+    },
+}
 
 
 def read_json(path: Path):
@@ -150,16 +169,18 @@ def compile_profiles(profiles_dir: Path, resources_root: Path, out_dir: Path):
         noise_settings = read_json(data_root / "noise_settings" / f"{template_id}.json")
         noise_settings = replace_root(noise_settings, template_id, root_id)
         router = noise_settings["noise_router"]
-        router["continents"] = f"realscale:{legacy_id}/continents"
-        router["erosion"] = f"realscale:{legacy_id}/erosion"
-        router["ridges"] = f"realscale:{legacy_id}/ridges"
+        signal_fields = LEGACY_SIGNAL_FIELDS[legacy_id]
+        continents_id = f"realscale:{legacy_id}/{signal_fields['continents']}"
+        router["continents"] = continents_id
+        router["erosion"] = f"realscale:{legacy_id}/{signal_fields['erosion']}"
+        router["ridges"] = f"realscale:{legacy_id}/{signal_fields['ridges']}"
         router["depth"] = f"realscale:{root_id}/terrain_density"
         router["initial_density_without_jaggedness"] = f"realscale:{root_id}/preliminary_density"
         router["final_density"]["base"] = f"realscale:{root_id}/terrain_density"
         adjusted = router.get("temperature", {}).get("adjusted", {})
         if isinstance(adjusted, dict):
             adjusted["height_signal"] = f"realscale:{root_id}/original_height_signal"
-            adjusted["continents"] = f"realscale:{legacy_id}/continents"
+            adjusted["continents"] = continents_id
         write_json(out_dir / "data/realscale/worldgen/noise_settings" / f"{root_id}.json", noise_settings)
 
         density_dir = out_dir / "data/realscale/worldgen/density_function" / root_id
