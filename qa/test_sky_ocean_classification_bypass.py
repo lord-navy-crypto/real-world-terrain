@@ -50,7 +50,8 @@ class OffshoreClassificationTest(unittest.TestCase):
             self.assertEqual(source["source"]["type"],"realscale:natural_ecotones")
         # New canonical aliases compose the same layers in a stable order.
         for preset in ("natural_three_realms","alpine_three_realms",
-                       "canyon_three_realms","measured_three_realms"):
+                       "canyon_three_realms","glacial_three_realms",
+                       "volcanic_three_realms","karst_three_realms","dune_three_realms"):
             dims=json.loads((PRESETS/(preset+".json")).read_text())["dimensions"]
             source=dims["minecraft:overworld"]["generator"]["biome_source"]
             self.assertEqual(source["type"],"realscale:sky_ocean")
