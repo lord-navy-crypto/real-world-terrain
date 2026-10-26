@@ -11,6 +11,10 @@ on:
       - "neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/**"
       - "research/v1.1/profiles/**"
       - "qa/neoforge/audit_fitted_archetype_heightmaps.py"
+      - "qa/neoforge/realscale_headless_qa.py"
+      - "research/v1.1/tools/compile_terrain_archetype_profiles.py"
+      - "research/v1.1/tools/fit_terrain_archetype.py"
+      - "research/v1.1/tests/test_compile_terrain_archetype_profiles.py"
       - "qa/neoforge/compare_fitted_archetype_heightmaps.py"
       - ".github/workflows/fitted-terrain-worldgen-smoke.yml"
   push:
@@ -24,11 +28,16 @@ on:
       - "neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/**"
       - "research/v1.1/profiles/**"
       - "qa/neoforge/audit_fitted_archetype_heightmaps.py"
+      - "qa/neoforge/realscale_headless_qa.py"
+      - "research/v1.1/tools/compile_terrain_archetype_profiles.py"
+      - "research/v1.1/tools/fit_terrain_archetype.py"
+      - "research/v1.1/tests/test_compile_terrain_archetype_profiles.py"
       - "qa/neoforge/compare_fitted_archetype_heightmaps.py"
       - ".github/workflows/fitted-terrain-worldgen-smoke.yml"
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
