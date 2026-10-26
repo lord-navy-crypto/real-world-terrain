@@ -76,6 +76,36 @@ class TerrainProfileCompilerTests(unittest.TestCase):
                     height = json.loads((out / "data/realscale/worldgen/density_function" / root_id / "height_signal.json").read_text())
                     self.assertEqual(height["type"], "realscale:terrain_archetype")
                     self.assertEqual(height["family"], family)
+
+                    # Every compiled runtime coefficient must preserve the
+                    # corresponding value from the fitted profile. This guards
+                    # against menu/resource generation silently dropping data.
+                    fitted_profile = json.loads(
+                        (profiles / f"{config['target']}.json").read_text(encoding="utf-8")
+                    )
+                    parameter_fields = (
+                        ("macro_gain", "macro_gain"),
+                        ("meso_gain", "meso_gain"),
+                        ("micro_gain", "micro_gain"),
+                        ("relief_gain", "relief_gain"),
+                        ("ridge_sharpness", "ridge_sharpness"),
+                        ("cliff_index", "cliff_index"),
+                        ("valley_index", "valley_index"),
+                        ("ridge_index", "ridge_index"),
+                        ("anisotropy_gain", "anisotropy_gain"),
+                        ("dune_axis_radians", "dune_axis_radians"),
+                        ("dominant_wavelength_m", "dominant_wavelength_m"),
+                    )
+                    for runtime_name, profile_name in parameter_fields:
+                        expected = float(fitted_profile["fit_parameters"][profile_name])
+                        if runtime_name == "dune_axis_radians":
+                            expected = max(-float(np.pi), min(float(np.pi), expected))
+                        elif runtime_name == "dominant_wavelength_m":
+                            expected = max(1.0, min(1_000_000.0, expected))
+                        self.assertAlmostEqual(
+                            height[runtime_name], expected, places=6,
+                            msg=f"{family}: {runtime_name} did not map from {profile_name}",
+                        )
                     legacy_id = config["legacy_source"]
                     signal_fields = COMPILER.LEGACY_SIGNAL_FIELDS[legacy_id]
                     self.assertEqual(height["continents"], f"realscale:{legacy_id}/{signal_fields['continents']}")
