@@ -139,12 +139,25 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
         double x = ctx.blockX();
         double z = ctx.blockZ();
         double highlandGate = smoothstep(0.65, 1.7, original);
+        // The dominant orientation and wavelength are fitted from each real
+        // DEM crop. Keep these broad signals subtle so the fitted scale guides
+        // morphology without turning the entire world into repeated stripes.
+        double across = orientedAcross(x, z);
+        double phase = TAU * across / dominantWavelengthM;
+        double ridgeBands = 0.85 + 0.15 * Math.pow(Math.max(0.0, Math.cos(phase)), 2.0);
+        double valleyDistance = Math.abs(Math.sin(Math.PI * across / dominantWavelengthM));
+        double canyonTrough = 1.0 - smoothstep(0.0, 0.18, valleyDistance);
+        double canyonShoulder = smoothstep(0.18, 0.25, valleyDistance)
+                * (1.0 - smoothstep(0.25, 0.42, valleyDistance));
 
         return switch (family) {
             case "alpine" -> original + landGate * highlandGate * reliefGain
-                    * 0.22 * macroGain * ridgeSharpness * (1.0 - Math.abs(signal));
+                    * 0.22 * macroGain * ridgeSharpness * ridgeBands
+                    * (1.0 - Math.abs(signal));
             case "canyon" -> original - landGate * reliefGain
-                    * 0.28 * mesoGain * cliffIndex * Math.abs(signal);
+                    * (0.28 * mesoGain * cliffIndex * Math.abs(signal)
+                    + 0.10 * valleyIndex * canyonTrough)
+                    + landGate * reliefGain * 0.025 * cliffIndex * canyonShoulder;
             case "glacial" -> glacialValley(original, landGate, x, z);
             case "volcanic" -> volcanicShield(original, landGate, x, z);
             case "karst" -> karstTowers(original, landGate, x, z, signal);
@@ -153,13 +166,22 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
         };
     }
 
+    private double orientedAcross(double x, double z) {
+        return x * Math.cos(duneAxisRadians) + z * Math.sin(duneAxisRadians);
+    }
+
+    private double fittedScale(double fraction, double min, double max) {
+        return Math.max(min, Math.min(max, dominantWavelengthM * fraction));
+    }
+
     private double glacialValley(double original, double gate, double x, double z) {
         int cellX = Math.floorDiv((int)x, CELL);
+        double width = fittedScale(0.035, 180.0, 1600.0);
         double centerX = cellX * (double) CELL + CELL * 0.5
-                + 130.0 * Math.sin(z * 0.00055 + cellX * 1.17);
-        double width = 260.0 + 280.0 * valleyIndex;
+                + width * 0.22 * Math.sin(TAU * z / dominantWavelengthM + cellX * 1.17);
         double across = Math.abs(x - centerX);
-        // Flat-bottomed center followed by a broad U-shaped valley wall.
+        // Flat-bottomed center followed by a broad U-shaped valley wall;
+        // width follows the measured wavelength of the glacial-valley crop.
         double trough = 1.0 - smoothstep(width * 0.28, width, across);
         return original - gate * reliefGain * 0.44 * Math.max(valleyIndex, 0.12) * trough;
     }
@@ -172,7 +194,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
                 + MountainReliefMath.centerOffsetX(hash);
         double centerZ = cellZ * (double) CELL + CELL * 0.5
                 + MountainReliefMath.centerOffsetZ(hash);
-        double radius = 280.0 + Math.floorMod(hash >>> 41, 281L);
+        double radius = fittedScale(0.025, 250.0, 800.0);
         double radial = distance(x, z, centerX, centerZ) / radius;
         if (radial >= 1.0) return original;
         double shield = Math.pow(Math.max(0.0, 1.0 - radial), 1.35);
@@ -189,12 +211,12 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
         double centerZ = cellZ * (double) CELL + CELL * 0.5
                 + MountainReliefMath.centerOffsetZ(hash);
         double radial = distance(x, z, centerX, centerZ);
-        double towerRadius = 230.0 + Math.floorMod(hash >>> 37, 220L);
+        double towerRadius = fittedScale(0.025, 80.0, 450.0);
         double tower = 1.0 - smoothstep(towerRadius * 0.55, towerRadius, radial);
         long sinkHash = MountainReliefMath.mix(hash ^ 0x6a09e667f3bcc909L);
         double sinkX = centerX + MountainReliefMath.centerOffsetX(sinkHash) * 1.8;
         double sinkZ = centerZ + MountainReliefMath.centerOffsetZ(sinkHash) * 1.8;
-        double sinkRadius = 95.0 + Math.floorMod(sinkHash >>> 33, 90L);
+        double sinkRadius = fittedScale(0.012, 40.0, 200.0);
         double sink = 1.0 - smoothstep(sinkRadius * 0.45, sinkRadius,
                 distance(x, z, sinkX, sinkZ));
         double noiseTower = Math.max(0.0, signal) * 0.08 * ridgeGain();
@@ -203,7 +225,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
     }
 
     private double duneRidges(double original, double gate, double x, double z, double signal) {
-        double across = x * Math.cos(duneAxisRadians) + z * Math.sin(duneAxisRadians);
+        double across = orientedAcross(x, z);
         double phase = TAU * across / dominantWavelengthM + signal * 0.12;
         double wave = Math.sin(phase) + 0.28 * Math.sin(2.0 * phase + 0.6);
         return original + gate * reliefGain * 0.10 * Math.max(mesoGain, 0.12)
