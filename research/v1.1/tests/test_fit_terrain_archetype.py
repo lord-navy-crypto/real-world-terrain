@@ -52,7 +52,7 @@ class TerrainArchetypeFitTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
 
-    def fit(self, array, family="alpine", cell_x=32.0, cell_z=32.0):
+    def fit(self, array, family="alpine", cell_x=32.0, cell_z=32.0, input_meta=None):
         return FIT.fit_profile(
             elevation=array.astype(np.float64),
             cell_x=cell_x,
@@ -63,7 +63,7 @@ class TerrainArchetypeFitTests(unittest.TestCase):
             vertical_datum="synthetic-test-datum",
             source_sha256="a" * 64,
             source_file="synthetic-not-real.tif",
-            input_meta={
+            input_meta=input_meta or {
                 "input_format": "test fixture",
                 "crs": "synthetic local metric grid",
                 "native_spacing_m": [cell_x, cell_z],
@@ -126,7 +126,7 @@ class TerrainArchetypeFitTests(unittest.TestCase):
         self.assertGreater(cell_z, 20)
         self.assertEqual(meta["input_format"], "GeoTIFF")
         self.assertEqual(meta["crs"], "EPSG:4326")
-        profile = self.fit(elevation, cell_x=cell_x, cell_z=cell_z)
+        profile = self.fit(elevation, cell_x=cell_x, cell_z=cell_z, input_meta=meta)
         self.assertEqual(profile["source"]["input_crs"], "EPSG:4326")
 
     def test_nodata_is_rejected_not_silently_filled(self):
