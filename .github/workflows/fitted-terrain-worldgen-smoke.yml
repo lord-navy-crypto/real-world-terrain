@@ -100,7 +100,7 @@ jobs:
           for path in saved_worlds:
               try:
                   data = gzip.decompress(path.read_bytes())
-                  if (b"realscale:dune_three_realms" in data
+                  if (b"realscale:tva_dune_fitted" in data
                       and b"realscale:grand_nether" in data
                       and b"realscale:grand_end" in data):
                       print("FITTED_PRESET_PERSISTED:", path)
@@ -108,8 +108,8 @@ jobs:
               except Exception as exc:
                   print("LEVEL_DAT_READ_FAILURE:", path, exc)
           if not ready.is_set() or not valid:
-              raise SystemExit("Fitted dune preset did not boot and persist its generator ID.")
-          print("PASS: fitted density codec registry decode, world boot and saved generator ID")
+              raise SystemExit("Fitted dune preset did not boot and persist its fitted noise-settings ID.")
+          print("PASS: fitted density codec registry decode, actual world boot and fitted noise-settings ID")
           PY
       - name: Upload fitted-archetype server diagnostics
         if: always()
