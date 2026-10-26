@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exercise real compiled RealScale .jar -> YACL draft -> self-contained new-world pack.
 
-Must preserve four original menu choices plus additive experiments and Grand dimensions.
+Must preserve one default plus six fitted menu choices, hide experiments, and keep Grand dimensions.
 """
 import json
 from pathlib import Path
@@ -32,13 +32,18 @@ def main():
         "realscale:natural_three_realms",
         "realscale:alpine_three_realms",
         "realscale:canyon_three_realms",
-        "realscale:measured_three_realms",
+        "realscale:glacial_three_realms",
+        "realscale:volcanic_three_realms",
+        "realscale:karst_three_realms",
+        "realscale:dune_three_realms",
     ]
-    optional=["realscale:wonders_invasion_three_realms"]
+    experimental=["realscale:wonders_invasion_three_realms"]
     if cave_test:
-        optional.append("realscale:cave_ocean_ecology_three_realms")
-    require(core["replace"] is False and core["values"]==original+optional,
-            "RealScale built mod must retain four original presets plus explicit opt-in experiments")
+        experimental.append("realscale:cave_ocean_ecology_three_realms")
+    require(core["replace"] is False and core["values"]==original,
+            "RealScale built mod must expose only the default and six DEM-fitted presets")
+    require(not any(preset in core["values"] for preset in experimental),
+            "Experimental world presets must remain available on disk but hidden from the default menu")
     with tempfile.TemporaryDirectory(prefix="realscale-lab-export-") as temporary:
         directory=Path(temporary)
         draft=directory/"profile.json"
@@ -80,7 +85,7 @@ def main():
             pass
         else:
             raise AssertionError("Exporter unexpectedly overwrote a pre-existing pack")
-    print("REALSCALE_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, 4 stable + permitted optional test menu and immutable export")
+    print("REALSCALE_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, 7 canonical fitted modes, hidden experiments and immutable export")
 
 if __name__=="__main__":
     main()
