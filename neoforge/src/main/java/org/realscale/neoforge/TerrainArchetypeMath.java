@@ -26,6 +26,19 @@ final class TerrainArchetypeMath {
     private final double axisCos;
     private final double axisSin;
 
+    // Volcanic geometry depends only on horizontal block coordinates. Worldgen
+    // samples many Y values for the same X/Z, so cache the expensive radial
+    // shield/caldera shape per worker rather than repeating hash/hypot/pow/exp.
+    private static final int VOLCANIC_CACHE_SLOTS = 1024;
+    private final ThreadLocal<VolcanicShapeCache> volcanicShapeCache =
+            ThreadLocal.withInitial(VolcanicShapeCache::new);
+
+    private static final class VolcanicShapeCache {
+        private final long[] keys = new long[VOLCANIC_CACHE_SLOTS];
+        private final double[] shapes = new double[VOLCANIC_CACHE_SLOTS];
+        private final boolean[] occupied = new boolean[VOLCANIC_CACHE_SLOTS];
+    }
+
     TerrainArchetypeMath(String family, double macroGain, double mesoGain,
             double microGain, double reliefGain, double ridgeSharpness,
             double cliffIndex, double valleyIndex, double ridgeIndex,
@@ -128,19 +141,44 @@ final class TerrainArchetypeMath {
     }
 
     private double volcanicShield(double original, double gate, double x, double z) {
-        int cellX = Math.floorDiv((int)x, CELL);
-        int cellZ = Math.floorDiv((int)z, CELL);
-        long hash = MountainReliefMath.siteHash(cellX, cellZ);
+        int blockX = (int) x;
+        int blockZ = (int) z;
+        double shape = volcanicShapeAt(blockX, blockZ);
+        if (shape == 0.0) return original;
+        return original + gate * reliefGain * 0.55 * Math.max(macroGain, 0.12) * shape;
+    }
+
+    private double volcanicShapeAt(int x, int z) {
+        long key = ((long) x << 32) ^ (z & 0xffffffffL);
+        int hash = x * 0x9e3779b9 ^ Integer.rotateLeft(z * 0x85ebca6b, 13);
+        int slot = (hash ^ (hash >>> 16)) & (VOLCANIC_CACHE_SLOTS - 1);
+        VolcanicShapeCache cache = volcanicShapeCache.get();
+        if (cache.occupied[slot] && cache.keys[slot] == key) {
+            return cache.shapes[slot];
+        }
+
+        int cellX = Math.floorDiv(x, CELL);
+        int cellZ = Math.floorDiv(z, CELL);
+        long site = MountainReliefMath.siteHash(cellX, cellZ);
         double centerX = cellX * (double) CELL + CELL * 0.5
-                + MountainReliefMath.centerOffsetX(hash);
+                + MountainReliefMath.centerOffsetX(site);
         double centerZ = cellZ * (double) CELL + CELL * 0.5
-                + MountainReliefMath.centerOffsetZ(hash);
+                + MountainReliefMath.centerOffsetZ(site);
         double radius = fittedScale(0.025, 250.0, 800.0);
         double radial = distance(x, z, centerX, centerZ) / radius;
-        if (radial >= 1.0) return original;
-        double shield = Math.pow(Math.max(0.0, 1.0 - radial), 1.35);
-        double caldera = 0.16 * Math.exp(-Math.pow(radial / 0.12, 2.0));
-        return original + gate * reliefGain * 0.55 * Math.max(macroGain, 0.12) * (shield - caldera);
+        double shape;
+        if (radial >= 1.0) {
+            shape = 0.0;
+        } else {
+            double shield = Math.pow(Math.max(0.0, 1.0 - radial), 1.35);
+            double caldera = 0.16 * Math.exp(-Math.pow(radial / 0.12, 2.0));
+            shape = shield - caldera;
+        }
+
+        cache.keys[slot] = key;
+        cache.shapes[slot] = shape;
+        cache.occupied[slot] = true;
+        return shape;
     }
 
     private double karstTowers(double original, double gate, double x, double z, double signal) {
