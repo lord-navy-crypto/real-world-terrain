@@ -68,7 +68,7 @@ class RealCaveBiomeTests(unittest.TestCase):
         self.assertIn("Blocks.POINTED_DRIPSTONE",code)
         self.assertIn("spike.canSurvive(w,p)",code)
 
-    def test_only_special_test_preset_remaps_cave_biomes(self):
+    def test_shared_cave_layer_in_canonical_presets_and_legacy_preservation(self):
         presets=DATA/"worldgen/world_preset"
         experiment=load(presets/"tva_cave_ocean_ecology_test_three_realms.json")
         sacred=load(presets/"tva_sacred_timeline_three_realms.json")
@@ -85,15 +85,33 @@ class RealCaveBiomeTests(unittest.TestCase):
                          sacred["dimensions"]["minecraft:the_nether"])
         self.assertEqual(experiment["dimensions"]["minecraft:the_end"],
                          sacred["dimensions"]["minecraft:the_end"])
-        for standard in ("tva_sacred_timeline_three_realms","tva_measured_three_realms",
-                         "tva_alpine_three_realms","tva_canyon_three_realms"):
-            p=load(presets/(standard+".json"))
-            self.assertNotIn("cave_depth_habitats",json.dumps(p))
-        menu=load(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
-        self.assertEqual(menu["values"][-1],
-                         "realscale:cave_ocean_ecology_three_realms")
-        self.assertEqual(len(menu["values"]),6)
 
+        # Historical preset graphs are unchanged for existing-world compatibility.
+        for legacy in ("tva_sacred_timeline_three_realms","tva_measured_three_realms",
+                       "tva_alpine_three_realms","tva_canyon_three_realms"):
+            p=load(presets/(legacy+".json"))
+            self.assertNotIn("cave_depth_habitats",json.dumps(p))
+
+        # New canonical presets compose the cave layer with the shared wonder/ecotone stack.
+        for canonical in ("natural_three_realms","alpine_three_realms",
+                          "canyon_three_realms","measured_three_realms"):
+            p=load(presets/(canonical+".json"))
+            chain=p["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+            self.assertEqual(chain["type"],"realscale:sky_ocean")
+            chain=chain["source"]
+            self.assertEqual(chain["type"],"realscale:geo_wonders_opt_in")
+            chain=chain["source"]
+            self.assertEqual(chain["type"],"realscale:natural_ecotones")
+            chain=chain["source"]
+            self.assertEqual(chain["type"],"realscale:cave_depth_habitats")
+
+        menu=load(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
+        self.assertEqual(menu["values"],[
+            "realscale:natural_three_realms",
+            "realscale:alpine_three_realms",
+            "realscale:canyon_three_realms",
+            "realscale:measured_three_realms",
+        ])
     def test_warm_reef_has_waterlogged_coral_and_temperate_seagrass(self):
         java=(JAVA/"CaveMarineHabitatFeature.java").read_text()
         for coral in ("TUBE_CORAL_FAN","BRAIN_CORAL_FAN","BUBBLE_CORAL_FAN",
