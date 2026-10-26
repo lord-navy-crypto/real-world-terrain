@@ -11,6 +11,7 @@ import hashlib
 import json
 import math
 import shutil
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -236,6 +237,37 @@ def compile_profiles(profiles_dir: Path, resources_root: Path, out_dir: Path):
             "description": "RealScale fitted terrain archetypes — Natural + six real-data profiles",
         }
     })
+
+    # Emit directly installable archives: datapack resources at ZIP root, and a
+    # companion resource pack for translated Create World labels.
+    artifact_root = out_dir.parent
+    datapack_zip = artifact_root / "RealScale-Terrain-Archetypes-Datapack.zip"
+    with zipfile.ZipFile(datapack_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        archive.write(out_dir / "pack.mcmeta", "pack.mcmeta")
+        archive.write(out_dir / "terrain-profile-provenance.json", "terrain-profile-provenance.json")
+        for path in sorted((out_dir / "data").rglob("*")):
+            if path.is_file():
+                archive.write(path, path.relative_to(out_dir).as_posix())
+
+    resource_pack = artifact_root / "language-pack"
+    write_json(resource_pack / "pack.mcmeta", {
+        "pack": {
+            "pack_format": 34,
+            "description": "RealScale terrain archetype world preset labels",
+        }
+    })
+    for path in sorted((out_dir / "assets").rglob("*")):
+        if path.is_file():
+            destination = resource_pack / path.relative_to(out_dir)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(path, destination)
+    language_zip = artifact_root / "RealScale-Terrain-Archetypes-Language-Pack.zip"
+    with zipfile.ZipFile(language_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        archive.write(resource_pack / "pack.mcmeta", "pack.mcmeta")
+        for path in sorted((resource_pack / "assets").rglob("*")):
+            if path.is_file():
+                archive.write(path, path.relative_to(resource_pack).as_posix())
+
     return manifest_entries
 
 
