@@ -114,19 +114,14 @@ jobs:
             cat > "$qa_pack/pack.mcmeta" <<'JSON'
           {"pack":{"pack_format":48,"description":"RealScale fitted worldgen QA sample loader"}}
           JSON
-            cat > "$qa_pack/data/minecraft/tags/function/tick.json" <<'JSON'
-          {"values":["realscale:qa_tick"]}
+            cat > "$qa_pack/data/minecraft/tags/function/load.json" <<'JSON'
+          {"values":["realscale:qa_schedule"]}
           JSON
-            cat > "$qa_pack/data/realscale/function/qa_tick.mcfunction" <<'FUNCTION'
-          execute unless entity @e[type=minecraft:marker,tag=realscale_qa_scheduled,limit=1] run function realscale:qa_schedule
-          FUNCTION
             cat > "$qa_pack/data/realscale/function/qa_schedule.mcfunction" <<'FUNCTION'
-          execute in minecraft:overworld run summon minecraft:marker 0 80 0 {Tags:["realscale_qa_scheduled"]}
-          schedule function realscale:qa_initialize 600t replace
+          schedule function realscale:qa_initialize 1800t replace
           FUNCTION
             cat > "$qa_pack/data/realscale/function/qa_initialize.mcfunction" <<'FUNCTION'
           execute in minecraft:overworld run forceload add 976 976 1072 1072
-          execute in minecraft:overworld run summon minecraft:marker 1024 80 1024 {Tags:["realscale_qa_initialized"]}
           FUNCTION
           done
       - name: Boot NeoForge and persist the fitted generator ID
@@ -169,7 +164,7 @@ jobs:
               # function is the source of truth for chunk requests.
               # Let initial spawn preparation settle, then give the bounded
               # target region time to generate before the graceful server stop.
-              time.sleep(120)
+              time.sleep(180)
           # runServer is a Gradle wrapper; its stdin does not reliably forward
           # "stop" to the Minecraft child. SIGINT the isolated process group so
           # the server's shutdown hook saves generated Anvil chunks gracefully.
