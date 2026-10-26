@@ -2,6 +2,7 @@ import importlib.util
 import json
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 import numpy as np
@@ -83,6 +84,19 @@ class TerrainProfileCompilerTests(unittest.TestCase):
             self.assertEqual(provenance["preset_count"], 7)
             self.assertEqual(provenance["profile_count"], 6)
             self.assertFalse(provenance["raw_dem_grids_embedded"])
+            datapack_zip = out.parent / "RealScale-Terrain-Archetypes-Datapack.zip"
+            language_zip = out.parent / "RealScale-Terrain-Archetypes-Language-Pack.zip"
+            self.assertTrue(datapack_zip.is_file())
+            self.assertTrue(language_zip.is_file())
+            with zipfile.ZipFile(datapack_zip) as archive:
+                names = set(archive.namelist())
+                self.assertIn("pack.mcmeta", names)
+                self.assertIn("data/minecraft/tags/worldgen/world_preset/normal.json", names)
+                self.assertIn("data/realscale/worldgen/world_preset/dune_three_realms.json", names)
+            with zipfile.ZipFile(language_zip) as archive:
+                names = set(archive.namelist())
+                self.assertIn("pack.mcmeta", names)
+                self.assertIn("assets/minecraft/lang/zh_cn.json", names)
 
 
 if __name__ == "__main__":
