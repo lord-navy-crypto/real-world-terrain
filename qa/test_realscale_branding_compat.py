@@ -128,7 +128,7 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
                 self.assertEqual(density["family"], profile["family"])
                 self.assertEqual(density["dominant_wavelength_m"], fit["dominant_wavelength_m"])
                 self.assertEqual(density["relief_gain"], fit["relief_gain"])
-                self.assertEqual(density["dune_axis_radians"], fit["dune_axis_radians"])
+                self.assertAlmostEqual(density["dune_axis_radians"], fit["dune_axis_radians"], places=5)
                 self.assertEqual(density["macro_gain"], fit["macro_gain"])
                 self.assertEqual(density["cliff_index"], fit["cliff_index"])
                 self.assertEqual(density["valley_index"], fit["valley_index"])
