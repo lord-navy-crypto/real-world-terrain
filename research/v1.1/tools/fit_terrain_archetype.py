@@ -294,6 +294,7 @@ def fit_profile(
             "vertical_mapping_requires_explicit_choice": True,
             "absolute_elevation_is_not_replayed": True,
             "minecraft_height_budget_blocks": 2096,
+            "preview_generator": "seeded_multiscale_spectral_noise_prototype",
         },
         "limitations": [
             "This is a parametric calibration profile, not a neural-network model.",
@@ -305,6 +306,71 @@ def fit_profile(
     }
 
 
+def _spectral_band_noise(rows, cols, cell_x, cell_z, exponent, anisotropy, low_cut, high_cut, rng):
+    white = rng.standard_normal((rows, cols))
+    spectrum = np.fft.fft2(white)
+    fx = np.fft.fftfreq(cols, d=cell_x)[None, :]
+    fz = np.fft.fftfreq(rows, d=cell_z)[:, None]
+    frequency = np.sqrt((fx / max(anisotropy, 1e-6)) ** 2 + fz ** 2)
+    mask = frequency > 0
+    if low_cut is not None:
+        mask &= frequency >= low_cut
+    if high_cut is not None:
+        mask &= frequency < high_cut
+    if not np.any(mask):
+        mask = frequency > 0
+    spectral_filter = np.zeros_like(frequency)
+    spectral_filter[mask] = np.power(frequency[mask], -exponent / 2.0)
+    field = np.fft.ifft2(spectrum * spectral_filter).real
+    field -= float(np.mean(field))
+    spread = float(np.std(field))
+    if spread < 1e-9:
+        field = white - float(np.mean(white))
+        spread = float(np.std(field))
+    return field / max(spread, 1e-9)
+
+
+def synthesize_heightfield(profile: dict, rows: int, cols: int, cell_x: float, cell_z: float, seed: int = 0):
+    """Generate a new relative-height sample from fitted coefficients only."""
+    if rows < 32 or cols < 32:
+        raise ValueError("Synthetic preview needs at least 32 rows and 32 columns")
+    if cell_x <= 0 or cell_z <= 0:
+        raise ValueError("Preview pixel spacing must be positive")
+    family = profile.get("family")
+    if family not in FAMILIES:
+        raise ValueError("Unknown fitted terrain family")
+    params = profile["fit_parameters"]
+    scales = profile["observed_statistics"]["scale_bands_m"]
+    exponent = float(params["variogram_exponent"])
+    anisotropy = float(params["anisotropy_gain"])
+    fine_m = float(scales["fine"])
+    coarse_m = float(scales["coarse"])
+    rng = np.random.default_rng(seed)
+
+    macro = _spectral_band_noise(rows, cols, cell_x, cell_z, exponent, anisotropy,
+                                 None, 1.0 / max(coarse_m, 1e-6), rng)
+    meso = _spectral_band_noise(rows, cols, cell_x, cell_z, exponent, anisotropy,
+                                1.0 / max(coarse_m, 1e-6), 1.0 / max(fine_m, 1e-6), rng)
+    micro = _spectral_band_noise(rows, cols, cell_x, cell_z, exponent, anisotropy,
+                                 1.0 / max(fine_m, 1e-6), None, rng)
+    result = (
+        float(params["macro_amplitude_rms_m"]) * macro
+        + float(params["meso_amplitude_rms_m"]) * meso
+        + float(params["micro_amplitude_rms_m"]) * micro
+    )
+    if family == "alpine":
+        ridge = 1.0 - np.abs(macro)
+        ridge = (ridge - float(np.mean(ridge))) / max(float(np.std(ridge)), 1e-9)
+        result += float(params["ridge_sharpness"]) * 0.25 * float(params["macro_amplitude_rms_m"]) * ridge
+    elif family == "canyon":
+        valley = np.abs(meso)
+        valley = (valley - float(np.mean(valley))) / max(float(np.std(valley)), 1e-9)
+        result -= float(params["cliff_index"]) * 0.25 * float(params["meso_amplitude_rms_m"]) * valley
+    result -= float(np.mean(result))
+    return result
+
+
+
 def main():
     parser = argparse.ArgumentParser(description="Fit compact RealScale terrain archetype parameters from a sourced DEM")
     parser.add_argument("--dem", required=True, type=Path, help="Verified GeoTIFF or RealScale RGT1 .rgt.gz")
@@ -314,6 +380,11 @@ def main():
     parser.add_argument("--family", choices=FAMILIES, required=True)
     parser.add_argument("--elevation-unit", choices=("meter", "foot"), default="meter")
     parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument("--preview-out", type=Path, help="Optional synthetic preview .npz generated from fitted parameters only")
+    parser.add_argument("--preview-rows", type=int, default=256)
+    parser.add_argument("--preview-cols", type=int, default=256)
+    parser.add_argument("--preview-cell-m", type=float, default=32.0)
+    parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
     if not args.dem.is_file():
