@@ -49,7 +49,7 @@ class CoreSmoothing(unittest.TestCase):
     self.assertTrue((R/"noise_settings"/(legacy+".json")).is_file())
     self.assertTrue((R/"density_function"/legacy/"height_signal.json").is_file())
  def test_four_canonical_menu_entries_and_hidden_experiment_resources(self):
-  stable=["realscale:"+x for x in ("natural_three_realms","alpine_three_realms","canyon_three_realms","measured_three_realms")]
+  stable=["realscale:"+x for x in ("natural_three_realms","alpine_three_realms","canyon_three_realms","glacial_three_realms","volcanic_three_realms","karst_three_realms","dune_three_realms")]
   self.assertTrue((R/"world_preset/tva_wonders_invasion_three_realms.json").is_file())
   self.assertTrue((R/"world_preset/tva_cave_ocean_ecology_test_three_realms.json").is_file())
   for tag in ("normal","extended"):
