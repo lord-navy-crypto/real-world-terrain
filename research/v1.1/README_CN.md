@@ -1,46 +1,72 @@
-# RealScale Terrain Archetype Fit v1.1
+# RealScale Terrain Archetype Fitting v0.2
 
-这是一个离线研究工具：从真实 DEM 拟合紧凑的地形形态参数，再用这些参数和新种子合成新的地形样本。它不会把原始 DEM 当作无限世界的高度图，也不会自动修改 NeoForge 运行时。
+本工具链负责把真实地形 DEM 转换为紧凑的地貌统计参数，再由新种子合成不同地形；它不把原始高度图当作无限世界地图。
 
-## 安装
+## 默认模式与六种数据拟合模式
 
-    python3 -m pip install -r research/v1.1/requirements.txt
+- **Natural Landscapes**：默认模式，不绑定某一个真实地点。
+- **Alpine Mountains**：珠峰/喜马拉雅山脊。
+- **Canyons & Valleys**：美国大峡谷的峡谷壁、台地和谷地尺度。
+- **Glacial Valleys**：优胜美地冰川谷地的 U 形谷、谷宽与坡壁统计。
+- **Volcanic Landscapes**：夏威夷盾状火山与火山口形态。
+- **Karst Landscapes**：中国桂林喀斯特峰林、峰丛和洼地。
+- **Sand Dunes**：纳米布沙海的沙丘主波长、脊线方向和不对称性。
 
-## 用法
+后六种目标都要使用真实 DEM 拟合。默认数据基线为 Copernicus DEM GLO-90 公共 COG，垂直基准 EGM2008，水平坐标 WGS84，单位为米。GLO-90 名义分辨率约 90 米，是 DSM（数字表面模型），包含植被和人工地物影响，适合宏观地貌形态，不足以解析细小悬崖、喀斯特小洼地或单个沙丘波纹。美国境内的峡谷、冰川谷和火山目标可在核验实际产品元数据后换用 USGS 3DEP 更高分辨率裸地 DEM。
 
-输入应是经过来源核验的 GeoTIFF，或现有的 RGT1 压缩地形瓦片。区域至少需要 32 × 32 个有效样本，且每个方向至少约 1.5 km；更大的区域通常更适合估计多尺度地貌特征。
+## 获取真实数据并生成拟合配置
 
-珠峰/喜马拉雅示例。请把路径、产品名称、URL 和垂直基准替换为实际下载文件的元数据；不要猜测垂直基准。
+安装依赖：
 
 ```bash
-python3 research/v1.1/tools/fit_terrain_archetype.py \
-  --dem /path/to/verified_everest_dem.tif \
-  --source "Copernicus DEM GLO-30" \
-  --source-url "https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM" \
-  --vertical-datum "verify from the exact downloaded product metadata" \
-  --family alpine \
-  --out research/v1.1/profiles/everest_alpine_fit.json \
-  --preview-out research/v1.1/previews/everest_alpine_seed42.npz \
-  --seed 42
+python3 -m pip install -r research/v1.1/requirements.txt
 ```
 
-大峡谷样本应使用实际下载的 USGS 3DEP 文件，并把 family 设为 canyon。先核对数据产品元数据，再运行拟合。
+获取六个公开 GLO-90 栅格并生成拟合参数与新种子预览：
 
-## 输出
+```bash
+python3 research/v1.1/tools/build_terrain_profiles.py \
+  --all \
+  --seed 42 \
+  --out-dir build/terrain-archetype-calibration
+```
 
-- 来源名称、来源 URL、输入格式、坐标系、网格间距、垂直基准和输入文件 SHA-256。
-- 高程分位数、P05–P95 relief、坡度分布、多尺度起伏 RMS、方向半变异函数。
-- 可供后续生成器使用的多尺度幅度、粗糙度指数、各向异性、山脊/谷地统计参数。
-- 可选的 NPZ 合成预览。它只使用拟合系数和新种子，不再读取原始 DEM 网格。
+也可以只处理一个目标，例如：
 
-## 重要边界
+```bash
+python3 research/v1.1/tools/build_terrain_profiles.py \
+  --target grand_canyon \
+  --seed 42 \
+  --out-dir build/terrain-archetype-calibration
+```
 
-拟合 JSON 不包含原始高程网格；合成预览也是由参数生成的新样本。当前的谱噪声预览器只是研究原型，尚未接入 NeoForge DensityFunctions，不能称为已完成的游戏内生成模型。
+输出包括：
 
-当前仓库尚未包含经过核验的珠峰或大峡谷 DEM，也没有对应的真实拟合配置。合成测试数据仅用于测试，不得描述为真实地点的测量结果。
+- `profiles/*.json`：来源 URL、实际下载瓦片 SHA-256、裁切 DEM SHA-256、坐标系、网格间距、垂直基准和拟合参数。
+- `previews/*.npz`：只根据拟合参数与新种子生成的合成高度场，不包含原始 DEM。
+- `calibration_summary.json`：六个目标的拟合摘要和产物哈希。
+- `inputs/`：本地下载的真实源瓦片与裁切栅格，不应提交到 Git 仓库。
 
-Copernicus DEM GLO-30 是数字表面模型（DSM），可能包含植被和建筑影响；USGS 3DEP 的分辨率与垂直基准取决于具体产品。参考：
-- Copernicus DEM: https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM
-- USGS 3DEP: https://www.usgs.gov/3d-elevation-program/about-3dep-products-services
+目标区域和数据源记录在 `research/v1.1/data/terrain_dem_targets.json`。数据获取工具会校验瓦片、裁切范围和坐标系；如果下载源不可用或研究窗口超出瓦片，它会失败，而不是悄悄改用合成数据。
 
-Minecraft 当前 Overworld 的高度范围不足以同时保留珠峰绝对海拔和垂直 1:1。拟合出地貌形态系数并不等于已经解决这个高度限制。
+## 拟合方法
+
+每个区域提取高程分位数、P05–P95 高差、坡度分布、多尺度起伏 RMS、方向半变异函数、主导空间波长与方向。六种生成核分别突出山脊、峡谷陡壁、U 形谷、盾状火山/火山口、喀斯特峰林/洼地和风向沙丘脊线。
+
+这些是基于真实栅格统计的参数化地貌模型，不是神经网络，也不意味着模型推断出了真实地质成因。真实数据只用于拟合，不应直接复制成无限世界的高度图。
+
+## 当前边界
+
+- 该流水线会从公开数据源下载真实栅格；首次成功执行后，生成的拟合 JSON 才能被称为对应目标的真实数据拟合结果。
+- 合成预览器已根据七类核生成可重复的新高度样本，但它仍是离线研究预览。
+- 拟合参数尚未正式编译进 NeoForge DensityFunctions；不能声称游戏内六个地貌预设已经使用这些真实拟合系数。
+- 当前 Overworld 的垂直高度预算无法在垂直 1 方块 = 1 米的条件下容纳珠峰绝对海拔；后续必须明确选择相对高程映射或垂直压缩。
+- 不要提交原始 DEM 瓦片。保留官方来源、数据产品版本、垂直基准、许可要求和哈希即可。
+
+## 权威数据来源
+
+- Copernicus DEM GLO-90 公共数据说明与瓦片命名：<https://copernicus-dem-90m.s3.amazonaws.com/readme.html>
+- Copernicus DEM 产品规格与垂直基准：<https://dataspace.copernicus.eu/sites/default/files/media/files/2024-06/geo1988-copernicusdem-spe-002_producthandbook_i5.0.pdf>
+- Copernicus DEM 公共数据集与许可说明：<https://registry.opendata.aws/copernicus-dem/>
+- USGS 3DEP 产品、分辨率和裸地 DEM 说明：<https://www.usgs.gov/3d-elevation-program/about-3dep-products-services>
+- USGS 约 10 米 1/3 arc-second DEM 产品元数据：<https://data.usgs.gov/datacatalog/data/USGS%3A3a81321b-c153-416f-98b7-cc8e5f0e17c3>
