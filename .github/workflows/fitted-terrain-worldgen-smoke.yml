@@ -93,12 +93,13 @@ jobs:
           level-type=$WORLD_PRESET_ID
           level-seed=42
           spawn-protection=0
+          spawn-chunk-radius=0
           view-distance=3
           simulation-distance=3
           max-players=1
           max-tick-time=-1
           online-mode=true
-          initial-enabled-packs=vanilla,mod:realscale,file/realscale-qa
+          initial-enabled-packs=vanilla,file/realscale-qa
           PROPERTIES
           done
           # A datapack tick function is used instead of writing commands to
@@ -117,7 +118,11 @@ jobs:
           {"values":["realscale:qa_tick"]}
           JSON
             cat > "$qa_pack/data/realscale/function/qa_tick.mcfunction" <<'FUNCTION'
-          execute unless entity @e[type=minecraft:marker,tag=realscale_qa_initialized,limit=1] run function realscale:qa_initialize
+          execute unless entity @e[type=minecraft:marker,tag=realscale_qa_scheduled,limit=1] run function realscale:qa_schedule
+          FUNCTION
+            cat > "$qa_pack/data/realscale/function/qa_schedule.mcfunction" <<'FUNCTION'
+          execute in minecraft:overworld run summon minecraft:marker 0 80 0 {Tags:["realscale_qa_scheduled"]}
+          schedule function realscale:qa_initialize 600t replace
           FUNCTION
             cat > "$qa_pack/data/realscale/function/qa_initialize.mcfunction" <<'FUNCTION'
           execute in minecraft:overworld run forceload add 976 976 1072 1072
@@ -162,7 +167,9 @@ jobs:
               # Gradle's
               # stdin is not a reliable Minecraft console channel, so the
               # function is the source of truth for chunk requests.
-              time.sleep(90)
+              # Let initial spawn preparation settle, then give the bounded
+              # target region time to generate before the graceful server stop.
+              time.sleep(120)
           # runServer is a Gradle wrapper; its stdin does not reliably forward
           # "stop" to the Minecraft child. SIGINT the isolated process group so
           # the server's shutdown hook saves generated Anvil chunks gracefully.
