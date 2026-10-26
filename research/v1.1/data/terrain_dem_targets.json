@@ -1,0 +1,67 @@
+{
+  "schema": "realscale:terrain_dem_targets/v1",
+  "status": "targets_only_no_source_rasters_acquired",
+  "raw_rasters_committed": false,
+  "targets": [
+    {
+      "id": "everest_himalaya",
+      "family": "alpine",
+      "center_latitude": 27.9881,
+      "center_longitude": 86.9253,
+      "study_window_degrees": {
+        "west": 86.55,
+        "south": 27.65,
+        "east": 87.25,
+        "north": 28.25
+      },
+      "preferred_source": {
+        "name": "Copernicus DEM GLO-30",
+        "nominal_spacing_m": 30,
+        "surface_type": "DSM",
+        "url": "https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM",
+        "availability_note": "Verify exact target-tile availability; public AWS GLO-30 coverage is incomplete."
+      },
+      "fallback_source": {
+        "name": "Copernicus DEM GLO-90",
+        "nominal_spacing_m": 90,
+        "surface_type": "DSM",
+        "url": "https://registry.opendata.aws/copernicus-dem/",
+        "availability_note": "Global public AWS coverage; suitable for a first macro-morphology fit, not fine cliff detail."
+      },
+      "status": "not_acquired",
+      "must_verify": [
+        "Exact tile/product identifiers and source URL",
+        "Vertical datum and elevation units from product metadata",
+        "Mosaic continuity across tile boundaries",
+        "NoData handling and study-window coverage",
+        "License and required attribution"
+      ]
+    },
+    {
+      "id": "grand_canyon",
+      "family": "canyon",
+      "study_window_degrees": {
+        "west": -112.7,
+        "south": 35.9,
+        "east": -111.8,
+        "north": 36.5
+      },
+      "preferred_source": {
+        "name": "USGS 3DEP 1/3 arc-second DEM",
+        "nominal_spacing_m": 10,
+        "surface_type": "bare-earth DEM",
+        "url": "https://data.usgs.gov/datacatalog/data/USGS%3A3a81321b-c153-416f-98b7-cc8e5f0e17c3",
+        "download_url": "https://www.usgs.gov/the-national-map-data-delivery/gis-data-download",
+        "availability_note": "Check current tile coverage and use higher-resolution project data where available."
+      },
+      "status": "not_acquired",
+      "must_verify": [
+        "Exact tile/product identifiers and source URL",
+        "Vertical datum and elevation units from product metadata",
+        "Mosaic continuity across tile boundaries",
+        "NoData handling and study-window coverage",
+        "License and required attribution"
+      ]
+    }
+  ]
+}
