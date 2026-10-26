@@ -26,9 +26,12 @@ NEW = [
 ]
 CANONICAL = {
     "natural_three_realms": "tva_natural_smoothed",
-    "alpine_three_realms": "tva_alpine_smoothed",
-    "canyon_three_realms": "tva_canyon_smoothed",
-    "measured_three_realms": "usgs_big_sur_v2",
+    "alpine_three_realms": "tva_alpine_fitted",
+    "canyon_three_realms": "tva_canyon_fitted",
+    "glacial_three_realms": "tva_glacial_fitted",
+    "volcanic_three_realms": "tva_volcanic_fitted",
+    "karst_three_realms": "tva_karst_fitted",
+    "dune_three_realms": "tva_dune_fitted",
 }
 SHARED_BIOME_CHAIN = [
     "realscale:sky_ocean",
@@ -54,7 +57,7 @@ def source_chain(source):
 
 
 class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
-    def test_new_world_menu_has_only_four_canonical_presets(self):
+    def test_new_world_menu_has_one_default_and_six_fitted_presets(self):
         menu = ["realscale:" + name for name in CANONICAL]
         for name in ("normal", "extended"):
             tag = read(TAG_ROOT / (name + ".json"))
