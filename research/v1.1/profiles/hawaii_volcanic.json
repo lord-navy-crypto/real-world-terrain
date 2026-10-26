@@ -26,6 +26,8 @@
     "mode": "procedural_from_fitted_coefficients",
     "preview_generator": "seeded_multiscale_spectral_noise_prototype",
     "raw_elevation_samples_embedded": false,
+    "runtime_density_function": "realscale:terrain_archetype",
+    "runtime_integration": "relative_morphology_modifier_over_base_density",
     "vertical_mapping_requires_explicit_choice": true,
     "vertical_meters_per_block": null
   },
@@ -36,7 +38,7 @@
     "Runtime relief is normalized to the existing world-height budget; absolute DEM altitude is not replayed and vertical meters-to-blocks scaling is not yet a calibrated one-to-one mapping.",
     "DEM-derived morphology does not by itself prove tectonic, rainfall, or lithology causes.",
     "This calibration uses the global 90 m DSM baseline; it cannot resolve fine cliffs, small sinkholes, or individual dune ripples.",
-    "The profile is a real-data-derived morphology fit, but game runtime integration still requires explicit density-function compilation and worldgen QA."
+    "The six canonical target profiles are compiled into NeoForge density functions by this branch; generated-world QA is tracked separately and must pass before calling the presets release-ready."
   ],
   "observed_statistics": {
     "elevation_percentiles_m": {
