@@ -179,7 +179,7 @@ def stablePlayablePresetEntries = [
 
 tasks.named("jar").configure {
     exclude { details ->
-        def resourcePath = details.path.replace('\\\\', '/')
+        def resourcePath = details.path
         resourcePath.startsWith("data/realscale/worldgen/world_preset/") &&
             !stablePlayablePresetEntries.contains(resourcePath)
     }
