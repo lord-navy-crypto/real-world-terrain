@@ -1,0 +1,23 @@
+{
+  "anisotropy_gain": 0.990941,
+  "base": "realscale:tva_glacial_fitted/original_height_signal",
+  "cliff_index": 0.176078,
+  "continents": "realscale:himalayan/continents",
+  "dominant_wavelength_m": 17311.0169,
+  "dune_axis_radians": 1.570796,
+  "family": "glacial",
+  "macro_gain": 0.976883,
+  "meso_gain": 0.211697,
+  "micro_gain": 0.029717,
+  "relief_gain": 0.713694,
+  "ridge_index": 0.497856,
+  "ridge_sharpness": 0.347762,
+  "selector": {
+    "noise": "minecraft:erosion",
+    "type": "minecraft:noise",
+    "xz_scale": 0.006,
+    "y_scale": 0
+  },
+  "type": "realscale:terrain_archetype",
+  "valley_index": 0.502144
+}

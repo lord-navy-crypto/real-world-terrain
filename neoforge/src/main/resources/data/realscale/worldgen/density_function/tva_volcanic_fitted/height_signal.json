@@ -1,0 +1,23 @@
+{
+  "anisotropy_gain": 1.058617,
+  "base": "realscale:tva_volcanic_fitted/original_height_signal",
+  "cliff_index": 0.0,
+  "continents": "realscale:realism_max/continents",
+  "dominant_wavelength_m": 25035.3016,
+  "dune_axis_radians": -1.800358,
+  "family": "volcanic",
+  "macro_gain": 0.993788,
+  "meso_gain": 0.111131,
+  "micro_gain": 0.005939,
+  "relief_gain": 0.735566,
+  "ridge_index": 0.503278,
+  "ridge_sharpness": 0.129572,
+  "selector": {
+    "noise": "minecraft:erosion",
+    "type": "minecraft:noise",
+    "xz_scale": 0.006,
+    "y_scale": 0
+  },
+  "type": "realscale:terrain_archetype",
+  "valley_index": 0.496722
+}

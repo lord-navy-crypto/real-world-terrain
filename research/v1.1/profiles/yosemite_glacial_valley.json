@@ -1,0 +1,141 @@
+{
+  "family": "glacial",
+  "family_kernel": "u_shaped_glacial_valley_multiscale",
+  "fit_parameters": {
+    "anisotropy_gain": 0.990941,
+    "anisotropy_xz_raw": 0.981964,
+    "cliff_index": 0.176078,
+    "dominant_wavelength_m": 17311.0169,
+    "dune_axis_radians": 1.570796,
+    "macro_amplitude_rms_m": 869.73659,
+    "macro_gain": 0.976883,
+    "meso_amplitude_rms_m": 188.47761,
+    "meso_gain": 0.211697,
+    "micro_amplitude_rms_m": 26.45751,
+    "micro_gain": 0.029717,
+    "relief_gain": 0.713694,
+    "ridge_index": 0.497856,
+    "ridge_sharpness": 0.347762,
+    "valley_index": 0.502144,
+    "variogram_exponent": 1.508071
+  },
+  "generation_contract": {
+    "absolute_elevation_is_not_replayed": true,
+    "horizontal_meters_per_block": 1.0,
+    "minecraft_height_budget_blocks": 2096,
+    "mode": "procedural_from_fitted_coefficients",
+    "preview_generator": "seeded_multiscale_spectral_noise_prototype",
+    "raw_elevation_samples_embedded": false,
+    "vertical_mapping_requires_explicit_choice": true,
+    "vertical_meters_per_block": null
+  },
+  "limitations": [
+    "This is a parametric calibration profile, not a neural-network model.",
+    "The raw DEM grid is not included and must not be replayed as the infinite-world generator.",
+    "The profile is not yet wired into NeoForge DensityFunctions.",
+    "DEM-derived morphology does not by itself prove tectonic, rainfall, or lithology causes.",
+    "Absolute altitude and vertical scale must be handled explicitly by the eventual generator.",
+    "This calibration uses the global 90 m DSM baseline; it cannot resolve fine cliffs, small sinkholes, or individual dune ripples.",
+    "The profile is a real-data-derived morphology fit, but game runtime integration still requires explicit density-function compilation and worldgen QA."
+  ],
+  "observed_statistics": {
+    "elevation_percentiles_m": {
+      "p05": 261.888,
+      "p25": 953.3741,
+      "p50": 1836.153,
+      "p75": 2495.3645,
+      "p95": 3116.6645
+    },
+    "relief_p95_minus_p05_m": 2854.7765,
+    "scale_bands_m": {
+      "coarse": 4000.0,
+      "fine": 250.0,
+      "mid": 1000.0
+    },
+    "semivariograms": [
+      {
+        "lag_pixels": 1,
+        "lag_x_m": 73.6013,
+        "lag_z_m": 92.61,
+        "semi_x_m2": 158.314715,
+        "semi_z_m2": 238.202301
+      },
+      {
+        "lag_pixels": 2,
+        "lag_x_m": 147.2025,
+        "lag_z_m": 185.22,
+        "semi_x_m2": 571.000347,
+        "semi_z_m2": 842.933777
+      },
+      {
+        "lag_pixels": 4,
+        "lag_x_m": 294.405,
+        "lag_z_m": 370.44,
+        "semi_x_m2": 1871.079507,
+        "semi_z_m2": 2714.283992
+      },
+      {
+        "lag_pixels": 8,
+        "lag_x_m": 588.8101,
+        "lag_z_m": 740.88,
+        "semi_x_m2": 5464.144595,
+        "semi_z_m2": 7811.229583
+      },
+      {
+        "lag_pixels": 16,
+        "lag_x_m": 1177.6202,
+        "lag_z_m": 1481.76,
+        "semi_x_m2": 14026.4252,
+        "semi_z_m2": 19368.784837
+      },
+      {
+        "lag_pixels": 32,
+        "lag_x_m": 2355.2404,
+        "lag_z_m": 2963.52,
+        "semi_x_m2": 31364.843603,
+        "semi_z_m2": 39768.975788
+      }
+    ],
+    "slope_degrees": {
+      "p50": 11.45971,
+      "p75": 18.7542,
+      "p95": 32.32543
+    }
+  },
+  "schema": "realscale:terrain_archetype_fit/v1",
+  "source": {
+    "cols": 1176,
+    "elevation_units_used_for_fit": "meters",
+    "file_name": "yosemite_glacial_valley.tif",
+    "horizontal_extent_m": [
+      86481.483,
+      109928.07
+    ],
+    "input_crs": "EPSG:4326",
+    "input_format": "GeoTIFF",
+    "name": "Copernicus DEM GLO-90 public AWS COG",
+    "native_spacing_m": [
+      73.60126212938665,
+      92.61
+    ],
+    "nominal_spacing_m": 90,
+    "rows": 1188,
+    "sha256": "f6047ca9ed3d476b987c68e91c4ccb33885932b1276781053e0800d1304d1cea",
+    "source_dataset": "Copernicus DEM GLO-90",
+    "source_tile_sha256": "53b26cef442f03f7e59008ed14c74ea163ba9a7e5ed0f84c91c816a281e526b9",
+    "surface_type": "DSM",
+    "url": "https://copernicus-dem-90m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_30_N37_00_W120_00_DEM/Copernicus_DSM_COG_30_N37_00_W120_00_DEM.tif",
+    "vertical_datum": "EGM2008"
+  },
+  "target": {
+    "display_name": "Glacial Valleys — Yosemite",
+    "fit_goal": [
+      "u_shaped_valley",
+      "valley_width",
+      "wall_slope",
+      "overdeepening_proxy"
+    ],
+    "id": "yosemite_glacial_valley",
+    "landscape": "Yosemite Valley, California, United States"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "argument1": "realscale:tva_dune_fitted/height_signal",
+  "argument2": {
+    "from_value": 0.9921875,
+    "from_y": -64,
+    "to_value": -15.3828125,
+    "to_y": 2032,
+    "type": "minecraft:y_clamped_gradient"
+  },
+  "type": "minecraft:add"
+}

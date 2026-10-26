@@ -4,6 +4,9 @@
     "realscale:natural_three_realms",
     "realscale:alpine_three_realms",
     "realscale:canyon_three_realms",
-    "realscale:measured_three_realms"
+    "realscale:glacial_three_realms",
+    "realscale:volcanic_three_realms",
+    "realscale:karst_three_realms",
+    "realscale:dune_three_realms"
   ]
 }

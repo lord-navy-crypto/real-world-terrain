@@ -1,0 +1,5 @@
+{
+  "argument1": "realscale:tva_volcanic_fitted/terrain_density",
+  "argument2": 0.390625,
+  "type": "minecraft:add"
+}

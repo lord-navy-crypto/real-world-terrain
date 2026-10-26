@@ -3,22 +3,22 @@
     "minecraft:overworld": {
       "generator": {
         "biome_source": {
-          "type": "realscale:sky_ocean",
           "source": {
-            "type": "realscale:geo_wonders_opt_in",
             "source": {
-              "type": "realscale:natural_ecotones",
               "source": {
-                "type": "realscale:cave_depth_habitats",
                 "source": {
                   "preset": "minecraft:overworld",
                   "type": "minecraft:multi_noise"
-                }
-              }
-            }
-          }
+                },
+                "type": "realscale:cave_depth_habitats"
+              },
+              "type": "realscale:natural_ecotones"
+            },
+            "type": "realscale:geo_wonders_opt_in"
+          },
+          "type": "realscale:sky_ocean"
         },
-        "settings": "realscale:tva_alpine_smoothed",
+        "settings": "realscale:tva_alpine_fitted",
         "type": "minecraft:noise"
       },
       "type": "realscale:realism_max_overworld"
