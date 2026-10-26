@@ -37,6 +37,7 @@ def audit(world: Path, slug: str, target_chunk_min: int, target_chunk_max: int) 
         raise RuntimeError(f"No Anvil region files under {world / 'region'}")
 
     heightmaps: dict[str, list[int | None]] = {}
+    world_surface_maps: dict[str, list[int | None]] = {}
     decoded_chunks = 0
     for region in regions:
         if region.stat().st_size <= 8192:
@@ -50,23 +51,35 @@ def audit(world: Path, slug: str, target_chunk_min: int, target_chunk_max: int) 
             if not (target_chunk_min <= cx <= target_chunk_max
                     and target_chunk_min <= cz <= target_chunk_max):
                 continue
-            heights = [
+            # WORLD_SURFACE is capped by the water surface in oceans. Compare
+            # OCEAN_FLOOR as the primary terrain signal so submerged landforms
+            # are not invisible to the acceptance test.
+            floor_heights = [
+                surface_height(chunk, x, z, min_y=-64, height=2096, heightmap="OCEAN_FLOOR")
+                for z in range(16)
+                for x in range(16)
+            ]
+            surface_heights = [
                 surface_height(chunk, x, z, min_y=-64, height=2096, heightmap="WORLD_SURFACE")
                 for z in range(16)
                 for x in range(16)
             ]
-            if not any(value is not None for value in heights):
+            if not any(value is not None for value in floor_heights):
                 continue
             key = f"{cx},{cz}"
             if key in heightmaps:
                 raise RuntimeError(f"Duplicate saved chunk coordinates {key}")
-            heightmaps[key] = heights
+            heightmaps[key] = floor_heights
+            world_surface_maps[key] = surface_heights
             decoded_chunks += 1
 
     flat = sorted(value for values in heightmaps.values() for value in values if value is not None)
+    surface_flat = sorted(
+        value for values in world_surface_maps.values() for value in values if value is not None
+    )
     if decoded_chunks < 40 or len(flat) < 40 * 200:
         raise RuntimeError(
-            f"Insufficient persisted WORLD_SURFACE samples in the forced sample area for {slug}: "
+            f"Insufficient persisted OCEAN_FLOOR samples in the forced sample area for {slug}: "
             f"chunks={decoded_chunks}, columns={len(flat)}, "
             f"target_chunks={target_chunk_min}..{target_chunk_max}"
         )
@@ -82,7 +95,8 @@ def audit(world: Path, slug: str, target_chunk_min: int, target_chunk_max: int) 
         "slug": slug,
         "world_name": world.name,
         "seed": 42,
-        "heightmap": "WORLD_SURFACE",
+        "heightmap": "OCEAN_FLOOR",
+        "surface_heightmap": "WORLD_SURFACE",
         "world_min_y": -64,
         "world_height": 2096,
         "region_files": len(regions),
@@ -90,15 +104,21 @@ def audit(world: Path, slug: str, target_chunk_min: int, target_chunk_max: int) 
         "target_chunk_max": target_chunk_max,
         "decoded_chunks": decoded_chunks,
         "sampled_columns": len(flat),
-        "surface_y_min": min(flat),
-        "surface_y_max": max(flat),
-        "surface_y_p05": percentile(flat, 0.05),
-        "surface_y_median": percentile(flat, 0.50),
-        "surface_y_p95": percentile(flat, 0.95),
+        "terrain_floor_y_min": min(flat),
+        "terrain_floor_y_max": max(flat),
+        "terrain_floor_y_p05": percentile(flat, 0.05),
+        "terrain_floor_y_median": percentile(flat, 0.50),
+        "terrain_floor_y_p95": percentile(flat, 0.95),
+        "world_surface_y_min": min(surface_flat) if surface_flat else None,
+        "world_surface_y_max": max(surface_flat) if surface_flat else None,
+        "world_surface_y_median": percentile(surface_flat, 0.50) if surface_flat else None,
         "heightmap_sha256": digest,
         # Per-chunk arrays let the aggregate gate compare identical X/Z columns
         # across modes rather than comparing unrelated summary statistics.
         "heightmap_by_chunk": {key: heightmaps[key] for key in sorted(heightmaps)},
+        "world_surface_by_chunk": {
+            key: world_surface_maps[key] for key in sorted(world_surface_maps)
+        },
     }
 
 
