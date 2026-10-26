@@ -296,8 +296,18 @@ def main(root,expected_preset,profile):
                             " but before fully-loaded chunk verification")
                     await_full_chunk(rcon,1024,1024,
                                      timeout_seconds=remaining)
+                elapsed_seconds = time.monotonic() - budget_start
+                timing_path = root/"build"/"rcon_distant_timing.json"
+                timing_path.write_text(json.dumps({
+                    "preset": expected_preset,
+                    "target_x": 1024,
+                    "target_z": 1024,
+                    "elapsed_seconds": round(elapsed_seconds, 3),
+                    "limit_seconds": 180,
+                    "fully_loaded": True
+                }, indent=2) + "\\n", encoding="utf-8")
                 print("QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS: PASS",
-                      flush=True)
+                      f"elapsed_seconds={elapsed_seconds:.3f}", flush=True)
                 # Standalone DH-Chunky v0.3 command is ONLY required for the
                 # new triple-mod patched test arms. All other worldgen tests
                 # (including vanilla, no-addon, USGS, etc.) stay unaffected.
