@@ -18,15 +18,11 @@ for name,want in checks.items():
  if name in modified_preset_tags:
   tag=json.loads((ROOT/name).read_text())
   expected=[
-   'realscale:natural_three_realms',
-   'realscale:alpine_three_realms',
-   'realscale:canyon_three_realms',
-   'realscale:measured_three_realms',
-   'realscale:wonders_invasion_three_realms']
-  trial=(ROOT/'neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json')
-  if trial.is_file():
-   expected.append('realscale:cave_ocean_ecology_three_realms')
-  assert tag.get('values',[])==expected,(name,tag.get('values'))
+    'realscale:natural_three_realms',
+    'realscale:alpine_three_realms',
+    'realscale:canyon_three_realms',
+    'realscale:measured_three_realms']
+   assert tag.get('values',[])==expected,(name,tag.get('values'))
 
   print('INTENTIONAL MODIFICATION: four canonical terrain families; optional experiments remain hidden')
   continue
