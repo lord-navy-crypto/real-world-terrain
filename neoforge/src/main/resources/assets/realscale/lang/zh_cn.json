@@ -9,10 +9,6 @@
   "realscale.atlas.refresh": "刷新地图",
   "realscale.atlas.scanning": "正在读取已保存区块...",
   "realscale.atlas.coverage_only": "已保存区块覆盖图（并非地貌渲染）",
-  "realscale.atlas.chunky_found": "已安装 Chunky：进入该世界后逐条执行命令",
-  "realscale.atlas.chunky_missing": "可选安装 Chunky，在游戏内进行区块预生成",
-  "realscale.atlas.copy_chunky": "复制 Chunky 命令",
-  "realscale.atlas.copied": "命令已复制；请进入世界后逐条执行",
   "realscale.atlas.draw_start": "后台绘图",
   "realscale.atlas.draw_pause": "暂停",
   "realscale.atlas.draw_resume": "继续",
@@ -20,15 +16,5 @@
   "realscale.atlas.draw_idle": "当前没有正在运行的绘图任务",
   "realscale.atlas.draw_started": "已开始后台绘图",
   "realscale.atlas.draw_busy": "已经有绘图任务正在运行",
-  "realscale.atlas.draw_real_legend": "已保存区块的抽样高度图",
-  "realscale.atlas.pregen_start": "后台预生成",
-  "realscale.atlas.pregen_pause": "暂停生成",
-  "realscale.atlas.pregen_resume": "继续生成",
-  "realscale.atlas.pregen_stop": "保存停止",
-  "realscale.atlas.pregen_starting": "正在启动或继续后台预生成...",
-  "realscale.atlas.pregen_busy": "已有后台预生成任务正在运行",
-  "realscale.atlas.warmup_start": "预热（128格）",
-  "realscale.atlas.warmup_starting": "正在生成 128 格预热区域...",
-  "realscale.atlas.warmup_busy": "已有预热或预生成任务正在运行",
-  "realscale.atlas.busy_shared_io": "请先完成或取消当前任务，再启动其他地图任务"
+  "realscale.atlas.draw_real_legend": "已保存区块的抽样高度图"
 }
