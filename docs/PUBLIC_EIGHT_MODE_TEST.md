@@ -1,11 +1,10 @@
-# RealScale eight-mode public experimental test (2026-10-27)
+# RealScale seven-mode public experimental test (2026-10-27)
 
-The Create World menu intentionally shows **eight** RealScale choices:
+The Create World menu intentionally shows **seven** RealScale choices:
 
 | Choice | World preset | Release status |
 |---|---|---|
 | Natural Landscapes | `realscale:natural_three_realms` | Original, preserved |
-| Original USGS Big Sur | `realscale:usgs_big_sur` | Original, preserved |
 | Everest / Himalaya alpine | `realscale:alpine_three_realms` | Experimental DEM fit |
 | Grand Canyon canyons | `realscale:canyon_three_realms` | Experimental DEM fit |
 | Yosemite glacial valleys | `realscale:glacial_three_realms` | Experimental DEM fit |
@@ -13,7 +12,7 @@ The Create World menu intentionally shows **eight** RealScale choices:
 | Guilin karst | `realscale:karst_three_realms` | Experimental DEM fit |
 | Namib dunes | `realscale:dune_three_realms` | Experimental DEM fit |
 
-Both Natural and original USGS use the same **byte-identical world-preset and noise-settings JSON** as the isolated two-mode release candidate. No silent USGS v2 substitution; `usgs_big_sur_v2` remains optional, not on the menu. The fitted code is present as extra registered behavior; overall new binary compatibility and on-device performance still require testing.
+Natural uses the same **byte-identical world-preset and noise-settings JSON** as the isolated stable candidate. USGS Big Sur is **removed from both new-world menus** because it failed validation. Its historical data resources remain only for existing-world compatibility; the USGS mode is not an offered gameplay choice. The fitted code is present as extra registered behavior; on-device performance still requires testing.
 
 The six fitted modes are **visible** in the standard and extended new-world menu, with clear Experimental / 实验玩法 labels in English and Chinese. Other legacy and opt-in world resources remain available for backwards compatibility but are not additional public menu choices.
 
@@ -25,8 +24,8 @@ Offline NeoForge/Chunky launcher and pre-generated chunk controller have been re
 
 ## Install and playtest
 
-Download the artifact `RealScale-8-Modes-Public-Experimental-Test-JAR` from the passing **Public eight-mode test JAR** GitHub Actions run, unzip, and copy the single installable JAR into the Minecraft 1.21.1 / NeoForge mods directory. Requires compatible dependencies already specified by the mod manifest and Java 21. Do not install alongside another RealScale JAR.
+Download the artifact `RealScale-7-Modes-Public-Experimental-Test-JAR` from the passing **Public seven-mode test JAR** GitHub Actions run, unzip, and copy the single installable JAR into the Minecraft 1.21.1 / NeoForge mods directory. Requires compatible dependencies already specified by the mod manifest and Java 21. Do not install alongside another RealScale JAR.
 
 Use **new worlds only** for fitted modes, back up existing saves, and try more than one seed and known continental/land-heavy regions rather than assuming an ocean-area smoke proves the intended terrain profile. Record startup time, distant chunks, memory, TPS/FPS, and screenshots at X/Z coordinates.
 
-The original two-mode branch stays separate and unmodified by this public experiment.
+Only USGS menu selection, its directly corresponding tests and JAR verification were changed for this seven-mode test. The separate two-mode release-candidate branch is unchanged.
