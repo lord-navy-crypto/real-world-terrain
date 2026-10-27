@@ -45,7 +45,7 @@ class WorldAtlasFeatureTest(unittest.TestCase):
         # A UI that merely hides the button is not sufficient: the launcher
         # and its Java sources must be absent from the distributable project.
         self.assertFalse((SRC / "WorldAtlasOfflinePregenerator.java").exists())
-        self.assertFalse((SRC.parent.parent.parent / "test/java/org/realscale/neoforge/WorldAtlasRealChunkySmoke.java").exists())
+        self.assertFalse((ROOT / "neoforge/src/test/java/org/realscale/neoforge/WorldAtlasRealChunkySmoke.java").exists())
         screen=(SRC / "WorldAtlasMapScreen.java").read_text()
         self.assertNotIn("WorldAtlasOfflinePregenerator",screen)
         self.assertNotIn("setClipboard(",screen)
