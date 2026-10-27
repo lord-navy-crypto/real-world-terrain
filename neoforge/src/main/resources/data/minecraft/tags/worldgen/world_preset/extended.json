@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     "realscale:natural_three_realms",
+    "realscale:usgs_big_sur",
     "realscale:alpine_three_realms",
     "realscale:canyon_three_realms",
     "realscale:glacial_three_realms",
