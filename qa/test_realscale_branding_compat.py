@@ -97,7 +97,7 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
         }
         for path, sha in expected.items():
             raw = (RES / path).read_bytes()
-            git_blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\\0" + raw).hexdigest()
+            git_blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + bytes((0,)) + raw).hexdigest()
             self.assertEqual(git_blob, sha, path)
 
     def test_restored_fitted_labels_explicitly_say_experimental(self):
