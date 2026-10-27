@@ -25,7 +25,7 @@ def read(path):
     return json.loads(path.read_text(encoding="utf-8"))
 class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
     def test_new_menu_uses_only_new_realscale_preset_ids(self):
-        menu=["realscale:"+p for p in NEW]
+        menu=["realscale:natural_three_realms","realscale:usgs_big_sur"]
         for name in ("normal","extended"):
             tag=read(RES/"data/minecraft/tags/worldgen/world_preset"/(name+".json"))
             self.assertEqual(tag["values"],menu)
