@@ -17,13 +17,13 @@
   "biome.realscale.glowing_moss_grottos": "荧光苔藓溶洞",
   "biome.realscale.fossil_limestone_caves": "化石石灰岩洞穴",
   "generator.realscale.natural_three_realms": "RealScale｜自然地貌",
-  "generator.realscale.alpine_three_realms": "RealScale｜高山地貌（珠峰/喜马拉雅拟合）",
-  "generator.realscale.canyon_three_realms": "RealScale｜峡谷与河谷（大峡谷拟合）",
+  "generator.realscale.alpine_three_realms": "RealScale｜高山地貌（珠峰/喜马拉雅拟合） [实验玩法]",
+  "generator.realscale.canyon_three_realms": "RealScale｜峡谷与河谷（大峡谷拟合） [实验玩法]",
   "generator.realscale.measured_three_realms": "RealScale｜实测地形 USGS Big Sur",
   "generator.realscale.wonders_invasion_three_realms": "RealScale｜全球自然奇观与跨维度生态",
   "generator.realscale.cave_ocean_ecology_three_realms": "RealScale｜洞穴与海洋生态（实验）",
-  "generator.realscale.dune_three_realms": "RealScale｜沙丘地貌（纳米布沙海拟合）",
-  "generator.realscale.glacial_three_realms": "RealScale｜冰川山谷（优胜美地拟合）",
-  "generator.realscale.karst_three_realms": "RealScale｜喀斯特地貌（桂林拟合）",
-  "generator.realscale.volcanic_three_realms": "RealScale｜火山地貌（夏威夷拟合）"
+  "generator.realscale.dune_three_realms": "RealScale｜沙丘地貌（纳米布沙海拟合） [实验玩法]",
+  "generator.realscale.glacial_three_realms": "RealScale｜冰川山谷（优胜美地拟合） [实验玩法]",
+  "generator.realscale.karst_three_realms": "RealScale｜喀斯特地貌（桂林拟合） [实验玩法]",
+  "generator.realscale.volcanic_three_realms": "RealScale｜火山地貌（夏威夷拟合） [实验玩法]"
 }
