@@ -1,0 +1,62 @@
+name: Build standalone DH Chunky Guard 0.3.1 playable JAR
+on:
+  push:
+    branches: ['build/dh-chunky-guard-031-20261027']
+    paths:
+      - '.github/workflows/build-dh-chunky-guard-031-artifact.yml'
+      - 'dh-chunky-guard/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-guard-031:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Verify guard 0.3.1 hot path
+        run: python3 -m unittest discover -s qa -p 'test_dh_chunky_guard_hotpath.py' -v
+      - name: Build independently installable NeoForge addon
+        working-directory: dh-chunky-guard
+        run: gradle --no-daemon --stacktrace build
+      - name: Verify exact 0.3.1 binary metadata and self-contained addon classes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          jars = list(Path('dh-chunky-guard/build/libs').glob('RealScale-DH-Chunky-Guard-NeoForge-1.21.1-*.jar'))
+          jars = [p for p in jars if not p.name.endswith('-sources.jar')]
+          if len(jars) != 1 or '0.3.1-experimental.jar' not in jars[0].name:
+              raise SystemExit(f'Wrong guard binary: {jars}')
+          with ZipFile(jars[0]) as z:
+              entries=set(z.namelist())
+              for required in ('META-INF/neoforge.mods.toml',
+                               'dhchunkyguard.mixins.json',
+                               'org/realscale/compat/dhchunky/DhChunkyGuardMod.class',
+                               'org/realscale/compat/dhchunky/ChunkyBridgeMetrics.class',
+                               'org/realscale/compat/dhchunky/mixin/ChunkyLifecycleSetupMixin.class'):
+                  if required not in entries:
+                      raise SystemExit(f'Missing class or manifest: {required}')
+              metadata=z.read('META-INF/neoforge.mods.toml')
+              if b'version="0.3.1-experimental"' not in metadata:
+                  raise SystemExit('Wrong compatibility version in jar')
+              if any(n.startswith('org/popcraft/') or n.startswith('com/seibel/') for n in entries):
+                  raise SystemExit('Third-party mod internals should not be bundled')
+          print('DH_CHUNKY_GUARD_031_BINARY_OK',jars[0])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-DH-Chunky-Guard-0.3.1-Latest-JAR
+          path: dh-chunky-guard/build/libs/RealScale-DH-Chunky-Guard-NeoForge-1.21.1-0.3.1-experimental.jar
+          if-no-files-found: error
+          retention-days: 7
