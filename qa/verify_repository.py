@@ -18,16 +18,17 @@ for name,want in checks.items():
  if name in modified_preset_tags:
   tag=json.loads((ROOT/name).read_text())
   expected=[
-    'realscale:natural_three_realms',
-    'realscale:alpine_three_realms',
-    'realscale:canyon_three_realms',
-    'realscale:glacial_three_realms',
-    'realscale:volcanic_three_realms',
-    'realscale:karst_three_realms',
-    'realscale:dune_three_realms']
+   'realscale:natural_three_realms',
+   'realscale:usgs_big_sur',
+   'realscale:alpine_three_realms',
+   'realscale:canyon_three_realms',
+   'realscale:glacial_three_realms',
+   'realscale:volcanic_three_realms',
+   'realscale:karst_three_realms',
+   'realscale:dune_three_realms']
   assert tag.get('values',[])==expected,(name,tag.get('values'))
 
-  print('INTENTIONAL MODIFICATION: one default plus six data-fitted terrain families; optional experiments remain hidden')
+  print('INTENTIONAL MODIFICATION: original Natural + USGS plus six visible data-fitted test families')
   continue
  if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):
   # Preserve the exact historical text for every legacy ID while allowing
