@@ -17,13 +17,13 @@
   "biome.realscale.glowing_moss_grottos": "Glowing Moss Grottos",
   "biome.realscale.fossil_limestone_caves": "Fossil Limestone Caves",
   "generator.realscale.natural_three_realms": "RealScale | Natural Landscapes",
-  "generator.realscale.alpine_three_realms": "RealScale | Alpine Mountains — Everest/Himalaya fit",
-  "generator.realscale.canyon_three_realms": "RealScale | Canyons & Valleys — Grand Canyon fit",
+  "generator.realscale.alpine_three_realms": "RealScale | Alpine Mountains — Everest/Himalaya fit [Experimental]",
+  "generator.realscale.canyon_three_realms": "RealScale | Canyons & Valleys — Grand Canyon fit [Experimental]",
   "generator.realscale.measured_three_realms": "RealScale | Measured Terrain — USGS Big Sur",
   "generator.realscale.wonders_invasion_three_realms": "RealScale | Earth Wonders and Cross-Realm Ecology",
   "generator.realscale.cave_ocean_ecology_three_realms": "RealScale | Caves and Marine Habitats (Experimental)",
-  "generator.realscale.dune_three_realms": "RealScale | Sand Dunes — Namib Sand Sea fit",
-  "generator.realscale.glacial_three_realms": "RealScale | Glacial Valleys — Yosemite fit",
-  "generator.realscale.karst_three_realms": "RealScale | Karst Landscapes — Guilin fit",
-  "generator.realscale.volcanic_three_realms": "RealScale | Volcanic Landscapes — Hawaiʻi fit"
+  "generator.realscale.dune_three_realms": "RealScale | Sand Dunes — Namib Sand Sea fit [Experimental]",
+  "generator.realscale.glacial_three_realms": "RealScale | Glacial Valleys — Yosemite fit [Experimental]",
+  "generator.realscale.karst_three_realms": "RealScale | Karst Landscapes — Guilin fit [Experimental]",
+  "generator.realscale.volcanic_three_realms": "RealScale | Volcanic Landscapes — Hawaiʻi fit [Experimental]"
 }
