@@ -16,6 +16,11 @@
 - DH 3.3.3, Chunky 1.4.23, Minecraft 1.21.1, NeoForge 21.1.x are still the only pinned test combination.
 - v0.3.1 remains experimental until physical DH/Sodium/Iris rendering and multiple launches have been verified.
 
+### Standalone build artifact — 2026-10-27
+- Rebuilt and audited the independent `0.3.1-experimental` NeoForge addon JAR; build and packaging checks passed.
+- Artifact: [DH–Chunky Guard build](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39922035765).
+- This is still an **experimental compatibility patch**, not a requirement for RealScale. Client-rendered DH LOD and Iris/Sodium behavior remain unverified.
+
 ## 0.3.0-experimental — 2026-10-23
 
 ### 新增 / Added
