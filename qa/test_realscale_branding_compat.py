@@ -57,12 +57,13 @@ def source_chain(source):
 
 
 class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
-    def test_new_world_menu_has_two_unchanged_modes_and_six_fitted_tests(self):
-        menu = ["realscale:natural_three_realms", "realscale:usgs_big_sur"] + ["realscale:" + name for name in CANONICAL if name != "natural_three_realms"]
+    def test_new_world_menu_has_natural_and_six_fitted_tests_without_usgs(self):
+        menu = ["realscale:" + name for name in CANONICAL]
         for name in ("normal", "extended"):
             tag = read(TAG_ROOT / (name + ".json"))
             self.assertEqual(tag["values"], menu)
-            self.assertEqual(len(set(menu)), 8)
+            self.assertEqual(len(set(menu)), 7)
+            self.assertNotIn("realscale:usgs_big_sur", tag["values"])
 
     def test_six_fitted_presets_share_universal_biome_layers(self):
         for name, settings_id in CANONICAL.items():
