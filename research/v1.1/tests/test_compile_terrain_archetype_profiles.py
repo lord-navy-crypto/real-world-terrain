@@ -76,6 +76,21 @@ class TerrainProfileCompilerTests(unittest.TestCase):
                     height = json.loads((out / "data/realscale/worldgen/density_function" / root_id / "height_signal.json").read_text())
                     self.assertEqual(height["type"], "realscale:terrain_archetype")
                     self.assertEqual(height["family"], family)
+                    terrain = json.loads(
+                        (out / "data/realscale/worldgen/density_function"
+                         / root_id / "terrain_density.json").read_text()
+                    )
+                    memo = terrain["argument1"]
+                    self.assertEqual(memo["type"], "realscale:measured_horizontal_memo")
+                    self.assertEqual(memo["input"], f"realscale:{root_id}/height_signal")
+                    self.assertEqual(terrain["argument2"]["type"], "minecraft:y_clamped_gradient")
+                    self.assertEqual(height["selector"]["y_scale"], 0)
+                    upstream_id = config["legacy_source"]
+                    source_height = json.loads(
+                        (COMPILER.DEFAULT_RESOURCES / "data/realscale/worldgen/density_function"
+                         / upstream_id / "height_signal.json").read_text()
+                    )
+                    self.assertEqual(source_height["type"], "minecraft:flat_cache")
 
                     # Every compiled runtime coefficient must preserve the
                     # corresponding value from the fitted profile. This guards

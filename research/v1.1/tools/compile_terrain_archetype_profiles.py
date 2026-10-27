@@ -166,6 +166,26 @@ def compile_profiles(profiles_dir: Path, resources_root: Path, out_dir: Path):
         if missing:
             raise ValueError(f"Profile {profile_path} lacks fit parameters: {missing}")
 
+        # The fitted height column is X/Z-only: each upstream height
+        # source and continental mask is a 2D flat_cache, and the selector
+        # uses y_scale=0. Only that column may be memoized, NOT the
+        # Y-gradient, caves, or final_density.
+        upstream_height = read_json(
+            data_root / "density_function" / legacy_id / "height_signal.json"
+        )
+        if upstream_height.get("type") != "minecraft:flat_cache":
+            raise ValueError(
+                f"Refusing X/Z memo for non-2D source: {legacy_id}/height_signal"
+            )
+        upstream_continents = read_json(
+            data_root / "density_function" / legacy_id
+            / f"{LEGACY_SIGNAL_FIELDS[legacy_id]['continents']}.json"
+        )
+        if upstream_continents.get("type") != "minecraft:flat_cache":
+            raise ValueError(
+                f"Refusing X/Z memo for non-2D continents: {legacy_id}"
+            )
+
         noise_settings = read_json(data_root / "noise_settings" / f"{template_id}.json")
         noise_settings = replace_root(noise_settings, template_id, root_id)
         router = noise_settings["noise_router"]
@@ -213,7 +233,21 @@ def compile_profiles(profiles_dir: Path, resources_root: Path, out_dir: Path):
         })
         for file_name in ("terrain_density.json", "preliminary_density.json"):
             source_file = data_root / "density_function" / template_id / file_name
-            write_json(density_dir / file_name, replace_root(read_json(source_file), template_id, root_id))
+            density = replace_root(read_json(source_file), template_id, root_id)
+            if file_name == "terrain_density.json":
+                height_id = f"realscale:{root_id}/height_signal"
+                if density.get("argument1") != height_id:
+                    raise ValueError(
+                        f"Unexpected {root_id} terrain-density template: "
+                        f"expected first input {height_id}"
+                    )
+                # Exact, bounded per-thread cache of the fitted 2D height
+                # value. No cache is applied to any Y-dependent graph.
+                density["argument1"] = {
+                    "type": "realscale:measured_horizontal_memo",
+                    "input": height_id,
+                }
+            write_json(density_dir / file_name, density)
 
         preset = json.loads(json.dumps(preset_template))
         preset["dimensions"]["minecraft:overworld"]["generator"]["settings"] = f"realscale:{root_id}"

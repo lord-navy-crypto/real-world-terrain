@@ -120,7 +120,15 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
     public double compute(DensityFunction.FunctionContext ctx) {
         double original = base.compute(ctx);
         double continent = continents.compute(ctx);
-        double signal = selector.compute(ctx);
+        // The land gate is exactly zero below this boundary. Avoid
+        // unnecessary selector noise work in ocean columns.
+        if (continent <= -0.10) return original;
+        // Alpine relief only applies above this highland threshold.
+        if ("alpine".equals(family) && original <= 0.65) return original;
+        // Glacier and volcano kernels do not use the selector input.
+        // Suppressing that sample changes no fitted morphology values.
+        double signal = ("glacial".equals(family) || "volcanic".equals(family))
+                ? 0.0 : selector.compute(ctx);
         return morphology.compute(original, continent, signal, ctx.blockX(), ctx.blockZ());
     }
 
