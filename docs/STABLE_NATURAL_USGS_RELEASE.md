@@ -3,8 +3,10 @@
 This is a **candidate branch**, not yet a tested or merged stable release.
 The source snapshot comes from `experimental/terrain-modes-20261026`
 (commit `6b0c52b581ee0e5a64ff901365f024d30aaf62b0`).
-PR #136 and that experimental branch are not merged here; they remain
-separate places to develop the six real-DEM-fitted archetypes.
+This candidate *inherits* the snapshot's experimental implementations
+for compatibility, but hides their new-world menu entries. Ongoing fitted-mode
+development remains on the experimental branch and PR #136; nothing is merged
+to `main` and no experimental resources are removed by this candidate.
 
 ## Create World menu
 
