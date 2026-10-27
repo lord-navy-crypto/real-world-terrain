@@ -3,10 +3,10 @@ loaderVersion="[4,)"
 license="Source research implementation; retains Minecraft's own vanilla assets/data references"
 [[mods]]
 modId="realscale"
-version="2.0.0-preview.2-test.6"
-displayName="RealScale — Terrain, Caves & Oceans (Experimental)"
+version="2.0.0-preview.2-two-mode.1"
+displayName="RealScale — Natural + USGS Two-Mode Preview"
 authors="RealScale Research"
-description="Experimental four-family three-realm terrain: Natural, Alpine, Canyon, USGS Big Sur v2; Grand Nether/End, ecotones, APES ecology and offshore skylands."
+description="Two playable RealScale new-world presets: Natural Landscapes and USGS Big Sur V2. Other fitted DEM archetypes remain experimental and are not packaged for new-world selection."
 [[dependencies.realscale]]
 modId="neoforge"
 type="required"

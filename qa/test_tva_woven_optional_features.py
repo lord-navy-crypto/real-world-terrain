@@ -60,14 +60,12 @@ class WovenOptionalFeaturesTest(unittest.TestCase):
             self.assertNotIn(opt_in, original)
 
     def test_combined_invasion_preset_remains_available_but_is_hidden_from_menu(self):
+        # Release-mode visibility differs from the experimental branch. The
+        # combined invasion feature remains in source for experimental use,
+        # but only the two accepted worlds are selectable from this JAR.
         expected = [
             "realscale:natural_three_realms",
-            "realscale:alpine_three_realms",
-            "realscale:canyon_three_realms",
-            "realscale:glacial_three_realms",
-            "realscale:volcanic_three_realms",
-            "realscale:karst_three_realms",
-            "realscale:dune_three_realms",
+            "realscale:usgs_big_sur_v2",
         ]
         self.assertTrue((PRESETS/"wonders_invasion_three_realms.json").is_file())
         self.assertTrue((PRESETS/"cave_ocean_ecology_three_realms.json").is_file())
