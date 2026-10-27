@@ -16,14 +16,14 @@ import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 
 /**
- * TEST-only original-biome decorator. The regular four RealScale presets
- * remain unchanged; only explicitly selected cave-ecology test preset
- * constructs this source. Ocean/river/Deep Dark biome identities stay vanilla.
+ * Shared cave-habitat biome decorator used by the new canonical RealScale
+ * presets. Historical preset IDs retain their original biome-source graphs.
+ * Ocean/river/Deep Dark biome identities stay vanilla.
  *
  * Source uses quart coordinates and original vanilla cave biome climate, not
  * carved-block or fluid reads (those aren't available at biome-source stage).
- * All six custom biome JSON files inherit ORIGINAL 1.21.1 cave ore, lake,
- * dungeon, carver and spawn lists to prevent disappearing vanilla generation.
+ * All custom biome JSON files inherit original 1.21.1 cave ore, lake, dungeon,
+ * carver and spawn lists to preserve vanilla generation.
  */
 public final class CaveDepthBiomeSource extends BiomeSource {
     public static final MapCodec<CaveDepthBiomeSource> CODEC=
@@ -56,6 +56,7 @@ public final class CaveDepthBiomeSource extends BiomeSource {
         this.regions=Map.copyOf(targets);
     }
     private BiomeSource source(){return source;}
+    BiomeSource wrappedSource(){return source;}
     @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),regions.values().stream()).distinct();

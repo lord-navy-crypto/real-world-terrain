@@ -59,16 +59,25 @@ class WovenOptionalFeaturesTest(unittest.TestCase):
                        "cross_realm_showcase"):
             self.assertNotIn(opt_in, original)
 
-    def test_new_opt_in_is_selectable_without_replacing_existing_presets(self):
+    def test_combined_invasion_preset_remains_available_but_is_hidden_from_menu(self):
+        expected = [
+            "realscale:natural_three_realms",
+            "realscale:alpine_three_realms",
+            "realscale:canyon_three_realms",
+            "realscale:glacial_three_realms",
+            "realscale:volcanic_three_realms",
+            "realscale:karst_three_realms",
+            "realscale:dune_three_realms",
+        ]
+        self.assertTrue((PRESETS/"wonders_invasion_three_realms.json").is_file())
+        self.assertTrue((PRESETS/"cave_ocean_ecology_three_realms.json").is_file())
         for tag_name in ("normal", "extended"):
             with self.subTest(tag=tag_name):
                 entry = load(TAGS/(tag_name+".json"))
                 self.assertFalse(entry["replace"])
-                self.assertEqual(entry["values"][0], "realscale:natural_three_realms")
-                self.assertEqual(entry["values"].count("realscale:wonders_invasion_three_realms"), 1)
-                for required in ("alpine_three_realms", "canyon_three_realms",
-                                 "measured_three_realms"):
-                    self.assertIn("realscale:"+required,entry["values"])
+                self.assertEqual(entry["values"], expected)
+                self.assertNotIn("realscale:wonders_invasion_three_realms", entry["values"])
+                self.assertNotIn("realscale:cave_ocean_ecology_three_realms", entry["values"])
 
     def test_nested_java_guards_activate_both_feature_families(self):
         sky=(JAVA/"SkyOceanBiomeSource.java").read_text()

@@ -1,0 +1,4 @@
+{
+  "argument": "realscale:grand_canyon/height_signal",
+  "type": "minecraft:interpolated"
+}

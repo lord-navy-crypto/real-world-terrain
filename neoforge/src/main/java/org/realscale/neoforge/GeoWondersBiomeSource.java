@@ -18,6 +18,7 @@ public final class GeoWondersBiomeSource extends BiomeSource {
     private final BiomeSource source;
     private GeoWondersBiomeSource(BiomeSource source){this.source=source;}
     private BiomeSource source(){return source;}
+    BiomeSource wrappedSource(){return source;}
     /** Allow the outer sky-island biome source to recognize a nested
      * cross-realm experiment without relaxing either feature's opt-in guard.
      */

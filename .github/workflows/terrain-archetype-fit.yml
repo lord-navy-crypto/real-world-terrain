@@ -1,0 +1,64 @@
+name: Terrain archetype fit prototype
+
+on:
+  pull_request:
+    paths:
+      - "research/v1.1/**"
+      - "docs/TERRAIN_ARCHETYPE_FITTING_V01.md"
+      - ".github/workflows/terrain-archetype-fit.yml"
+  push:
+    branches: [main]
+    paths:
+      - "research/v1.1/**"
+      - "docs/TERRAIN_ARCHETYPE_FITTING_V01.md"
+      - ".github/workflows/terrain-archetype-fit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install offline calibration dependencies
+        run: python -m pip install -r research/v1.1/requirements.txt
+      - name: Run synthetic, GeoTIFF, six-family, and target-manifest contract tests
+        run: python -m unittest discover -s research/v1.1/tests -p "test_*.py" -v
+
+  real-dem-calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install DEM acquisition and fitting dependencies
+        run: python -m pip install -r research/v1.1/requirements.txt
+      - name: Acquire six real landscape DEM crops and fit parameter-only profiles
+        run: |
+          python research/v1.1/tools/build_terrain_profiles.py --all --seed 42 --out-dir build/terrain-archetype-calibration
+      - name: Compile the six real-data profiles into a selectable seven-mode worldgen pack
+        run: |
+          python research/v1.1/tools/compile_terrain_archetype_profiles.py \
+            --profiles-dir build/terrain-archetype-calibration/profiles \
+            --out-dir build/terrain-archetype-calibration/compiled-pack
+      - name: Publish fitted profiles, previews and compiled resources without raw DEM tiles
+        uses: actions/upload-artifact@v4
+        with:
+          name: terrain-archetype-calibration-${{ github.run_id }}
+          path: |
+            build/terrain-archetype-calibration/calibration_summary.json
+            build/terrain-archetype-calibration/profiles/*.json
+            build/terrain-archetype-calibration/previews/*.npz
+            build/terrain-archetype-calibration/compiled-pack/**
+            build/terrain-archetype-calibration/RealScale-Terrain-Archetypes-Datapack.zip
+            build/terrain-archetype-calibration/RealScale-Terrain-Archetypes-Language-Pack.zip
+          if-no-files-found: error
+          retention-days: 30

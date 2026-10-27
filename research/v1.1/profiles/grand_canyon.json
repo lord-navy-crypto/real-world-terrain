@@ -1,0 +1,143 @@
+{
+  "family": "canyon",
+  "family_kernel": "valley_and_cliff_multiscale",
+  "fit_parameters": {
+    "anisotropy_gain": 1.045483,
+    "anisotropy_xz_raw": 1.093035,
+    "cliff_index": 0.291044,
+    "dominant_wavelength_m": 34289.3669,
+    "dune_axis_radians": -2.243785,
+    "macro_amplitude_rms_m": 357.6531,
+    "macro_gain": 0.918247,
+    "meso_amplitude_rms_m": 150.84022,
+    "meso_gain": 0.387271,
+    "micro_amplitude_rms_m": 32.22246,
+    "micro_gain": 0.082729,
+    "relief_gain": 0.363634,
+    "ridge_index": 0.479623,
+    "ridge_sharpness": 0.597412,
+    "valley_index": 0.520377,
+    "variogram_exponent": 1.306399
+  },
+  "generation_contract": {
+    "absolute_elevation_is_not_replayed": true,
+    "horizontal_meters_per_block": 1.0,
+    "minecraft_height_budget_blocks": 2096,
+    "mode": "procedural_from_fitted_coefficients",
+    "preview_generator": "seeded_multiscale_spectral_noise_prototype",
+    "raw_elevation_samples_embedded": false,
+    "runtime_density_function": "realscale:terrain_archetype",
+    "runtime_integration": "relative_morphology_modifier_over_base_density",
+    "vertical_mapping_requires_explicit_choice": true,
+    "vertical_meters_per_block": null
+  },
+  "limitations": [
+    "This is a parametric calibration profile, not a neural-network model.",
+    "The raw DEM grid is not included and must not be replayed as the infinite-world generator.",
+    "This JSON is a parameter source, not a Minecraft resource by itself; the repository compiler emits the six target profiles as NeoForge terrain_archetype DensityFunctions.",
+    "Runtime relief is normalized to the existing world-height budget; absolute DEM altitude is not replayed and vertical meters-to-blocks scaling is not yet a calibrated one-to-one mapping.",
+    "DEM-derived morphology does not by itself prove tectonic, rainfall, or lithology causes.",
+    "This calibration uses the global 90 m DSM baseline; it cannot resolve fine cliffs, small sinkholes, or individual dune ripples.",
+    "The six canonical target profiles are compiled into NeoForge density functions by this branch; generated-world QA is tracked separately and must pass before calling the presets release-ready."
+  ],
+  "observed_statistics": {
+    "elevation_percentiles_m": {
+      "p05": 1137.1323,
+      "p25": 1500.4319,
+      "p50": 1727.3118,
+      "p75": 1973.3911,
+      "p95": 2591.6692
+    },
+    "relief_p95_minus_p05_m": 1454.5368,
+    "scale_bands_m": {
+      "coarse": 4000.0,
+      "fine": 250.0,
+      "mid": 1000.0
+    },
+    "semivariograms": [
+      {
+        "lag_pixels": 1,
+        "lag_x_m": 74.5755,
+        "lag_z_m": 92.61,
+        "semi_x_m2": 211.391529,
+        "semi_z_m2": 297.447079
+      },
+      {
+        "lag_pixels": 2,
+        "lag_x_m": 149.1511,
+        "lag_z_m": 185.22,
+        "semi_x_m2": 736.211682,
+        "semi_z_m2": 995.770983
+      },
+      {
+        "lag_pixels": 4,
+        "lag_x_m": 298.3021,
+        "lag_z_m": 370.44,
+        "semi_x_m2": 2258.702995,
+        "semi_z_m2": 2856.916764
+      },
+      {
+        "lag_pixels": 8,
+        "lag_x_m": 596.6043,
+        "lag_z_m": 740.88,
+        "semi_x_m2": 5848.574897,
+        "semi_z_m2": 6826.647119
+      },
+      {
+        "lag_pixels": 16,
+        "lag_x_m": 1193.2086,
+        "lag_z_m": 1481.76,
+        "semi_x_m2": 12380.592629,
+        "semi_z_m2": 13460.766273
+      },
+      {
+        "lag_pixels": 32,
+        "lag_x_m": 2386.4171,
+        "lag_z_m": 2963.52,
+        "semi_x_m2": 22323.986966,
+        "semi_z_m2": 24886.634843
+      }
+    ],
+    "slope_degrees": {
+      "p50": 4.52842,
+      "p75": 12.68612,
+      "p95": 40.37311
+    }
+  },
+  "schema": "realscale:terrain_archetype_fit/v1",
+  "source": {
+    "cols": 1176,
+    "elevation_units_used_for_fit": "meters",
+    "file_name": "grand_canyon.tif",
+    "horizontal_extent_m": [
+      87626.254,
+      109928.07
+    ],
+    "input_crs": "EPSG:4326",
+    "input_format": "GeoTIFF",
+    "name": "Copernicus DEM GLO-90 public AWS COG",
+    "native_spacing_m": [
+      74.5755352592912,
+      92.61
+    ],
+    "nominal_spacing_m": 90,
+    "rows": 1188,
+    "sha256": "de6022ff03383d5e7e10a4dc49e4eb15fb9e8e02a52ecb5a9befb60a564101a4",
+    "source_dataset": "Copernicus DEM GLO-90",
+    "source_tile_sha256": "ee822761108de1b03a5576b81cb2c56e2361ffd7f746b98e877f942fae7843bd",
+    "surface_type": "DSM",
+    "url": "https://copernicus-dem-90m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_30_N36_00_W113_00_DEM/Copernicus_DSM_COG_30_N36_00_W113_00_DEM.tif",
+    "vertical_datum": "EGM2008"
+  },
+  "target": {
+    "display_name": "Canyons & Valleys — Grand Canyon",
+    "fit_goal": [
+      "cliff_index",
+      "valley_cross_section",
+      "plateau_relief",
+      "drainage_scale"
+    ],
+    "id": "grand_canyon",
+    "landscape": "Grand Canyon, Arizona, United States"
+  }
+}

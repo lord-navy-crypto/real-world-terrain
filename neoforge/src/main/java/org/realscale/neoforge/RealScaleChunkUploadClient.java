@@ -21,7 +21,7 @@ public final class RealScaleChunkUploadClient {
     private RealScaleChunkUploadClient(){}
 
     public static final boolean ENABLED=Boolean.parseBoolean(System.getProperty(
-            "realscale.experimental.client.uploadbudget","true"));
+            "realscale.experimental.client.uploadbudget","false"));
     private static final boolean PROFILE=ENABLED ||
             Boolean.getBoolean("realscale.client.chunkqueue.profile");
     public static final ClientChunkUploadBudget BUDGET =

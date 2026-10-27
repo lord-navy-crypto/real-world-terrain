@@ -106,8 +106,9 @@ the SHA-pinned bundled resource.
 An external raster is optional. Without it, the unchanged and
 SHA-pinned original 480m 16x16 bundled DEM loads. When any one of the
 three external files exists, all three must exist and pass metadata,
-source-domain, coordinate system, size, offset, elevation range and
-cryptographic checksum checks. A mismatch raises a startup error rather
+coordinate system, size, offset, elevation range and cryptographic checksum
+checks. The runtime does not pin a fixed service URL; source provenance is
+retained in the import manifest. A mismatch raises a startup error rather
 than silently fabricating or switching terrain. This dataset is loaded
 once at JVM startup; replacing data while a world is active is unsupported.
 

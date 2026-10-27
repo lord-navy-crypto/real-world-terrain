@@ -1,8 +1,9 @@
-# RealScale World Atlas v0.1 — offline save coverage and Chunky guidance
+# RealScale World Atlas — saved coverage and heightmap inspection
 
-**Development candidate only.** NeoForge 1.21.1, Java 21. Built on unified
-TVA PR #46. This is **not** an in-game terrain renderer, an embedded Chunky
-copy, nor a background server/pregeneration engine.
+**Current main-branch scope.** NeoForge 1.21.1, Java 21. World Atlas reads
+saved-region coverage and samples persisted heightmaps. It does not include
+a Chunky command-copy button, launch external tools, start a background
+server, or generate chunks from the Atlas UI.
 
 ## Where to open it
 
@@ -24,41 +25,19 @@ Directory symlinks are refused. Region header entries with missing sectors
 or offset past EOF do not count as present. The game will never start a
 hidden server, overwrite saves or force-generate chunks from this UI.
 
-## Chunky is a separate optional add-on
+## External chunk generation
 
-World Atlas detects whether the `chunky` mod is installed, and has a
-**Copy Chunky steps** button. Its clipboard contains FOUR INDIVIDUAL
-commands for the current Atlas centre and radius:
+Chunky, if installed separately by the player, remains an independent
+in-game tool. The current Atlas does not detect it, prepare its commands,
+copy commands to the clipboard, control its tasks, or invoke it. Use the
+external tool's own documented interface outside World Atlas.
 
-```text
-/chunky center 0 0
-/chunky radius 1024
-/chunky shape square
-/chunky start
-```
+## Scope boundary
 
-In v0.1, go **back** to the vanilla world list, enter the world normally,
-and run those commands **one at a time** with Chunky installed. Chunky
-handles its own task progress, pause/continue and generation status; it is
-never bundled or secretly invoked by RealScale. If Chunky is absent,
-World Atlas remains useful as a read-only saved-chunk map.
-
-Even with Chunky, a singleplayer world will not keep generating
-automatically after exiting Minecraft. Offline background generation needs
-a separate explicit, supervised server process, exclusive world-directory
-lock, user cancellation and controlled shutdown. This is intentionally NOT
-part of v0.1.
-
-## Planned stages — not yet implemented
-
-- v0.2: inspect real heightmaps, water, biomes from persisted chunk NBT and
-  display terrain colors, not just region occupancy; design a bounded
-  Chunky command-adapter for supported in-world use.
-- v0.3: create-new-world-without-entering workflow and optionally an explicit
-  offline background-server session, with saved-world locking and safe exit.
-- v0.4: richer overlays (cliffs, basins, waterways, cave/water layers) and
-  validated long-running task status. No map may fabricate blocks/chunks,
-  silently move existing-world seed or force structures off.
+The earlier v0.2–v0.4 ideas for an in-Atlas Chunky adapter and offline
+background-server session are not part of the current release scope. The
+current implementation prioritizes read-only saved-region inspection and
+bounded heightmap drawing.
 
 ## Acceptance criteria
 
@@ -66,8 +45,7 @@ part of v0.1.
   truncated/unallocated slots, bounded radius and no-write parity.
 - Existing world-list UI and language smoke tests.
 - Java21 NeoForge client compile and runtime GUI interaction on a real
-  player machine, including GUI-scale 2/3, many saves and Chunky present/
-  absent. Static tests are NOT substitutes for real interactive checks.
+  player machine, including GUI-scale 2/3 and many saves. Static tests are NOT substitutes for real interactive checks.
 - All pre-existing 14 worldgen/quality workflows on exact final SHA remain
   the release gates; nothing in Atlas may disable terrain QA or change
   worldgen math, sky islands, cave structures or 2096-high terrain.

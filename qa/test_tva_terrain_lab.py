@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Actual cross-branch regression: former YACL Lab exports must inherit RealScale's
-four stable choices plus an opt-in fifth, and three enlarged dimensions without old-ID changes.
+"""Actual cross-branch regression: Terrain Lab exports inherit the default plus six
+DEM-fitted choices, keep optional experiments hidden, and preserve three realm dimensions.
 """
 import importlib.util
 import json
@@ -22,12 +22,13 @@ TVA={
 CORE=("realscale:natural_three_realms",
       "realscale:alpine_three_realms",
       "realscale:canyon_three_realms",
-      "realscale:measured_three_realms")
-# The independently selected cave-biome variant exists only in the
-# integration TEST branch; stable release keeps its original 5-item menu.
-CAVE_TEST=(SOURCES/"data/realscale/worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json").exists()
-MENU=CORE+("realscale:wonders_invasion_three_realms",)+(
-    ("realscale:cave_ocean_ecology_three_realms",) if CAVE_TEST else ())
+      "realscale:glacial_three_realms",
+      "realscale:volcanic_three_realms",
+      "realscale:karst_three_realms",
+      "realscale:dune_three_realms")
+# Experimental Wonders/invasion and cave-ocean variants stay available on disk,
+# but the new-world menu contains only the default and six fitted archetypes.
+MENU=CORE
 
 def read(path):
     return json.loads(path.read_text(encoding="utf-8"))
@@ -42,14 +43,22 @@ class RealScaleRecoveredTerrainLab(unittest.TestCase):
                        "assets/minecraft/lang"):
             shutil.copytree(SOURCES/folder,self.root/folder)
 
-    def test_four_original_menu_items_and_additive_opt_in(self):
+    def test_default_and_six_fitted_menu_items_hide_optional_experiments(self):
         for key in ("normal","extended"):
             j=read(self.root/"data/minecraft/tags/worldgen/world_preset"/(key+".json"))
             self.assertEqual(tuple(j["values"]),MENU)
 
     def test_three_family_exports_keep_512_grand_dimensions_and_biome_sources(self):
+        # Historical IDs retain their original generation graph for saved worlds.
+        legacy={k:read(self.root/"data/realscale/worldgen/world_preset"/(v+".json"))
+                for k,v in TVA.items()}
+        canonical_ids={
+            "landscape":"natural_three_realms",
+            "alpine":"alpine_three_realms",
+            "canyon":"canyon_three_realms",
+        }
         canonical={k:read(self.root/"data/realscale/worldgen/world_preset"/(v+".json"))
-                   for k,v in TVA.items()}
+                   for k,v in canonical_ids.items()}
         for family in TVA:
             with self.subTest(family=family):
                 name,_,paths=lab.apply(self.root,family,1.0,0,50,6)
@@ -60,8 +69,13 @@ class RealScaleRecoveredTerrainLab(unittest.TestCase):
                                  original["dimensions"]["minecraft:the_nether"])
                 self.assertEqual(new["dimensions"]["minecraft:the_end"],
                                  original["dimensions"]["minecraft:the_end"])
+                # Newly exported Lab worlds share the universal ecology,
+                # geology, ecotone and marine biome-source stack.
                 self.assertEqual(new["dimensions"]["minecraft:overworld"]["generator"]["biome_source"],
                                  original["dimensions"]["minecraft:overworld"]["generator"]["biome_source"])
+                self.assertEqual(
+                    read(self.root/"data/realscale/worldgen/world_preset"/(TVA[family]+".json")),
+                    legacy[family])
                 self.assertEqual(new["dimensions"]["minecraft:the_nether"]["generator"]["settings"],
                                  "realscale:grand_nether")
                 self.assertEqual(new["dimensions"]["minecraft:the_end"]["generator"]["settings"],
