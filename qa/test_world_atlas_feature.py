@@ -41,6 +41,17 @@ class WorldAtlasFeatureTest(unittest.TestCase):
             self.assertNotIn(unsafe,screen)
         self.assertIn('realscale.atlas.coverage_only',screen)
 
+    def test_no_offline_server_launcher_or_chunky_copy_in_release(self):
+        # A UI that merely hides the button is not sufficient: the launcher
+        # and its Java sources must be absent from the distributable project.
+        self.assertFalse((SRC / "WorldAtlasOfflinePregenerator.java").exists())
+        self.assertFalse((SRC.parent.parent.parent / "test/java/org/realscale/neoforge/WorldAtlasRealChunkySmoke.java").exists())
+        screen=(SRC / "WorldAtlasMapScreen.java").read_text()
+        self.assertNotIn("WorldAtlasOfflinePregenerator",screen)
+        self.assertNotIn("setClipboard(",screen)
+        self.assertNotIn("/chunky",screen)
+        self.assertNotIn("ProcessBuilder",screen)
+
     def test_english_chinese_atlas_labels(self):
         keys=("entry","title","empty","back","refresh","scanning",
               "coverage_only")
