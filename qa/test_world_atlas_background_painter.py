@@ -41,26 +41,24 @@ class WorldAtlasBackgroundPainterTests(unittest.TestCase):
         self.assertNotIn("new FileOutputStream(",source)
         self.assertNotIn("ServerChunkCache",source)
 
-    def test_gui_has_live_progress_and_controls_but_no_hidden_chunky_copy(self):
+    def test_gui_has_live_drawing_progress_and_controls_without_hidden_server(self):
         source=(SRC/"WorldAtlasMapScreen.java").read_text()
-        for name in ("warmup_start","draw_start","draw_pause","draw_resume",
-                     "draw_cancel","draw_busy","draw_real_legend"):
+        for name in ("draw_start","draw_pause","draw_resume","draw_cancel",
+                     "draw_busy","draw_real_legend"):
             self.assertIn("realscale.atlas."+name,source)
         self.assertIn("WorldAtlasBackgroundPainter.start(",source)
-        self.assertIn("WorldAtlasOfflinePregenerator.startWarmup(",source)
-        self.assertIn("if(serverJob!=null)",source)
         self.assertIn("WorldAtlasBackgroundPainter.cancel()",source)
         self.assertIn("WorldAtlasBackgroundPainter.pause()",source)
         self.assertIn("WorldAtlasBackgroundPainter.resume()",source)
         self.assertIn("WorldAtlasBackgroundPainter.current()",source)
         self.assertIn("drawing.available()",source)
-        for forbidden in ("ProcessBuilder(","loadLevel(", "runServer(",
+        for forbidden in ("ProcessBuilder(","Runtime.getRuntime().exec(",
+                          "loadLevel(", "runServer(",
                           "createWorldOpenFlows()","getChunk("):
             self.assertNotIn(forbidden,source)
 
     def test_bilingual_ui(self):
-        keys=("warmup_start","warmup_starting","warmup_busy","busy_shared_io",
-              "draw_start","draw_pause","draw_resume","draw_cancel",
+        keys=("draw_start","draw_pause","draw_resume","draw_cancel",
               "draw_started","draw_busy","draw_idle","draw_real_legend")
         for filename in ("en_us.json","zh_cn.json"):
             lang=json.loads((LANG/filename).read_text())

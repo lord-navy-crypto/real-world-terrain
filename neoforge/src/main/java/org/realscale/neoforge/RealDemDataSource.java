@@ -126,13 +126,14 @@ final class RealDemDataSource {
             String metadata=Files.readString(PROVENANCE,StandardCharsets.UTF_8);
             if(Files.size(PROVENANCE)>16384)
                 throw new IOException("USGS provenance is unexpectedly large");
+            // Source URLs remain in the import manifest for provenance. The
+            // runtime validates the content hash and raster metadata without
+            // embedding a fixed network endpoint in the mod.
             if(!sha.equals(jsonString(metadata,"rgt1_sha256"))
-                    || !jsonString(metadata,"source_url").startsWith(
-                        "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/exportImage?")
                     || !jsonString(metadata,"coordinate_reference_system").startsWith("EPSG:26910")
                     || !jsonString(metadata,"elevation_units").equals("metres")
                     || !jsonString(metadata,"source_sha256").matches("[0-9a-f]{64}"))
-                throw new IOException("USGS import provenance or checksum mismatch");
+                throw new IOException("USGS import metadata or checksum mismatch");
             try(InputStream in=Files.newInputStream(EXTERNAL)) {
                 return new RealDemDataSource(in,sha,true);
             }

@@ -1,5 +1,15 @@
 # RealScale Terrain
 
+## 两模式干净稳定候选（2026-10-27）
+
+当前可优先验证的稳定候选是 [release/stable-natural-usgs-clean-20261027](https://github.com/lord-navy-crypto/real-world-terrain/tree/release/stable-natural-usgs-clean-20261027)。该分支从品牌兼容基线 PR #96 分出，**不叠加六套 DEM 拟合地形的 PR #136**。它还不是最终 Stable 发布版。
+
+- 正式可见：`realscale:natural_three_realms`（自然地貌）与 `realscale:usgs_big_sur`（原始 USGS Big Sur 实测小范围地形）。
+- 暂不纳入正式新世界菜单：高山、峡谷、实测 V2 及其他旧实验入口。旧资源及存档 ID 保留用于兼容；不是删除已有世界。
+- 六套新增的 DEM 拟合地形（冰川、火山、喀斯特、沙丘等）仍在 [experimental/terrain-modes-20261026](https://github.com/lord-navy-crypto/real-world-terrain/tree/experimental/terrain-modes-20261026) 和 PR #136 开发，不编入本候选的新增 `terrain_archetype` 引擎。
+
+该候选的专属 CI 包含源码菜单和 DEM 核心连线检查、NeoForge JAR 构建、打包内容检查，以及自然模式和 USGS 模式各自的专用服务器远距区块 180 秒内完成并落盘测试。**只有 CI 真正通过、后续同机性能和客户端测试完成后，才能称为稳定发布。** 当前 README 的历史实验版说明不代表这条稳定候选分支菜单。
+
 Minecraft 1.21.1 / NeoForge / Java 21 的真实尺度地形实验项目。仓库保留 **v1.1 历史测试候选版**：USGS Big Sur 高程覆盖层 + 七个程序化世界预设。地表单位为 1 方块 = 1 米；这不意味着原始观测分辨率为 1 米。
 
 ## 当前实验预览与兼容组件（2026-10-23）

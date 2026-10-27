@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract checks for offline Atlas MVP without a hidden second Chunky."""
+"""Contract checks for the read-only World Atlas and saved-terrain drawing."""
 import json
 import unittest
 from pathlib import Path
@@ -28,37 +28,33 @@ class WorldAtlasFeatureTest(unittest.TestCase):
         self.assertNotIn("ChunkGenerator",source)
         self.assertNotIn("server.execute(",source)
 
-    def test_no_unsafe_offline_chunky_or_fake_terrain_preview(self):
+    def test_readonly_atlas_has_no_chunky_command_adapter_or_launcher(self):
         screen=(SRC/"WorldAtlasMapScreen.java").read_text()
         self.assertIn("CompletableFuture.supplyAsync(",screen)
-        self.assertIn('ModList.get().isLoaded("chunky")',screen)
-        self.assertIn("keyboardHandler.setClipboard(commands)",screen)
         self.assertIn("WorldAtlasRegionIndex.scan(",screen)
+        self.assertNotIn("Chunky",screen)
+        self.assertNotIn("chunky",screen.lower())
+        self.assertNotIn("setClipboard",screen)
         for unsafe in ("ProcessBuilder(","Runtime.getRuntime().exec(",
                        "createWorldOpenFlows()", "loadLevel(",
                        "getChunk(", "ServerChunkCache"):
             self.assertNotIn(unsafe,screen)
         self.assertIn('realscale.atlas.coverage_only',screen)
 
-    def test_warmup_reuses_server_and_waits_for_chunky_task_drain(self):
-        source=(SRC/"WorldAtlasOfflinePregenerator.java").read_text()
-        self.assertIn("startWarmup(",source)
-        self.assertIn('"WARMUP_READY"',source)
-        self.assertIn("beginWarmupDrain(s)",source)
-        self.assertIn("beginNaturalDrain(s)",source)
-        self.assertIn('safe.contains("No tasks running.")',source)
-        self.assertIn('if(s.status.state().equals("RUNNING"))',source)
-        self.assertIn("PAUSE_DRAINING",source)
-        self.assertIn("pausedAwaitingTaskSave",source)
-        self.assertIn('s.command("save-all flush")',source)
-        self.assertIn('old.command("chunky start minecraft:overworld square "',source)
-        self.assertNotIn('command.startsWith("chunky continue")',source)
+    def test_no_offline_server_launcher_or_chunky_copy_in_release(self):
+        # A UI that merely hides the button is not sufficient: the launcher
+        # and its Java sources must be absent from the distributable project.
+        self.assertFalse((SRC / "WorldAtlasOfflinePregenerator.java").exists())
+        self.assertFalse((ROOT / "neoforge/src/test/java/org/realscale/neoforge/WorldAtlasRealChunkySmoke.java").exists())
+        screen=(SRC / "WorldAtlasMapScreen.java").read_text()
+        self.assertNotIn("WorldAtlasOfflinePregenerator",screen)
+        self.assertNotIn("setClipboard(",screen)
+        self.assertNotIn("/chunky",screen)
+        self.assertNotIn("ProcessBuilder",screen)
 
     def test_english_chinese_atlas_labels(self):
         keys=("entry","title","empty","back","refresh","scanning",
-              "coverage_only","chunky_found","chunky_missing",
-              "copy_chunky","copied","warmup_start","warmup_starting",
-              "warmup_busy","busy_shared_io")
+              "coverage_only")
         for name in ("en_us","zh_cn"):
             data=json.loads((RES/(name+".json")).read_text())
             for key in keys:
