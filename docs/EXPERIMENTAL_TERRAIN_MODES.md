@@ -2,7 +2,7 @@
 
 This branch preserves the full terrain-mode development catalog and is not the
 conservative playable release target. Keep experimental work here while the
-stable release branch exposes only Natural and USGS Big Sur V2.
+stable release branch exposes only Natural and the original USGS Big Sur pilot. The separate USGS Big Sur V2 seamless/blended profile remains experimental until performance and saved-world compatibility are proven.
 
 Current experimental families include fitted alpine, canyon, glacial, volcanic,
 karst, and dune terrain; smoothing probes; PR25 climate variants; and the other
