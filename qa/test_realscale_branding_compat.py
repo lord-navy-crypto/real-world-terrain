@@ -57,15 +57,18 @@ def source_chain(source):
 
 
 class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
-    def test_new_world_menu_has_one_default_and_six_fitted_presets(self):
+    def test_new_world_menu_has_natural_and_six_fitted_tests_without_usgs(self):
         menu = ["realscale:" + name for name in CANONICAL]
         for name in ("normal", "extended"):
             tag = read(TAG_ROOT / (name + ".json"))
             self.assertEqual(tag["values"], menu)
             self.assertEqual(len(set(menu)), 7)
+            self.assertNotIn("realscale:usgs_big_sur", tag["values"])
 
-    def test_canonical_presets_share_universal_biome_layers(self):
+    def test_six_fitted_presets_share_universal_biome_layers(self):
         for name, settings_id in CANONICAL.items():
+            if name == "natural_three_realms":
+                continue
             with self.subTest(preset=name):
                 world = read(WORLD / (name + ".json"))
                 overworld = world["dimensions"]["minecraft:overworld"]
@@ -77,6 +80,35 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
                 self.assertEqual(overworld["type"], "realscale:realism_max_overworld")
                 self.assertIn("minecraft:the_nether", world["dimensions"])
                 self.assertIn("minecraft:the_end", world["dimensions"])
+
+    def test_unmodified_default_and_usgs_worldgen_resources(self):
+        # Git blob identities from the clean Natural + original USGS release
+        # candidate. These lock the *bytes*, not just the JSON shape.
+        import hashlib
+
+        expected = {
+            "data/realscale/worldgen/world_preset/natural_three_realms.json":
+                "563ed6ca4b0fd09b6ae1aa05854c834908690f23",
+            "data/realscale/worldgen/world_preset/usgs_big_sur.json":
+                "97be6c20ed9dfc5d8d51287282df3b516d7cf461",
+            "data/realscale/worldgen/noise_settings/tva_natural_smoothed.json":
+                "5be587e4abe1cd926b536ea90dc258d696ba8263",
+            "data/realscale/worldgen/noise_settings/usgs_big_sur.json":
+                "2a56e3e6dfae35ef165286a814e2277aee4b7ff6",
+        }
+        for path, sha in expected.items():
+            raw = (RES / path).read_bytes()
+            git_blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + bytes((0,)) + raw).hexdigest()
+            self.assertEqual(git_blob, sha, path)
+
+    def test_restored_fitted_labels_explicitly_say_experimental(self):
+        for name in ("en_us.json", "zh_cn.json"):
+            labels = read(RES / "assets/minecraft/lang" / name)
+            for preset in CANONICAL:
+                if preset == "natural_three_realms":
+                    continue
+                label = labels["generator.realscale." + preset]
+                self.assertTrue(("Experimental" in label) or ("实验" in label), (name, preset))
 
     def test_six_fitted_modes_change_only_overworld_noise_settings(self):
         reference = None

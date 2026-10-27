@@ -1,0 +1,167 @@
+name: Public seven-mode test JAR (Natural plus six fits)
+on:
+  pull_request:
+    paths:
+      - 'neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/world_preset/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/usgs_big_sur/**'
+      - 'neoforge/build.gradle'
+      - 'qa/test_realscale_branding_compat.py'
+      - '.github/workflows/public-eight-mode-test-jar.yml'
+  push:
+    branches:
+      - 'test/public-eight-presets-natural-usgs-20261027'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: public-seven-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify-and-build:
+    name: Verify seven visible terrain modes; keep original resources unchanged
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Check all seven choices, six fits and original source bytes
+        run: python3 -m unittest discover -s qa -p 'test_realscale_branding_compat.py' -v
+      - name: Build NeoForge candidate JAR
+        working-directory: neoforge
+        run: gradle --no-daemon build
+      - name: Verify packaged JAR exposes seven choices without USGS
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from zipfile import ZipFile
+          jars = [p for p in Path("neoforge/build/libs").glob("RealScale-NeoForge-1.21.1-*.jar")
+                  if not p.name.endswith("-sources.jar")]
+          if len(jars) != 1:
+              raise SystemExit(f"Expected one playable RealScale JAR, found {jars}")
+          with ZipFile(jars[0]) as z:
+              paths = set(z.namelist())
+              root = "data/minecraft/tags/worldgen/world_preset/"
+              expected = ["realscale:" + v for v in ("natural_three_realms", "alpine_three_realms", "canyon_three_realms", "glacial_three_realms", "volcanic_three_realms", "karst_three_realms", "dune_three_realms")]
+              for menu in ("normal", "extended"):
+                  data = json.loads(z.read(root + menu + ".json"))
+                  if data["values"] != expected:
+                      raise SystemExit(f"Packaged {menu} release menu mismatch: {data}")
+              for resource in (
+                  "data/realscale/worldgen/world_preset/natural_three_realms.json",
+                  "data/realscale/worldgen/world_preset/usgs_big_sur.json",
+                  "data/realscale/worldgen/noise_settings/usgs_big_sur.json",
+                  "data/realscale/worldgen/density_function/usgs_big_sur/terrain_density.json",
+              ):
+                  if resource not in paths:
+                      raise SystemExit(f"Missing release resource in JAR: {resource}")
+              for fitted in ("alpine", "canyon", "glacial", "volcanic", "karst", "dune"):
+                  profile = f"data/realscale/worldgen/world_preset/{fitted}_three_realms.json"
+                  if profile not in paths:
+                      raise SystemExit(f"Fitted terrain preset missing: {profile}")
+              forbidden = (
+                  "WorldAtlasOfflinePregenerator",
+                  "WorldAtlasRealChunkySmoke",
+              )
+              if any(any(token in name for token in forbidden) for name in paths):
+                  raise SystemExit("Removed offline pregenerator was found in compiled JAR")
+              screen_classes = [name for name in paths if name.endswith("WorldAtlasMapScreen.class")]
+              if len(screen_classes) != 1:
+                  raise SystemExit("Read-only Atlas map screen class missing")
+              screen_bytes = z.read(screen_classes[0])
+              if b"WorldAtlasOfflinePregenerator" in screen_bytes or b"/chunky" in screen_bytes or b"setClipboard" in screen_bytes:
+                  raise SystemExit("Atlas class still references offline generation or Chunky command copying")
+              dem_classes = [name for name in paths if name.endswith("RealDemDataSource.class")]
+              if len(dem_classes) != 1:
+                  raise SystemExit("DEM data source class missing")
+              if b"https://elevation.nationalmap.gov/" in z.read(dem_classes[0]):
+                  raise SystemExit("Fixed USGS runtime provenance endpoint remains in JAR")
+          print("PUBLIC_SEVEN_MODE_PACKAGED_JAR_OK", jars[0])
+          PY
+      - name: Upload candidate only (not a certified Stable release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-7-Modes-Public-Experimental-Test-JAR
+          path: neoforge/build/libs/RealScale-NeoForge-1.21.1-*.jar
+          if-no-files-found: error
+          retention-days: 7
+
+  real-worldgen:
+    name: Real NeoForge saved far chunk - ${{ matrix.name }}
+    needs: verify-and-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - name: natural
+            preset: realscale:natural_three_realms
+          - name: volcanic
+            preset: realscale:volcanic_three_realms
+          - name: dune
+            preset: realscale:dune_three_realms
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Prepare clean isolated world for chosen release preset
+        working-directory: neoforge
+        env:
+          RELEASE_PRESET: ${{ matrix.preset }}
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<PROPERTIES
+          level-name=world
+          level-type=$RELEASE_PRESET
+          level-seed=42
+          spawn-protection=0
+          spawn-chunk-radius=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+          done
+      - name: Require real saved far chunk within 180 seconds
+        working-directory: neoforge
+        env:
+          RELEASE_PRESET: ${{ matrix.preset }}
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . "$RELEASE_PRESET" distant
+      - name: Preserve server log, saved-world proof and timeout diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-7-Mode-${{ matrix.name }}-Worldgen-Evidence
+          path: |
+            neoforge/build/rcon_distant_server.log
+            neoforge/build/rcon_distant_thread_dump_*.txt
+            neoforge/build/rcon_distant_stall_fingerprint.json
+            neoforge/run/**/level.dat
+            neoforge/run/**/region/*.mca
+          if-no-files-found: warn
+          retention-days: 7
