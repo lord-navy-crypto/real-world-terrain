@@ -66,6 +66,23 @@ jobs:
               ):
                   if resource not in paths:
                       raise SystemExit(f"Missing release resource in JAR: {resource}")
+              forbidden = (
+                  "WorldAtlasOfflinePregenerator",
+                  "WorldAtlasRealChunkySmoke",
+              )
+              if any(any(token in name for token in forbidden) for name in paths):
+                  raise SystemExit("Removed offline pregenerator was found in compiled JAR")
+              screen_classes = [name for name in paths if name.endswith("WorldAtlasMapScreen.class")]
+              if len(screen_classes) != 1:
+                  raise SystemExit("Read-only Atlas map screen class missing")
+              screen_bytes = z.read(screen_classes[0])
+              if b"WorldAtlasOfflinePregenerator" in screen_bytes or b"/chunky" in screen_bytes or b"setClipboard" in screen_bytes:
+                  raise SystemExit("Atlas class still references offline generation or Chunky command copying")
+              dem_classes = [name for name in paths if name.endswith("RealDemDataSource.class")]
+              if len(dem_classes) != 1:
+                  raise SystemExit("DEM data source class missing")
+              if b"https://elevation.nationalmap.gov/" in z.read(dem_classes[0]):
+                  raise SystemExit("Fixed USGS runtime provenance endpoint remains in JAR")
           print("STABLE_NATURAL_USGS_PACKAGED_JAR_OK", jars[0])
           PY
       - name: Upload candidate only (not a certified Stable release)
