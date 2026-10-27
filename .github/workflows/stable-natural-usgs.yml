@@ -1,10 +1,12 @@
-name: Stable Natural + USGS preset menu
+name: Stable Natural + USGS source and JAR
 on:
   pull_request:
     paths:
       - 'neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/world_preset/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/usgs_big_sur/**'
+      - 'neoforge/build.gradle'
       - 'qa/test_stable_natural_usgs_menu.py'
       - '.github/workflows/stable-natural-usgs.yml'
   push:
@@ -13,13 +15,63 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: stable-natural-usgs-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  stable-menu:
+  verify-and-build:
+    name: Verify stable Natural + original USGS and build candidate
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Validate only Natural and USGS are visible, preserving experiments
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Check release menu, kernel wiring, and preserved experiments
         run: python3 -m unittest discover -s qa -p 'test_stable_natural_usgs_menu.py' -v
+      - name: Build NeoForge candidate JAR
+        working-directory: neoforge
+        run: gradle --no-daemon build
+      - name: Verify the built JAR exposes the same two RealScale presets
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from zipfile import ZipFile
+          jars = [p for p in Path("neoforge/build/libs").glob("RealScale-NeoForge-1.21.1-*.jar")
+                  if not p.name.endswith("-sources.jar")]
+          if len(jars) != 1:
+              raise SystemExit(f"Expected one playable RealScale JAR, found {jars}")
+          with ZipFile(jars[0]) as z:
+              paths = set(z.namelist())
+              root = "data/minecraft/tags/worldgen/world_preset/"
+              expected = ["realscale:natural_three_realms", "realscale:usgs_big_sur"]
+              for menu in ("normal", "extended"):
+                  data = json.loads(z.read(root + menu + ".json"))
+                  if data["values"] != expected:
+                      raise SystemExit(f"Packaged {menu} release menu mismatch: {data}")
+              for resource in (
+                  "data/realscale/worldgen/world_preset/natural_three_realms.json",
+                  "data/realscale/worldgen/world_preset/usgs_big_sur.json",
+                  "data/realscale/worldgen/noise_settings/usgs_big_sur.json",
+                  "data/realscale/worldgen/density_function/usgs_big_sur/terrain_density.json",
+              ):
+                  if resource not in paths:
+                      raise SystemExit(f"Missing release resource in JAR: {resource}")
+          print("STABLE_NATURAL_USGS_PACKAGED_JAR_OK", jars[0])
+          PY
+      - name: Upload candidate only (not a certified Stable release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-Natural-USGS-Release-Candidate
+          path: neoforge/build/libs/RealScale-NeoForge-1.21.1-*.jar
+          if-no-files-found: error
+          retention-days: 7
