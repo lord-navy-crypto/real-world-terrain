@@ -1,0 +1,25 @@
+name: Stable Natural + USGS preset menu
+on:
+  pull_request:
+    paths:
+      - 'neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/world_preset/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/**'
+      - 'qa/test_stable_natural_usgs_menu.py'
+      - '.github/workflows/stable-natural-usgs.yml'
+  push:
+    branches:
+      - 'release/stable-natural-usgs-20261027'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stable-menu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate only Natural and USGS are visible, preserving experiments
+        run: python3 -m unittest discover -s qa -p 'test_stable_natural_usgs_menu.py' -v
