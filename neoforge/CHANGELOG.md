@@ -2,6 +2,21 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
 
+## Seven-mode public test build — 2026-10-27
+**Artifact basis:** `2.0.0-preview.2-test.6` (the JAR's internal version was not bumped for this menu-only test build).
+
+### Changed
+- The normal and extended Create World menus now expose **seven choices**: Natural Landscapes plus six fitted experimental presets (Alpine, Canyon, Glacial, Volcanic, Karst, Dune).
+- Removed USGS Big Sur from both selectable menus at the user's request. Legacy USGS resources remain in the JAR for saved-world compatibility; USGS is not offered as a new-world mode.
+- The six fitted presets are visibly marked Experimental / 实验玩法 in English and Chinese.
+- Natural Landscapes' original preset and noise-settings resources remain byte-identical to the separate stable candidate baseline.
+
+### Validation
+- Source-integrity and packaged-JAR menu checks passed; downloadable artifact: [RealScale-7-Modes-Public-Experimental-Test-JAR](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/40446967997).
+- Real NeoForge smoke jobs for Natural, Volcanic and Dune were cancelled in this run, so this build is **not** certified by a completed in-game worldgen smoke test.
+- A previous fitted-mode comparison found no measurable Dune-vs-Natural height difference across its sampled 6,400 columns. Treat all six fits as player-test experiments, not validated geographic matches.
+- The JAR's internal version remains `2.0.0-preview.2-test.6`; this changelog does not imply a formal stable release.
+
 ## 2.0.0-preview.2-test.6 — 2026-10-23 — Experimental
 
 ### 新增 / Added
