@@ -65,9 +65,10 @@ class MountainBasinPlateauTest(unittest.TestCase):
             self.assertEqual(adjusted["height_signal"],
                              f"realscale:{preset}/original_height_signal")
             base=adjusted["base"]
-            self.assertEqual(base["type"],"realscale:radial_latitude_temperature")
-            self.assertTrue(base["area_balanced"])
+            self.assertEqual(base["type"],"realscale:latitude_temperature")
+            self.assertTrue(base["clamp_at_poles"])
             self.assertTrue(base["balanced"])
+            self.assertEqual(base["pole_distance"],10_001_966)
             self.assertGreater(base["altitude_cooling"],0)
             landform=read(DATA/"density_function"/preset/"height_signal.json")
             if preset=="tva_natural_smoothed":
@@ -85,8 +86,11 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertEqual(usgs["type"],"realscale:dem_density_seamless")
         self.assertEqual(usgs["blend_meters"],2048)
         usgs_noise=read(DATA/"noise_settings/usgs_big_sur_v2.json")
-        self.assertEqual(usgs_noise["noise_router"]["temperature"]["adjusted"]["type"],
-                         "realscale:radial_latitude_temperature")
+        usgs_latitude=usgs_noise["noise_router"]["temperature"]["adjusted"]
+        self.assertEqual(usgs_latitude["type"],"realscale:latitude_temperature")
+        self.assertTrue(usgs_latitude["clamp_at_poles"])
+        self.assertEqual(usgs_latitude["equator_z"],4_027_458)
+        self.assertEqual(usgs_latitude["prime_meridian_x"],13_559_827)
         self.assertEqual(usgs_noise["noise_router"]["final_density"]["type"],
                          "realscale:grand_overworld_caverns")
         for old in ("realism_max","himalayan","grand_canyon"):
