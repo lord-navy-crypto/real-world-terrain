@@ -393,7 +393,7 @@ public final class RealScaleTerrainLabClient {
                 .name(Component.literal("Shared Climate & Latitude / Export"))
                 .option(Option.<String>createBuilder()
                     .name(Component.literal("Latitude Climate Cycle"))
-                    .description(description("Built-in RealScale worlds use Z-axis zonal latitude. Earth/preview create parallel latitude bands (Z=0 equator, negative Z north, positive Z south); radial_* explicitly selects the retained concentric-ring experiment. 'off' adds no override and inherits the preset climate."))
+                    .description(description("Built-in RealScale worlds use a 1:20 horizontal map scale: X and Z are sampled in 20 source metres per Minecraft block, while Y remains unchanged. Z alone controls latitude (negative Z north, positive Z south); X is not used for climate. Earth/preview use the periodic full cycle equator -> north pole -> opposite equator -> south pole -> original equator. Earth places each pole about 500,098 blocks from the equator; preview uses 16,384 blocks. radial_* selects the retained concentric-ring experiment. 'off' inherits the preset climate."))
                     .binding("off", () -> d.latitudeMode, v -> d.latitudeMode=v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(
                         "off","earth","preview","radial_earth","radial_preview","radial_balanced",
@@ -405,12 +405,12 @@ public final class RealScaleTerrainLabClient {
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5)).build())
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Equator Z (Zonal) / Ring Center Z (Radial)"))
-                    .description(description("Zonal: Z coordinate of the equator; negative Z is north and positive Z is south. Radial: center Z of concentric rings. This is a world coordinate, not the player spawn."))
+                    .description(description("World Z block coordinate of the equator (or radial ring center). The exporter converts it to source metres using the 1:20 horizontal scale; negative Z is north and positive Z is south. This is a world coordinate, not the player spawn."))
                     .binding(0, () -> d.equatorZ, v -> d.equatorZ=v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(-4096,4096).step(128)).build())
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Ring Center X (Radial Only)"))
-                    .description(description("Only used by radial concentric-ring modes; ignored by Z-axis zonal latitude."))
+                    .description(description("World X block coordinate used only by radial concentric-ring modes; converted to source metres using the 1:20 horizontal scale. X does not affect zonal climate."))
                     .binding(0, () -> d.radialCenterX, v -> d.radialCenterX=v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(-4096,4096).step(128)).build())
                 .option(Option.<Integer>createBuilder()
