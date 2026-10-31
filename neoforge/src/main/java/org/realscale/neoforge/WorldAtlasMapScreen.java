@@ -11,11 +11,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 /**
- * Read-only persisted-chunk atlas. It NEVER opens the world/server or creates
- * a chunk, and never estimates "generated" from a noisy height preview.
- *
- * The Atlas reports existing save coverage and samples persisted heightmaps.
- * It does not launch external tools, start a server, or generate chunks.
+ * Read-only saved-chunk atlas.
+ * It indexes persisted Anvil region headers only. It never generates,
+ * preloads, tickets, schedules, or modifies chunks, and has no server
+ * bootstrap, background painter, or external process.
  */
 public final class WorldAtlasMapScreen extends Screen {
     private static final int[] RADII={512,1024,2048,4096};
@@ -26,7 +25,6 @@ public final class WorldAtlasMapScreen extends Screen {
     private WorldAtlasRegionIndex.Snapshot current;
     private CompletableFuture<WorldAtlasRegionIndex.Snapshot> pending;
     private String message="";
-    private Button pauseDrawButton;
 
     public WorldAtlasMapScreen(Screen parent,Path save) {
         super(Component.translatable("realscale.atlas.title"));
@@ -38,8 +36,7 @@ public final class WorldAtlasMapScreen extends Screen {
         current=null;
         message="";
         final int x=centerX,z=centerZ,radius=RADII[radiusIndex];
-        // Async, bounded, headers-only I/O; never block game render thread
-        // with a long scan, and never force a server to start while offline.
+        // Bounded read-only region-header scan; no chunk generation or server.
         pending=CompletableFuture.supplyAsync(() -> {
             try { return WorldAtlasRegionIndex.scan(save,x,z,radius); }
             catch (java.io.IOException ex) {
@@ -50,21 +47,6 @@ public final class WorldAtlasMapScreen extends Screen {
 
     @Override protected void init() {
         int mid=width/2;
-        int drawingY=height-106;
-        addRenderableWidget(Button.builder(
-                Component.translatable("realscale.atlas.draw_start"),
-                b -> startDrawing())
-                .bounds(mid-68,drawingY,88,20).build());
-        pauseDrawButton=Button.builder(
-                Component.translatable("realscale.atlas.draw_pause"),
-                b -> togglePause())
-                .bounds(mid+24,drawingY,60,20).build();
-        addRenderableWidget(pauseDrawButton);
-        addRenderableWidget(Button.builder(
-                Component.translatable("realscale.atlas.draw_cancel"),
-                b -> {if(!WorldAtlasBackgroundPainter.cancel())
-                    message=Component.translatable("realscale.atlas.draw_idle").getString();})
-                .bounds(mid+88,drawingY,60,20).build());
         int y=height-79;
         addRenderableWidget(Button.builder(Component.literal("X -"),
                 b -> {centerX-=512;requestScan();})
@@ -83,8 +65,7 @@ public final class WorldAtlasMapScreen extends Screen {
                 b -> {radiusIndex=Math.max(0,radiusIndex-1);requestScan();})
                 .bounds(mid-134,y,85,20).build());
         addRenderableWidget(Button.builder(Component.literal("Radius +"),
-                b -> {radiusIndex=Math.min(RADII.length-1,radiusIndex+1);
-                      requestScan();})
+                b -> {radiusIndex=Math.min(RADII.length-1,radiusIndex+1);requestScan();})
                 .bounds(mid-43,y,85,20).build());
         y=height-28;
         addRenderableWidget(Button.builder(
@@ -93,45 +74,11 @@ public final class WorldAtlasMapScreen extends Screen {
         addRenderableWidget(Button.builder(
                 Component.translatable("realscale.atlas.refresh"),
                 b -> requestScan()).bounds(width-102,y,94,20).build());
-        if(pending==null)requestScan();
-    }
-
-    private void startDrawing() {
-        try {
-            boolean started=WorldAtlasBackgroundPainter.start(save,
-                    centerX,centerZ,RADII[radiusIndex]);
-            message=Component.translatable(started
-                    ?"realscale.atlas.draw_started"
-                    :"realscale.atlas.draw_busy").getString();
-        } catch(IllegalArgumentException ex) {
-            // Repeated panning near the world border must not crash the GUI.
-            message=ex.getMessage()==null?"Map center is out of bounds":
-                    ex.getMessage();
-        }
-    }
-
-    private void togglePause() {
-        var job=WorldAtlasBackgroundPainter.current();
-        if(job!=null && "PAUSED".equals(job.state()))
-            WorldAtlasBackgroundPainter.resume();
-        else WorldAtlasBackgroundPainter.pause();
-    }
-
-    private WorldAtlasBackgroundPainter.View visiblePainting() {
-        var job=WorldAtlasBackgroundPainter.current();
-        return job!=null && job.matches(save,centerX,centerZ,
-                RADII[radiusIndex])?job:null;
+        requestScan();
     }
 
     @Override public void tick() {
         super.tick();
-        if(pauseDrawButton!=null) {
-            var job=WorldAtlasBackgroundPainter.current();
-            boolean paused=job!=null && "PAUSED".equals(job.state());
-            pauseDrawButton.setMessage(Component.translatable(paused
-                    ?"realscale.atlas.draw_resume"
-                    :"realscale.atlas.draw_pause"));
-        }
         if(pending==null || !pending.isDone())return;
         try {
             current=pending.join();
@@ -160,59 +107,24 @@ public final class WorldAtlasMapScreen extends Screen {
 
         int grid=WorldAtlasRegionIndex.MAP_CELLS;
         int step=Math.max(1,Math.min(5,
-                Math.min((width-26)/grid,(height-195)/grid)));
+                Math.min((width-26)/grid,(height-160)/grid)));
         int size=grid*step,left=(width-size)/2,top=49;
         gfx.fill(left-2,top-2,left+size+2,top+size+2,0xff19252a);
-        var drawing=visiblePainting();
-        var drawingTask=WorldAtlasBackgroundPainter.current();
-        boolean drawingTaskActive=drawingTask!=null
-                && !drawingTask.state().equals("DONE")
-                && !drawingTask.state().equals("CANCELLED")
-                && !drawingTask.state().equals("FAILED");
-        if(current!=null || drawing!=null) {
+        if(current!=null) {
             for(int z=0;z<grid;z++)for(int x=0;x<grid;x++) {
-                int coverage=current==null?0:current.cellCoverage(x,z);
-                int color=(coverage==0)?0xff47545c:
+                int coverage=current.cellCoverage(x,z);
+                int color=coverage==0?0xff47545c:
                         (coverage==255?0xff67ad87:0xffb5a46a);
-                if(drawing!=null) {
-                    int sampled=drawing.color(x,z);
-                    if(sampled!=0)color=sampled; // Real persisted heightmaps only
-                }
                 int px=left+x*step,pz=top+z*step;
                 gfx.fill(px,pz,px+step,pz+step,color);
             }
-        }else{
+        } else {
             gfx.drawCenteredString(font,
                     Component.translatable("realscale.atlas.scanning"),
                     width/2,top+size/2,0xffffffff);
         }
-        // One bounded status row stays ABOVE the first footer button at
-        // height-79. Do not overpaint navigation on 240px GUI-scaled windows.
-        int statusY=Math.min(top+size+2,height-140);
-        if(drawing==null && drawingTaskActive) {
-            // Panning changes the displayed map, not the running task's
-            // immutable target. Keep its progress visible without painting
-            // samples from the old center over the newly selected map.
-            String progress=drawingTask.state()+" | target XZ "
-                    +drawingTask.centerX()+","+drawingTask.centerZ()
-                    +" radius "+drawingTask.radius()+" | "
-                    +drawingTask.finished()+"/"+WorldAtlasBackgroundPainter.PIXELS
-                    +" cells | "+String.format(java.util.Locale.ROOT,
-                        "%.1f",drawingTask.percent())+"%";
-            gfx.drawCenteredString(font,Component.literal(
-                    font.plainSubstrByWidth(progress,Math.max(130,width-16))),
-                    width/2,statusY,0xffc5e6d0);
-        } else if(drawing!=null) {
-            String progress=drawing.state()+" | "
-                    +drawing.finished()+"/"+WorldAtlasBackgroundPainter.PIXELS
-                    +" cells | "+drawing.available()+" height samples"
-                    +" | "+String.format(java.util.Locale.ROOT,
-                        "%.1f",drawing.percent())+"%"
-                    +(drawing.errors()>0?" | "+drawing.errors()+" unreadable":"");
-            gfx.drawCenteredString(font,Component.literal(
-                    font.plainSubstrByWidth(progress,Math.max(130,width-16))),
-                    width/2,statusY,0xffc5e6d0);
-        } else if(!message.isEmpty()) {
+        int statusY=Math.min(top+size+5,height-103);
+        if(!message.isEmpty()) {
             gfx.drawCenteredString(font,Component.literal(
                     font.plainSubstrByWidth(message,Math.max(130,width-16))),
                     width/2,statusY,0xffffff99);
@@ -224,14 +136,11 @@ public final class WorldAtlasMapScreen extends Screen {
                     font.plainSubstrByWidth(stats,Math.max(130,width-16))),
                     width/2,statusY,0xffc5e6d0);
         }
-        // Clip the legend into the LEFT margin of the map; no overlap
-        // with the coverage pixels or bottom navigation at GUI scale 2/3.
-        String legend=Component.translatable(drawing!=null
-                ?"realscale.atlas.draw_real_legend"
-                :"realscale.atlas.coverage_only").getString();
-        gfx.drawString(font,Component.literal(
-                font.plainSubstrByWidth(legend,Math.max(35,left-16))),
-                8,49,0xffbcbcbc);
+        String legend=Component.translatable(
+                "realscale.atlas.coverage_only").getString();
+        gfx.drawCenteredString(font,Component.literal(
+                font.plainSubstrByWidth(legend,Math.max(35,width-16))),
+                width/2,Math.min(height-94,statusY+13),0xffbcbcbc);
     }
 
     @Override public void onClose() {
