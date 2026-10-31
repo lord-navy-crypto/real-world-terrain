@@ -9,9 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
-import java.util.Locale;
-
-/** Read-only, live-position latitude and astronomical climate-belt report. */
+/** Read-only, live-position report using RealScale's single 1:20 latitude model. */
 public final class GeographicClimateInspectorScreen extends Screen {
     private final Screen parent;
     private Report report;
@@ -19,9 +17,8 @@ public final class GeographicClimateInspectorScreen extends Screen {
 
     private record Report(
             int x, int y, int z, String dimension, String biome,
-            double latitude, String latitudeLabel, String hemisphere,
-            String belt, String boundary, String mode, String coordinateReference,
-            int strengthPercent, boolean radial) { }
+            String latitudeLabel, String hemisphere, String belt,
+            String boundary, String scale, String coordinateReference) { }
 
     public GeographicClimateInspectorScreen(Screen parent) {
         super(Component.literal("Geographic Climate Inspector"));
@@ -53,18 +50,16 @@ public final class GeographicClimateInspectorScreen extends Screen {
             return;
         }
 
-        GeographicClimateInspectorClient.ActiveClimateProfile profile =
-                GeographicClimateInspectorClient.readActiveProfile(minecraft);
+        GeographicClimateInspectorClient.GeographicLatitudeProfile profile =
+                GeographicClimateInspectorClient.readGeographicProfile(minecraft);
         if (profile == null) {
             report = null;
-            unavailableReason = minecraft.getSingleplayerServer() == null
-                    ? "Active generator metadata is not available from a remote server yet."
-                    : "No RealScale latitude node is active in this dimension.";
+            unavailableReason = "The 1:20 geographic latitude report applies to the Overworld only.";
             return;
         }
 
         BlockPos pos = player.blockPosition();
-        double latitude = profile.latitudeAt(pos.getX(), pos.getZ());
+        double latitude = profile.latitudeAt(pos.getZ());
         String biome = minecraft.level.getBiome(pos).unwrapKey()
                 .map(key -> key.location().toString()).orElse("unregistered biome");
         ResourceLocation dimension = minecraft.level.dimension().location();
@@ -72,14 +67,11 @@ public final class GeographicClimateInspectorScreen extends Screen {
         report = new Report(
                 pos.getX(), pos.getY(), pos.getZ(),
                 dimension.toString(), biome,
-                latitude,
                 GeographicClimateMath.latitudeLabel(latitude),
-                profile.radial() ? "Not applicable (concentric rings)"
-                        : GeographicClimateMath.hemisphereLabel(latitude),
+                GeographicClimateMath.hemisphereLabel(latitude),
                 GeographicClimateMath.beltLabel(latitude),
                 GeographicClimateMath.boundaryLabel(latitude),
-                profile.modeLabel(), profile.coordinateReference(),
-                (int)Math.round(profile.strength() * 100.0), profile.radial());
+                profile.scaleLabel(), profile.coordinateReference());
         unavailableReason = "";
     }
 
@@ -92,18 +84,20 @@ public final class GeographicClimateInspectorScreen extends Screen {
         if (player == null) return;
 
         player.displayClientMessage(Component.literal(
-                "[RealScale Climate] " + report.latitudeLabel()
+                "[RealScale Geographic Report] " + report.latitudeLabel()
                         + " | " + report.belt()), false);
         player.displayClientMessage(Component.literal(
                 "Position X/Y/Z: " + report.x() + " / " + report.y()
                         + " / " + report.z() + " | " + report.dimension()), false);
         player.displayClientMessage(Component.literal(
                 "Hemisphere: " + report.hemisphere()
-                        + " | Mode: " + report.mode()
-                        + " | Strength: " + report.strengthPercent() + "%"), false);
+                        + " | Latitude model: " + report.scale()), false);
         player.displayClientMessage(Component.literal(
                 "Current biome: " + report.biome()
-                        + " | This is a latitude belt, not a Köppen climate classification."), false);
+                        + " | " + report.coordinateReference()), false);
+        player.displayClientMessage(Component.literal(
+                "Climate belt is a simplified latitude-based zone, not a Köppen classification or local weather forecast."),
+                false);
     }
 
     @Override
@@ -115,7 +109,7 @@ public final class GeographicClimateInspectorScreen extends Screen {
             graphics.drawCenteredString(font, Component.literal(unavailableReason),
                     width / 2, height / 2 - 12, 0xffffcc88);
             graphics.drawCenteredString(font,
-                    Component.literal("The inspector will not infer a latitude mode from the next-world draft."),
+                    Component.literal("No world-generation node is required for this geographic report."),
                     width / 2, height / 2 + 8, 0xffbbbbbb);
             return;
         }
@@ -132,22 +126,20 @@ public final class GeographicClimateInspectorScreen extends Screen {
         y += 17;
         drawLine(graphics, "Hemisphere", report.hemisphere(), y);
         y += 17;
-        drawLine(graphics, "Astronomical climate belt", report.belt(), y);
+        drawLine(graphics, "Latitude climate belt", report.belt(), y);
         y += 17;
         drawLine(graphics, "Boundary assessment", report.boundary(), y);
         y += 17;
-        drawLine(graphics, "Active latitude mode", report.mode(), y);
-        y += 17;
-        drawLine(graphics, "Latitude strength", report.strengthPercent() + "%", y);
+        drawLine(graphics, "Latitude scale", report.scale(), y);
         y += 17;
         drawLine(graphics, "Reference", report.coordinateReference(), y);
 
-        int noteY = Math.min(height - 48, y + 24);
+        int noteY = Math.min(height - 48, y + 18);
         graphics.drawCenteredString(font,
                 Component.literal("X is the east–west map coordinate, not a true longitude."),
                 width / 2, noteY, 0xffc8c8c8);
         graphics.drawCenteredString(font,
-                Component.literal("Latitude belts are broad astronomical zones, not local weather or Köppen classes."),
+                Component.literal("Subtropical / subpolar boundaries are approximate; this is not local weather."),
                 width / 2, noteY + 13, 0xffa8a8a8);
     }
 
