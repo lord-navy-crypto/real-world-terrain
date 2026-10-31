@@ -1,9 +1,9 @@
-# RealScale World Atlas — saved coverage and heightmap inspection
+# RealScale World Atlas — read-only saved-chunk coverage
 
-**Current main-branch scope.** NeoForge 1.21.1, Java 21. World Atlas reads
-saved-region coverage and samples persisted heightmaps. It does not include
-a Chunky command-copy button, launch external tools, start a background
-server, or generate chunks from the Atlas UI.
+**Current scope.** NeoForge 1.21.1, Java 21. World Atlas only indexes
+existing saved-region coverage. It does not sample or draw terrain heightmaps,
+pre-generate chunks, preload chunks, invoke Chunky, connect to Distant Horizons,
+start a server, or launch an external process.
 
 ## Where to open it
 
@@ -15,37 +15,41 @@ server, or generate chunks from the Atlas UI.
 5. Pan X/Z by 512 blocks and change square preview radius among 512,
    1024, 2048 and 4096 blocks. Press Refresh to read saved coverage again.
 6. Green: all saved slots in that coarse map cell; amber: partial; grey:
-   no saved slots. The title shows the exact count for the selected
-   square. This indicates **saved slots**, not FULL chunk-status proof,
-   biome details, height values, completed Chunky work or FPS.
+   no saved slots. This indicates saved slots only, not FULL chunk status,
+   biome details, terrain height, completed generation work or FPS.
 
 All save I/O is asynchronous, bounded to 4096 blocks radius, read-only,
 uses `region/r.<rx>.<rz>.mca` location headers, and never loads the world.
 Directory symlinks are refused. Region header entries with missing sectors
-or offset past EOF do not count as present. The game will never start a
-hidden server, overwrite saves or force-generate chunks from this UI.
+or offsets past EOF do not count as present. The game will never start a
+hidden server, overwrite saves, force-generate chunks or preload chunks.
 
-## External chunk generation
+## Explicitly removed
 
-Chunky, if installed separately by the player, remains an independent
-in-game tool. The current Atlas does not detect it, prepare its commands,
-copy commands to the clipboard, control its tasks, or invoke it. Use the
-external tool's own documented interface outside World Atlas.
+The following are not part of RealScale and must not be bundled or reintroduced:
+- Offline World Atlas background painter and heightmap sampler.
+- Atlas Draw, Pause, Resume and Cancel task controls.
+- DH–Chunky startup guard, Mixin, server commands and standalone addon JAR.
+- DH–Chunky compatibility build, runtime and bytecode-inspection workflows.
+- Automatic Chunky command generation, clipboard integration or task control.
+
+Chunky or Distant Horizons installed independently by a player remain separate
+third-party mods; RealScale neither detects nor controls their pre-generation
+tasks.
 
 ## Scope boundary
 
-The earlier v0.2–v0.4 ideas for an in-Atlas Chunky adapter and offline
-background-server session are not part of the current release scope. The
-current implementation prioritizes read-only saved-region inspection and
-bounded heightmap drawing.
+World Atlas is a local-save coverage viewer, not a world-generation utility.
+It reads existing region metadata only. It must not introduce server-side
+listeners, worldgen hooks, Mixin injection, chunk tickets, Chunky APIs,
+background generation workers or hidden server startup.
 
 ## Acceptance criteria
 
 - Pure Java synthetic Anvil file checks, negative region positions,
   truncated/unallocated slots, bounded radius and no-write parity.
-- Existing world-list UI and language smoke tests.
-- Java21 NeoForge client compile and runtime GUI interaction on a real
-  player machine, including GUI-scale 2/3 and many saves. Static tests are NOT substitutes for real interactive checks.
-- All pre-existing 14 worldgen/quality workflows on exact final SHA remain
-  the release gates; nothing in Atlas may disable terrain QA or change
-  worldgen math, sky islands, cave structures or 2096-high terrain.
+- Existing world-list UI and bilingual language smoke tests.
+- Java 21 NeoForge client compile and runtime GUI interaction on a real
+  player machine, including GUI-scale 2/3 and many saves. Static tests are
+  not substitutes for real interactive checks.
+- Existing terrain world-generation QA remains unchanged.
