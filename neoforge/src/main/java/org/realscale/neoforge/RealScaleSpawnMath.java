@@ -1,65 +1,63 @@
 package org.realscale.neoforge;
 
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
- * Deterministic low-to-mid elevation spawn profiles.
+ * Deterministic preset-aware spawn elevation selection.
  *
- * This class deliberately has no Minecraft dependencies so the profile and
- * scoring rules can be smoke-tested with a plain Java 21 compiler.
+ * A preset defines a low-to-mid percentile band. The actual target Y is then
+ * derived from the safe terrain samples around world origin, so it adapts to
+ * RealScale's very different vertical scales instead of assuming sea level is
+ * close to the land surface.
  */
 public final class RealScaleSpawnMath {
     private RealScaleSpawnMath() {}
 
     public record Profile(
-            int minOffset,
-            int maxOffset,
-            int maxSpawnOffset,
+            int minQuantilePermille,
+            int maxQuantilePermille,
             int searchRadius,
-            int candidateCount,
-            int maxRelief
+            int candidateCount
     ) {
         public Profile {
-            if (minOffset < 1 || maxOffset < minOffset
-                    || maxSpawnOffset < maxOffset || searchRadius < 32
-                    || candidateCount < 1 || candidateCount > 40 || maxRelief < 0) {
+            if (minQuantilePermille < 0 || maxQuantilePermille < minQuantilePermille
+                    || maxQuantilePermille > 1000 || searchRadius < 32
+                    || candidateCount < 1 || candidateCount > 40) {
                 throw new IllegalArgumentException("Invalid RealScale spawn profile");
             }
         }
     }
 
     private static final Profile NATURAL =
-            new Profile(8, 28, 64, 384, 32, 18);
+            new Profile(320, 420, 2048, 32);
 
-    /**
-     * Select a conservative profile from a noise-settings registry path.
-     * The target is relative to the generator sea level, not an absolute Y.
-     */
+    /** Select a conservative low-to-mid percentile band for a noise-settings ID. */
     public static Profile profileFor(String settingsId) {
         String id = settingsId == null ? "" : settingsId.toLowerCase(Locale.ROOT);
         int separator = id.indexOf(':');
         if (separator >= 0) id = id.substring(separator + 1);
 
         if (containsAny(id, "alpine", "himalayan", "mountain")) {
-            return new Profile(8, 26, 64, 384, 40, 22);
+            return new Profile(180, 300, 2048, 40);
         }
         if (containsAny(id, "canyon", "grand_canyon")) {
-            return new Profile(4, 18, 48, 384, 32, 20);
+            return new Profile(350, 500, 1536, 32);
         }
         if (id.contains("glacial")) {
-            return new Profile(6, 22, 56, 384, 32, 20);
+            return new Profile(280, 400, 2048, 32);
         }
         if (id.contains("volcanic")) {
-            return new Profile(6, 22, 56, 384, 32, 22);
+            return new Profile(220, 350, 2048, 32);
         }
         if (id.contains("karst")) {
-            return new Profile(5, 20, 52, 384, 32, 18);
+            return new Profile(300, 420, 2048, 32);
         }
         if (id.contains("dune")) {
-            return new Profile(4, 18, 48, 384, 32, 16);
+            return new Profile(300, 450, 2048, 32);
         }
         if (containsAny(id, "usgs", "measured", "big_sur")) {
-            return new Profile(5, 22, 60, 448, 40, 20);
+            return new Profile(280, 400, 2560, 40);
         }
         return NATURAL;
     }
@@ -71,39 +69,48 @@ public final class RealScaleSpawnMath {
         return false;
     }
 
-    /** Deterministic target elevation for a world seed and terrain profile. */
-    public static int targetHeight(long seed, int seaLevel, Profile profile) {
-        int span = profile.maxOffset() - profile.minOffset() + 1;
-        long profileBits = ((long) profile.minOffset() << 48)
-                ^ ((long) profile.maxOffset() << 32)
-                ^ ((long) profile.maxSpawnOffset() << 16)
-                ^ profile.searchRadius()
-                ^ ((long) profile.candidateCount() << 8)
-                ^ profile.maxRelief();
+    /** Deterministic seed-specific percentile within the selected preset band. */
+    public static int targetQuantilePermille(long seed, Profile profile) {
+        long profileBits = ((long) profile.minQuantilePermille() << 48)
+                ^ ((long) profile.maxQuantilePermille() << 32)
+                ^ ((long) profile.searchRadius() << 16)
+                ^ profile.candidateCount();
         long mixed = mix64(seed ^ profileBits ^ 0x52534C535041574EL);
-        int offset = (int) Long.remainderUnsigned(mixed, span);
-        return seaLevel + profile.minOffset() + offset;
+        int span = profile.maxQuantilePermille() - profile.minQuantilePermille() + 1;
+        return profile.minQuantilePermille()
+                + (int) Long.remainderUnsigned(mixed, span);
     }
 
     /**
-     * Lower scores are better: elevation match first, then local relief,
-     * followed by a small preference for locations near the world origin.
+     * Convert the preset's deterministic quantile into an actual Y value
+     * using safe surface samples collected from the active terrain generator.
      */
+    public static int targetHeight(long seed, Profile profile, int[] sampledHeights) {
+        if (sampledHeights == null || sampledHeights.length == 0) {
+            throw new IllegalArgumentException("At least one safe terrain sample is required");
+        }
+        int[] sorted = Arrays.copyOf(sampledHeights, sampledHeights.length);
+        Arrays.sort(sorted);
+        int quantile = targetQuantilePermille(seed, profile);
+        int index = (int) Math.round((quantile / 1000.0) * (sorted.length - 1));
+        return sorted[index];
+    }
+
+    /** Lower scores prefer the target elevation, gentler relief, and origin proximity. */
     public static double score(
             int surfaceY,
             int targetY,
             int localRelief,
             int distanceSquared
     ) {
-        return Math.abs(surfaceY - targetY) * 4.0
-                + Math.max(0, localRelief) * 2.5
-                + Math.sqrt(Math.max(0, distanceSquared)) * 0.025;
+        return Math.abs(surfaceY - targetY) * 3.0
+                + Math.max(0, localRelief) * 4.0
+                + Math.sqrt(Math.max(0, distanceSquared)) * 0.02;
     }
 
-    /** Reject submerged lowlands and extreme high-altitude surfaces. */
-    public static boolean isHeightAllowed(int surfaceY, int seaLevel, Profile profile) {
-        return surfaceY >= seaLevel + 2
-                && surfaceY <= seaLevel + profile.maxSpawnOffset();
+    /** Reject samples outside the generator's usable vertical range. */
+    public static boolean isHeightAllowed(int surfaceY, int minY, int maxY) {
+        return surfaceY > minY + 1 && surfaceY + 1 < maxY;
     }
 
     static long mix64(long value) {

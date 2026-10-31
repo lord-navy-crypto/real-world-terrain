@@ -1,10 +1,13 @@
 package org.realscale.neoforge;
 
 import com.mojang.logging.LogUtils;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -30,6 +33,9 @@ public final class RealScaleSpawnPosition {
     private static final int SLOPE_SAMPLE_STEP = 8;
     private static final int MAX_CANDIDATES = 40;
 
+    private record Candidate(int x, int z, int surfaceY, int relief, int distanceSquared) {}
+    private record SpawnChoice(BlockPos position, int targetY, int relief) {}
+
     private RealScaleSpawnPosition() {}
 
     public static void onCreateSpawnPosition(LevelEvent.CreateSpawnPosition event) {
@@ -38,37 +44,51 @@ public final class RealScaleSpawnPosition {
         if (!(level.getChunkSource().getGenerator()
                 instanceof NoiseBasedChunkGenerator generator)) return;
 
-        ResourceLocation settingsId = generator.generatorSettings().unwrapKey()
-                .map(key -> key.location()).orElse(null);
-        if (settingsId == null || !"realscale".equals(settingsId.getNamespace())) return;
+        var settingsHolder = generator.generatorSettings();
+        ResourceLocation settingsId = settingsHolder.unwrapKey()
+                .map(key -> key.location())
+                .orElseGet(() -> level.registryAccess()
+                        .registryOrThrow(Registries.NOISE_SETTINGS)
+                        .getResourceKey(settingsHolder.value())
+                        .map(key -> key.location())
+                        .orElse(null));
+        if (settingsId == null) {
+            LOGGER.warn("RealScale spawn selection skipped: noise-settings registry key was unavailable");
+            return;
+        }
+        if (!"realscale".equals(settingsId.getNamespace())) return;
 
         RealScaleSpawnMath.Profile profile =
                 RealScaleSpawnMath.profileFor(settingsId.getPath());
         RandomState randomState = level.getChunkSource().randomState();
-        BlockPos best = findBestSpawn(level, generator, randomState, profile);
-        if (best == null) return;
+        SpawnChoice best = findBestSpawn(level, generator, randomState, profile);
+        if (best == null) {
+            LOGGER.warn("RealScale found no safe initial spawn candidate within {} blocks; keeping vanilla selection",
+                    profile.searchRadius());
+            return;
+        }
 
-        event.getSettings().setSpawn(best, 0.0F);
+        event.getSettings().setSpawn(best.position(), 0.0F);
         event.setCanceled(true);
-        LOGGER.info("RealScale selected initial spawn {} for noise settings {}", best, settingsId);
+        LOGGER.info("RealScale selected initial spawn x={} y={} z={} targetY={} relief={} settings={}",
+                best.position().getX(), best.position().getY(), best.position().getZ(),
+                best.targetY(), best.relief(), settingsId);
     }
 
-    private static BlockPos findBestSpawn(
+    private static SpawnChoice findBestSpawn(
             ServerLevel level,
             NoiseBasedChunkGenerator generator,
             RandomState randomState,
             RealScaleSpawnMath.Profile profile
     ) {
-        int seaLevel = generator.getSeaLevel();
-        int targetY = RealScaleSpawnMath.targetHeight(level.getSeed(), seaLevel, profile);
         RandomSource random = RandomSource.create(
                 RealScaleSpawnMath.mix64(level.getSeed() ^ SAMPLE_SALT));
         Map<Long, Integer> heights = new HashMap<>();
-        BlockPos best = null;
-        double bestScore = Double.POSITIVE_INFINITY;
+        List<Candidate> candidates = new ArrayList<>(profile.candidateCount());
+        int minimumY = generator.getMinY();
+        int maximumY = minimumY + generator.getGenDepth();
 
-        int candidateCount = Math.min(profile.candidateCount(), MAX_CANDIDATES);
-        for (int i = 0; i < candidateCount; i++) {
+        for (int i = 0; i < Math.min(profile.candidateCount(), MAX_CANDIDATES); i++) {
             int x;
             int z;
             if (i == 0) {
@@ -82,7 +102,7 @@ public final class RealScaleSpawnPosition {
             }
 
             int surfaceY = heightAt(generator, level, randomState, x, z, heights);
-            if (!RealScaleSpawnMath.isHeightAllowed(surfaceY, seaLevel, profile)) continue;
+            if (!RealScaleSpawnMath.isHeightAllowed(surfaceY, minimumY, maximumY)) continue;
             if (!isSafeSurface(generator, level, randomState, x, z, surfaceY)) continue;
 
             int west = heightAt(generator, level, randomState,
@@ -96,16 +116,28 @@ public final class RealScaleSpawnPosition {
             int minimum = Math.min(surfaceY, Math.min(Math.min(west, east), Math.min(north, south)));
             int maximum = Math.max(surfaceY, Math.max(Math.max(west, east), Math.max(north, south)));
             int relief = maximum - minimum;
-            if (relief > profile.maxRelief()) continue;
-
             int distanceSquared = x * x + z * z;
-            double score = RealScaleSpawnMath.score(surfaceY, targetY, relief, distanceSquared);
+            candidates.add(new Candidate(x, z, surfaceY, relief, distanceSquared));
+        }
+
+        if (candidates.isEmpty()) return null;
+        int[] sampledHeights = candidates.stream().mapToInt(Candidate::surfaceY).toArray();
+        int targetY = RealScaleSpawnMath.targetHeight(level.getSeed(), profile, sampledHeights);
+
+        Candidate best = null;
+        double bestScore = Double.POSITIVE_INFINITY;
+        for (Candidate candidate : candidates) {
+            double score = RealScaleSpawnMath.score(
+                    candidate.surfaceY(), targetY, candidate.relief(), candidate.distanceSquared());
             if (score < bestScore) {
                 bestScore = score;
-                best = BlockPos.containing(x + 0.5D, surfaceY, z + 0.5D);
+                best = candidate;
             }
         }
-        return best;
+        if (best == null) return null;
+        BlockPos position = BlockPos.containing(
+                best.x() + 0.5D, best.surfaceY(), best.z() + 0.5D);
+        return new SpawnChoice(position, targetY, best.relief());
     }
 
     private static int heightAt(
@@ -133,10 +165,6 @@ public final class RealScaleSpawnPosition {
             int z,
             int surfaceY
     ) {
-        int minimumY = generator.getMinY();
-        int maximumY = minimumY + generator.getGenDepth();
-        if (surfaceY <= minimumY + 1 || surfaceY + 1 >= maximumY) return false;
-
         NoiseColumn column = generator.getBaseColumn(x, z, level, randomState);
         BlockState ground = column.getBlock(surfaceY - 1);
         BlockState feet = column.getBlock(surfaceY);
