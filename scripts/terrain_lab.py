@@ -496,7 +496,10 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                     "base":temp_value,
                     "equator_z":equator_z,
                     "pole_distance":10_001_966 if latitude=="earth" else 16_384,
-                    "strength":round(latitude_strength/100.0,5)
+                    "strength":round(latitude_strength/100.0,5),
+                    # New exports use a finite north-to-south map; old saved
+                    # density nodes without this field keep their periodic semantics.
+                    "clamp_at_poles":True
                 }
         if valley:
             # Sample height-signal differences across neighboring points,

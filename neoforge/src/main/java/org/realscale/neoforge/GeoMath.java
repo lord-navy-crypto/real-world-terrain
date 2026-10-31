@@ -2,6 +2,7 @@ package org.realscale.neoforge;
 
 /** Pure math, independent of Minecraft classes for CPU-only unit testing. */
 final class GeoMath {
+    static final double EARTH_EQUATORIAL_CIRCUMFERENCE_METERS = 40_075_017.0;
     private GeoMath() {}
     static double clamp(double x,double low,double high){
         return Math.max(low,Math.min(high,x));
@@ -39,6 +40,26 @@ final class GeoMath {
         if(phase<=1.0)return 90*phase;
         if(phase<=3.0)return 90*(2-phase);
         return 90*(phase-4);
+    }
+
+    /** Finite equirectangular world map: Z<equator is north, Z>equator is south.
+     * Beyond either pole, retain the polar climate instead of repeating another hemisphere.
+     */
+    static double clampedLatitudeDeg(int z,int equatorZ,int poleDistance){
+        double normalized=clamp(((double)equatorZ-(double)z)/poleDistance,-1.0,1.0);
+        return 90.0*normalized;
+    }
+
+    /** X increases east. Longitude wraps to [-180,180), using equatorial metres per turn.
+     * The equirectangular map has constant Minecraft block spacing; its east-west
+     * ground-distance distortion therefore increases toward the poles.
+     */
+    static double longitudeDeg(int x,int primeMeridianX){
+        double offset=((double)x-(double)primeMeridianX)%EARTH_EQUATORIAL_CIRCUMFERENCE_METERS;
+        double degrees=offset*(360.0/EARTH_EQUATORIAL_CIRCUMFERENCE_METERS);
+        degrees=(degrees+180.0)%360.0;
+        if(degrees<0.0)degrees+=360.0;
+        return degrees-180.0;
     }
     /** Repeating concentric climate belts around a fixed center.
      * Equator 0 degrees at center, pole at one radius, next equator at 2 radii.
@@ -100,8 +121,8 @@ final class GeoMath {
         return 90.0*(1.0-Math.abs(2.0*fraction-1.0));
     }
 
-    static double balancedRadialTemperature(double original,double latitude,double strength,
-                                            double altitudeCooling,int y){
+    static double balancedLatitudeTemperature(double original,double latitude,double strength,
+                                              double altitudeCooling,int y){
         double baseline=latitudeTemperature(original,latitude,strength);
         double tropical=1.0-smoothstep(12.0,37.0,latitude);
         double temperate=smoothstep(18.0,38.0,latitude)
@@ -116,6 +137,12 @@ final class GeoMath {
         double coolingRefund=altitudeCooling*altitude
                              *(0.75*tropical+0.40*temperate);
         return baseline+latitudeBuffer+coolingRefund;
+    }
+
+    /** Backward-compatible name retained for existing concentric climate settings. */
+    static double balancedRadialTemperature(double original,double latitude,double strength,
+                                             double altitudeCooling,int y){
+        return balancedLatitudeTemperature(original,latitude,strength,altitudeCooling,y);
     }
     static double climateBudget(double original,double adjusted,double maxCooling,double maxWarming){
         double d=adjusted-original;
