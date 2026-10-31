@@ -6,6 +6,8 @@ final class GeoMath {
     static final int EARTH_QUARTER_MERIDIAN_METERS = 10_001_966;
     /** Compress latitude climate progression only; world coordinates remain 1 block = 1 metre. */
     static final int CLIMATE_LATITUDE_COMPRESSION = 20;
+    /** The 1:20 geographic report uses Z=0 as its fixed equator reference. */
+    static final int CLIMATE_EQUATOR_Z = 0;
     /** One climate pole per 500,098 world blocks (10,001,966 m / 20). */
     static final int CLIMATE_POLE_DISTANCE_BLOCKS =
             (int)Math.round((double)EARTH_QUARTER_MERIDIAN_METERS / CLIMATE_LATITUDE_COMPRESSION);
