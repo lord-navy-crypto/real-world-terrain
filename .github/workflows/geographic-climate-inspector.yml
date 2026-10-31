@@ -1,0 +1,69 @@
+name: Geographic Climate Inspector test build
+on:
+  push:
+    branches: [feature/geographic-climate-inspector-20261031]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: geographic-climate-inspector-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Verify repository and inspector integration contracts
+        run: |
+          python3 qa/verify_repository.py
+          python3 -m unittest discover -s qa -p 'test_geographic_climate_inspector.py' -v
+      - name: Run pure Java latitude-belt boundary tests
+        run: |
+          mkdir -p build/geographic-climate-inspector
+          javac -d build/geographic-climate-inspector \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/GeographicClimateMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/GeographicClimateMathSmoke.java
+          java -cp build/geographic-climate-inspector org.realscale.neoforge.GeographicClimateMathSmoke
+      - name: Build NeoForge 1.21.1 test JAR
+        working-directory: neoforge
+        run: gradle --no-daemon --stacktrace build
+      - name: Verify installable JAR contains the inspector and test version
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          jars = list(Path("neoforge/build/libs").glob("*2.0.0-preview.2-test.7.jar"))
+          assert len(jars) == 1, jars
+          expected = (
+              "org/realscale/neoforge/GeographicClimateMath.class",
+              "org/realscale/neoforge/GeographicClimateInspectorClient.class",
+              "org/realscale/neoforge/GeographicClimateInspectorClient$ActiveClimateProfile.class",
+              "org/realscale/neoforge/GeographicClimateInspectorScreen.class",
+          )
+          with ZipFile(jars[0]) as archive:
+              names = set(archive.namelist())
+              for name in expected:
+                  assert name in names, name
+              metadata = archive.read("META-INF/neoforge.mods.toml")
+              assert b"2.0.0-preview.2-test.7" in metadata
+          print("GEOGRAPHIC_CLIMATE_INSPECTOR_JAR_PASS", jars[0])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: RealScale-Geographic-Climate-Inspector-test.7
+          path: neoforge/build/libs/*2.0.0-preview.2-test.7.jar
+          if-no-files-found: error
