@@ -49,7 +49,11 @@ class GeographicClimateAuditTest(unittest.TestCase):
         self.assertAlmostEqual(zonal_latitude_degrees(-2*pole,profile),0,delta=0.001)
         self.assertAlmostEqual(zonal_latitude_degrees(-3*pole,profile),-90,delta=0.001)
         self.assertAlmostEqual(zonal_latitude_degrees(-4*pole,profile),0,delta=0.001)
-        self.assertAlmostEqual(zonal_latitude_degrees(pole,profile),90,delta=0.001)
+        # Positive Z is the southern hemisphere: the first pole is -90°.
+        self.assertAlmostEqual(zonal_latitude_degrees(pole,profile),-90,delta=0.001)
+        self.assertAlmostEqual(zonal_latitude_degrees(2*pole,profile),0,delta=0.001)
+        self.assertAlmostEqual(zonal_latitude_degrees(3*pole,profile),90,delta=0.001)
+        self.assertAlmostEqual(zonal_latitude_degrees(4*pole,profile),0,delta=0.001)
 
     def test_big_sur_nominal_geographic_anchor(self):
         q=10_001_966

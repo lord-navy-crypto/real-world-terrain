@@ -1,6 +1,6 @@
 package org.realscale.neoforge;
 
-/** Pure-Java checks for the default finite Z-latitude / X-longitude map. */
+/** Pure-Java checks for the default periodic 1:20 Z-latitude map. */
 public final class ZonalLatitudeClimateSmoke {
     private ZonalLatitudeClimateSmoke() {}
     private static void check(boolean ok,String reason) {
@@ -30,6 +30,15 @@ public final class ZonalLatitudeClimateSmoke {
                 -90,0.001,"south pole");
         close(GeoMath.latitudeDeg(-4*poleDistanceBlocks*horizontalScale,0,quarterMeridianMeters),
                 0,0.001,"return to original equator");
+
+        close(GeoMath.latitudeDeg(poleDistanceBlocks*horizontalScale,0,quarterMeridianMeters),
+                -90,0.001,"southern pole in positive Z");
+        close(GeoMath.latitudeDeg(2*poleDistanceBlocks*horizontalScale,0,quarterMeridianMeters),
+                0,0.001,"opposite equator in positive Z");
+        close(GeoMath.latitudeDeg(3*poleDistanceBlocks*horizontalScale,0,quarterMeridianMeters),
+                90,0.001,"northern pole in positive Z");
+        close(GeoMath.latitudeDeg(4*poleDistanceBlocks*horizontalScale,0,quarterMeridianMeters),
+                0,0.001,"return to original equator in positive Z");
 
         close(GeoMath.latitudeDeg(0,4_027_458,quarterMeridianMeters),36.24,0.001,
                 "Big Sur nominal latitude anchor");
