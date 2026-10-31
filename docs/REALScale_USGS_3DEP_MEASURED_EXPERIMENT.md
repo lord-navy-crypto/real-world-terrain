@@ -87,8 +87,15 @@ the SHA-pinned bundled resource.
 ## Game coordinate mapping
 
 - Big Sur source centre maps to Minecraft X=0, Z=0.
-- Minecraft X increases east, Minecraft Z increases **south**. GeoTIFF is
-  north-up: raster first row is northmost and becomes the most-negative Z.
+- The project's documented default Big Sur import anchor is 36.24°N,
+  121.81°W. The zonal climate profile uses the corresponding nominal
+  equator Z=4,027,458 and prime-meridian X=13,559,827 offsets, so the local
+  DEM origin is not mistaken for the equator or Greenwich. If a custom DEM
+  is imported at another coordinate, its manifest must be used to recalibrate
+  these offsets before claiming geographic alignment.
+- Minecraft X increases east and is the longitude axis; Minecraft Z increases
+  **south** and is the latitude axis. GeoTIFF is north-up: raster first row is
+  northmost and becomes the most-negative Z.
 - World horizontal and vertical units are 1 Minecraft block per metre.
 - RGT1 stores metres above the USGS elevation datum; game solid surface
   at a sample is Y = 63 + source_elevation_m.

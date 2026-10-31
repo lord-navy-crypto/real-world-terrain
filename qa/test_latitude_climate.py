@@ -36,6 +36,7 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertEqual(temp["equator_z"],0)
         self.assertEqual(temp["pole_distance"],10_001_966)
         self.assertEqual(temp["strength"],.7)
+        self.assertTrue(temp["clamp_at_poles"])
         noise=out[lab.GEO_ROOT/"noise_settings"/(name+".json")]
         self.assertEqual(noise["noise_router"]["temperature"],
                          f"realscale:terrain_lab/{name}/biome_temperature")
@@ -48,6 +49,7 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertEqual(temp["pole_distance"],16384)
         self.assertEqual(temp["equator_z"],-512)
         self.assertEqual(temp["strength"],.45)
+        self.assertTrue(temp["clamp_at_poles"])
 
     def test_basin_climate_is_true_nested_noise_router_node(self):
         name,options,out=self.make(latitude="preview",climate=65,
@@ -179,6 +181,7 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertIn('Enclosed Basin Warming (Optional)',screen)
         self.assertIn('equatorZ',screen)
         self.assertIn('radial_preview',screen)
+        self.assertIn('Z-axis zonal latitude',screen)
         self.assertIn('Radial Cold Climate Limit',screen)
 
 

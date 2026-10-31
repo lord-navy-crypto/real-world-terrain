@@ -50,6 +50,111 @@ def radial_profile_from_noise(settings_path):
     return find(temperature)
 
 
+
+def zonal_profile_from_noise(settings_path):
+    """Follow the active temperature graph and extract its Z-axis latitude node."""
+    settings=json.loads(settings_path.read_text(encoding="utf-8"))
+    temperature=settings.get("noise_router",{}).get("temperature")
+    resources=settings_path.parent.parent/"density_function"
+    seen=set()
+
+    def find(node):
+        if isinstance(node,str) and node.startswith("realscale:"):
+            ref=node.split(":",1)[1]
+            if ref in seen:
+                return None
+            seen.add(ref)
+            density_file=resources/(ref+".json")
+            if density_file.is_file():
+                return find(json.loads(density_file.read_text(encoding="utf-8")))
+        elif isinstance(node,dict):
+            if node.get("type")=="realscale:latitude_temperature":
+                return {
+                    "equator_z":node.get("equator_z",0),
+                    "pole_distance":node.get("pole_distance",10_001_966),
+                    "strength":node.get("strength",0.0),
+                    "balanced":node.get("balanced",False),
+                    "altitude_cooling":node.get("altitude_cooling",0.0),
+                    "clamp_at_poles":node.get("clamp_at_poles",False),
+                    "prime_meridian_x":node.get("prime_meridian_x",0)
+                }
+            for child in node.values():
+                match=find(child)
+                if match is not None:
+                    return match
+        elif isinstance(node,list):
+            for child in node:
+                match=find(child)
+                if match is not None:
+                    return match
+        return None
+
+    return find(temperature)
+
+
+def zonal_latitude_degrees(z,zonal):
+    """Python parity with GeoMath's finite Z-axis latitude coordinate."""
+    distance=zonal["pole_distance"]
+    phase=(zonal["equator_z"]-z)/distance
+    if zonal.get("clamp_at_poles",False):
+        return 90.0*max(-1.0,min(1.0,phase))
+    phase%=4.0
+    if phase<=1.0:return 90.0*phase
+    if phase<=3.0:return 90.0*(2.0-phase)
+    return 90.0*(phase-4.0)
+
+
+def zonal_biome_audit(heights,surface_biomes,zonal):
+    """Observed biome fractions by Z-axis latitude; sampled chunks only."""
+    if not zonal:return {"mode":"not_zonal"}
+    bands={"equatorial_0_30":[],"middle_30_60":[],"polar_60_90":[]}
+    tropical_all=[]
+    tropical_high=[]
+    z_values=[]
+    for (x,z),y in heights.items():
+        biome=surface_biomes.get((x,z))
+        if not isinstance(biome,str):continue
+        latitude=abs(zonal_latitude_degrees(z,zonal))
+        z_values.append(z)
+        if latitude<23.5:
+            tropical_all.append(biome)
+            if y>=240:tropical_high.append(biome)
+        label=("equatorial_0_30" if latitude<30 else
+               "middle_30_60" if latitude<60 else "polar_60_90")
+        bands[label].append(biome)
+    count=sum(len(values) for values in bands.values())
+    result={}
+    for name,biomes in bands.items():
+        cold=sum(any(fragment in biome for fragment in
+                     ("snowy","frozen","ice_spikes","grove")) for biome in biomes)
+        warm=sum(any(fragment in biome for fragment in
+                     ("jungle","savanna","desert","badlands")) for biome in biomes)
+        result[name]={
+            "sample_columns":len(biomes),
+            "sample_fraction":round(len(biomes)/count,6) if count else None,
+            "cold_biome_fraction":round(cold/len(biomes),6) if biomes else None,
+            "warm_biome_fraction":round(warm/len(biomes),6) if biomes else None
+        }
+    def cold_fraction(items):
+        return round(sum(any(fragment in biome for fragment in
+                             ("snowy","frozen","ice_spikes","grove"))
+                         for biome in items)/len(items),6) if items else None
+    result["equatorial_plateau_check"]={
+        "tropical_columns":len(tropical_all),
+        "high_plateau_columns_y240_plus":len(tropical_high),
+        "tropical_cold_fraction":cold_fraction(tropical_all),
+        "high_plateau_cold_fraction":cold_fraction(tropical_high),
+        "note":"Y>=240 is a diagnostic height band, not proof of a plateau. Sampled chunks only."
+    }
+    result["mode"]="zonal_clamped" if zonal.get("clamp_at_poles",False) else "zonal_periodic"
+    result["sample_columns"]=count
+    result["z_range_blocks"]=[min(z_values),max(z_values)] if z_values else None
+    result["equator_z"]=zonal["equator_z"]
+    result["pole_distance_blocks"]=zonal["pole_distance"]
+    result["prime_meridian_x"]=zonal.get("prime_meridian_x",0)
+    result["note"]="Observed saved chunks only; not a global biome-area or thermodynamic balance claim."
+    return result
+
 def radial_latitude_degrees(x,z,radial):
     """Python parity with GeoMath: legacy, balanced, two-crest, PR25 one-crest.
 
@@ -845,6 +950,7 @@ def scan(root,preset="realism_max"):
       "configured_sea_level":json.loads(settings_path.read_text())["sea_level"],
       "surface_biome_counts":surface_biome_counts,
       "altitude_biome_audit":altitude_biome_audit(H,surface_biomes),
+      "zonal_biome_audit":zonal_biome_audit(H,surface_biomes,zonal_profile_from_noise(settings_path)),
       "radial_biome_audit":radial_biome_audit(H,surface_biomes,radial_profile_from_noise(settings_path)),
       "river_biome_columns":river_biome_columns,
       "river_surface_block_counts":river_surface_block_counts,
