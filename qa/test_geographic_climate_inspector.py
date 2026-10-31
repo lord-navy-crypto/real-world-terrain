@@ -18,6 +18,7 @@ class GeographicClimateInspectorTests(unittest.TestCase):
     def test_uses_fixed_1_to_20_geographic_model_not_generator_node_discovery(self):
         source = (JAVA / "GeographicClimateInspectorClient.java").read_text()
         self.assertIn("GeoMath.CLIMATE_EQUATOR_Z", source)
+        self.assertIn('return "1:20";', source)
         self.assertIn("GeoMath.CLIMATE_POLE_DISTANCE_BLOCKS", source)
         self.assertIn("Level.OVERWORLD", source)
         self.assertNotIn("getSingleplayerServer", source)
@@ -43,7 +44,6 @@ class GeographicClimateInspectorTests(unittest.TestCase):
             "Hemisphere",
             "Latitude climate belt",
             "Latitude scale",
-            "1:20",
             "Announce to Chat",
             "displayClientMessage",
         ):
