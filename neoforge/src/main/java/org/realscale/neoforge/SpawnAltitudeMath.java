@@ -16,8 +16,9 @@ final class SpawnAltitudeMath {
             case "usgs_big_sur_v2", "tva_pr25_measured_climate" -> 72;
             default -> 80;
         };
-        long mixed=mix64(worldSeed ^ ((long)preset.hashCode()<<32)
-                ^ 0x9E3779B97F4A7C15L);
+        // Keep the same seed variation across profiles so preset baselines
+        // preserve their intended ordering while still differing by world seed.
+        long mixed=mix64(worldSeed ^ 0x9E3779B97F4A7C15L);
         int variation=(int)Long.remainderUnsigned(mixed,33L)-16;
         return seaLevel+baseOffset+variation;
     }
