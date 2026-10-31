@@ -35,7 +35,8 @@ class GeographicClimateAuditTest(unittest.TestCase):
                 radial=radial_profile_from_noise(root/(preset+".json"))
                 self.assertIsNotNone(radial)
                 self.assertTrue(radial["area_balanced"])
-                self.assertEqual(radial["pole_distance"],8192)
+                self.assertEqual(radial["pole_distance"],163_840)
+                self.assertEqual(radial["horizontal_scale"],20)
                 self.assertIsNone(zonal_profile_from_noise(root/(preset+".json")))
 
     def test_zonal_latitude_completes_full_periodic_earth_cycle_at_1_to_20(self):
