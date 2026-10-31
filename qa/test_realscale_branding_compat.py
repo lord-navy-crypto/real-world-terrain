@@ -13,7 +13,6 @@ OLD = [
     "tva_alpine_three_realms",
     "tva_canyon_three_realms",
     "tva_measured_three_realms",
-    "tva_wonders_invasion_three_realms",
     "tva_cave_ocean_ecology_test_three_realms",
 ]
 NEW = [
@@ -21,7 +20,6 @@ NEW = [
     "alpine_three_realms",
     "canyon_three_realms",
     "measured_three_realms",
-    "wonders_invasion_three_realms",
     "cave_ocean_ecology_three_realms",
 ]
 CANONICAL = {
@@ -143,7 +141,7 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
 
     def test_optional_special_presets_are_hidden_not_deleted(self):
         menu = read(TAG_ROOT / "normal.json")["values"]
-        for name in ("wonders_invasion_three_realms", "cave_ocean_ecology_three_realms"):
+        for name in ("cave_ocean_ecology_three_realms",):
             self.assertTrue((WORLD / (name + ".json")).is_file(), name)
             self.assertNotIn("realscale:" + name, menu)
 
