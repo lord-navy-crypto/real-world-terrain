@@ -18,7 +18,7 @@ class RealScaleSpawnProfileTests(unittest.TestCase):
     def test_event_is_overworld_realscale_only_and_preserves_vanilla_fallback(self):
         source=(JAVA/"RealScaleSpawnPosition.java").read_text()
         for token in ("LevelEvent.CreateSpawnPosition","instanceof ServerLevel",
-                      "Level.OVERWORLD","generatorSettings().unwrapKey()",
+                      "Level.OVERWORLD","settingsHolder.unwrapKey()",
                       "RealScaleSpawnMath.profileFor","event.getSettings().setSpawn",
                       "event.setCanceled(true)"):
             self.assertIn(token,source)
