@@ -59,6 +59,7 @@ CHINESE = {
     "canyon":"峡谷台地（大峡谷 + 大陆地形）",
 }
 NORMAL = ("realism_max","himalayan","grand_canyon","usgs_big_sur_v2")
+HORIZONTAL_SCALE = 20  # source metres per Minecraft X/Z block
 GEO_ROOT = Path("data/realscale/worldgen")
 LABEL_ROOT = Path("assets/minecraft/lang")
 TAG_ROOT = Path("data/minecraft/tags/worldgen/world_preset")
@@ -146,6 +147,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                  river_grade=int(river_grade),inland=bool(inland))
     # Do not mutate the hash and files of any previously generated legacy preset.
     if preset in FAMILIES:
+        options["horizontal_scale"]=HORIZONTAL_SCALE
         options["blend_percent"]=int(blend_percent)
         if lithostitched_blend and blend_percent and not lithostitched_geology:
             # Deep Geology owns its adaptive mix; v1 toggle cannot make an
@@ -419,7 +421,13 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     # unchanged; high-altitude quart-biome samples are cooled smoothly.
     if climate or valley or basin or (latitude != "off" and latitude_strength):
         temperature_id=density_id+"/biome_temperature"
-        temperature_before=copy.deepcopy(noise["noise_router"]["temperature"])
+        temperature_node=copy.deepcopy(noise["noise_router"]["temperature"])
+        horizontal_scale=1
+        if isinstance(temperature_node,dict) and temperature_node.get("type")=="realscale:horizontal_scale":
+            horizontal_scale=temperature_node["scale"]
+            temperature_before=copy.deepcopy(temperature_node["base"])
+        else:
+            temperature_before=temperature_node
         cool=round(climate*0.009,6)
         noise["noise_router"]["temperature"]=temperature_id
     if inland:
@@ -481,9 +489,9 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                 temp_value={
                     "type":"realscale:radial_latitude_temperature",
                     "base":temp_value,
-                    "center_x":center_x,
-                    "center_z":equator_z,
-                    "pole_distance":10_001_966 if latitude=="radial_earth" else (8_192 if latitude in ("radial_balanced","radial_equal_area","radial_equal_area_single_pole") else 16_384),
+                    "center_x":center_x*horizontal_scale,
+                    "center_z":equator_z*horizontal_scale,
+                    "pole_distance":10_001_966 if latitude=="radial_earth" else (163_840 if latitude in ("radial_balanced","radial_equal_area","radial_equal_area_single_pole") else 327_680),
                     "strength":round(latitude_strength/100.0,5),
                     **({"balanced":True,"altitude_cooling":cool} if latitude in ("radial_balanced","radial_equal_area","radial_equal_area_single_pole") else {}),
                     **({"area_balanced":True} if latitude in ("radial_equal_area","radial_equal_area_single_pole") else {}),
@@ -494,12 +502,12 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                 temp_value={
                     "type":"realscale:latitude_temperature",
                     "base":temp_value,
-                    "equator_z":equator_z,
-                    "pole_distance":10_001_966 if latitude=="earth" else 16_384,
+                    "equator_z":equator_z*horizontal_scale,
+                    "pole_distance":10_001_966 if latitude=="earth" else 327_680,
                     "strength":round(latitude_strength/100.0,5),
-                    # New exports use a finite north-to-south map; old saved
-                    # density nodes without this field keep their periodic semantics.
-                    "clamp_at_poles":True
+                    # Periodic full-earth cycle: equator -> north pole -> opposite
+                    # equator -> south pole -> original equator.
+                    "clamp_at_poles":False
                 }
         if valley:
             # Sample height-signal differences across neighboring points,
@@ -535,7 +543,11 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                 "max_cooling":round(cold_limit/100.0,5),
                 "max_warming":0.45
             }
-        output[GEO_ROOT/"density_function"/density_folder/"biome_temperature.json"]=temp_value
+        output[GEO_ROOT/"density_function"/density_folder/"biome_temperature.json"]={
+            "type":"realscale:horizontal_scale",
+            "base":temp_value,
+            "scale":horizontal_scale
+        }
     return name,options,output
 
 def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False):
@@ -703,12 +715,12 @@ def main(argv=None):
     parser.add_argument("--valley-warming",type=int,default=0,
                         help="Opt-in bounded relative-valley temperature boost (0..100)")
     parser.add_argument("--latitude-mode",choices=("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area","radial_equal_area_single_pole"),default="off",
-                        help="meridional or concentric latitude; Earth = 1m/block, preview = pole at radius 16,384 blocks")
+                        help="periodic Z-axis latitude or legacy concentric mode; Earth uses the 1:20 horizontal map (pole ~500,098 blocks), preview uses a 16,384-block pole distance")
     parser.add_argument("--latitude-strength",type=int,default=70,help="Latitude climate strength 0..100")
     parser.add_argument("--equator-z",type=int,default=0,
-                        help="World Z of latitude zero (or radial ring center Z). Not the future auto-selected spawn.")
+                        help="World Z block coordinate of latitude zero (or radial ring center); converted to source metres using the 1:20 horizontal scale.")
     parser.add_argument("--radial-center-x",type=int,default=0,
-                        help="World X center of radial latitude rings; Z center is --equator-z")
+                        help="World X block coordinate of radial ring center; converted to source metres using the 1:20 horizontal scale.")
     parser.add_argument("--cold-limit",type=int,default=60,
                         help="Radial maximum combined cold correction (0=off, default 60%); prevents polar+high-altitude overcooling")
     parser.add_argument("--basin-warming",type=int,default=0,
