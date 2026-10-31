@@ -17,6 +17,10 @@ from pathlib import Path
 import subprocess
 import sys
 
+EARTH_QUARTER_MERIDIAN_METERS = 10_001_966
+CLIMATE_LATITUDE_COMPRESSION = 20
+CLIMATE_PREVIEW_POLE_DISTANCE_BLOCKS = round(EARTH_QUARTER_MERIDIAN_METERS / CLIMATE_LATITUDE_COMPRESSION)
+
 PRESETS = (
     "realism_max", "georeal_ultimate", "himalayan", "grand_canyon",
     "usgs_big_sur", "usgs_big_sur_v2", "continental", "realistic_mountains", "ultimate",
@@ -508,7 +512,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                     "type":"realscale:latitude_temperature",
                     "base":temp_value,
                     "equator_z":equator_z,
-                    "pole_distance":10_001_966 if latitude=="earth" else 16_384,
+                    "pole_distance":EARTH_QUARTER_MERIDIAN_METERS if latitude=="earth" else CLIMATE_PREVIEW_POLE_DISTANCE_BLOCKS,
                     "strength":round(latitude_strength/100.0,5)
                 }
         if valley:
@@ -713,7 +717,7 @@ def main(argv=None):
     parser.add_argument("--valley-warming",type=int,default=0,
                         help="Opt-in bounded relative-valley temperature boost (0..100)")
     parser.add_argument("--latitude-mode",choices=("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area","radial_equal_area_single_pole"),default="off",
-                        help="meridional or concentric latitude; Earth = 1m/block, preview = pole at radius 16,384 blocks")
+                        help="meridional or concentric latitude; Earth = 1m/block, preview = 1:20 climate latitude, pole at 500,098 blocks")
     parser.add_argument("--latitude-strength",type=int,default=70,help="Latitude climate strength 0..100")
     parser.add_argument("--equator-z",type=int,default=0,
                         help="World Z of latitude zero (or radial ring center Z). Not the future auto-selected spawn.")
