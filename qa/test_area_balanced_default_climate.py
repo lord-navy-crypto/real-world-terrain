@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
 NOISE=ROOT/"neoforge/src/main/resources/data/realscale/worldgen/noise_settings"
+DENSITY=ROOT/"neoforge/src/main/resources/data/realscale/worldgen/density_function"
 SOURCE=ROOT/"neoforge/src/main/java/org/realscale/neoforge"
 
 class ZonalDefaultClimateTest(unittest.TestCase):
@@ -57,9 +58,9 @@ class ZonalDefaultClimateTest(unittest.TestCase):
         self.assertIn("static double areaBalancedRadialLatitudeDeg",math)
         for name in ("tva_pr25_natural_climate","tva_pr25_alpine_climate",
                      "tva_pr25_canyon_climate","tva_pr25_measured_climate"):
-            settings=json.loads((NOISE/(name+".json")).read_text())
+            settings=json.loads((DENSITY/name/"biome_temperature.json").read_text())
             self.assertIn("radial_latitude_temperature",
-                          json.dumps(settings["noise_router"]["temperature"]))
+                          json.dumps(settings["adjusted"]))
 
 if __name__=="__main__":
     unittest.main()
