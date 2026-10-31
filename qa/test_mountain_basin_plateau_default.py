@@ -47,18 +47,24 @@ class MountainBasinPlateauTest(unittest.TestCase):
                 terrain=read(root/"terrain_density.json")
                 self.assertEqual(terrain["argument1"],f"realscale:{preset}/height_signal")
                 noise=read(DATA/"noise_settings"/(preset+".json"))
-                self.assertEqual(noise["noise_router"]["depth"],
-                                 f"realscale:{preset}/terrain_density")
-                self.assertEqual(noise["noise_router"]["final_density"]["type"],
-                                 "realscale:grand_overworld_caverns")
-                self.assertEqual(noise["noise_router"]["final_density"]["base"],
-                                 f"realscale:{preset}/terrain_density")
+                depth=noise["noise_router"]["depth"]
+                self.assertEqual(depth["type"],"realscale:horizontal_scale")
+                self.assertEqual(depth["scale"],20)
+                self.assertEqual(depth["base"],f"realscale:{preset}/terrain_density")
+                final=noise["noise_router"]["final_density"]
+                self.assertEqual(final["type"],"realscale:horizontal_scale")
+                self.assertEqual(final["scale"],20)
+                self.assertEqual(final["base"]["type"],"realscale:grand_overworld_caverns")
+                self.assertEqual(final["base"]["base"],f"realscale:{preset}/terrain_density")
                 self.assertEqual(noise["sea_level"],63)
 
     def test_basins_reuse_same_seeded_layout_as_relief_and_climate(self):
         for preset in PRESETS:
             noise=read(DATA/"noise_settings"/(preset+".json"))
-            temperature=noise["noise_router"]["temperature"]
+            temperature_scale=noise["noise_router"]["temperature"]
+            self.assertEqual(temperature_scale["type"],"realscale:horizontal_scale")
+            self.assertEqual(temperature_scale["scale"],20)
+            temperature=temperature_scale["base"]
             self.assertEqual(temperature["type"],"realscale:climate_budget")
             adjusted=temperature["adjusted"]
             self.assertEqual(adjusted["type"],"realscale:mountain_basin_temperature")
@@ -66,7 +72,7 @@ class MountainBasinPlateauTest(unittest.TestCase):
                              f"realscale:{preset}/original_height_signal")
             base=adjusted["base"]
             self.assertEqual(base["type"],"realscale:latitude_temperature")
-            self.assertTrue(base["clamp_at_poles"])
+            self.assertFalse(base["clamp_at_poles"])
             self.assertTrue(base["balanced"])
             self.assertEqual(base["pole_distance"],10_001_966)
             self.assertGreater(base["altitude_cooling"],0)
@@ -86,13 +92,18 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertEqual(usgs["type"],"realscale:dem_density_seamless")
         self.assertEqual(usgs["blend_meters"],2048)
         usgs_noise=read(DATA/"noise_settings/usgs_big_sur_v2.json")
-        usgs_latitude=usgs_noise["noise_router"]["temperature"]["adjusted"]
+        usgs_temperature=usgs_noise["noise_router"]["temperature"]
+        self.assertEqual(usgs_temperature["type"],"realscale:horizontal_scale")
+        self.assertEqual(usgs_temperature["scale"],20)
+        usgs_latitude=usgs_temperature["base"]["adjusted"]
         self.assertEqual(usgs_latitude["type"],"realscale:latitude_temperature")
-        self.assertTrue(usgs_latitude["clamp_at_poles"])
+        self.assertFalse(usgs_latitude["clamp_at_poles"])
         self.assertEqual(usgs_latitude["equator_z"],4_027_458)
-        self.assertEqual(usgs_latitude["prime_meridian_x"],13_559_827)
-        self.assertEqual(usgs_noise["noise_router"]["final_density"]["type"],
-                         "realscale:grand_overworld_caverns")
+        self.assertNotIn("prime_meridian_x",usgs_latitude)
+        final=usgs_noise["noise_router"]["final_density"]
+        self.assertEqual(final["type"],"realscale:horizontal_scale")
+        self.assertEqual(final["scale"],20)
+        self.assertEqual(final["base"]["type"],"realscale:grand_overworld_caverns")
         for old in ("realism_max","himalayan","grand_canyon"):
             self.assertNotEqual(
                 read(DATA/"density_function"/old/"height_signal.json").get("type"),

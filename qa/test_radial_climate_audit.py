@@ -22,8 +22,9 @@ class GeographicClimateAuditTest(unittest.TestCase):
             with self.subTest(preset=preset):
                 zonal=zonal_profile_from_noise(root/(preset+".json"))
                 self.assertIsNotNone(zonal)
-                self.assertTrue(zonal["clamp_at_poles"])
+                self.assertFalse(zonal["clamp_at_poles"])
                 self.assertEqual(zonal["pole_distance"],10_001_966)
+                self.assertEqual(zonal["horizontal_scale"],20)
                 self.assertIsNone(radial_profile_from_noise(root/(preset+".json")))
 
     def test_historical_pr25_profiles_remain_radial(self):
@@ -37,30 +38,39 @@ class GeographicClimateAuditTest(unittest.TestCase):
                 self.assertEqual(radial["pole_distance"],8192)
                 self.assertIsNone(zonal_profile_from_noise(root/(preset+".json")))
 
-    def test_zonal_latitude_is_finite_and_clamped_at_both_poles(self):
+    def test_zonal_latitude_completes_full_periodic_earth_cycle_at_1_to_20(self):
         q=10_001_966
-        profile={"equator_z":0,"pole_distance":q,"clamp_at_poles":True}
+        scale=20
+        pole=round(q/scale)
+        profile={"equator_z":0,"pole_distance":q,
+                 "horizontal_scale":scale,"clamp_at_poles":False}
         self.assertEqual(zonal_latitude_degrees(0,profile),0)
-        self.assertAlmostEqual(zonal_latitude_degrees(-q,profile),90)
-        self.assertAlmostEqual(zonal_latitude_degrees(q,profile),-90)
-        self.assertAlmostEqual(zonal_latitude_degrees(-2*q,profile),90)
-        self.assertAlmostEqual(zonal_latitude_degrees(2*q,profile),-90)
+        self.assertAlmostEqual(zonal_latitude_degrees(-pole,profile),90,delta=0.001)
+        self.assertAlmostEqual(zonal_latitude_degrees(-2*pole,profile),0,delta=0.001)
+        self.assertAlmostEqual(zonal_latitude_degrees(-3*pole,profile),-90,delta=0.001)
+        self.assertAlmostEqual(zonal_latitude_degrees(-4*pole,profile),0,delta=0.001)
+        self.assertAlmostEqual(zonal_latitude_degrees(pole,profile),90,delta=0.001)
 
     def test_big_sur_nominal_geographic_anchor(self):
         q=10_001_966
-        profile={"equator_z":4_027_458,"pole_distance":q,"clamp_at_poles":True}
+        profile={"equator_z":4_027_458,"pole_distance":q,
+                 "horizontal_scale":20,"clamp_at_poles":False}
         self.assertAlmostEqual(zonal_latitude_degrees(0,profile),36.24,delta=0.001)
 
     def test_zonal_biome_audit_reports_observed_latitude_bands(self):
-        profile={"equator_z":0,"pole_distance":10_001_966,"clamp_at_poles":True}
-        heights={(0,0):80,(0,-10_001_966):300,(0,10_001_966):300}
+        profile={"equator_z":0,"pole_distance":10_001_966,
+                 "horizontal_scale":20,"clamp_at_poles":False}
+        pole=round(10_001_966/20)
+        heights={(0,0):80,(0,-pole):300,(0,pole):300}
         biomes={(0,0):"minecraft:plains",
-                (0,-10_001_966):"minecraft:snowy_plains",
-                (0,10_001_966):"minecraft:snowy_plains"}
+                (0,-pole):"minecraft:snowy_plains",
+                (0,pole):"minecraft:snowy_plains"}
         result=zonal_biome_audit(heights,biomes,profile)
-        self.assertEqual(result["mode"],"zonal_clamped")
+        self.assertEqual(result["mode"],"zonal_periodic")
         self.assertEqual(result["equator_z"],0)
         self.assertEqual(result["sample_columns"],3)
+        self.assertAlmostEqual(result["pole_distance_blocks"],500098.3,delta=0.1)
+        self.assertAlmostEqual(result["full_period_blocks"],2_000_393.2,delta=0.1)
 
     def test_reference_nodes_and_original_single_pole_are_followed(self):
         with tempfile.TemporaryDirectory() as td:

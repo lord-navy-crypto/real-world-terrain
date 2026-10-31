@@ -46,7 +46,10 @@ class BranchFamilyUnificationTest(unittest.TestCase):
                        "tva_canyon_smoothed","usgs_big_sur_v2"):
             with self.subTest(preset=preset):
                 config=json.loads((DATA/"noise_settings"/(preset+".json")).read_text())
-                temp=config["noise_router"]["temperature"]
+                temp_scale=config["noise_router"]["temperature"]
+                self.assertEqual(temp_scale["type"],"realscale:horizontal_scale")
+                self.assertEqual(temp_scale["scale"],20)
+                temp=temp_scale["base"]
                 self.assertEqual(temp["type"],"realscale:climate_budget")
                 if preset=="usgs_big_sur_v2":
                     # DEM mode deliberately preserves its independent relief
@@ -58,12 +61,15 @@ class BranchFamilyUnificationTest(unittest.TestCase):
                     zonal=temp["adjusted"]["base"]
                 self.assertEqual(zonal["type"],
                                  "realscale:latitude_temperature")
-                self.assertTrue(zonal["clamp_at_poles"])
+                self.assertFalse(zonal["clamp_at_poles"])
                 self.assertTrue(zonal["balanced"])
                 self.assertEqual(zonal["pole_distance"],10_001_966)
                 self.assertIn("equator_z",zonal)
-                self.assertIn("prime_meridian_x",zonal)
-                self.assertEqual(config["noise_router"]["final_density"]["type"],
+                self.assertNotIn("prime_meridian_x",zonal)
+                final=config["noise_router"]["final_density"]
+                self.assertEqual(final["type"],"realscale:horizontal_scale")
+                self.assertEqual(final["scale"],20)
+                self.assertEqual(final["base"]["type"],
                                  "realscale:grand_overworld_caverns")
 
     def test_only_experimental_world_has_wonders_opt_in(self):
