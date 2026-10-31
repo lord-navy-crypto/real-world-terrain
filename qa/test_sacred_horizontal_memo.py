@@ -69,7 +69,7 @@ class SacredHorizontalMemoTest(unittest.TestCase):
         self.assertEqual(depth_scale["base"],
                          "realscale:tva_natural_smoothed/terrain_density")
 
-        horizontal_scale=(ROOT.parents[1]/"java/org/realscale/neoforge/HorizontalScaleDensity.java")
+        horizontal_scale=(ROOT.parents[6]/"neoforge/src/main/java/org/realscale/neoforge/HorizontalScaleDensity.java")
         source=horizontal_scale.read_text(encoding="utf-8")
         self.assertIn("delegate.blockX()",source)
         self.assertIn("delegate.blockZ()",source)
