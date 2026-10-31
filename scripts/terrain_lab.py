@@ -662,7 +662,7 @@ def gui(root, launch):
     slider("Warped vertical strata solidity (0..20)",strata,0,20,1)
     slider("Altitude-aware biome cooling (0..100)",climate,0,100,1)
     slider("Optional valley-floor warming (0..100)",valley,0,100,5)
-    chooser("Latitude climate cycle",latitude,("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area","radial_equal_area_single_pole"))
+    chooser("Latitude climate cycle (temperature only; preview = 1:20; terrain stays 1 block = 1 m)",latitude,("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area","radial_equal_area_single_pole"))
     slider("Latitude temperature strength (0..100)",latitude_strength,0,100,5)
     slider("Equator origin Z / ring center Z",equator_z,-4096,4096,128)
     slider("Concentric ring center X",center_x,-4096,4096,128)
@@ -717,7 +717,7 @@ def main(argv=None):
     parser.add_argument("--valley-warming",type=int,default=0,
                         help="Opt-in bounded relative-valley temperature boost (0..100)")
     parser.add_argument("--latitude-mode",choices=("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area","radial_equal_area_single_pole"),default="off",
-                        help="meridional or concentric latitude; Earth = 1m/block, preview = 1:20 climate latitude, pole at 500,098 blocks")
+                        help="temperature latitude only: earth = 1:1 (10,001,966 blocks/equator-to-pole); preview = 1:20 climate mapping (500,098 blocks); terrain/geographic coordinates remain 1 block = 1 metre")
     parser.add_argument("--latitude-strength",type=int,default=70,help="Latitude climate strength 0..100")
     parser.add_argument("--equator-z",type=int,default=0,
                         help="World Z of latitude zero (or radial ring center Z). Not the future auto-selected spawn.")
