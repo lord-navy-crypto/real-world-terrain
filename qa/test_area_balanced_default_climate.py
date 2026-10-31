@@ -65,6 +65,18 @@ class NorthSouthDefaultClimateTest(unittest.TestCase):
                 self.assertEqual(found[0]["equator_z"],0)
                 self.assertEqual(found[0]["pole_distance"],500098)
 
+    def test_1_to_20_is_climate_only_and_world_z_remains_unscaled(self):
+        math_source=(SOURCE/"GeoMath.java").read_text()
+        latitude_source=(SOURCE/"LatitudeTemperatureDensity.java").read_text()
+        self.assertIn("EARTH_QUARTER_MERIDIAN_METERS = 10_001_966",math_source)
+        self.assertIn("CLIMATE_LATITUDE_COMPRESSION = 20",math_source)
+        self.assertIn("CLIMATE_POLE_DISTANCE_BLOCKS",math_source)
+        self.assertIn("GeoMath.latitudeDeg(ctx.blockZ(),equatorZ,poleDistance)",latitude_source)
+        self.assertEqual(round(10_001_966/20),500_098)
+        # The world coordinate itself remains the direct one-block/one-metre Z.
+        self.assertNotIn("ctx.blockZ()/20",latitude_source)
+        self.assertNotIn("ctx.blockZ()*20",latitude_source)
+
     def test_natural_preserves_mountain_basin_and_climate_budget_layers(self):
         d=json.loads((NOISE/"tva_natural_smoothed.json").read_text())
         temp=d["noise_router"]["temperature"]
