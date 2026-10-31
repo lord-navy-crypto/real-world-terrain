@@ -21,8 +21,10 @@ class PR25CompleteClimateRecovery(unittest.TestCase):
                 alternative=read(DATA/"world_preset"/(prefix+"_three_realms.json"))
                 canon_noise=read(DATA/"noise_settings"/(original+".json"))
                 canon_world=read(DATA/"world_preset"/(preset+".json"))
-                self.assertEqual(noise["noise_router"]["temperature"],
-                                 "realscale:"+key+"/biome_temperature")
+                temperature=noise["noise_router"]["temperature"]
+                self.assertEqual(temperature["type"],"realscale:horizontal_scale")
+                self.assertEqual(temperature["scale"],20)
+                self.assertEqual(temperature["base"],"realscale:"+key+"/biome_temperature")
                 self.assertEqual(temp["type"],"realscale:climate_budget")
                 basin=temp["adjusted"]
                 self.assertEqual(basin["type"],"realscale:basin_temperature")
@@ -41,9 +43,15 @@ class PR25CompleteClimateRecovery(unittest.TestCase):
                                      canon_noise["noise_router"][field])
                 self.assertEqual(noise["sea_level"],canon_noise["sea_level"])
                 # Sacred/default retains newer mountain basin climate and full caves.
-                self.assertEqual(canon_noise["noise_router"]["temperature"]["type"],
+                canon_temperature=canon_noise["noise_router"]["temperature"]
+                self.assertEqual(canon_temperature["type"],"realscale:horizontal_scale")
+                self.assertEqual(canon_temperature["scale"],20)
+                self.assertEqual(canon_temperature["base"]["type"],
                                  "realscale:climate_budget")
-                self.assertEqual(canon_noise["noise_router"]["final_density"]["type"],
+                canon_final=canon_noise["noise_router"]["final_density"]
+                self.assertEqual(canon_final["type"],"realscale:horizontal_scale")
+                self.assertEqual(canon_final["scale"],20)
+                self.assertEqual(canon_final["base"]["type"],
                                  "realscale:grand_overworld_caverns")
 
 if __name__=="__main__":unittest.main()

@@ -21,8 +21,8 @@ public record RadialLatitudeTemperatureDensity(DensityFunction base,int centerX,
     public static final MapCodec<RadialLatitudeTemperatureDensity> MAP_CODEC =
         RecordCodecBuilder.mapCodec(i->i.group(
             DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(RadialLatitudeTemperatureDensity::base),
-            Codec.intRange(-29_000_000,29_000_000).fieldOf("center_x").forGetter(RadialLatitudeTemperatureDensity::centerX),
-            Codec.intRange(-29_000_000,29_000_000).fieldOf("center_z").forGetter(RadialLatitudeTemperatureDensity::centerZ),
+            Codec.intRange(-600_000_000,600_000_000).fieldOf("center_x").forGetter(RadialLatitudeTemperatureDensity::centerX),
+            Codec.intRange(-600_000_000,600_000_000).fieldOf("center_z").forGetter(RadialLatitudeTemperatureDensity::centerZ),
             Codec.intRange(1024,10_001_966).fieldOf("pole_distance").forGetter(RadialLatitudeTemperatureDensity::poleDistance),
             Codec.doubleRange(0.0,1.0).fieldOf("strength").forGetter(RadialLatitudeTemperatureDensity::strength),
             Codec.BOOL.optionalFieldOf("balanced",false).forGetter(RadialLatitudeTemperatureDensity::balanced),

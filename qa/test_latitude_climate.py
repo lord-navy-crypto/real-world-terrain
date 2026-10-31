@@ -26,28 +26,37 @@ class LatitudeClimateTests(unittest.TestCase):
     def make(self,**opts):
         return lab.files_for(self.root,"landscape",1.0,0,50,6,**opts)
 
-    def get_temperature(self,outputs,name):
+    def get_temperature_wrapper(self,outputs,name):
         return outputs[lab.GEO_ROOT/"density_function/terrain_lab"/name/"biome_temperature.json"]
 
-    def test_earth_scale_is_true_one_block_per_meter(self):
+    def get_temperature(self,outputs,name):
+        wrapper=self.get_temperature_wrapper(outputs,name)
+        self.assertEqual(wrapper["type"],"realscale:horizontal_scale")
+        self.assertEqual(wrapper["scale"],20)
+        return wrapper["base"]
+
+    def test_earth_scale_uses_periodic_one_to_twenty_horizontal_mapping(self):
         name,options,out=self.make(latitude="earth",latitude_strength=70)
         temp=self.get_temperature(out,name)
         self.assertEqual(temp["type"],"realscale:latitude_temperature")
         self.assertEqual(temp["equator_z"],0)
         self.assertEqual(temp["pole_distance"],10_001_966)
         self.assertEqual(temp["strength"],.7)
+        self.assertFalse(temp["clamp_at_poles"])
+        self.assertEqual(options["horizontal_scale"],20)
         noise=out[lab.GEO_ROOT/"noise_settings"/(name+".json")]
         self.assertEqual(noise["noise_router"]["temperature"],
                          f"realscale:terrain_lab/{name}/biome_temperature")
         self.assertEqual(noise["sea_level"],63)
         self.assertEqual(options["latitude"],"earth")
 
-    def test_preview_shortens_pole_distance_without_affecting_blocks_per_meter(self):
+    def test_preview_keeps_sixteen_thousand_block_pole_distance_and_periodicity(self):
         name,_,out=self.make(latitude="preview",latitude_strength=45,equator_z=-512)
         temp=self.get_temperature(out,name)
-        self.assertEqual(temp["pole_distance"],16384)
-        self.assertEqual(temp["equator_z"],-512)
+        self.assertEqual(temp["pole_distance"],327_680)
+        self.assertEqual(temp["equator_z"],-10_240)
         self.assertEqual(temp["strength"],.45)
+        self.assertFalse(temp["clamp_at_poles"])
 
     def test_basin_climate_is_true_nested_noise_router_node(self):
         name,options,out=self.make(latitude="preview",climate=65,
@@ -107,9 +116,13 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertEqual(len(after-baseline),1)
         name=(after-baseline).pop().stem
         t=lab.jread(self.root,lab.GEO_ROOT/"density_function/terrain_lab"/name/"biome_temperature.json")
+        self.assertEqual(t["type"],"realscale:horizontal_scale")
+        self.assertEqual(t["scale"],20)
+        t=t["base"]
         self.assertEqual(t["type"],"realscale:basin_temperature")
         self.assertEqual(t["base"]["type"],"realscale:latitude_temperature")
         self.assertEqual(t["base"]["pole_distance"],10_001_966)
+        self.assertFalse(t["base"]["clamp_at_poles"])
 
     def test_concentric_earth_radius_and_climate_budget(self):
         name,opts,outputs=self.make(
@@ -123,8 +136,8 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertEqual(temp["original"]["type"],"minecraft:shifted_noise")
         r=temp["adjusted"]["base"]["base"]
         self.assertEqual(r["type"],"realscale:radial_latitude_temperature")
-        self.assertEqual(r["center_x"],1024)
-        self.assertEqual(r["center_z"],-512)
+        self.assertEqual(r["center_x"],20_480)
+        self.assertEqual(r["center_z"],-10_240)
         self.assertEqual(r["pole_distance"],10_001_966)
         self.assertEqual(r["strength"],.7)
         self.assertEqual(opts["latitude"],"radial_earth")
@@ -139,7 +152,7 @@ class LatitudeClimateTests(unittest.TestCase):
         a,o,files=self.make(latitude="radial_preview",cold_limit=0)
         r=self.get_temperature(files,a)
         self.assertEqual(r["type"],"realscale:radial_latitude_temperature")
-        self.assertEqual(r["pole_distance"],16384)
+        self.assertEqual(r["pole_distance"],327_680)
         self.assertNotIn("cold_limit",o)
         b,oo,ff=self.make(latitude="radial_preview",cold_limit=60)
         self.assertNotEqual(a,b)
@@ -173,12 +186,14 @@ class LatitudeClimateTests(unittest.TestCase):
         src=ROOT/"neoforge/src/main/java/org/realscale/neoforge"
         mod=(src/"RealScaleMod.java").read_text()
         screen=(src/"RealScaleTerrainLabClient.java").read_text()
-        for name in ("latitude_temperature","basin_temperature","radial_latitude_temperature","climate_budget"):
+        for name in ("horizontal_scale","latitude_temperature","basin_temperature","radial_latitude_temperature","climate_budget"):
             self.assertIn('"'+name+'"',mod)
         self.assertIn('Latitude Climate Cycle',screen)
         self.assertIn('Enclosed Basin Warming (Optional)',screen)
         self.assertIn('equatorZ',screen)
         self.assertIn('radial_preview',screen)
+        self.assertIn('1:20 horizontal map scale',screen)
+        self.assertIn('X is not used for climate',screen)
         self.assertIn('Radial Cold Climate Limit',screen)
 
 
@@ -191,7 +206,7 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertEqual(radial["type"],"realscale:radial_latitude_temperature")
         self.assertTrue(radial["balanced"])
         self.assertTrue(radial["area_balanced"])
-        self.assertEqual(radial["pole_distance"],8192)
+        self.assertEqual(radial["pole_distance"],163_840)
         self.assertEqual(radial["altitude_cooling"],.585)
         self.assertEqual(options["latitude"],"radial_equal_area")
         old_name,old_options,old_files=self.make(
@@ -218,7 +233,7 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertTrue(profile["single_pole_area"])
         self.assertTrue(profile["area_balanced"])
         self.assertTrue(profile["balanced"])
-        self.assertEqual(profile["pole_distance"],8192)
+        self.assertEqual(profile["pole_distance"],163_840)
         self.assertEqual(opts["latitude"],"radial_equal_area_single_pole")
         old_name,_,old_out=self.make(latitude="radial_equal_area",
                                     latitude_strength=70,cold_limit=0)

@@ -19,55 +19,145 @@
   },
   "noise_router": {
     "barrier": {
-      "noise": "minecraft:aquifer_barrier",
-      "type": "minecraft:noise",
-      "xz_scale": 1,
-      "y_scale": 0.5
-    },
-    "continents": "realscale:realism_max/continental_field",
-    "depth": "realscale:usgs_big_sur_v2/terrain_density",
-    "erosion": "realscale:realism_max/erosion_field",
-    "final_density": {
-      "type": "realscale:grand_overworld_caverns",
+      "type": "realscale:horizontal_scale",
       "base": {
-        "type": "realscale:range_min_exact",
-        "base": "realscale:usgs_big_sur_v2/terrain_density",
-        "cave": "realscale:usgs_big_sur_v2/cave_density",
-        "min_inclusive": 0.25,
-        "max_exclusive": 4
-      },
-      "warp": {
+        "noise": "minecraft:aquifer_barrier",
         "type": "minecraft:noise",
-        "noise": "minecraft:spaghetti_3d_1",
-        "xz_scale": 0.038,
-        "y_scale": 0.03
+        "xz_scale": 1,
+        "y_scale": 0.5
       },
-      "small_caves": "realscale:realism_max/cave_core"
+      "scale": 20
+    },
+    "continents": {
+      "type": "realscale:horizontal_scale",
+      "base": "realscale:realism_max/continental_field",
+      "scale": 20
+    },
+    "depth": {
+      "type": "realscale:horizontal_scale",
+      "base": "realscale:usgs_big_sur_v2/terrain_density",
+      "scale": 20
+    },
+    "erosion": {
+      "type": "realscale:horizontal_scale",
+      "base": "realscale:realism_max/erosion_field",
+      "scale": 20
+    },
+    "final_density": {
+      "type": "realscale:horizontal_scale",
+      "base": {
+        "type": "realscale:grand_overworld_caverns",
+        "base": {
+          "type": "realscale:range_min_exact",
+          "base": "realscale:usgs_big_sur_v2/terrain_density",
+          "cave": "realscale:usgs_big_sur_v2/cave_density",
+          "min_inclusive": 0.25,
+          "max_exclusive": 4
+        },
+        "warp": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:spaghetti_3d_1",
+          "xz_scale": 0.038,
+          "y_scale": 0.03
+        },
+        "small_caves": "realscale:realism_max/cave_core"
+      },
+      "scale": 20
     },
     "fluid_level_floodedness": {
-      "noise": "minecraft:aquifer_fluid_level_floodedness",
-      "type": "minecraft:noise",
-      "xz_scale": 1,
-      "y_scale": 0.67
+      "type": "realscale:horizontal_scale",
+      "base": {
+        "noise": "minecraft:aquifer_fluid_level_floodedness",
+        "type": "minecraft:noise",
+        "xz_scale": 1,
+        "y_scale": 0.67
+      },
+      "scale": 20
     },
     "fluid_level_spread": {
-      "noise": "minecraft:aquifer_fluid_level_spread",
-      "type": "minecraft:noise",
-      "xz_scale": 1,
-      "y_scale": 0.7142857142857143
+      "type": "realscale:horizontal_scale",
+      "base": {
+        "noise": "minecraft:aquifer_fluid_level_spread",
+        "type": "minecraft:noise",
+        "xz_scale": 1,
+        "y_scale": 0.7142857142857143
+      },
+      "scale": 20
     },
-    "initial_density_without_jaggedness": "realscale:usgs_big_sur_v2/preliminary_density",
+    "initial_density_without_jaggedness": {
+      "type": "realscale:horizontal_scale",
+      "base": "realscale:usgs_big_sur_v2/preliminary_density",
+      "scale": 20
+    },
     "lava": {
-      "noise": "minecraft:aquifer_lava",
-      "type": "minecraft:noise",
-      "xz_scale": 1,
-      "y_scale": 1
+      "type": "realscale:horizontal_scale",
+      "base": {
+        "noise": "minecraft:aquifer_lava",
+        "type": "minecraft:noise",
+        "xz_scale": 1,
+        "y_scale": 1
+      },
+      "scale": 20
     },
-    "ridges": "realscale:realism_max/mountain_axis",
+    "ridges": {
+      "type": "realscale:horizontal_scale",
+      "base": "realscale:realism_max/mountain_axis",
+      "scale": 20
+    },
     "temperature": {
-      "type": "realscale:climate_budget",
-      "original": {
-        "noise": "minecraft:temperature",
+      "type": "realscale:horizontal_scale",
+      "base": {
+        "type": "realscale:climate_budget",
+        "original": {
+          "noise": "minecraft:temperature",
+          "shift_x": "minecraft:shift_x",
+          "shift_y": 0,
+          "shift_z": "minecraft:shift_z",
+          "type": "minecraft:shifted_noise",
+          "xz_scale": 0.15,
+          "y_scale": 0
+        },
+        "adjusted": {
+          "type": "realscale:latitude_temperature",
+          "base": {
+            "type": "minecraft:add",
+            "argument1": {
+              "noise": "minecraft:temperature",
+              "shift_x": "minecraft:shift_x",
+              "shift_y": 0,
+              "shift_z": "minecraft:shift_z",
+              "type": "minecraft:shifted_noise",
+              "xz_scale": 0.15,
+              "y_scale": 0
+            },
+            "argument2": {
+              "type": "minecraft:mul",
+              "argument1": -0.42,
+              "argument2": {
+                "type": "minecraft:y_clamped_gradient",
+                "from_y": 96,
+                "to_y": 720,
+                "from_value": 0,
+                "to_value": 1
+              }
+            }
+          },
+          "equator_z": 4027458,
+          "pole_distance": 10001966,
+          "strength": 0.58,
+          "balanced": true,
+          "altitude_cooling": 0.42,
+          "clamp_at_poles": false
+        },
+        "max_cooling": 0.66,
+        "max_warming": 0.34
+      },
+      "scale": 20
+    },
+    "vegetation": {
+      "type": "realscale:horizontal_scale",
+      "base": {
+        "noise": "minecraft:vegetation",
         "shift_x": "minecraft:shift_x",
         "shift_y": 0,
         "shift_z": "minecraft:shift_z",
@@ -75,50 +165,7 @@
         "xz_scale": 0.15,
         "y_scale": 0
       },
-      "adjusted": {
-        "type": "realscale:radial_latitude_temperature",
-        "base": {
-          "type": "minecraft:add",
-          "argument1": {
-            "noise": "minecraft:temperature",
-            "shift_x": "minecraft:shift_x",
-            "shift_y": 0,
-            "shift_z": "minecraft:shift_z",
-            "type": "minecraft:shifted_noise",
-            "xz_scale": 0.15,
-            "y_scale": 0
-          },
-          "argument2": {
-            "type": "minecraft:mul",
-            "argument1": -0.42,
-            "argument2": {
-              "type": "minecraft:y_clamped_gradient",
-              "from_y": 96,
-              "to_y": 720,
-              "from_value": 0,
-              "to_value": 1
-            }
-          }
-        },
-        "center_x": 0,
-        "center_z": 0,
-        "pole_distance": 8192,
-        "strength": 0.58,
-        "balanced": true,
-        "altitude_cooling": 0.42,
-        "area_balanced": true
-      },
-      "max_cooling": 0.66,
-      "max_warming": 0.34
-    },
-    "vegetation": {
-      "noise": "minecraft:vegetation",
-      "shift_x": "minecraft:shift_x",
-      "shift_y": 0,
-      "shift_z": "minecraft:shift_z",
-      "type": "minecraft:shifted_noise",
-      "xz_scale": 0.15,
-      "y_scale": 0
+      "scale": 20
     },
     "vein_gap": 0,
     "vein_ridged": 0,

@@ -28,7 +28,10 @@ class UnifiedTimelineTests(unittest.TestCase):
         self.assertEqual(sacred["input"]["type"],"minecraft:cache_2d")
         self.assertEqual(sacred["input"]["argument"]["type"],"realscale:mountain_relief")
         measured=json.loads((DATA/"noise_settings/usgs_big_sur_v2.json").read_text())
-        final=measured["noise_router"]["final_density"]
+        scale=measured["noise_router"]["final_density"]
+        self.assertEqual(scale["type"],"realscale:horizontal_scale")
+        self.assertEqual(scale["scale"],20)
+        final=scale["base"]
         self.assertEqual(final["type"],"realscale:grand_overworld_caverns")
         self.assertEqual(final["base"]["type"],"realscale:range_min_exact")
         self.assertEqual(final["base"]["cave"],"realscale:usgs_big_sur_v2/cave_density")

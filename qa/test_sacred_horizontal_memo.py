@@ -55,11 +55,24 @@ class SacredHorizontalMemoTest(unittest.TestCase):
         self.assertEqual(terrain["argument2"]["type"],"minecraft:y_clamped_gradient")
         settings=read("noise_settings/tva_natural_smoothed.json")
         self.assertEqual(settings["noise"]["height"],2096)
-        final=settings["noise_router"]["final_density"]
+        final_scale=settings["noise_router"]["final_density"]
+        self.assertEqual(final_scale["type"],"realscale:horizontal_scale")
+        self.assertEqual(final_scale["scale"],20)
+        final=final_scale["base"]
         self.assertEqual(final["type"],"realscale:grand_overworld_caverns")
         self.assertEqual(final["base"],"realscale:tva_natural_smoothed/terrain_density")
         self.assertEqual(final["small_caves"],"realscale:realism_max/cave_core")
-        self.assertEqual(settings["noise_router"]["depth"],
+
+        depth_scale=settings["noise_router"]["depth"]
+        self.assertEqual(depth_scale["type"],"realscale:horizontal_scale")
+        self.assertEqual(depth_scale["scale"],20)
+        self.assertEqual(depth_scale["base"],
                          "realscale:tva_natural_smoothed/terrain_density")
+
+        horizontal_scale=(ROOT.parents[6]/"neoforge/src/main/java/org/realscale/neoforge/HorizontalScaleDensity.java")
+        source=horizontal_scale.read_text(encoding="utf-8")
+        self.assertIn("delegate.blockX()",source)
+        self.assertIn("delegate.blockZ()",source)
+        self.assertIn("delegate.blockY()",source)
 
 if __name__=="__main__":unittest.main()

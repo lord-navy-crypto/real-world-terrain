@@ -40,7 +40,7 @@
         },
         "center_x": 0,
         "center_z": 0,
-        "pole_distance": 8192,
+        "pole_distance": 163840,
         "strength": 0.7,
         "balanced": true,
         "altitude_cooling": 0.52,

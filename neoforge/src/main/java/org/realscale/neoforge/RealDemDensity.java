@@ -7,8 +7,10 @@ import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.world.level.levelgen.DensityFunction;
 
 /** Real DEM-driven noise density inserted into vanilla NoiseBasedChunkGenerator.
- * The same function is used for final terrain AND preliminary surface prediction.
- * Outside the ~480m pilot window it returns original v0.6 Realism MAX density.
+ * The enclosing horizontal_scale density node supplies source-metre X/Z
+ * coordinates (20 metres per Minecraft horizontal block). The same function
+ * is used for final terrain AND preliminary surface prediction. Outside the
+ * measured tile it returns the original procedural density.
  */
 public record RealDemDensity(DensityFunction base,int blendMeters) implements DensityFunction.SimpleFunction {
     static final RealDemTile DEM=RealDemTile.load();
@@ -25,7 +27,7 @@ public record RealDemDensity(DensityFunction base,int blendMeters) implements De
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
         final int x=ctx.blockX(), z=ctx.blockZ();
-        // Most generated chunks are outside the ~480m pilot: no cache lookup
+        // Most generated chunks are outside the measured tile: no cache lookup
         // or interpolation is needed. Equality is also zero DEM influence.
         if (x<=DEM.originX() || x>=DEM.maxX() || z<=DEM.originZ() || z>=DEM.maxZ())
             return base.compute(ctx);

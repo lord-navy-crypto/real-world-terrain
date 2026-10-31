@@ -6,6 +6,11 @@ final class GeoMath {
     static double clamp(double x,double low,double high){
         return Math.max(low,Math.min(high,x));
     }
+
+    /** Convert a Minecraft horizontal block coordinate to source metres. */
+    static int scaleHorizontalCoordinate(int coordinate,int scale){
+        return Math.multiplyExact(coordinate,scale);
+    }
     static double ridgeErosion(double base,double ridge,double erosion,double ridgeGain,double erosionGain){
         double crest=1.0-clamp(Math.abs(ridge),0,1);
         double erosivity=clamp((erosion+1.0)*0.5,0,1);
@@ -40,6 +45,15 @@ final class GeoMath {
         if(phase<=3.0)return 90*(2-phase);
         return 90*(phase-4);
     }
+
+    /** Finite equirectangular world map: Z<equator is north, Z>equator is south.
+     * Beyond either pole, retain the polar climate instead of repeating another hemisphere.
+     */
+    static double clampedLatitudeDeg(int z,int equatorZ,int poleDistance){
+        double normalized=clamp(((double)equatorZ-(double)z)/poleDistance,-1.0,1.0);
+        return 90.0*normalized;
+    }
+
     /** Repeating concentric climate belts around a fixed center.
      * Equator 0 degrees at center, pole at one radius, next equator at 2 radii.
      * North/south meridian labels are deliberately not assigned to rings.
@@ -100,12 +114,15 @@ final class GeoMath {
         return 90.0*(1.0-Math.abs(2.0*fraction-1.0));
     }
 
-    static double balancedRadialTemperature(double original,double latitude,double strength,
-                                            double altitudeCooling,int y){
-        double baseline=latitudeTemperature(original,latitude,strength);
-        double tropical=1.0-smoothstep(12.0,37.0,latitude);
-        double temperate=smoothstep(18.0,38.0,latitude)
-                         *(1.0-smoothstep(47.0,67.0,latitude));
+    static double balancedLatitudeTemperature(double original,double latitude,double strength,
+                                              double altitudeCooling,int y){
+        // Latitude carries a hemisphere sign for geographic labeling, but the
+        // annual-mean zonal climate response must be symmetric north/south.
+        double absoluteLatitude=Math.abs(latitude);
+        double baseline=latitudeTemperature(original,absoluteLatitude,strength);
+        double tropical=1.0-smoothstep(12.0,37.0,absoluteLatitude);
+        double temperate=smoothstep(18.0,38.0,absoluteLatitude)
+                         *(1.0-smoothstep(47.0,67.0,absoluteLatitude));
         double altitude=smoothstep(96.0,320.0,y);
         // The tropics and temperate belt are both active: distribute a small
         // additional warm/temperate climate signal smoothly, not by hard
@@ -116,6 +133,12 @@ final class GeoMath {
         double coolingRefund=altitudeCooling*altitude
                              *(0.75*tropical+0.40*temperate);
         return baseline+latitudeBuffer+coolingRefund;
+    }
+
+    /** Backward-compatible name retained for existing concentric climate settings. */
+    static double balancedRadialTemperature(double original,double latitude,double strength,
+                                             double altitudeCooling,int y){
+        return balancedLatitudeTemperature(original,latitude,strength,altitudeCooling,y);
     }
     static double climateBudget(double original,double adjusted,double maxCooling,double maxWarming){
         double d=adjusted-original;

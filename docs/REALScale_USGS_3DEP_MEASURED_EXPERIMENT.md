@@ -86,20 +86,30 @@ the SHA-pinned bundled resource.
 
 ## Game coordinate mapping
 
-- Big Sur source centre maps to Minecraft X=0, Z=0.
-- Minecraft X increases east, Minecraft Z increases **south**. GeoTIFF is
-  north-up: raster first row is northmost and becomes the most-negative Z.
-- World horizontal and vertical units are 1 Minecraft block per metre.
-- RGT1 stores metres above the USGS elevation datum; game solid surface
-  at a sample is Y = 63 + source_elevation_m.
-- No per-region vertical scaling, no elevation clamps, no simulated
-  erosion inserted into the measured tile. Any terrain modifications from
-  separately registered Minecraft cave features, aquifers, structures,
-  etc. are explicitly **gameplay additions**, not claimed USGS observations.
-- Within the measured DEM grid, the RealDemSeamlessMath interpolation is
+- The Big Sur source centre maps to Minecraft X=0, Z=0.
+- The default source centre is 36.24°N, 121.81°W. Its latitude anchor is
+  `equator_z=4,027,458` source metres. The climate model uses Z only; it
+  does not calculate longitude or use an X-axis prime-meridian offset.
+- The active worldgen density router converts Minecraft X and Z block
+  coordinates to source metres at **20 metres per horizontal block**.
+  X and Z are scaled identically, so the map is not stretched horizontally.
+- Y remains **1 Minecraft block per metre**. This is horizontal-only
+  compression, so measured relief is vertically exaggerated relative to its
+  horizontal footprint by 20x.
+- The 513x513 measured raster at 16m spacing spans about 8,192 source metres
+  per side, or about 410 Minecraft blocks after the 1:20 horizontal mapping.
+  Source sample spacing is 0.8 Minecraft blocks; the runtime interpolation
+  evaluates the original measured samples in source-metre coordinates.
+- RGT1 stores metres above the USGS elevation datum; game solid surface at a
+  sample remains Y = 63 + source_elevation_m.
+- No per-region vertical scaling, no elevation clamps, and no simulated
+  erosion are inserted into the measured tile. Any terrain modifications
+  from separately registered Minecraft cave features, aquifers, structures,
+  etc. are gameplay additions, not claimed USGS observations.
+- Within the measured DEM grid, RealDemSeamlessMath interpolation remains
   monotone and preserves source sample elevations. Outside it, the preset
-  still smoothly blends to **procedural** fallback over 2048 metres,
-  which must NOT be mislabelled as real-world data.
+  smoothly blends to procedural fallback over 2048 source metres, equivalent
+  to about 102 Minecraft horizontal blocks.
 
 ## Data safety and reproducibility
 

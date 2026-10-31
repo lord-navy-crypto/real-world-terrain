@@ -46,20 +46,30 @@ class BranchFamilyUnificationTest(unittest.TestCase):
                        "tva_canyon_smoothed","usgs_big_sur_v2"):
             with self.subTest(preset=preset):
                 config=json.loads((DATA/"noise_settings"/(preset+".json")).read_text())
-                temp=config["noise_router"]["temperature"]
+                temp_scale=config["noise_router"]["temperature"]
+                self.assertEqual(temp_scale["type"],"realscale:horizontal_scale")
+                self.assertEqual(temp_scale["scale"],20)
+                temp=temp_scale["base"]
                 self.assertEqual(temp["type"],"realscale:climate_budget")
                 if preset=="usgs_big_sur_v2":
                     # DEM mode deliberately preserves its independent relief
                     # climate rather than borrowing procedural basin sites.
-                    radial=temp["adjusted"]
+                    zonal=temp["adjusted"]
                 else:
                     self.assertEqual(temp["adjusted"]["type"],
                                      "realscale:mountain_basin_temperature")
-                    radial=temp["adjusted"]["base"]
-                self.assertEqual(radial["type"],
-                                 "realscale:radial_latitude_temperature")
-                self.assertTrue(radial["area_balanced"])
-                self.assertEqual(config["noise_router"]["final_density"]["type"],
+                    zonal=temp["adjusted"]["base"]
+                self.assertEqual(zonal["type"],
+                                 "realscale:latitude_temperature")
+                self.assertFalse(zonal["clamp_at_poles"])
+                self.assertTrue(zonal["balanced"])
+                self.assertEqual(zonal["pole_distance"],10_001_966)
+                self.assertIn("equator_z",zonal)
+                self.assertNotIn("prime_meridian_x",zonal)
+                final=config["noise_router"]["final_density"]
+                self.assertEqual(final["type"],"realscale:horizontal_scale")
+                self.assertEqual(final["scale"],20)
+                self.assertEqual(final["base"]["type"],
                                  "realscale:grand_overworld_caverns")
 
     def test_only_experimental_world_has_wonders_opt_in(self):
@@ -73,6 +83,15 @@ class BranchFamilyUnificationTest(unittest.TestCase):
         self.assertNotIn("cross_realm_invasion",assert_key(normal))
         self.assertEqual(normal["dimensions"]["minecraft:the_nether"],
                          wonder["dimensions"]["minecraft:the_nether"])
+
+    def test_default_presets_use_zonal_temperature_and_radial_algorithms_remain_selectable(self):
+        src=(JAVA/"GeoMath.java").read_text()
+        radial=(JAVA/"RadialLatitudeTemperatureDensity.java").read_text()
+        for method in ("radialLatitudeDeg","balancedRadialLatitudeDeg",
+                       "areaBalancedRadialLatitudeDeg","singlePoleAreaRadialLatitudeDeg"):
+            self.assertIn(method,src)
+        self.assertIn("GeoMath.areaBalancedRadialLatitudeDeg",radial)
+        self.assertIn("GeoMath.singlePoleAreaRadialLatitudeDeg",radial)
 
     def test_both_area_climate_algorithms_remain_selectable(self):
         src=(JAVA/"GeoMath.java").read_text()

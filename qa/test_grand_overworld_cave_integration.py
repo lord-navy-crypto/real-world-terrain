@@ -22,15 +22,21 @@ class OverworldCaveContracts(unittest.TestCase):
         for preset in CAVE_WORLDS:
             with self.subTest(preset=preset):
                 noise=read(DATA/"noise_settings"/f"{preset}.json")
-                node=noise["noise_router"]["final_density"]
-                self.assertIsInstance(node,dict)
+                scale=noise["noise_router"]["final_density"]
+                self.assertIsInstance(scale,dict)
+                self.assertEqual(scale["type"],"realscale:horizontal_scale")
+                self.assertEqual(scale["scale"],20)
+                node=scale["base"]
                 self.assertEqual(node["type"],"realscale:grand_overworld_caverns")
                 self.assertEqual(node["small_caves"],"realscale:realism_max/cave_core")
                 self.assertEqual(node["warp"]["type"],"minecraft:noise")
                 self.assertEqual(noise["sea_level"],63)
                 if preset!="usgs_big_sur_v2":
                     self.assertEqual(node["base"],f"realscale:{preset}/terrain_density")
-                    self.assertEqual(noise["noise_router"]["depth"],
+                    depth=noise["noise_router"]["depth"]
+                    self.assertEqual(depth["type"],"realscale:horizontal_scale")
+                    self.assertEqual(depth["scale"],20)
+                    self.assertEqual(depth["base"],
                                      f"realscale:{preset}/terrain_density")
                 else:
                     # The original range_choice(min(T, caves), T) is fused

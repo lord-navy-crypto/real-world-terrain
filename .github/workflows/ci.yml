@@ -212,14 +212,20 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/MountainReliefSiteCacheSmoke.java
           java -cp build/mountain-site-cache-smoke org.realscale.neoforge.MountainReliefSiteCacheSmoke
           python3 -m unittest discover -s qa -p 'test_mountain_basin_plateau_default.py' -v
-      - name: Verify equal-area concentric latitude math and default climate wiring
+      - name: Verify zonal latitude, longitude and preserved radial climate math
         run: |
-          mkdir -p build/area-balanced-climate
+          mkdir -p build/area-balanced-climate build/zonal-latitude-climate
           javac -d build/area-balanced-climate \
             neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
             neoforge/src/test/java/org/realscale/neoforge/AreaBalancedClimateSmoke.java
           java -cp build/area-balanced-climate org.realscale.neoforge.AreaBalancedClimateSmoke
+          javac -d build/zonal-latitude-climate \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/ZonalLatitudeClimateSmoke.java
+          java -cp build/zonal-latitude-climate org.realscale.neoforge.ZonalLatitudeClimateSmoke
           python3 -m unittest discover -s qa -p 'test_area_balanced_default_climate.py' -v
+          python3 -m unittest discover -s qa -p 'test_radial_climate_audit.py' -v
+          python3 -m unittest discover -s qa -p 'test_latitude_climate.py' -v
       - name: Verify chunk-local lava tube and karst passages
         run: python3 -m unittest discover -s qa -p 'test_cave_wonder_networks.py' -v
       - name: Check real large-region math at negative and chunk-border coordinates

@@ -89,7 +89,10 @@ class TerrainLabTests(unittest.TestCase):
         name,opts,_=lab.apply(self.root,"alpine",1.0,0,65,6,blend_percent=25)
         self.assertEqual(opts["mountain_caves_revision"],5)
         settings=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
-        final=settings["noise_router"]["final_density"]
+        final_wrapper=settings["noise_router"]["final_density"]
+        self.assertEqual(final_wrapper["type"],"realscale:horizontal_scale")
+        self.assertEqual(final_wrapper["scale"],20)
+        final=final_wrapper["base"]
         self.assertEqual(final["type"],"minecraft:min")
         extra=final["argument2"]
         self.assertEqual(extra["type"],"minecraft:max")
@@ -120,8 +123,10 @@ class TerrainLabTests(unittest.TestCase):
         name,opts,_=lab.apply(self.root,"alpine",1.0,0,50,6)
         self.assertNotIn("mountain_caves_revision",opts)
         settings=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
-        self.assertEqual(settings["noise_router"]["final_density"]["type"],
-                         "minecraft:range_choice")
+        final=settings["noise_router"]["final_density"]
+        self.assertEqual(final["type"],"realscale:horizontal_scale")
+        self.assertEqual(final["scale"],20)
+        self.assertEqual(final["base"]["type"],"minecraft:range_choice")
 
     def test_optional_fantasy_dimension_expansion_isolated_to_new_lab_world(self):
         base,*_=lab.apply(self.root,"landscape",1.0,0,50,6)
@@ -209,6 +214,9 @@ class TerrainLabTests(unittest.TestCase):
         self.assertEqual(len(new),1)
         name=new.pop().stem
         output=lab.jread(self.root,lab.GEO_ROOT/"density_function/terrain_lab"/name/"biome_temperature.json")
+        self.assertEqual(output["type"],"realscale:horizontal_scale")
+        self.assertEqual(output["scale"],20)
+        output=output["base"]
         self.assertEqual(output["type"],"realscale:valley_temperature")
         self.assertEqual(output["warmth"],.1225)
         client=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleTerrainLabClient.java").read_text()
