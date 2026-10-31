@@ -47,8 +47,11 @@ class CustomGeoTests(unittest.TestCase):
                 # Both are valid; the important requirement is that the
                 # generated noise router actually references this Lab profile.
                 final=noise["noise_router"]["final_density"]
-                wired=final if isinstance(final,str) else final["input"]
-                self.assertEqual(wired,"realscale:terrain_lab/"+name+"/terrain_density")
+                self.assertEqual(final["type"],"realscale:horizontal_scale")
+                self.assertEqual(final["scale"],20)
+                base=final["base"]
+                self.assertEqual(base["type"],"realscale:grand_overworld_caverns")
+                self.assertEqual(base["base"],"realscale:terrain_lab/"+name+"/terrain_density")
                 self.assertEqual(opts["ridge"],18)
 
     def test_altitude_biome_cooling_uses_world_local_noise_router(self):
@@ -60,13 +63,19 @@ class CustomGeoTests(unittest.TestCase):
                 self.assertEqual(settings["noise_router"]["temperature"],
                                  f"realscale:terrain_lab/{name}/biome_temperature")
                 temperature=lab.jread(self.root,folder/"biome_temperature.json")
+                self.assertEqual(temperature["type"],"realscale:horizontal_scale")
+                self.assertEqual(temperature["scale"],20)
+                temperature=temperature["base"]
                 self.assertEqual(temperature["type"],"minecraft:add")
                 self.assertEqual(temperature["argument1"]["type"],"minecraft:shifted_noise")
                 self.assertEqual(temperature["argument2"]["argument1"],-.585)
                 gradient=temperature["argument2"]["argument2"]
                 self.assertEqual(gradient["type"],"minecraft:y_clamped_gradient")
                 self.assertEqual((gradient["from_y"],gradient["to_y"]),(96,320))
-                self.assertEqual(settings["noise_router"]["vegetation"]["type"],"minecraft:shifted_noise")
+                vegetation=settings["noise_router"]["vegetation"]
+                self.assertEqual(vegetation["type"],"realscale:horizontal_scale")
+                self.assertEqual(vegetation["scale"],20)
+                self.assertEqual(vegetation["base"]["type"],"minecraft:shifted_noise")
                 self.assertEqual(settings["sea_level"],63)
                 self.assertEqual(options["climate"],65)
 
@@ -92,6 +101,9 @@ class CustomGeoTests(unittest.TestCase):
                 name,opts,out=lab.files_for(self.root,family,1,0,50,6,climate=65,valley=40)
                 folder=lab.GEO_ROOT/"density_function/terrain_lab"/name
                 temp=out[folder/"biome_temperature.json"]
+                self.assertEqual(temp["type"],"realscale:horizontal_scale")
+                self.assertEqual(temp["scale"],20)
+                temp=temp["base"]
                 self.assertEqual(temp["type"],"realscale:valley_temperature")
                 self.assertEqual(temp["height_signal"],f"realscale:terrain_lab/{name}/height_signal")
                 self.assertEqual(temp["radius"],96)
