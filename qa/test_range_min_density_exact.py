@@ -56,7 +56,13 @@ class RangeMinExactTests(unittest.TestCase):
         for filename in ("usgs_big_sur_v2.json",
                          "tva_pr25_measured_climate.json"):
             data=json.loads((DIR/filename).read_text(encoding="utf-8"))
-            node=data["noise_router"]["final_density"]["base"]
+            final=data["noise_router"]["final_density"]
+            if filename=="usgs_big_sur_v2.json":
+                self.assertEqual(final["type"],"realscale:horizontal_scale")
+                self.assertEqual(final["scale"],20)
+                final=final["base"]
+            self.assertEqual(final["type"],"realscale:grand_overworld_caverns")
+            node=final["base"]
             self.assertEqual(node,{
                 "type":"realscale:range_min_exact",
                 "base":ORIGINAL["input"],
@@ -67,8 +73,6 @@ class RangeMinExactTests(unittest.TestCase):
             self.assertEqual(data["noise"]["height"],2096)
             self.assertEqual(data["noise"]["min_y"],-64)
             self.assertTrue(data["aquifers_enabled"])
-            self.assertEqual(data["noise_router"]["final_density"]["type"],
-                             "realscale:grand_overworld_caverns")
 
     def test_registration_and_no_redundant_base_compute(self):
         registry=(SOURCES/"RealScaleMod.java").read_text(encoding="utf-8")
@@ -103,6 +107,9 @@ class RangeMinExactTests(unittest.TestCase):
                      "tva_natural_smoothed.json"):
             node=json.loads((DIR/name).read_text())[
                 "noise_router"]["final_density"]
+            self.assertEqual(node["type"],"realscale:horizontal_scale")
+            self.assertEqual(node["scale"],20)
+            node=node["base"]
             self.assertEqual(node["type"],"realscale:grand_overworld_caverns")
             self.assertNotEqual(node["base"] if isinstance(node["base"],str)
                                 else node["base"].get("type",""),
