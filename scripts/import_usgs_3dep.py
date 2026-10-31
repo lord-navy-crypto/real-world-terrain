@@ -39,7 +39,7 @@ CENTER_LON = -121.81
 
 def build_request(latitude=CENTER_LAT, longitude=CENTER_LON, size=513,
                   spacing=CELL_METRES):
-    """Construct the exact raster geometry, 1 game block = 1 DEM metre."""
+    """Construct exact source-metre raster geometry; worldgen maps X/Z at 20m per block."""
     if size not in GRID_CHOICES or spacing not in CELL_CHOICES:
         raise ValueError("Supported grid sizes 65/129/257/513 at 16m or 32m spacing")
     if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):

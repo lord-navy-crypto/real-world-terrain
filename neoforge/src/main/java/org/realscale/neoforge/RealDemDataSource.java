@@ -15,6 +15,9 @@ import java.util.zip.GZIPInputStream;
  * resolution. The original bundled 16x16 pilot is preserved for legacy
  * worlds. New USGS v2 may load a larger verified external 3DEP dataset.
  *
+ * RGT1 origin, cell spacing, and query coordinates are all source metres.
+ * The worldgen horizontal_scale node converts Minecraft X/Z blocks to those
+ * coordinates at 20 metres per block. Elevation Y remains 1 block per metre.
  * USGS 3DEP samples are interpolated bare-earth elevations, not precise
  * individual survey points. Minecraft sea level 63 corresponds to
  * approximately 0m in the source elevation datum.
@@ -144,6 +147,7 @@ final class RealDemDataSource {
         }
     }
 
+    /** x/z are source metres supplied by the horizontal-scale density wrapper. */
     public double worldSolidYAt(double x,double z) {
         if(legacy!=null)return legacy.worldSolidYAt(x,z);
         double u=(x-originX)/cellMeters,v=(z-originZ)/cellMeters;

@@ -1,75 +1,124 @@
-# RealScale Zonal Latitude and Longitude Climate Model
+# RealScale 1:20 Horizontal Map and Periodic Z-Latitude Climate
 
-## Decision
+## Adopted coordinate model
 
-The default geographic projection is a planar, equirectangular-style map:
+The canonical RealScale world uses a **1:20 horizontal map scale**:
 
-- **X is longitude:** positive X moves east.
-- **Z is latitude:** negative Z moves north; positive Z moves south.
-- **Y is elevation.**
-- **equator_z** anchors latitude 0°.
-- **prime_meridian_x** anchors longitude 0°.
+- Minecraft X block coordinates are converted to source-map metres by multiplying by 20.
+- Minecraft Z block coordinates are converted to source-map metres by multiplying by 20.
+- Y is elevation and is intentionally unchanged.
+- **Z is the only geographic coordinate used by the climate model.**
+- X is horizontally scaled with Z to preserve the map's horizontal aspect ratio, but no longitude is calculated and X adds no climate term.
+- The old concentric/radial latitude algorithms remain available as opt-in experiments.
 
-The former concentric-ring model remains registered and available for experimental and historical world presets. The four current canonical climate profiles now use the Z-axis zonal model; the four opt-in PR #25 historical profiles intentionally retain their radial model.
+The scale is applied to the roots of the active noise router by
+`realscale:horizontal_scale`. The density wrapper uses a reusable per-thread
+context pool; it does not allocate a new context object for each density
+sample. It scales X/Z only and delegates Y unchanged.
 
-## Coordinate conversion
+This is a horizontal compaction, not a fully isotropic 3D scale: terrain
+elevations remain 1 block per source metre while horizontal distances use
+20 source metres per block. The resulting relief is vertically exaggerated
+relative to its horizontal footprint by a factor of 20. This is intentional
+for the current design and must be considered when evaluating measured DEM
+terrain and slopes.
 
-At one Minecraft block per metre, the meridional quarter-distance is
-**Q = 10,001,966 blocks**. The equatorial circumference used for longitude
-wrapping is **C = 40,075,017 blocks**.
+## Earth-scale latitude constants
 
-Latitude is finite and clamped at the poles:
+The meridional quarter-distance remains the physical Earth value:
 
-`latitude_deg = 90 * clamp((equator_z - Z) / Q, -1, 1)`
+`Q = 10,001,966 source metres`
 
-Longitude increases eastward and wraps to [-180°, 180°):
+At 20 source metres per Minecraft block:
 
-`longitude_deg = wrap_[-180,180)(360 * (X - prime_meridian_x) / C)`
+- Equator to either pole: `Q / 20 = 500,098.3 blocks` (about 500,098 blocks).
+- Equator to the opposite equator: about 1,000,197 blocks.
+- Full latitude cycle: `4Q / 20 = 2,000,393.2 blocks`.
 
-Here `equator_z` is the equator Z and `prime_meridian_x` is the prime-meridian X.
-The finite latitude clamp is intentional: moving beyond either pole stays in
-that polar climate instead of repeating another equator and hemisphere. The
-old periodic triangle-wave method remains unchanged for older serialized settings.
+The density node stores `pole_distance` and `equator_z` in source metres.
+The horizontal-scale wrapper supplies source-metre Z coordinates to the
+latitude node. This keeps the geographic constants independent of the
+Minecraft block scale.
 
-The projection is a rectangular map, not a sphere. Minecraft keeps equal block
-spacing in X at every Z, so east-west ground-distance distortion increases
-toward the poles. Longitude is a geographic coordinate and future
-regional-field input; it is **not** used as a direct baseline temperature control.
+## Periodic latitude sequence
 
-## Climate calculation
+Let `Z` be the Minecraft Z coordinate, `S=20` the horizontal scale,
+`Z_e` the equator coordinate in source metres, and `Q` the quarter-meridian
+distance. The periodic phase is:
 
-The existing temperature noise remains the regional baseline. The zonal node applies the same balanced latitude and altitude treatment previously used by the canonical radial profiles:
+`p = mod((Z_e - S*Z) / Q, 4)`
 
-[
-T_{	ext{lat}} =
-T_{	ext{base}}+
-sleft(0.22-0.90sin^{1.35}(|phi|)ight)
-]
+The signed latitude is:
 
-The balanced layer retains the tropical/temperate buffers and altitude-cooling refund. The existing mountain-basin, valley, basin, and climate-budget nodes remain separate layers. The climate budget limits the combined correction; it does not claim global energy conservation or a fixed global biome-area fraction.
+- `90p` when `0 <= p <= 1`
+- `90(2-p)` when `1 < p <= 3`
+- `90(p-4)` when `3 < p < 4`
 
-Latitude controls the broad annual-mean temperature pattern. X-dependent noise, continentalness, local moisture, the ocean/land layout, and terrain remain available to create regional differences at the same latitude. No longitude-only temperature gradient is added.
+This produces one continuous full cycle:
 
-This is a static world-generation climate approximation. It does not simulate seasonal axial tilt, weather, dynamic winds, or time-evolving ocean currents.
+`equator 0° -> north pole +90° -> opposite equator 0° -> south pole -90° -> original equator 0°`
 
-## Default profile anchors
+The sequence repeats every approximately 2,000,393 Minecraft blocks along Z.
+There is no polar clamp in the canonical presets. The old clamped calculation
+remains available for legacy serialized settings.
 
-| World profile | Equator Z | Prime-meridian X | Purpose |
-|---|---:|---:|---|
-| TVA Natural | 0 | 0 | Synthetic global map |
-| TVA Alpine | 0 | 0 | Synthetic global map |
-| TVA Canyon | 0 | 0 | Synthetic global map |
-| USGS Big Sur v2 | 4,027,458 | 13,559,827 | Nominal project source anchor: 36.24°N, 121.81°W |
+The annual-mean temperature response is symmetric across hemispheres:
+the climate correction uses the absolute value of latitude. The signed
+latitude is retained by the coordinate function to distinguish north and
+south in diagnostics and future geography work.
 
-The Big Sur offsets follow the project's documented default USGS import anchor. A custom measured DEM imported at a different latitude/longitude must be recalibrated from its own manifest; local DEM coordinates alone do not establish geodetic position.
+## Default profiles
+
+| Profile | Equator Z (source metres) | Pole distance (source metres) |
+|---|---:|---:|
+| TVA Natural | 0 | 10,001,966 |
+| TVA Alpine | 0 | 10,001,966 |
+| TVA Canyon | 0 | 10,001,966 |
+| USGS Big Sur v2 | 4,027,458 | 10,001,966 |
+
+The Big Sur anchor preserves the project's documented source centre at
+36.24°N. At local Minecraft Z=0, the source coordinate is 36.24°N.
+No prime-meridian/X offset is stored or used by the climate model.
+
+## Climate and regional variation
+
+Latitude controls the broad annual-mean temperature pattern. Existing
+temperature noise, continentalness, moisture, ocean/land layout, terrain
+elevation, mountain-basin effects, valley warming, basin warming, and climate
+budget remain separate inputs. X-dependent terrain and noise can still create
+regional variation, but X is not converted to longitude and does not create
+a longitude-driven climate gradient.
+
+This remains a static world-generation climate approximation. It does not
+simulate seasonal axial tilt, time-varying weather, dynamic winds, or
+time-evolving ocean currents.
+
+## USGS measured terrain
+
+The DEM remains stored in source metres. The horizontal-scale wrapper passes
+`X*20` and `Z*20` into the measured DEM density, so a source grid with
+16 m cells has an effective 0.8-block spacing and a 32 m grid has a 1.6-block
+spacing. The existing interpolation evaluates the original measured samples
+in source coordinates. Elevation values remain 1:1 in Y.
 
 ## Compatibility and validation
 
-- Existing latitude-temperature records without clamp, balanced, or prime-meridian fields retain their prior defaults.
-- The new default profiles use pole clamping, balanced latitude response, and the Earth-scale quarter-meridian.
-- Existing radial codecs and equal-area algorithms are unchanged.
-- Historical tva_pr25_*_climate profiles remain opt-in and radial.
-- Tests cover pole clamping, longitude wrapping, Big Sur's nominal anchor, default density-graph wiring, and radial regression parity.
+- Existing worlds and their saved datapacks are not modified in place.
+- The canonical four profiles use the horizontal scale wrapper and periodic
+  Z-latitude.
+- Terrain Lab unwraps and re-wraps the temperature node exactly once when it
+  creates a new climate density function.
+- Terrain Lab equator and radial-center inputs are entered in Minecraft
+  blocks and converted to source metres at export.
+- The optional legacy `prime_meridian_x` codec field is retained only so old
+  datapacks can still be decoded; it is not calculated.
+- Existing radial codecs and equal-area algorithms are unchanged. Their
+  center coordinates are interpreted in source metres when used inside the
+  1:20-scaled worldgen router.
+- Historical PR25 radial profiles remain opt-in and are not silently rewritten.
+- Tests cover horizontal coordinate scaling, periodic latitude landmarks,
+  north/south temperature symmetry, canonical density graph wiring, DEM
+  source-coordinate mapping, and radial regression parity.
 
 ## Scientific references
 
