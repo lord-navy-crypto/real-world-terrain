@@ -36,7 +36,7 @@ class NorthSouthDefaultClimateTest(unittest.TestCase):
                 self.assertEqual(radial,[],"radial latitude must not drive a shipped surface profile")
                 lat=latitude[0]
                 self.assertEqual(lat["equator_z"],0)
-                self.assertEqual(lat["pole_distance"],8192)
+                self.assertEqual(lat["pole_distance"],500098)
                 self.assertEqual(lat["strength"],0.58)
                 self.assertEqual(d["sea_level"],63)
                 self.assertEqual(d["noise_router"]["final_density"]["type"],
@@ -63,7 +63,7 @@ class NorthSouthDefaultClimateTest(unittest.TestCase):
                 self.assertEqual(len(found),1)
                 self.assertEqual(found[0]["type"],"realscale:latitude_temperature")
                 self.assertEqual(found[0]["equator_z"],0)
-                self.assertEqual(found[0]["pole_distance"],8192)
+                self.assertEqual(found[0]["pole_distance"],500098)
 
     def test_natural_preserves_mountain_basin_and_climate_budget_layers(self):
         d=json.loads((NOISE/"tva_natural_smoothed.json").read_text())
