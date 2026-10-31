@@ -59,15 +59,9 @@ public final class SkyOceanBiomeSource extends BiomeSource {
             ResourceLocation.fromNamespaceAndPath("realscale","sky_blossom_isles")));
     }
     private BiomeSource source(){return source;}
-    /** Preserve sky island placement for nested optional invasion presets. */
+    /** Preserve sky island placement for nested optional Geo Wonders presets. */
     public boolean containsGeoWonders() {
         return source instanceof GeoWondersBiomeSource;
-    }
-    public boolean containsCrossRealm() {
-        return source instanceof CrossRealmBiomeSource
-                || source instanceof CrossRealmShowcaseBiomeSource
-                || source instanceof GeoWondersBiomeSource wonders
-                   && wonders.containsCrossRealm();
     }
     @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {

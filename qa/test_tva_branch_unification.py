@@ -29,8 +29,6 @@ FAMILIES={
     "Natural wonders opt-in":("GeoWonderRegionFeature.java",
                     "EarthWonderFeature.java","CaveWonderNetworkFeature.java",
                     "GeoWondersBiomeSource.java"),
-    "Six-direction invasive habitats":("CrossRealmBiomeSource.java",
-                    "CrossRealmTerrainPatchFeature.java"),
 }
 
 class BranchFamilyUnificationTest(unittest.TestCase):

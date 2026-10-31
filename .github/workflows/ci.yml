@@ -233,11 +233,11 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_geo_wonder_regions.py' -v
       - name: Verify NeoForge experimental world uses authenticated save and stop
         run: python3 -m unittest discover -s qa -p 'test_geo_wonders_rcon_shutdown.py' -v
-      - name: Ensure canonical sacred timeline excludes experimental geology and invasion
+      - name: Ensure canonical sacred timeline excludes experimental geology and preserves three realms
         run: python3 -m unittest discover -s qa -p 'test_sacred_timeline_promotions.py' -v
-      - name: Verify woven opt-in Wonders + invasion and preserved performance cache
+      - name: Verify independent opt-in Natural Wonders and preserved performance cache
         run: python3 -m unittest discover -s qa -p 'test_tva_woven_optional_features.py' -v
-      - name: Verify Natural Wonders and six-way invasion registrations and safety gates
+      - name: Verify Natural Wonders registrations and safety gates
         run: python3 -m unittest discover -s qa -p 'test_natural_wonders*.py' -v
       - name: Validate mountain cave microhabitats, legacy features and roof safety
         run: python3 -m unittest discover -s qa -p 'test_highland_cave_recovery.py' -v

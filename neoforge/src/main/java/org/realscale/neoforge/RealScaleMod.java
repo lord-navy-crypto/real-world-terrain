@@ -3,6 +3,7 @@ package org.realscale.neoforge;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.RegisterEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 
@@ -12,6 +13,7 @@ public final class RealScaleMod {
         RealScaleVehicles.register(bus);
         bus.addListener(RealScaleStructurePacks::register);
         bus.addListener(this::registerDensity);
+        NeoForge.EVENT_BUS.addListener(RealScaleSpawnPosition::onCreateSpawnPosition);
     }
     private void registerDensity(RegisterEvent event) {
         event.register(Registries.DENSITY_FUNCTION_TYPE, helper -> {
@@ -44,15 +46,7 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones"),
                     NaturalEcotoneBiomeSource.CODEC)
         );
-        event.register(Registries.BIOME_SOURCE, helper ->
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cross_realm_showcase"),
-                    CrossRealmShowcaseBiomeSource.CODEC)
-        );
-        event.register(Registries.BIOME_SOURCE, helper ->
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cross_realm_invasion"),
-                    CrossRealmBiomeSource.CODEC)
-        );
-        event.register(Registries.BIOME_SOURCE, helper ->
+event.register(Registries.BIOME_SOURCE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_ocean"),
                     SkyOceanBiomeSource.CODEC)
         );
@@ -80,24 +74,6 @@ public final class RealScaleMod {
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.UPLAND_SCREE));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "coastal_driftwood"),
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.COASTAL_DRIFTWOOD));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_nether_overworld"),
-                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.NETHER_IN_OVERWORLD));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_end_overworld"),
-                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.END_IN_OVERWORLD));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_overworld_nether"),
-                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.OVERWORLD_IN_NETHER));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_end_nether"),
-                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.END_IN_NETHER));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_overworld_end"),
-                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.OVERWORLD_IN_END));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_nether_end"),
-                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.NETHER_IN_END));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_nether"),
-                    new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.NETHER));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_end"),
-                    new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.END));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_overworld"),
-                    new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.OVERWORLD));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_blossom_island"),
                     new SkyIslandFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"),

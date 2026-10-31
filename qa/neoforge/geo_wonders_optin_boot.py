@@ -5,22 +5,19 @@ import pathlib
 import signal
 import os
 from rcon_worldgen_smoke import Rcon
+from realscale_headless_qa import read_nbt
 import subprocess
 import threading
 import time
 
 ROOT=pathlib.Path(__file__).resolve().parents[2]/"neoforge"
-# Both opt-ins must pass actual server codec, RCON save and Anvil checks.
-# A dedicated world directory prevents mixed evidence between matrix jobs.
+# The independent Natural Wonders opt-in must pass real server codec,
+# authenticated RCON save, and Anvil persistence checks.
 PROFILE=os.environ.get("REALSCALE_WONDERS_PROFILE","natural-wonders")
-PRESETS={
-    "natural-wonders":("tva_natural_wonders_experimental_three_realms","geo-wonders-lab"),
-    "woven-wonders-invasion":("tva_wonders_invasion_three_realms","tva-wonders-invasion-lab"),
-}
-if PROFILE not in PRESETS:
-    raise SystemExit("Unknown opt-in world QA profile: "+PROFILE)
-preset_name,world_name=PRESETS[PROFILE]
-PRESET="realscale:"+preset_name
+if PROFILE != "natural-wonders":
+    raise SystemExit("Only the independent natural-wonders profile is supported")
+world_name="geo-wonders-lab"
+PRESET="realscale:tva_natural_wonders_experimental_three_realms"
 for folder in ("run","run/server","run/gametestserver"):
     directory=ROOT/folder
     directory.mkdir(parents=True,exist_ok=True)
@@ -85,10 +82,19 @@ finally:
 worlds=list((ROOT/"run").glob("**/"+world_name+"/level.dat"))
 if not worlds: raise AssertionError("No persisted Geo Wonders world")
 text=gzip.decompress(worlds[0].read_bytes())
+level_data=read_nbt(text).get("Data",{})
+spawn_x=int(level_data.get("SpawnX",0))
+spawn_y=int(level_data.get("SpawnY",-9999))
+spawn_z=int(level_data.get("SpawnZ",0))
+if not (65<=spawn_y<=127):
+    raise AssertionError("RealScale initial spawn is outside the low-to-mid elevation band: "+str((spawn_x,spawn_y,spawn_z)))
+if spawn_x*spawn_x+spawn_z*spawn_z>384*384+64:
+    raise AssertionError("RealScale initial spawn is outside the bounded search radius: "+str((spawn_x,spawn_y,spawn_z)))
+if "RealScale selected initial spawn" not in "".join(log):
+    raise AssertionError("NeoForge did not report selecting a RealScale initial spawn")
+print("REALSCALE_SMART_SPAWN_PERSISTED",spawn_x,spawn_y,spawn_z,flush=True)
 required=[b"realscale:geo_wonders_opt_in",b"realscale:sky_ocean",
           b"realscale:grand_nether",b"realscale:grand_end"]
-if PROFILE=="woven-wonders-invasion":
-    required.append(b"realscale:cross_realm_invasion")
 for expected in required:
     if expected not in text:
         raise AssertionError("Experimental source missing from persisted world: "+expected.decode())
