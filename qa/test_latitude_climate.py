@@ -120,10 +120,9 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertEqual(t["scale"],20)
         t=t["base"]
         self.assertEqual(t["type"],"realscale:basin_temperature")
-        self.assertEqual(t["base"]["type"],"realscale:valley_temperature")
-        self.assertEqual(t["base"]["base"]["type"],"realscale:latitude_temperature")
-        self.assertEqual(t["base"]["base"]["pole_distance"],10_001_966)
-        self.assertFalse(t["base"]["base"]["clamp_at_poles"])
+        self.assertEqual(t["base"]["type"],"realscale:latitude_temperature")
+        self.assertEqual(t["base"]["pole_distance"],10_001_966)
+        self.assertFalse(t["base"]["clamp_at_poles"])
 
     def test_concentric_earth_radius_and_climate_budget(self):
         name,opts,outputs=self.make(
