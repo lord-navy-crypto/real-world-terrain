@@ -186,13 +186,14 @@ class LatitudeClimateTests(unittest.TestCase):
         src=ROOT/"neoforge/src/main/java/org/realscale/neoforge"
         mod=(src/"RealScaleMod.java").read_text()
         screen=(src/"RealScaleTerrainLabClient.java").read_text()
-        for name in ("latitude_temperature","basin_temperature","radial_latitude_temperature","climate_budget"):
+        for name in ("horizontal_scale","latitude_temperature","basin_temperature","radial_latitude_temperature","climate_budget"):
             self.assertIn('"'+name+'"',mod)
         self.assertIn('Latitude Climate Cycle',screen)
         self.assertIn('Enclosed Basin Warming (Optional)',screen)
         self.assertIn('equatorZ',screen)
         self.assertIn('radial_preview',screen)
-        self.assertIn('Z-axis zonal latitude',screen)
+        self.assertIn('1:20 horizontal map scale',screen)
+        self.assertIn('X is not used for climate',screen)
         self.assertIn('Radial Cold Climate Limit',screen)
 
 
@@ -205,7 +206,7 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertEqual(radial["type"],"realscale:radial_latitude_temperature")
         self.assertTrue(radial["balanced"])
         self.assertTrue(radial["area_balanced"])
-        self.assertEqual(radial["pole_distance"],8192)
+        self.assertEqual(radial["pole_distance"],163_840)
         self.assertEqual(radial["altitude_cooling"],.585)
         self.assertEqual(options["latitude"],"radial_equal_area")
         old_name,old_options,old_files=self.make(
@@ -232,7 +233,7 @@ class LatitudeClimateTests(unittest.TestCase):
         self.assertTrue(profile["single_pole_area"])
         self.assertTrue(profile["area_balanced"])
         self.assertTrue(profile["balanced"])
-        self.assertEqual(profile["pole_distance"],8192)
+        self.assertEqual(profile["pole_distance"],163_840)
         self.assertEqual(opts["latitude"],"radial_equal_area_single_pole")
         old_name,_,old_out=self.make(latitude="radial_equal_area",
                                     latitude_strength=70,cold_limit=0)
