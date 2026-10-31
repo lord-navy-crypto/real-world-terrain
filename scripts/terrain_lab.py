@@ -327,6 +327,15 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     original_settings=jread(root,GEO_ROOT/"noise_settings"/(source+".json"))
     if original_settings["sea_level"]!=63:raise ValueError("Refuse to modify a non-Y63 preset")
     noise=replace_refs(original_settings,repl)
+    horizontal_scale=HORIZONTAL_SCALE if preset in FAMILIES else 1
+    if preset in FAMILIES:
+        # Normalize any source wrappers first, then apply exactly one wrapper
+        # to each completed router root after all Terrain Lab edits are made.
+        for key,value in list(noise["noise_router"].items()):
+            if isinstance(value,dict) and value.get("type")=="realscale:horizontal_scale":
+                if value.get("scale")!=horizontal_scale:
+                    raise ValueError("Source preset has a conflicting horizontal scale: "+preset)
+                noise["noise_router"][key]=value["base"]
     # Extra upper-mountain cave corridors for newly generated Lab presets only.
     # The existing caves use a terrain-density window and high-density closure,
     # which can leave tall mountain interiors largely solid. Extend exploration
@@ -421,13 +430,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     # unchanged; high-altitude quart-biome samples are cooled smoothly.
     if climate or valley or basin or (latitude != "off" and latitude_strength):
         temperature_id=density_id+"/biome_temperature"
-        temperature_node=copy.deepcopy(noise["noise_router"]["temperature"])
-        horizontal_scale=1
-        if isinstance(temperature_node,dict) and temperature_node.get("type")=="realscale:horizontal_scale":
-            horizontal_scale=temperature_node["scale"]
-            temperature_before=copy.deepcopy(temperature_node["base"])
-        else:
-            temperature_before=temperature_node
+        temperature_before=copy.deepcopy(noise["noise_router"]["temperature"])
         cool=round(climate*0.009,6)
         noise["noise_router"]["temperature"]=temperature_id
     if inland:
@@ -503,7 +506,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                     "base":temp_value,
                     "center_x":center_x*horizontal_scale,
                     "center_z":equator_z*horizontal_scale,
-                    "pole_distance":10_001_966 if latitude=="radial_earth" else (163_840 if latitude in ("radial_balanced","radial_equal_area","radial_equal_area_single_pole") else 327_680),
+                    "pole_distance":10_001_966 if latitude=="radial_earth" else ((8_192 if latitude in ("radial_balanced","radial_equal_area","radial_equal_area_single_pole") else 16_384)*horizontal_scale),
                     "strength":round(latitude_strength/100.0,5),
                     **({"balanced":True,"altitude_cooling":cool} if latitude in ("radial_balanced","radial_equal_area","radial_equal_area_single_pole") else {}),
                     **({"area_balanced":True} if latitude in ("radial_equal_area","radial_equal_area_single_pole") else {}),
@@ -515,7 +518,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                     "type":"realscale:latitude_temperature",
                     "base":temp_value,
                     "equator_z":equator_z*horizontal_scale,
-                    "pole_distance":10_001_966 if latitude=="earth" else 327_680,
+                    "pole_distance":10_001_966 if latitude=="earth" else 16_384*horizontal_scale,
                     "strength":round(latitude_strength/100.0,5),
                     # Periodic full-earth cycle: equator -> north pole -> opposite
                     # equator -> south pole -> original equator.
@@ -560,6 +563,20 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
             "base":temp_value,
             "scale":horizontal_scale
         }
+    if preset in FAMILIES:
+        for key,value in list(noise["noise_router"].items()):
+            # The new biome_temperature reference already points to a
+            # horizontal_scale wrapper written above; do not wrap it twice.
+            if key=="temperature" and value==density_id+"/biome_temperature":
+                continue
+            if isinstance(value,dict) and value.get("type")=="realscale:horizontal_scale":
+                continue
+            if isinstance(value,(dict,str)):
+                noise["noise_router"][key]={
+                    "type":"realscale:horizontal_scale",
+                    "base":value,
+                    "scale":horizontal_scale
+                }
     return name,options,output
 
 def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False):
