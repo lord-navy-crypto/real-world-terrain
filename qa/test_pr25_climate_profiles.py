@@ -28,8 +28,9 @@ class PR25CompleteClimateRecovery(unittest.TestCase):
                 self.assertEqual(basin["type"],"realscale:basin_temperature")
                 self.assertEqual(basin["base"]["type"],"realscale:valley_temperature")
                 self.assertEqual(basin["base"]["base"]["type"],
-                                 "realscale:radial_latitude_temperature")
-                self.assertTrue(basin["base"]["base"]["area_balanced"])
+                                 "realscale:latitude_temperature")
+                self.assertEqual(basin["base"]["base"]["equator_z"], 0)
+                self.assertEqual(basin["base"]["base"]["pole_distance"], 8192)
                 self.assertEqual(alternative["dimensions"]["minecraft:overworld"]["generator"]["settings"],
                                  "realscale:"+key)
                 self.assertEqual(alternative["dimensions"]["minecraft:the_nether"],
