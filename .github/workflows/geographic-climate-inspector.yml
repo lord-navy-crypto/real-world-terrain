@@ -31,6 +31,8 @@ jobs:
         run: |
           python3 qa/verify_repository.py
           python3 -m unittest discover -s qa -p 'test_geographic_climate_inspector.py' -v
+          python3 -m unittest discover -s qa -p 'test_world_atlas_feature.py' -v
+          python3 -m unittest discover -s qa -p 'test_lod_stack_audit.py' -v
       - name: Run pure Java latitude-belt boundary tests
         run: |
           mkdir -p build/geographic-climate-inspector
@@ -41,7 +43,7 @@ jobs:
           java -cp build/geographic-climate-inspector org.realscale.neoforge.GeographicClimateMathSmoke
       - name: Build NeoForge 1.21.1 test JAR
         working-directory: neoforge
-        run: gradle --no-daemon --stacktrace build
+        run: gradle --no-daemon --stacktrace clean build
       - name: Verify installable JAR contains the inspector and test version
         run: |
           python3 - <<'PY'
@@ -59,6 +61,16 @@ jobs:
               names = set(archive.namelist())
               for name in expected:
                   assert name in names, name
+              forbidden = (
+                  "dhchunkyguard", "DhChunkyGuardMod.class",
+                  "ChunkyLifecycleSetupMixin.class",
+                  "WorldAtlasBackgroundPainter.class",
+                  "WorldAtlasHeightmapReader.class",
+              )
+              assert not any(any(token in name for token in forbidden) for name in names)
+              atlas = archive.read("org/realscale/neoforge/WorldAtlasMapScreen.class")
+              assert b"WorldAtlasBackgroundPainter" not in atlas
+              assert b"dhchunkyguard" not in atlas.lower()
               metadata = archive.read("META-INF/neoforge.mods.toml")
               assert b"2.0.0-preview.2-test.9" in metadata
           print("GEOGRAPHIC_CLIMATE_INSPECTOR_JAR_PASS", jars[0])

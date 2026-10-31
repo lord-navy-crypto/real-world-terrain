@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract checks for the read-only World Atlas and saved-terrain drawing."""
+"""Contract checks for the strictly read-only World Atlas."""
 import json
 import unittest
 from pathlib import Path
@@ -28,27 +28,31 @@ class WorldAtlasFeatureTest(unittest.TestCase):
         self.assertNotIn("ChunkGenerator",source)
         self.assertNotIn("server.execute(",source)
 
-    def test_readonly_atlas_has_no_chunky_command_adapter_or_launcher(self):
+    def test_no_generation_painter_or_preload_controls(self):
         screen=(SRC/"WorldAtlasMapScreen.java").read_text()
         self.assertIn("CompletableFuture.supplyAsync(",screen)
         self.assertIn("WorldAtlasRegionIndex.scan(",screen)
-        self.assertNotIn("Chunky",screen)
-        self.assertNotIn("chunky",screen.lower())
-        self.assertNotIn("setClipboard",screen)
-        for unsafe in ("ProcessBuilder(","Runtime.getRuntime().exec(",
-                       "createWorldOpenFlows()", "loadLevel(",
-                       "getChunk(", "ServerChunkCache"):
-            self.assertNotIn(unsafe,screen)
-        self.assertIn('realscale.atlas.coverage_only',screen)
+        for forbidden in ("WorldAtlasBackgroundPainter","WorldAtlasHeightmapReader",
+                          "Chunky","DistantHorizons","startDrawing","togglePause",
+                          "ProcessBuilder(","Runtime.getRuntime().exec(",
+                          "createWorldOpenFlows()","loadLevel(","getChunk("):
+            self.assertNotIn(forbidden,screen)
 
-    def test_english_chinese_atlas_labels(self):
-        keys=("entry","title","empty","back","refresh","scanning",
-              "coverage_only")
+    def test_removed_addon_and_painter_sources_are_absent(self):
+        for relative in (
+            "dh-chunky-guard",
+            "neoforge/src/main/java/org/realscale/neoforge/WorldAtlasBackgroundPainter.java",
+            "neoforge/src/main/java/org/realscale/neoforge/WorldAtlasHeightmapReader.java",
+        ):
+            self.assertFalse((ROOT/relative).exists(),relative)
+
+    def test_english_chinese_atlas_labels_and_no_draw_controls(self):
+        keys=("entry","title","empty","back","refresh","scanning","coverage_only")
         for name in ("en_us","zh_cn"):
             data=json.loads((RES/(name+".json")).read_text())
             for key in keys:
-                self.assertTrue(data.get("realscale.atlas."+key),
-                                name+" missing "+key)
+                self.assertTrue(data.get("realscale.atlas."+key),name+" missing "+key)
+            self.assertFalse(any(k.startswith("realscale.atlas.draw_") for k in data))
 
 if __name__=="__main__":
     unittest.main()

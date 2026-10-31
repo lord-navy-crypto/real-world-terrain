@@ -1,8 +1,0 @@
-{
-  "required": true,
-  "minVersion": "0.8",
-  "compatibilityLevel": "JAVA_21",
-  "package": "org.realscale.compat.dhchunky.mixin",
-  "mixins": ["ChunkyLifecycleSetupMixin"],
-  "injectors": {"defaultRequire": 1}
-}
