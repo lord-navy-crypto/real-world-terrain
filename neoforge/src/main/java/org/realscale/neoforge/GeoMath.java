@@ -123,10 +123,13 @@ final class GeoMath {
 
     static double balancedLatitudeTemperature(double original,double latitude,double strength,
                                               double altitudeCooling,int y){
-        double baseline=latitudeTemperature(original,latitude,strength);
-        double tropical=1.0-smoothstep(12.0,37.0,latitude);
-        double temperate=smoothstep(18.0,38.0,latitude)
-                         *(1.0-smoothstep(47.0,67.0,latitude));
+        // Latitude carries a hemisphere sign for geographic labeling, but the
+        // annual-mean zonal climate response must be symmetric north/south.
+        double absoluteLatitude=Math.abs(latitude);
+        double baseline=latitudeTemperature(original,absoluteLatitude,strength);
+        double tropical=1.0-smoothstep(12.0,37.0,absoluteLatitude);
+        double temperate=smoothstep(18.0,38.0,absoluteLatitude)
+                         *(1.0-smoothstep(47.0,67.0,absoluteLatitude));
         double altitude=smoothstep(96.0,320.0,y);
         // The tropics and temperate belt are both active: distribute a small
         // additional warm/temperate climate signal smoothly, not by hard

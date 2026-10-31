@@ -39,8 +39,12 @@ public final class ZonalLatitudeClimateSmoke {
 
         double equatorial=GeoMath.balancedLatitudeTemperature(0,0,0.58,0.42,320);
         double polar=GeoMath.balancedLatitudeTemperature(0,90,0.58,0.42,320);
+        double northernMidLatitude=GeoMath.balancedLatitudeTemperature(0,40,0.58,0.42,320);
+        double southernMidLatitude=GeoMath.balancedLatitudeTemperature(0,-40,0.58,0.42,320);
         check(Double.isFinite(equatorial)&&Double.isFinite(polar),"finite climate values");
         check(equatorial>polar,"latitude must cool toward poles");
+        close(northernMidLatitude,southernMidLatitude,1e-12,
+                "annual-mean climate must be symmetric across hemispheres");
 
         System.out.println("ZONAL_LATITUDE_LONGITUDE_CLIMATE_PASS");
     }
