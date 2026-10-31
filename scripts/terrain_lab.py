@@ -485,6 +485,18 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                                           "to_value":1.0}}
             }
         if latitude != "off" and latitude_strength:
+            # Replace the inherited latitude node instead of stacking a second
+            # climate gradient on top of the preset's default 1:20 latitude.
+            def strip_latitude_nodes(node):
+                if isinstance(node,dict):
+                    if node.get("type") in ("realscale:latitude_temperature",
+                                             "realscale:radial_latitude_temperature"):
+                        return strip_latitude_nodes(node.get("base",0))
+                    return {key:strip_latitude_nodes(value) for key,value in node.items()}
+                if isinstance(node,list):
+                    return [strip_latitude_nodes(value) for value in node]
+                return node
+            temp_value=strip_latitude_nodes(temp_value)
             if latitude.startswith("radial_"):
                 temp_value={
                     "type":"realscale:radial_latitude_temperature",
