@@ -9,14 +9,12 @@ import net.minecraft.world.level.levelgen.DensityFunction;
 /**
  * Zonal geographic temperature field for a planar/equirectangular-style world map.
  *
- * X increases east and is converted to longitude around primeMeridianX.
- * Z increases south: equatorZ is 0 degrees, negative Z is north, positive Z
- * is south. clampAtPoles=true gives one finite north-to-south world strip and
- * holds polar climate beyond either pole. Missing optional fields preserve
- * the older periodic LatitudeTemperatureDensity behavior.
- *
- * Longitude is coordinate metadata for future regional fields; it does not
- * directly change the baseline annual-mean temperature.
+ * Z is the sole geographic climate coordinate: negative Z is north and
+ * positive Z is south. The enclosing horizontal_scale density node converts
+ * Minecraft X/Z blocks to source metres at 20 metres per horizontal block.
+ * The latitude field remains periodic: equator -> north pole -> opposite
+ * equator -> south pole -> original equator. The optional legacy
+ * prime_meridian_x field is decoded for older datapacks and ignored.
  */
 public record LatitudeTemperatureDensity(
         DensityFunction base,
@@ -33,7 +31,7 @@ public record LatitudeTemperatureDensity(
         RecordCodecBuilder.mapCodec(i -> i.group(
             DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base")
                 .forGetter(LatitudeTemperatureDensity::base),
-            Codec.intRange(-29_000_000,29_000_000).fieldOf("equator_z")
+            Codec.intRange(-600_000_000,600_000_000).fieldOf("equator_z")
                 .forGetter(LatitudeTemperatureDensity::equatorZ),
             Codec.intRange(1024,10_001_966).fieldOf("pole_distance")
                 .forGetter(LatitudeTemperatureDensity::poleDistance),
@@ -57,11 +55,6 @@ public record LatitudeTemperatureDensity(
         return clampAtPoles
             ? GeoMath.clampedLatitudeDeg(z,equatorZ,poleDistance)
             : GeoMath.latitudeDeg(z,equatorZ,poleDistance);
-    }
-
-    /** Longitude in degrees at a world X coordinate; east is positive. */
-    public double longitudeAtX(int x) {
-        return GeoMath.longitudeDeg(x,primeMeridianX);
     }
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {

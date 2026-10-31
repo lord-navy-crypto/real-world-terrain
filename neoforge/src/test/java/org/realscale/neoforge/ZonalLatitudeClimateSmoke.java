@@ -11,29 +11,30 @@ public final class ZonalLatitudeClimateSmoke {
                 reason+": "+actual+" vs "+expected);
     }
     public static void main(String[] args) {
-        final int quarterMeridian=10_001_966;
-        final int equatorialCircumference=40_075_017;
+        final int quarterMeridianMeters=10_001_966;
+        final int horizontalScale=20;
+        final int poleDistanceBlocks=(int)Math.round(
+                quarterMeridianMeters/(double)horizontalScale);
 
-        close(GeoMath.clampedLatitudeDeg(0,0,quarterMeridian),0,0,"equator");
-        close(GeoMath.clampedLatitudeDeg(-quarterMeridian,0,quarterMeridian),90,0,"north pole");
-        close(GeoMath.clampedLatitudeDeg(quarterMeridian,0,quarterMeridian),-90,0,"south pole");
-        close(GeoMath.clampedLatitudeDeg(-2*quarterMeridian,0,quarterMeridian),90,0,
-                "north polar cap must clamp");
-        close(GeoMath.clampedLatitudeDeg(2*quarterMeridian,0,quarterMeridian),-90,0,
-                "south polar cap must clamp");
-        close(GeoMath.clampedLatitudeDeg(0,4_027_458,quarterMeridian),36.24,0.001,
+        close(GeoMath.scaleHorizontalCoordinate(12345,horizontalScale),246900,0,
+                "X horizontal 1:20 scale");
+        close(GeoMath.scaleHorizontalCoordinate(-12345,horizontalScale),-246900,0,
+                "Z horizontal 1:20 scale");
+
+        close(GeoMath.latitudeDeg(0,0,quarterMeridianMeters),0,0,"initial equator");
+        close(GeoMath.latitudeDeg(-poleDistanceBlocks*horizontalScale,0,quarterMeridianMeters),
+                90,0.001,"north pole");
+        close(GeoMath.latitudeDeg(-2*poleDistanceBlocks*horizontalScale,0,quarterMeridianMeters),
+                0,0.001,"opposite equator");
+        close(GeoMath.latitudeDeg(-3*poleDistanceBlocks*horizontalScale,0,quarterMeridianMeters),
+                -90,0.001,"south pole");
+        close(GeoMath.latitudeDeg(-4*poleDistanceBlocks*horizontalScale,0,quarterMeridianMeters),
+                0,0.001,"return to original equator");
+
+        close(GeoMath.latitudeDeg(0,4_027_458,quarterMeridianMeters),36.24,0.001,
                 "Big Sur nominal latitude anchor");
 
-        close(GeoMath.longitudeDeg(0,0),0,0,"prime meridian");
-        close(GeoMath.longitudeDeg(10_018_754,0),90,0.001,"east quarter-turn");
-        close(GeoMath.longitudeDeg(-10_018_754,0),-90,0.001,"west quarter-turn");
-        close(GeoMath.longitudeDeg(equatorialCircumference,0),0,0.001,"longitude wraps");
-        close(GeoMath.longitudeDeg(0,13_559_827),-121.81,0.001,
-                "Big Sur nominal longitude anchor");
-
-        // The old periodic latitude and every radial geometry remain available.
-        close(GeoMath.latitudeDeg(-2*quarterMeridian,0,quarterMeridian),0,0,
-                "legacy periodic latitude semantics");
+        // The old concentric algorithms remain available as opt-in experiments.
         close(GeoMath.areaBalancedRadialLatitudeDeg(8192,0,0,0,8192),90,0,
                 "legacy radial equal-area mode");
 
@@ -46,6 +47,6 @@ public final class ZonalLatitudeClimateSmoke {
         close(northernMidLatitude,southernMidLatitude,1e-12,
                 "annual-mean climate must be symmetric across hemispheres");
 
-        System.out.println("ZONAL_LATITUDE_LONGITUDE_CLIMATE_PASS");
+        System.out.println("ZONAL_PERIODIC_1_TO_20_CLIMATE_PASS");
     }
 }

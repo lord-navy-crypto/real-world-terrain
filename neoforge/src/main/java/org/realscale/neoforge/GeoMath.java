@@ -2,10 +2,14 @@ package org.realscale.neoforge;
 
 /** Pure math, independent of Minecraft classes for CPU-only unit testing. */
 final class GeoMath {
-    static final double EARTH_EQUATORIAL_CIRCUMFERENCE_METERS = 40_075_017.0;
     private GeoMath() {}
     static double clamp(double x,double low,double high){
         return Math.max(low,Math.min(high,x));
+    }
+
+    /** Convert a Minecraft horizontal block coordinate to source metres. */
+    static int scaleHorizontalCoordinate(int coordinate,int scale){
+        return Math.multiplyExact(coordinate,scale);
     }
     static double ridgeErosion(double base,double ridge,double erosion,double ridgeGain,double erosionGain){
         double crest=1.0-clamp(Math.abs(ridge),0,1);
@@ -50,17 +54,6 @@ final class GeoMath {
         return 90.0*normalized;
     }
 
-    /** X increases east. Longitude wraps to [-180,180), using equatorial metres per turn.
-     * The equirectangular map has constant Minecraft block spacing; its east-west
-     * ground-distance distortion therefore increases toward the poles.
-     */
-    static double longitudeDeg(int x,int primeMeridianX){
-        double offset=((double)x-(double)primeMeridianX)%EARTH_EQUATORIAL_CIRCUMFERENCE_METERS;
-        double degrees=offset*(360.0/EARTH_EQUATORIAL_CIRCUMFERENCE_METERS);
-        degrees=(degrees+180.0)%360.0;
-        if(degrees<0.0)degrees+=360.0;
-        return degrees-180.0;
-    }
     /** Repeating concentric climate belts around a fixed center.
      * Equator 0 degrees at center, pole at one radius, next equator at 2 radii.
      * North/south meridian labels are deliberately not assigned to rings.
