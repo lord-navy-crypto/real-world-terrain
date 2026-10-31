@@ -8,13 +8,5 @@
   "realscale.atlas.back": "返回",
   "realscale.atlas.refresh": "刷新地图",
   "realscale.atlas.scanning": "正在读取已保存区块...",
-  "realscale.atlas.coverage_only": "已保存区块覆盖图（并非地貌渲染）",
-  "realscale.atlas.draw_start": "后台绘图",
-  "realscale.atlas.draw_pause": "暂停",
-  "realscale.atlas.draw_resume": "继续",
-  "realscale.atlas.draw_cancel": "取消",
-  "realscale.atlas.draw_idle": "当前没有正在运行的绘图任务",
-  "realscale.atlas.draw_started": "已开始后台绘图",
-  "realscale.atlas.draw_busy": "已经有绘图任务正在运行",
-  "realscale.atlas.draw_real_legend": "已保存区块的抽样高度图"
+  "realscale.atlas.coverage_only": "已保存区块覆盖图（并非地貌渲染）"
 }
