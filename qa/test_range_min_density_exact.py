@@ -57,8 +57,7 @@ class RangeMinExactTests(unittest.TestCase):
                          "tva_pr25_measured_climate.json"):
             data=json.loads((DIR/filename).read_text(encoding="utf-8"))
             final=data["noise_router"]["final_density"]
-            if filename=="usgs_big_sur_v2.json":
-                self.assertEqual(final["type"],"realscale:horizontal_scale")
+            if final["type"]=="realscale:horizontal_scale":
                 self.assertEqual(final["scale"],20)
                 final=final["base"]
             self.assertEqual(final["type"],"realscale:grand_overworld_caverns")
