@@ -42,6 +42,29 @@ class NorthSouthDefaultClimateTest(unittest.TestCase):
                 self.assertEqual(d["noise_router"]["final_density"]["type"],
                                  "realscale:grand_overworld_caverns")
 
+    def test_all_pr25_climate_variants_use_signed_north_south_latitude(self):
+        for name in ("tva_pr25_natural_climate", "tva_pr25_alpine_climate",
+                     "tva_pr25_canyon_climate", "tva_pr25_measured_climate"):
+            with self.subTest(name=name):
+                path=ROOT/"neoforge/src/main/resources/data/realscale/worldgen/density_function"/name/"biome_temperature.json"
+                root=json.loads(path.read_text())
+                found=[]
+                def walk(x):
+                    if isinstance(x,dict):
+                        if x.get("type") in ("realscale:latitude_temperature",
+                                             "realscale:radial_latitude_temperature"):
+                            found.append(x)
+                        for value in x.values():
+                            walk(value)
+                    elif isinstance(x,list):
+                        for value in x:
+                            walk(value)
+                walk(root)
+                self.assertEqual(len(found),1)
+                self.assertEqual(found[0]["type"],"realscale:latitude_temperature")
+                self.assertEqual(found[0]["equator_z"],0)
+                self.assertEqual(found[0]["pole_distance"],8192)
+
     def test_natural_preserves_mountain_basin_and_climate_budget_layers(self):
         d=json.loads((NOISE/"tva_natural_smoothed.json").read_text())
         temp=d["noise_router"]["temperature"]
