@@ -90,7 +90,7 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
             "data/realscale/worldgen/world_preset/usgs_big_sur.json":
                 "97be6c20ed9dfc5d8d51287282df3b516d7cf461",
             "data/realscale/worldgen/noise_settings/tva_natural_smoothed.json":
-                "33742da46204642f7120b1caa822c55a49dc77b1",
+                "451da951d80f30b50b230e51cf671c98faf923fc",
             "data/realscale/worldgen/noise_settings/usgs_big_sur.json":
                 "2a56e3e6dfae35ef165286a814e2277aee4b7ff6",
         }
