@@ -113,9 +113,11 @@ in source coordinates. Elevation values remain 1:1 in Y.
 - The optional legacy `prime_meridian_x` codec field is retained only so old
   datapacks can still be decoded; it is not calculated.
 - Existing radial codecs and equal-area algorithms are unchanged. Their
-  center coordinates are interpreted in source metres when used inside the
+  center coordinates and radius are stored in source metres inside the
   1:20-scaled worldgen router.
-- Historical PR25 radial profiles remain opt-in and are not silently rewritten.
+- Historical PR25 radial profiles remain opt-in: the concentric formula is
+  preserved, while their former 8,192-block pole radius is represented as
+  163,840 source metres so the playable radius remains 8,192 blocks at 1:20.
 - Tests cover horizontal coordinate scaling, periodic latitude landmarks,
   north/south temperature symmetry, canonical density graph wiring, DEM
   source-coordinate mapping, and radial regression parity.
