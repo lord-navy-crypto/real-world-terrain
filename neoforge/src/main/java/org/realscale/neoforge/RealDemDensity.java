@@ -27,7 +27,7 @@ public record RealDemDensity(DensityFunction base,int blendMeters) implements De
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
         final int x=ctx.blockX(), z=ctx.blockZ();
-        // Most generated chunks are outside the ~480m pilot: no cache lookup
+        // Most generated chunks are outside the measured tile: no cache lookup
         // or interpolation is needed. Equality is also zero DEM influence.
         if (x<=DEM.originX() || x>=DEM.maxX() || z<=DEM.originZ() || z>=DEM.maxZ())
             return base.compute(ctx);

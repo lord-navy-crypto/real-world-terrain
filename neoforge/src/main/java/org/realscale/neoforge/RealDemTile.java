@@ -5,9 +5,10 @@ import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.zip.GZIPInputStream;
 
-/** DEM is USGS 3DEP EPQS derived, interpolated on 32m grid (NOT 1m observations).
- *  One Minecraft block is 1m; no automatic scaling or vertical clipping.
- *  Tile grid coordinates are centered on game (0,0), not real geolocation.
+/** DEM is USGS 3DEP-derived, interpolated on a 32m source grid (not 1m observations).
+ *  The active USGS v2 worldgen density wrapper maps 20 source metres to one
+ *  Minecraft X/Z block. Elevation Y remains 1 block per metre. Tile coordinates
+ *  are source metres centered on game (0,0), not a geodetic world projection.
  */
 public final class RealDemTile {
     private final int width, height, originX, originZ, seaY;
