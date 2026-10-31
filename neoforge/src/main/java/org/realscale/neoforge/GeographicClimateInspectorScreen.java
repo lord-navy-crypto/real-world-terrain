@@ -171,7 +171,7 @@ public final class GeographicClimateInspectorScreen extends Screen {
                 Component.literal("X is the east–west map coordinate, not a true longitude."),
                 width / 2, noteY, 0xffc8c8c8);
         graphics.drawCenteredString(font,
-                Component.literal("Not a Köppen classification or local weather forecast."),
+                Component.literal("This is not a Köppen classification or local weather forecast."),
                 width / 2, noteY + 13, 0xffa8a8a8);
     }
 
