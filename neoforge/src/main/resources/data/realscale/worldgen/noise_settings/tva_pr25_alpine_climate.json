@@ -19,54 +19,102 @@
   },
   "noise_router": {
     "barrier": {
-      "type": "minecraft:noise",
-      "noise": "minecraft:aquifer_barrier",
-      "xz_scale": 1,
-      "y_scale": 0.5
-    },
-    "continents": "realscale:himalayan/continents",
-    "depth": "realscale:tva_alpine_smoothed/terrain_density",
-    "erosion": "realscale:himalayan/erosion",
-    "final_density": {
-      "type": "realscale:grand_overworld_caverns",
-      "base": "realscale:tva_alpine_smoothed/terrain_density",
-      "warp": {
+      "type": "realscale:horizontal_scale",
+      "base": {
         "type": "minecraft:noise",
-        "noise": "minecraft:spaghetti_3d_1",
-        "xz_scale": 0.038,
-        "y_scale": 0.03
+        "noise": "minecraft:aquifer_barrier",
+        "xz_scale": 1,
+        "y_scale": 0.5
       },
-      "small_caves": "realscale:realism_max/cave_core"
+      "scale": 20
+    },
+    "continents": {
+      "type": "realscale:horizontal_scale",
+      "base": "realscale:himalayan/continents",
+      "scale": 20
+    },
+    "depth": {
+      "type": "realscale:horizontal_scale",
+      "base": "realscale:tva_alpine_smoothed/terrain_density",
+      "scale": 20
+    },
+    "erosion": {
+      "type": "realscale:horizontal_scale",
+      "base": "realscale:himalayan/erosion",
+      "scale": 20
+    },
+    "final_density": {
+      "type": "realscale:horizontal_scale",
+      "base": {
+        "type": "realscale:grand_overworld_caverns",
+        "base": "realscale:tva_alpine_smoothed/terrain_density",
+        "warp": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:spaghetti_3d_1",
+          "xz_scale": 0.038,
+          "y_scale": 0.03
+        },
+        "small_caves": "realscale:realism_max/cave_core"
+      },
+      "scale": 20
     },
     "fluid_level_floodedness": {
-      "type": "minecraft:noise",
-      "noise": "minecraft:aquifer_fluid_level_floodedness",
-      "xz_scale": 1,
-      "y_scale": 0.67
+      "type": "realscale:horizontal_scale",
+      "base": {
+        "type": "minecraft:noise",
+        "noise": "minecraft:aquifer_fluid_level_floodedness",
+        "xz_scale": 1,
+        "y_scale": 0.67
+      },
+      "scale": 20
     },
     "fluid_level_spread": {
-      "type": "minecraft:noise",
-      "noise": "minecraft:aquifer_fluid_level_spread",
-      "xz_scale": 1,
-      "y_scale": 0.7142857142857143
+      "type": "realscale:horizontal_scale",
+      "base": {
+        "type": "minecraft:noise",
+        "noise": "minecraft:aquifer_fluid_level_spread",
+        "xz_scale": 1,
+        "y_scale": 0.7142857142857143
+      },
+      "scale": 20
     },
-    "initial_density_without_jaggedness": "realscale:tva_alpine_smoothed/preliminary_density",
+    "initial_density_without_jaggedness": {
+      "type": "realscale:horizontal_scale",
+      "base": "realscale:tva_alpine_smoothed/preliminary_density",
+      "scale": 20
+    },
     "lava": {
-      "type": "minecraft:noise",
-      "noise": "minecraft:aquifer_lava",
-      "xz_scale": 1,
-      "y_scale": 1
+      "type": "realscale:horizontal_scale",
+      "base": {
+        "type": "minecraft:noise",
+        "noise": "minecraft:aquifer_lava",
+        "xz_scale": 1,
+        "y_scale": 1
+      },
+      "scale": 20
     },
-    "ridges": "realscale:himalayan/ridges",
-    "temperature": "realscale:tva_pr25_alpine_climate/biome_temperature",
+    "ridges": {
+      "type": "realscale:horizontal_scale",
+      "base": "realscale:himalayan/ridges",
+      "scale": 20
+    },
+    "temperature": {
+      "type": "realscale:horizontal_scale",
+      "base": "realscale:tva_pr25_alpine_climate/biome_temperature",
+      "scale": 20
+    },
     "vegetation": {
-      "type": "minecraft:shifted_noise",
-      "noise": "minecraft:vegetation",
-      "shift_x": "minecraft:shift_x",
-      "shift_y": 0,
-      "shift_z": "minecraft:shift_z",
-      "xz_scale": 0.18,
-      "y_scale": 0
+      "type": "realscale:horizontal_scale",
+      "base": {
+        "type": "minecraft:shifted_noise",
+        "noise": "minecraft:vegetation",
+        "shift_x": "minecraft:shift_x",
+        "shift_y": 0,
+        "shift_z": "minecraft:shift_z",
+        "xz_scale": 0.18,
+        "y_scale": 0
+      },
+      "scale": 20
     },
     "vein_gap": 0,
     "vein_ridged": 0,
