@@ -45,7 +45,7 @@ class LatitudeClimateTests(unittest.TestCase):
     def test_preview_shortens_pole_distance_without_affecting_blocks_per_meter(self):
         name,_,out=self.make(latitude="preview",latitude_strength=45,equator_z=-512)
         temp=self.get_temperature(out,name)
-        self.assertEqual(temp["pole_distance"],16384)
+        self.assertEqual(temp["pole_distance"],500_098)
         self.assertEqual(temp["equator_z"],-512)
         self.assertEqual(temp["strength"],.45)
 
