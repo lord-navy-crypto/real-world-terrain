@@ -3,6 +3,7 @@ package org.realscale.neoforge;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.RegisterEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 
@@ -12,6 +13,8 @@ public final class RealScaleMod {
         RealScaleVehicles.register(bus);
         bus.addListener(RealScaleStructurePacks::register);
         bus.addListener(this::registerDensity);
+        // Spawn selection is a logical-server level event, not a mod lifecycle event.
+        NeoForge.EVENT_BUS.addListener(SpawnAltitudeSelector::onCreateSpawnPosition);
     }
     private void registerDensity(RegisterEvent event) {
         event.register(Registries.DENSITY_FUNCTION_TYPE, helper -> {
