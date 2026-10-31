@@ -51,14 +51,18 @@ class BranchFamilyUnificationTest(unittest.TestCase):
                 if preset=="usgs_big_sur_v2":
                     # DEM mode deliberately preserves its independent relief
                     # climate rather than borrowing procedural basin sites.
-                    radial=temp["adjusted"]
+                    zonal=temp["adjusted"]
                 else:
                     self.assertEqual(temp["adjusted"]["type"],
                                      "realscale:mountain_basin_temperature")
-                    radial=temp["adjusted"]["base"]
-                self.assertEqual(radial["type"],
-                                 "realscale:radial_latitude_temperature")
-                self.assertTrue(radial["area_balanced"])
+                    zonal=temp["adjusted"]["base"]
+                self.assertEqual(zonal["type"],
+                                 "realscale:latitude_temperature")
+                self.assertTrue(zonal["clamp_at_poles"])
+                self.assertTrue(zonal["balanced"])
+                self.assertEqual(zonal["pole_distance"],10_001_966)
+                self.assertIn("equator_z",zonal)
+                self.assertIn("prime_meridian_x",zonal)
                 self.assertEqual(config["noise_router"]["final_density"]["type"],
                                  "realscale:grand_overworld_caverns")
 
@@ -73,6 +77,15 @@ class BranchFamilyUnificationTest(unittest.TestCase):
         self.assertNotIn("cross_realm_invasion",assert_key(normal))
         self.assertEqual(normal["dimensions"]["minecraft:the_nether"],
                          wonder["dimensions"]["minecraft:the_nether"])
+
+    def test_default_presets_use_zonal_temperature_and_radial_algorithms_remain_selectable(self):
+        src=(JAVA/"GeoMath.java").read_text()
+        radial=(JAVA/"RadialLatitudeTemperatureDensity.java").read_text()
+        for method in ("radialLatitudeDeg","balancedRadialLatitudeDeg",
+                       "areaBalancedRadialLatitudeDeg","singlePoleAreaRadialLatitudeDeg"):
+            self.assertIn(method,src)
+        self.assertIn("GeoMath.areaBalancedRadialLatitudeDeg",radial)
+        self.assertIn("GeoMath.singlePoleAreaRadialLatitudeDeg",radial)
 
     def test_both_area_climate_algorithms_remain_selectable(self):
         src=(JAVA/"GeoMath.java").read_text()

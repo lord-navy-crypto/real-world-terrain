@@ -14,40 +14,27 @@ The former concentric-ring model remains registered and available for experiment
 
 ## Coordinate conversion
 
-At one Minecraft block per metre, the meridional quarter-distance is:
-
-[
-Q = 10{,}001{,}966 	ext{ blocks}
-]
-
-The equatorial circumference used for longitude wrapping is:
-
-[
-C = 40{,}075{,}017 	ext{ blocks}
-]
+At one Minecraft block per metre, the meridional quarter-distance is
+**Q = 10,001,966 blocks**. The equatorial circumference used for longitude
+wrapping is **C = 40,075,017 blocks**.
 
 Latitude is finite and clamped at the poles:
 
-[
-phi(Z)=90^circ,
-operatorname{clamp}left(
-rac{Z_e-Z}{Q},-1,1
-ight)
-]
+`latitude_deg = 90 * clamp((equator_z - Z) / Q, -1, 1)`
 
-Longitude increases eastward and wraps to the conventional interval [-180°, 180°):
+Longitude increases eastward and wraps to [-180°, 180°):
 
-[
-lambda(X)=
-operatorname{wrap}_{[-180,180)}
-left(
-360^circrac{X-X_0}{C}
-ight)
-]
+`longitude_deg = wrap_[-180,180)(360 * (X - prime_meridian_x) / C)`
 
-Here Z_e is the equator Z and X_0 is the prime-meridian X. The finite latitude clamp is intentional: moving beyond either pole stays in that polar climate instead of repeating another equator and hemisphere. The old periodic triangle-wave method remains unchanged for older serialized settings.
+Here `equator_z` is the equator Z and `prime_meridian_x` is the prime-meridian X.
+The finite latitude clamp is intentional: moving beyond either pole stays in
+that polar climate instead of repeating another equator and hemisphere. The
+old periodic triangle-wave method remains unchanged for older serialized settings.
 
-The projection is a rectangular map, not a sphere. Minecraft keeps equal block spacing in X at every Z, so east-west ground-distance distortion increases toward the poles. Longitude is a geographic coordinate and future regional-field input; it is **not** used as a direct baseline temperature control.
+The projection is a rectangular map, not a sphere. Minecraft keeps equal block
+spacing in X at every Z, so east-west ground-distance distortion increases
+toward the poles. Longitude is a geographic coordinate and future
+regional-field input; it is **not** used as a direct baseline temperature control.
 
 ## Climate calculation
 
