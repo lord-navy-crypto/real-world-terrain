@@ -61,6 +61,59 @@ public final class GeographicClimateMathSmoke {
         catch (IllegalArgumentException expected) { rejected = true; }
         check(rejected, "out-of-range latitude rejected");
 
+        // Inspector-only inverse meridian arc: WGS84 45-degree arc / 20.
+        // The legacy linear worldgen latitude remains untouched.
+        double geodetic45 = GeographicClimateMath.geodeticLatitudeDeg(-249247, 0, pole);
+        check(close(geodetic45, 45.0, .005), "WGS84 45N meridian arc at 1:20");
+        check(close(GeographicClimateMath.geodeticLatitudeDeg(249247, 0, pole),
+                -geodetic45, 1e-10), "hemispheres must mirror");
+        check(close(GeographicClimateMath.geodeticLatitudeDeg(-pole, 0, pole), 90, 0),
+                "north pole");
+        check(close(GeographicClimateMath.geodeticLatitudeDeg(pole, 0, pole), -90, 0),
+                "south pole");
+        check(close(GeographicClimateMath.geodeticLatitudeDeg(2 * pole, 0, pole), 0, 0),
+                "opposite equator");
+        check(close(GeographicClimateMath.geodeticLatitudeDeg(-3 * pole, 0, pole), -90, 0),
+                "wrapped south pole");
+        check(Math.abs(GeographicClimateMath.geodeticLatitudeDeg(-2 * pole + 1, 0, pole)
+                - GeographicClimateMath.geodeticLatitudeDeg(-2 * pole - 1, 0, pole)) < .001,
+                "latitude continuous across wrapped equator");
+        check(close(GeographicClimateMath.geodeticLatitudeDeg(29_999_999, 0, pole),
+                -GeographicClimateMath.geodeticLatitudeDeg(-29_999_999, 0, pole),
+                1e-8), "large Minecraft coordinates remain symmetric");
+
+        GeographicClimateMath.SolarEstimate equinox =
+                GeographicClimateMath.estimateSolar(0, 63, 0);
+        check(close(equinox.declinationDegrees(), 0, 1e-10), "virtual equinox declination");
+        check(close(equinox.daylightHours(), 12, 1e-10), "equatorial equinox daylength");
+        check(close(equinox.meanToaWattsPerM2(), 1361.0 / Math.PI, 1e-6),
+                "daily mean equinox equatorial solar input");
+        GeographicClimateMath.SolarEstimate northSummer =
+                GeographicClimateMath.estimateSolar(45, 63, 24L * 24_000L);
+        GeographicClimateMath.SolarEstimate southWinter =
+                GeographicClimateMath.estimateSolar(-45, 63, 24L * 24_000L);
+        check(close(northSummer.declinationDegrees(), 23.4366, 1e-6),
+                "north summer solstice declination");
+        check(northSummer.daylightHours() > 15.0 && southWinter.daylightHours() < 9.0,
+                "seasonal daylight differs between hemispheres");
+        check("Summer (virtual)".equals(northSummer.season())
+                && "Winter (virtual)".equals(southWinter.season()),
+                "seasons are reversed across hemispheres");
+        check(northSummer.meanToaWattsPerM2() > southWinter.meanToaWattsPerM2(),
+                "seasonally appropriate hemisphere solar input");
+        GeographicClimateMath.SolarEstimate polarSummer =
+                GeographicClimateMath.estimateSolar(90, 63, 24L * 24_000L);
+        GeographicClimateMath.SolarEstimate polarWinter =
+                GeographicClimateMath.estimateSolar(90, 63, 72L * 24_000L);
+        check(close(polarSummer.daylightHours(), 24, 1e-9)
+                && close(polarWinter.daylightHours(), 0, 1e-9),
+                "polar day and polar night");
+        check(close(GeographicClimateMath.estimateSolar(35, 1063, 0)
+                .altitudeTemperatureOffsetC(), -6.5, 1e-9),
+                "standard lapse-rate offset for 1000 blocks above reference");
+        check(GeographicClimateMath.estimateSolar(35, 63, -24_000)
+                .virtualDay() == 95, "negative game time uses floor-mod calendar");
+
         System.out.println("GEOGRAPHIC_CLIMATE_INSPECTOR_1_20_PASS");
     }
 
