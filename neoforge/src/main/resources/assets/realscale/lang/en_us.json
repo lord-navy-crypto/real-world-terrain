@@ -8,13 +8,5 @@
   "realscale.atlas.back": "Back",
   "realscale.atlas.refresh": "Refresh map",
   "realscale.atlas.scanning": "Reading saved regions...",
-  "realscale.atlas.coverage_only": "Saved chunk coverage — not a terrain image",
-  "realscale.atlas.draw_start": "Draw terrain",
-  "realscale.atlas.draw_pause": "Pause",
-  "realscale.atlas.draw_resume": "Resume",
-  "realscale.atlas.draw_cancel": "Cancel",
-  "realscale.atlas.draw_idle": "No active map task",
-  "realscale.atlas.draw_started": "Background map drawing started",
-  "realscale.atlas.draw_busy": "A map task is already running",
-  "realscale.atlas.draw_real_legend": "Sampled saved heightmap"
+  "realscale.atlas.coverage_only": "Saved chunk coverage — not a terrain image"
 }
