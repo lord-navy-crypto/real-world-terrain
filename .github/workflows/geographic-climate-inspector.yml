@@ -2,6 +2,8 @@ name: Geographic Climate Inspector test build
 on:
   push:
     branches: [feature/geographic-climate-inspector-20261031]
+  pull_request:
+    branches: [feature/geographic-climate-inspector-20261031]
   workflow_dispatch:
 permissions:
   contents: read

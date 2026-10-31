@@ -52,7 +52,7 @@ public final class GeographicClimateInspectorClient {
 
     public record GeographicLatitudeProfile(int equatorZ, int poleDistance) {
         public double latitudeAt(int z) {
-            return GeoMath.latitudeDeg(z, equatorZ, poleDistance);
+            return GeographicClimateMath.geodeticLatitudeDeg(z, equatorZ, poleDistance);
         }
 
         public String scaleLabel() {
@@ -61,7 +61,7 @@ public final class GeographicClimateInspectorClient {
 
         public String coordinateReference() {
             return "Equator Z: " + equatorZ + " | Equator-to-pole: "
-                    + String.format(Locale.ROOT, "%,d", poleDistance) + " blocks";
+                    + String.format(Locale.ROOT, "%,d", poleDistance) + " blocks (WGS84 meridional approximation)";
         }
     }
 }
