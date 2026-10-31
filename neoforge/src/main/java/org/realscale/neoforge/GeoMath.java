@@ -2,6 +2,14 @@ package org.realscale.neoforge;
 
 /** Pure math, independent of Minecraft classes for CPU-only unit testing. */
 final class GeoMath {
+    /** WGS84 equator-to-pole meridional distance, rounded to whole metres. */
+    static final int EARTH_QUARTER_MERIDIAN_METERS = 10_001_966;
+    /** Compress latitude climate progression only; world coordinates remain 1 block = 1 metre. */
+    static final int CLIMATE_LATITUDE_COMPRESSION = 20;
+    /** One climate pole per 500,098 world blocks (10,001,966 m / 20). */
+    static final int CLIMATE_POLE_DISTANCE_BLOCKS =
+            (int)Math.round((double)EARTH_QUARTER_MERIDIAN_METERS / CLIMATE_LATITUDE_COMPRESSION);
+
     private GeoMath() {}
     static double clamp(double x,double low,double high){
         return Math.max(low,Math.min(high,x));
