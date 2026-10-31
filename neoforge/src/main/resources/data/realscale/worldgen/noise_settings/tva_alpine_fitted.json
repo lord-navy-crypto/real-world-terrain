@@ -61,9 +61,7 @@
     "temperature": {
       "adjusted": {
         "base": {
-          "altitude_cooling": 0.42,
-          "area_balanced": true,
-          "balanced": true,
+          "type": "realscale:latitude_temperature",
           "base": {
             "argument1": {
               "noise": "minecraft:temperature",
@@ -87,11 +85,9 @@
             },
             "type": "minecraft:add"
           },
-          "center_x": 0,
-          "center_z": 0,
-          "pole_distance": 8192,
-          "strength": 0.58,
-          "type": "realscale:radial_latitude_temperature"
+          "equator_z": 0,
+          "pole_distance": 500098,
+          "strength": 0.58
         },
         "continents": "realscale:himalayan/continents",
         "height_signal": "realscale:tva_alpine_fitted/original_height_signal",

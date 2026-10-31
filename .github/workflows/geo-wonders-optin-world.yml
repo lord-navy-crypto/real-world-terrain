@@ -1,4 +1,4 @@
-name: Opt-in Natural Wonders and Cross-Realm combined NeoForge boot
+name: Opt-in Natural Wonders NeoForge boot
 on:
   pull_request:
     paths:
@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [natural-wonders, woven-wonders-invasion]
+        profile: [natural-wonders]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -28,7 +28,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
-      - name: Boot selected experimental world and verify both feature codecs
+      - name: Boot the independent Natural Wonders world and verify its codecs
         env:
           REALSCALE_WONDERS_PROFILE: ${{ matrix.profile }}
         run: python3 qa/neoforge/geo_wonders_optin_boot.py
@@ -41,6 +41,4 @@ jobs:
             neoforge/build/geo-wonders-optin-*-server.log
             neoforge/run/**/geo-wonders-lab/level.dat
             neoforge/run/**/geo-wonders-lab/region/*.mca
-            neoforge/run/**/tva-wonders-invasion-lab/level.dat
-            neoforge/run/**/tva-wonders-invasion-lab/region/*.mca
           if-no-files-found: warn

@@ -50,6 +50,72 @@ def radial_profile_from_noise(settings_path):
     return find(temperature)
 
 
+
+def meridional_profile_from_noise(settings_path):
+    """Follow the live temperature density graph to its signed N/S latitude node."""
+    settings=json.loads(settings_path.read_text(encoding="utf-8"))
+    temperature=settings.get("noise_router",{}).get("temperature")
+    resources=settings_path.parent.parent/"density_function"
+    seen=set()
+    def find(node):
+        if isinstance(node,str) and node.startswith("realscale:"):
+            ref=node.split(":",1)[1]
+            if ref in seen:return None
+            seen.add(ref)
+            density_file=resources/(ref+".json")
+            if density_file.is_file():
+                return find(json.loads(density_file.read_text(encoding="utf-8")))
+        elif isinstance(node,dict):
+            if node.get("type")=="realscale:latitude_temperature":
+                return {k:node[k] for k in ("equator_z","pole_distance","strength")}
+            for child in node.values():
+                match=find(child)
+                if match is not None:return match
+        elif isinstance(node,list):
+            for child in node:
+                match=find(child)
+                if match is not None:return match
+        return None
+    return find(temperature)
+
+
+def meridional_latitude_degrees(z,profile):
+    """Signed latitude parity with GeoMath.latitudeDeg; north is negative Z."""
+    phase=((profile["equator_z"]-z)/profile["pole_distance"])%4.0
+    if phase<=1.0:return 90.0*phase
+    if phase<=3.0:return 90.0*(2.0-phase)
+    return 90.0*(phase-4.0)
+
+
+def meridional_biome_audit(heights,surface_biomes,profile):
+    """Observed north/equatorial/south biome bands from persisted surface columns."""
+    bands={"north_polar_60_90":[],"north_mid_30_60":[],
+           "equatorial_0_30":[],"south_mid_30_60":[],"south_polar_60_90":[]}
+    for (x,z),y in heights.items():
+        biome=surface_biomes.get((x,z))
+        if not isinstance(biome,str):continue
+        latitude=meridional_latitude_degrees(z,profile)
+        absolute=abs(latitude)
+        if absolute<30:label="equatorial_0_30"
+        elif absolute<60:label="north_mid_30_60" if latitude>0 else "south_mid_30_60"
+        else:label="north_polar_60_90" if latitude>0 else "south_polar_60_90"
+        bands[label].append(biome)
+    total=sum(map(len,bands.values()))
+    result={}
+    for label,biomes in bands.items():
+        cold=sum(any(token in b for token in ("snowy","frozen","ice_spikes","grove")) for b in biomes)
+        warm=sum(any(token in b for token in ("jungle","savanna","desert","badlands")) for b in biomes)
+        result[label]={"sample_columns":len(biomes),
+            "sample_fraction":round(len(biomes)/total,6) if total else None,
+            "cold_biome_fraction":round(cold/len(biomes),6) if biomes else None,
+            "warm_biome_fraction":round(warm/len(biomes),6) if biomes else None}
+    result["mode"]="signed_north_south"
+    result["equator_z"]=profile["equator_z"]
+    result["pole_distance_blocks"]=profile["pole_distance"]
+    result["note"]="Observed sampled Anvil columns only; not a global biome-area or thermodynamic guarantee."
+    return result
+
+
 def radial_latitude_degrees(x,z,radial):
     """Python parity with GeoMath: legacy, balanced, two-crest, PR25 one-crest.
 
@@ -846,6 +912,7 @@ def scan(root,preset="realism_max"):
       "surface_biome_counts":surface_biome_counts,
       "altitude_biome_audit":altitude_biome_audit(H,surface_biomes),
       "radial_biome_audit":radial_biome_audit(H,surface_biomes,radial_profile_from_noise(settings_path)),
+      "north_south_biome_audit":meridional_biome_audit(H,surface_biomes,meridional_profile_from_noise(settings_path)),
       "river_biome_columns":river_biome_columns,
       "river_surface_block_counts":river_surface_block_counts,
       "river_dry_surface_block_counts":river_dry_surface_block_counts,

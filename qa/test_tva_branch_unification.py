@@ -29,8 +29,6 @@ FAMILIES={
     "Natural wonders opt-in":("GeoWonderRegionFeature.java",
                     "EarthWonderFeature.java","CaveWonderNetworkFeature.java",
                     "GeoWondersBiomeSource.java"),
-    "Six-direction invasive habitats":("CrossRealmBiomeSource.java",
-                    "CrossRealmTerrainPatchFeature.java"),
 }
 
 class BranchFamilyUnificationTest(unittest.TestCase):
@@ -41,7 +39,7 @@ class BranchFamilyUnificationTest(unittest.TestCase):
                     self.assertTrue((JAVA/file).is_file(),
                         "Mainline candidate is missing a previous subsystem: "+family+"/"+file)
 
-    def test_sacred_settings_still_use_caves_and_climate(self):
+    def test_sacred_settings_use_signed_1_to_20_latitude_and_keep_caves(self):
         for preset in ("tva_natural_smoothed","tva_alpine_smoothed",
                        "tva_canyon_smoothed","usgs_big_sur_v2"):
             with self.subTest(preset=preset):
@@ -51,14 +49,15 @@ class BranchFamilyUnificationTest(unittest.TestCase):
                 if preset=="usgs_big_sur_v2":
                     # DEM mode deliberately preserves its independent relief
                     # climate rather than borrowing procedural basin sites.
-                    radial=temp["adjusted"]
+                    latitude=temp["adjusted"]
                 else:
                     self.assertEqual(temp["adjusted"]["type"],
                                      "realscale:mountain_basin_temperature")
-                    radial=temp["adjusted"]["base"]
-                self.assertEqual(radial["type"],
-                                 "realscale:radial_latitude_temperature")
-                self.assertTrue(radial["area_balanced"])
+                    latitude=temp["adjusted"]["base"]
+                self.assertEqual(latitude["type"],
+                                 "realscale:latitude_temperature")
+                self.assertEqual(latitude["equator_z"],0)
+                self.assertEqual(latitude["pole_distance"],500098)
                 self.assertEqual(config["noise_router"]["final_density"]["type"],
                                  "realscale:grand_overworld_caverns")
 

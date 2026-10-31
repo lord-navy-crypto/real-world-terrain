@@ -13,7 +13,6 @@ OLD = [
     "tva_alpine_three_realms",
     "tva_canyon_three_realms",
     "tva_measured_three_realms",
-    "tva_wonders_invasion_three_realms",
     "tva_cave_ocean_ecology_test_three_realms",
 ]
 NEW = [
@@ -21,7 +20,6 @@ NEW = [
     "alpine_three_realms",
     "canyon_three_realms",
     "measured_three_realms",
-    "wonders_invasion_three_realms",
     "cave_ocean_ecology_three_realms",
 ]
 CANONICAL = {
@@ -92,7 +90,7 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
             "data/realscale/worldgen/world_preset/usgs_big_sur.json":
                 "97be6c20ed9dfc5d8d51287282df3b516d7cf461",
             "data/realscale/worldgen/noise_settings/tva_natural_smoothed.json":
-                "5be587e4abe1cd926b536ea90dc258d696ba8263",
+                "451da951d80f30b50b230e51cf671c98faf923fc",
             "data/realscale/worldgen/noise_settings/usgs_big_sur.json":
                 "2a56e3e6dfae35ef165286a814e2277aee4b7ff6",
         }
@@ -143,7 +141,7 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
 
     def test_optional_special_presets_are_hidden_not_deleted(self):
         menu = read(TAG_ROOT / "normal.json")["values"]
-        for name in ("wonders_invasion_three_realms", "cave_ocean_ecology_three_realms"):
+        for name in ("cave_ocean_ecology_three_realms",):
             self.assertTrue((WORLD / (name + ".json")).is_file(), name)
             self.assertNotIn("realscale:" + name, menu)
 

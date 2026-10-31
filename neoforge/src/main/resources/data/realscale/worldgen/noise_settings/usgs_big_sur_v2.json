@@ -76,7 +76,7 @@
         "y_scale": 0
       },
       "adjusted": {
-        "type": "realscale:radial_latitude_temperature",
+        "type": "realscale:latitude_temperature",
         "base": {
           "type": "minecraft:add",
           "argument1": {
@@ -100,13 +100,9 @@
             }
           }
         },
-        "center_x": 0,
-        "center_z": 0,
-        "pole_distance": 8192,
-        "strength": 0.58,
-        "balanced": true,
-        "altitude_cooling": 0.42,
-        "area_balanced": true
+        "equator_z": 0,
+        "pole_distance": 500098,
+        "strength": 0.58
       },
       "max_cooling": 0.66,
       "max_warming": 0.34

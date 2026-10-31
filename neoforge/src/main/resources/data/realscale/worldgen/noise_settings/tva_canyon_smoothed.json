@@ -72,7 +72,7 @@
       "adjusted": {
         "type": "realscale:mountain_basin_temperature",
         "base": {
-          "type": "realscale:radial_latitude_temperature",
+          "type": "realscale:latitude_temperature",
           "base": {
             "type": "minecraft:add",
             "argument1": {
@@ -96,13 +96,9 @@
               }
             }
           },
-          "center_x": 0,
-          "center_z": 0,
-          "pole_distance": 8192,
-          "strength": 0.58,
-          "balanced": true,
-          "altitude_cooling": 0.42,
-          "area_balanced": true
+          "equator_z": 0,
+          "pole_distance": 500098,
+          "strength": 0.58
         },
         "height_signal": "realscale:tva_canyon_smoothed/original_height_signal",
         "continents": "realscale:grand_canyon/continents",

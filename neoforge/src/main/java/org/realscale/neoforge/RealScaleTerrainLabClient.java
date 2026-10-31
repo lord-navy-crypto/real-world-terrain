@@ -393,7 +393,7 @@ public final class RealScaleTerrainLabClient {
                 .name(Component.literal("Shared Climate & Latitude / Export"))
                 .option(Option.<String>createBuilder()
                     .name(Component.literal("Latitude Climate Cycle"))
-                    .description(description("Shared latitude controls; equal-area supports legacy two-crest and PR25 single-pole ring geometry."))
+                    .description(description("Temperature mapping only: earth = 1:1; preview = 1:20 climate compression (500,098 blocks equator-to-pole). Terrain and geographic coordinates remain 1 block = 1 metre. Equal-area radial modes are climate-only patterns."))
                     .binding("off", () -> d.latitudeMode, v -> d.latitudeMode=v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(
                         "off","earth","preview","radial_earth","radial_preview","radial_balanced",

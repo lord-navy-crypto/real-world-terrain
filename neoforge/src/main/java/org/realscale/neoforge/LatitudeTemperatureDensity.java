@@ -6,11 +6,13 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.world.level.levelgen.DensityFunction;
 
-/** New-world-only geographic temperature latitude, using north = negative Z.
- * Coordinates are anchored to a configured equator line (default Z=0),
- * NOT to a future spawn point, which is unknown when chunk generation begins.
- * Quarter meridian at 1 block/meter is 10,001,966 blocks. The repeating
- * triangle avoids climate discontinuities at either pole or crossing equator.
+/**
+ * New-world-only north/south climate latitude, using north = negative Z.
+ * Minecraft world coordinates remain geographic metres (1 block = 1 metre).
+ * Only the climate latitude progression is compressed 1:20:
+ * WGS84 quarter meridian 10,001,966 m / 20 = 500,098 climate blocks.
+ * The equator is a fixed configured world Z (default 0), never the spawn point.
+ * The repeating triangle keeps climate transitions continuous across poles.
  */
 public record LatitudeTemperatureDensity(DensityFunction base,int equatorZ,
                                          int poleDistance,double strength)

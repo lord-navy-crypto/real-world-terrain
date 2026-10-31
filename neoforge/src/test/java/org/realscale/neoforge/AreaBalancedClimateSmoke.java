@@ -5,6 +5,19 @@ public final class AreaBalancedClimateSmoke {
     private AreaBalancedClimateSmoke(){}
     private static void check(boolean ok,String what){if(!ok)throw new AssertionError(what);}
     public static void main(String[] args) {
+        int climatePole=GeoMath.CLIMATE_POLE_DISTANCE_BLOCKS;
+        check(GeoMath.EARTH_QUARTER_MERIDIAN_METERS==10_001_966,"Earth quarter meridian metres");
+        check(GeoMath.CLIMATE_LATITUDE_COMPRESSION==20,"climate-only 1:20 factor");
+        check(climatePole==500_098,"1:20 climate pole distance");
+        check(Math.abs(GeoMath.latitudeDeg(-climatePole,0,climatePole)-90.0)<1e-9,
+                "north pole at negative Z");
+        check(Math.abs(GeoMath.latitudeDeg(climatePole,0,climatePole)+90.0)<1e-9,
+                "south pole at positive Z");
+        check(GeoMath.latitudeDeg(0,0,climatePole)==0.0,"equator at Z=0");
+        check(Math.abs(GeoMath.latitudeDeg(-2*climatePole,0,climatePole))<1e-9,
+                "north-side return equator");
+        check(Math.abs(GeoMath.latitudeDeg(2*climatePole,0,climatePole))<1e-9,
+                "south-side return equator");
         final int q=8192;
         check(GeoMath.areaBalancedRadialLatitudeDeg(0,0,0,0,q)==0,"equator");
         int[] poles={8192,24576,40960};
