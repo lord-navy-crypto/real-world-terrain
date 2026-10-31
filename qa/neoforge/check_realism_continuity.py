@@ -8,65 +8,96 @@ from realscale_headless_qa import iter_region_chunks,surface_height,get_block,un
 import gzip
 
 def radial_profile_from_noise(settings_path):
-    """Follow the actual temperature density graph, including nested inline nodes.
-
-    Sacred worlds currently use climate_budget -> mountain_basin_temperature ->
-    radial_latitude_temperature. Checking only a string root silently reported
-    'not_radial' for worlds where radial latitude is active.
-    """
+    """Follow the temperature graph and retain its horizontal source scale."""
     settings=json.loads(settings_path.read_text(encoding="utf-8"))
     temperature=settings.get("noise_router",{}).get("temperature")
     resources=settings_path.parent.parent/"density_function"
-    seen=set()
 
+    def find_scale(node,seen=None):
+        seen=set() if seen is None else seen
+        if isinstance(node,str) and node.startswith("realscale:"):
+            ref=node.split(":",1)[1]
+            if ref in seen:return 1
+            seen.add(ref)
+            path=resources/(ref+".json")
+            return find_scale(json.loads(path.read_text(encoding="utf-8")),seen) if path.is_file() else 1
+        if isinstance(node,dict):
+            if node.get("type")=="realscale:horizontal_scale":
+                return node.get("scale",1)
+            for child in node.values():
+                value=find_scale(child,seen)
+                if value!=1:return value
+        elif isinstance(node,list):
+            for child in node:
+                value=find_scale(child,seen)
+                if value!=1:return value
+        return 1
+
+    horizontal_scale=find_scale(temperature)
+    seen=set()
     def find(node):
         if isinstance(node,str) and node.startswith("realscale:"):
             ref=node.split(":",1)[1]
-            if ref in seen:
-                return None
+            if ref in seen:return None
             seen.add(ref)
-            density_file=resources/(ref+".json")
-            if density_file.is_file():
-                return find(json.loads(density_file.read_text(encoding="utf-8")))
+            path=resources/(ref+".json")
+            if path.is_file():return find(json.loads(path.read_text(encoding="utf-8")))
         elif isinstance(node,dict):
             if node.get("type")=="realscale:radial_latitude_temperature":
                 return {
                     **{k:node[k] for k in ("center_x","center_z","pole_distance","strength")},
                     "balanced":node.get("balanced",False),
                     "area_balanced":node.get("area_balanced",False),
-                    "single_pole_area":node.get("single_pole_area",False)
+                    "single_pole_area":node.get("single_pole_area",False),
+                    "horizontal_scale":horizontal_scale
                 }
             for child in node.values():
                 match=find(child)
-                if match is not None:
-                    return match
+                if match is not None:return match
         elif isinstance(node,list):
             for child in node:
                 match=find(child)
-                if match is not None:
-                    return match
+                if match is not None:return match
         return None
-
     return find(temperature)
 
 
 
 def zonal_profile_from_noise(settings_path):
-    """Follow the active temperature graph and extract its Z-axis latitude node."""
+    """Extract Z-latitude parameters and the enclosing horizontal scale."""
     settings=json.loads(settings_path.read_text(encoding="utf-8"))
     temperature=settings.get("noise_router",{}).get("temperature")
     resources=settings_path.parent.parent/"density_function"
-    seen=set()
 
+    def find_scale(node,seen=None):
+        seen=set() if seen is None else seen
+        if isinstance(node,str) and node.startswith("realscale:"):
+            ref=node.split(":",1)[1]
+            if ref in seen:return 1
+            seen.add(ref)
+            path=resources/(ref+".json")
+            return find_scale(json.loads(path.read_text(encoding="utf-8")),seen) if path.is_file() else 1
+        if isinstance(node,dict):
+            if node.get("type")=="realscale:horizontal_scale":
+                return node.get("scale",1)
+            for child in node.values():
+                value=find_scale(child,seen)
+                if value!=1:return value
+        elif isinstance(node,list):
+            for child in node:
+                value=find_scale(child,seen)
+                if value!=1:return value
+        return 1
+
+    horizontal_scale=find_scale(temperature)
+    seen=set()
     def find(node):
         if isinstance(node,str) and node.startswith("realscale:"):
             ref=node.split(":",1)[1]
-            if ref in seen:
-                return None
+            if ref in seen:return None
             seen.add(ref)
-            density_file=resources/(ref+".json")
-            if density_file.is_file():
-                return find(json.loads(density_file.read_text(encoding="utf-8")))
+            path=resources/(ref+".json")
+            if path.is_file():return find(json.loads(path.read_text(encoding="utf-8")))
         elif isinstance(node,dict):
             if node.get("type")=="realscale:latitude_temperature":
                 return {
@@ -76,26 +107,24 @@ def zonal_profile_from_noise(settings_path):
                     "balanced":node.get("balanced",False),
                     "altitude_cooling":node.get("altitude_cooling",0.0),
                     "clamp_at_poles":node.get("clamp_at_poles",False),
-                    "prime_meridian_x":node.get("prime_meridian_x",0)
+                    "horizontal_scale":horizontal_scale
                 }
             for child in node.values():
                 match=find(child)
-                if match is not None:
-                    return match
+                if match is not None:return match
         elif isinstance(node,list):
             for child in node:
                 match=find(child)
-                if match is not None:
-                    return match
+                if match is not None:return match
         return None
-
     return find(temperature)
 
 
 def zonal_latitude_degrees(z,zonal):
-    """Python parity with GeoMath's finite Z-axis latitude coordinate."""
+    """Python parity with GeoMath; z is a Minecraft block coordinate."""
     distance=zonal["pole_distance"]
-    phase=(zonal["equator_z"]-z)/distance
+    scale=zonal.get("horizontal_scale",1)
+    phase=(zonal["equator_z"]-z*scale)/distance
     if zonal.get("clamp_at_poles",False):
         return 90.0*max(-1.0,min(1.0,phase))
     phase%=4.0
@@ -150,8 +179,10 @@ def zonal_biome_audit(heights,surface_biomes,zonal):
     result["sample_columns"]=count
     result["z_range_blocks"]=[min(z_values),max(z_values)] if z_values else None
     result["equator_z"]=zonal["equator_z"]
-    result["pole_distance_blocks"]=zonal["pole_distance"]
-    result["prime_meridian_x"]=zonal.get("prime_meridian_x",0)
+    scale=zonal.get("horizontal_scale",1)
+    result["pole_distance_blocks"]=zonal["pole_distance"]/scale
+    result["full_period_blocks"]=4*zonal["pole_distance"]/scale
+    result["horizontal_scale"]=scale
     result["note"]="Observed saved chunks only; not a global biome-area or thermodynamic balance claim."
     return result
 
@@ -162,7 +193,8 @@ def radial_latitude_degrees(x,z,radial):
     data. Never infer real global area fractions from sampled spawn chunks.
     """
     distance=radial["pole_distance"]
-    radius=math.hypot(x-radial["center_x"],z-radial["center_z"])
+    scale=radial.get("horizontal_scale",1)
+    radius=math.hypot(x*scale-radial["center_x"],z*scale-radial["center_z"])
     if radial.get("single_pole_area",False):
         period=2.0*distance
         cycle=math.floor(radius/period)
