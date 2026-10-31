@@ -50,7 +50,7 @@ jobs:
           expected = (
               "org/realscale/neoforge/GeographicClimateMath.class",
               "org/realscale/neoforge/GeographicClimateInspectorClient.class",
-              "org/realscale/neoforge/GeographicClimateInspectorClient$ActiveClimateProfile.class",
+              "org/realscale/neoforge/GeographicClimateInspectorClient$GeographicLatitudeProfile.class",
               "org/realscale/neoforge/GeographicClimateInspectorScreen.class",
           )
           with ZipFile(jars[0]) as archive:
