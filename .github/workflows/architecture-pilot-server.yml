@@ -53,7 +53,7 @@ jobs:
           cat > run/server.properties <<'EOF'
           server-port=25565
           level-name=architecture-pilot
-          level-type=minecraft:flat
+          level-type=minecraft:normal
           level-seed=20261104
           initial-enabled-packs=vanilla,mod/realscale:resourcepacks/realscale_structures_architecture_pilot
           initial-disabled-packs=

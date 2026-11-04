@@ -16,7 +16,7 @@ This module intentionally combines two independent sources of building designs:
 The original design pipeline now has two generators:
 
 - `scripts/generate_original_architecture.py`: five foundational original designs.
-- `scripts/generate_architecture_batch.py`: 30 additional designs produced in one deterministic batch from reusable building primitives, including fifteen multi-building settlement compounds.
+- `scripts/generate_architecture_batch.py`: 50 additional designs produced in one deterministic batch from reusable building primitives, including fifteen multi-building settlement compounds.
 
 The complete original catalog currently contains:
 
@@ -29,6 +29,11 @@ The complete original catalog currently contains:
 | `forest_watchtower`, `botanical_greenhouse`, `orchard_farm`, `lumber_camp` | Lookout tower, glazed crop house, tree orchard and timber camp | Forests, birch/taiga, meadow and riverine woodland |
 | `desert_well`, `mountain_observatory`, `ruined_watchpost`, `garden_pavilion` | Water well, high-altitude observatory, weathered ruin and open garden structure | Desert, alpine, forest and flower/meadow biomes |
 | `woodland_hamlet`, `plains_market_square`, `river_trade_hamlet`, `alpine_watch_compound`, `desert_oasis_hamlet` | Multi-building settlements combining homes, civic services, river infrastructure, mountain outpost and oasis facilities | Temperate woodland, plains, rivers, alpine and arid regions |
+| `stone_mason_workshop`, `quarry_shed`, `charcoal_kiln`, `charcoal_burners_camp`, `riverside_sawmill` | Stoneworking, quarry services, charcoal production and timber processing | Stony uplands, badlands, forests and river margins |
+| `canal_lock`, `railway_signal_box`, `railway_depot` | Canal engineering, railway signalling and regional freight infrastructure | Plains, rivers, meadows and forest-steppe |
+| `monastery_chapel`, `hilltop_manor`, `frontier_fort` | Religious, residential and defensive compounds with courtyards and perimeter walls | Temperate woodland, meadows, foothills and open plains |
+| `apiary_garden`, `vineyard_estate`, `orchard_cider_estate`, `sheepfold_ranch` | Beekeeping, trellised cultivation, fruit processing and livestock infrastructure | Flower meadows, plains, woodland margins and grasslands |
+| `snowbound_storehouse`, `desert_cistern`, `tropical_boardwalk_house`, `fishing_village_compound`, `marsh_reed_hamlet` | Climate-specific storage, water supply, raised homes and coastal/wetland settlements | Snowy slopes, arid basins, tropical wetlands, shores and marshes |
 | `forest_ranger_lodge`, `plains_farmstead`, `alpine_waystation`, `coastal_lighthouse`, `desert_caravanserai` | Foundational cabin, farmstead, mountain shelter, lighthouse and courtyard inn | Temperate forest, plains, alpine, coastal and semi-arid biomes |
 
 
@@ -37,7 +42,7 @@ The complete original catalog currently contains:
 The pack is intentionally optional. In Minecraft 1.21.1:
 
 1. Open **Create New World → Data Packs**.
-2. Find **RealScale | Architecture Library (38 Structures)** under Available.
+2. Find **RealScale | Architecture Library (58 Structures)** under Available.
 3. Move it to Selected, confirm the pack prompt, and create the world.
 
 For an existing world, use **Edit World → Data Packs** and make a backup first.

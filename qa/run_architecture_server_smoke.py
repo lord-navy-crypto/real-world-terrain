@@ -166,22 +166,28 @@ try:
     if pack_id not in active:
         raise RuntimeError("Architecture data pack did not remain enabled after reload")
 
-    print("RCON:", rcon_command(sock, 6,
-          "forceload add 0 160 0 1055 160 31"), flush=True)
-    # Chunk tickets are acknowledged before asynchronous chunk loading finishes.
-    time.sleep(4)
-
+    command_id = 6
     for index, template in enumerate(TEMPLATES):
-        x = index * 32
+        # A 64x64 ticket window comfortably contains even the largest template
+        # while keeping the server's 256-chunk force-load limit far below its cap.
+        x = index * 64
+        region = f"{x} 160 0 {x + 63} 160 63"
+        ticket = rcon_command(sock, command_id, f"forceload add {region}")
+        print("RCON force-load:", ticket, flush=True)
+        time.sleep(0.5)
+
         command = f"place template realscale:architecture/{template} {x} 160 0"
         print(f">>> {command}", flush=True)
-        response = rcon_command(sock, index + 7, command)
+        response = rcon_command(sock, command_id + 1, command)
         expected = f'Loaded template "realscale:architecture/{template}" at'
         print("RCON:", response, flush=True)
         if expected not in response:
             raise RuntimeError(f"Template placement did not succeed for {template}: {response}")
+        released = rcon_command(sock, command_id + 2, f"forceload remove {region}")
+        print("RCON release:", released, flush=True)
+        command_id += 3
 
-    save_id = 7 + len(TEMPLATES)
+    save_id = command_id
     print("RCON:", rcon_command(sock, save_id, "save-all flush"), flush=True)
     time.sleep(2)
     try:

@@ -73,7 +73,7 @@ the design and build pipeline.
 
 The architecture library therefore provides 58 templates in total: three
 individually licensed GDMC conversions and 55 original RealScale designs (five
-foundational designs plus 50 batch-generated designs, including five
+foundational designs plus 50 batch-generated designs, including fifteen
 multi-building settlement compounds). Converted/generated NBT is embedded in
 the mod's base data namespace for explicit template placement. The separate
 optional architecture pack contains only biome tags and worldgen registration.
