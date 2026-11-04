@@ -137,19 +137,25 @@ try:
 
     pack_id = "mod/realscale:resourcepacks/realscale_structures_architecture_pilot"
     available = rcon_command(sock, 2, "datapack list available")
+    active_before = rcon_command(sock, 3, "datapack list enabled")
     print("RCON available packs:", available, flush=True)
-    if pack_id not in available:
-        raise RuntimeError(f"Optional architecture data pack is not discoverable: {pack_id}")
-    enabled = rcon_command(sock, 3, f"datapack enable {pack_id}")
-    print("RCON enable architecture pack:", enabled, flush=True)
-    if "Enabled" not in enabled and "already enabled" not in enabled.lower():
-        raise RuntimeError(f"Architecture data pack could not be enabled: {enabled}")
-    active = rcon_command(sock, 4, "datapack list enabled")
+    print("RCON enabled packs before selection:", active_before, flush=True)
+    if pack_id not in available and pack_id not in active_before:
+        raise RuntimeError(f"Optional architecture data pack was not discovered: {pack_id}")
+    if pack_id in active_before:
+        active = active_before
+        print("Architecture pack was already enabled by the isolated test world.", flush=True)
+    else:
+        enabled = rcon_command(sock, 4, f"datapack enable {pack_id}")
+        print("RCON enable architecture pack:", enabled, flush=True)
+        if "Enabled" not in enabled and "already enabled" not in enabled.lower():
+            raise RuntimeError(f"Architecture data pack could not be enabled: {enabled}")
+        active = rcon_command(sock, 5, "datapack list enabled")
     print("RCON enabled packs:", active, flush=True)
     if pack_id not in active:
         raise RuntimeError("Architecture data pack did not remain enabled after reload")
 
-    print("RCON:", rcon_command(sock, 5,
+    print("RCON:", rcon_command(sock, 6,
           "forceload add 0 160 0 1055 160 31"), flush=True)
     # Chunk tickets are acknowledged before asynchronous chunk loading finishes.
     time.sleep(4)
@@ -158,13 +164,13 @@ try:
         x = index * 32
         command = f"place template realscale:architecture/{template} {x} 160 0"
         print(f">>> {command}", flush=True)
-        response = rcon_command(sock, index + 6, command)
+        response = rcon_command(sock, index + 7, command)
         expected = f'Loaded template "realscale:architecture/{template}" at'
         print("RCON:", response, flush=True)
         if expected not in response:
             raise RuntimeError(f"Template placement did not succeed for {template}: {response}")
 
-    save_id = 6 + len(TEMPLATES)
+    save_id = 7 + len(TEMPLATES)
     print("RCON:", rcon_command(sock, save_id, "save-all flush"), flush=True)
     time.sleep(2)
     try:
