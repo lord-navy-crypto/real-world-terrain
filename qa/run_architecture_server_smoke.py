@@ -168,32 +168,21 @@ try:
 
     command_id = 6
     for index, template in enumerate(TEMPLATES):
-        # A 64x64 ticket window comfortably contains even the largest template
-        # while keeping the server's 256-chunk force-load limit far below its cap.
+        # Keep every template in its own 64-block-wide test bay.
+        # The placement command loads target chunks as needed.
         x = index * 64
-        region = f"{x} 160 0 {x + 63} 160 63"
-        ticket = rcon_command(sock, command_id, f"forceload add {region}")
-        print("RCON force-load:", ticket, flush=True)
-        time.sleep(0.5)
-
         command = f"place template realscale:architecture/{template} {x} 160 0"
         print(f">>> {command}", flush=True)
-        response = rcon_command(sock, command_id + 1, command)
+        response = rcon_command(sock, command_id, command)
         expected = f'Loaded template "realscale:architecture/{template}" at'
         print("RCON:", response, flush=True)
         if expected not in response:
             raise RuntimeError(f"Template placement did not succeed for {template}: {response}")
-        released = rcon_command(sock, command_id + 2, f"forceload remove {region}")
-        print("RCON release:", released, flush=True)
-        command_id += 3
+        command_id += 1
 
     save_id = command_id
     print("RCON:", rcon_command(sock, save_id, "save-all flush"), flush=True)
     time.sleep(2)
-    try:
-        rcon_command(sock, save_id + 1, "forceload remove all")
-    except Exception:
-        pass
     try:
         rcon_command(sock, save_id + 2, "stop")
     except Exception:
