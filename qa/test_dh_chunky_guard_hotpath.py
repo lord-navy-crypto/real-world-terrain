@@ -43,7 +43,7 @@ class GuardHotpathTests(unittest.TestCase):
                   if 'modId="dhchunkyguard"' in b]
         self.assertEqual(len(legacy), 1)
         self.assertIn('type="incompatible"', legacy[0])
-        self.assertNotIn('[[mods]]\\nmodId="dhchunkyguard"', meta)
+        self.assertNotIn("[[mods]]" + chr(10) + 'modId="dhchunkyguard"', meta)
         self.assertFalse((ROOT / "dh-chunky-guard/build.gradle").exists())
 
 
