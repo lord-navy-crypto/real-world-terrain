@@ -696,6 +696,10 @@ def build_river_trade_hamlet():
                  "Riverside working hamlet with a watermill, fishing cottage, masonry bridge and timber landing.")
     merge_building(b, build_watermill(), 2, 0, 2)
     merge_building(b, build_fishing_hut(), 30, 0, 2)
+    # A shallow engineered channel makes the bridge and landing visually read
+    # as riverside infrastructure even when the start biome is a floodplain edge.
+    b.fill(0, 0, 23, 50, 0, 25, "minecraft:gravel")
+    b.fill(0, 1, 23, 50, 1, 25, "minecraft:water", level="0")
     merge_building(b, build_stone_bridge(), 2, 0, 21)
     merge_building(b, build_coastal_pier(), 27, 0, 22)
     b.fill(20, 0, 17, 28, 0, 19, "minecraft:coarse_dirt")
