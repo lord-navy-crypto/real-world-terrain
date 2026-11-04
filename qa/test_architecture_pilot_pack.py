@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""License, original design, conversion and worldgen tests for architecture."""
+"""License, batch generation, NBT, worldgen and packaging tests."""
 import gzip
 import json
 import sys
@@ -11,10 +11,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import convert_gdmc_architecture as converter
 import generate_original_architecture as original_generator
+import generate_architecture_batch as batch_generator
 
 SOURCE = ROOT / "assets/architecture/gdmc-source"
 LICENSED = ROOT / "neoforge/build/generated/realscale-licensed-architecture-templates/data/realscale/structures/architecture"
 ORIGINAL = ROOT / "neoforge/build/generated/realscale-original-architecture-templates/data/realscale/structures/architecture"
+BATCH = ROOT / "neoforge/build/generated/realscale-batch-architecture-templates/data/realscale/structures/architecture"
 PACK = ROOT / "neoforge/build/generated/realscale-structure-packs/resourcepacks/realscale_structures_architecture_pilot"
 JAVA = ROOT / "neoforge/src/main/java/org/realscale/neoforge/RealScaleStructurePacks.java"
 LICENSE = ROOT / "licenses/GDMC-APACHE-2.0.txt"
@@ -33,9 +35,27 @@ ORIGINAL_EXPECTED = {
     "coastal_lighthouse": (9, 20, 9),
     "desert_caravanserai": (17, 9, 17),
 }
+BATCH_NAMES = (
+    "woodland_cottage", "village_blacksmith", "schoolhouse",
+    "healers_clinic", "brick_bakery", "two_storey_townhouse",
+    "snowfield_shelter", "savanna_outpost", "marsh_stilt_house",
+    "mesa_trading_post", "market_hall", "railway_station", "windmill",
+    "fishing_hut", "coastal_pier", "forest_watchtower",
+    "botanical_greenhouse", "orchard_farm", "stone_bridge", "watermill",
+    "desert_well", "mountain_observatory", "ruined_watchpost",
+    "garden_pavilion", "lumber_camp",
+)
+BATCH_FACTORIES = {factory().name: factory for factory in batch_generator.BUILDINGS}
+BATCH_EXPECTED = {
+    name: (BATCH_FACTORIES[name]().width,
+           BATCH_FACTORIES[name]().height,
+           BATCH_FACTORIES[name]().length)
+    for name in BATCH_NAMES
+}
 ALL_EXPECTED = {
     **{name: size for name, (size, _) in LICENSED_EXPECTED.items()},
     **ORIGINAL_EXPECTED,
+    **BATCH_EXPECTED,
 }
 
 
@@ -99,8 +119,71 @@ class ArchitecturePilotTests(unittest.TestCase):
                 root = read_template(path, expected_size)
                 palette_names = {entry["Name"] for entry in root["palette"]}
                 self.assertGreater(len(palette_names), 8)
-                self.assertTrue(any(name != "minecraft:air" for name in palette_names))
         self.assertIn("Original RealScale designs", ORIGINAL_DOC.read_text(encoding="utf-8"))
+
+    def test_batch_generator_creates_twenty_five_original_designs(self):
+        self.assertEqual(len(batch_generator.BUILDINGS), 25)
+        self.assertEqual(set(BATCH_FACTORIES), set(BATCH_NAMES))
+        self.assertEqual(len(BATCH_EXPECTED), 25)
+        self.assertTrue(BATCH.is_dir(),
+                        "Run Gradle processResources or build before this test")
+        for template, expected_size in BATCH_EXPECTED.items():
+            with self.subTest(template=template):
+                path = BATCH / f"{template}.nbt"
+                self.assertTrue(path.is_file(), path)
+                root = read_template(path, expected_size)
+                palette_names = {entry["Name"] for entry in root["palette"]}
+                self.assertGreater(len(palette_names), 5)
+                self.assertTrue(any(name != "minecraft:air" for name in palette_names))
+
+    def test_batch_designs_have_archetype_specific_blocks_and_profiles(self):
+        self.assertTrue(PACK.is_dir(),
+                        "Run Gradle processResources or build before this test")
+        expected_features = {
+            "woodland_cottage": "minecraft:oak_planks",
+            "village_blacksmith": "minecraft:campfire",
+            "schoolhouse": "minecraft:black_concrete",
+            "healers_clinic": "minecraft:white_terracotta",
+            "brick_bakery": "minecraft:bricks",
+            "two_storey_townhouse": "minecraft:dark_oak_planks",
+            "snowfield_shelter": "minecraft:spruce_planks",
+            "savanna_outpost": "minecraft:acacia_planks",
+            "marsh_stilt_house": "minecraft:oak_log",
+            "mesa_trading_post": "minecraft:orange_terracotta",
+            "market_hall": "minecraft:dark_oak_log",
+            "railway_station": "minecraft:rail",
+            "windmill": "minecraft:white_wool",
+            "fishing_hut": "minecraft:spruce_planks",
+            "coastal_pier": "minecraft:spruce_planks",
+            "forest_watchtower": "minecraft:spruce_log",
+            "botanical_greenhouse": "minecraft:glass_pane",
+            "orchard_farm": "minecraft:oak_leaves",
+            "stone_bridge": "minecraft:stone_bricks",
+            "watermill": "minecraft:cobblestone",
+            "desert_well": "minecraft:sandstone",
+            "mountain_observatory": "minecraft:cut_copper",
+            "ruined_watchpost": "minecraft:mossy_cobblestone",
+            "garden_pavilion": "minecraft:polished_diorite",
+            "lumber_camp": "minecraft:coarse_dirt",
+        }
+        self.assertEqual(set(expected_features), set(BATCH_NAMES))
+        for template, required_block in expected_features.items():
+            with self.subTest(template=template):
+                root = read_template(BATCH / f"{template}.nbt", BATCH_EXPECTED[template])
+                self.assertIn(required_block, {p["Name"] for p in root["palette"]})
+                biome_tag = json.loads(
+                    (PACK / f"data/realscale/tags/worldgen/biome/has_structure/{template}.json").read_text()
+                )
+                self.assertTrue(biome_tag["values"])
+                self.assertFalse(biome_tag["replace"])
+                structure_set = json.loads(
+                    (PACK / f"data/realscale/worldgen/structure_set/{template}.json").read_text()
+                )
+                self.assertEqual(structure_set["placement"]["type"], "minecraft:random_spread")
+                self.assertGreater(
+                    structure_set["placement"]["spacing"],
+                    structure_set["placement"]["separation"]
+                )
 
     def test_original_buildings_have_distinct_biome_and_design_profiles(self):
         self.assertTrue(PACK.is_dir(),
@@ -135,7 +218,7 @@ class ArchitecturePilotTests(unittest.TestCase):
                         "Run Gradle processResources or build before this test")
         meta = json.loads((PACK / "pack.mcmeta").read_text(encoding="utf-8"))
         self.assertEqual(meta["pack"]["pack_format"], 48)
-        self.assertEqual(len(ALL_EXPECTED), 8)
+        self.assertEqual(len(ALL_EXPECTED), 33)
         for template in ALL_EXPECTED:
             with self.subTest(template=template):
                 structure = json.loads(
@@ -194,6 +277,7 @@ class ArchitecturePilotTests(unittest.TestCase):
                 )
             self.assertFalse(any(name.endswith(".schematic") for name in names))
             self.assertNotIn("original-architecture-manifest.json", names)
+            self.assertNotIn("batch-architecture-manifest.json", names)
 
 
 if __name__ == "__main__":
