@@ -91,16 +91,17 @@ tasks.named('test', Test) {
 // Embed every selectable structure preset inside the RealScale JAR itself.
 // No Python or external structure ZIPs are needed to play or build the mod.
 def generatedStructureResources = layout.buildDirectory.dir("generated/realscale-structure-packs")
-def generatedArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-architecture-templates")
+def generatedLicensedArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-licensed-architecture-templates")
+def generatedOriginalArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-original-architecture-templates")
 
 // Convert only the three explicitly licensed GDMC source schematics. The source
 // files stay outside the NeoForge module and are never packaged in the JAR.
 tasks.register("generateArchitectureTemplates") {
     inputs.dir(file("../assets/architecture/gdmc-source"))
     inputs.file(file("../scripts/convert_gdmc_architecture.py"))
-    outputs.dir(generatedArchitectureTemplates)
+    outputs.dir(generatedLicensedArchitectureTemplates)
     doLast {
-        def output = generatedArchitectureTemplates.get().asFile
+        def output = generatedLicensedArchitectureTemplates.get().asFile
         project.delete(output)
         def python = System.getenv("PYTHON") ?: "python3"
         project.exec {
@@ -112,8 +113,23 @@ tasks.register("generateArchitectureTemplates") {
     }
 }
 
+tasks.register("generateOriginalArchitectureTemplates") {
+    inputs.file(file("../scripts/generate_original_architecture.py"))
+    outputs.dir(generatedOriginalArchitectureTemplates)
+    doLast {
+        def output = generatedOriginalArchitectureTemplates.get().asFile
+        project.delete(output)
+        def python = System.getenv("PYTHON") ?: "python3"
+        project.exec {
+            commandLine python,
+                    file("../scripts/generate_original_architecture.py").absolutePath,
+                    "--output", output.absolutePath
+        }
+    }
+}
+
 tasks.register("generateBuiltInStructurePacks") {
-    dependsOn("generateArchitectureTemplates")
+    dependsOn("generateArchitectureTemplates", "generateOriginalArchitectureTemplates")
     outputs.dir(generatedStructureResources)
     doLast {
         def root = generatedStructureResources.get().asFile
@@ -184,16 +200,22 @@ tasks.register("generateBuiltInStructurePacks") {
         new File(architecturePack, "pack.mcmeta").setText(
             groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
                 pack:[pack_format:48,
-                      description:"RealScale optional architecture pilot — Apache-2.0 GDMC-derived templates"]
+                      description:"RealScale optional architecture library — Apache-2.0 imports + original generated designs"]
             ])) + "\n", "UTF-8")
 
-        def templateSource = new File(generatedArchitectureTemplates.get().asFile,
+        def templateTarget = new File(architecturePack, "data/realscale/structures/architecture")
+        def licensedTemplateSource = new File(generatedLicensedArchitectureTemplates.get().asFile,
                 "data/realscale/structures/architecture")
-        if (!templateSource.isDirectory())
-            throw new GradleException("Converted architecture templates are missing: " + templateSource)
+        def originalTemplateSource = new File(generatedOriginalArchitectureTemplates.get().asFile,
+                "data/realscale/structures/architecture")
+        if (!licensedTemplateSource.isDirectory())
+            throw new GradleException("Converted licensed architecture templates are missing: " + licensedTemplateSource)
+        if (!originalTemplateSource.isDirectory())
+            throw new GradleException("Original generated architecture templates are missing: " + originalTemplateSource)
         project.copy {
-            from(templateSource)
-            into(new File(architecturePack, "data/realscale/structures/architecture"))
+            from(licensedTemplateSource)
+            from(originalTemplateSource)
+            into(templateTarget)
         }
 
         def writeArchitectureJson = { String relativePath, Object value ->
@@ -204,8 +226,10 @@ tasks.register("generateBuiltInStructurePacks") {
         }
 
         // Explicit IDs avoid referencing the nonexistent #minecraft:is_plains tag.
+        // Each building has its own random-spread set and an explicit biome list.
+        // The original structures are authored by scripts/generate_original_architecture.py.
         def architectureProfiles = [
-            [id:"modern_house", spacing:48, separation:16, salt:140011,
+            [id:"modern_house", spacing:64, separation:20, salt:140011,
              biomes:["minecraft:plains", "minecraft:sunflower_plains",
                      "minecraft:forest", "minecraft:flower_forest",
                      "minecraft:birch_forest", "minecraft:old_growth_birch_forest",
@@ -215,7 +239,7 @@ tasks.register("generateBuiltInStructurePacks") {
                      "realscale:birch_parkland", "realscale:pine_oak_mosaic",
                      "realscale:oak_to_dark_forest", "realscale:temperate_to_birch",
                      "realscale:riverine_woodland"]],
-            [id:"glass_greenhouse", spacing:72, separation:24, salt:140012,
+            [id:"glass_greenhouse", spacing:96, separation:28, salt:140012,
              biomes:["minecraft:plains", "minecraft:sunflower_plains",
                      "minecraft:meadow", "minecraft:forest",
                      "minecraft:birch_forest", "minecraft:flower_forest",
@@ -223,7 +247,7 @@ tasks.register("generateBuiltInStructurePacks") {
                      "realscale:floodplain_margin", "realscale:reed_marsh_edge",
                      "realscale:lake_woodland_margin", "realscale:seasonal_floodforest",
                      "realscale:riverine_woodland", "realscale:mountain_wetland"]],
-            [id:"city_library", spacing:112, separation:32, salt:140013,
+            [id:"city_library", spacing:144, separation:40, salt:140013,
              biomes:["minecraft:forest", "minecraft:flower_forest",
                      "minecraft:birch_forest", "minecraft:old_growth_birch_forest",
                      "minecraft:dark_forest", "minecraft:taiga",
@@ -232,7 +256,38 @@ tasks.register("generateBuiltInStructurePacks") {
                      "realscale:pine_oak_mosaic", "realscale:oak_to_dark_forest",
                      "realscale:montane_oak_foothills", "realscale:subalpine_woodland",
                      "realscale:temperate_to_birch", "realscale:birch_conifer_transition",
-                     "realscale:birch_parkland", "realscale:riverine_woodland"]]
+                     "realscale:birch_parkland", "realscale:riverine_woodland"]],
+            [id:"forest_ranger_lodge", spacing:88, separation:28, salt:140021,
+             biomes:["minecraft:forest", "minecraft:flower_forest",
+                     "minecraft:birch_forest", "minecraft:old_growth_birch_forest",
+                     "minecraft:dark_forest", "minecraft:taiga",
+                     "minecraft:old_growth_spruce_taiga", "realscale:woodland_meadow",
+                     "realscale:pine_oak_mosaic", "realscale:oak_to_dark_forest",
+                     "realscale:birch_parkland", "realscale:riverine_woodland"]],
+            [id:"plains_farmstead", spacing:80, separation:24, salt:140022,
+             biomes:["minecraft:plains", "minecraft:sunflower_plains",
+                     "minecraft:savanna", "minecraft:savanna_plateau",
+                     "minecraft:meadow", "realscale:shrub_prairie",
+                     "realscale:forest_steppe", "realscale:wet_meadow",
+                     "realscale:woodland_meadow", "realscale:semi_arid_scrubland"]],
+            [id:"alpine_waystation", spacing:112, separation:32, salt:140023,
+             biomes:["minecraft:meadow", "minecraft:grove", "minecraft:snowy_slopes",
+                     "minecraft:windswept_hills", "minecraft:taiga",
+                     "realscale:rocky_alpine_meadow", "realscale:montane_spruce_meadow",
+                     "realscale:subalpine_woodland", "realscale:scree_transition",
+                     "realscale:montane_oak_foothills"]],
+            [id:"coastal_lighthouse", spacing:128, separation:36, salt:140024,
+             biomes:["minecraft:beach", "minecraft:stony_shore",
+                     "realscale:coastal_dune_meadow", "realscale:coastal_heath",
+                     "realscale:gravel_shore_fringe", "realscale:coastal_marsh_woodland",
+                     "realscale:tropical_littoral_forest"]],
+            [id:"desert_caravanserai", spacing:128, separation:36, salt:140025,
+             biomes:["minecraft:desert", "minecraft:badlands",
+                     "minecraft:eroded_badlands", "minecraft:wooded_badlands",
+                     "minecraft:savanna", "minecraft:savanna_plateau",
+                     "realscale:semi_arid_scrubland", "realscale:dry_grass_dunes",
+                     "realscale:dune_scrub", "realscale:oasis_fringe",
+                     "realscale:terracotta_scrub", "realscale:savanna_badlands"]]
         ]
 
         architectureProfiles.each { profile ->
