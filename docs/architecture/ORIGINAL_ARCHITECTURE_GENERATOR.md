@@ -16,7 +16,7 @@ This module intentionally combines two independent sources of building designs:
 The original design pipeline now has two generators:
 
 - `scripts/generate_original_architecture.py`: five foundational original designs.
-- `scripts/generate_architecture_batch.py`: 25 additional designs produced in one deterministic batch from reusable building primitives.
+- `scripts/generate_architecture_batch.py`: 30 additional designs produced in one deterministic batch from reusable building primitives, including five multi-building settlement compounds.
 
 The complete original catalog currently contains:
 
@@ -28,6 +28,7 @@ The complete original catalog currently contains:
 | `fishing_hut`, `coastal_pier`, `stone_bridge`, `watermill` | Fishing landing, timber pier, masonry crossing and riverside mill | Shores, rivers, floodplains and coastal transitions |
 | `forest_watchtower`, `botanical_greenhouse`, `orchard_farm`, `lumber_camp` | Lookout tower, glazed crop house, tree orchard and timber camp | Forests, birch/taiga, meadow and riverine woodland |
 | `desert_well`, `mountain_observatory`, `ruined_watchpost`, `garden_pavilion` | Water well, high-altitude observatory, weathered ruin and open garden structure | Desert, alpine, forest and flower/meadow biomes |
+| `woodland_hamlet`, `plains_market_square`, `river_trade_hamlet`, `alpine_watch_compound`, `desert_oasis_hamlet` | Multi-building settlements combining homes, civic services, river infrastructure, mountain outpost and oasis facilities | Temperate woodland, plains, rivers, alpine and arid regions |
 | `forest_ranger_lodge`, `plains_farmstead`, `alpine_waystation`, `coastal_lighthouse`, `desert_caravanserai` | Foundational cabin, farmstead, mountain shelter, lighthouse and courtyard inn | Temperate forest, plains, alpine, coastal and semi-arid biomes |
 
 
@@ -36,7 +37,7 @@ The complete original catalog currently contains:
 The pack is intentionally optional. In Minecraft 1.21.1:
 
 1. Open **Create New World → Data Packs**.
-2. Find **RealScale | Architecture Library (33 Structures)** under Available.
+2. Find **RealScale | Architecture Library (38 Structures)** under Available.
 3. Move it to Selected, confirm the pack prompt, and create the world.
 
 For an existing world, use **Edit World → Data Packs** and make a backup first.
@@ -51,15 +52,15 @@ region.
 ```text
 Apache-2.0 source schematics ──> licensed converter ──┐
                                                      ├─> optional architecture datapack ──> mod JAR
-Original design rules ─────────> original generator ─┘
+Original design rules ─────────> two procedural generators ─┘
 ```
 
 Gradle runs both generators during `processResources`. Only the resulting
 Minecraft `.nbt` structure templates and their worldgen JSON definitions are
 embedded. The original design scripts, licensed source files and source
-websites are not required at runtime. The batch pipeline adds 25 more
-original templates, bringing the total to 30 original structures plus
-three separately licensed imports (33 templates overall). No network request or external
+websites are not required at runtime. The batch pipeline adds 30 more
+original templates, bringing the total to 35 original structures plus
+three separately licensed imports (38 templates overall). No network request or external
 structure-library dependency is made by the game.
 
 Minecraft's `random_spread` structure sets choose candidate locations using
