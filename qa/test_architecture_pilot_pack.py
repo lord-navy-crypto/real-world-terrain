@@ -108,6 +108,13 @@ class ArchitecturePilotTests(unittest.TestCase):
             )
             self.assertFalse(biome_tag["replace"])
             self.assertTrue(biome_tag["values"])
+            self.assertFalse(any(v.startswith("#minecraft:is_") for v in biome_tag["values"]),
+                             "Architecture tags must not reference nonexistent vanilla biome tags")
+            for biome in biome_tag["values"]:
+                if biome.startswith("realscale:"):
+                    biome_file = (ROOT / "neoforge/src/main/resources/data/realscale/worldgen/biome"
+                                  / (biome.split(":", 1)[1] + ".json"))
+                    self.assertTrue(biome_file.is_file(), f"Unknown RealScale biome: {biome}")
 
     def test_registered_pack_is_optional_and_legacy_sources_are_not_in_jar(self):
         source = JAVA.read_text(encoding="utf-8")
