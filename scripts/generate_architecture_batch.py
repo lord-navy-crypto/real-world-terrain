@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from generate_original_architecture import Building
+from generate_original_architecture import Building, build_plains_farmstead
 
 
 def door(b, x, y, z, wood="oak", facing="north"):
@@ -1003,8 +1003,8 @@ def build_quarry_shed():
     b.gable_roof(1, 11, 1, 13, 6, 2, "spruce")
     for x in (13, 18):
         for z in (3, 12):
-            b.log(x, 1, z, "spruce")
-            b.log(x, 5, z, "spruce")
+            for y in range(1, 7):
+                b.log(x, y, z, "spruce")
     b.gable_roof(12, 19, 2, 13, 6, 2, "dark_oak")
     b.fill(13, 1, 5, 15, 3, 7, "minecraft:stone_bricks")
     b.fill(16, 1, 9, 18, 2, 11, "minecraft:polished_andesite")
