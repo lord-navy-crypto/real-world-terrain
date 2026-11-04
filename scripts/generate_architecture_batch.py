@@ -266,9 +266,15 @@ def build_market_hall():
             b.log(x, 8, z, "dark_oak", axis="z")
     b.gable_roof(1, 19, 1, 15, 8, 3, "dark_oak")
     for x, wool in ((4, "red"), (8, "yellow"), (12, "blue"), (16, "green")):
-        b.fill(x - 1, 2, 5, x + 1, 2, 10, f"minecraft:{wool}_wool")
-        b.fill(x - 1, 3, 6, x + 1, 3, 9, "minecraft:barrel")
-        b.set(x, 3, 8, "minecraft:crafting_table")
+        # Counter, stocked barrels and a raised colored awning for each stall.
+        b.fill(x - 1, 1, 6, x + 1, 1, 9, "minecraft:oak_planks")
+        b.set(x, 2, 7, "minecraft:barrel", facing="up", open="false")
+        b.set(x, 2, 8, "minecraft:crafting_table")
+        for sx in (x - 1, x + 1):
+            for sz in (5, 10):
+                b.log(sx, 2, sz, "dark_oak")
+                b.log(sx, 3, sz, "dark_oak")
+        b.fill(x - 1, 4, 5, x + 1, 4, 10, f"minecraft:{wool}_wool")
     for x in (3, 9, 15):
         lantern(b, x, 7, 8, True)
     return b
