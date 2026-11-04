@@ -117,8 +117,8 @@ def feature_bakery(b, c):
 def feature_townhouse(b, c):
     b.set(3, 2, 7, "minecraft:crafting_table")
     b.set(4, 2, 7, "minecraft:bookshelf")
-    b.set(c + 2, 7, 7, "minecraft:lantern", hanging=True)
-    b.set(c - 2, 7, 7, "minecraft:lantern", hanging=True)
+    b.set(c + 2, 7, 7, "minecraft:lantern", hanging="true")
+    b.set(c - 2, 7, 7, "minecraft:lantern", hanging="true")
 
 
 def feature_snow(b, c):
@@ -290,8 +290,8 @@ def build_railway_station():
     pane(b, 2, 3, 2)
     pane(b, 5, 3, 2)
     for x in range(1, 20):
-        b.set(x, 1, 5, "minecraft:rail", shape="east_west", waterlogged="false")
-        b.set(x, 1, 7, "minecraft:rail", shape="east_west", waterlogged="false")
+        b.set(x, 1, 5, "minecraft:rail", shape="east_west")
+        b.set(x, 1, 7, "minecraft:rail", shape="east_west")
     for x in (4, 10, 16):
         lantern(b, x, 6, 6, True)
     return b
@@ -323,8 +323,7 @@ def build_windmill():
         b.set(7, y, 0, "minecraft:white_wool")
     door(b, 7, 1, 3)
     b.set(5, 2, 7, "minecraft:barrel", facing="up", open="false")
-    b.set(9, 2, 7, "minecraft:grindstone", face="wall", facing="north",
-          powered="false")
+    b.set(9, 2, 7, "minecraft:grindstone", face="wall", facing="north")
     return b
 
 
