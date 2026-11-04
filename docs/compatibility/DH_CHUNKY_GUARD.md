@@ -56,3 +56,30 @@ The integrated compatibility tests are in `qa/test_dh_chunky_*.py`. The
 `dh-chunky-integrated` workflow builds the main `neoforge/` project and
 checks that the compatibility classes and optional Mixin configuration are
 inside the RealScale JAR, with no third-party DH/Chunky binaries bundled.
+
+## Historical development record
+
+- **0.3.1-experimental (2026-10-23):** moved the already-bound listener check to
+  the first operation in the Mixin callback and cached the opt-out JVM property
+  at class initialization. This reduced work on the ordinary completed-chunk
+  path; it was not an FPS benchmark. The pinned test pair remained DH 3.3.3 /
+  Chunky 1.4.23. Physical DH/Sodium/Iris rendering remained uncertified.
+  [Standalone build evidence](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39922035765).
+- **0.3.0-experimental (2026-10-23):** added the read-only
+  `/dhchunkyguard status` and `/dhchunkyguard advice` commands, launch-lifetime
+  counters and binding confirmation. Dedicated-server/RCON checks passed.
+  [Build and regression checks](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39905141570);
+  [multi-preset server test](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39905141492).
+- **0.2.0-experimental (2026-10-23):** cached the reflective
+  `ChunkyProvider.get()` method and added a marker emitted only after DH's
+  native listener binding returned successfully.
+- **0.1.0-experimental (2026-10-22):** introduced the narrow retry for the
+  confirmed `IllegalStateException: Chunky is not loaded.` startup race.
+  It never disabled DH's LOD renderer or rewrote RealScale world height,
+  generated chunks, or saved data. An earlier client observation of distant
+  mountain LOD is historical evidence only, not certification of this
+  integrated build or its shader compatibility.
+
+The former standalone artifact and its separate build project have been
+retired. These historical run links refer to the old standalone implementation;
+the integrated build is validated by the new workflow above.
