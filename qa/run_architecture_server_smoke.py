@@ -55,7 +55,7 @@ while time.monotonic() < deadline:
             continue
         captured.append(line)
         print(line, end="", flush=True)
-        if "Done (" in line and "For help, type" in line:
+        if "Done (" in line:
             booted = True
             break
     if booted:
