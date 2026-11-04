@@ -221,7 +221,10 @@ tasks.register("generateBuiltInStructurePacks") {
                       description:"RealScale optional architecture library — Apache-2.0 imports + original generated designs"]
             ])) + "\n", "UTF-8")
 
-        def templateTarget = new File(architecturePack, "data/realscale/structures/architecture")
+        // StructureTemplateManager reads templates from the mod's normal
+        // data namespace. Keep the NBT available for explicit /place template
+        // use even when the optional worldgen pack is not selected.
+        def templateTarget = new File(root, "data/realscale/structures/architecture")
         def licensedTemplateSource = new File(generatedLicensedArchitectureTemplates.get().asFile,
                 "data/realscale/structures/architecture")
         def originalTemplateSource = new File(generatedOriginalArchitectureTemplates.get().asFile,
