@@ -16,7 +16,7 @@ This module intentionally combines two independent sources of building designs:
 The original design pipeline now has two generators:
 
 - `scripts/generate_original_architecture.py`: five foundational original designs.
-- `scripts/generate_architecture_batch.py`: 30 additional designs produced in one deterministic batch from reusable building primitives, including five multi-building settlement compounds.
+- `scripts/generate_architecture_batch.py`: 30 additional designs produced in one deterministic batch from reusable building primitives, including fifteen multi-building settlement compounds.
 
 The complete original catalog currently contains:
 
@@ -60,9 +60,9 @@ Minecraft `.nbt` templates are embedded in the mod's base data namespace,
 so explicit `/place template` use does not depend on enabling the optional
 worldgen pack. The biome tags, structure definitions, template pools and
 structure sets live in the separate opt-in pack. The original design scripts,
-licensed source files and source websites are not required at runtime. The batch pipeline adds 30 more
-original templates, bringing the total to 35 original structures plus
-three separately licensed imports (38 templates overall). No network request or external
+licensed source files and source websites are not required at runtime. The batch pipeline adds 50 more
+original templates, bringing the total to 55 original structures plus
+three separately licensed imports (58 templates overall). No network request or external
 structure-library dependency is made by the game.
 
 Minecraft's `random_spread` structure sets choose candidate locations using

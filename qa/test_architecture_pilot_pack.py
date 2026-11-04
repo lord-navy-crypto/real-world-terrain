@@ -46,6 +46,13 @@ BATCH_NAMES = (
     "garden_pavilion", "lumber_camp", "woodland_hamlet",
     "plains_market_square", "river_trade_hamlet",
     "alpine_watch_compound", "desert_oasis_hamlet",
+    "stone_mason_workshop", "canal_lock", "monastery_chapel",
+    "apiary_garden", "snowbound_storehouse", "desert_cistern",
+    "tropical_boardwalk_house", "railway_signal_box", "quarry_shed",
+    "charcoal_kiln", "vineyard_estate", "sheepfold_ranch",
+    "charcoal_burners_camp", "fishing_village_compound", "hilltop_manor",
+    "frontier_fort", "railway_depot", "orchard_cider_estate",
+    "riverside_sawmill", "marsh_reed_hamlet",
 )
 BATCH_FACTORIES = {factory().name: factory for factory in batch_generator.BUILDINGS}
 BATCH_EXPECTED = {
@@ -123,10 +130,10 @@ class ArchitecturePilotTests(unittest.TestCase):
                 self.assertGreater(len(palette_names), 8)
         self.assertIn("Original RealScale designs", ORIGINAL_DOC.read_text(encoding="utf-8"))
 
-    def test_batch_generator_creates_twenty_five_original_designs(self):
-        self.assertEqual(len(batch_generator.BUILDINGS), 30)
+    def test_batch_generator_creates_fifty_original_designs(self):
+        self.assertEqual(len(batch_generator.BUILDINGS), 50)
         self.assertEqual(set(BATCH_FACTORIES), set(BATCH_NAMES))
-        self.assertEqual(len(BATCH_EXPECTED), 30)
+        self.assertEqual(len(BATCH_EXPECTED), 50)
         self.assertTrue(BATCH.is_dir(),
                         "Run Gradle processResources or build before this test")
         for template, expected_size in BATCH_EXPECTED.items():
@@ -172,6 +179,26 @@ class ArchitecturePilotTests(unittest.TestCase):
             "river_trade_hamlet": "minecraft:cobblestone",
             "alpine_watch_compound": "minecraft:cut_copper",
             "desert_oasis_hamlet": "minecraft:orange_terracotta",
+            "stone_mason_workshop": "minecraft:stonecutter",
+            "canal_lock": "minecraft:water",
+            "monastery_chapel": "minecraft:flowering_azalea",
+            "apiary_garden": "minecraft:beehive",
+            "snowbound_storehouse": "minecraft:snow",
+            "desert_cistern": "minecraft:cut_sandstone",
+            "tropical_boardwalk_house": "minecraft:jungle_planks",
+            "railway_signal_box": "minecraft:redstone_lamp",
+            "quarry_shed": "minecraft:polished_andesite",
+            "charcoal_kiln": "minecraft:campfire",
+            "vineyard_estate": "minecraft:sweet_berry_bush",
+            "sheepfold_ranch": "minecraft:hay_block",
+            "charcoal_burners_camp": "minecraft:campfire",
+            "fishing_village_compound": "minecraft:smoker",
+            "hilltop_manor": "minecraft:bricks",
+            "frontier_fort": "minecraft:spruce_log",
+            "railway_depot": "minecraft:bricks",
+            "orchard_cider_estate": "minecraft:oak_leaves",
+            "riverside_sawmill": "minecraft:water",
+            "marsh_reed_hamlet": "minecraft:mud",
         }
         self.assertEqual(set(expected_features), set(BATCH_NAMES))
         for template, required_block in expected_features.items():
@@ -201,12 +228,44 @@ class ArchitecturePilotTests(unittest.TestCase):
             "river_trade_hamlet": {"minecraft:cobblestone", "minecraft:gravel", "minecraft:water"},
             "alpine_watch_compound": {"minecraft:cut_copper", "minecraft:campfire", "minecraft:spruce_log"},
             "desert_oasis_hamlet": {"minecraft:orange_terracotta", "minecraft:jungle_leaves", "minecraft:water"},
+            "vineyard_estate": {"minecraft:sweet_berry_bush", "minecraft:oak_leaves", "minecraft:barrel"},
+            "sheepfold_ranch": {"minecraft:hay_block", "minecraft:water", "minecraft:oak_fence"},
+            "charcoal_burners_camp": {"minecraft:campfire", "minecraft:stone_bricks", "minecraft:spruce_log"},
+            "fishing_village_compound": {"minecraft:smoker", "minecraft:barrel", "minecraft:spruce_log"},
+            "hilltop_manor": {"minecraft:bricks", "minecraft:stone_bricks", "minecraft:spruce_log"},
+            "frontier_fort": {"minecraft:spruce_log", "minecraft:stone_bricks", "minecraft:campfire"},
+            "railway_depot": {"minecraft:bricks", "minecraft:gravel", "minecraft:redstone_lamp"},
+            "orchard_cider_estate": {"minecraft:oak_leaves", "minecraft:barrel", "minecraft:bricks"},
+            "riverside_sawmill": {"minecraft:water", "minecraft:gravel", "minecraft:spruce_log"},
+            "marsh_reed_hamlet": {"minecraft:oak_planks", "minecraft:mud", "minecraft:oak_log"},
         }
         for template, required_blocks in expected.items():
             with self.subTest(template=template):
                 root = read_template(BATCH / f"{template}.nbt", BATCH_EXPECTED[template])
                 self.assertGreaterEqual(root["size"][0], 40)
                 self.assertGreaterEqual(root["size"][2], 35)
+                palette = {entry["Name"] for entry in root["palette"]}
+                self.assertTrue(required_blocks.issubset(palette),
+                                f"{template} is missing settlement features: {required_blocks - palette}")
+
+    def test_second_expansion_compounds_have_distinct_settlement_features(self):
+        expected = {
+            "vineyard_estate": {"minecraft:sweet_berry_bush", "minecraft:oak_leaves", "minecraft:barrel"},
+            "sheepfold_ranch": {"minecraft:hay_block", "minecraft:water", "minecraft:oak_fence"},
+            "charcoal_burners_camp": {"minecraft:campfire", "minecraft:stone_bricks", "minecraft:spruce_log"},
+            "fishing_village_compound": {"minecraft:smoker", "minecraft:barrel", "minecraft:spruce_log"},
+            "hilltop_manor": {"minecraft:bricks", "minecraft:stone_bricks", "minecraft:spruce_log"},
+            "frontier_fort": {"minecraft:spruce_log", "minecraft:stone_bricks", "minecraft:campfire"},
+            "railway_depot": {"minecraft:bricks", "minecraft:gravel", "minecraft:redstone_lamp"},
+            "orchard_cider_estate": {"minecraft:oak_leaves", "minecraft:barrel", "minecraft:bricks"},
+            "riverside_sawmill": {"minecraft:water", "minecraft:gravel", "minecraft:spruce_log"},
+            "marsh_reed_hamlet": {"minecraft:oak_planks", "minecraft:mud", "minecraft:oak_log"},
+        }
+        for template, required_blocks in expected.items():
+            with self.subTest(template=template):
+                root = read_template(BATCH / f"{template}.nbt", BATCH_EXPECTED[template])
+                self.assertGreaterEqual(root["size"][0], 39)
+                self.assertGreaterEqual(root["size"][2], 25)
                 palette = {entry["Name"] for entry in root["palette"]}
                 self.assertTrue(required_blocks.issubset(palette),
                                 f"{template} is missing settlement features: {required_blocks - palette}")
@@ -244,7 +303,7 @@ class ArchitecturePilotTests(unittest.TestCase):
                         "Run Gradle processResources or build before this test")
         meta = json.loads((PACK / "pack.mcmeta").read_text(encoding="utf-8"))
         self.assertEqual(meta["pack"]["pack_format"], 48)
-        self.assertEqual(len(ALL_EXPECTED), 38)
+        self.assertEqual(len(ALL_EXPECTED), 58)
         for template in ALL_EXPECTED:
             with self.subTest(template=template):
                 structure = json.loads(
@@ -288,7 +347,7 @@ class ArchitecturePilotTests(unittest.TestCase):
     def test_registered_pack_is_optional_and_only_templates_are_packaged(self):
         source = JAVA.read_text(encoding="utf-8")
         self.assertIn('"architecture_pilot"', source)
-        self.assertIn('"RealScale | Architecture Library (38 Structures)", false)', source)
+        self.assertIn('"RealScale | Architecture Library (58 Structures)", false)', source)
         self.assertIn("false, // Never mandatory", source)
         jars = list((ROOT / "neoforge/build/libs").glob("*.jar"))
         self.assertTrue(jars, "NeoForge jar must be built before validation")

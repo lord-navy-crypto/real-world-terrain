@@ -29,6 +29,13 @@ TEMPLATES = (
     "garden_pavilion", "lumber_camp", "woodland_hamlet",
     "plains_market_square", "river_trade_hamlet",
     "alpine_watch_compound", "desert_oasis_hamlet",
+    "stone_mason_workshop", "canal_lock", "monastery_chapel",
+    "apiary_garden", "snowbound_storehouse", "desert_cistern",
+    "tropical_boardwalk_house", "railway_signal_box", "quarry_shed",
+    "charcoal_kiln", "vineyard_estate", "sheepfold_ranch",
+    "charcoal_burners_camp", "fishing_village_compound", "hilltop_manor",
+    "frontier_fort", "railway_depot", "orchard_cider_estate",
+    "riverside_sawmill", "marsh_reed_hamlet",
 )
 
 def fail(message: str, proc=None, lines=None):
