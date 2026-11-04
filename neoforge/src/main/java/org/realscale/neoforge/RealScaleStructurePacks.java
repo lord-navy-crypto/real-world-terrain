@@ -84,7 +84,7 @@ public final class RealScaleStructurePacks {
         }
         // Explicit opt-in: do not add buildings to ordinary vanilla worlds by default.
         registerOne(event, "architecture_pilot",
-                "RealScale | Architecture Library (38 Structures)", false);
+                "RealScale | Architecture Library (58 Structures)", false);
     }
 
     private static void registerOne(AddPackFindersEvent event, String id,
