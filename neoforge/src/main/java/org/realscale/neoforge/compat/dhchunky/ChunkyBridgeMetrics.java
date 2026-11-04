@@ -1,14 +1,14 @@
-package org.realscale.compat.dhchunky;
+package org.realscale.neoforge.compat.dhchunky;
 
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Small launch-lifetime counters; zero timers, polls, background workers,
- * configuration writes, or per-chunk log spam. Does not inspect player data.
+ * Lightweight launch-lifetime counters for the embedded DH/Chunky bridge.
+ * No timers, polling threads, configuration writes, player-data inspection,
+ * chunk scheduler changes, or per-chunk log spam.
  *
- * A native listener being bound is NOT proof that distant GPU LOD has rendered.
- * v0.3 deliberately leaves the DH/Chunky scheduler completely upstream-owned.
+ * A native listener bind is NOT proof that distant GPU LOD rendered.
  */
 public final class ChunkyBridgeMetrics {
     private static final AtomicLong providerProbes = new AtomicLong();
@@ -41,7 +41,7 @@ public final class ChunkyBridgeMetrics {
         boolean enabled = Boolean.parseBoolean(System.getProperty(
             "realscale.dhchunky.guard.enabled", "true"));
         return String.format(Locale.ROOT,
-            "DHChunkyGuard v0.3.1 enabled=%s probes=%d notReady=%d deferred=%d "
+            "RealScale DH-Chunky Guard (embedded) enabled=%s probes=%d notReady=%d deferred=%d "
                 + "readySignals=%d nativeBindsSinceLaunch=%d avgProbeUs=%.1f maxProbeUs=%.1f "
                 + "GPU_LOD=unverified",
             enabled, checks, failedProbes.get(), deferredCallbacks.get(),
@@ -50,15 +50,14 @@ public final class ChunkyBridgeMetrics {
 
     public static String advice() {
         if (nativeBindings.get() == 0L && deferredCallbacks.get() > 0L) {
-            return "DHChunkyGuard: Chunky was not ready; native DH listener bind not yet observed. "
-                + "Generate or load another chunk, then check status. Do not assume GPU LOD is broken.";
+            return "RealScale DH-Chunky Guard: Chunky was not ready; native DH listener binding "
+                + "has not yet been observed. Load or generate another chunk, then check status.";
         }
         if (nativeBindings.get() == 0L) {
-            return "DHChunkyGuard: no native DH listener bind observed in this process. "
-                + "Check exact DH 3.3.3 / Chunky 1.4.23 versions and latest.log.";
+            return "RealScale DH-Chunky Guard: no native DH listener bind observed in this process. "
+                + "The embedded guard activates only for Distant Horizons 3.3.3 + Chunky 1.4.23.";
         }
-        return "DHChunkyGuard: native DH-to-Chunky listener binding observed. "
-            + "This does NOT verify rendered LOD. For blank mountains check DH rendering, "
-            + "distant generation and active Iris shaderpack compatibility separately.";
+        return "RealScale DH-Chunky Guard: native DH-to-Chunky listener binding was observed. "
+            + "This does NOT verify rendered LOD, Iris, Sodium, or shaderpack compatibility.";
     }
 }

@@ -1,0 +1,73 @@
+name: Build RealScale with integrated DH-Chunky compatibility
+on:
+  push:
+    branches: [main]
+    paths:
+      - "neoforge/src/main/java/org/realscale/neoforge/compat/dhchunky/**"
+      - "neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java"
+      - "neoforge/src/main/resources/META-INF/neoforge.mods.toml"
+      - "neoforge/src/main/resources/realscale.dhchunky.mixins.json"
+      - "qa/test_dh_chunky_*.py"
+      - ".github/workflows/dh-chunky-integrated.yml"
+  pull_request:
+    paths:
+      - "neoforge/src/main/java/org/realscale/neoforge/compat/dhchunky/**"
+      - "neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java"
+      - "neoforge/src/main/resources/META-INF/neoforge.mods.toml"
+      - "neoforge/src/main/resources/realscale.dhchunky.mixins.json"
+      - "qa/test_dh_chunky_*.py"
+      - ".github/workflows/dh-chunky-integrated.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-integrated-mod:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '21'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.14.3'}
+      - name: Validate embedded guard and optional-dependency contracts
+        run: |
+          python3 -m unittest discover -s qa -p test_dh_chunky_patch.py -v
+          python3 -m unittest discover -s qa -p test_dh_chunky_status.py -v
+          python3 -m unittest discover -s qa -p test_dh_chunky_guard_hotpath.py -v
+      - name: Build the main RealScale NeoForge mod (single JAR)
+        working-directory: neoforge
+        run: gradle --no-daemon --stacktrace build
+      - name: Verify compatibility is embedded and third-party mods are not bundled
+        run: |
+          python3 - <<'PY'
+          from glob import glob
+          from zipfile import ZipFile
+
+          jars = glob("neoforge/build/libs/*.jar")
+          assert len(jars) == 1, jars
+          with ZipFile(jars[0]) as jar:
+              names = set(jar.namelist())
+              required = (
+                  "META-INF/neoforge.mods.toml",
+                  "realscale.dhchunky.mixins.json",
+                  "org/realscale/neoforge/compat/dhchunky/ChunkyBridgeMetrics.class",
+                  "org/realscale/neoforge/compat/dhchunky/DhChunkyGuardCommands.class",
+                  "org/realscale/neoforge/compat/dhchunky/mixin/ChunkyLifecycleSetupMixin.class",
+                  "org/realscale/neoforge/compat/dhchunky/mixin/DhChunkyMixinConfigPlugin.class",
+              )
+              for path in required:
+                  assert path in names, path
+              metadata = jar.read("META-INF/neoforge.mods.toml").decode("utf-8")
+              assert 'modId="realscale"' in metadata
+              assert 'modId="dhchunkyguard"' not in metadata
+              assert not any(path.startswith(("com/seibel/", "org/popcraft/")) for path in names)
+          print("REALSCALE_SINGLE_JAR_DH_CHUNKY_COMPAT_VALID")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-NeoForge-1.21.1-integrated-DH-Chunky
+          path: neoforge/build/libs/*.jar
+          if-no-files-found: error
