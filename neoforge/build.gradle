@@ -91,7 +91,29 @@ tasks.named('test', Test) {
 // Embed every selectable structure preset inside the RealScale JAR itself.
 // No Python or external structure ZIPs are needed to play or build the mod.
 def generatedStructureResources = layout.buildDirectory.dir("generated/realscale-structure-packs")
+def generatedArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-architecture-templates")
+
+// Convert only the three explicitly licensed GDMC source schematics. The source
+// files stay outside the NeoForge module and are never packaged in the JAR.
+tasks.register("generateArchitectureTemplates") {
+    inputs.dir(file("../assets/architecture/gdmc-source"))
+    inputs.file(file("../scripts/convert_gdmc_architecture.py"))
+    outputs.dir(generatedArchitectureTemplates)
+    doLast {
+        def output = generatedArchitectureTemplates.get().asFile
+        project.delete(output)
+        def python = System.getenv("PYTHON") ?: "python3"
+        exec {
+            commandLine python,
+                    file("../scripts/convert_gdmc_architecture.py").absolutePath,
+                    "--source", file("../assets/architecture/gdmc-source").absolutePath,
+                    "--output", output.absolutePath
+        }
+    }
+}
+
 tasks.register("generateBuiltInStructurePacks") {
+    dependsOn("generateArchitectureTemplates")
     outputs.dir(generatedStructureResources)
     doLast {
         def root = generatedStructureResources.get().asFile
@@ -153,6 +175,93 @@ tasks.register("generateBuiltInStructurePacks") {
                 file.setText(groovy.json.JsonOutput.prettyPrint(
                         groovy.json.JsonOutput.toJson(data)) + "\n", "UTF-8")
             }
+        }
+
+        // Separate, non-mandatory architecture pack: three converted NBT templates
+        // plus biome-aware single-piece jigsaw structure definitions.
+        def architecturePack = new File(root, "resourcepacks/realscale_structures_architecture_pilot")
+        architecturePack.mkdirs()
+        new File(architecturePack, "pack.mcmeta").setText(
+            groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                pack:[pack_format:48,
+                      description:"RealScale optional architecture pilot — Apache-2.0 GDMC-derived templates"]
+            ])) + "\n", "UTF-8")
+
+        def templateSource = new File(generatedArchitectureTemplates.get().asFile,
+                "data/realscale/structures/architecture")
+        if (!templateSource.isDirectory())
+            throw new GradleException("Converted architecture templates are missing: " + templateSource)
+        project.copy {
+            from(templateSource)
+            into(new File(architecturePack, "data/realscale/structures/architecture"))
+        }
+
+        def writeArchitectureJson = { String relativePath, Object value ->
+            def target = new File(architecturePack, relativePath)
+            target.parentFile.mkdirs()
+            target.setText(groovy.json.JsonOutput.prettyPrint(
+                    groovy.json.JsonOutput.toJson(value)) + "\n", "UTF-8")
+        }
+
+        def architectureProfiles = [
+            [id:"modern_house", spacing:48, separation:16, salt:140011,
+             biomes:["#minecraft:is_plains", "#minecraft:is_forest",
+                     "#minecraft:is_savanna", "#minecraft:is_taiga"]],
+            [id:"glass_greenhouse", spacing:72, separation:24, salt:140012,
+             biomes:["#minecraft:is_plains", "#minecraft:is_forest",
+                     "#minecraft:is_savanna"]],
+            [id:"city_library", spacing:112, separation:32, salt:140013,
+             biomes:["#minecraft:is_plains", "#minecraft:is_forest",
+                     "#minecraft:is_taiga"]]
+        ]
+
+        architectureProfiles.each { profile ->
+            def id = profile.id
+            def poolId = "realscale:architecture/" + id
+            def structureId = "realscale:" + id
+
+            writeArchitectureJson("data/realscale/worldgen/structure/" + id + ".json", [
+                type:"minecraft:jigsaw",
+                biomes:"#realscale:has_structure/" + id,
+                step:"surface_structures",
+                terrain_adaptation:"none",
+                start_pool:poolId,
+                size:0,
+                start_height:[absolute:0],
+                project_start_to_heightmap:"WORLD_SURFACE_WG",
+                max_distance_from_center:80,
+                use_expansion_hack:false,
+                liquid_settings:"ignore_waterlogging"
+            ])
+
+            writeArchitectureJson("data/realscale/worldgen/template_pool/architecture/" + id + ".json", [
+                fallback:"minecraft:empty",
+                elements:[[
+                    weight:1,
+                    element:[
+                        element_type:"minecraft:single_pool_element",
+                        location:poolId,
+                        processors:"minecraft:empty",
+                        projection:"rigid"
+                    ]
+                ]]
+            ])
+
+            writeArchitectureJson("data/realscale/worldgen/structure_set/" + id + ".json", [
+                structures:[[structure:structureId, weight:1]],
+                placement:[
+                    type:"minecraft:random_spread",
+                    salt:profile.salt,
+                    separation:profile.separation,
+                    spacing:profile.spacing,
+                    spread_type:"linear"
+                ]
+            ])
+
+            writeArchitectureJson("data/realscale/tags/worldgen/biome/has_structure/" + id + ".json", [
+                replace:false,
+                values:profile.biomes
+            ])
         }
     }
 }
