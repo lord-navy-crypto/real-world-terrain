@@ -1,0 +1,72 @@
+name: RealScale architecture pilot server placement
+on:
+  pull_request:
+    paths:
+      - "neoforge/**"
+      - "assets/architecture/**"
+      - "scripts/convert_gdmc_architecture.py"
+      - "docs/architecture/**"
+      - "qa/test_architecture_pilot_pack.py"
+      - "qa/run_architecture_server_smoke.py"
+      - ".github/workflows/architecture-pilot-server.yml"
+  push:
+    branches: [main]
+    paths:
+      - "neoforge/**"
+      - "assets/architecture/**"
+      - "scripts/convert_gdmc_architecture.py"
+      - "docs/architecture/**"
+      - "qa/test_architecture_pilot_pack.py"
+      - "qa/run_architecture_server_smoke.py"
+      - ".github/workflows/architecture-pilot-server.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: architecture-pilot-server-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  place-templates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+      - name: Prepare an isolated RealScale world with the optional architecture pack enabled
+        working-directory: neoforge
+        run: |
+          mkdir -p run
+          printf "eula=true\n" > run/eula.txt
+          cat > run/server.properties <<'EOF'
+          server-port=25565
+          level-name=architecture-pilot
+          level-type=realscale:usgs_big_sur
+          level-seed=20261104
+          initial-enabled-packs=vanilla,realscale:resourcepacks/realscale_structures_architecture_pilot
+          initial-disabled-packs=
+          max-tick-time=-1
+          view-distance=3
+          simulation-distance=3
+          online-mode=false
+          spawn-protection=0
+          EOF
+      - name: Boot server and place the three converted structure templates
+        working-directory: neoforge
+        run: python3 ../qa/run_architecture_server_smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RealScale-Architecture-Pilot-Server-Smoke
+          path: |
+            neoforge/run/architecture-pilot-server-smoke.log
+            neoforge/run/logs/latest.log
+          if-no-files-found: warn
