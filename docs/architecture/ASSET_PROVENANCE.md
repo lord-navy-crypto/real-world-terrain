@@ -48,3 +48,28 @@ MC Schematics is retained as a design-reference catalog only. No uploaded
 structure from that site is copied or redistributed by this pilot because the
 site does not grant a blanket redistribution license for user uploads. A
 future item must have explicit per-work permission before it can be bundled.
+
+
+## Original RealScale designs
+
+The five additional structures in this pilot are not imported from either
+schematic catalog or another creator. They are designed and generated from
+scratch by `scripts/generate_original_architecture.py`:
+
+- Forest Ranger Lodge
+- Plains Farmstead
+- Alpine Waystation
+- Coastal Lighthouse
+- Desert Caravanserai
+
+The script writes deterministic Minecraft 1.21.1 NBT from its own block-layout
+rules. These templates are distributed as original RealScale project assets;
+they are not subject to the GDMC Apache-2.0 attribution above. See
+[ORIGINAL_ARCHITECTURE_GENERATOR.md](ORIGINAL_ARCHITECTURE_GENERATOR.md) for
+the design and build pipeline.
+
+The optional architecture pack therefore contains eight templates in total:
+three individually licensed GDMC conversions and five original RealScale
+designs. Only the converted/generated NBT and worldgen JSON are included in
+the mod JAR; source schematics and source generators remain outside the
+NeoForge module resources.
