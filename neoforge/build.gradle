@@ -103,7 +103,7 @@ tasks.register("generateArchitectureTemplates") {
         def output = generatedArchitectureTemplates.get().asFile
         project.delete(output)
         def python = System.getenv("PYTHON") ?: "python3"
-        exec {
+        project.exec {
             commandLine python,
                     file("../scripts/convert_gdmc_architecture.py").absolutePath,
                     "--source", file("../assets/architecture/gdmc-source").absolutePath,
