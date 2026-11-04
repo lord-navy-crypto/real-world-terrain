@@ -12,6 +12,7 @@ on:
       - 'neoforge/**'
       - 'qa/run_architecture_server_smoke.py'
       - 'qa/test_architecture_pilot_pack.py'
+      - 'qa/test_builtin_structure_packs.py'
       - '.github/workflows/architecture-library-58.yml'
   pull_request:
     paths:
