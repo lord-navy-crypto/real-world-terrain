@@ -244,6 +244,17 @@ tasks.register("generateBuiltInStructurePacks") {
             into(templateTarget)
         }
 
+        // Mirror the exact templates into the opt-in architecture pack as well.
+        // Keep base-namespace copies for explicit placement without pack opt-in.
+        def optionalTemplateTarget = new File(architecturePack,
+                "data/realscale/structures/architecture")
+        project.copy {
+            from(licensedTemplateSource)
+            from(originalTemplateSource)
+            from(batchTemplateSource)
+            into(optionalTemplateTarget)
+        }
+
         def writeArchitectureJson = { String relativePath, Object value ->
             def target = new File(architecturePack, relativePath)
             target.parentFile.mkdirs()
