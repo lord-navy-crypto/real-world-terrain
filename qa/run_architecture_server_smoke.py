@@ -211,6 +211,26 @@ try:
         command_id = wait_for_test_bay_chunks(sock, command_id, x, 0)
         print("RCON: all 16 test-bay chunks are entity-ticking.", flush=True)
 
+        if index == 0:
+            # Baselines separate server/chunk placement failures from malformed
+            # generated templates and the converted GDMC schematic.
+            vanilla_probe = rcon_command(
+                sock, command_id, "place template minecraft:igloo/top 48 160 48"
+            )
+            print("RCON vanilla template baseline:", vanilla_probe, flush=True)
+            if 'Loaded template "minecraft:igloo/top" at' not in vanilla_probe:
+                raise RuntimeError(f"Vanilla template baseline failed: {vanilla_probe}")
+            command_id += 1
+
+            original_probe = rcon_command(
+                sock, command_id,
+                f"place template realscale:architecture/forest_ranger_lodge {x + 24} 160 0"
+            )
+            print("RCON original-template baseline:", original_probe, flush=True)
+            if 'Loaded template "realscale:architecture/forest_ranger_lodge" at' not in original_probe:
+                raise RuntimeError(f"Original NBT template baseline failed: {original_probe}")
+            command_id += 1
+
         command = f"place template realscale:architecture/{template} {x} 160 0"
         print(f">>> {command}", flush=True)
         response = rcon_command(sock, command_id, command)
