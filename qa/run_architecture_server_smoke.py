@@ -25,7 +25,7 @@ def fail(message: str, proc=None, lines=None):
     if proc is not None and proc.poll() is None:
         try:
             if proc.stdin and not proc.stdin.closed:
-                proc.stdin.write("stop\\n")
+                proc.stdin.write("stop\n")
                 proc.stdin.flush()
                 proc.wait(timeout=20)
         except Exception:
@@ -54,7 +54,7 @@ def recv_exact(sock, count):
     return bytes(data)
 
 def send_packet(sock, packet_id, packet_type, payload):
-    body = struct.pack("<ii", packet_id, packet_type) + payload.encode("utf-8") + b"\\x00\\x00"
+    body = struct.pack("<ii", packet_id, packet_type) + payload.encode("utf-8") + b"\x00\x00"
     sock.sendall(struct.pack("<i", len(body)) + body)
 
 def recv_packet(sock):
