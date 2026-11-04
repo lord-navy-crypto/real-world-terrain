@@ -59,6 +59,9 @@ jobs:
           view-distance=3
           simulation-distance=3
           online-mode=false
+          enable-rcon=true
+          rcon.password=architecture-smoke-local-only
+          rcon.port=25575
           spawn-protection=0
           EOF
       - name: Boot server and place all licensed and original structure templates
