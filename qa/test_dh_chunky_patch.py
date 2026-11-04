@@ -40,6 +40,10 @@ class DhChunkyGuardTests(unittest.TestCase):
             self.assertEqual(len(blocks), 1)
             self.assertIn('type="optional"', blocks[0])
         self.assertIn('config="realscale.dhchunky.mixins.json"', toml)
+        legacy = [b for b in toml.split("[[dependencies.realscale]]")
+                  if 'modId="dhchunkyguard"' in b]
+        self.assertEqual(len(legacy), 1)
+        self.assertIn('type="incompatible"', legacy[0])
 
     def test_compatibility_code_is_inside_the_real_scale_project(self):
         self.assertTrue(SOURCE.is_file())

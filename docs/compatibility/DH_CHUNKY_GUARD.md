@@ -18,6 +18,15 @@ If either mod is missing, or a different version is installed, the Mixin plugin
 skips the guard and RealScale continues without this compatibility patch.
 Distant Horizons and Chunky are not bundled or made required dependencies.
 
+## Upgrade from the old standalone addon
+
+Remove any previously installed `RealScale-DH-Chunky-Guard` 0.1–0.3.x JAR
+before installing this integrated RealScale build. The old addon has its own
+Mixin config and registers the same `/dhchunkyguard` command; running both
+copies could apply the same patch twice. RealScale declares the retired
+`dhchunkyguard` mod ID incompatible so this accidental duplicate is rejected
+at launch rather than silently loading two copies.
+
 ## What it fixes
 
 The known failure occurs when DH attempts its first Chunky event-listener bind
