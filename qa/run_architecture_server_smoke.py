@@ -26,7 +26,9 @@ TEMPLATES = (
     "fishing_hut", "coastal_pier", "forest_watchtower",
     "botanical_greenhouse", "orchard_farm", "stone_bridge", "watermill",
     "desert_well", "mountain_observatory", "ruined_watchpost",
-    "garden_pavilion", "lumber_camp",
+    "garden_pavilion", "lumber_camp", "woodland_hamlet",
+    "plains_market_square", "river_trade_hamlet",
+    "alpine_watch_compound", "desert_oasis_hamlet",
 )
 
 def fail(message: str, proc=None, lines=None):
