@@ -30,6 +30,22 @@ The complete original catalog currently contains:
 | `desert_well`, `mountain_observatory`, `ruined_watchpost`, `garden_pavilion` | Water well, high-altitude observatory, weathered ruin and open garden structure | Desert, alpine, forest and flower/meadow biomes |
 | `forest_ranger_lodge`, `plains_farmstead`, `alpine_waystation`, `coastal_lighthouse`, `desert_caravanserai` | Foundational cabin, farmstead, mountain shelter, lighthouse and courtyard inn | Temperate forest, plains, alpine, coastal and semi-arid biomes |
 
+
+## Enable the architecture library in a world
+
+The pack is intentionally optional. In Minecraft 1.21.1:
+
+1. Open **Create New World → Data Packs**.
+2. Find **RealScale | Architecture Library (33 Structures)** under Available.
+3. Move it to Selected, confirm the pack prompt, and create the world.
+
+For an existing world, use **Edit World → Data Packs** and make a backup first.
+Structures only generate in chunks that have not already been generated; they
+are not retroactively inserted into explored terrain. The library uses
+independent biome-specific random-spread sets, with conservative spacing so
+the new buildings remain discoveries rather than a dense layer over every
+region.
+
 ## Build and generation flow
 
 ```text
