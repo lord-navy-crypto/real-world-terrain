@@ -636,6 +636,113 @@ def build_lumber_camp():
     return b
 
 
+def merge_building(target, source, offset_x, offset_y=0, offset_z=0):
+    """Compose an original building into a larger settlement without copying air."""
+    for (x, y, z), block_state in source.blocks.items():
+        if block_state[0] != "minecraft:air":
+            target.set(offset_x + x, offset_y + y, offset_z + z, block_state)
+
+
+def build_woodland_hamlet():
+    b = Building("woodland_hamlet", (41, 15, 39),
+                 "Three-building woodland hamlet with a cottage, healer clinic, schoolhouse, shared well and footpaths.")
+    merge_building(b, build_woodland_cottage(), 2, 0, 2)
+    merge_building(b, build_healers_clinic(), 26, 0, 2)
+    merge_building(b, build_schoolhouse(), 12, 0, 22)
+    # Shared paths join all three entrances without cutting through interiors.
+    b.fill(8, 0, 15, 8, 0, 20, "minecraft:dirt_path")
+    b.fill(33, 0, 15, 33, 0, 20, "minecraft:dirt_path")
+    b.fill(20, 0, 15, 20, 0, 21, "minecraft:dirt_path")
+    b.fill(8, 0, 17, 33, 0, 17, "minecraft:dirt_path")
+    # A shared well and a small common garden make this a settlement, not a row of houses.
+    b.fill(17, 0, 14, 23, 0, 20, "minecraft:coarse_dirt")
+    b.fill(19, 1, 15, 21, 1, 17, "minecraft:stone_bricks")
+    b.fill(20, 1, 16, 20, 1, 16, "minecraft:water", level="0")
+    for x, z in ((18, 15), (22, 15), (18, 19), (22, 19)):
+        b.log(x, 1, z, "oak")
+    b.fill(18, 2, 15, 22, 2, 15, "minecraft:oak_slab",
+           type="bottom", waterlogged="false")
+    for x in (5, 36):
+        for z in range(4, 14, 3):
+            b.fence(x, 1, z, "oak")
+    b.fill(3, 1, 17, 5, 1, 19, "minecraft:farmland", moisture="7")
+    b.set(4, 2, 18, "minecraft:carrots", age="7")
+    return b
+
+
+def build_plains_market_square():
+    b = Building("plains_market_square", (49, 15, 43),
+                 "Compact civic square combining a roofed market hall, bakery, blacksmith, central well and paved pedestrian lanes.")
+    merge_building(b, build_market_hall(), 14, 0, 2)
+    merge_building(b, build_brick_bakery(), 2, 0, 26)
+    merge_building(b, build_village_blacksmith(), 32, 0, 26)
+    merge_building(b, build_desert_well(), 20, 0, 25)
+    b.fill(18, 0, 19, 30, 0, 24, "minecraft:stone_bricks")
+    b.fill(8, 0, 20, 40, 0, 20, "minecraft:dirt_path")
+    b.fill(10, 0, 24, 10, 0, 26, "minecraft:dirt_path")
+    b.fill(38, 0, 24, 38, 0, 26, "minecraft:dirt_path")
+    # Benches and lantern posts define the shared civic space.
+    for x in (18, 30):
+        b.log(x, 1, 21, "oak")
+        b.set(x, 2, 21, "minecraft:lantern", hanging="true")
+    for x in (19, 29):
+        b.set(x, 1, 23, "minecraft:oak_stairs", facing="north",
+              half="bottom", shape="straight", waterlogged="false")
+    return b
+
+
+def build_river_trade_hamlet():
+    b = Building("river_trade_hamlet", (51, 16, 35),
+                 "Riverside working hamlet with a watermill, fishing cottage, masonry bridge and timber landing.")
+    merge_building(b, build_watermill(), 2, 0, 2)
+    merge_building(b, build_fishing_hut(), 30, 0, 2)
+    merge_building(b, build_stone_bridge(), 2, 0, 21)
+    merge_building(b, build_coastal_pier(), 27, 0, 22)
+    b.fill(20, 0, 17, 28, 0, 19, "minecraft:coarse_dirt")
+    b.fill(24, 0, 16, 24, 0, 22, "minecraft:dirt_path")
+    b.fill(24, 0, 19, 30, 0, 19, "minecraft:dirt_path")
+    # Mooring and storage area beside the landing.
+    for x in (29, 35, 41, 47):
+        b.log(x, 1, 19, "spruce")
+        b.set(x, 2, 19, "minecraft:lantern", hanging="true")
+    return b
+
+
+def build_alpine_watch_compound():
+    b = Building("alpine_watch_compound", (41, 22, 41),
+                 "Highland outpost combining a snow shelter, timber lookout tower and copper-domed mountain observatory.")
+    merge_building(b, build_snowfield_shelter(), 2, 0, 2)
+    merge_building(b, build_forest_watchtower(), 28, 0, 2)
+    merge_building(b, build_mountain_observatory(), 12, 0, 22)
+    b.fill(12, 0, 15, 28, 0, 18, "minecraft:gravel")
+    b.fill(20, 0, 18, 20, 0, 22, "minecraft:gravel")
+    for x, z in ((10, 18), (30, 18), (10, 21), (30, 21)):
+        b.set(x, 1, z, "minecraft:campfire", facing="north", lit="false",
+              signal_fire="false", waterlogged="false")
+    return b
+
+
+def build_desert_oasis_hamlet():
+    b = Building("desert_oasis_hamlet", (45, 15, 39),
+                 "Arid settlement with a terracotta trading post, shaded outpost, central well and irrigated date-grove courtyard.")
+    merge_building(b, build_mesa_trading_post(), 2, 0, 2)
+    merge_building(b, build_desert_well(), 19, 0, 5)
+    merge_building(b, build_savanna_outpost(), 28, 0, 2)
+    b.fill(16, 0, 21, 29, 0, 34, "minecraft:sand")
+    b.fill(20, 0, 22, 20, 0, 33, "minecraft:water", level="0")
+    for x in (17, 23, 27):
+        for z in (24, 30):
+            b.log(x, 1, z, "jungle")
+            for dx in (-1, 0, 1):
+                for dz in (-1, 0, 1):
+                    b.set(x + dx, 2, z + dz, "minecraft:jungle_leaves",
+                          distance="7", persistent="true", waterlogged="false")
+            b.fill(x - 1, 1, z - 1, x + 1, 1, z + 1, "minecraft:coarse_dirt")
+    b.fill(18, 0, 18, 27, 0, 18, "minecraft:cut_sandstone")
+    b.fill(22, 0, 18, 22, 0, 22, "minecraft:cut_sandstone")
+    return b
+
+
 BUILDINGS = (
     build_woodland_cottage,
     build_village_blacksmith,
@@ -662,6 +769,11 @@ BUILDINGS = (
     build_ruined_watchpost,
     build_garden_pavilion,
     build_lumber_camp,
+    build_woodland_hamlet,
+    build_plains_market_square,
+    build_river_trade_hamlet,
+    build_alpine_watch_compound,
+    build_desert_oasis_hamlet,
 )
 
 
