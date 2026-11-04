@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Boot NeoForge and place licensed plus original RealScale architecture templates."""
+"""Boot NeoForge and verify licensed/original architecture through local RCON."""
 from __future__ import annotations
 import queue
+import socket
+import struct
 import subprocess
 import sys
 import threading
@@ -10,6 +12,9 @@ from pathlib import Path
 
 ROOT = Path.cwd()
 LOG_PATH = ROOT / "run/architecture-pilot-server-smoke.log"
+RCON_HOST = "127.0.0.1"
+RCON_PORT = 25575
+RCON_PASSWORD = "architecture-smoke-local-only"
 TEMPLATES = (
     "modern_house", "glass_greenhouse", "city_library",
     "forest_ranger_lodge", "plains_farmstead", "alpine_waystation",
@@ -20,9 +25,9 @@ def fail(message: str, proc=None, lines=None):
     if proc is not None and proc.poll() is None:
         try:
             if proc.stdin and not proc.stdin.closed:
-                proc.stdin.write("stop\n")
+                proc.stdin.write("stop\\n")
                 proc.stdin.flush()
-                proc.wait(timeout=30)
+                proc.wait(timeout=20)
         except Exception:
             try:
                 proc.terminate()
@@ -38,6 +43,50 @@ def fail(message: str, proc=None, lines=None):
     LOG_PATH.write_text(captured, encoding="utf-8", errors="replace")
     print(captured[-16000:], file=sys.stderr)
     raise SystemExit(message)
+
+def recv_exact(sock, count):
+    data = bytearray()
+    while len(data) < count:
+        chunk = sock.recv(count - len(data))
+        if not chunk:
+            raise ConnectionError("RCON connection closed")
+        data.extend(chunk)
+    return bytes(data)
+
+def send_packet(sock, packet_id, packet_type, payload):
+    body = struct.pack("<ii", packet_id, packet_type) + payload.encode("utf-8") + b"\\x00\\x00"
+    sock.sendall(struct.pack("<i", len(body)) + body)
+
+def recv_packet(sock):
+    length = struct.unpack("<i", recv_exact(sock, 4))[0]
+    body = recv_exact(sock, length)
+    packet_id, packet_type = struct.unpack("<ii", body[:8])
+    return packet_id, packet_type, body[8:-2].decode("utf-8", errors="replace")
+
+def connect_rcon(timeout=45):
+    deadline = time.monotonic() + timeout
+    last_error = None
+    while time.monotonic() < deadline:
+        try:
+            sock = socket.create_connection((RCON_HOST, RCON_PORT), timeout=3)
+            sock.settimeout(8)
+            send_packet(sock, 1, 3, RCON_PASSWORD)
+            packet_id, packet_type, _ = recv_packet(sock)
+            if packet_id != 1 or packet_type != 2:
+                sock.close()
+                raise PermissionError("RCON authentication was rejected")
+            return sock
+        except Exception as exc:
+            last_error = exc
+            time.sleep(1)
+    raise TimeoutError(f"RCON did not become ready: {last_error}")
+
+def rcon_command(sock, packet_id, command):
+    send_packet(sock, packet_id, 2, command)
+    response_id, _response_type, response = recv_packet(sock)
+    if response_id != packet_id:
+        raise RuntimeError(f"Unexpected RCON response id {response_id}: {response}")
+    return response
 
 proc = subprocess.Popen(
     ["gradle", "--no-daemon", "runServer", "--stacktrace"],
@@ -71,25 +120,42 @@ def wait_for(fragment: str, timeout: int):
 
 wait_for("Done (", 600)
 print("NEOFORGE_ARCHITECTURE_SERVER_BOOT_OK", flush=True)
-proc.stdin.write("forceload add 0 0 256 32\n")
-proc.stdin.flush()
-time.sleep(2)
 
-for index, template in enumerate(TEMPLATES):
-    x = index * 32
-    command = f"place template realscale:architecture/{template} {x} 160 0"
-    expected = f'Loaded template "realscale:architecture/{template}" at'
-    print(f">>> {command}", flush=True)
-    proc.stdin.write(command + "\n")
-    proc.stdin.flush()
-    wait_for(expected, 45)
+try:
+    sock = connect_rcon()
+    print("NEOFORGE_ARCHITECTURE_RCON_READY", flush=True)
+    print("RCON:", rcon_command(sock, 2, "forceload add 0 0 256 32"), flush=True)
 
-proc.stdin.write("save-all flush\n")
-proc.stdin.flush()
-time.sleep(3)
-proc.stdin.write("forceload remove all\n")
-proc.stdin.write("stop\n")
-proc.stdin.flush()
+    for index, template in enumerate(TEMPLATES):
+        x = index * 32
+        command = f"place template realscale:architecture/{template} {x} 160 0"
+        print(f">>> {command}", flush=True)
+        response = rcon_command(sock, index + 3, command)
+        expected = f'Loaded template "realscale:architecture/{template}" at'
+        print("RCON:", response, flush=True)
+        if expected not in response:
+            raise RuntimeError(f"Template placement did not succeed for {template}: {response}")
+
+    print("RCON:", rcon_command(sock, 20, "save-all flush"), flush=True)
+    time.sleep(2)
+    try:
+        rcon_command(sock, 21, "forceload remove all")
+    except Exception:
+        pass
+    try:
+        rcon_command(sock, 22, "stop")
+    except Exception:
+        # The server may close RCON immediately after accepting stop.
+        pass
+    sock.close()
+except Exception as exc:
+    try:
+        if "sock" in locals():
+            sock.close()
+    except Exception:
+        pass
+    fail(f"Architecture RCON verification failed: {exc}", proc, captured)
+
 try:
     proc.wait(timeout=120)
 except subprocess.TimeoutExpired:
@@ -102,10 +168,6 @@ LOG_PATH.write_text(captured_text, encoding="utf-8", errors="replace")
 if proc.returncode != 0:
     fail(f"NeoForge server exited with code {proc.returncode}.", None, captured)
 
-for template in TEMPLATES:
-    expected = f'Loaded template "realscale:architecture/{template}" at'
-    if expected not in captured_text:
-        fail(f"Template placement success was not reported for {template}.", None, captured)
 for bad in (
     "Failed to place template", "There is no template with ID",
     "Unknown registry key", "Couldn't parse data file", "Unknown block",
