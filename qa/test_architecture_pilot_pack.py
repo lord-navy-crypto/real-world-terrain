@@ -298,15 +298,21 @@ class ArchitecturePilotTests(unittest.TestCase):
             prefix = "resourcepacks/realscale_structures_architecture_pilot/"
             self.assertIn(prefix + "pack.mcmeta", names)
             for template in ALL_EXPECTED:
-                required_paths = (
-                    f"data/realscale/structures/architecture/{template}.nbt",
+                # Templates are always addressable through the mod's base data
+                # namespace; only the worldgen definitions remain opt-in.
+                self.assertIn(f"data/realscale/structures/architecture/{template}.nbt", names)
+                required_pack_paths = (
                     f"data/realscale/worldgen/structure/{template}.json",
                     f"data/realscale/worldgen/structure_set/{template}.json",
                     f"data/realscale/worldgen/template_pool/architecture/{template}.json",
                     f"data/realscale/tags/worldgen/biome/has_structure/{template}.json",
                 )
-                for required_path in required_paths:
+                for required_path in required_pack_paths:
                     self.assertIn(prefix + required_path, names)
+                self.assertNotIn(
+                    prefix + f"data/realscale/structures/architecture/{template}.nbt",
+                    names
+                )
             self.assertFalse(any(name.endswith(".schematic") for name in names))
             self.assertNotIn("original-architecture-manifest.json", names)
             self.assertNotIn("batch-architecture-manifest.json", names)
