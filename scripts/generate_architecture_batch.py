@@ -753,6 +753,499 @@ def build_desert_oasis_hamlet():
     return b
 
 
+def build_stone_mason_workshop():
+    b = Building("stone_mason_workshop", (21, 12, 17),
+                 "Stoneworking yard with an enclosed mason workshop, open cutting bay, block stacks and tool benches.")
+    b.fill(1, 0, 1, 19, 0, 15, "minecraft:cobblestone")
+    b.fill(2, 1, 2, 10, 1, 13, "minecraft:stone_bricks")
+    b.shell(2, 2, 2, 10, 5, 13, "minecraft:stone_bricks")
+    for x in (2, 10):
+        for z in (2, 13):
+            for y in range(2, 7):
+                b.log(x, y, z, "spruce")
+    door(b, 6, 2, 2, "spruce")
+    b.gable_roof(1, 11, 1, 14, 6, 3, "spruce")
+    # Open-sided cutting bay and sheltered stone stock.
+    for x in (12, 19):
+        for z in (3, 13):
+            for y in range(1, 7):
+                b.log(x, y, z, "spruce")
+    b.gable_roof(11, 20, 2, 14, 6, 2, "dark_oak")
+    b.set(14, 2, 7, "minecraft:stonecutter", facing="north")
+    b.set(16, 2, 7, "minecraft:grindstone", face="wall", facing="north")
+    b.set(18, 2, 7, "minecraft:anvil", facing="north")
+    b.fill(13, 1, 10, 14, 2, 11, "minecraft:stone_bricks")
+    b.fill(16, 1, 10, 18, 3, 11, "minecraft:polished_andesite")
+    lantern(b, 6, 4, 8, True)
+    return b
+
+
+def build_canal_lock():
+    b = Building("canal_lock", (33, 12, 17),
+                 "Engineered canal lock with stone chamber walls, timber gates, towpaths and a small lock-keeper cabin.")
+    b.fill(0, 0, 0, 32, 0, 16, "minecraft:gravel")
+    b.fill(0, 1, 5, 32, 1, 11, "minecraft:water", level="0")
+    b.fill(0, 1, 4, 32, 3, 4, "minecraft:stone_bricks")
+    b.fill(0, 1, 12, 32, 3, 12, "minecraft:stone_bricks")
+    b.fill(9, 1, 5, 9, 3, 11, "minecraft:stone_bricks")
+    b.fill(23, 1, 5, 23, 3, 11, "minecraft:stone_bricks")
+    for x in (9, 23):
+        for z in range(5, 12):
+            b.fence(x, 2, z, "spruce")
+        b.log(x, 4, 5, "spruce")
+        b.log(x, 4, 11, "spruce")
+        b.log(x, 5, 5, "spruce")
+        b.log(x, 5, 11, "spruce")
+    # Lock-keeper cabin sits on the dry towpath.
+    b.fill(2, 0, 1, 8, 0, 3, "minecraft:stone_bricks")
+    b.shell(2, 1, 1, 8, 4, 3, "minecraft:oak_planks")
+    for x in (2, 8):
+        for z in (1, 3):
+            b.log(x, 1, z, "oak")
+            b.log(x, 2, z, "oak")
+            b.log(x, 3, z, "oak")
+            b.log(x, 4, z, "oak")
+    door(b, 5, 1, 1)
+    b.gable_roof(1, 9, 0, 4, 5, 2, "spruce")
+    b.fill(1, 0, 13, 31, 0, 15, "minecraft:dirt_path")
+    lantern(b, 7, 4, 2, True)
+    lantern(b, 25, 4, 13)
+    return b
+
+
+def build_monastery_chapel():
+    b = Building("monastery_chapel", (23, 15, 25),
+                 "Quiet stone chapel with a bell tower, enclosed cloister garden, arcaded walk and central courtyard.")
+    b.fill(1, 0, 1, 21, 0, 23, "minecraft:stone_bricks")
+    # Chapel nave.
+    b.fill(5, 1, 7, 17, 1, 21, "minecraft:polished_andesite")
+    b.shell(5, 2, 7, 17, 7, 21, "minecraft:stone_bricks")
+    for x in (5, 17):
+        for z in (7, 21):
+            for y in range(2, 9):
+                b.log(x, y, z, "spruce")
+    door(b, 11, 2, 7, "spruce")
+    b.gable_roof(4, 18, 6, 22, 8, 3, "dark_oak")
+    for x in (7, 15):
+        for z in (7, 14, 20):
+            pane(b, x, 4, z)
+    # Bell tower and cross-shaped roof finial.
+    b.fill(3, 1, 3, 7, 1, 7, "minecraft:stone_bricks")
+    b.shell(3, 2, 3, 7, 10, 7, "minecraft:stone_bricks")
+    for y in range(2, 12):
+        b.log(3, y, 3, "spruce")
+        b.log(7, y, 3, "spruce")
+        b.log(3, y, 7, "spruce")
+        b.log(7, y, 7, "spruce")
+    b.gable_roof(2, 8, 2, 8, 11, 2, "spruce")
+    b.log(5, 13, 5, "oak")
+    b.log(5, 14, 5, "oak")
+    # Cloister walls and planted quadrangle.
+    for x in range(2, 21):
+        b.fill(x, 2, 2, x, 3, 2, "minecraft:stone_bricks")
+        b.fill(x, 2, 22, x, 3, 22, "minecraft:stone_bricks")
+    for z in range(2, 23):
+        b.fill(2, 2, z, 2, 3, z, "minecraft:stone_bricks")
+        b.fill(20, 2, z, 20, 3, z, "minecraft:stone_bricks")
+    b.fill(8, 0, 3, 15, 0, 5, "minecraft:moss_block")
+    for x, z in ((9, 4), (14, 4), (11, 3), (12, 5)):
+        b.set(x, 1, z, "minecraft:flowering_azalea")
+    lantern(b, 11, 4, 16, True)
+    return b
+
+
+def build_apiary_garden():
+    b = Building("apiary_garden", (25, 12, 25),
+                 "Small beekeeper's cottage and fenced apiary with timber hive stands, flowering beds and a honey workbench.")
+    b.fill(1, 0, 1, 23, 0, 23, "minecraft:coarse_dirt")
+    b.fill(2, 0, 2, 9, 0, 9, "minecraft:stone_bricks")
+    b.shell(2, 1, 2, 9, 4, 9, "minecraft:oak_planks")
+    for x in (2, 9):
+        for z in (2, 9):
+            for y in range(1, 6):
+                b.log(x, y, z, "oak")
+    door(b, 5, 1, 2)
+    b.gable_roof(1, 10, 1, 10, 5, 2, "spruce")
+    b.set(4, 2, 6, "minecraft:barrel", facing="up", open="false")
+    b.set(6, 2, 6, "minecraft:crafting_table")
+    # Three orderly hive rows with clear access between them.
+    for x in (13, 17, 21):
+        for z in (5, 11, 17):
+            b.fill(x - 1, 1, z - 1, x + 1, 1, z + 1, "minecraft:oak_planks")
+            b.log(x, 2, z, "oak")
+            b.set(x, 3, z, "minecraft:beehive", facing="south", honey_level="0")
+            lantern(b, x, 2, z + 1)
+    # Flower beds border the apiary without blocking the working lanes.
+    for x in range(12, 23):
+        for z in (3, 20):
+            b.set(x, 1, z, "minecraft:oxeye_daisy" if x % 2 else "minecraft:cornflower")
+    for z in range(4, 21):
+        for x in (11, 23):
+            b.fence(x, 1, z, "oak")
+    b.fill(11, 0, 21, 23, 0, 23, "minecraft:grass_block", snowy="false")
+    return b
+
+
+def build_snowbound_storehouse():
+    b = Building("snowbound_storehouse", (17, 11, 15),
+                 "Compact alpine provisions store with deep stone footing, spruce frame, loading porch and snow-covered eaves.")
+    b.fill(1, 0, 1, 15, 0, 13, "minecraft:stone_bricks")
+    b.fill(2, 1, 2, 14, 1, 12, "minecraft:spruce_planks")
+    b.shell(2, 2, 2, 14, 5, 12, "minecraft:spruce_planks")
+    for x in (2, 14):
+        for z in (2, 12):
+            for y in range(2, 7):
+                b.log(x, y, z, "spruce")
+    door(b, 8, 2, 2, "spruce")
+    b.gable_roof(1, 15, 1, 13, 6, 3, "spruce")
+    for x in (4, 6, 10, 12):
+        b.set(x, 7, 4, "minecraft:snow")
+    b.set(5, 2, 7, "minecraft:barrel", facing="up", open="false")
+    b.set(10, 2, 7, "minecraft:barrel", facing="up", open="false")
+    b.fill(6, 1, 0, 10, 1, 1, "minecraft:spruce_planks")
+    for x in (6, 10):
+        b.log(x, 2, 0, "spruce")
+        b.log(x, 3, 0, "spruce")
+    lantern(b, 8, 3, 5, True)
+    return b
+
+
+def build_desert_cistern():
+    b = Building("desert_cistern", (19, 13, 19),
+                 "Sunken sandstone cistern with covered draw well, water reservoir and shaded rest alcove.")
+    b.fill(1, 0, 1, 17, 0, 17, "minecraft:sandstone")
+    b.fill(4, 0, 4, 14, 0, 14, "minecraft:water", level="0")
+    for y in (1, 2, 3):
+        b.fill(3, y, 3, 15, y, 3, "minecraft:cut_sandstone")
+        b.fill(3, y, 15, 15, y, 15, "minecraft:cut_sandstone")
+        b.fill(3, y, 3, 3, y, 15, "minecraft:cut_sandstone")
+        b.fill(15, y, 3, 15, y, 15, "minecraft:cut_sandstone")
+    b.fill(7, 1, 7, 11, 1, 11, "minecraft:sandstone")
+    b.fill(8, 2, 8, 10, 2, 10, "minecraft:water", level="0")
+    for x, z in ((6, 6), (12, 6), (6, 12), (12, 12)):
+        b.log(x, 1, z, "acacia")
+        b.log(x, 5, z, "acacia")
+    b.fill(6, 5, 6, 12, 5, 12, "minecraft:cut_sandstone")
+    b.fill(8, 6, 8, 10, 6, 10, "minecraft:air")
+    b.set(9, 1, 9, "minecraft:water", level="0")
+    b.fill(1, 0, 16, 17, 0, 17, "minecraft:sand")
+    lantern(b, 9, 5, 9, True)
+    return b
+
+
+def build_tropical_boardwalk_house():
+    b = Building("tropical_boardwalk_house", (19, 15, 19),
+                 "Raised jungle timber home with open undercroft, steep roof, fenced veranda and boardwalk over wet ground.")
+    b.fill(1, 0, 1, 17, 0, 17, "minecraft:mud")
+    for x in (3, 15):
+        for z in (3, 15):
+            for y in range(1, 6):
+                b.log(x, y, z, "jungle")
+    b.fill(2, 5, 2, 16, 5, 16, "minecraft:jungle_planks")
+    b.shell(2, 6, 2, 16, 9, 16, "minecraft:jungle_planks")
+    for x in (2, 16):
+        for z in (2, 16):
+            for y in range(6, 11):
+                b.log(x, y, z, "jungle")
+    door(b, 9, 6, 2, "jungle")
+    b.gable_roof(1, 17, 1, 17, 10, 4, "jungle")
+    for x in range(5, 14, 3):
+        pane(b, x, 8, 2)
+        pane(b, x, 8, 16)
+    b.fill(7, 4, 0, 11, 4, 2, "minecraft:jungle_planks")
+    for x in (7, 11):
+        b.fence(x, 5, 0, "jungle")
+    b.fill(8, 1, 15, 10, 1, 18, "minecraft:jungle_planks")
+    for x in (8, 10):
+        b.log(x, 0, 16, "jungle")
+        b.log(x, 0, 18, "jungle")
+    return b
+
+
+def build_railway_signal_box():
+    b = Building("railway_signal_box", (15, 14, 13),
+                 "Elevated railway signal cabin with timber frame, exterior ladder, semaphore-style mast and trackside lamps.")
+    b.fill(1, 0, 1, 13, 0, 11, "minecraft:gravel")
+    for x in (3, 11):
+        for z in (3, 9):
+            for y in range(1, 6):
+                b.log(x, y, z, "spruce")
+    b.fill(2, 5, 2, 12, 5, 10, "minecraft:spruce_planks")
+    b.shell(2, 6, 2, 12, 9, 10, "minecraft:oak_planks")
+    door(b, 7, 6, 2, "spruce")
+    b.gable_roof(1, 13, 1, 11, 10, 3, "dark_oak")
+    for x in (4, 10):
+        pane(b, x, 8, 2)
+        pane(b, x, 8, 10)
+    for y in range(1, 6):
+        b.stair(4, y, 1, "spruce", "north")
+    # Signal mast and two static signal lamps.
+    for y in range(1, 12):
+        b.log(12, y, 11, "dark_oak")
+    b.set(11, 10, 11, "minecraft:redstone_lamp")
+    b.set(13, 8, 11, "minecraft:redstone_lamp")
+    b.set(7, 6, 7, "minecraft:cartography_table")
+    lantern(b, 7, 8, 7, True)
+    return b
+
+
+def build_quarry_shed():
+    b = Building("quarry_shed", (21, 11, 17),
+                 "Rugged quarry service shed with covered tool bay, stone sorting bins and stacked cut-stone blocks.")
+    b.fill(1, 0, 1, 19, 0, 15, "minecraft:gravel")
+    b.fill(2, 1, 2, 10, 1, 12, "minecraft:cobblestone")
+    b.shell(2, 2, 2, 10, 5, 12, "minecraft:oak_planks")
+    for x in (2, 10):
+        for z in (2, 12):
+            for y in range(2, 7):
+                b.log(x, y, z, "spruce")
+    door(b, 6, 2, 2)
+    b.gable_roof(1, 11, 1, 13, 6, 2, "spruce")
+    for x in (13, 18):
+        for z in (3, 12):
+            b.log(x, 1, z, "spruce")
+            b.log(x, 5, z, "spruce")
+    b.gable_roof(12, 19, 2, 13, 6, 2, "dark_oak")
+    b.fill(13, 1, 5, 15, 3, 7, "minecraft:stone_bricks")
+    b.fill(16, 1, 9, 18, 2, 11, "minecraft:polished_andesite")
+    b.set(14, 2, 9, "minecraft:stonecutter", facing="north")
+    b.set(17, 2, 5, "minecraft:grindstone", face="wall", facing="north")
+    lantern(b, 6, 4, 8, True)
+    return b
+
+
+def build_charcoal_kiln():
+    b = Building("charcoal_kiln", (17, 10, 17),
+                 "Remote charcoal-burning station with stone kiln mound, covered fuel stacks and a small operator shelter.")
+    b.fill(1, 0, 1, 15, 0, 15, "minecraft:coarse_dirt")
+    b.fill(3, 1, 3, 11, 1, 11, "minecraft:stone_bricks")
+    b.fill(4, 2, 4, 10, 4, 10, "minecraft:stone_bricks")
+    b.fill(5, 5, 5, 9, 6, 9, "minecraft:stone_bricks")
+    b.fill(6, 7, 6, 8, 7, 8, "minecraft:stone_bricks")
+    b.set(7, 2, 3, "minecraft:campfire", facing="north", lit="false",
+          signal_fire="false", waterlogged="false")
+    b.fill(2, 1, 12, 12, 1, 14, "minecraft:spruce_planks")
+    for x in (3, 11):
+        for z in (12, 14):
+            for y in range(2, 5):
+                b.log(x, y, z, "spruce")
+    b.gable_roof(2, 12, 11, 15, 5, 2, "spruce")
+    for x in (13, 14):
+        for z in (3, 5, 7):
+            b.log(x, 1, z, "oak", axis="x")
+            b.log(x, 2, z, "oak", axis="x")
+    lantern(b, 7, 3, 13)
+    return b
+
+
+def build_vineyard_estate():
+    b = Building("vineyard_estate", (43, 14, 29),
+                 "Vineyard estate with a timber farmhouse, terraced trellis rows, a press yard and a small storage court.")
+    merge_building(b, build_woodland_cottage(), 2, 0, 2)
+    b.fill(17, 0, 2, 41, 0, 26, "minecraft:coarse_dirt")
+    # Repeated trellis rows are deliberately separated by walking lanes.
+    for z in (5, 10, 15, 20, 25):
+        for x in range(18, 41, 4):
+            b.fence(x, 1, z, "oak")
+            b.fence(x, 2, z, "oak")
+            b.set(x, 3, z, "minecraft:oak_leaves", distance="7",
+                  persistent="true", waterlogged="false")
+        for x in range(19, 40):
+            b.set(x, 1, z + 1, "minecraft:sweet_berry_bush", age="3")
+    b.fill(17, 0, 2, 17, 0, 26, "minecraft:dirt_path")
+    b.fill(29, 0, 3, 39, 0, 8, "minecraft:stone_bricks")
+    b.set(32, 1, 5, "minecraft:barrel", facing="up", open="false")
+    b.set(35, 1, 5, "minecraft:barrel", facing="up", open="false")
+    b.set(37, 1, 5, "minecraft:crafting_table")
+    return b
+
+
+def build_sheepfold_ranch():
+    b = Building("sheepfold_ranch", (41, 13, 29),
+                 "Working sheep ranch with farmhouse and barn, fenced grazing paddocks, hay stores and a long water trough.")
+    merge_building(b, build_plains_farmstead(), 2, 0, 2)
+    for x in range(22, 39):
+        b.fence(x, 1, 3, "oak")
+        b.fence(x, 1, 24, "oak")
+    for z in range(3, 25):
+        b.fence(22, 1, z, "oak")
+        b.fence(38, 1, z, "oak")
+    b.fill(25, 0, 8, 35, 0, 9, "minecraft:water", level="0")
+    b.fill(26, 1, 14, 29, 1, 17, "minecraft:hay_block", axis="y")
+    b.fill(32, 1, 14, 35, 1, 17, "minecraft:hay_block", axis="y")
+    b.fill(24, 0, 21, 36, 0, 22, "minecraft:dirt_path")
+    return b
+
+
+def build_charcoal_burners_camp():
+    b = Building("charcoal_burners_camp", (39, 13, 27),
+                 "Forest charcoal camp with a timber bunkhouse, two stone kilns, stacked fuelwood and a covered work area.")
+    merge_building(b, build_lumber_camp(), 2, 0, 2)
+    for cx, cz in ((27, 7), (33, 7)):
+        b.fill(cx - 3, 0, cz - 3, cx + 3, 0, cz + 3, "minecraft:coarse_dirt")
+        b.fill(cx - 2, 1, cz - 2, cx + 2, 1, cz + 2, "minecraft:stone_bricks")
+        b.fill(cx - 2, 2, cz - 2, cx + 2, 4, cz + 2, "minecraft:stone_bricks")
+        b.fill(cx - 1, 5, cz - 1, cx + 1, 6, cz + 1, "minecraft:stone_bricks")
+        b.set(cx, 2, cz - 2, "minecraft:campfire", facing="north", lit="false",
+              signal_fire="false", waterlogged="false")
+    for x in range(25, 36, 2):
+        b.log(x, 1, 17, "spruce", axis="x")
+        b.log(x, 2, 17, "spruce", axis="x")
+    b.fill(24, 0, 20, 36, 0, 23, "minecraft:gravel")
+    return b
+
+
+def build_fishing_village_compound():
+    b = Building("fishing_village_compound", (49, 14, 27),
+                 "Coastal working hamlet combining a fisher cottage, long timber pier, smokehouse, net-drying racks and a shared quay.")
+    merge_building(b, build_fishing_hut(), 2, 0, 2)
+    merge_building(b, build_coastal_pier(), 24, 0, 12)
+    b.fill(29, 0, 2, 43, 0, 10, "minecraft:cobblestone")
+    b.shell(30, 1, 3, 42, 5, 9, "minecraft:spruce_planks")
+    for x in (30, 42):
+        for z in (3, 9):
+            for y in range(1, 7):
+                b.log(x, y, z, "spruce")
+    door(b, 36, 1, 3, "spruce")
+    b.gable_roof(29, 43, 2, 10, 6, 3, "spruce")
+    b.set(33, 2, 6, "minecraft:smoker", facing="north", lit="false")
+    b.set(36, 2, 6, "minecraft:barrel", facing="up", open="false")
+    b.set(39, 2, 6, "minecraft:barrel", facing="up", open="false")
+    for x in (30, 34, 38, 42):
+        for y in (1, 3):
+            b.log(x, y, 11, "oak")
+        b.fence(x, 2, 11, "oak")
+    return b
+
+
+def build_hilltop_manor():
+    b = Building("hilltop_manor", (41, 20, 35),
+                 "Defensible hilltop manor with a two-storey residence, corner lookout, enclosed garden and stone approach court.")
+    merge_building(b, build_two_storey_townhouse(), 2, 0, 2)
+    merge_building(b, build_forest_watchtower(), 27, 0, 2)
+    for x in range(1, 40):
+        b.fill(x, 0, 1, x, 2, 1, "minecraft:stone_bricks")
+        b.fill(x, 0, 33, x, 2, 33, "minecraft:stone_bricks")
+    for z in range(1, 34):
+        b.fill(1, 0, z, 1, 2, z, "minecraft:stone_bricks")
+        b.fill(39, 0, z, 39, 2, z, "minecraft:stone_bricks")
+    b.fill(15, 0, 16, 25, 0, 25, "minecraft:grass_block", snowy="false")
+    for x, z in ((17, 18), (23, 18), (17, 23), (23, 23)):
+        b.set(x, 1, z, "minecraft:flowering_azalea")
+    b.fill(19, 0, 1, 21, 0, 8, "minecraft:stone_bricks")
+    return b
+
+
+def build_frontier_fort():
+    b = Building("frontier_fort", (41, 16, 35),
+                 "Timber frontier fort with a palisade perimeter, four raised corner platforms, barracks and a central supply yard.")
+    b.fill(1, 0, 1, 39, 0, 33, "minecraft:coarse_dirt")
+    for x in range(2, 39):
+        for y in range(1, 7):
+            b.log(x, y, 2, "spruce")
+            b.log(x, y, 32, "spruce")
+    for z in range(2, 33):
+        for y in range(1, 7):
+            b.log(2, y, z, "spruce")
+            b.log(38, y, z, "spruce")
+    # Four corner platforms with simple railed decks.
+    for cx, cz in ((4, 4), (36, 4), (4, 30), (36, 30)):
+        b.fill(cx - 2, 6, cz - 2, cx + 2, 6, cz + 2, "minecraft:spruce_planks")
+        for x in range(cx - 2, cx + 3):
+            b.fence(x, 7, cz - 2, "spruce")
+            b.fence(x, 7, cz + 2, "spruce")
+        for z in range(cz - 2, cz + 3):
+            b.fence(cx - 2, 7, z, "spruce")
+            b.fence(cx + 2, 7, z, "spruce")
+    # Gate opening and barracks.
+    for y in range(1, 5):
+        b.set(20, y, 2, "minecraft:air")
+        b.set(21, y, 2, "minecraft:air")
+    b.fill(12, 0, 9, 28, 0, 15, "minecraft:stone_bricks")
+    b.shell(12, 1, 9, 28, 5, 15, "minecraft:spruce_planks")
+    for x in (12, 28):
+        for z in (9, 15):
+            for y in range(1, 7):
+                b.log(x, y, z, "spruce")
+    door(b, 20, 1, 9, "spruce")
+    b.gable_roof(11, 29, 8, 16, 6, 3, "spruce")
+    b.fill(17, 0, 20, 23, 0, 26, "minecraft:gravel")
+    b.set(20, 1, 22, "minecraft:campfire", facing="north", lit="false",
+          signal_fire="false", waterlogged="false")
+    return b
+
+
+def build_railway_depot():
+    b = Building("railway_depot", (49, 16, 29),
+                 "Regional rail depot combining a passenger station, signal cabin, freight warehouse and two gravel service tracks.")
+    merge_building(b, build_railway_station(), 2, 0, 2)
+    merge_building(b, build_railway_signal_box(), 30, 0, 2)
+    b.fill(30, 0, 16, 46, 0, 27, "minecraft:gravel")
+    b.shell(31, 1, 17, 45, 6, 26, "minecraft:bricks")
+    for x in (31, 45):
+        for z in (17, 26):
+            for y in range(1, 8):
+                b.log(x, y, z, "dark_oak")
+    b.gable_roof(30, 46, 16, 27, 7, 3, "dark_oak")
+    for x in (35, 41):
+        b.set(x, 2, 17, "minecraft:barrel", facing="up", open="false")
+        b.set(x, 2, 25, "minecraft:barrel", facing="up", open="false")
+    b.fill(1, 0, 14, 47, 0, 15, "minecraft:gravel")
+    b.fill(1, 0, 27, 47, 0, 28, "minecraft:gravel")
+    return b
+
+
+def build_orchard_cider_estate():
+    b = Building("orchard_cider_estate", (47, 14, 29),
+                 "Fruit-growing estate combining an orchard farmhouse, bakery-style press house, barrel store and orderly tree rows.")
+    merge_building(b, build_orchard_farm(), 2, 0, 2)
+    merge_building(b, build_brick_bakery(), 27, 0, 2)
+    b.fill(28, 0, 17, 44, 0, 26, "minecraft:coarse_dirt")
+    for x in (31, 35, 39, 43):
+        for z in (18, 22, 26):
+            b.log(x, 1, z, "oak")
+            for dx in (-1, 0, 1):
+                for dz in (-1, 0, 1):
+                    b.set(x + dx, 2, z + dz, "minecraft:oak_leaves",
+                          distance="7", persistent="true", waterlogged="false")
+    for x, z in ((29, 19), (29, 23), (29, 26), (44, 19), (44, 23)):
+        b.set(x, 1, z, "minecraft:barrel", facing="up", open="false")
+    b.fill(26, 0, 15, 45, 0, 16, "minecraft:dirt_path")
+    return b
+
+
+def build_riverside_sawmill():
+    b = Building("riverside_sawmill", (45, 15, 27),
+                 "Working riverside sawmill combining a water-powered mill, timber bunkhouse, log sorting yard and loading channel.")
+    merge_building(b, build_watermill(), 2, 0, 2)
+    merge_building(b, build_lumber_camp(), 24, 0, 2)
+    b.fill(0, 0, 21, 44, 0, 24, "minecraft:gravel")
+    b.fill(0, 1, 21, 44, 1, 24, "minecraft:water", level="0")
+    for x in range(27, 43, 3):
+        b.log(x, 2, 19, "spruce", axis="x")
+        b.log(x, 3, 19, "spruce", axis="x")
+    b.fill(25, 0, 18, 43, 0, 20, "minecraft:coarse_dirt")
+    return b
+
+
+def build_marsh_reed_hamlet():
+    b = Building("marsh_reed_hamlet", (43, 16, 31),
+                 "Wetland hamlet with two raised timber homes, shared boardwalks, landing platforms and reed-edge gardens.")
+    merge_building(b, build_marsh_stilt_house(), 2, 0, 2)
+    merge_building(b, build_marsh_stilt_house(), 25, 0, 2)
+    b.fill(7, 0, 16, 35, 0, 20, "minecraft:mud")
+    b.fill(7, 1, 17, 35, 1, 19, "minecraft:oak_planks")
+    for x in range(7, 36, 4):
+        b.log(x, 0, 18, "oak")
+        b.log(x, 1, 18, "oak")
+        b.fence(x, 2, 17, "oak")
+        b.fence(x, 2, 19, "oak")
+    b.fill(3, 0, 22, 39, 0, 23, "minecraft:coarse_dirt")
+    for x in (5, 10, 15, 28, 33, 38):
+        b.set(x, 1, 25, "minecraft:flowering_azalea")
+    return b
+
+
 BUILDINGS = (
     build_woodland_cottage,
     build_village_blacksmith,
@@ -784,6 +1277,26 @@ BUILDINGS = (
     build_river_trade_hamlet,
     build_alpine_watch_compound,
     build_desert_oasis_hamlet,
+    build_stone_mason_workshop,
+    build_canal_lock,
+    build_monastery_chapel,
+    build_apiary_garden,
+    build_snowbound_storehouse,
+    build_desert_cistern,
+    build_tropical_boardwalk_house,
+    build_railway_signal_box,
+    build_quarry_shed,
+    build_charcoal_kiln,
+    build_vineyard_estate,
+    build_sheepfold_ranch,
+    build_charcoal_burners_camp,
+    build_fishing_village_compound,
+    build_hilltop_manor,
+    build_frontier_fort,
+    build_railway_depot,
+    build_orchard_cider_estate,
+    build_riverside_sawmill,
+    build_marsh_reed_hamlet,
 )
 
 
