@@ -1,0 +1,50 @@
+# Architecture pilot asset provenance
+
+This pilot imports three selected structures, not either website's full catalog.
+The source files remain outside the NeoForge module under `assets/architecture/gdmc-source/`.
+The build converts them into Minecraft 1.21.1 structure NBT and places only those
+three converted templates in the optional built-in RealScale architecture pack.
+
+## Upstream and license
+
+- Upstream project: https://github.com/williamcwi/GDMC
+- Upstream license: Apache License 2.0, copied to `licenses/GDMC-APACHE-2.0.txt`
+- Copyright notice retained: Copyright 2019 Wai Ip Chu.
+- Minecraft.pl pages identify these assets as originating from `williamcwi/GDMC`
+  and explicitly mark them Apache 2.0:
+  - Modern Brick House: https://minecraft.pl/schematyki/nowoczesny-dom-z-cegla
+  - Glass Greenhouse: https://minecraft.pl/schematyki/szklarnia-szklana
+  - City Library: https://minecraft.pl/schematyki/biblioteka-miejska
+
+## Selected files
+
+| Pack template | Upstream source path | Dimensions | Original Git blob SHA | Source SHA-256 |
+|---|---|---:|---|---|
+| `modern_house.nbt` | `schematics/modern_house/modern_house_1.schematic` | 12×10×12 | `4d3d4f0a36d8a0c7937c1288780dacffaa544e4e` | `8febc4e110e8324e5955d6492ba8993c12285abc8e7696dffb9c50af30882e01` |
+| `glass_greenhouse.nbt` | `schematics/greenhouse/greenhouse_2.schematic` | 12×7×12 | `1b39ba9ef1da3333a95b26562f14e56e281c773c` | `c0097e5d1367e79a072b3282a565f562cdce0db3ac535de6be78c501e5a88155` |
+| `city_library.nbt` | `schematics/library/library.schematic` | 24×10×20 | `ba0ba507dc921d96b786e24d773881d241e647e7` | `1401f67f642a617d03427083959e4501c7f994614de4c522b626673644194ad0` |
+
+## Conversion and modifications
+
+The original files use legacy numeric block IDs. The dependency-free converter
+maps the used IDs and metadata to named vanilla 1.21.1 block states and writes
+structure NBT with DataVersion 3955. It rejects any unrecognized block ID
+instead of silently substituting another block.
+
+The conversion intentionally omits legacy block-entity payloads and entities:
+chests are empty, signs are blank, and flower pots are empty. Crop age, farmland
+moisture, water, block orientation, and supported stair/slab/door states are
+converted. The converted templates are modified files under Apache 2.0; this
+conversion is recorded here and in the converter's source header.
+
+The source `.schematic` files are not packaged in the JAR. Only the three
+converted `.nbt` templates are included in the opt-in built-in resource pack.
+No website database, external downloader, runtime network access, or external
+mod dependency is introduced.
+
+## MC Schematics policy
+
+MC Schematics is retained as a design-reference catalog only. No uploaded
+structure from that site is copied or redistributed by this pilot because the
+site does not grant a blanket redistribution license for user uploads. A
+future item must have explicit per-work permission before it can be bundled.
