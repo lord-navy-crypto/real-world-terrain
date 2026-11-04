@@ -192,6 +192,25 @@ class ArchitecturePilotTests(unittest.TestCase):
                     structure_set["placement"]["separation"]
                 )
 
+    def test_settlement_compounds_combine_multiple_building_and_site_features(self):
+        self.assertTrue(BATCH.is_dir(),
+                        "Run Gradle processResources or build before this test")
+        expected = {
+            "woodland_hamlet": {"minecraft:oak_planks", "minecraft:dirt_path", "minecraft:water"},
+            "plains_market_square": {"minecraft:stone_bricks", "minecraft:barrel", "minecraft:dirt_path"},
+            "river_trade_hamlet": {"minecraft:cobblestone", "minecraft:gravel", "minecraft:water"},
+            "alpine_watch_compound": {"minecraft:cut_copper", "minecraft:campfire", "minecraft:spruce_log"},
+            "desert_oasis_hamlet": {"minecraft:orange_terracotta", "minecraft:jungle_leaves", "minecraft:water"},
+        }
+        for template, required_blocks in expected.items():
+            with self.subTest(template=template):
+                root = read_template(BATCH / f"{template}.nbt", BATCH_EXPECTED[template])
+                self.assertGreaterEqual(root["size"][0], 40)
+                self.assertGreaterEqual(root["size"][2], 35)
+                palette = {entry["Name"] for entry in root["palette"]}
+                self.assertTrue(required_blocks.issubset(palette),
+                                f"{template} is missing settlement features: {required_blocks - palette}")
+
     def test_original_buildings_have_distinct_biome_and_design_profiles(self):
         self.assertTrue(PACK.is_dir(),
                         "Run Gradle processResources or build before this test")
