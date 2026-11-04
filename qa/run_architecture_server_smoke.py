@@ -19,6 +19,14 @@ TEMPLATES = (
     "modern_house", "glass_greenhouse", "city_library",
     "forest_ranger_lodge", "plains_farmstead", "alpine_waystation",
     "coastal_lighthouse", "desert_caravanserai",
+    "woodland_cottage", "village_blacksmith", "schoolhouse",
+    "healers_clinic", "brick_bakery", "two_storey_townhouse",
+    "snowfield_shelter", "savanna_outpost", "marsh_stilt_house",
+    "mesa_trading_post", "market_hall", "railway_station", "windmill",
+    "fishing_hut", "coastal_pier", "forest_watchtower",
+    "botanical_greenhouse", "orchard_farm", "stone_bridge", "watermill",
+    "desert_well", "mountain_observatory", "ruined_watchpost",
+    "garden_pavilion", "lumber_camp",
 )
 
 def fail(message: str, proc=None, lines=None):
@@ -124,26 +132,29 @@ print("NEOFORGE_ARCHITECTURE_SERVER_BOOT_OK", flush=True)
 try:
     sock = connect_rcon()
     print("NEOFORGE_ARCHITECTURE_RCON_READY", flush=True)
-    print("RCON:", rcon_command(sock, 2, "forceload add 0 0 256 32"), flush=True)
 
     for index, template in enumerate(TEMPLATES):
         x = index * 32
+        load_id = 2 + index * 2
+        place_id = load_id + 1
+        print("RCON:", rcon_command(sock, load_id, f"forceload add {x} 160 0"), flush=True)
         command = f"place template realscale:architecture/{template} {x} 160 0"
         print(f">>> {command}", flush=True)
-        response = rcon_command(sock, index + 3, command)
+        response = rcon_command(sock, place_id, command)
         expected = f'Loaded template "realscale:architecture/{template}" at'
         print("RCON:", response, flush=True)
         if expected not in response:
             raise RuntimeError(f"Template placement did not succeed for {template}: {response}")
 
-    print("RCON:", rcon_command(sock, 20, "save-all flush"), flush=True)
+    save_id = 2 + len(TEMPLATES) * 2
+    print("RCON:", rcon_command(sock, save_id, "save-all flush"), flush=True)
     time.sleep(2)
     try:
-        rcon_command(sock, 21, "forceload remove all")
+        rcon_command(sock, save_id + 1, "forceload remove all")
     except Exception:
         pass
     try:
-        rcon_command(sock, 22, "stop")
+        rcon_command(sock, save_id + 2, "stop")
     except Exception:
         # The server may close RCON immediately after accepting stop.
         pass
