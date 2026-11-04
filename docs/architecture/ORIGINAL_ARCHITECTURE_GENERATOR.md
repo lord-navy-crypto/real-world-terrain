@@ -18,7 +18,7 @@ The original design pipeline now has two generators:
 - `scripts/generate_original_architecture.py`: five foundational original designs.
 - `scripts/generate_architecture_batch.py`: 25 additional designs produced in one deterministic batch from reusable building primitives.
 
-The batch generator creates these additional archetypes:
+The complete original catalog currently contains:
 
 | Structure ID | Design | Intended biome families |
 |---|---|---|
