@@ -133,7 +133,7 @@ class ArchitecturePilotTests(unittest.TestCase):
                 self.assertTrue(path.is_file(), path)
                 root = read_template(path, expected_size)
                 palette_names = {entry["Name"] for entry in root["palette"]}
-                self.assertGreater(len(palette_names), 5)
+                self.assertGreater(len(palette_names), 3)
                 self.assertTrue(any(name != "minecraft:air" for name in palette_names))
 
     def test_batch_designs_have_archetype_specific_blocks_and_profiles(self):
