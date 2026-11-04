@@ -55,10 +55,12 @@ Apache-2.0 source schematics ──> licensed converter ──┐
 Original design rules ─────────> two procedural generators ─┘
 ```
 
-Gradle runs both generators during `processResources`. Only the resulting
-Minecraft `.nbt` structure templates and their worldgen JSON definitions are
-embedded. The original design scripts, licensed source files and source
-websites are not required at runtime. The batch pipeline adds 30 more
+Gradle runs both generators during `processResources`. The resulting
+Minecraft `.nbt` templates are embedded in the mod's base data namespace,
+so explicit `/place template` use does not depend on enabling the optional
+worldgen pack. The biome tags, structure definitions, template pools and
+structure sets live in the separate opt-in pack. The original design scripts,
+licensed source files and source websites are not required at runtime. The batch pipeline adds 30 more
 original templates, bringing the total to 35 original structures plus
 three separately licensed imports (38 templates overall). No network request or external
 structure-library dependency is made by the game.
