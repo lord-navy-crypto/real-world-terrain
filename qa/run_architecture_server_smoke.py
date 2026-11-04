@@ -168,9 +168,18 @@ try:
 
     command_id = 6
     for index, template in enumerate(TEMPLATES):
-        # Keep every template in its own 64-block-wide test bay.
-        # The placement command loads target chunks as needed.
+        # forceload uses two-dimensional block positions (x z), not x y z.
+        # Load the complete 64x64 test bay before attempting placement so the
+        # command cannot fail merely because its destination chunks are absent.
         x = index * 64
+        region = f"{x} 0 {x + 63} 63"
+        ticket = rcon_command(sock, command_id, f"forceload add {region}")
+        print("RCON force-load:", ticket, flush=True)
+        if "Added" not in ticket and "already" not in ticket.lower():
+            raise RuntimeError(f"Could not force-load the test bay for {template}: {ticket}")
+        time.sleep(0.5)
+        command_id += 1
+
         command = f"place template realscale:architecture/{template} {x} 160 0"
         print(f">>> {command}", flush=True)
         response = rcon_command(sock, command_id, command)
@@ -178,6 +187,10 @@ try:
         print("RCON:", response, flush=True)
         if expected not in response:
             raise RuntimeError(f"Template placement did not succeed for {template}: {response}")
+        command_id += 1
+
+        released = rcon_command(sock, command_id, f"forceload remove {region}")
+        print("RCON release:", released, flush=True)
         command_id += 1
 
     save_id = command_id
