@@ -93,6 +93,7 @@ tasks.named('test', Test) {
 def generatedStructureResources = layout.buildDirectory.dir("generated/realscale-structure-packs")
 def generatedLicensedArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-licensed-architecture-templates")
 def generatedOriginalArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-original-architecture-templates")
+def generatedBatchArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-batch-architecture-templates")
 
 // Convert only the three explicitly licensed GDMC source schematics. The source
 // files stay outside the NeoForge module and are never packaged in the JAR.
@@ -128,8 +129,25 @@ tasks.register("generateOriginalArchitectureTemplates") {
     }
 }
 
+tasks.register("generateArchitectureBatchTemplates") {
+    inputs.file(file("../scripts/generate_architecture_batch.py"))
+    inputs.file(file("../scripts/generate_original_architecture.py"))
+    outputs.dir(generatedBatchArchitectureTemplates)
+    doLast {
+        def output = generatedBatchArchitectureTemplates.get().asFile
+        project.delete(output)
+        def python = System.getenv("PYTHON") ?: "python3"
+        project.exec {
+            commandLine python,
+                    file("../scripts/generate_architecture_batch.py").absolutePath,
+                    "--output", output.absolutePath
+        }
+    }
+}
+
 tasks.register("generateBuiltInStructurePacks") {
-    dependsOn("generateArchitectureTemplates", "generateOriginalArchitectureTemplates")
+    dependsOn("generateArchitectureTemplates", "generateOriginalArchitectureTemplates",
+              "generateArchitectureBatchTemplates")
     outputs.dir(generatedStructureResources)
     doLast {
         def root = generatedStructureResources.get().asFile
@@ -208,13 +226,18 @@ tasks.register("generateBuiltInStructurePacks") {
                 "data/realscale/structures/architecture")
         def originalTemplateSource = new File(generatedOriginalArchitectureTemplates.get().asFile,
                 "data/realscale/structures/architecture")
+        def batchTemplateSource = new File(generatedBatchArchitectureTemplates.get().asFile,
+                "data/realscale/structures/architecture")
         if (!licensedTemplateSource.isDirectory())
             throw new GradleException("Converted licensed architecture templates are missing: " + licensedTemplateSource)
         if (!originalTemplateSource.isDirectory())
             throw new GradleException("Original generated architecture templates are missing: " + originalTemplateSource)
+        if (!batchTemplateSource.isDirectory())
+            throw new GradleException("Batch-generated architecture templates are missing: " + batchTemplateSource)
         project.copy {
             from(licensedTemplateSource)
             from(originalTemplateSource)
+            from(batchTemplateSource)
             into(templateTarget)
         }
 
