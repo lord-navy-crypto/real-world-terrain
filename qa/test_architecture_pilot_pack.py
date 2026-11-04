@@ -92,6 +92,7 @@ class ArchitecturePilotTests(unittest.TestCase):
                 (PACK / f"data/realscale/tags/worldgen/biome/has_structure/{template}.json").read_text()
             )
             self.assertEqual(structure["type"], "minecraft:jigsaw")
+            self.assertIn("spawn_overrides", structure)
             self.assertEqual(structure["biomes"], f"#realscale:has_structure/{template}")
             self.assertEqual(structure["size"], 0)
             self.assertEqual(structure["project_start_to_heightmap"], "WORLD_SURFACE_WG")

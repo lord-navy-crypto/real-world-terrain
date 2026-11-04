@@ -224,6 +224,7 @@ tasks.register("generateBuiltInStructurePacks") {
                 type:"minecraft:jigsaw",
                 biomes:"#realscale:has_structure/" + id,
                 step:"surface_structures",
+                spawn_overrides:[:],
                 terrain_adaptation:"none",
                 start_pool:poolId,
                 size:0,
