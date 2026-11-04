@@ -105,6 +105,36 @@ def rcon_command(sock, packet_id, command):
         raise RuntimeError(f"Unexpected RCON response id {response_id}: {response}")
     return response
 
+
+def wait_for_test_bay_chunks(sock, packet_id, origin_x, origin_z=0, y=160, timeout=45):
+    """Wait for every chunk in a 64x64 test bay to reach entity-ticking status."""
+    pending = [
+        (origin_x + 8 + dx * 16, origin_z + 8 + dz * 16)
+        for dz in range(4)
+        for dx in range(4)
+    ]
+    deadline = time.monotonic() + timeout
+    while pending and time.monotonic() < deadline:
+        still_pending = []
+        for chunk_x, chunk_z in pending:
+            probe = (
+                f"execute if loaded {chunk_x} {y} {chunk_z} "
+                "run time query daytime"
+            )
+            response = rcon_command(sock, packet_id, probe)
+            packet_id += 1
+            if "The time is" not in response:
+                still_pending.append((chunk_x, chunk_z))
+        pending = still_pending
+        if pending:
+            time.sleep(0.25)
+    if pending:
+        raise TimeoutError(
+            f"Test bay chunks did not reach entity-ticking status: {pending}"
+        )
+    return packet_id
+
+
 proc = subprocess.Popen(
     ["gradle", "--no-daemon", "runServer", "--stacktrace"],
     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -177,8 +207,9 @@ try:
         print("RCON force-load:", ticket, flush=True)
         if "Marked" not in ticket and "already" not in ticket.lower():
             raise RuntimeError(f"Could not force-load the test bay for {template}: {ticket}")
-        time.sleep(0.5)
         command_id += 1
+        command_id = wait_for_test_bay_chunks(sock, command_id, x, 0)
+        print("RCON: all 16 test-bay chunks are entity-ticking.", flush=True)
 
         command = f"place template realscale:architecture/{template} {x} 160 0"
         print(f">>> {command}", flush=True)
