@@ -175,7 +175,7 @@ try:
         region = f"{x} 0 {x + 63} 63"
         ticket = rcon_command(sock, command_id, f"forceload add {region}")
         print("RCON force-load:", ticket, flush=True)
-        if "Added" not in ticket and "already" not in ticket.lower():
+        if "Marked" not in ticket and "already" not in ticket.lower():
             raise RuntimeError(f"Could not force-load the test bay for {template}: {ticket}")
         time.sleep(0.5)
         command_id += 1
