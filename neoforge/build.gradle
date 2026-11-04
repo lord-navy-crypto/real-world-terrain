@@ -203,16 +203,36 @@ tasks.register("generateBuiltInStructurePacks") {
                     groovy.json.JsonOutput.toJson(value)) + "\n", "UTF-8")
         }
 
+        // Explicit IDs avoid referencing the nonexistent #minecraft:is_plains tag.
         def architectureProfiles = [
             [id:"modern_house", spacing:48, separation:16, salt:140011,
-             biomes:["#minecraft:is_plains", "#minecraft:is_forest",
-                     "#minecraft:is_savanna", "#minecraft:is_taiga"]],
+             biomes:["minecraft:plains", "minecraft:sunflower_plains",
+                     "minecraft:forest", "minecraft:flower_forest",
+                     "minecraft:birch_forest", "minecraft:old_growth_birch_forest",
+                     "minecraft:taiga", "minecraft:old_growth_spruce_taiga",
+                     "minecraft:savanna", "realscale:shrub_prairie",
+                     "realscale:forest_steppe", "realscale:woodland_meadow",
+                     "realscale:birch_parkland", "realscale:pine_oak_mosaic",
+                     "realscale:oak_to_dark_forest", "realscale:temperate_to_birch",
+                     "realscale:riverine_woodland"]],
             [id:"glass_greenhouse", spacing:72, separation:24, salt:140012,
-             biomes:["#minecraft:is_plains", "#minecraft:is_forest",
-                     "#minecraft:is_savanna"]],
+             biomes:["minecraft:plains", "minecraft:sunflower_plains",
+                     "minecraft:meadow", "minecraft:forest",
+                     "minecraft:birch_forest", "minecraft:flower_forest",
+                     "realscale:wet_meadow", "realscale:marshy_woodland",
+                     "realscale:floodplain_margin", "realscale:reed_marsh_edge",
+                     "realscale:lake_woodland_margin", "realscale:seasonal_floodforest",
+                     "realscale:riverine_woodland", "realscale:mountain_wetland"]],
             [id:"city_library", spacing:112, separation:32, salt:140013,
-             biomes:["#minecraft:is_plains", "#minecraft:is_forest",
-                     "#minecraft:is_taiga"]]
+             biomes:["minecraft:forest", "minecraft:flower_forest",
+                     "minecraft:birch_forest", "minecraft:old_growth_birch_forest",
+                     "minecraft:dark_forest", "minecraft:taiga",
+                     "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga",
+                     "minecraft:meadow", "realscale:woodland_meadow",
+                     "realscale:pine_oak_mosaic", "realscale:oak_to_dark_forest",
+                     "realscale:montane_oak_foothills", "realscale:subalpine_woodland",
+                     "realscale:temperate_to_birch", "realscale:birch_conifer_transition",
+                     "realscale:birch_parkland", "realscale:riverine_woodland"]]
         ]
 
         architectureProfiles.each { profile ->
