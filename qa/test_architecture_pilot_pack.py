@@ -372,7 +372,7 @@ class ArchitecturePilotTests(unittest.TestCase):
                 )
                 for required_path in required_pack_paths:
                     self.assertIn(prefix + required_path, names)
-                self.assertNotIn(
+                self.assertIn(
                     prefix + f"data/realscale/structures/architecture/{template}.nbt",
                     names
                 )
