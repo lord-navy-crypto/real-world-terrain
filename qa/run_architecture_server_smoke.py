@@ -20,7 +20,7 @@ def fail(message: str, proc=None, lines=None):
     if proc is not None and proc.poll() is None:
         try:
             if proc.stdin and not proc.stdin.closed:
-                proc.stdin.write("stop\\n")
+                proc.stdin.write("stop\n")
                 proc.stdin.flush()
                 proc.wait(timeout=30)
         except Exception:
@@ -71,7 +71,7 @@ def wait_for(fragment: str, timeout: int):
 
 wait_for("Done (", 600)
 print("NEOFORGE_ARCHITECTURE_SERVER_BOOT_OK", flush=True)
-proc.stdin.write("forceload add 0 0 256 32\\n")
+proc.stdin.write("forceload add 0 0 256 32\n")
 proc.stdin.flush()
 time.sleep(2)
 
@@ -80,15 +80,15 @@ for index, template in enumerate(TEMPLATES):
     command = f"place template realscale:architecture/{template} {x} 160 0"
     expected = f'Loaded template "realscale:architecture/{template}" at'
     print(f">>> {command}", flush=True)
-    proc.stdin.write(command + "\\n")
+    proc.stdin.write(command + "\n")
     proc.stdin.flush()
     wait_for(expected, 45)
 
-proc.stdin.write("save-all flush\\n")
+proc.stdin.write("save-all flush\n")
 proc.stdin.flush()
 time.sleep(3)
-proc.stdin.write("forceload remove all\\n")
-proc.stdin.write("stop\\n")
+proc.stdin.write("forceload remove all\n")
+proc.stdin.write("stop\n")
 proc.stdin.flush()
 try:
     proc.wait(timeout=120)
