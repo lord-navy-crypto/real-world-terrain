@@ -133,20 +133,22 @@ try:
     sock = connect_rcon()
     print("NEOFORGE_ARCHITECTURE_RCON_READY", flush=True)
 
+    print("RCON:", rcon_command(sock, 2,
+          "forceload add 0 160 0 1055 160 31"), flush=True)
+    # Chunk tickets are acknowledged before asynchronous chunk loading finishes.
+    time.sleep(4)
+
     for index, template in enumerate(TEMPLATES):
         x = index * 32
-        load_id = 2 + index * 2
-        place_id = load_id + 1
-        print("RCON:", rcon_command(sock, load_id, f"forceload add {x} 160 0"), flush=True)
         command = f"place template realscale:architecture/{template} {x} 160 0"
         print(f">>> {command}", flush=True)
-        response = rcon_command(sock, place_id, command)
+        response = rcon_command(sock, index + 3, command)
         expected = f'Loaded template "realscale:architecture/{template}" at'
         print("RCON:", response, flush=True)
         if expected not in response:
             raise RuntimeError(f"Template placement did not succeed for {template}: {response}")
 
-    save_id = 2 + len(TEMPLATES) * 2
+    save_id = 3 + len(TEMPLATES)
     print("RCON:", rcon_command(sock, save_id, "save-all flush"), flush=True)
     time.sleep(2)
     try:
