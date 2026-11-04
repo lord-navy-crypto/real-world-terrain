@@ -368,7 +368,7 @@ def build_desert_caravanserai():
         b.fence(11, 2, z, "acacia")
     b.set(5, 2, 5, "minecraft:barrel", facing="up", open="false")
     b.set(5, 2, 11, "minecraft:crafting_table")
-    b.set(8, 2, 2, "minecraft:carpet")
+    b.set(8, 2, 2, "minecraft:orange_carpet")
     return b
 
 
