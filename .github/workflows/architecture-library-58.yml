@@ -63,7 +63,7 @@ jobs:
           python3 -m unittest discover -s qa -p 'test_builtin_structure_packs.py' -v
           python3 - <<'PY'
           from pathlib import Path
-          root = Path("neoforge/build/resources/main/data/realscale/structures/architecture")
+          root = Path("neoforge/build/resources/main/data/realscale/structure/architecture")
           files = sorted(root.glob("*.nbt"))
           print("PACKAGED_ARCHITECTURE_TEMPLATE_COUNT:", len(files))
           if len(files) != 58:

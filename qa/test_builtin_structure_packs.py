@@ -83,7 +83,7 @@ class BuiltinStructureTests(unittest.TestCase):
                 "Structure override must only be in selectable built-in packs")
             architecture_prefix = "resourcepacks/realscale_structures_architecture_pilot/"
             for asset in ("modern_house.nbt", "glass_greenhouse.nbt", "city_library.nbt"):
-                self.assertIn("data/realscale/structures/architecture/" + asset, names)
+                self.assertIn("data/realscale/structure/architecture/" + asset, names)
             for structure in ("modern_house", "glass_greenhouse", "city_library"):
                 self.assertIn(architecture_prefix + "data/realscale/worldgen/structure/" + structure + ".json", names)
             self.assertFalse(any(n.endswith(".schematic") for n in names),
