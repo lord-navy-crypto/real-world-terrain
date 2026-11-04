@@ -43,7 +43,9 @@ BATCH_NAMES = (
     "fishing_hut", "coastal_pier", "forest_watchtower",
     "botanical_greenhouse", "orchard_farm", "stone_bridge", "watermill",
     "desert_well", "mountain_observatory", "ruined_watchpost",
-    "garden_pavilion", "lumber_camp",
+    "garden_pavilion", "lumber_camp", "woodland_hamlet",
+    "plains_market_square", "river_trade_hamlet",
+    "alpine_watch_compound", "desert_oasis_hamlet",
 )
 BATCH_FACTORIES = {factory().name: factory for factory in batch_generator.BUILDINGS}
 BATCH_EXPECTED = {
@@ -122,9 +124,9 @@ class ArchitecturePilotTests(unittest.TestCase):
         self.assertIn("Original RealScale designs", ORIGINAL_DOC.read_text(encoding="utf-8"))
 
     def test_batch_generator_creates_twenty_five_original_designs(self):
-        self.assertEqual(len(batch_generator.BUILDINGS), 25)
+        self.assertEqual(len(batch_generator.BUILDINGS), 30)
         self.assertEqual(set(BATCH_FACTORIES), set(BATCH_NAMES))
-        self.assertEqual(len(BATCH_EXPECTED), 25)
+        self.assertEqual(len(BATCH_EXPECTED), 30)
         self.assertTrue(BATCH.is_dir(),
                         "Run Gradle processResources or build before this test")
         for template, expected_size in BATCH_EXPECTED.items():
@@ -165,6 +167,11 @@ class ArchitecturePilotTests(unittest.TestCase):
             "ruined_watchpost": "minecraft:mossy_cobblestone",
             "garden_pavilion": "minecraft:polished_diorite",
             "lumber_camp": "minecraft:coarse_dirt",
+            "woodland_hamlet": "minecraft:oak_planks",
+            "plains_market_square": "minecraft:dark_oak_log",
+            "river_trade_hamlet": "minecraft:cobblestone",
+            "alpine_watch_compound": "minecraft:cut_copper",
+            "desert_oasis_hamlet": "minecraft:orange_terracotta",
         }
         self.assertEqual(set(expected_features), set(BATCH_NAMES))
         for template, required_block in expected_features.items():
@@ -218,7 +225,7 @@ class ArchitecturePilotTests(unittest.TestCase):
                         "Run Gradle processResources or build before this test")
         meta = json.loads((PACK / "pack.mcmeta").read_text(encoding="utf-8"))
         self.assertEqual(meta["pack"]["pack_format"], 48)
-        self.assertEqual(len(ALL_EXPECTED), 33)
+        self.assertEqual(len(ALL_EXPECTED), 38)
         for template in ALL_EXPECTED:
             with self.subTest(template=template):
                 structure = json.loads(
@@ -262,7 +269,7 @@ class ArchitecturePilotTests(unittest.TestCase):
     def test_registered_pack_is_optional_and_only_templates_are_packaged(self):
         source = JAVA.read_text(encoding="utf-8")
         self.assertIn('"architecture_pilot"', source)
-        self.assertIn('"RealScale | Architecture Library (33 Structures)", false)', source)
+        self.assertIn('"RealScale | Architecture Library (38 Structures)", false)', source)
         self.assertIn("false, // Never mandatory", source)
         jars = list((ROOT / "neoforge/build/libs").glob("*.jar"))
         self.assertTrue(jars, "NeoForge jar must be built before validation")
