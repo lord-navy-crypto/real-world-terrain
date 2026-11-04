@@ -135,7 +135,7 @@ class ArchitecturePilotTests(unittest.TestCase):
                         "Run Gradle processResources or build before this test")
         meta = json.loads((PACK / "pack.mcmeta").read_text(encoding="utf-8"))
         self.assertEqual(meta["pack"]["pack_format"], 48)
-        self.assertEqual(set(ALL_EXPECTED), set(ALL_EXPECTED.keys()))
+        self.assertEqual(len(ALL_EXPECTED), 8)
         for template in ALL_EXPECTED:
             with self.subTest(template=template):
                 structure = json.loads(
