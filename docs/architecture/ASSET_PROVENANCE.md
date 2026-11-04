@@ -2,8 +2,9 @@
 
 This pilot imports three selected structures, not either website's full catalog.
 The source files remain outside the NeoForge module under `assets/architecture/gdmc-source/`.
-The build converts them into Minecraft 1.21.1 structure NBT and places only those
-three converted templates in the optional built-in RealScale architecture pack.
+The build converts them into Minecraft 1.21.1 structure NBT and embeds those
+templates in the mod's base data namespace. Their biome and worldgen
+registration is kept in the optional built-in RealScale architecture pack.
 
 ## Upstream and license
 
@@ -37,8 +38,9 @@ moisture, water, block orientation, and supported stair/slab/door states are
 converted. The converted templates are modified files under Apache 2.0; this
 conversion is recorded here and in the converter's source header.
 
-The source `.schematic` files are not packaged in the JAR. Only the three
-converted `.nbt` templates are included in the opt-in built-in resource pack.
+The source `.schematic` files are not packaged in the JAR. The three converted
+`.nbt` templates are included in the mod's base data namespace; the optional
+resource pack only supplies their worldgen registration.
 No website database, external downloader, runtime network access, or external
 mod dependency is introduced.
 
