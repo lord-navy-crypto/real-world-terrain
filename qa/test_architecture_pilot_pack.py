@@ -111,7 +111,7 @@ class ArchitecturePilotTests(unittest.TestCase):
     def test_registered_pack_is_optional_and_legacy_sources_are_not_in_jar(self):
         source = JAVA.read_text(encoding="utf-8")
         self.assertIn('"architecture_pilot"', source)
-        self.assertIn("Architecture Structures (Pilot)", source)
+        self.assertIn('"RealScale | Architecture Structures (Pilot)", false)', source)
         self.assertIn("false, // Never mandatory", source)
         jars = list((ROOT / "neoforge/build/libs").glob("*.jar"))
         self.assertTrue(jars, "Build the NeoForge JAR before this test")

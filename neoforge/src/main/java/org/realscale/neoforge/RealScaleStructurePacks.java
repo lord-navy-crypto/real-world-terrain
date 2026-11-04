@@ -82,9 +82,9 @@ public final class RealScaleStructurePacks {
                     "RealScale | Nether + End Structures " + ratio + "x",
                     current.otherDimensions() == ratio);
         }
-        // Optional built-in pilot assets: enabled by default only for NEW worlds.
+        // Explicit opt-in: do not add buildings to ordinary vanilla worlds by default.
         registerOne(event, "architecture_pilot",
-                "RealScale | Architecture Structures (Pilot)", true);
+                "RealScale | Architecture Structures (Pilot)", false);
     }
 
     private static void registerOne(AddPackFindersEvent event, String id,
