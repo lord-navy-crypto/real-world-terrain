@@ -732,12 +732,12 @@ def build_desert_oasis_hamlet():
     b.fill(20, 0, 22, 20, 0, 33, "minecraft:water", level="0")
     for x in (17, 23, 27):
         for z in (24, 30):
+            b.fill(x - 1, 1, z - 1, x + 1, 1, z + 1, "minecraft:coarse_dirt")
             b.log(x, 1, z, "jungle")
             for dx in (-1, 0, 1):
                 for dz in (-1, 0, 1):
                     b.set(x + dx, 2, z + dz, "minecraft:jungle_leaves",
                           distance="7", persistent="true", waterlogged="false")
-            b.fill(x - 1, 1, z - 1, x + 1, 1, z + 1, "minecraft:coarse_dirt")
     b.fill(18, 0, 18, 27, 0, 18, "minecraft:cut_sandstone")
     b.fill(22, 0, 18, 22, 0, 22, "minecraft:cut_sandstone")
     return b
