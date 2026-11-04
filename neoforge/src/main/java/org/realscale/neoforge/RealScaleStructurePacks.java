@@ -15,8 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Built-in optional structure packs: six vanilla density presets plus an
- * Apache-2.0 GDMC-derived architecture pilot.
+ * Built-in optional structure packs: six vanilla density presets plus a
+ * mixed licensed/original RealScale architecture library.
  *
  * The selected default packs are enabled by the pack repository for NEW worlds;
  * every other density is selectable from Create World > Data Packs. Packs are
@@ -84,7 +84,7 @@ public final class RealScaleStructurePacks {
         }
         // Explicit opt-in: do not add buildings to ordinary vanilla worlds by default.
         registerOne(event, "architecture_pilot",
-                "RealScale | Architecture Structures (Pilot)", false);
+                "RealScale | Architecture Library (33 Structures)", false);
     }
 
     private static void registerOne(AddPackFindersEvent event, String id,
