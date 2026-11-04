@@ -13,15 +13,22 @@ This module intentionally combines two independent sources of building designs:
    doors, rooms, crop plots, courtyards and vertical features) and writes
    Minecraft 1.21.1 structure NBT.
 
-The original generator currently creates:
+The original design pipeline now has two generators:
+
+- `scripts/generate_original_architecture.py`: five foundational original designs.
+- `scripts/generate_architecture_batch.py`: 25 additional designs produced in one deterministic batch from reusable building primitives.
+
+The batch generator creates these additional archetypes:
 
 | Structure ID | Design | Intended biome families |
 |---|---|---|
-| `forest_ranger_lodge` | Timber cabin, porch, stone footing and chimney | Temperate forest, birch, taiga and RealScale woodland transitions |
-| `plains_farmstead` | Farmhouse, barn, fenced crop rows and water trough | Plains, meadow, savanna and grassland ecotones |
-| `alpine_waystation` | Stone-and-spruce mountain shelter with hearth | Meadow, grove, snowy foothills and alpine transitions |
-| `coastal_lighthouse` | Tapered red-white beacon with lantern room | Beach, stony shore and RealScale coastal biomes |
-| `desert_caravanserai` | Sandstone courtyard inn, arcade and cistern | Desert, badlands, savanna and semi-arid RealScale biomes |
+| `woodland_cottage`, `village_blacksmith`, `schoolhouse`, `healers_clinic`, `brick_bakery` | Five distinct village services and homes with different room plans and interiors | Temperate forests, plains, meadows and woodland transitions |
+| `two_storey_townhouse`, `snowfield_shelter`, `savanna_outpost`, `marsh_stilt_house`, `mesa_trading_post` | Multi-storey urban house, snow shelter, dryland outpost, raised wetland house and badlands trading post | Forests, snowy biomes, savanna, marsh and badlands |
+| `market_hall`, `railway_station`, `windmill` | Civic market, regional rail stop and four-sail windmill | Plains, grasslands, meadow and selected forest ecotones |
+| `fishing_hut`, `coastal_pier`, `stone_bridge`, `watermill` | Fishing landing, timber pier, masonry crossing and riverside mill | Shores, rivers, floodplains and coastal transitions |
+| `forest_watchtower`, `botanical_greenhouse`, `orchard_farm`, `lumber_camp` | Lookout tower, glazed crop house, tree orchard and timber camp | Forests, birch/taiga, meadow and riverine woodland |
+| `desert_well`, `mountain_observatory`, `ruined_watchpost`, `garden_pavilion` | Water well, high-altitude observatory, weathered ruin and open garden structure | Desert, alpine, forest and flower/meadow biomes |
+| `forest_ranger_lodge`, `plains_farmstead`, `alpine_waystation`, `coastal_lighthouse`, `desert_caravanserai` | Foundational cabin, farmstead, mountain shelter, lighthouse and courtyard inn | Temperate forest, plains, alpine, coastal and semi-arid biomes |
 
 ## Build and generation flow
 
@@ -33,8 +40,10 @@ Original design rules ─────────> original generator ─┘
 
 Gradle runs both generators during `processResources`. Only the resulting
 Minecraft `.nbt` structure templates and their worldgen JSON definitions are
-embedded. The original design script, licensed source files and source
-websites are not required at runtime. No network request or external
+embedded. The original design scripts, licensed source files and source
+websites are not required at runtime. The batch pipeline adds 25 more
+original templates, bringing the total to 30 original structures plus
+three separately licensed imports (33 templates overall). No network request or external
 structure-library dependency is made by the game.
 
 Minecraft's `random_spread` structure sets choose candidate locations using
@@ -63,6 +72,7 @@ creation.
 
 ```sh
 python3 scripts/generate_original_architecture.py --output /tmp/realscale-original
+python3 scripts/generate_architecture_batch.py --output /tmp/realscale-batch
 python3 -m unittest discover -s qa -p test_architecture_pilot_pack.py -v
 cd neoforge && gradle --no-daemon build
 ```
