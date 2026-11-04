@@ -38,7 +38,12 @@ class GuardHotpathTests(unittest.TestCase):
         meta = (root / "META-INF/neoforge.mods.toml").read_text(encoding="utf-8")
         self.assertIn('"required": false', config)
         self.assertIn('type="optional"', meta)
-        self.assertNotIn('modId="dhchunkyguard"', meta)
+        self.assertIn('modId="dhchunkyguard"', meta)
+        legacy = [b for b in meta.split("[[dependencies.realscale]]")
+                  if 'modId="dhchunkyguard"' in b]
+        self.assertEqual(len(legacy), 1)
+        self.assertIn('type="incompatible"', legacy[0])
+        self.assertNotIn('[[mods]]\\nmodId="dhchunkyguard"', meta)
         self.assertFalse((ROOT / "dh-chunky-guard/build.gradle").exists())
 
 
