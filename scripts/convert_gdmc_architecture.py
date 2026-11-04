@@ -298,7 +298,7 @@ def main():
         if not source.is_file():
             raise SystemExit(f"Missing licensed source asset: {source}")
         target_name = ASSETS[source_name][0]
-        target = args.output / "data/realscale/structures/architecture" / f"{target_name}.nbt"
+        target = args.output / "data/realscale/structure/architecture" / f"{target_name}.nbt"
         print("ARCHITECTURE_TEMPLATE", convert_schematic(source, target))
     print("GDMC_ARCHITECTURE_CONVERSION_OK: 3 Apache-2.0 templates, Minecraft 1.21.1")
 

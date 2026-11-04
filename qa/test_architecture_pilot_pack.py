@@ -14,9 +14,9 @@ import generate_original_architecture as original_generator
 import generate_architecture_batch as batch_generator
 
 SOURCE = ROOT / "assets/architecture/gdmc-source"
-LICENSED = ROOT / "neoforge/build/generated/realscale-licensed-architecture-templates/data/realscale/structures/architecture"
-ORIGINAL = ROOT / "neoforge/build/generated/realscale-original-architecture-templates/data/realscale/structures/architecture"
-BATCH = ROOT / "neoforge/build/generated/realscale-batch-architecture-templates/data/realscale/structures/architecture"
+LICENSED = ROOT / "neoforge/build/generated/realscale-licensed-architecture-templates/data/realscale/structure/architecture"
+ORIGINAL = ROOT / "neoforge/build/generated/realscale-original-architecture-templates/data/realscale/structure/architecture"
+BATCH = ROOT / "neoforge/build/generated/realscale-batch-architecture-templates/data/realscale/structure/architecture"
 PACK = ROOT / "neoforge/build/generated/realscale-structure-packs/resourcepacks/realscale_structures_architecture_pilot"
 JAVA = ROOT / "neoforge/src/main/java/org/realscale/neoforge/RealScaleStructurePacks.java"
 LICENSE = ROOT / "licenses/GDMC-APACHE-2.0.txt"
@@ -363,7 +363,7 @@ class ArchitecturePilotTests(unittest.TestCase):
             for template in ALL_EXPECTED:
                 # Templates are always addressable through the mod's base data
                 # namespace; only the worldgen definitions remain opt-in.
-                self.assertIn(f"data/realscale/structures/architecture/{template}.nbt", names)
+                self.assertIn(f"data/realscale/structure/architecture/{template}.nbt", names)
                 required_pack_paths = (
                     f"data/realscale/worldgen/structure/{template}.json",
                     f"data/realscale/worldgen/structure_set/{template}.json",
@@ -373,7 +373,7 @@ class ArchitecturePilotTests(unittest.TestCase):
                 for required_path in required_pack_paths:
                     self.assertIn(prefix + required_path, names)
                 self.assertIn(
-                    prefix + f"data/realscale/structures/architecture/{template}.nbt",
+                    prefix + f"data/realscale/structure/architecture/{template}.nbt",
                     names
                 )
             self.assertFalse(any(name.endswith(".schematic") for name in names))

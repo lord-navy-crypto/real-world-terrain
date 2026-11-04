@@ -224,13 +224,13 @@ tasks.register("generateBuiltInStructurePacks") {
         // StructureTemplateManager reads templates from the mod's normal
         // data namespace. Keep the NBT available for explicit /place template
         // use even when the optional worldgen pack is not selected.
-        def templateTarget = new File(root, "data/realscale/structures/architecture")
+        def templateTarget = new File(root, "data/realscale/structure/architecture")
         def licensedTemplateSource = new File(generatedLicensedArchitectureTemplates.get().asFile,
-                "data/realscale/structures/architecture")
+                "data/realscale/structure/architecture")
         def originalTemplateSource = new File(generatedOriginalArchitectureTemplates.get().asFile,
-                "data/realscale/structures/architecture")
+                "data/realscale/structure/architecture")
         def batchTemplateSource = new File(generatedBatchArchitectureTemplates.get().asFile,
-                "data/realscale/structures/architecture")
+                "data/realscale/structure/architecture")
         if (!licensedTemplateSource.isDirectory())
             throw new GradleException("Converted licensed architecture templates are missing: " + licensedTemplateSource)
         if (!originalTemplateSource.isDirectory())
@@ -247,7 +247,7 @@ tasks.register("generateBuiltInStructurePacks") {
         // Mirror the exact templates into the opt-in architecture pack as well.
         // Keep base-namespace copies for explicit placement without pack opt-in.
         def optionalTemplateTarget = new File(architecturePack,
-                "data/realscale/structures/architecture")
+                "data/realscale/structure/architecture")
         project.copy {
             from(licensedTemplateSource)
             from(originalTemplateSource)
