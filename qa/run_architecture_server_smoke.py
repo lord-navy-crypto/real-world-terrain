@@ -146,7 +146,11 @@ try:
         active = active_before
         print("Architecture pack was already enabled by the isolated test world.", flush=True)
     else:
+        # Enabling a data pack performs a full resource reload; allow that
+        # reload to complete before the RCON response is expected.
+        sock.settimeout(90)
         enabled = rcon_command(sock, 4, f"datapack enable {pack_id}")
+        sock.settimeout(8)
         print("RCON enable architecture pack:", enabled, flush=True)
         if "Enabled" not in enabled and "already enabled" not in enabled.lower():
             raise RuntimeError(f"Architecture data pack could not be enabled: {enabled}")
