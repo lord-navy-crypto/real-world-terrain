@@ -1,0 +1,94 @@
+# RealScale integrated Distant Horizons × Chunky guard
+
+## Integration status
+
+The former `dh-chunky-guard` standalone NeoForge project is now part of the
+RealScale source set. Its classes and Mixin configuration are packaged in the
+single RealScale JAR. There is no second compatibility JAR to install.
+
+## Scope
+
+- Minecraft 1.21.1, Java 21, NeoForge 21.1.x
+- Distant Horizons 3.3.3
+- Chunky 1.4.23
+- RealScale remains usable when either optional mod is absent.
+
+The embedded Mixin activates only when both exact tested versions are present.
+If either mod is missing, or a different version is installed, the Mixin plugin
+skips the guard and RealScale continues without this compatibility patch.
+Distant Horizons and Chunky are not bundled or made required dependencies.
+
+## Upgrade from the old standalone addon
+
+Remove any previously installed `RealScale-DH-Chunky-Guard` 0.1–0.3.x JAR
+before installing this integrated RealScale build. The old addon has its own
+Mixin config and registers the same `/dhchunkyguard` command; running both
+copies could apply the same patch twice. RealScale declares the retired
+`dhchunkyguard` mod ID incompatible so this accidental duplicate is rejected
+at launch rather than silently loading two copies.
+
+## What it fixes
+
+The known failure occurs when DH attempts its first Chunky event-listener bind
+before Chunky's provider has registered. In that narrow state,
+`ChunkyProvider.get()` throws `IllegalStateException: Chunky is not loaded.`.
+
+The guard checks DH's existing `listenerBound` flag first. Before the first
+successful bind, it probes the Chunky provider. It cancels only the premature
+first-time setup call, without changing DH's flag, so DH can retry on the next
+real chunk event. It handles only the confirmed `IllegalStateException`;
+unexpected errors remain visible. Once DH's native listener is bound, the
+normal chunk-event path returns after a field read.
+
+The read-only commands remain available:
+
+- `/dhchunkyguard status`
+- `/dhchunkyguard advice`
+
+They report provider probes, deferred attempts and confirmed native listener
+binding. They do not control Chunky or DH schedulers.
+
+## Explicit non-goals and verification limits
+
+This integration does not alter RealScale terrain generation, the 2096-block
+Overworld height, saved chunks, DH's LOD generator/scheduler, Iris, Sodium, or
+shaderpack rendering. A successful native listener bind is not proof that
+GPU-rendered distant LOD is visible.
+
+**GPU LOD, Iris, Sodium and shaderpack compatibility remain unverified for this
+integrated build.** They require physical-client A/B testing; headless server
+CI cannot certify them.
+
+## Build and validation
+
+The integrated compatibility tests are in `qa/test_dh_chunky_*.py`. The
+`dh-chunky-integrated` workflow builds the main `neoforge/` project and
+checks that the compatibility classes and optional Mixin configuration are
+inside the RealScale JAR, with no third-party DH/Chunky binaries bundled.
+
+## Historical development record
+
+- **0.3.1-experimental (2026-10-23):** moved the already-bound listener check to
+  the first operation in the Mixin callback and cached the opt-out JVM property
+  at class initialization. This reduced work on the ordinary completed-chunk
+  path; it was not an FPS benchmark. The pinned test pair remained DH 3.3.3 /
+  Chunky 1.4.23. Physical DH/Sodium/Iris rendering remained uncertified.
+  [Standalone build evidence](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39922035765).
+- **0.3.0-experimental (2026-10-23):** added the read-only
+  `/dhchunkyguard status` and `/dhchunkyguard advice` commands, launch-lifetime
+  counters and binding confirmation. Dedicated-server/RCON checks passed.
+  [Build and regression checks](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39905141570);
+  [multi-preset server test](https://github.com/lord-navy-crypto/real-world-terrain/actions/runs/39905141492).
+- **0.2.0-experimental (2026-10-23):** cached the reflective
+  `ChunkyProvider.get()` method and added a marker emitted only after DH's
+  native listener binding returned successfully.
+- **0.1.0-experimental (2026-10-22):** introduced the narrow retry for the
+  confirmed `IllegalStateException: Chunky is not loaded.` startup race.
+  It never disabled DH's LOD renderer or rewrote RealScale world height,
+  generated chunks, or saved data. An earlier client observation of distant
+  mountain LOD is historical evidence only, not certification of this
+  integrated build or its shader compatibility.
+
+The former standalone artifact and its separate build project have been
+retired. These historical run links refer to the old standalone implementation;
+the integrated build is validated by the new workflow above.

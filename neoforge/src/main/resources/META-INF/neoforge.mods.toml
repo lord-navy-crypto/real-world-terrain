@@ -28,3 +28,27 @@ type="required"
 versionRange="[3.8.1,)"
 ordering="NONE"
 side="CLIENT"
+
+# Distant Horizons and Chunky are optional. The embedded compatibility Mixin
+# activates only for the exact, tested DH 3.3.3 + Chunky 1.4.23 pair.
+[[dependencies.realscale]]
+modId="distanthorizons"
+type="optional"
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"
+[[dependencies.realscale]]
+modId="chunky"
+type="optional"
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"
+# Prevent installing the retired standalone addon beside the embedded copy.
+[[dependencies.realscale]]
+modId="dhchunkyguard"
+type="incompatible"
+versionRange="[0,)"
+ordering="NONE"
+side="BOTH"
+[[mixins]]
+config="realscale.dhchunky.mixins.json"

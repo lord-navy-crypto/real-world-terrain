@@ -1,10 +1,11 @@
-package org.realscale.compat.dhchunky.mixin;
+package org.realscale.neoforge.compat.dhchunky.mixin;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.realscale.compat.dhchunky.ChunkyBridgeMetrics;
+import org.realscale.neoforge.compat.dhchunky.ChunkyBridgeMetrics;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,13 +18,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * During integrated singleplayer's early full chunk events, Chunky 1.4.23's
  * ChunkyProvider.get() can throw "Chunky is not loaded." because its provider
- * registration has not happened yet. The uncaught exception shuts the world
- * down. Prevent the premature first-time call WITHOUT mutating DH's flag so
- * its very next chunk event can retry after Chunky registers.
+ * registration has not happened yet. Defer only that first native binding
+ * attempt, without mutating DH's flag, so its next chunk event can retry.
  *
- * Targets a PROVEN method descriptor from the pinned official DH 3.3.3 JAR.
- * No RealScale, Minecraft density function or DH rendering code is changed.
+ * This Mixin is optional and is version-gated by DhChunkyMixinConfigPlugin.
+ * It does not modify RealScale worldgen, DH rendering, or Chunky scheduling.
  */
+@Pseudo
 @Mixin(
     targets = "com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractChunkyAccessor",
     remap = false
@@ -33,8 +34,8 @@ public abstract class ChunkyLifecycleSetupMixin {
     @Unique private static final AtomicBoolean realscale$warned = new AtomicBoolean();
     @Unique private static final AtomicBoolean realscale$hookSeen = new AtomicBoolean();
     @Unique private static volatile Method realscale$providerGet;
-    // JVM flags are immutable for this mod lifetime. Avoid system property
-    // parsing on every Minecraft full-chunk event after DH has bound.
+    // JVM flags are immutable for this mod lifetime. Avoid property parsing
+    // on every full-chunk event after DH has bound its native listener.
     @Unique private static final boolean realscale$guardEnabled =
             Boolean.parseBoolean(System.getProperty(
                     "realscale.dhchunky.guard.enabled", "true"));
@@ -43,25 +44,20 @@ public abstract class ChunkyLifecycleSetupMixin {
     @Inject(method = "tryRunFirstTimeSetup()V", at = @At("HEAD"),
             cancellable = true, remap = false)
     private void realscale$deferChunkyBindingUntilReady(CallbackInfo ci) {
-        // Explicit opt-out for A/B verification or a future upstream DH fix.
-        // After native DH binding this injection is still called on every
-        // full-chunk event. Its normal-gameplay hot path must be one cheap
-        // field test, without System.getProperty, reflection or allocations.
+        // Normal completed-chunk hot path: one field read and return.
         if (listenerBound) return;
         if (!realscale$guardEnabled) return;
         if (realscale$hookSeen.compareAndSet(false, true)) {
             System.err.println("REALSCALE_DH_CHUNKY_GUARD_HOOK_ENTERED");
         }
 
-        // Timed only during the pre-bind handshake, never on ordinary chunk
-        // updates after listenerBound flips. DH still owns its generator plan.
+        // Timed only during the pre-bind handshake, never after listenerBound flips.
         long started = System.nanoTime();
         boolean providerReady = realscale$isChunkyProviderReady();
         ChunkyBridgeMetrics.probe(providerReady, System.nanoTime() - started);
         if (!providerReady) {
             ChunkyBridgeMetrics.deferred();
-            // Cancel BEFORE DH flips listenerBound; retry at next real chunk
-            // update. This also ensures an exception cannot escape chunk load.
+            // Cancel BEFORE DH flips listenerBound; retry at next real chunk event.
             if (realscale$warned.compareAndSet(false, true)) {
                 System.err.println(
                     "REALSCALE_DH_CHUNKY_GUARD_DEFERRED: Chunky provider not ready; "
@@ -77,7 +73,7 @@ public abstract class ChunkyLifecycleSetupMixin {
         }
     }
 
-    /** Only report success AFTER Distant Horizons' original listener binding returns. */
+    /** Report success only AFTER Distant Horizons' original listener binding returns. */
     @Inject(method = "tryRunFirstTimeSetup()V", at = @At("RETURN"), remap = false)
     private void realscale$confirmNativeDhListener(CallbackInfo ci) {
         if (!realscale$boundConfirmed && listenerBound) {
@@ -105,14 +101,13 @@ public abstract class ChunkyLifecycleSetupMixin {
 
     @Unique
     private static boolean realscale$isChunkyProviderReady() {
-        // Avoid directly linking Chunky classes from this standalone addon,
-        // which makes class initialization robust while game registries load.
+        // Avoid directly linking Chunky classes while registries are loading.
         try {
             return realscale$resolveChunkyGetter().invoke(null) != null;
         } catch (InvocationTargetException ex) {
             Throwable root = ex.getCause();
-            if (root instanceof IllegalStateException &&
-                    "Chunky is not loaded.".equals(root.getMessage())) {
+            if (root instanceof IllegalStateException
+                    && "Chunky is not loaded.".equals(root.getMessage())) {
                 return false; // The one confirmed and narrowly handled error.
             }
             if (root instanceof Error error) throw error;
@@ -120,9 +115,9 @@ public abstract class ChunkyLifecycleSetupMixin {
             throw new IllegalStateException(
                 "Unexpected ChunkyProvider.get() invocation error", root);
         } catch (ReflectiveOperationException ex) {
-            // Intentionally fail instead of masking unknown version/API changes.
+            // Fail visibly rather than masking an unknown API/version change.
             throw new IllegalStateException(
-                "Chunky 1.4.23 provider API was not found; check exact mods", ex);
+                "Chunky 1.4.23 provider API was not found; check the installed mods", ex);
         }
     }
 }
