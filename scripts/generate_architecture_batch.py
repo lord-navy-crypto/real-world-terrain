@@ -48,9 +48,12 @@ def gabled_house(name, size, wall_top, wall, floor, roof, foundation,
                 b.log(x, y, z, frame)
     center = w // 2
     door(b, center, 2, 2, "spruce" if frame == "spruce" else "oak")
-    for x, z in ((3, 3), (w - 4, 3), (3, d - 4), (w - 4, d - 4)):
-        pane(b, x, min(3, wall_top - 1), z)
+    for z in (4, d - 4):
+        pane(b, 2, min(3, wall_top - 1), z)
+        pane(b, w - 3, min(3, wall_top - 1), z)
     for x in range(4, w - 4, 3):
+        if x == center:
+            continue
         pane(b, x, min(3, wall_top - 1), 2)
         pane(b, x, min(3, wall_top - 1), d - 3)
     if second_floor:
