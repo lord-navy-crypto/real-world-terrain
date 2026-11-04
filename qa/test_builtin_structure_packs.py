@@ -44,6 +44,7 @@ class BuiltinStructureTests(unittest.TestCase):
         self.assertTrue(GENERATED.is_dir(),
             "Run Gradle processResources or build before this integration test")
         expected_names={f"realscale_structures_{p}" for p in PROFILES}
+        expected_names.add("realscale_structures_architecture_pilot")
         self.assertEqual({x.name for x in GENERATED.iterdir() if x.is_dir()},
                          expected_names)
         for profile, expected in PROFILES.items():
@@ -80,6 +81,13 @@ class BuiltinStructureTests(unittest.TestCase):
                 any(n.startswith("data/minecraft/worldgen/structure_set/")
                     for n in names),
                 "Structure override must only be in selectable built-in packs")
+            architecture_prefix = "resourcepacks/realscale_structures_architecture_pilot/"
+            for asset in ("modern_house.nbt", "glass_greenhouse.nbt", "city_library.nbt"):
+                self.assertIn(architecture_prefix + "data/realscale/structures/architecture/" + asset, names)
+            for structure in ("modern_house", "glass_greenhouse", "city_library"):
+                self.assertIn(architecture_prefix + "data/realscale/worldgen/structure/" + structure + ".json", names)
+            self.assertFalse(any(n.endswith(".schematic") for n in names),
+                             "Legacy source schematics must stay outside the JAR")
 
 
 if __name__ == "__main__":
