@@ -296,11 +296,17 @@ class ArchitecturePilotTests(unittest.TestCase):
         with zipfile.ZipFile(jar) as archive:
             names = set(archive.namelist())
             prefix = "resourcepacks/realscale_structures_architecture_pilot/"
+            self.assertIn(prefix + "pack.mcmeta", names)
             for template in ALL_EXPECTED:
-                self.assertIn(
-                    prefix + f"data/realscale/structures/architecture/{template}.nbt",
-                    names
+                required_paths = (
+                    f"data/realscale/structures/architecture/{template}.nbt",
+                    f"data/realscale/worldgen/structure/{template}.json",
+                    f"data/realscale/worldgen/structure_set/{template}.json",
+                    f"data/realscale/worldgen/template_pool/architecture/{template}.json",
+                    f"data/realscale/tags/worldgen/biome/has_structure/{template}.json",
                 )
+                for required_path in required_paths:
+                    self.assertIn(prefix + required_path, names)
             self.assertFalse(any(name.endswith(".schematic") for name in names))
             self.assertNotIn("original-architecture-manifest.json", names)
             self.assertNotIn("batch-architecture-manifest.json", names)
