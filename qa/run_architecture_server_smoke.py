@@ -12,6 +12,39 @@ from pathlib import Path
 
 ROOT = Path.cwd()
 LOG_PATH = ROOT / "run/architecture-pilot-server-smoke.log"
+
+
+def prepare_nbt_diagnostics():
+    """Create isolated one-block templates to pinpoint NBT/state failures."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from generate_original_architecture import Building, build_forest_ranger_lodge
+
+    pack = ROOT / "run/architecture-58-smoke/datapacks/realscale_nbt_diagnostics"
+    (pack / "data/realscale/structure/diagnostics").mkdir(parents=True, exist_ok=True)
+    (pack / "pack.mcmeta").write_text(
+        '{"pack":{"pack_format":48,"description":"Temporary RealScale NBT diagnostics"}}',
+        encoding="utf-8",
+    )
+
+    tiny = Building("tiny_stone", (3, 3, 3), "Temporary one-block NBT diagnostic.")
+    tiny.set(1, 1, 1, "minecraft:stone")
+    tiny.write(pack / "data/realscale/structure/diagnostics/tiny_stone.nbt")
+
+    large = Building("large_single_stone", (13, 10, 13), "Temporary large one-block NBT diagnostic.")
+    large.set(0, 0, 0, "minecraft:stone")
+    large.write(pack / "data/realscale/structure/diagnostics/large_single_stone.nbt")
+
+    forest = build_forest_ranger_lodge()
+    states = sorted({state for state in forest.blocks.values() if state[0] != "minecraft:air"})
+    ids = []
+    for index, block_state in enumerate(states):
+        name = f"state_{index:02d}"
+        probe = Building(name, (1, 1, 1), f"Temporary block-state diagnostic: {block_state[0]}.")
+        probe.set(0, 0, 0, block_state)
+        probe.write(pack / f"data/realscale/structure/diagnostics/{name}.nbt")
+        ids.append(name)
+    print("NBT_DIAGNOSTIC_TEMPLATE_IDS:", ["tiny_stone", "large_single_stone", *ids], flush=True)
+    return ids
 RCON_HOST = "127.0.0.1"
 RCON_PORT = 25575
 RCON_PASSWORD = "architecture-smoke-local-only"
@@ -135,6 +168,8 @@ def wait_for_test_bay_chunks(sock, packet_id, origin_x, origin_z=0, y=160, timeo
     return packet_id
 
 
+diagnostic_state_ids = prepare_nbt_diagnostics()
+
 proc = subprocess.Popen(
     ["gradle", "--no-daemon", "runServer", "--stacktrace"],
     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -212,19 +247,43 @@ try:
         print("RCON: all 16 test-bay chunks are entity-ticking.", flush=True)
 
         if index == 0:
-            # Baselines separate server/chunk placement failures from malformed
-            # generated templates and the converted GDMC schematic.
-            vanilla_probe = rcon_command(
-                sock, command_id, "place template minecraft:igloo/top 48 160 48"
-            )
-            print("RCON vanilla template baseline:", vanilla_probe, flush=True)
-            if 'Loaded template "minecraft:igloo/top" at' not in vanilla_probe:
-                raise RuntimeError(f"Vanilla template baseline failed: {vanilla_probe}")
+            # The vanilla baseline is already known to work. Probe a tiny and a
+            # full-size one-block template, then every distinct non-air state
+            # from the failing original build, before placing the full template.
+            diagnostic_pack = "file/realscale_nbt_diagnostics"
+            enabled_diag = rcon_command(sock, command_id, f"datapack list enabled")
+            if diagnostic_pack not in enabled_diag:
+                raise RuntimeError(f"NBT diagnostic pack was not loaded: {enabled_diag}")
             command_id += 1
+
+            for diagnostic, px, py, pz in (
+                ("tiny_stone", x + 32, 280, 48),
+                ("large_single_stone", x + 16, 260, 48),
+            ):
+                probe = rcon_command(
+                    sock, command_id,
+                    f"place template realscale:diagnostics/{diagnostic} {px} {py} {pz}"
+                )
+                print(f"RCON NBT diagnostic {diagnostic}:", probe, flush=True)
+                if f'Loaded template "realscale:diagnostics/{diagnostic}" at' not in probe:
+                    raise RuntimeError(f"NBT diagnostic {diagnostic} failed: {probe}")
+                command_id += 1
+
+            for state_index, diagnostic in enumerate(diagnostic_state_ids):
+                dx = (state_index % 4) * 16
+                dz = (state_index // 4) * 16
+                probe = rcon_command(
+                    sock, command_id,
+                    f"place template realscale:diagnostics/{diagnostic} {x + dx} 220 {dz}"
+                )
+                print(f"RCON NBT diagnostic {diagnostic}:", probe, flush=True)
+                if f'Loaded template "realscale:diagnostics/{diagnostic}" at' not in probe:
+                    raise RuntimeError(f"NBT block-state diagnostic {diagnostic} failed: {probe}")
+                command_id += 1
 
             original_probe = rcon_command(
                 sock, command_id,
-                f"place template realscale:architecture/forest_ranger_lodge {x + 24} 160 0"
+                f"place template realscale:architecture/forest_ranger_lodge {x} 160 0"
             )
             print("RCON original-template baseline:", original_probe, flush=True)
             if 'Loaded template "realscale:architecture/forest_ranger_lodge" at' not in original_probe:
