@@ -71,7 +71,10 @@ class NorthSouthDefaultClimateTest(unittest.TestCase):
         self.assertIn("EARTH_QUARTER_MERIDIAN_METERS = 10_001_966",math_source)
         self.assertIn("CLIMATE_LATITUDE_COMPRESSION = 20",math_source)
         self.assertIn("CLIMATE_POLE_DISTANCE_BLOCKS",math_source)
-        self.assertIn("GeoMath.latitudeDeg(ctx.blockZ(),equatorZ,poleDistance)",latitude_source)
+        self.assertIn("GeographicClimateMath.geodeticLatitudeDeg(ctx.blockZ())",latitude_source)
+        climate_math=(SOURCE/"GeographicClimateMath.java").read_text()
+        self.assertIn("GeoMath.CLIMATE_POLE_DISTANCE_BLOCKS",climate_math)
+        self.assertNotIn("equatorZ,poleDistance",latitude_source)
         self.assertEqual(round(10_001_966/20),500_098)
         # The world coordinate itself remains the direct one-block/one-metre Z.
         self.assertNotIn("ctx.blockZ()/20",latitude_source)
@@ -85,7 +88,7 @@ class NorthSouthDefaultClimateTest(unittest.TestCase):
         self.assertEqual(temp["max_cooling"],0.66)
         self.assertEqual(temp["max_warming"],0.34)
 
-    def test_older_radial_math_remains_available_for_explicit_opt_in_modes(self):
+    def test_older_radial_math_remains_available_for_saved_world_compatibility(self):
         source=(SOURCE/"RadialLatitudeTemperatureDensity.java").read_text()
         self.assertIn('optionalFieldOf("area_balanced",false)',source)
         self.assertIn("GeoMath.balancedRadialLatitudeDeg",source)
