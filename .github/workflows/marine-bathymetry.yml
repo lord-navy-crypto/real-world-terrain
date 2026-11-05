@@ -1,0 +1,83 @@
+name: TVA ocean seeds - real marine biome and water-column integrity
+on:
+  pull_request:
+    paths:
+      - 'neoforge/**'
+      - 'qa/neoforge/audit_ocean_seed.py'
+      - 'qa/neoforge/ocean_seed_worldgen.py'
+      - 'qa/neoforge/skyland_rcon.py'
+      - '.github/workflows/marine-bathymetry.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  natural-ocean-integrity:
+    name: Ocean seed QA / ${{ matrix.profile }} / ${{ matrix.seed }}
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          # Published Java 1.21.4 ocean starts; GTA/TVA 1.21.1 is NEVER presumed
+          # identical: the Anvil audit proves actual vanilla ocean biomes.
+          - seed: '4025804172371830787'
+            profile: deep
+          - seed: '-8717682453392808086'
+            profile: ocean
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Configure RealScale TVA Natural with a reproducible ocean seed
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=marine-ocean-proof
+          level-type=realscale:tva_sacred_timeline_three_realms
+          level-seed=${{ matrix.seed }}
+          view-distance=4
+          simulation-distance=3
+          max-tick-time=-1
+          online-mode=true
+          enable-rcon=true
+          rcon.password=realscale-ci-only
+          rcon.port=25575
+          PROPERTIES
+          done
+      - name: Generate and save real spawn chunks without distant-biome RCON lookups
+        working-directory: neoforge
+        env:
+          TVA_OCEAN_SEED: ${{ matrix.seed }}
+        run: python3 ../qa/neoforge/ocean_seed_worldgen.py
+      - name: Audit actual ocean biomes and submerged sea floor from saved Anvil
+        working-directory: neoforge
+        run: |
+          python3 ../qa/neoforge/audit_ocean_seed.py \
+            run/marine-ocean-proof \
+            --seed '${{ matrix.seed }}' \
+            --profile '${{ matrix.profile }}' \
+            --output 'build/ocean-seed-${{ matrix.seed }}.json'
+      - name: Preserve ocean evidence whether seed passes or fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TVA-Ocean-${{ matrix.profile }}-${{ matrix.seed }}-Evidence
+          path: |
+            neoforge/build/ocean-seed-*.json
+            neoforge/build/ocean-seed-*.log
+            neoforge/run/**/marine-ocean-proof/level.dat
+            neoforge/run/**/marine-ocean-proof/region/*.mca
+          if-no-files-found: warn

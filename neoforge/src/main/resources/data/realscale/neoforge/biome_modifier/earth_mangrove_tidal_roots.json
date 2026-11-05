@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:mangrove_swamp"
+  ],
+  "features": "realscale:earth_mangrove_tidal_roots",
+  "step": "vegetal_decoration"
+}

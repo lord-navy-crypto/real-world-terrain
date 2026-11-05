@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:stony_peaks",
+    "minecraft:badlands",
+    "minecraft:windswept_gravelly_hills"
+  ],
+  "features": "realscale:earth_cooled_lava_field",
+  "step": "vegetal_decoration"
+}

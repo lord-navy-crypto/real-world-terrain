@@ -1,0 +1,42 @@
+{
+  "dimensions": {
+    "minecraft:overworld": {
+      "generator": {
+        "biome_source": {
+          "type": "realscale:sky_ocean",
+          "source": {
+            "type": "realscale:natural_ecotones",
+            "source": {
+              "preset": "minecraft:overworld",
+              "type": "minecraft:multi_noise"
+            }
+          }
+        },
+        "settings": "realscale:tva_pr25_natural_climate",
+        "type": "minecraft:noise"
+      },
+      "type": "realscale:realism_max_overworld"
+    },
+    "minecraft:the_end": {
+      "generator": {
+        "biome_source": {
+          "type": "minecraft:the_end"
+        },
+        "settings": "realscale:grand_end",
+        "type": "minecraft:noise"
+      },
+      "type": "realscale:grand_end"
+    },
+    "minecraft:the_nether": {
+      "generator": {
+        "biome_source": {
+          "preset": "minecraft:nether",
+          "type": "minecraft:multi_noise"
+        },
+        "settings": "realscale:grand_nether",
+        "type": "minecraft:noise"
+      },
+      "type": "realscale:grand_nether"
+    }
+  }
+}

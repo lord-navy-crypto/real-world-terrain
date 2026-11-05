@@ -1,0 +1,147 @@
+{
+  "minecraft_region_files": 4,
+  "decoded_chunks": 836,
+  "dem_interior_samples": 1040,
+  "median_abs_height_error_m": 0.478,
+  "p95_abs_height_error_m": 0.945,
+  "range_actual_surface_y": [
+    1214,
+    1242
+  ],
+  "lava_on_dem_summits": 0,
+  "source_expected_height_range": [
+    1105.78,
+    1244.45
+  ],
+  "examples": [
+    {
+      "x": -60,
+      "z": -60,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.821,
+      "difference_m": 0.179,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -59,
+      "z": -60,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.836,
+      "difference_m": 0.164,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -58,
+      "z": -60,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.851,
+      "difference_m": 0.149,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -57,
+      "z": -60,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.866,
+      "difference_m": 0.134,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -56,
+      "z": -60,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.88,
+      "difference_m": 0.12,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -55,
+      "z": -60,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.895,
+      "difference_m": 0.105,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -54,
+      "z": -60,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.91,
+      "difference_m": 0.09,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -53,
+      "z": -60,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.925,
+      "difference_m": 0.075,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -52,
+      "z": -60,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.94,
+      "difference_m": 0.06,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -51,
+      "z": -60,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.955,
+      "difference_m": 0.045,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -50,
+      "z": -60,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.97,
+      "difference_m": 0.03,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -49,
+      "z": -60,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.985,
+      "difference_m": 0.015,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -60,
+      "z": -59,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.235,
+      "difference_m": 0.765,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -59,
+      "z": -59,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.271,
+      "difference_m": 0.729,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -58,
+      "z": -59,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.308,
+      "difference_m": 0.692,
+      "top_block": "minecraft:snow"
+    },
+    {
+      "x": -57,
+      "z": -59,
+      "actual_surface_y": 1242,
+      "expected_from_USGS_y": 1241.344,
+      "difference_m": 0.656,
+      "top_block": "minecraft:snow"
+    }
+  ],
+  "dem_drives_real_chunks": true
+}

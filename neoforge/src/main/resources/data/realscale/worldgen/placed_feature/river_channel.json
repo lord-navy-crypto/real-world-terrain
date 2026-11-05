@@ -1,0 +1,9 @@
+{
+  "feature": "realscale:river_channel",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 1
+    }
+  ]
+}

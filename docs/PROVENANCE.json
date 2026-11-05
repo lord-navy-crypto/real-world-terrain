@@ -1,0 +1,92 @@
+[
+  {
+    "path": "qa/legacy/realscale_headless_qa.py",
+    "source_repository": "lord-navy-crypto/SWARM-MOBS",
+    "source_commit": "50025ff9743688a2907f5bac570557245487b627",
+    "source_path": "qa/realscale/realscale_headless_qa.py"
+  },
+  {
+    "path": "qa/legacy/test_realscale_headless_qa.py",
+    "source_repository": "lord-navy-crypto/SWARM-MOBS",
+    "source_commit": "50025ff9743688a2907f5bac570557245487b627",
+    "source_path": "qa/realscale/test_realscale_headless_qa.py"
+  },
+  {
+    "path": "qa/legacy/georeal_headless_qa.py",
+    "source_repository": "lord-navy-crypto/SWARM-MOBS",
+    "source_commit": "50025ff9743688a2907f5bac570557245487b627",
+    "source_path": "qa/realscale/georeal_headless_qa.py"
+  },
+  {
+    "path": "qa/legacy/realism_max_v06_engine_qa.py",
+    "source_repository": "lord-navy-crypto/SWARM-MOBS",
+    "source_commit": "50025ff9743688a2907f5bac570557245487b627",
+    "source_path": "qa/realscale/realism_max_v06_engine_qa.py"
+  },
+  {
+    "path": "qa/legacy/village_structure_qa.py",
+    "source_repository": "lord-navy-crypto/SWARM-MOBS",
+    "source_commit": "50025ff9743688a2907f5bac570557245487b627",
+    "source_path": "qa/realscale/village_structure_qa.py"
+  },
+  {
+    "path": "qa/neoforge/check_actual_chunk_heights.py",
+    "source_repository": "lord-navy-crypto/SWARM-MOBS",
+    "source_commit": "3ec198454d0f1e65d69ed89dc3292e318ac9461c",
+    "source_path": "qa/realscale-final/check_actual_chunk_heights.py"
+  },
+  {
+    "path": "qa/neoforge/realscale_headless_qa.py",
+    "source_repository": "lord-navy-crypto/SWARM-MOBS",
+    "source_commit": "3ec198454d0f1e65d69ed89dc3292e318ac9461c",
+    "source_path": "qa/realscale-final/realscale_headless_qa.py"
+  },
+  {
+    "path": "archive/v0.4/datapack",
+    "source_repository": "lord-navy-crypto/SWARM-MOBS",
+    "source_commit": "50025ff9743688a2907f5bac570557245487b627",
+    "source_path": "qa/realscale/realscale_exact_qa.b64",
+    "decoded_archive_sha256": "ad8168e33da18479d6570497509e76768322d671e82e5a0a1664f85082bce2f7"
+  },
+  {
+    "path": "archive/v0.5/datapack",
+    "source_repository": "lord-navy-crypto/SWARM-MOBS",
+    "source_commit": "50025ff9743688a2907f5bac570557245487b627",
+    "source_path": "qa/realscale/georeal_pack.b64",
+    "decoded_archive_sha256": "8c859475b63f827ad20dfc40782df6e97cbe71c72330884381d6766c99c090f7"
+  },
+  {
+    "path": "archive/v0.6/datapack",
+    "source_repository": "lord-navy-crypto/SWARM-MOBS",
+    "source_commit": "50025ff9743688a2907f5bac570557245487b627",
+    "source_path": "qa/realscale/realism_max_v06_pack_lzma.b64",
+    "decoded_archive_sha256": "d82e1e09d71db278458ffdda811644bda2445b662278e5287b0ef8a715716b55"
+  },
+  {
+    "path": null,
+    "sha256": "7ad7100c89fdaeb02687e9b437cb26771f487fb1176a63304a3fa164b380cffd",
+    "run_url": "https://github.com/lord-navy-crypto/SWARM-MOBS/actions/runs/38115588244",
+    "artifact_id": 11693367960,
+    "external_deliverable": "RealScale-v1.1-original-server-qa.zip",
+    "upload_status": "not uploaded: automatic approval reviewer input budget exceeded"
+  },
+  {
+    "path": "evidence/v1.1/build-artifact.zip",
+    "sha256": "c82d6caadd5ab23b2a67cc115b87e8dc0850c31e10aa4c63a7d42ecc1b0d60be",
+    "run_url": "https://github.com/lord-navy-crypto/SWARM-MOBS/actions/runs/38115577108",
+    "artifact_id": 11693133054
+  },
+  {
+    "path": "evidence/usgs-data.zip",
+    "sha256": "ffdafe8208a30a922c718a1606317aa6fb2d8928b75ac08db240666fc33540e8",
+    "run_url": "https://github.com/lord-navy-crypto/SWARM-MOBS/actions/runs/38114075983",
+    "artifact_id": 11693160633
+  },
+  {
+    "path": "neoforge",
+    "source_repository": "lord-navy-crypto/SWARM-MOBS",
+    "source_commit": "3ec198454d0f1e65d69ed89dc3292e318ac9461c",
+    "source_path": "qa/realscale-final/project.tar.xz.b64",
+    "decoded_archive_sha256": "c025c04397a54aecc17eb0ae89682bd2afe225acad7518a1ded2483d0a4e34f9"
+  }
+]

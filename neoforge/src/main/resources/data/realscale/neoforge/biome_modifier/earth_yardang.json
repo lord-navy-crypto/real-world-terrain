@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:desert",
+    "minecraft:badlands"
+  ],
+  "features": "realscale:earth_yardang",
+  "step": "vegetal_decoration"
+}

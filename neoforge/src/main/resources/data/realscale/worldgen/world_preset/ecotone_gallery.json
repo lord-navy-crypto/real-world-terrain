@@ -1,0 +1,78 @@
+{
+  "dimensions": {
+    "minecraft:overworld": {
+      "generator": {
+        "biome_source": {
+          "type": "minecraft:checkerboard",
+          "scale": 3,
+          "biomes": [
+            "realscale:woodland_meadow",
+            "realscale:forest_steppe",
+            "realscale:marshy_woodland",
+            "realscale:semi_arid_scrubland",
+            "realscale:subalpine_woodland",
+            "realscale:rocky_alpine_meadow",
+            "realscale:snowy_treeline",
+            "realscale:floodplain_margin",
+            "realscale:birch_conifer_transition",
+            "realscale:wet_meadow",
+            "realscale:riverine_woodland",
+            "realscale:heathland",
+            "realscale:shrub_prairie",
+            "realscale:oasis_fringe",
+            "realscale:badlands_fringe",
+            "realscale:scree_transition",
+            "realscale:reed_marsh_edge",
+            "realscale:lake_woodland_margin",
+            "realscale:dune_scrub",
+            "realscale:coastal_heath",
+            "realscale:temperate_to_birch",
+            "realscale:oak_to_dark_forest",
+            "realscale:taiga_to_tundra",
+            "realscale:snowfield_margin",
+            "realscale:mountain_wetland",
+            "realscale:gravel_shore_fringe",
+            "realscale:mangrove_transition",
+            "realscale:tropical_forest_edge",
+            "realscale:bamboo_jungle_edge",
+            "realscale:savanna_badlands",
+            "realscale:cold_desert_scrub",
+            "realscale:warm_river_margin",
+            "realscale:pine_oak_mosaic",
+            "realscale:rocky_plateau_grass",
+            "realscale:frost_shrub_tundra",
+            "realscale:lichen_rockland",
+            "realscale:seasonal_floodforest",
+            "realscale:meadow_bog_margin",
+            "realscale:coastal_dune_meadow",
+            "realscale:terracotta_scrub"
+          ]
+        },
+        "settings": "realscale:realism_max",
+        "type": "minecraft:noise"
+      },
+      "type": "realscale:realism_max_overworld"
+    },
+    "minecraft:the_end": {
+      "generator": {
+        "biome_source": {
+          "type": "minecraft:the_end"
+        },
+        "settings": "minecraft:end",
+        "type": "minecraft:noise"
+      },
+      "type": "minecraft:the_end"
+    },
+    "minecraft:the_nether": {
+      "generator": {
+        "biome_source": {
+          "preset": "minecraft:nether",
+          "type": "minecraft:multi_noise"
+        },
+        "settings": "minecraft:nether",
+        "type": "minecraft:noise"
+      },
+      "type": "minecraft:the_nether"
+    }
+  }
+}

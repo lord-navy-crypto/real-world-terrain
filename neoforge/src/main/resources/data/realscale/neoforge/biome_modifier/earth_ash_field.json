@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:stony_peaks",
+    "minecraft:windswept_gravelly_hills"
+  ],
+  "features": "realscale:earth_ash_field",
+  "step": "vegetal_decoration"
+}

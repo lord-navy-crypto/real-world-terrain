@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:desert",
+    "minecraft:badlands",
+    "minecraft:eroded_badlands"
+  ],
+  "features": "realscale:geo_region_playa_basin",
+  "step": "vegetal_decoration"
+}

@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:stony_peaks",
+    "minecraft:windswept_hills",
+    "minecraft:badlands"
+  ],
+  "features": "realscale:earth_rocky_plateau",
+  "step": "vegetal_decoration"
+}

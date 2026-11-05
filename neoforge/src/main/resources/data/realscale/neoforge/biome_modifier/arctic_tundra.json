@@ -1,0 +1,12 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:snowy_plains",
+    "minecraft:ice_spikes",
+    "realscale:taiga_to_tundra",
+    "realscale:frost_shrub_tundra",
+    "realscale:lichen_rockland"
+  ],
+  "features": "realscale:arctic_tundra",
+  "step": "vegetal_decoration"
+}

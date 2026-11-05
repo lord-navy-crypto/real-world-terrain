@@ -1,0 +1,48 @@
+name: PR25 restored climate four-world actual NeoForge acceptance
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pr25-climate-worlds.yml'
+      - 'qa/neoforge/pr25_climate_world_boot.py'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_pr25_*.json'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_pr25_*.json'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/tva_pr25_*/biome_temperature.json'
+      - 'neoforge/src/main/java/org/realscale/neoforge/RadialLatitudeTemperatureDensity.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GeoMath.java'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  historical-climate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        family: [natural, alpine, canyon, measured]
+    name: PR25 live climate / ${{ matrix.family }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Start NeoForge and verify archived climate's saved new world
+        run: python3 qa/neoforge/pr25_climate_world_boot.py '${{ matrix.family }}'
+      - name: Publish logs and actual saved Anvil data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PR25-${{ matrix.family }}-Actual-Saved-World
+          path: |
+            neoforge/build/pr25-climate-*-server.log
+            neoforge/run/**/pr25-climate-*/level.dat
+            neoforge/run/**/pr25-climate-*/region/*.mca
+          if-no-files-found: warn

@@ -1,0 +1,54 @@
+name: USGS 3DEP official measured data import
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/tva-usgs-3dep-measured-terrain-expansion
+    paths:
+      - scripts/import_usgs_3dep.py
+      - .github/workflows/usgs_3dep_measured_data.yml
+
+permissions:
+  contents: read
+
+jobs:
+  official-big-sur-measurement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install geospatial raster reader
+        run: python -m pip install --disable-pip-version-check rasterio numpy
+      - name: Fetch USGS 3DEP Big Sur real bare-earth elevation (no procedural synthesis)
+        run: |
+          python scripts/import_usgs_3dep.py \
+            --latitude 36.25 \
+            --longitude -121.70 \
+            --grid 513 \
+            --spacing 16 \
+            --output build/official-usgs/config/realscale
+      - name: Verify source provenance, grid size and cryptographic integrity
+        run: |
+          python - <<'PY'
+          import json,hashlib,pathlib
+          root=pathlib.Path('build/official-usgs/config/realscale')
+          meta=json.loads((root/'usgs_3dep.json').read_text())
+          blob=(root/'usgs_3dep.rgt.gz').read_bytes()
+          sha=hashlib.sha256(blob).hexdigest()
+          assert sha==(root/'usgs_3dep.sha256').read_text().strip()
+          assert sha==meta['rgt1_sha256']
+          assert meta['source_url'].startswith('https://elevation.nationalmap.gov/')
+          assert meta['data_grid']==[513,513]
+          assert meta['cell_size_metres']==16
+          assert meta['elevation_units']=='metres'
+          print('USGS_3DEP_OFFICIAL_REAL_DATA_PASS',sha)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-Official-USGS-3DEP-BigSur-8km-Measured-Raster
+          path: build/official-usgs/config/realscale/
+          if-no-files-found: error

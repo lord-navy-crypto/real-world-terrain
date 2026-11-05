@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:lush_caves",
+    "realscale:damp_limestone_caverns",
+    "realscale:deep_fungal_caverns"
+  ],
+  "features": "realscale:cave_moss_nooks",
+  "step": "underground_decoration"
+}

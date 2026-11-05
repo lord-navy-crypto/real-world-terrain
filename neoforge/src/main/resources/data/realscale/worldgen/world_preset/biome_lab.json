@@ -1,0 +1,50 @@
+{
+  "dimensions": {
+    "minecraft:overworld": {
+      "generator": {
+        "biome_source": {
+          "type": "minecraft:checkerboard",
+          "scale": 4,
+          "biomes": [
+            "realscale:woodland_meadow",
+            "realscale:semi_arid_scrubland",
+            "realscale:subalpine_woodland",
+            "realscale:forest_steppe",
+            "realscale:marshy_woodland",
+            "realscale:rocky_alpine_meadow",
+            "realscale:damp_limestone_caverns",
+            "realscale:deep_fungal_caverns",
+            "realscale:dry_karst_caves",
+            "realscale:underground_springs",
+            "realscale:volcanic_caverns",
+            "realscale:glacial_subsurface"
+          ]
+        },
+        "settings": "realscale:realism_max",
+        "type": "minecraft:noise"
+      },
+      "type": "realscale:realism_max_overworld"
+    },
+    "minecraft:the_end": {
+      "generator": {
+        "biome_source": {
+          "type": "minecraft:the_end"
+        },
+        "settings": "minecraft:end",
+        "type": "minecraft:noise"
+      },
+      "type": "minecraft:the_end"
+    },
+    "minecraft:the_nether": {
+      "generator": {
+        "biome_source": {
+          "preset": "minecraft:nether",
+          "type": "minecraft:multi_noise"
+        },
+        "settings": "minecraft:nether",
+        "type": "minecraft:noise"
+      },
+      "type": "minecraft:the_nether"
+    }
+  }
+}

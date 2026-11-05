@@ -1,0 +1,115 @@
+name: Forced sky island worldgen and Anvil proof
+# Keep only the newest PR validation; old experimental commits must not
+# monopolize expensive high-ceiling Minecraft server runners.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+on:
+  pull_request:
+    paths:
+      - 'neoforge/**'
+      - 'qa/neoforge/check_actual_sky_island.py'
+      - 'qa/neoforge/skyland_rcon.py'
+      - '.github/workflows/skyland-geometry.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  skyland-anvil-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Cross-check Anvil fixture against Java's signed 64-bit lattice
+        run: python3 -m unittest discover -s qa -p 'test_sky_island_fixture_parity.py' -v
+      - name: Configure isolated deep-ocean world for deterministic island test
+        working-directory: neoforge
+        run: |
+          for dir in run run/server run/gametestserver; do
+            mkdir -p "$dir"
+            printf 'eula=true\n' > "$dir/eula.txt"
+            cat > "$dir/server.properties" <<'PROPERTIES'
+          level-name=sky-island-proof
+          level-type=realscale:skylands_test_deep_ocean
+          level-seed=785312
+          view-distance=3
+          simulation-distance=3
+          max-tick-time=-1
+          online-mode=true
+          enable-rcon=true
+          rcon.password=realscale-ci-only
+          rcon.port=25575
+          PROPERTIES
+          done
+      - name: Generate current deterministic sky island centers and flush Minecraft chunks
+        working-directory: neoforge
+        run: |
+          python3 - <<'PY'
+          import subprocess,threading,time,os,signal,pathlib
+          log=pathlib.Path("build/forced-sky-island.log")
+          log.parent.mkdir(parents=True,exist_ok=True)
+          p=subprocess.Popen(["gradle","--no-daemon","runServer","--stacktrace"],
+             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,stdin=subprocess.PIPE,
+             text=True,bufsize=1,start_new_session=True)
+          lines=[];ready=threading.Event()
+          def read():
+              for line in p.stdout:
+                  lines.append(line)
+                  if "Done (" in line and "For help" in line:
+                      ready.set()
+          t=threading.Thread(target=read,daemon=True)
+          t.start()
+          deadline=time.time()+420
+          while time.time()<deadline and p.poll() is None and not ready.is_set():
+              time.sleep(1)
+          if not ready.is_set():
+              log.write_text("".join(lines))
+              raise SystemExit("Minecraft skyland fixture server failed to boot")
+          # Use the REAL server RCON endpoint. Gradle stdin is not guaranteed
+          # to forward console commands; unfinished chunks previously gave
+          # false-negative satellite island tests.
+          import sys
+          sys.path.insert(0, "../qa/neoforge")
+          from skyland_rcon import command
+          from sky_island_fixture import archipelago_at_origin
+          for x,z,top in archipelago_at_origin():
+              response=command(f"forceload add {x} {z}")
+              if "Unknown" in response or "Incorrect" in response:
+                  raise RuntimeError("Unable to force-generate island chunk: "+response)
+          time.sleep(45)
+          command("save-all flush")
+          time.sleep(8)
+          try:
+              command("stop")
+          except Exception as e:
+              # The Minecraft RCON socket may close before acknowledging stop.
+              print("RCON stop disconnected:",e)
+          try: p.wait(timeout=60)
+          except subprocess.TimeoutExpired:
+              os.killpg(p.pid,signal.SIGINT)
+              try:p.wait(timeout=15)
+              except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGKILL)
+          t.join(timeout=5)
+          log.write_text("".join(lines))
+          print("SKYLAND_SERVER_LOG_TAIL",log.read_text()[-5000:])
+          PY
+      - name: Require actual Sky Blossom biome plus placed island blocks
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/check_actual_sky_island.py run/sky-island-proof
+      - name: Upload saved island proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Forced-sky-island-Anvil-proof
+          path: |
+            neoforge/build/forced-sky-island.log
+            neoforge/run/**/sky-island-proof/level.dat
+            neoforge/run/**/sky-island-proof/region/*.mca
+          if-no-files-found: warn

@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "realscale:ultimate",
+    "realscale:realistic_mountains",
+    "realscale:himalayan",
+    "realscale:grand_canyon",
+    "realscale:continental",
+    "realscale:georeal_ultimate"
+  ]
+}
