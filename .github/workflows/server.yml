@@ -67,7 +67,7 @@ jobs:
             # The DEM is centered on world (0, 0), while Minecraft's chosen
             # spawn can be far away. Explicitly generate the central 8x8 chunk
             # square so the Anvil audit samples the measured-only DEM interior.
-            p.stdin.write('forceload add -64 -64 63 63\\n');p.stdin.flush()
+            p.stdin.write('forceload add -64 -64 63 63\n');p.stdin.flush()
             deadline=time.time()+240
             forced=False
             while time.time()<deadline and p.poll() is None:
@@ -79,7 +79,7 @@ jobs:
               time.sleep(1)
             if not forced:
               raise SystemExit('Central DEM forceload was not acknowledged')
-            p.stdin.write('save-all flush\\n');p.stdin.flush()
+            p.stdin.write('save-all flush\n');p.stdin.flush()
             time.sleep(12)
             print('USGS_DEM_CENTER_FORCED_AND_FLUSHED: 8x8 chunks')
           else:
