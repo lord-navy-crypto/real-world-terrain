@@ -251,10 +251,25 @@ try:
             # full-size one-block template, then every distinct non-air state
             # from the failing original build, before placing the full template.
             diagnostic_pack = "file/realscale_nbt_diagnostics"
-            enabled_diag = rcon_command(sock, command_id, f"datapack list enabled")
-            if diagnostic_pack not in enabled_diag:
-                raise RuntimeError(f"NBT diagnostic pack was not loaded: {enabled_diag}")
+            available_diag = rcon_command(sock, command_id, "datapack list available")
+            print("RCON available NBT diagnostic packs:", available_diag, flush=True)
+            if diagnostic_pack not in available_diag:
+                raise RuntimeError(f"NBT diagnostic pack was not discovered: {available_diag}")
             command_id += 1
+
+            enabled_diag = rcon_command(sock, command_id, "datapack list enabled")
+            if diagnostic_pack not in enabled_diag:
+                sock.settimeout(90)
+                enabled_response = rcon_command(
+                    sock, command_id, f"datapack enable {diagnostic_pack}"
+                )
+                sock.settimeout(8)
+                print("RCON enable NBT diagnostic pack:", enabled_response, flush=True)
+                command_id += 1
+                enabled_diag = rcon_command(sock, command_id, "datapack list enabled")
+                command_id += 1
+            if diagnostic_pack not in enabled_diag:
+                raise RuntimeError(f"NBT diagnostic pack did not enable: {enabled_diag}")
 
             for diagnostic, px, py, pz in (
                 ("tiny_stone", x + 32, 280, 48),
