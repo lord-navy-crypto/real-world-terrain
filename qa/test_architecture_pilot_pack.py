@@ -423,6 +423,8 @@ class ArchitecturePilotTests(unittest.TestCase):
         full = (ROOT / ".github/workflows/architecture-library-58.yml").read_text(encoding="utf-8")
         self.assertIn("working-directory: neoforge", pilot)
         self.assertIn("level-name=architecture-pilot", pilot)
+        self.assertNotIn("initial-enabled-packs", pilot)
+        self.assertNotIn("initial-enabled-packs", full)
         self.assertIn("working-directory: neoforge", full)
         self.assertIn("level-name=architecture-58-smoke", full)
         self.assertIn('world_name = line.partition("=")[2].strip()', script)
