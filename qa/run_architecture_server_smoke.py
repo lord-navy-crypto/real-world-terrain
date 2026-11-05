@@ -19,7 +19,15 @@ def prepare_nbt_diagnostics():
     sys.path.insert(0, str(ROOT.parent / "scripts"))
     from generate_original_architecture import Building, build_forest_ranger_lodge
 
-    pack = ROOT / "run/architecture-pilot/datapacks/realscale_nbt_diagnostics"
+    properties = ROOT / "run/server.properties"
+    world_name = None
+    for line in properties.read_text(encoding="utf-8").splitlines():
+        if line.startswith("level-name="):
+            world_name = line.partition("=")[2].strip()
+            break
+    if not world_name:
+        raise RuntimeError("server.properties is missing its level-name")
+    pack = ROOT / "run" / world_name / "datapacks" / "realscale_nbt_diagnostics"
     (pack / "data/realscale/structure/diagnostics").mkdir(parents=True, exist_ok=True)
     (pack / "pack.mcmeta").write_text(
         '{"pack":{"pack_format":48,"description":"Temporary RealScale NBT diagnostics"}}',
