@@ -251,12 +251,9 @@ try:
             # full-size one-block template, then every distinct non-air state
             # from the failing original build, before placing the full template.
             diagnostic_pack = "file/realscale_nbt_diagnostics"
-            available_diag = rcon_command(sock, command_id, "datapack list available")
-            print("RCON available NBT diagnostic packs:", available_diag, flush=True)
-            if diagnostic_pack not in available_diag:
-                raise RuntimeError(f"NBT diagnostic pack was not discovered: {available_diag}")
-            command_id += 1
-
+            # Packs discovered from the world folder are auto-enabled at boot,
+            # so they are intentionally absent from "datapack list available".
+            # Check the enabled list directly before trying to enable anything.
             enabled_diag = rcon_command(sock, command_id, "datapack list enabled")
             if diagnostic_pack not in enabled_diag:
                 sock.settimeout(90)
