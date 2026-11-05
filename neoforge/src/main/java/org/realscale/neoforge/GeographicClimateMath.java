@@ -74,10 +74,10 @@ final class GeographicClimateMath {
     private static final double LAPSE_RATE_C_PER_METRE = 0.0065;
     private static final int REFERENCE_SEA_LEVEL_Y = 63;
 
-    /** WGS84 geodetic latitude for the repeating, north-negative-Z meridian. */
-    static double geodeticLatitudeDeg(int z, int equatorZ, int poleDistance) {
-        if (poleDistance <= 0) throw new IllegalArgumentException("Pole distance must be positive");
-        double phase = (((double) equatorZ - (double) z) / poleDistance) % 4.0;
+    /** WGS84 geodetic latitude for the one fixed Z=0, 1:20 meridian. */
+    static double geodeticLatitudeDeg(int z) {
+        int poleDistance = GeoMath.CLIMATE_POLE_DISTANCE_BLOCKS;
+        double phase = (((double) GeoMath.CLIMATE_EQUATOR_Z - (double) z) / poleDistance) % 4.0;
         if (phase < 0.0) phase += 4.0;
         double signedArcFraction;
         if (phase <= 1.0) signedArcFraction = phase;
