@@ -417,6 +417,18 @@ class ArchitecturePilotTests(unittest.TestCase):
                                       / (biome.split(":", 1)[1] + ".json"))
                         self.assertTrue(biome_file.is_file(), f"Unknown RealScale biome: {biome}")
 
+    def test_rcon_diagnostic_pack_is_created_in_the_selected_world(self):
+        script = (ROOT / "qa/run_architecture_server_smoke.py").read_text(encoding="utf-8")
+        workflow = (ROOT / ".github/workflows/architecture-pilot-server.yml").read_text(encoding="utf-8")
+        self.assertIn("working-directory: neoforge", workflow)
+        self.assertIn("level-name=architecture-pilot", workflow)
+        self.assertIn(
+            'run/architecture-pilot/datapacks/realscale_nbt_diagnostics',
+            script,
+        )
+        self.assertNotIn("architecture-58-smoke/datapacks", script)
+        self.assertIn('f\'datapack enable "{diagnostic_pack}"\'', script)
+
     def test_registered_pack_is_optional_and_only_templates_are_packaged(self):
         source = JAVA.read_text(encoding="utf-8")
         self.assertIn('"architecture_pilot"', source)
