@@ -1,10 +1,10 @@
 # RealScale Terrain
 
-Minecraft 1.21.1 / NeoForge / Java 21 的真实尺度地形实验项目。仓库保留 **v1.1 历史测试候选版**：USGS Big Sur 高程覆盖层 + 七个历史程序化预设。当前开发分支正在把新世界入口精简为四个规范地形家族，并建立由真实 DEM 拟合参数驱动的离线原型。地表单位为 1 方块 = 1 米；这不意味着原始观测分辨率为 1 米。
+Minecraft 1.21.1 / NeoForge / Java 21 的真实尺度地形实验项目。仓库保留 **v1.1 历史测试候选版**：USGS Big Sur 高程覆盖层 + 七个历史程序化预设。本稳定候选分支仅在创建世界菜单公开两个 RealScale 入口：自然地貌（Natural Landscapes）和 USGS Big Sur v2；拟合高山、峡谷、冰川、火山、喀斯特与沙丘保留于实验分支及兼容资源中，尚未宣称全部通过性能验收。地表单位为 1 方块 = 1 米；这不意味着原始观测分辨率为 1 米。
 
 ## 当前实验预览与兼容组件（2026-10-23）
 
-最新实验性主模组采用 **RealScale 2.0.0-preview.2-test.6** 命名，下载 JAR 的前缀为 **RealScale-NeoForge-1.21.1**。本分支将新世界菜单精简为四项：自然地貌、高山地貌、峡谷与河谷、实测地形。地质奇观、洞穴生物群系和海洋栖息地作为可组合的共享层；跨维度入侵仍保留为隐藏的实验资源。旧世界注册 ID 与可选实验资源继续保留，避免删除历史兼容路径。对已有世界，请先备份再测试新版本。
+最新实验性主模组采用 **RealScale 2.0.0-preview.2-test.6** 命名，下载 JAR 的前缀为 **RealScale-NeoForge-1.21.1**。本候选分支在普通及扩展世界创建菜单仅新增两项 RealScale 入口：自然地貌（`realscale:natural_three_realms`）和 USGS Big Sur v2（`realscale:usgs_big_sur_v2`）。详见 [双模式候选版说明](docs/STABLE_NATURAL_USGS_RELEASE.md)。地质奇观、洞穴生物群系和海洋栖息地作为可组合的共享层；跨维度入侵仍保留为隐藏的实验资源。旧世界注册 ID 与可选实验资源继续保留，避免删除历史兼容路径。对已有世界，请先备份再测试新版本。
 
 RealScale 与 Distant Horizons / Chunky 的独立兼容补丁统一在本仓库的 [`dh-chunky-guard/`](dh-chunky-guard/) 管理。它拥有**单独的 Java / Mixin / Gradle 和 JAR 构建**，不是 RealScale 主模组必需依赖；需要使用精确匹配的 DH 3.3.3、Chunky 1.4.23、NeoForge 1.21.1。不要把两款 RealScale 主模组 JAR 同时安装，也不要同时安装两个 Guard 版本。
 

@@ -11,7 +11,7 @@
   "generator.realscale.tva_alpine_three_realms": "RealScale | Alpine Mountains",
   "generator.realscale.tva_canyon_three_realms": "RealScale | Canyons and Valleys",
   "generator.realscale.tva_measured_three_realms": "RealScale | Measured Terrain — USGS Big Sur",
-  "generator.realscale.usgs_big_sur_v2": "RealScale | USGS Big Sur v2 (legacy-compatible measured)",
+  "generator.realscale.usgs_big_sur_v2": "RealScale | USGS Measured Terrain — Big Sur v2",
   "generator.realscale.tva_wonders_invasion_three_realms": "RealScale | Earth Wonders and Cross-Realm Ecology",
   "generator.realscale.tva_cave_ocean_ecology_test_three_realms": "RealScale | Caves and Marine Habitats (Experimental)",
   "biome.realscale.glowing_moss_grottos": "Glowing Moss Grottos",

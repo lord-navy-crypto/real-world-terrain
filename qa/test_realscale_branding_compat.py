@@ -57,12 +57,30 @@ def source_chain(source):
 
 
 class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
-    def test_new_world_menu_has_one_default_and_six_fitted_presets(self):
-        menu = ["realscale:" + name for name in CANONICAL]
+    def test_stable_world_menu_has_only_natural_and_usgs_v2(self):
+        # Vanilla entries remain available because the tag does not replace
+        # Minecraft's list; only these two RealScale entries are added.
+        menu = ["realscale:natural_three_realms", "realscale:usgs_big_sur_v2"]
         for name in ("normal", "extended"):
             tag = read(TAG_ROOT / (name + ".json"))
+            self.assertFalse(tag["replace"])
             self.assertEqual(tag["values"], menu)
-            self.assertEqual(len(set(menu)), 7)
+            self.assertEqual(len(set(tag["values"])), 2)
+
+        natural = read(WORLD / "natural_three_realms.json")
+        usgs = read(WORLD / "usgs_big_sur_v2.json")
+        self.assertEqual(
+            natural["dimensions"]["minecraft:overworld"]["generator"]["settings"],
+            "realscale:tva_natural_smoothed",
+        )
+        self.assertEqual(
+            usgs["dimensions"]["minecraft:overworld"]["generator"]["settings"],
+            "realscale:usgs_big_sur_v2",
+        )
+        self.assertEqual(
+            usgs["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]["type"],
+            "minecraft:multi_noise",
+        )
 
     def test_canonical_presets_share_universal_biome_layers(self):
         for name, settings_id in CANONICAL.items():
@@ -109,11 +127,20 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
                         "terrain presets must share universal biome/structure and cross-realm wiring",
                     )
 
-    def test_optional_special_presets_are_hidden_not_deleted(self):
-        menu = read(TAG_ROOT / "normal.json")["values"]
-        for name in ("wonders_invasion_three_realms", "cave_ocean_ecology_three_realms"):
-            self.assertTrue((WORLD / (name + ".json")).is_file(), name)
-            self.assertNotIn("realscale:" + name, menu)
+    def test_experimental_and_legacy_presets_hidden_not_deleted(self):
+        for tag_name in ("normal", "extended"):
+            menu = read(TAG_ROOT / (tag_name + ".json"))["values"]
+            for name in (
+                "alpine_three_realms", "canyon_three_realms",
+                "glacial_three_realms", "volcanic_three_realms",
+                "karst_three_realms", "dune_three_realms",
+                "measured_three_realms",
+                "wonders_invasion_three_realms", "cave_ocean_ecology_three_realms",
+                *OLD,
+            ):
+                with self.subTest(tag=tag_name, preset=name):
+                    self.assertTrue((WORLD / (name + ".json")).is_file(), name)
+                    self.assertNotIn("realscale:" + name, menu)
 
     def test_six_fitted_profiles_have_real_source_provenance_and_no_raw_grid(self):
         profile_root = ROOT / "research/v1.1/profiles"
