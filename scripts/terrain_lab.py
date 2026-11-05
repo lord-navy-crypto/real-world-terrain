@@ -19,7 +19,7 @@ import sys
 
 EARTH_QUARTER_MERIDIAN_METERS = 10_001_966
 CLIMATE_LATITUDE_COMPRESSION = 20
-CLIMATE_PREVIEW_POLE_DISTANCE_BLOCKS = round(EARTH_QUARTER_MERIDIAN_METERS / CLIMATE_LATITUDE_COMPRESSION)
+FIXED_1_20_POLE_DISTANCE_BLOCKS = round(EARTH_QUARTER_MERIDIAN_METERS / CLIMATE_LATITUDE_COMPRESSION)
 FIXED_LATITUDE_MODE = "fixed_1_20"
 LEGACY_LATITUDE_MODES = {
     "earth", "preview", "radial_earth", "radial_preview", "radial_balanced",
@@ -510,7 +510,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                 "type":"realscale:latitude_temperature",
                 "base":temp_value,
                 "equator_z":0,
-                "pole_distance":CLIMATE_PREVIEW_POLE_DISTANCE_BLOCKS,
+                "pole_distance":FIXED_1_20_POLE_DISTANCE_BLOCKS,
                 "strength":round(latitude_strength/100.0,5)
             }
         if valley:
