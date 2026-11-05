@@ -33,7 +33,8 @@ class DhChunkyGuardTests(unittest.TestCase):
         self.assertIn("FMLLoader.getLoadingModList()", plugin)
         self.assertIn("loadingModList.getMods()", plugin)
         self.assertIn("ModInfo::getVersion", plugin)
-        self.assertNotIn("ModList.get()", plugin)
+        self.assertNotIn("import net.neoforged.fml.ModList;", plugin)
+        self.assertNotIn("ModList.get(", plugin)
 
     def test_dh_and_chunky_are_optional_not_hard_dependencies(self):
         toml = TOML.read_text(encoding="utf-8")
