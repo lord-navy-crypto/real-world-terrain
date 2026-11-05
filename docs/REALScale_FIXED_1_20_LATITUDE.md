@@ -17,7 +17,7 @@ The 1:20 factor applies only to the climate-latitude calculation. It does not re
 
 The live Geographic Climate Inspector and the worldgen `LatitudeTemperatureDensity` function both call `GeographicClimateMath.geodeticLatitudeDeg`. This keeps the report and biome-temperature input aligned, including the WGS84 meridional correction rather than using a separate linear triangle approximation.
 
-Terrain Lab exposes only a latitude-strength slider. Strength 0 disables the latitude contribution; nonzero values always use the same fixed model. There are no selectable 1:1, preview, radial, equal-area, or movable-equator models.
+The Terrain Lab GUI exposes only a latitude-strength slider. Editable merged families default to the fixed model; immutable legacy presets retain their existing climate graph. Strength 0 disables the latitude contribution; nonzero values always use the same fixed model. The CLI exposes only `fixed_1_20` (plus `off` for compatibility). There are no selectable 1:1, preview, radial, equal-area, or movable-equator models.
 
 ## Backward compatibility
 
