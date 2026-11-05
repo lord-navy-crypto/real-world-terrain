@@ -43,8 +43,9 @@ class TerrainLabTests(unittest.TestCase):
                 self.assertEqual(settings["noise_router"]["depth"],prefix+"/terrain_density")
                 self.assertEqual(settings["noise_router"]["initial_density_without_jaggedness"],prefix+"/preliminary_density")
                 final=settings["noise_router"]["final_density"]
-                self.assertEqual(final["input"],prefix+"/terrain_density")
-                self.assertEqual(final["when_in_range"]["argument2"],prefix+"/cave_density")
+                # Legacy procedural profiles retain a direct density reference;
+                # the extra cave envelope is only injected for merged UI families.
+                self.assertEqual(final,prefix+"/terrain_density")
                 height=lab.jread(self.root,lab.GEO_ROOT/"density_function/terrain_lab"/name/"height_signal.json")
                 self.assertEqual(height["argument1"]["argument2"],"realscale:"+preset+"/height_signal")
                 self.assertEqual(height["argument2"],16/128)
@@ -58,7 +59,7 @@ class TerrainLabTests(unittest.TestCase):
                 self.assertEqual(len(paths),10)
 
 
-    def test_ui_really_exposes_only_three_merged_families(self):
+    def test_ui_exposes_three_editable_lab_families_and_seven_world_presets(self):
         self.assertEqual(lab.EDITABLE,("landscape","alpine","canyon"))
         native=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleTerrainLabClient.java").read_text()
         self.assertIn('"landscape", "alpine", "canyon"',native)
@@ -66,11 +67,11 @@ class TerrainLabTests(unittest.TestCase):
         self.assertIn('blendPercent',native)
         self.assertNotIn('"realism_max", "georeal_ultimate", "himalayan", "grand_canyon",',native)
         original=lab.jread(self.root,lab.TAG_ROOT/"extended.json")
-        self.assertEqual([x for x in original["values"] if not x.startswith("realscale:lab_")][-1],"realscale:usgs_big_sur_v2")
-        self.assertEqual(len([x for x in original["values"] if not x.startswith("realscale:lab_")]),4)
+        self.assertEqual([x for x in original["values"] if not x.startswith("realscale:lab_")][-1],"realscale:dune_three_realms")
+        self.assertEqual(len([x for x in original["values"] if not x.startswith("realscale:lab_")]),7)
         self.assertEqual(original["values"],lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"])
         self.assertEqual([x for x in lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"] if not x.startswith("realscale:lab_")],
-                         ["realscale:realism_max","realscale:himalayan","realscale:grand_canyon","realscale:usgs_big_sur_v2"])
+                         ["realscale:natural_three_realms","realscale:alpine_three_realms","realscale:canyon_three_realms","realscale:glacial_three_realms","realscale:volcanic_three_realms","realscale:karst_three_realms","realscale:dune_three_realms"])
 
     def test_merged_families_blend_actual_height_density_functions(self):
         for family,(base,secondary) in lab.FAMILIES.items():
@@ -120,10 +121,10 @@ class TerrainLabTests(unittest.TestCase):
         name,opts,_=lab.apply(self.root,"alpine",1.0,0,50,6)
         self.assertNotIn("mountain_caves_revision",opts)
         settings=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
-        self.assertEqual(settings["noise_router"]["final_density"]["type"],
-                         "minecraft:range_choice")
+        self.assertEqual(settings["noise_router"]["final_density"],
+                         "realscale:terrain_lab/"+name+"/terrain_density")
 
-    def test_optional_fantasy_dimension_expansion_isolated_to_new_lab_world(self):
+    def test_legacy_fantasy_toggle_preserves_512_block_grand_dimensions(self):
         base,*_=lab.apply(self.root,"landscape",1.0,0,50,6)
         expanded,options,_=lab.apply(self.root,"landscape",1.0,0,50,6,
                                      fantasy_dimensions=True)
@@ -131,18 +132,13 @@ class TerrainLabTests(unittest.TestCase):
         self.assertEqual(options["fantasy_dimensions"],"v2")
         before=lab.jread(self.root,lab.GEO_ROOT/"world_preset"/(base+".json"))
         after=lab.jread(self.root,lab.GEO_ROOT/"world_preset"/(expanded+".json"))
-        self.assertEqual(before["dimensions"]["minecraft:the_nether"]["generator"]["settings"],
-                         "minecraft:nether")
-        self.assertEqual(before["dimensions"]["minecraft:the_end"]["generator"]["settings"],
-                         "minecraft:end")
-        self.assertEqual(after["dimensions"]["minecraft:the_nether"]["type"],
-                         "realscale:fantasy_nether_v1")
+        for dimension in ("minecraft:the_nether","minecraft:the_end"):
+            with self.subTest(dimension=dimension):
+                self.assertEqual(after["dimensions"][dimension],before["dimensions"][dimension])
         self.assertEqual(after["dimensions"]["minecraft:the_nether"]["generator"]["settings"],
-                         "realscale:fantasy_nether_v2")
-        self.assertEqual(after["dimensions"]["minecraft:the_end"]["type"],
-                         "minecraft:the_end")
+                         "realscale:grand_nether")
         self.assertEqual(after["dimensions"]["minecraft:the_end"]["generator"]["settings"],
-                         "realscale:fantasy_end_v2")
+                         "realscale:grand_end")
         self.assertEqual(after["dimensions"]["minecraft:overworld"]["generator"]["settings"],
                          "realscale:"+expanded)
 
@@ -227,7 +223,7 @@ class TerrainLabTests(unittest.TestCase):
         b,*_=lab.apply(self.root,"realism_max",1.1,0,50,6)
         self.assertNotEqual(a,b)
         normal=lab.jread(self.root,lab.TAG_ROOT/"normal.json")
-        expected=["realscale:realism_max","realscale:himalayan","realscale:grand_canyon","realscale:usgs_big_sur_v2"]
+        expected=["realscale:natural_three_realms","realscale:alpine_three_realms","realscale:canyon_three_realms","realscale:glacial_three_realms","realscale:volcanic_three_realms","realscale:karst_three_realms","realscale:dune_three_realms"]
         self.assertEqual(normal["values"][:len(expected)],expected)
         self.assertIn("realscale:"+a,normal["values"])
         self.assertIn("realscale:"+b,normal["values"])
@@ -246,7 +242,7 @@ class TerrainLabTests(unittest.TestCase):
         self.assertTrue(name.endswith("_g0"))
 
     def test_dem_pilot_rejects_modification(self):
-        with self.assertRaisesRegex(ValueError,"measured DEM"):
+        with self.assertRaisesRegex(ValueError,"measured, read-only terrain"):
             lab.apply(self.root,"usgs_big_sur",1.1,8,60,3)
 
     def test_rejects_out_of_bound_values(self):
@@ -291,9 +287,13 @@ class TerrainLabTests(unittest.TestCase):
         self.assertIn("dist = Dist.CLIENT",client.read_text())
         self.assertIn("IConfigScreenFactory",client.read_text())
         self.assertIn('side="CLIENT"',metadata)
-        self.assertIn("maven.modrinth:1eAoo2KR:h8Px82QV",build)
-        self.assertIn("prepareTerrainLabDraft",build)
-        self.assertIn("dependsOn tasks.named('prepareTerrainLabDraft')",build)
+        self.assertIn("dev.isxander:yet-another-config-lib:3.8.1+1.21.1-neoforge",build)
+        # Saved YACL drafts are exported explicitly; normal mod builds must not
+        # auto-rewrite or publish experimental terrain presets.
+        self.assertNotIn("prepareTerrainLabDraft",build)
+        exporter=ROOT/"scripts/export_terrain_lab_datapack.py"
+        self.assertTrue(exporter.is_file())
+        self.assertIn("export_terrain_lab_datapack.py",build)
 
 
     def test_lithostitched_mix_opt_in_uses_real_codec_and_new_world_id(self):

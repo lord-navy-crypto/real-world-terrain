@@ -2,16 +2,18 @@
 
 ## Canonical new-world modes (four, and only four)
 
-- **Natural**: `realscale:tva_sacred_timeline_three_realms` — base Realism MAX
-- **Alpine**: `realscale:tva_alpine_three_realms` — Himalayan landscape
-- **Canyon**: `realscale:tva_canyon_three_realms` — Grand Canyon landscape
-- **Real-World**: `realscale:tva_measured_three_realms` — measured USGS Big Sur v2
+- **Natural Landscapes**: `realscale:natural_three_realms` — general multi-scale terrain
+- **Alpine Mountains**: `realscale:alpine_three_realms` — fitted Himalayan/Everest-derived morphology target
+- **Canyons & Valleys**: `realscale:canyon_three_realms` — fitted Grand-Canyon-derived morphology target
+- **Measured Terrain**: `realscale:measured_three_realms` — local USGS Big Sur v2 measured-data mode
 
-Each uses Y -64 to 2031 Overworld, 512-block Grand Nether and 512-block
-Grand End, the nested 60-ecotone / high-offshore sky source, and APES
-vanilla-block habitats. There are no alternative canonical 256-block realms.
-Original world-preset IDs remain in data for compatibility; older historical
-presets are intentionally hidden from the new-world menu.
+All four use the same universal biome-source composition: offshore/sky source, geological-wonder opt-in, natural ecotone transitions, cave-depth habitats, and the underlying vanilla multi-noise source. Shared geological landforms and marine habitat biome modifiers are not duplicated into separate terrain presets. Cross-realm invasion remains a hidden experimental preset rather than a default layer.
+
+The Overworld range remains Y -64 to 2031, with the 512-block Grand Nether and Grand End. The fitted Alpine and Canyon modes are procedural archetypes, not raw DEM playback and not yet claimed to be fully calibrated from those locations. Measured Terrain remains the only mode intended to sample a real local DEM directly. Historical world-preset IDs and optional experimental resources remain in the repository for compatibility; the new-world menu only exposes the four canonical modes.
+
+## DEM-fitted terrain archetypes
+
+See [Terrain Archetype Fitting v0.1](TERRAIN_ARCHETYPE_FITTING_V01.md) and the offline research prototype under `research/v1.1/`. A fit profile stores compact statistical coefficients, source provenance and a hash, not the raw elevation grid. No verified Everest or Grand Canyon source raster/profile is included yet.
 
 ## Terrain Lab independent settings
 

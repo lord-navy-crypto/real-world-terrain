@@ -1,0 +1,107 @@
+{
+  "default_mode": "realscale:natural_three_realms",
+  "preset_count": 7,
+  "profile_count": 6,
+  "profiles": [
+    {
+      "family": "alpine",
+      "native_spacing_m": [
+        82.10080813849378,
+        92.61
+      ],
+      "noise_settings_id": "tva_alpine_fitted",
+      "preset_id": "alpine_three_realms",
+      "profile_sha256": "7795c4206349a91d5ddbce91d3d13893331831395b935aa76b377fb45d5af869",
+      "relief_p95_minus_p05_m": 3863.3904,
+      "source_sha256": "4137bef405a892868b9eb2cc69357c8bcddad02fd009557535ff7a1e1c072bef",
+      "source_tile_sha256": "6c5a5815874946143f5bf84a20d6c3a15535436e5d870ab8264d6dfc06d79a65",
+      "source_url": "https://copernicus-dem-90m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_30_N27_00_E086_00_DEM/Copernicus_DSM_COG_30_N27_00_E086_00_DEM.tif",
+      "target_id": "everest_himalaya",
+      "vertical_datum": "EGM2008"
+    },
+    {
+      "family": "canyon",
+      "native_spacing_m": [
+        74.5755352592912,
+        92.61
+      ],
+      "noise_settings_id": "tva_canyon_fitted",
+      "preset_id": "canyon_three_realms",
+      "profile_sha256": "26cbbe19d7a922731f52441d04ff9f24667967ab85c07769b7bce5b7bf954d11",
+      "relief_p95_minus_p05_m": 1454.5368,
+      "source_sha256": "de6022ff03383d5e7e10a4dc49e4eb15fb9e8e02a52ecb5a9befb60a564101a4",
+      "source_tile_sha256": "ee822761108de1b03a5576b81cb2c56e2361ffd7f746b98e877f942fae7843bd",
+      "source_url": "https://copernicus-dem-90m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_30_N36_00_W113_00_DEM/Copernicus_DSM_COG_30_N36_00_W113_00_DEM.tif",
+      "target_id": "grand_canyon",
+      "vertical_datum": "EGM2008"
+    },
+    {
+      "family": "glacial",
+      "native_spacing_m": [
+        73.60126212938665,
+        92.61
+      ],
+      "noise_settings_id": "tva_glacial_fitted",
+      "preset_id": "glacial_three_realms",
+      "profile_sha256": "738e903f4dae68dd808e85aceda255be2bf277ad240cb8ce7ded9e1449e4ad0f",
+      "relief_p95_minus_p05_m": 2854.7765,
+      "source_sha256": "f6047ca9ed3d476b987c68e91c4ccb33885932b1276781053e0800d1304d1cea",
+      "source_tile_sha256": "53b26cef442f03f7e59008ed14c74ea163ba9a7e5ed0f84c91c816a281e526b9",
+      "source_url": "https://copernicus-dem-90m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_30_N37_00_W120_00_DEM/Copernicus_DSM_COG_30_N37_00_W120_00_DEM.tif",
+      "target_id": "yosemite_glacial_valley",
+      "vertical_datum": "EGM2008"
+    },
+    {
+      "family": "volcanic",
+      "native_spacing_m": [
+        87.4481858246736,
+        92.61
+      ],
+      "noise_settings_id": "tva_volcanic_fitted",
+      "preset_id": "volcanic_three_realms",
+      "profile_sha256": "c29d8c1fd1e490a35a91378da40a05b1046c6023ffcbd02e6f7e11968ddaa7c0",
+      "relief_p95_minus_p05_m": 2942.2636,
+      "source_sha256": "7c3ae46c75b7c09628ef51cd6384b0bd57819ecb3dd056b02f8da8b80eb15a28",
+      "source_tile_sha256": "8c78154b67e784a520a6cbae2c87ad3017341f9501fce862dafcfff3061a377d",
+      "source_url": "https://copernicus-dem-90m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_30_N19_00_W156_00_DEM/Copernicus_DSM_COG_30_N19_00_W156_00_DEM.tif",
+      "target_id": "hawaii_volcanic",
+      "vertical_datum": "EGM2008"
+    },
+    {
+      "family": "karst",
+      "native_spacing_m": [
+        83.73302268063145,
+        92.61
+      ],
+      "noise_settings_id": "tva_karst_fitted",
+      "preset_id": "karst_three_realms",
+      "profile_sha256": "d76d9d429e578f8f37af8322ee8ec499fe9f5a17fee2f994ef2590469f0597cc",
+      "relief_p95_minus_p05_m": 1054.5571,
+      "source_sha256": "d9acb9f92ee0810e79911b9c9e6ddc89c722a0caf6dbea4c6c6c7ed7ea0e9908",
+      "source_tile_sha256": "d5c7700ef846727fabc1ffe95d77e59136253d7296598e3b47b4342d4a054031",
+      "source_url": "https://copernicus-dem-90m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_30_N25_00_E110_00_DEM/Copernicus_DSM_COG_30_N25_00_E110_00_DEM.tif",
+      "target_id": "guilin_karst",
+      "vertical_datum": "EGM2008"
+    },
+    {
+      "family": "dune",
+      "native_spacing_m": [
+        84.4177103928641,
+        92.61
+      ],
+      "noise_settings_id": "tva_dune_fitted",
+      "preset_id": "dune_three_realms",
+      "profile_sha256": "d8066ddb3b2420e6d8447e1f1df4c3d30c36661a3ce1fe8d140e01c6798a1d6e",
+      "relief_p95_minus_p05_m": 590.7353,
+      "source_sha256": "668cbffd61fe41d35d949a84f788623d8ca2e70f2f86b37ccde82bbf32ef2492",
+      "source_tile_sha256": "659f42d3b4bb5ceec8244d1be4e5239872cd6abe6f65914fd83eb53a630fccbf",
+      "source_url": "https://copernicus-dem-90m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_30_S25_00_E015_00_DEM/Copernicus_DSM_COG_30_S25_00_E015_00_DEM.tif",
+      "target_id": "namib_dunes",
+      "vertical_datum": "EGM2008"
+    }
+  ],
+  "raw_dem_grids_embedded": false,
+  "runtime_density_function": "realscale:terrain_archetype",
+  "schema": "realscale:compiled_terrain_archetypes/v1",
+  "status": "compiled_from_verified_real_dem_profiles"
+}

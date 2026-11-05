@@ -1,0 +1,191 @@
+{
+  "schema": "realscale:terrain_dem_targets/v2",
+  "default_mode": {
+    "id": "natural",
+    "display_name": "Natural Landscapes",
+    "data_fit_required": false,
+    "description": "General multi-scale terrain; not tied to one reference landscape."
+  },
+  "data_policy": {
+    "primary_dataset": "Copernicus DEM GLO-90 public AWS COG",
+    "nominal_spacing_m": 90,
+    "surface_type": "DSM",
+    "horizontal_crs": "WGS84 / EPSG:4326",
+    "vertical_datum": "EGM2008",
+    "vertical_units": "meters",
+    "source_url": "https://copernicus-dem-90m.s3.eu-central-1.amazonaws.com/",
+    "documentation_url": "https://copernicus-dem-90m.s3.amazonaws.com/readme.html",
+    "license_url": "https://registry.opendata.aws/copernicus-dem/",
+    "note": "GLO-90 provides worldwide land coverage and is suitable for macro-morphology fitting, not fine cliff or dune-ripple detail. Do not commit raw source tiles; retain hashes and provenance. Prefer higher-resolution official regional DEMs where available, after verifying each product's metadata."
+  },
+  "targets": [
+    {
+      "id": "everest_himalaya",
+      "family": "alpine",
+      "display_name": "Alpine Mountains — Everest/Himalaya",
+      "landscape": "Mount Everest and surrounding Himalayan ridges",
+      "center_latitude": 27.9881,
+      "center_longitude": 86.9253,
+      "tile": "N27_00_E086_00",
+      "study_window_degrees": {
+        "west": 86.5,
+        "south": 27.5,
+        "east": 86.99,
+        "north": 27.99
+      },
+      "preferred_high_resolution_alternative": {
+        "name": "Copernicus DEM GLO-30 Public",
+        "nominal_spacing_m": 30,
+        "url": "https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM",
+        "note": "Verify that the exact tile is publicly released; use GLO-90 when not."
+      },
+      "status": "target_selected_not_yet_fitted",
+      "fit_goal": [
+        "macro_relief",
+        "ridge_sharpness",
+        "multi_scale_slope",
+        "anisotropy"
+      ]
+    },
+    {
+      "id": "grand_canyon",
+      "family": "canyon",
+      "display_name": "Canyons & Valleys — Grand Canyon",
+      "landscape": "Grand Canyon, Arizona, United States",
+      "center_latitude": 36.1,
+      "center_longitude": -112.1,
+      "tile": "N36_00_W113_00",
+      "study_window_degrees": {
+        "west": -112.99,
+        "south": 36,
+        "east": -112.01,
+        "north": 36.99
+      },
+      "preferred_high_resolution_alternative": {
+        "name": "USGS 3DEP 1/3 arc-second bare-earth DEM",
+        "nominal_spacing_m": 10,
+        "url": "https://data.usgs.gov/datacatalog/data/USGS%3A3a81321b-c153-416f-98b7-cc8e5f0e17c3",
+        "note": "Use after verifying the exact product tile and vertical datum."
+      },
+      "status": "target_selected_not_yet_fitted",
+      "fit_goal": [
+        "cliff_index",
+        "valley_cross_section",
+        "plateau_relief",
+        "drainage_scale"
+      ]
+    },
+    {
+      "id": "yosemite_glacial_valley",
+      "family": "glacial",
+      "display_name": "Glacial Valleys — Yosemite",
+      "landscape": "Yosemite Valley, California, United States",
+      "center_latitude": 37.7459,
+      "center_longitude": -119.5936,
+      "tile": "N37_00_W120_00",
+      "study_window_degrees": {
+        "west": -119.99,
+        "south": 37,
+        "east": -119.01,
+        "north": 37.99
+      },
+      "preferred_high_resolution_alternative": {
+        "name": "USGS 3DEP 1/3 arc-second bare-earth DEM",
+        "nominal_spacing_m": 10,
+        "url": "https://data.usgs.gov/datacatalog/data/USGS%3A3a81321b-c153-416f-98b7-cc8e5f0e17c3",
+        "note": "Use after verifying the exact product tile and vertical datum."
+      },
+      "status": "target_selected_not_yet_fitted",
+      "fit_goal": [
+        "u_shaped_valley",
+        "valley_width",
+        "wall_slope",
+        "overdeepening_proxy"
+      ]
+    },
+    {
+      "id": "hawaii_volcanic",
+      "family": "volcanic",
+      "display_name": "Volcanic Landscapes — Hawaiʻi",
+      "landscape": "Mauna Loa and Kīlauea, Hawaiʻi, United States",
+      "center_latitude": 19.475,
+      "center_longitude": -155.608,
+      "tile": "N19_00_W156_00",
+      "study_window_degrees": {
+        "west": -155.99,
+        "south": 19,
+        "east": -155.01,
+        "north": 19.99
+      },
+      "preferred_high_resolution_alternative": {
+        "name": "USGS 3DEP 1/3 arc-second DEM",
+        "nominal_spacing_m": 10,
+        "url": "https://data.usgs.gov/datacatalog/data/USGS%3A3a81321b-c153-416f-98b7-cc8e5f0e17c3",
+        "note": "Use after verifying the exact product tile and vertical datum."
+      },
+      "status": "target_selected_not_yet_fitted",
+      "fit_goal": [
+        "shield_slope",
+        "cone_prominence",
+        "caldera_proxy",
+        "radial_symmetry"
+      ]
+    },
+    {
+      "id": "guilin_karst",
+      "family": "karst",
+      "display_name": "Karst Landscapes — Guilin",
+      "landscape": "Guilin karst tower terrain, Guangxi, China",
+      "center_latitude": 25.2736,
+      "center_longitude": 110.2902,
+      "tile": "N25_00_E110_00",
+      "study_window_degrees": {
+        "west": 110,
+        "south": 25,
+        "east": 110.99,
+        "north": 25.99
+      },
+      "preferred_high_resolution_alternative": {
+        "name": "Copernicus DEM GLO-30 Public",
+        "nominal_spacing_m": 30,
+        "url": "https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM",
+        "note": "Verify public availability of the exact tile; the GLO-90 baseline is guaranteed global land coverage."
+      },
+      "status": "target_selected_not_yet_fitted",
+      "fit_goal": [
+        "tower_density",
+        "tower_height_distribution",
+        "doline_scale",
+        "ridge_valley_contrast"
+      ]
+    },
+    {
+      "id": "namib_dunes",
+      "family": "dune",
+      "display_name": "Sand Dunes — Namib Sand Sea",
+      "landscape": "Namib Sand Sea, Namibia",
+      "center_latitude": -24.5,
+      "center_longitude": 15.5,
+      "tile": "S25_00_E015_00",
+      "study_window_degrees": {
+        "west": 15,
+        "south": -24.99,
+        "east": 15.99,
+        "north": -24
+      },
+      "preferred_high_resolution_alternative": {
+        "name": "Copernicus DEM GLO-30 Public",
+        "nominal_spacing_m": 30,
+        "url": "https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM",
+        "note": "Verify public availability; GLO-90 is the fallback."
+      },
+      "status": "target_selected_not_yet_fitted",
+      "fit_goal": [
+        "dominant_dune_wavelength",
+        "ridge_orientation",
+        "crest_skew",
+        "anisotropy"
+      ]
+    }
+  ]
+}

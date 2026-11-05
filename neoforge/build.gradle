@@ -2,9 +2,9 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.146'
 }
-version='2.0.0-tva-preview.1'
+version='2.0.0-preview.2-test.9'
 group='org.realscale'
-base { archivesName = 'RealScale-TVA-Ultimate-NeoForge-1.21.1' }
+base { archivesName = 'RealScale-NeoForge-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 neoForge {
     version = '21.1.249'
@@ -31,7 +31,7 @@ neoForge {
 // Dedicated original v1.3 Terrain Lab dependencies. YACL is CLIENT-ONLY in
 // metadata; the server must remain playable without any YACL installation.
 // Lithostitched is used only when the player explicitly exports a Lab profile
-// that contains its codecs, never by the canonical TVA world presets.
+// that contains its codecs, never by the legacy world-presets (including saved-world compatibility IDs).
 repositories {
     // Use YACL's author-maintained Maven rather than a brittle Modrinth
     // short-ID/version artifact endpoint. This is the exact 1.21.1 NeoForge
@@ -83,6 +83,13 @@ tasks.named('test', Test) {
     testLogging { events 'passed', 'skipped', 'failed' }
 }
 
+// NeoForge ModDev supplies the mapped Minecraft/NeoForge compile classpath to
+// the main source set. Reuse it for JUnit tests that directly exercise runtime
+// density functions; Gradle's default test classpath otherwise cannot resolve
+// net.minecraft classes during :compileTestJava.
+sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
+
 // YACL stores 3 independent profiles. Converting one selected draft is an
 // explicit export operation, never an automatic edit to the FOUR core presets.
 // See scripts/export_terrain_lab_datapack.py.
@@ -91,7 +98,63 @@ tasks.named('test', Test) {
 // Embed every selectable structure preset inside the RealScale JAR itself.
 // No Python or external structure ZIPs are needed to play or build the mod.
 def generatedStructureResources = layout.buildDirectory.dir("generated/realscale-structure-packs")
+def generatedLicensedArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-licensed-architecture-templates")
+def generatedOriginalArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-original-architecture-templates")
+def generatedBatchArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-batch-architecture-templates")
+
+// Convert only the three explicitly licensed GDMC source schematics. The source
+// files stay outside the NeoForge module and are never packaged in the JAR.
+tasks.register("generateArchitectureTemplates") {
+    inputs.dir(file("../assets/architecture/gdmc-source"))
+    inputs.file(file("../scripts/convert_gdmc_architecture.py"))
+    outputs.dir(generatedLicensedArchitectureTemplates)
+    doLast {
+        def output = generatedLicensedArchitectureTemplates.get().asFile
+        project.delete(output)
+        def python = System.getenv("PYTHON") ?: "python3"
+        project.exec {
+            commandLine python,
+                    file("../scripts/convert_gdmc_architecture.py").absolutePath,
+                    "--source", file("../assets/architecture/gdmc-source").absolutePath,
+                    "--output", output.absolutePath
+        }
+    }
+}
+
+tasks.register("generateOriginalArchitectureTemplates") {
+    inputs.file(file("../scripts/generate_original_architecture.py"))
+    outputs.dir(generatedOriginalArchitectureTemplates)
+    doLast {
+        def output = generatedOriginalArchitectureTemplates.get().asFile
+        project.delete(output)
+        def python = System.getenv("PYTHON") ?: "python3"
+        project.exec {
+            commandLine python,
+                    file("../scripts/generate_original_architecture.py").absolutePath,
+                    "--output", output.absolutePath
+        }
+    }
+}
+
+tasks.register("generateArchitectureBatchTemplates") {
+    inputs.file(file("../scripts/generate_architecture_batch.py"))
+    inputs.file(file("../scripts/generate_original_architecture.py"))
+    outputs.dir(generatedBatchArchitectureTemplates)
+    doLast {
+        def output = generatedBatchArchitectureTemplates.get().asFile
+        project.delete(output)
+        def python = System.getenv("PYTHON") ?: "python3"
+        project.exec {
+            commandLine python,
+                    file("../scripts/generate_architecture_batch.py").absolutePath,
+                    "--output", output.absolutePath
+        }
+    }
+}
+
 tasks.register("generateBuiltInStructurePacks") {
+    dependsOn("generateArchitectureTemplates", "generateOriginalArchitectureTemplates",
+              "generateArchitectureBatchTemplates")
     outputs.dir(generatedStructureResources)
     doLast {
         def root = generatedStructureResources.get().asFile
@@ -153,6 +216,318 @@ tasks.register("generateBuiltInStructurePacks") {
                 file.setText(groovy.json.JsonOutput.prettyPrint(
                         groovy.json.JsonOutput.toJson(data)) + "\n", "UTF-8")
             }
+        }
+
+        // Separate, non-mandatory architecture pack: three converted NBT templates
+        // plus biome-aware single-piece jigsaw structure definitions.
+        def architecturePack = new File(root, "resourcepacks/realscale_structures_architecture_pilot")
+        architecturePack.mkdirs()
+        new File(architecturePack, "pack.mcmeta").setText(
+            groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                pack:[pack_format:48,
+                      description:"RealScale optional architecture library — Apache-2.0 imports + original generated designs"]
+            ])) + "\n", "UTF-8")
+
+        // StructureTemplateManager reads templates from the mod's normal
+        // data namespace. Keep the NBT available for explicit /place template
+        // use even when the optional worldgen pack is not selected.
+        def templateTarget = new File(root, "data/realscale/structure/architecture")
+        def licensedTemplateSource = new File(generatedLicensedArchitectureTemplates.get().asFile,
+                "data/realscale/structure/architecture")
+        def originalTemplateSource = new File(generatedOriginalArchitectureTemplates.get().asFile,
+                "data/realscale/structure/architecture")
+        def batchTemplateSource = new File(generatedBatchArchitectureTemplates.get().asFile,
+                "data/realscale/structure/architecture")
+        if (!licensedTemplateSource.isDirectory())
+            throw new GradleException("Converted licensed architecture templates are missing: " + licensedTemplateSource)
+        if (!originalTemplateSource.isDirectory())
+            throw new GradleException("Original generated architecture templates are missing: " + originalTemplateSource)
+        if (!batchTemplateSource.isDirectory())
+            throw new GradleException("Batch-generated architecture templates are missing: " + batchTemplateSource)
+        project.copy {
+            from(licensedTemplateSource)
+            from(originalTemplateSource)
+            from(batchTemplateSource)
+            into(templateTarget)
+        }
+
+        // Mirror the exact templates into the opt-in architecture pack as well.
+        // Keep base-namespace copies for explicit placement without pack opt-in.
+        def optionalTemplateTarget = new File(architecturePack,
+                "data/realscale/structure/architecture")
+        project.copy {
+            from(licensedTemplateSource)
+            from(originalTemplateSource)
+            from(batchTemplateSource)
+            into(optionalTemplateTarget)
+        }
+
+        def writeArchitectureJson = { String relativePath, Object value ->
+            def target = new File(architecturePack, relativePath)
+            target.parentFile.mkdirs()
+            target.setText(groovy.json.JsonOutput.prettyPrint(
+                    groovy.json.JsonOutput.toJson(value)) + "\n", "UTF-8")
+        }
+
+        // Explicit IDs avoid referencing the nonexistent #minecraft:is_plains tag.
+        // Each building has its own random-spread set and an explicit biome list.
+        // The original structures are authored by scripts/generate_original_architecture.py.
+        def architectureProfiles = [
+            [id:"modern_house", spacing:64, separation:20, salt:140011,
+             biomes:["minecraft:plains", "minecraft:sunflower_plains",
+                     "minecraft:forest", "minecraft:flower_forest",
+                     "minecraft:birch_forest", "minecraft:old_growth_birch_forest",
+                     "minecraft:taiga", "minecraft:old_growth_spruce_taiga",
+                     "minecraft:savanna", "realscale:shrub_prairie",
+                     "realscale:forest_steppe", "realscale:woodland_meadow",
+                     "realscale:birch_parkland", "realscale:pine_oak_mosaic",
+                     "realscale:oak_to_dark_forest", "realscale:temperate_to_birch",
+                     "realscale:riverine_woodland"]],
+            [id:"glass_greenhouse", spacing:96, separation:28, salt:140012,
+             biomes:["minecraft:plains", "minecraft:sunflower_plains",
+                     "minecraft:meadow", "minecraft:forest",
+                     "minecraft:birch_forest", "minecraft:flower_forest",
+                     "realscale:wet_meadow", "realscale:marshy_woodland",
+                     "realscale:floodplain_margin", "realscale:reed_marsh_edge",
+                     "realscale:lake_woodland_margin", "realscale:seasonal_floodforest",
+                     "realscale:riverine_woodland", "realscale:mountain_wetland"]],
+            [id:"city_library", spacing:144, separation:40, salt:140013,
+             biomes:["minecraft:forest", "minecraft:flower_forest",
+                     "minecraft:birch_forest", "minecraft:old_growth_birch_forest",
+                     "minecraft:dark_forest", "minecraft:taiga",
+                     "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga",
+                     "minecraft:meadow", "realscale:woodland_meadow",
+                     "realscale:pine_oak_mosaic", "realscale:oak_to_dark_forest",
+                     "realscale:montane_oak_foothills", "realscale:subalpine_woodland",
+                     "realscale:temperate_to_birch", "realscale:birch_conifer_transition",
+                     "realscale:birch_parkland", "realscale:riverine_woodland"]],
+            [id:"forest_ranger_lodge", spacing:88, separation:28, salt:140021,
+             biomes:["minecraft:forest", "minecraft:flower_forest",
+                     "minecraft:birch_forest", "minecraft:old_growth_birch_forest",
+                     "minecraft:dark_forest", "minecraft:taiga",
+                     "minecraft:old_growth_spruce_taiga", "realscale:woodland_meadow",
+                     "realscale:pine_oak_mosaic", "realscale:oak_to_dark_forest",
+                     "realscale:birch_parkland", "realscale:riverine_woodland"]],
+            [id:"plains_farmstead", spacing:80, separation:24, salt:140022,
+             biomes:["minecraft:plains", "minecraft:sunflower_plains",
+                     "minecraft:savanna", "minecraft:savanna_plateau",
+                     "minecraft:meadow", "realscale:shrub_prairie",
+                     "realscale:forest_steppe", "realscale:wet_meadow",
+                     "realscale:woodland_meadow", "realscale:semi_arid_scrubland"]],
+            [id:"alpine_waystation", spacing:112, separation:32, salt:140023,
+             biomes:["minecraft:meadow", "minecraft:grove", "minecraft:snowy_slopes",
+                     "minecraft:windswept_hills", "minecraft:taiga",
+                     "realscale:rocky_alpine_meadow", "realscale:montane_spruce_meadow",
+                     "realscale:subalpine_woodland", "realscale:scree_transition",
+                     "realscale:montane_oak_foothills"]],
+            [id:"coastal_lighthouse", spacing:128, separation:36, salt:140024,
+             biomes:["minecraft:beach", "minecraft:stony_shore",
+                     "realscale:coastal_dune_meadow", "realscale:coastal_heath",
+                     "realscale:gravel_shore_fringe", "realscale:coastal_marsh_woodland",
+                     "realscale:tropical_littoral_forest"]],
+            [id:"desert_caravanserai", spacing:128, separation:36, salt:140025,
+             biomes:["minecraft:desert", "minecraft:badlands",
+                     "minecraft:eroded_badlands", "minecraft:wooded_badlands",
+                     "minecraft:savanna", "minecraft:savanna_plateau",
+                     "realscale:semi_arid_scrubland", "realscale:dry_grass_dunes",
+                     "realscale:dune_scrub", "realscale:oasis_fringe",
+                     "realscale:terracotta_scrub", "realscale:savanna_badlands"]],
+            [id:"woodland_cottage", spacing:112, separation:36, salt:140030,
+             biomes:["minecraft:forest", "minecraft:flower_forest", "minecraft:birch_forest",
+                     "minecraft:old_growth_birch_forest", "minecraft:taiga",
+                     "realscale:woodland_meadow", "realscale:pine_oak_mosaic",
+                     "realscale:riverine_woodland"]],
+            [id:"village_blacksmith", spacing:176, separation:52, salt:140031,
+             biomes:["minecraft:plains", "minecraft:sunflower_plains", "minecraft:forest",
+                     "minecraft:taiga", "minecraft:meadow", "realscale:forest_steppe",
+                     "realscale:woodland_meadow"]],
+            [id:"schoolhouse", spacing:208, separation:64, salt:140032,
+             biomes:["minecraft:plains", "minecraft:sunflower_plains", "minecraft:meadow",
+                     "minecraft:flower_forest", "realscale:woodland_meadow",
+                     "realscale:riverine_woodland"]],
+            [id:"healers_clinic", spacing:208, separation:64, salt:140033,
+             biomes:["minecraft:flower_forest", "minecraft:meadow", "minecraft:forest",
+                     "realscale:wet_meadow", "realscale:riverine_woodland",
+                     "realscale:marshy_woodland"]],
+            [id:"brick_bakery", spacing:192, separation:56, salt:140034,
+             biomes:["minecraft:plains", "minecraft:sunflower_plains", "minecraft:savanna",
+                     "realscale:forest_steppe", "realscale:shrub_prairie",
+                     "realscale:woodland_meadow"]],
+            [id:"two_storey_townhouse", spacing:256, separation:72, salt:140035,
+             biomes:["minecraft:dark_forest", "minecraft:forest", "minecraft:birch_forest",
+                     "minecraft:old_growth_birch_forest", "realscale:pine_oak_mosaic",
+                     "realscale:oak_to_dark_forest", "realscale:temperate_to_birch"]],
+            [id:"snowfield_shelter", spacing:160, separation:48, salt:140036,
+             biomes:["minecraft:snowy_plains", "minecraft:ice_spikes", "minecraft:grove",
+                     "minecraft:snowy_slopes", "minecraft:taiga",
+                     "realscale:rocky_alpine_meadow", "realscale:montane_spruce_meadow",
+                     "realscale:subalpine_woodland"]],
+            [id:"savanna_outpost", spacing:176, separation:52, salt:140037,
+             biomes:["minecraft:savanna", "minecraft:savanna_plateau",
+                     "minecraft:windswept_savanna", "realscale:semi_arid_scrubland",
+                     "realscale:shrub_prairie", "realscale:savanna_badlands"]],
+            [id:"marsh_stilt_house", spacing:160, separation:48, salt:140038,
+             biomes:["minecraft:swamp", "minecraft:mangrove_swamp",
+                     "realscale:wet_meadow", "realscale:marshy_woodland",
+                     "realscale:reed_marsh_edge", "realscale:seasonal_floodforest"]],
+            [id:"mesa_trading_post", spacing:224, separation:64, salt:140039,
+             biomes:["minecraft:desert", "minecraft:badlands", "minecraft:eroded_badlands",
+                     "minecraft:wooded_badlands", "realscale:terracotta_scrub",
+                     "realscale:savanna_badlands", "realscale:dry_grass_dunes"]],
+            [id:"market_hall", spacing:256, separation:72, salt:140040,
+             biomes:["minecraft:plains", "minecraft:sunflower_plains", "minecraft:savanna",
+                     "minecraft:meadow", "realscale:shrub_prairie",
+                     "realscale:forest_steppe"]],
+            [id:"railway_station", spacing:320, separation:88, salt:140041,
+             biomes:["minecraft:plains", "minecraft:meadow", "minecraft:forest",
+                     "realscale:forest_steppe", "realscale:riverine_woodland",
+                     "realscale:woodland_meadow"]],
+            [id:"windmill", spacing:192, separation:56, salt:140042,
+             biomes:["minecraft:plains", "minecraft:sunflower_plains", "minecraft:savanna",
+                     "minecraft:meadow", "realscale:shrub_prairie",
+                     "realscale:forest_steppe"]],
+            [id:"fishing_hut", spacing:224, separation:64, salt:140043,
+             biomes:["minecraft:beach", "minecraft:stony_shore", "minecraft:river",
+                     "realscale:coastal_heath", "realscale:coastal_dune_meadow",
+                     "realscale:gravel_shore_fringe", "realscale:tropical_littoral_forest"]],
+            [id:"coastal_pier", spacing:320, separation:88, salt:140044,
+             biomes:["minecraft:beach", "minecraft:stony_shore",
+                     "realscale:coastal_dune_meadow", "realscale:gravel_shore_fringe",
+                     "realscale:coastal_heath"]],
+            [id:"forest_watchtower", spacing:192, separation:56, salt:140045,
+             biomes:["minecraft:forest", "minecraft:dark_forest", "minecraft:birch_forest",
+                     "minecraft:taiga", "minecraft:old_growth_spruce_taiga",
+                     "realscale:pine_oak_mosaic", "realscale:birch_parkland"]],
+            [id:"botanical_greenhouse", spacing:256, separation:72, salt:140046,
+             biomes:["minecraft:plains", "minecraft:forest", "minecraft:flower_forest",
+                     "minecraft:meadow", "realscale:wet_meadow",
+                     "realscale:riverine_woodland", "realscale:marshy_woodland"]],
+            [id:"orchard_farm", spacing:224, separation:64, salt:140047,
+             biomes:["minecraft:plains", "minecraft:meadow", "minecraft:forest",
+                     "realscale:forest_steppe", "realscale:woodland_meadow",
+                     "realscale:riverine_woodland", "realscale:temperate_to_birch"]],
+            [id:"stone_bridge", spacing:384, separation:104, salt:140048,
+             biomes:["minecraft:river", "minecraft:frozen_river",
+                     "realscale:riverine_woodland", "realscale:floodplain_margin",
+                     "realscale:wet_meadow"]],
+            [id:"watermill", spacing:320, separation:88, salt:140049,
+             biomes:["minecraft:river", "realscale:riverine_woodland",
+                     "realscale:wet_meadow", "realscale:floodplain_margin",
+                     "realscale:seasonal_floodforest"]],
+            [id:"desert_well", spacing:224, separation:64, salt:140050,
+             biomes:["minecraft:desert", "minecraft:badlands", "minecraft:savanna",
+                     "realscale:semi_arid_scrubland", "realscale:dune_scrub",
+                     "realscale:oasis_fringe", "realscale:dry_grass_dunes"]],
+            [id:"mountain_observatory", spacing:384, separation:104, salt:140051,
+             biomes:["minecraft:windswept_hills", "minecraft:windswept_forest",
+                     "minecraft:grove", "minecraft:snowy_slopes",
+                     "realscale:rocky_alpine_meadow", "realscale:montane_spruce_meadow",
+                     "realscale:scree_transition", "realscale:subalpine_woodland"]],
+            [id:"ruined_watchpost", spacing:288, separation:80, salt:140052,
+             biomes:["minecraft:forest", "minecraft:dark_forest", "minecraft:taiga",
+                     "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga",
+                     "realscale:birch_parkland", "realscale:pine_oak_mosaic"]],
+            [id:"garden_pavilion", spacing:288, separation:80, salt:140053,
+             biomes:["minecraft:flower_forest", "minecraft:meadow", "minecraft:cherry_grove",
+                     "minecraft:forest", "realscale:wet_meadow",
+                     "realscale:woodland_meadow", "realscale:riverine_woodland"]],
+            [id:"lumber_camp", spacing:224, separation:64, salt:140054,
+             biomes:["minecraft:forest", "minecraft:taiga", "minecraft:old_growth_pine_taiga",
+                     "minecraft:old_growth_spruce_taiga", "minecraft:birch_forest",
+                     "realscale:pine_oak_mosaic", "realscale:birch_parkland"]],
+            [id:"woodland_hamlet", spacing:512, separation:160, salt:140055,
+             biomes:["minecraft:forest", "minecraft:flower_forest", "minecraft:birch_forest",
+                     "minecraft:old_growth_birch_forest", "minecraft:taiga",
+                     "realscale:woodland_meadow", "realscale:pine_oak_mosaic",
+                     "realscale:riverine_woodland"]],
+            [id:"plains_market_square", spacing:512, separation:160, salt:140056,
+             biomes:["minecraft:plains", "minecraft:sunflower_plains", "minecraft:meadow",
+                     "minecraft:savanna", "realscale:forest_steppe",
+                     "realscale:shrub_prairie", "realscale:woodland_meadow"]],
+            [id:"river_trade_hamlet", spacing:640, separation:192, salt:140057,
+             biomes:["minecraft:plains", "minecraft:meadow", "minecraft:forest",
+                     "realscale:riverine_woodland", "realscale:floodplain_margin",
+                     "realscale:wet_meadow"]],
+            [id:"alpine_watch_compound", spacing:640, separation:192, salt:140058,
+             biomes:["minecraft:meadow", "minecraft:grove",
+                     "realscale:rocky_alpine_meadow", "realscale:montane_spruce_meadow",
+                     "realscale:subalpine_woodland"]],
+            [id:"desert_oasis_hamlet", spacing:512, separation:160, salt:140059,
+             biomes:["minecraft:desert", "minecraft:badlands", "minecraft:wooded_badlands",
+                     "minecraft:savanna", "minecraft:savanna_plateau",
+                     "realscale:semi_arid_scrubland", "realscale:dune_scrub",
+                     "realscale:oasis_fringe", "realscale:terracotta_scrub"]]
+,
+            [id:"stone_mason_workshop", spacing:448, separation:128, salt:140060, biomes:["minecraft:plains", "minecraft:meadow", "minecraft:stony_peaks", "minecraft:windswept_hills", "realscale:rocky_alpine_meadow", "realscale:montane_oak_foothills", "realscale:forest_steppe"]],
+            [id:"canal_lock", spacing:768, separation:224, salt:140061, biomes:["minecraft:plains", "minecraft:river", "minecraft:meadow", "realscale:riverine_woodland", "realscale:floodplain_margin", "realscale:wet_meadow"]],
+            [id:"monastery_chapel", spacing:768, separation:224, salt:140062, biomes:["minecraft:forest", "minecraft:flower_forest", "minecraft:meadow", "minecraft:cherry_grove", "realscale:woodland_meadow", "realscale:birch_parkland", "realscale:riverine_woodland"]],
+            [id:"apiary_garden", spacing:512, separation:160, salt:140063, biomes:["minecraft:flower_forest", "minecraft:meadow", "minecraft:plains", "minecraft:sunflower_plains", "realscale:wet_meadow", "realscale:woodland_meadow", "realscale:riverine_woodland"]],
+            [id:"snowbound_storehouse", spacing:512, separation:160, salt:140064, biomes:["minecraft:snowy_plains", "minecraft:grove", "minecraft:snowy_slopes", "minecraft:taiga", "realscale:rocky_alpine_meadow", "realscale:montane_spruce_meadow", "realscale:subalpine_woodland"]],
+            [id:"desert_cistern", spacing:640, separation:192, salt:140065, biomes:["minecraft:desert", "minecraft:badlands", "minecraft:savanna", "realscale:semi_arid_scrubland", "realscale:dune_scrub", "realscale:oasis_fringe", "realscale:dry_grass_dunes"]],
+            [id:"tropical_boardwalk_house", spacing:640, separation:192, salt:140066, biomes:["minecraft:jungle", "minecraft:bamboo_jungle", "minecraft:mangrove_swamp", "minecraft:swamp", "realscale:tropical_littoral_forest", "realscale:marshy_woodland", "realscale:seasonal_floodforest"]],
+            [id:"railway_signal_box", spacing:512, separation:160, salt:140067, biomes:["minecraft:plains", "minecraft:meadow", "minecraft:forest", "realscale:forest_steppe", "realscale:shrub_prairie", "realscale:woodland_meadow"]],
+            [id:"quarry_shed", spacing:576, separation:176, salt:140068, biomes:["minecraft:stony_peaks", "minecraft:windswept_hills", "minecraft:stony_shore", "minecraft:badlands", "realscale:rocky_alpine_meadow", "realscale:scree_transition", "realscale:terracotta_scrub"]],
+            [id:"charcoal_kiln", spacing:576, separation:176, salt:140069, biomes:["minecraft:forest", "minecraft:taiga", "minecraft:birch_forest", "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga", "realscale:pine_oak_mosaic", "realscale:birch_parkland"]],
+            [id:"vineyard_estate", spacing:768, separation:224, salt:140070, biomes:["minecraft:plains", "minecraft:sunflower_plains", "minecraft:meadow", "minecraft:forest", "realscale:forest_steppe", "realscale:woodland_meadow", "realscale:temperate_to_birch"]],
+            [id:"sheepfold_ranch", spacing:768, separation:224, salt:140071, biomes:["minecraft:plains", "minecraft:meadow", "minecraft:savanna", "realscale:forest_steppe", "realscale:shrub_prairie", "realscale:wet_meadow", "realscale:semi_arid_scrubland"]],
+            [id:"charcoal_burners_camp", spacing:768, separation:224, salt:140072, biomes:["minecraft:forest", "minecraft:taiga", "minecraft:birch_forest", "minecraft:old_growth_spruce_taiga", "realscale:pine_oak_mosaic", "realscale:birch_parkland"]],
+            [id:"fishing_village_compound", spacing:896, separation:256, salt:140073, biomes:["minecraft:beach", "minecraft:stony_shore", "minecraft:river", "realscale:coastal_heath", "realscale:coastal_dune_meadow", "realscale:gravel_shore_fringe", "realscale:tropical_littoral_forest"]],
+            [id:"hilltop_manor", spacing:896, separation:256, salt:140074, biomes:["minecraft:forest", "minecraft:dark_forest", "minecraft:meadow", "minecraft:windswept_hills", "realscale:woodland_meadow", "realscale:montane_oak_foothills", "realscale:subalpine_woodland"]],
+            [id:"frontier_fort", spacing:896, separation:256, salt:140075, biomes:["minecraft:plains", "minecraft:taiga", "minecraft:savanna", "minecraft:forest", "realscale:forest_steppe", "realscale:shrub_prairie", "realscale:pine_oak_mosaic"]],
+            [id:"railway_depot", spacing:896, separation:256, salt:140076, biomes:["minecraft:plains", "minecraft:meadow", "minecraft:forest", "realscale:forest_steppe", "realscale:riverine_woodland", "realscale:woodland_meadow"]],
+            [id:"orchard_cider_estate", spacing:768, separation:224, salt:140077, biomes:["minecraft:plains", "minecraft:meadow", "minecraft:flower_forest", "minecraft:forest", "realscale:forest_steppe", "realscale:woodland_meadow", "realscale:riverine_woodland"]],
+            [id:"riverside_sawmill", spacing:896, separation:256, salt:140078, biomes:["minecraft:river", "minecraft:forest", "minecraft:taiga", "realscale:riverine_woodland", "realscale:floodplain_margin", "realscale:wet_meadow", "realscale:seasonal_floodforest"]],
+            [id:"marsh_reed_hamlet", spacing:896, separation:256, salt:140079, biomes:["minecraft:swamp", "minecraft:mangrove_swamp", "minecraft:river", "realscale:wet_meadow", "realscale:marshy_woodland", "realscale:reed_marsh_edge", "realscale:seasonal_floodforest"]],
+        ]
+
+        architectureProfiles.each { profile ->
+            def id = profile.id
+            def poolId = "realscale:architecture/" + id
+            def structureId = "realscale:" + id
+
+            writeArchitectureJson("data/realscale/worldgen/structure/" + id + ".json", [
+                type:"minecraft:jigsaw",
+                biomes:"#realscale:has_structure/" + id,
+                step:"surface_structures",
+                spawn_overrides:[:],
+                terrain_adaptation:"none",
+                start_pool:poolId,
+                size:0,
+                start_height:[absolute:0],
+                project_start_to_heightmap:"WORLD_SURFACE_WG",
+                max_distance_from_center:80,
+                use_expansion_hack:false,
+                liquid_settings:"ignore_waterlogging"
+            ])
+
+            writeArchitectureJson("data/realscale/worldgen/template_pool/architecture/" + id + ".json", [
+                fallback:"minecraft:empty",
+                elements:[[
+                    weight:1,
+                    element:[
+                        element_type:"minecraft:single_pool_element",
+                        location:poolId,
+                        processors:"minecraft:empty",
+                        projection:"rigid"
+                    ]
+                ]]
+            ])
+
+            writeArchitectureJson("data/realscale/worldgen/structure_set/" + id + ".json", [
+                structures:[[structure:structureId, weight:1]],
+                placement:[
+                    type:"minecraft:random_spread",
+                    salt:profile.salt,
+                    separation:profile.separation,
+                    spacing:profile.spacing,
+                    spread_type:"linear"
+                ]
+            ])
+
+            writeArchitectureJson("data/realscale/tags/worldgen/biome/has_structure/" + id + ".json", [
+                replace:false,
+                values:profile.biomes
+            ])
         }
     }
 }

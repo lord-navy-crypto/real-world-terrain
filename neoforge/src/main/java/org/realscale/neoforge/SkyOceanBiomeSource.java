@@ -40,23 +40,28 @@ public final class SkyOceanBiomeSource extends BiomeSource {
             sites.clear();
         }
     }
+    private static BiomeSource unwrapOceanClassificationSource(BiomeSource candidate) {
+        // New canonical presets compose identity/decorator wrappers around the
+        // vanilla source. Unwrap them for offshore-ocean probes so those probes
+        // do not accidentally run the expensive ecotone boundary-ray searches.
+        if(candidate instanceof NaturalEcotoneBiomeSource eco)
+            return unwrapOceanClassificationSource(eco.offshoreOceanClassificationSource());
+        if(candidate instanceof GeoWondersBiomeSource wonders)
+            return unwrapOceanClassificationSource(wonders.wrappedSource());
+        if(candidate instanceof CaveDepthBiomeSource cave)
+            return unwrapOceanClassificationSource(cave.wrappedSource());
+        return candidate;
+    }
     private SkyOceanBiomeSource(BiomeSource source,HolderGetter<Biome> biomes) {
         this.source=source;
-        this.oceanClassificationSource=source instanceof NaturalEcotoneBiomeSource eco
-                ? eco.offshoreOceanClassificationSource() : source;
+        this.oceanClassificationSource=unwrapOceanClassificationSource(source);
         blossomIsle=biomes.getOrThrow(ResourceKey.create(Registries.BIOME,
             ResourceLocation.fromNamespaceAndPath("realscale","sky_blossom_isles")));
     }
     private BiomeSource source(){return source;}
-    /** Preserve sky island placement for nested optional invasion presets. */
+    /** Preserve sky island placement for nested optional Geo Wonders presets. */
     public boolean containsGeoWonders() {
         return source instanceof GeoWondersBiomeSource;
-    }
-    public boolean containsCrossRealm() {
-        return source instanceof CrossRealmBiomeSource
-                || source instanceof CrossRealmShowcaseBiomeSource
-                || source instanceof GeoWondersBiomeSource wonders
-                   && wonders.containsCrossRealm();
     }
     @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {

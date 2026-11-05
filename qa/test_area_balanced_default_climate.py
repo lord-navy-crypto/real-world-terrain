@@ -1,37 +1,95 @@
 import json
 import unittest
 from pathlib import Path
+
 ROOT=Path(__file__).resolve().parents[1]
 NOISE=ROOT/"neoforge/src/main/resources/data/realscale/worldgen/noise_settings"
 SOURCE=ROOT/"neoforge/src/main/java/org/realscale/neoforge"
-class AreaBalancedDefaultClimateTest(unittest.TestCase):
-    def test_all_four_default_profiles_actually_use_area_balance(self):
-        for name in ("tva_natural_smoothed","tva_alpine_smoothed",
-                     "tva_canyon_smoothed","usgs_big_sur_v2"):
+
+SURFACE_PROFILES=(
+    "tva_natural_smoothed",
+    "tva_alpine_smoothed", "tva_canyon_smoothed",
+    "tva_alpine_fitted", "tva_canyon_fitted",
+    "tva_dune_fitted", "tva_glacial_fitted",
+    "tva_karst_fitted", "tva_volcanic_fitted",
+    "usgs_big_sur_v2",
+)
+
+class NorthSouthDefaultClimateTest(unittest.TestCase):
+    def test_every_shipped_surface_profile_uses_signed_north_south_latitude(self):
+        for name in SURFACE_PROFILES:
             with self.subTest(name=name):
                 d=json.loads((NOISE/(name+".json")).read_text())
                 temp=d["noise_router"]["temperature"]
                 self.assertEqual(temp["type"],"realscale:climate_budget")
-                adjusted=temp["adjusted"]
-                if name!="usgs_big_sur_v2":
-                    self.assertEqual(adjusted["type"],"realscale:mountain_basin_temperature")
-                    self.assertGreater(adjusted["warmth"],0)
-                    radial=adjusted["base"]
-                else:
-                    radial=adjusted
-                self.assertEqual(radial["type"],"realscale:radial_latitude_temperature")
-                self.assertTrue(radial["area_balanced"])
-                self.assertTrue(radial["balanced"])
-                self.assertEqual(radial["pole_distance"],8192)
-                self.assertGreater(radial["altitude_cooling"],0)
-                self.assertEqual(radial["base"]["type"],"minecraft:add")
-                self.assertEqual(radial["base"]["argument1"],temp["original"])
+                def nodes(x):
+                    if isinstance(x,dict):
+                        yield x
+                        for value in x.values():
+                            yield from nodes(value)
+                    elif isinstance(x,list):
+                        for value in x:
+                            yield from nodes(value)
+                latitude=[x for x in nodes(temp) if x.get("type")=="realscale:latitude_temperature"]
+                radial=[x for x in nodes(temp) if x.get("type")=="realscale:radial_latitude_temperature"]
+                self.assertEqual(len(latitude),1,"must contain exactly one signed latitude node")
+                self.assertEqual(radial,[],"radial latitude must not drive a shipped surface profile")
+                lat=latitude[0]
+                self.assertEqual(lat["equator_z"],0)
+                self.assertEqual(lat["pole_distance"],500098)
+                self.assertEqual(lat["strength"],0.58)
                 self.assertEqual(d["sea_level"],63)
                 self.assertEqual(d["noise_router"]["final_density"]["type"],
                                  "realscale:grand_overworld_caverns")
-    def test_older_radial_modes_keep_unmodified_math(self):
+
+    def test_all_pr25_climate_variants_use_signed_north_south_latitude(self):
+        for name in ("tva_pr25_natural_climate", "tva_pr25_alpine_climate",
+                     "tva_pr25_canyon_climate", "tva_pr25_measured_climate"):
+            with self.subTest(name=name):
+                path=ROOT/"neoforge/src/main/resources/data/realscale/worldgen/density_function"/name/"biome_temperature.json"
+                root=json.loads(path.read_text())
+                found=[]
+                def walk(x):
+                    if isinstance(x,dict):
+                        if x.get("type") in ("realscale:latitude_temperature",
+                                             "realscale:radial_latitude_temperature"):
+                            found.append(x)
+                        for value in x.values():
+                            walk(value)
+                    elif isinstance(x,list):
+                        for value in x:
+                            walk(value)
+                walk(root)
+                self.assertEqual(len(found),1)
+                self.assertEqual(found[0]["type"],"realscale:latitude_temperature")
+                self.assertEqual(found[0]["equator_z"],0)
+                self.assertEqual(found[0]["pole_distance"],500098)
+
+    def test_1_to_20_is_climate_only_and_world_z_remains_unscaled(self):
+        math_source=(SOURCE/"GeoMath.java").read_text()
+        latitude_source=(SOURCE/"LatitudeTemperatureDensity.java").read_text()
+        self.assertIn("EARTH_QUARTER_MERIDIAN_METERS = 10_001_966",math_source)
+        self.assertIn("CLIMATE_LATITUDE_COMPRESSION = 20",math_source)
+        self.assertIn("CLIMATE_POLE_DISTANCE_BLOCKS",math_source)
+        self.assertIn("GeoMath.latitudeDeg(ctx.blockZ(),equatorZ,poleDistance)",latitude_source)
+        self.assertEqual(round(10_001_966/20),500_098)
+        # The world coordinate itself remains the direct one-block/one-metre Z.
+        self.assertNotIn("ctx.blockZ()/20",latitude_source)
+        self.assertNotIn("ctx.blockZ()*20",latitude_source)
+
+    def test_natural_preserves_mountain_basin_and_climate_budget_layers(self):
+        d=json.loads((NOISE/"tva_natural_smoothed.json").read_text())
+        temp=d["noise_router"]["temperature"]
+        self.assertEqual(temp["adjusted"]["type"],"realscale:mountain_basin_temperature")
+        self.assertEqual(temp["adjusted"]["warmth"],0.1)
+        self.assertEqual(temp["max_cooling"],0.66)
+        self.assertEqual(temp["max_warming"],0.34)
+
+    def test_older_radial_math_remains_available_for_explicit_opt_in_modes(self):
         source=(SOURCE/"RadialLatitudeTemperatureDensity.java").read_text()
         self.assertIn('optionalFieldOf("area_balanced",false)',source)
         self.assertIn("GeoMath.balancedRadialLatitudeDeg",source)
         self.assertIn("GeoMath.areaBalancedRadialLatitudeDeg",source)
-if __name__=="__main__":unittest.main()
+
+if __name__=="__main__":
+    unittest.main()

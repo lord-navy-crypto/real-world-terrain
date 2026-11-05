@@ -1,4 +1,4 @@
-name: TVA experimental terrain smoothing A/B proof
+name: RealScale experimental terrain smoothing A/B proof
 on:
   pull_request:
     paths: ['neoforge/**', 'qa/**', '.github/workflows/tva-smoothing-probe.yml']

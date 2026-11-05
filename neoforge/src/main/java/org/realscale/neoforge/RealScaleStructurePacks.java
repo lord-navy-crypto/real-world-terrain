@@ -15,7 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Six BUILT-IN (not external ZIP) vanilla structure-density packs.
+ * Built-in optional structure packs: six vanilla density presets plus a
+ * mixed licensed/original RealScale architecture library.
  *
  * The selected default packs are enabled by the pack repository for NEW worlds;
  * every other density is selectable from Create World > Data Packs. Packs are
@@ -81,6 +82,9 @@ public final class RealScaleStructurePacks {
                     "RealScale | Nether + End Structures " + ratio + "x",
                     current.otherDimensions() == ratio);
         }
+        // Explicit opt-in: do not add buildings to ordinary vanilla worlds by default.
+        registerOne(event, "architecture_pilot",
+                "RealScale | Architecture Library (58 Structures)", false);
     }
 
     private static void registerOne(AddPackFindersEvent event, String id,

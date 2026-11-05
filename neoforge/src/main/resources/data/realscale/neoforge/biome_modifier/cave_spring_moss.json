@@ -1,0 +1,13 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:lush_caves",
+    "realscale:underground_springs",
+    "realscale:damp_limestone_caverns",
+    "minecraft:meadow",
+    "minecraft:forest",
+    "minecraft:swamp"
+  ],
+  "features": "realscale:cave_spring_moss",
+  "step": "underground_decoration"
+}

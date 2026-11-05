@@ -100,7 +100,7 @@ def test_natural_ecotone_preset():
     assert load(PRESETS / "realism_max.json") == original
     tag = load(ROOT.parent / "minecraft/tags/worldgen/world_preset/normal.json")
     assert (PRESETS / "realism_max_ecotones.json").is_file()  # historical preset remains available
-    assert "realscale:tva_sacred_timeline_three_realms" in tag["values"]
+    assert "realscale:natural_three_realms" in tag["values"]
 
 def test_biome_lab():
     d = load(PRESETS / "biome_lab.json")
@@ -135,7 +135,9 @@ def test_supported_microstructures():
 def test_all_custom_biome_carvers():
     # Minecraft 1.21.1 expects a carving-stage map, not the later-version list.
     all_biomes = list(BIOMES.glob("*.json"))
-    assert len(all_biomes) == 67, len(all_biomes)
+    more=all((BIOMES/(n+".json")).is_file()
+        for n in ("glowing_moss_grottos","fossil_limestone_caves"))
+    assert len(all_biomes)==(69 if more else 67),len(all_biomes)
     for path in all_biomes:
         biome = load(path)
         assert isinstance(biome.get("carvers"), dict), path
@@ -217,7 +219,7 @@ def test_grand_dimensions():
     mod_java = (ROOT.parents[2] / "java/org/realscale/neoforge/RealScaleMod.java").read_text()
     assert '"grand_end_density"' in mod_java
     tag = load(ROOT.parent/"minecraft/tags/worldgen/world_preset/normal.json")
-    assert "realscale:tva_sacred_timeline_three_realms" in tag["values"]
+    assert "realscale:natural_three_realms" in tag["values"]
     assert (PRESETS/"realism_max_three_realms.json").exists()
     for file in ("realism_max.json","realism_max_ecotones.json"):
         assert load(PRESETS/file)["dimensions"]["minecraft:the_nether"]["generator"]["settings"] == "minecraft:nether"

@@ -1,4 +1,4 @@
-name: TVA multi-seed 4-family real terrain and cave quality QA
+name: RealScale multi-seed 4-family real terrain and cave quality QA
 on:
   pull_request:
     paths: ['neoforge/**', 'qa/**', '.github/workflows/multi-seed-server.yml']

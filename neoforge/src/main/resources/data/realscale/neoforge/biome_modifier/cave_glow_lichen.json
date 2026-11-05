@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "realscale:glowing_moss_grottos",
+    "realscale:deep_fungal_caverns"
+  ],
+  "features": "realscale:cave_glow_lichen",
+  "step": "underground_decoration"
+}

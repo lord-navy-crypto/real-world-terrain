@@ -17,6 +17,10 @@ from pathlib import Path
 import subprocess
 import sys
 
+EARTH_QUARTER_MERIDIAN_METERS = 10_001_966
+CLIMATE_LATITUDE_COMPRESSION = 20
+CLIMATE_PREVIEW_POLE_DISTANCE_BLOCKS = round(EARTH_QUARTER_MERIDIAN_METERS / CLIMATE_LATITUDE_COMPRESSION)
+
 PRESETS = (
     "realism_max", "georeal_ultimate", "himalayan", "grand_canyon",
     "usgs_big_sur", "usgs_big_sur_v2", "continental", "realistic_mountains", "ultimate",
@@ -58,7 +62,7 @@ CHINESE = {
     "alpine":"高山地貌（喜马拉雅 + 真实山脉）",
     "canyon":"峡谷台地（大峡谷 + 大陆地形）",
 }
-NORMAL = ("realism_max","himalayan","grand_canyon","usgs_big_sur_v2")
+NORMAL = ("natural_three_realms","alpine_three_realms","canyon_three_realms","glacial_three_realms","volcanic_three_realms","karst_three_realms","dune_three_realms")
 GEO_ROOT = Path("data/realscale/worldgen")
 LABEL_ROOT = Path("assets/minecraft/lang")
 TAG_ROOT = Path("data/minecraft/tags/worldgen/world_preset")
@@ -135,7 +139,7 @@ def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ri
     if river_grade not in (0,3,6,9):
         raise ValueError("River slope must be Off (0), Conservative (3), Standard (6) or Flexible (9)")
 
-def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False):
+def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False, universal_biomes=False):
     validate(preset,relief,elevation,caves,river_grade,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology)
     if type(fantasy_dimensions) is not bool or (fantasy_dimensions and preset not in FAMILIES):
         raise ValueError("Fantasy dimensions require a merged Lab family and a boolean setting")
@@ -173,6 +177,10 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                     options["cold_limit"]=cold_limit
         if basin:
             options["basin"]=basin
+    # Opt-in exported profiles use a new content-addressed ID: do not silently
+    # change the biome-source graph of historically generated saved worlds.
+    if universal_biomes and preset in FAMILIES:
+        options["biome_source_revision"]="canonical_universal_v1"
     checksum=hashlib.sha256(json.dumps(options,sort_keys=True).encode()).hexdigest()[:10]
     name="lab_"+preset+"_"+checksum+"_g"+str(river_grade)
     density_folder="terrain_lab/"+name
@@ -427,28 +435,37 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
             if "continentalness" in target:
                 target["continentalness"][0]=0.12
     # The original Terrain Lab used legacy presets and VANILLA Nether/End.
-    # Every NEW generated TVA profile must inherit the merged three realms
+    # Every NEW generated RealScale profile must inherit the merged three realms
     # and ocean-aware ecotones, never silently regress to vanilla dimensions.
-    tva_families={
-        "landscape":"tva_sacred_timeline_three_realms",
-        "alpine":"tva_alpine_three_realms",
-        "canyon":"tva_canyon_three_realms",
+    # New Terrain Lab worlds inherit the canonical RealScale biome-source
+    # graph (sky ocean, geology, ecotones, cave-depth habitats), rather than
+    # the historical preset graph kept only for old saved-world compatibility.
+    realscale_families={
+        "landscape":"natural_three_realms",
+        "alpine":"alpine_three_realms",
+        "canyon":"canyon_three_realms",
     }
-    if preset in tva_families:
-        original_preset=jread(root,GEO_ROOT/"world_preset"/(tva_families[preset]+".json"))
+    if universal_biomes:
+        realscale_families = {
+            "landscape": "natural_three_realms",
+            "alpine": "alpine_three_realms",
+            "canyon": "canyon_three_realms",
+        }
+    if preset in realscale_families:
+        original_preset=jread(root,GEO_ROOT/"world_preset"/(realscale_families[preset]+".json"))
     else:
         original_preset=jread(root,GEO_ROOT/"world_preset"/(source+".json"))
     world_preset=copy.deepcopy(original_preset)
     world_preset["dimensions"]["minecraft:overworld"]["generator"]["settings"]="realscale:"+name
     # Legacy fantasyDimensions drafts remain readable, but must not downgrade
-    # the selected TVA Grand Nether/End from 512 blocks back to 256.
+    # the RealScale Grand Nether/End from 512 blocks back to 256.
     # The optional 256-height fantasy presets remain in the registry as
-    # independent historical experiments, never replacing the canonical TVA.
-    if fantasy_dimensions and preset in tva_families:
+    # independent historical experiments, never replacing the canonical RealScale presets.
+    if fantasy_dimensions and preset in realscale_families:
         assert world_preset["dimensions"]["minecraft:the_nether"]["generator"]["settings"]=="realscale:grand_nether"
         assert world_preset["dimensions"]["minecraft:the_end"]["generator"]["settings"]=="realscale:grand_end"
     elif fantasy_dimensions:
-        raise ValueError("Legacy fantasy dimension overrides require TVA family settings")
+        raise ValueError("Legacy fantasy dimension overrides require RealScale family settings")
     output={
         GEO_ROOT/"density_function"/density_folder/"height_signal.json":height,
         GEO_ROOT/"density_function"/density_folder/"terrain_density.json":terrain,
@@ -495,7 +512,7 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
                     "type":"realscale:latitude_temperature",
                     "base":temp_value,
                     "equator_z":equator_z,
-                    "pole_distance":10_001_966 if latitude=="earth" else 16_384,
+                    "pole_distance":EARTH_QUARTER_MERIDIAN_METERS if latitude=="earth" else CLIMATE_PREVIEW_POLE_DISTANCE_BLOCKS,
                     "strength":round(latitude_strength/100.0,5)
                 }
         if valley:
@@ -535,8 +552,8 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         output[GEO_ROOT/"density_function"/density_folder/"biome_temperature.json"]=temp_value
     return name,options,output
 
-def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False):
-    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology)
+def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False, universal_biomes=False):
+    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology,universal_biomes)
     paths={path:serialized(obj) for path,obj in output.items()}
     preset_id="realscale:"+name
     for tag in ("normal","extended"):
@@ -567,7 +584,7 @@ def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_
             if basin:
                 label+=f" | basin warmth {basin}%"
             if fantasy_dimensions:
-                label+= " | Fantasy Nether + End expansion (EXPERIMENTAL)"
+                label+= " | Experimental variant (keeps 512-block Grand Nether/End)"
             if lithostitched_blend and blend_percent and not lithostitched_geology:
                 label+= " | Lithostitched adaptive mix"
             if lithostitched_geology:
@@ -645,7 +662,7 @@ def gui(root, launch):
     slider("Warped vertical strata solidity (0..20)",strata,0,20,1)
     slider("Altitude-aware biome cooling (0..100)",climate,0,100,1)
     slider("Optional valley-floor warming (0..100)",valley,0,100,5)
-    chooser("Latitude climate cycle",latitude,("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area","radial_equal_area_single_pole"))
+    chooser("Latitude climate cycle (temperature only; preview = 1:20; terrain stays 1 block = 1 m)",latitude,("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area","radial_equal_area_single_pole"))
     slider("Latitude temperature strength (0..100)",latitude_strength,0,100,5)
     slider("Equator origin Z / ring center Z",equator_z,-4096,4096,128)
     slider("Concentric ring center X",center_x,-4096,4096,128)
@@ -700,7 +717,7 @@ def main(argv=None):
     parser.add_argument("--valley-warming",type=int,default=0,
                         help="Opt-in bounded relative-valley temperature boost (0..100)")
     parser.add_argument("--latitude-mode",choices=("off","earth","preview","radial_earth","radial_preview","radial_balanced","radial_equal_area","radial_equal_area_single_pole"),default="off",
-                        help="meridional or concentric latitude; Earth = 1m/block, preview = pole at radius 16,384 blocks")
+                        help="temperature latitude only: earth = 1:1 (10,001,966 blocks/equator-to-pole); preview = 1:20 climate mapping (500,098 blocks); terrain/geographic coordinates remain 1 block = 1 metre")
     parser.add_argument("--latitude-strength",type=int,default=70,help="Latitude climate strength 0..100")
     parser.add_argument("--equator-z",type=int,default=0,
                         help="World Z of latitude zero (or radial ring center Z). Not the future auto-selected spawn.")
@@ -727,7 +744,7 @@ def main(argv=None):
         print("Legacy compatible algorithms:",", ".join(LEGACY_EDITABLE))
         print("Tuning modes:",", ".join(PROFILES))
         print("Adjustable: mix 0..50%, ridge 0..40, erosion 0..30, strata 0..20, biome cooling 0..100, valley warming 0..100, latitude mode off/earth/preview/radial_earth/radial_preview/radial_balanced/radial_equal_area/radial_equal_area_single_pole, latitude strength 0..100, equator-z, basin warming 0..100, relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
-        print("USGS Big Sur v2 is the read-only measured DEM. TVA's 512-block realms remain enabled.")
+        print("USGS Big Sur v2 is the read-only measured DEM. RealScale's 512-block dimension layouts remain enabled.")
         print("Optional Lithostitched terrain blending: --lithostitched-blend (merged families).")
         print("Deep geology suite: --lithostitched-geology (nonzero merged blend required).")
         return 0

@@ -9,18 +9,25 @@ checks=json.loads((ROOT/'docs/SHA256SUMS.json').read_text())
 # extended in this experimental branch with additional Feature registrations.
 # Check its required historic behavior, and keep all OTHER original hashes strict.
 modified_entrypoint='neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java'
-modified_preset_tag='neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json'
+modified_preset_tags={
+ 'neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json',
+ 'neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/extended.json',
+ }
 modified_density='neoforge/src/main/java/org/realscale/neoforge/RealDemDensity.java'
 for name,want in checks.items():
- if name==modified_preset_tag:
+ if name in modified_preset_tags:
   tag=json.loads((ROOT/name).read_text())
-  assert tag.get('values',[]) == [
-   'realscale:tva_sacred_timeline_three_realms',
-   'realscale:tva_alpine_three_realms',
-   'realscale:tva_canyon_three_realms',
-   'realscale:tva_measured_three_realms',
-   'realscale:tva_wonders_invasion_three_realms']
-  print('INTENTIONAL MODIFICATION: four curated TVA families plus opt-in woven features')
+  expected=[
+   'realscale:natural_three_realms',
+   'realscale:alpine_three_realms',
+   'realscale:canyon_three_realms',
+   'realscale:glacial_three_realms',
+   'realscale:volcanic_three_realms',
+   'realscale:karst_three_realms',
+   'realscale:dune_three_realms']
+  assert tag.get('values',[])==expected,(name,tag.get('values'))
+
+  print('INTENTIONAL MODIFICATION: Natural plus six visible data-fitted test families; original USGS hidden')
   continue
  if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):
   # Preserve the exact historical text for every legacy ID while allowing
@@ -30,20 +37,20 @@ for name,want in checks.items():
    old=json.loads(oldjar.read(rel))
   new=json.loads((ROOT/name).read_text())
   assert all(new.get(key)==value for key,value in old.items()),name
-  for preset in ('tva_sacred_timeline_three_realms','tva_alpine_three_realms',
-                 'tva_canyon_three_realms','tva_measured_three_realms'):
+  for preset in ('natural_three_realms','alpine_three_realms',
+                 'canyon_three_realms','glacial_three_realms','volcanic_three_realms','karst_three_realms','dune_three_realms'):
    assert new.get('generator.realscale.'+preset), (name,preset)
-  print('INTENTIONAL MODIFICATION: additive TVA labels, historical labels unchanged')
+  print('INTENTIONAL MODIFICATION: additive RealScale labels, historical labels unchanged')
   continue
  if name=='neoforge/src/main/resources/META-INF/neoforge.mods.toml':
   descriptor=(ROOT/name).read_text()
   for required in ('modLoader="javafml"','modId="realscale"',
-                   'version="2.0.0-tva-preview.1"',
+                   'version="2.0.0-preview.2-test.9"',
                    'versionRange="[21.1.0,)"',
                    'versionRange="[1.21.1,1.21.2)"',
                    'modId="yet_another_config_lib_v3"'):
    assert required in descriptor,(name,required)
-  print('INTENTIONAL MODIFICATION: TVA preview metadata with intact mod/dependency IDs')
+  print('INTENTIONAL MODIFICATION: RealScale preview metadata with intact mod/dependency IDs')
   continue
  if name==modified_density:
   source=(ROOT/name).read_text()

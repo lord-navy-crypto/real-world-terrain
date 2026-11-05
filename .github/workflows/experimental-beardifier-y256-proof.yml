@@ -1,0 +1,153 @@
+name: EXPERIMENT Beardifier Y256 versus untouched vanilla A-B-A
+on:
+  push:
+    branches: [experiment/vanilla-beardifier-y256-proof]
+    paths:
+      - '.github/workflows/experimental-beardifier-y256-proof.yml'
+      - 'qa/neoforge/triage_beardifier_three_worlds.py'
+      - 'qa/test_beardifier_three_way_triage.py'
+      - 'neoforge/src/main/java/org/realscale/neoforge/mixin/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/BeardifierYExtent.java'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  y256-vanilla-aba:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - preset: tva_measured_three_realms
+            seed: 2
+          - preset: tva_sacred_timeline_three_realms
+            seed: 42
+    name: Vanilla vs Y256 original-safe skip / ${{ matrix.preset }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '21'}
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.14.3'}
+      - name: Conservative 256-Y math and 3-way persisted NBT unit tests
+        run: |
+          mkdir -p build/beardifier-y256
+          javac -d build/beardifier-y256 \
+            neoforge/src/main/java/org/realscale/neoforge/BeardifierYExtent.java \
+            neoforge/src/test/java/org/realscale/neoforge/BeardifierYExtentSmoke.java
+          java -cp build/beardifier-y256 org.realscale.neoforge.BeardifierYExtentSmoke
+          python3 -m unittest discover -s qa -p 'test_beardifier_three_way_triage.py' -v
+          python3 -m unittest discover -s qa -p 'test_beardifier_anvil_semantics.py' -v
+          python3 -m unittest discover -s qa -p 'test_beardifier_three_runs.py' -v
+      - name: Prepare vanilla / Y256 / vanilla / verified-Y256 worlds
+        env:
+          PRESET: ${{ matrix.preset }}
+          SEED: ${{ matrix.seed }}
+        run: |
+          for variant in before after control verify; do
+            git worktree add --detach "$RUNNER_TEMP/realscale-$variant" "$GITHUB_SHA"
+            root="$RUNNER_TEMP/realscale-$variant/neoforge"
+            for dir in run run/server run/gametestserver; do
+              mkdir -p "$root/$dir"
+              printf 'eula=true\n' > "$root/$dir/eula.txt"
+              cat > "$root/$dir/server.properties" <<PROPERTIES
+          level-name=world
+          level-type=realscale:$PRESET
+          level-seed=$SEED
+          generate-structures=true
+          spawn-protection=0
+          view-distance=3
+          simulation-distance=3
+          max-players=1
+          max-tick-time=-1
+          online-mode=true
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
+          PROPERTIES
+            done
+          done
+      - name: Original vanilla without Beardifier Mixin
+        env:
+          PRESET: ${{ matrix.preset }}
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=false
+        run: |
+          cd "$RUNNER_TEMP/realscale-before/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Candidate exact vanilla-height-envelope skip Y256
+        env:
+          PRESET: ${{ matrix.preset }}
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=true -Drealscale.experimental.beardifier.verify=false
+        run: |
+          cd "$RUNNER_TEMP/realscale-after/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Repeat vanilla completely without any Mixin
+        env:
+          PRESET: ${{ matrix.preset }}
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=false
+        run: |
+          cd "$RUNNER_TEMP/realscale-control/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: Compare complete-load vanilla-Y256-vanilla and baseline drift
+        run: |
+          python3 qa/neoforge/compare_beardifier_three_runs.py \
+            "$RUNNER_TEMP/realscale-before/neoforge/build/rcon_distant_route_timing.json" \
+            "$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_timing.json" \
+            "$RUNNER_TEMP/realscale-control/neoforge/build/rcon_distant_route_timing.json" \
+            "$RUNNER_TEMP/realscale-y256-aba.json"
+      - name: Compare EVERY persisted voxel against two vanilla baseline worlds
+        continue-on-error: true
+        run: |
+          python3 qa/neoforge/triage_beardifier_three_worlds.py \
+            "$RUNNER_TEMP/realscale-before/neoforge" \
+            "$RUNNER_TEMP/realscale-after/neoforge" \
+            "$RUNNER_TEMP/realscale-control/neoforge" \
+            "$RUNNER_TEMP/realscale-y256-anvil-triage.json"
+      - name: Independent Y256-only original vanilla replay verifier
+        env:
+          PRESET: ${{ matrix.preset }}
+          JAVA_TOOL_OPTIONS: -Drealscale.experimental.beardifier.ycull=true -Drealscale.experimental.beardifier.verify=true
+        run: |
+          cd "$RUNNER_TEMP/realscale-verify/neoforge"
+          python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
+      - name: REQUIRE actual sampled zero-contribution original replays
+        run: |
+          logfile="$RUNNER_TEMP/realscale-verify/neoforge/build/rcon_distant_route_server.log"
+          grep 'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS' "$logfile"
+          grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=true' "$logfile"
+          python3 - "$logfile" <<'PY'
+          import re,sys
+          s=open(sys.argv[1],encoding="utf-8",errors="replace").read()
+          match=re.search(r'REALSCALE_BEARDIFIER_DIRECT_PARITY_PASS samples=(\d+) skipped=(\d+)',s)
+          assert match,"Missing actual original Beardifier replay evidence"
+          samples,skipped=map(int,match.groups())
+          assert samples>0 and skipped>0,(samples,skipped)
+          print("REALSCALE_BEARDIFIER_Y256_ORIGINAL_PARITY_PASS",match.groups())
+          PY
+      - name: Assert both references have NO Mixin
+        run: |
+          for name in before control; do
+            grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=false' \
+              "$RUNNER_TEMP/realscale-$name/neoforge/build/rcon_distant_route_server.log"
+          done
+          grep -q 'REALSCALE_EXPERIMENT_BEARDIFIER_MIXIN_DECISION: .* enabled=true' \
+            "$RUNNER_TEMP/realscale-after/neoforge/build/rcon_distant_route_server.log"
+      - name: Preserve A/B/A timings, logs and triage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Experimental-Beardifier-Y256-Proof-${{ matrix.preset }}
+          path: |
+            ${{ runner.temp }}/realscale-y256-aba.json
+            ${{ runner.temp }}/realscale-y256-anvil-triage.json
+            ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-control/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-verify/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_timing.json
+            ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_timing.json
+            ${{ runner.temp }}/realscale-control/neoforge/build/rcon_distant_route_timing.json
+          if-no-files-found: warn

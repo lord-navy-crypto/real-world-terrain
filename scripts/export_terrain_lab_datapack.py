@@ -110,7 +110,9 @@ def export(jar: Path, draft: Path, output: Path,
     with tempfile.TemporaryDirectory(prefix="realscale_export_") as temporary:
         root = Path(temporary)
         _copy_jar_resources(jar, root)
-        name, saved_options, files = apply(root, **options)
+        # Exported new worlds inherit the canonical biome decorators while
+        # legacy local profiles retain their previous hash and source graph.
+        name, saved_options, files = apply(root, **options, universal_biomes=True)
         profile_id = "realscale:" + name
         generated = sorted((Path(item) for item in files
                             if str(item).startswith("data/realscale/worldgen/")

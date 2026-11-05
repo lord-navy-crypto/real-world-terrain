@@ -28,7 +28,8 @@ public final class RealScaleClientFrameProfiler {
     private RealScaleClientFrameProfiler(){}
 
     private static final boolean ENABLED =
-            Boolean.getBoolean("realscale.client.fps.profile");
+            Boolean.parseBoolean(System.getProperty(
+                    "realscale.client.fps.profile","true"));
     private static final long WARMUP_NANOS=10_000_000_000L;
     private static final long REPORT_NANOS=30_000_000_000L;
     private static final String SCENE = safeLabel(System.getProperty(
