@@ -19,7 +19,7 @@ def prepare_nbt_diagnostics():
     sys.path.insert(0, str(ROOT.parent / "scripts"))
     from generate_original_architecture import Building, build_forest_ranger_lodge
 
-    pack = ROOT / "run/architecture-58-smoke/datapacks/realscale_nbt_diagnostics"
+    pack = ROOT / "run/architecture-pilot/datapacks/realscale_nbt_diagnostics"
     (pack / "data/realscale/structure/diagnostics").mkdir(parents=True, exist_ok=True)
     (pack / "pack.mcmeta").write_text(
         '{"pack":{"pack_format":48,"description":"Temporary RealScale NBT diagnostics"}}',
@@ -258,7 +258,7 @@ try:
             if diagnostic_pack not in enabled_diag:
                 sock.settimeout(90)
                 enabled_response = rcon_command(
-                    sock, command_id, f"datapack enable {diagnostic_pack}"
+                    sock, command_id, f'datapack enable "{diagnostic_pack}"'
                 )
                 sock.settimeout(8)
                 print("RCON enable NBT diagnostic pack:", enabled_response, flush=True)
