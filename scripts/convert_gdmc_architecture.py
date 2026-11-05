@@ -222,8 +222,9 @@ def string_payload(value):
 
 def int_payload(value): return struct.pack(">i", value)
 
-def int_array_payload(values):
-    return struct.pack(">i", len(values)) + b"".join(struct.pack(">i", int(v)) for v in values)
+def int_list_payload(values):
+    """Encode BlockPos/Vec3i coordinates as TAG_List<TAG_Int>, not TAG_Int_Array."""
+    return list_payload(3, [int_payload(v) for v in values])
 
 def compound_payload(entries):
     return b"".join(tag(tag_type, name, payload) for tag_type, name, payload in entries) + b"\x00"
@@ -271,13 +272,13 @@ def convert_schematic(source, output):
     block_payloads = []
     for x, y, z, state_index in entries:
         block_payloads.append(compound_payload([
-            (11, "pos", int_array_payload([x, y, z])),
+            (9, "pos", int_list_payload([x, y, z])),
             (3, "state", int_payload(state_index)),
         ]))
 
     root_fields = [
         (3, "DataVersion", int_payload(DATA_VERSION)),
-        (11, "size", int_array_payload([width, height, length])),
+        (9, "size", int_list_payload([width, height, length])),
         (9, "palette", list_payload(10, palette_payloads)),
         (9, "blocks", list_payload(10, block_payloads)),
         (9, "entities", list_payload(10, [])),

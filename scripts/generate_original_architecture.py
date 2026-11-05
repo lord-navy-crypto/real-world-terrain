@@ -99,13 +99,13 @@ class Building:
                 for x in range(self.width):
                     entry = self.blocks[(x, y, z)]
                     block_tags.append(compound_payload([
-                        (11, "pos", int_array_payload((x, y, z))),
+                        (9, "pos", int_list_payload((x, y, z))),
                         (3, "state", int_payload(indices[entry])),
                     ]))
 
         root = compound_payload([
             (3, "DataVersion", int_payload(DATA_VERSION)),
-            (11, "size", int_array_payload((self.width, self.height, self.length))),
+            (9, "size", int_list_payload((self.width, self.height, self.length))),
             (9, "palette", list_payload(10, palette_tags)),
             (9, "blocks", list_payload(10, block_tags)),
             (9, "entities", list_payload(10, [])),
@@ -132,8 +132,9 @@ def int_payload(value):
     return struct.pack(">i", int(value))
 
 
-def int_array_payload(values):
-    return struct.pack(">i", len(values)) + b"".join(int_payload(v) for v in values)
+def int_list_payload(values):
+    """Encode BlockPos/Vec3i coordinates as TAG_List<TAG_Int>, not TAG_Int_Array."""
+    return list_payload(3, [int_payload(v) for v in values])
 
 
 def tag(tag_type, name, payload):

@@ -2,6 +2,7 @@
 """License, batch generation, NBT, worldgen and packaging tests."""
 import gzip
 import json
+import struct
 import sys
 import unittest
 import zipfile
@@ -86,7 +87,75 @@ def read_template(path, expected_size):
     return root
 
 
+def skip_nbt_payload(data, offset, tag_type):
+    """Advance over one NBT payload without losing its encoded tag type."""
+    fixed = {1: 1, 2: 2, 3: 4, 4: 8, 5: 4, 6: 8}
+    if tag_type in fixed:
+        return offset + fixed[tag_type]
+    if tag_type in (7, 11, 12):
+        length = struct.unpack_from(">i", data, offset)[0]
+        unit = {7: 1, 11: 4, 12: 8}[tag_type]
+        return offset + 4 + length * unit
+    if tag_type == 8:
+        _value, offset = converter.read_string(data, offset)
+        return offset
+    if tag_type == 9:
+        subtype = data[offset]
+        length = struct.unpack_from(">i", data, offset + 1)[0]
+        offset += 5
+        for _ in range(length):
+            offset = skip_nbt_payload(data, offset, subtype)
+        return offset
+    if tag_type == 10:
+        while True:
+            child_type = data[offset]
+            offset += 1
+            if child_type == 0:
+                return offset
+            _name, offset = converter.read_string(data, offset)
+            offset = skip_nbt_payload(data, offset, child_type)
+    raise AssertionError(f"Unexpected NBT tag type {tag_type}")
+
+
+def compound_child(data, offset, wanted_name):
+    while True:
+        tag_type = data[offset]
+        offset += 1
+        if tag_type == 0:
+            raise AssertionError(f"NBT compound is missing {wanted_name!r}")
+        name, offset = converter.read_string(data, offset)
+        payload_offset = offset
+        if name == wanted_name:
+            return tag_type, payload_offset
+        offset = skip_nbt_payload(data, offset, tag_type)
+
+
 class ArchitecturePilotTests(unittest.TestCase):
+    def test_structure_coordinates_use_int_lists_required_by_1211_codec(self):
+        paths = sorted(LICENSED.glob("*.nbt")) + sorted(ORIGINAL.glob("*.nbt")) + sorted(BATCH.glob("*.nbt"))
+        self.assertEqual(len(paths), 58)
+        for path in paths:
+            with self.subTest(template=path.name):
+                data = gzip.decompress(path.read_bytes())
+                self.assertEqual(data[0], 10, "root must be a compound")
+                _root_name, root_offset = converter.read_string(data, 1)
+
+                size_type, size_offset = compound_child(data, root_offset, "size")
+                self.assertEqual(size_type, 9, "size must be TAG_List")
+                self.assertEqual(data[size_offset], 3, "size list elements must be TAG_Int")
+                self.assertEqual(struct.unpack_from(">i", data, size_offset + 1)[0], 3)
+
+                blocks_type, blocks_offset = compound_child(data, root_offset, "blocks")
+                self.assertEqual(blocks_type, 9, "blocks must be TAG_List")
+                self.assertEqual(data[blocks_offset], 10, "blocks list elements must be TAG_Compound")
+                self.assertGreater(struct.unpack_from(">i", data, blocks_offset + 1)[0], 0)
+
+                first_block_offset = blocks_offset + 5
+                pos_type, pos_offset = compound_child(data, first_block_offset, "pos")
+                self.assertEqual(pos_type, 9, "block pos must be TAG_List")
+                self.assertEqual(data[pos_offset], 3, "block pos list elements must be TAG_Int")
+                self.assertEqual(struct.unpack_from(">i", data, pos_offset + 1)[0], 3)
+
     def test_apache_license_and_source_provenance_are_retained(self):
         license_text = LICENSE.read_text(encoding="utf-8")
         provenance = PROVENANCE.read_text(encoding="utf-8")
