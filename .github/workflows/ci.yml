@@ -28,6 +28,8 @@ jobs:
         run: python3 qa/verify_repository.py
       - name: Validate custom biome registry resources (static)
         run: python3 scripts/check_custom_biomes.py
+      - name: Verify unified world settings preserve Sacred/Measured and export opt-in worlds
+        run: python3 -m unittest discover -s qa -p 'test_unified_realm_invasion_settings.py' -v
       - name: Validate Grand Ecology registrations and preserved dimensions
         run: python3 scripts/check_grand_ecology.py
       - name: Deterministic macro-ecology density and elevation smoke

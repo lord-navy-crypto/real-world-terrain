@@ -29,6 +29,14 @@ public final class CrossRealmBiomeSource extends BiomeSource {
         ).apply(i, CrossRealmBiomeSource::new));
 
     private static final int CELL=512;
+    // A 192-block radius covers the origin spawn platform and vanilla
+    // randomized 1st-spawn offsets. It deliberately does NOT turn the whole
+    // world into a Nether/End biome.
+    private static final long SPAWN_INVASION_RADIUS_SQUARED=192L*192L;
+    public static boolean isSpawnInvasionZone(int quartX,int quartZ) {
+        long x=(long)quartX*4L,z=(long)quartZ*4L;
+        return x*x+z*z<=SPAWN_INVASION_RADIUS_SQUARED;
+    }
     private final BiomeSource source;
     private final String target;
     private final Holder<Biome> forest, plains, meadow, cherry, taiga, netherWastes, endHighlands;
@@ -67,6 +75,16 @@ public final class CrossRealmBiomeSource extends BiomeSource {
         // Only extend an actual Nether or End biome; never overwrite ocean,
         // rivers or overworld climate, even if somebody wraps the wrong source.
         String biome=original.unwrapKey().map(k->k.location().toString()).orElse("");
+        if("overworld".equals(target) && isSpawnInvasionZone(quartX, quartZ)
+                && biome.startsWith("minecraft:")) {
+            // A guaranteed Nether/End biome at the NEW world's origin.
+            // The special starting region is small, immutable and restricted
+            // to explicit invasion world presets; all existing worlds with
+            // other saved biome-source codecs retain their original terrain.
+            // Allow the whole vertical column because the Measured terrain
+            // surface can be much higher than vanilla Y=196.
+            return (biome.hashCode() & 1) == 0 ? netherWastes : endHighlands;
+        }
         if("overworld".equals(target)) {
             // A different site population from the Nether/End imported
             // overworld habitats. Strictly land-only and opt-in.

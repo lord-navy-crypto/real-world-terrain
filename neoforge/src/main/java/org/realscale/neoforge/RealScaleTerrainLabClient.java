@@ -132,6 +132,11 @@ public final class RealScaleTerrainLabClient {
 
     private static class Draft {
         String preset = "landscape";
+        // Shared immutable next-world profile choice. Old YACL drafts default
+        // to terrain_lab and never turn on invasion implicitly.
+        String worldSource = "sacred";
+        boolean dimensionalInvasion = true;
+        boolean invasionShowcase = false;
         int blendPercent = 25;
         boolean lithostitchedBlend = false;
         boolean lithostitchedGeology = false;
@@ -183,6 +188,7 @@ public final class RealScaleTerrainLabClient {
         private static void migrateLegacyDraft(Draft d) {
             // Saved YACL drafts from v1.4.1 remain readable. These names are
             // normalized only in the next-world draft, never in existing saves.
+            if (d.worldSource == null) d.worldSource = "sacred";
             if (d.preset == null) return;
             switch (d.preset) {
                 case "realism_max", "georeal_ultimate", "ultimate" -> d.preset = "landscape";
@@ -209,6 +215,10 @@ public final class RealScaleTerrainLabClient {
         }
 
         private static boolean valid(Draft d) {
+            if (!("terrain_lab".equals(d.worldSource)
+                    || "sacred".equals(d.worldSource)
+                    || "measured".equals(d.worldSource))) return false;
+            if (d.invasionShowcase && !d.dimensionalInvasion) return false;
             if (!RealScaleStructurePacks.validOverworld(d.structureDensity)
                     || !RealScaleStructurePacks.validDimensions(d.dimensionStructureDensity))
                 return false;
@@ -243,6 +253,8 @@ public final class RealScaleTerrainLabClient {
         }
 
         void save() {
+            // Users requested invasion always enabled in every NEW unified world.
+            dimensionalInvasion = true;
             initializeProfiles();
             profiles.get(preset).copyTo(this);
             if (!valid(this)) throw new IllegalArgumentException("Terrain Lab draft is invalid");
@@ -352,9 +364,11 @@ public final class RealScaleTerrainLabClient {
 
     private static Screen createScreen(Screen parent) {
         Draft d=Draft.read();
+        // Always ON even for previously saved pre-feature drafts.
+        d.dimensionalInvasion = true;
         d.initializeProfiles();
         return YetAnotherConfigLib.createBuilder()
-            .title(Component.literal("RealScale | 4 Terrain Types / 3 Custom Families"))
+            .title(Component.literal("RealScale | Unified World Settings"))
             .category(ConfigCategory.createBuilder()
                 .name(Component.literal("Choose World Type"))
                 .option(Option.<String>createBuilder()
@@ -367,6 +381,32 @@ public final class RealScaleTerrainLabClient {
             .category(familyCategory("Natural | Landscape",d.profiles.get("landscape")))
             .category(familyCategory("Alpine | Mountains",d.profiles.get("alpine")))
             .category(familyCategory("Canyon | Plateaus",d.profiles.get("canyon")))
+            .category(ConfigCategory.createBuilder()
+                .name(Component.literal("Unified World Creation — Invasion Always ON"))
+                .option(Option.<String>createBuilder()
+                    .name(Component.literal("Base World (next new world)"))
+                    .description(description("Dimension Invasion is ALWAYS ENABLED for newly exported worlds. "
+                        + "The new world's guaranteed starting area is one of the invader biomes. "
+                        + "Terrain Lab = editable custom family below. "
+                        + "Sacred Timeline = canonical Natural preset. "
+                        + "Measured = canonical read-only USGS/DEM world. "
+                        + "These choices affect ONLY the exported new-world datapack, "
+                        + "NOT an already-created world or Minecraft's current World Type."))
+                    .binding("sacred", () -> d.worldSource, v -> d.worldSource=v)
+                    .controller(o -> CyclingListControllerBuilder.create(o)
+                        .values("terrain_lab", "sacred", "measured")).build())
+                .option(Option.<Boolean>createBuilder()
+                    .name(Component.literal("Invasion Showcase near Origin (test-only)"))
+                    .description(description("Requires Dimension Invasion ON. "
+                        + "Creates a NEW demonstration world with all six invasion "
+                        + "directions near X/Z 0/0 and 176/0 in their host realms. "
+                        + "Use this instead of searching many rare cells. "
+                        + "OFF is the normal rare-invasion gameplay mode. "
+                        + "This setting also requires exporting a new datapack."))
+                    .binding(false, () -> d.invasionShowcase,
+                             v -> d.invasionShowcase=v)
+                    .controller(BooleanControllerBuilder::create).build())
+                .build())
             .category(ConfigCategory.createBuilder()
                 .name(Component.literal("Built-in Vanilla Structures"))
                 .option(Option.<Integer>createBuilder()
