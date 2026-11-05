@@ -139,7 +139,7 @@ def rcon_command(sock, packet_id, command):
     return response
 
 
-def wait_for_test_bay_chunks(sock, packet_id, origin_x, origin_z=0, y=160, timeout=45):
+def wait_for_test_bay_chunks(sock, packet_id, origin_x, origin_z=0, y=160, timeout=180):
     """Wait for every chunk in a 64x64 test bay to reach entity-ticking status."""
     pending = [
         (origin_x + 8 + dx * 16, origin_z + 8 + dz * 16)
@@ -205,6 +205,9 @@ print("NEOFORGE_ARCHITECTURE_SERVER_BOOT_OK", flush=True)
 
 try:
     sock = connect_rcon()
+    # TVA's high-ceiling worldgen can synchronously spend >8 seconds generating
+    # the first forced chunks. Keep RCON open through the full command response.
+    sock.settimeout(300)
     print("NEOFORGE_ARCHITECTURE_RCON_READY", flush=True)
 
     pack_id = "mod/realscale:resourcepacks/realscale_structures_architecture_pilot"
@@ -220,9 +223,9 @@ try:
     else:
         # Enabling a data pack performs a full resource reload; allow that
         # reload to complete before the RCON response is expected.
-        sock.settimeout(90)
+        sock.settimeout(300)
         enabled = rcon_command(sock, 4, f"datapack enable {pack_id}")
-        sock.settimeout(8)
+        sock.settimeout(300)
         print("RCON enable architecture pack:", enabled, flush=True)
         if "Enabled" not in enabled and "already enabled" not in enabled.lower():
             raise RuntimeError(f"Architecture data pack could not be enabled: {enabled}")
@@ -256,11 +259,11 @@ try:
             # Check the enabled list directly before trying to enable anything.
             enabled_diag = rcon_command(sock, command_id, "datapack list enabled")
             if diagnostic_pack not in enabled_diag:
-                sock.settimeout(90)
+                sock.settimeout(300)
                 enabled_response = rcon_command(
                     sock, command_id, f"datapack enable {diagnostic_pack}"
                 )
-                sock.settimeout(8)
+                sock.settimeout(300)
                 print("RCON enable NBT diagnostic pack:", enabled_response, flush=True)
                 command_id += 1
                 enabled_diag = rcon_command(sock, command_id, "datapack list enabled")
