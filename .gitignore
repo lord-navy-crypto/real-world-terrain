@@ -1,5 +1,0 @@
-.gradle/
-**/build/
-**/__pycache__/
-**/run/
-.DS_Store

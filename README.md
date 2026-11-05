@@ -21,6 +21,16 @@ Minecraft 1.21.1 / NeoForge / Java 21 的真实尺度地形实验项目。当前
 
 DEM 覆盖约 480×480 米，32 米网格由约 54–67 米间距的 USGS 服务值重采样而来；内侧 96 米过渡带混合回 Realism MAX。真实降水、岩性、侵蚀与完整河网不在这个 JAR 中。客户端画面、村庄落地、长距离河流和性能仍待测试。
 
+## 可选建筑库（TVA preview.2 集成版）
+
+此构建在 TVA Integrated Optimization TEST preview.2-test.2 基础上集成 RealScale Architecture Library：
+- 58 种 Minecraft 1.21.1 结构模板：3 种经 Apache-2.0 许可核验的 GDMC 导入，以及 55 种原创设计。
+- 原创设计包括 50 种批量生成建筑，其中 15 种是多建筑组合聚落。
+- NBT 模板位于模组基础数据资源中，可用于显式 `/place template` 放置；自然生成注册位于独立可选数据包。
+- 新世界创建时，在 **Data Packs** 中选择 **RealScale | Architecture Library (58 Structures)**，才会启用自然生成。普通世界不会被强制添加这些建筑。
+
+来源、生成器、群系分布和验证边界见 [建筑生成说明](docs/architecture/ORIGINAL_ARCHITECTURE_GENERATOR.md) 与 [资产来源记录](docs/architecture/ASSET_PROVENANCE.md)。
+
 ## 构建与验证
 
 要求 Java 21、Python 3.9+、Gradle **8.14.3**（与原验证环境一致）。

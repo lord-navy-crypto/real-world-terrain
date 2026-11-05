@@ -6,3 +6,16 @@
 - Minecraft: Mojang/Microsoft. Vanilla resource identifiers and worldgen configuration references remain subject to applicable Minecraft terms. No official Minecraft client or dedicated-server JAR is redistributed. Test tools download the official server and validate its SHA-1. Minecraft EULA: <https://www.minecraft.net/eula>.
 - NeoForge and ModDevGradle are external build dependencies with their own licenses; this repository does not relicense them. <https://github.com/neoforged/NeoForge>, <https://github.com/neoforged/ModDevGradle>.
 - No NASADEM, HydroSHEDS or WorldClim datasets were recovered or bundled. Prior discussion of these products is not evidence of an implemented integration.
+
+- GDMC architecture pilot: three selected structures from `williamcwi/GDMC`
+  (`modern_house_1.schematic`, `greenhouse_2.schematic`, and
+  `library.schematic`) are redistributed as converted Minecraft 1.21.1
+  structure templates under Apache License 2.0. Copyright 2019 Wai Ip Chu is
+  retained; the complete license is in `licenses/GDMC-APACHE-2.0.txt`.
+  Conversion details, source hashes and modifications are documented in
+  `docs/architecture/ASSET_PROVENANCE.md`. The original files remain outside
+  the NeoForge module and are not included in the JAR.
+- MC Schematics is reference-only for this pilot. No user-uploaded structures
+  from that site are bundled or redistributed because its general site terms
+  do not grant blanket redistribution rights.
+
