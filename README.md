@@ -31,6 +31,16 @@ RealScale 与 Distant Horizons / Chunky 的独立兼容补丁统一在本仓库�
 
 DEM 覆盖约 480×480 米，32 米网格由约 54–67 米间距的 USGS 服务值重采样而来；内侧 96 米过渡带混合回 Realism MAX。真实降水、岩性、侵蚀与完整河网不在这个 JAR 中。客户端画面、村庄落地、长距离河流和性能仍待测试。
 
+## 可选建筑库（当前架构开发分支）
+
+当前架构开发分支还包含一个独立的 **RealScale Architecture Library**：
+- 58 种 Minecraft 1.21.1 结构模板：3 种经 Apache-2.0 许可核验的 GDMC 导入，以及 55 种原创设计。
+- 原创设计包括 50 种批量生成建筑，其中 15 种是多建筑组合聚落，代表性设计包括林地小村、平原集市、河畔聚落、葡萄园庄园、牧羊农场、铁路货运站、河畔锯木场和湿地聚落。
+- NBT 模板位于模组基础数据资源中，可用于显式 `/place template` 放置；自然生成的群系标签、结构定义和结构集则位于独立可选数据包。
+- 新世界创建时，在 **Data Packs** 中选择 **RealScale | Architecture Library (58 Structures)**，才会启用自然生成。普通世界不会被强制添加这些建筑。
+
+来源、生成器、群系分布和验证边界见 [建筑生成说明](docs/architecture/ORIGINAL_ARCHITECTURE_GENERATOR.md) 与 [资产来源记录](docs/architecture/ASSET_PROVENANCE.md)。
+
 ## 构建与验证
 
 要求 Java 21、Python 3.9+、Gradle **8.14.3**（与原验证环境一致）。
