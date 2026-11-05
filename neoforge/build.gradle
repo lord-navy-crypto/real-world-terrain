@@ -102,6 +102,15 @@ def generatedLicensedArchitectureTemplates = layout.buildDirectory.dir("generate
 def generatedOriginalArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-original-architecture-templates")
 def generatedBatchArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-batch-architecture-templates")
 
+// Gradle 9 removed Project.exec. Use ProviderFactory.exec so these
+// deterministic resource generators work on both the Gradle 8 and 9 CI lanes.
+def runArchitecturePython = { String scriptPath, List<String> arguments ->
+    def command = [System.getenv("PYTHON") ?: "python3", file(scriptPath).absolutePath] + arguments
+    providers.exec {
+        commandLine(command)
+    }.result.get()
+}
+
 // Convert only the three explicitly licensed GDMC source schematics. The source
 // files stay outside the NeoForge module and are never packaged in the JAR.
 tasks.register("generateArchitectureTemplates") {
@@ -111,13 +120,10 @@ tasks.register("generateArchitectureTemplates") {
     doLast {
         def output = generatedLicensedArchitectureTemplates.get().asFile
         project.delete(output)
-        def python = System.getenv("PYTHON") ?: "python3"
-        project.exec {
-            commandLine python,
-                    file("../scripts/convert_gdmc_architecture.py").absolutePath,
-                    "--source", file("../assets/architecture/gdmc-source").absolutePath,
-                    "--output", output.absolutePath
-        }
+        runArchitecturePython("../scripts/convert_gdmc_architecture.py", [
+            "--source", file("../assets/architecture/gdmc-source").absolutePath,
+            "--output", output.absolutePath
+        ])
     }
 }
 
@@ -127,12 +133,9 @@ tasks.register("generateOriginalArchitectureTemplates") {
     doLast {
         def output = generatedOriginalArchitectureTemplates.get().asFile
         project.delete(output)
-        def python = System.getenv("PYTHON") ?: "python3"
-        project.exec {
-            commandLine python,
-                    file("../scripts/generate_original_architecture.py").absolutePath,
-                    "--output", output.absolutePath
-        }
+        runArchitecturePython("../scripts/generate_original_architecture.py", [
+            "--output", output.absolutePath
+        ])
     }
 }
 
@@ -143,12 +146,9 @@ tasks.register("generateArchitectureBatchTemplates") {
     doLast {
         def output = generatedBatchArchitectureTemplates.get().asFile
         project.delete(output)
-        def python = System.getenv("PYTHON") ?: "python3"
-        project.exec {
-            commandLine python,
-                    file("../scripts/generate_architecture_batch.py").absolutePath,
-                    "--output", output.absolutePath
-        }
+        runArchitecturePython("../scripts/generate_architecture_batch.py", [
+            "--output", output.absolutePath
+        ])
     }
 }
 
