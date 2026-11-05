@@ -88,7 +88,21 @@ def meridional_latitude_degrees(z,profile):
 
 
 def meridional_biome_audit(heights,surface_biomes,profile):
-    """Observed north/equatorial/south biome bands from persisted surface columns."""
+    """Observed north/equatorial/south biome bands from persisted surface columns.
+
+    Some experimental presets intentionally keep vanilla shifted-noise
+    temperature and therefore have no signed latitude node. Other presets
+    use radial latitude, which is audited separately. Treat either case as
+    not applicable here instead of crashing while indexing a missing profile.
+    """
+    if not isinstance(profile,dict) or not {"equator_z","pole_distance"}.issubset(profile):
+        return {
+            "mode":"not_applicable",
+            "sample_columns":0,
+            "note":("No signed north/south latitude_temperature node is active "
+                    "in this preset; radial latitude diagnostics, when present, "
+                    "are reported separately.")
+        }
     bands={"north_polar_60_90":[],"north_mid_30_60":[],
            "equatorial_0_30":[],"south_mid_30_60":[],"south_polar_60_90":[]}
     for (x,z),y in heights.items():
