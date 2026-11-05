@@ -59,16 +59,29 @@ jobs:
           seen=0
           while True:
             seen=0
-            for region in pathlib.Path('run').glob('**/region/*.mca'):
+            for region in pathlib.Path('run').glob('**/region/r.*.*.mca'):
+              parts=region.stem.split('.')
+              if len(parts)!=3:
+                continue
+              rx,rz=int(parts[1]),int(parts[2])
               data=region.read_bytes()[:4096]
-              seen+=sum(int.from_bytes(data[i:i+3], 'big') > 0 for i in range(0, min(4096,len(data)), 4))
-            if seen>=300:
+              for index in range(1024):
+                if int.from_bytes(data[index*4:index*4+3], 'big') == 0:
+                  continue
+                cx=rx*32+(index%32)
+                cz=rz*32+(index//32)
+                if -4<=cx<=3 and -4<=cz<=3:
+                  seen+=1
+            # The audited DEM window is the same 8x8 chunk square. Thirty
+            # persisted center chunks provide far more than the 30 height
+            # samples required by check_actual_chunk_heights.py.
+            if seen>=30:
               time.sleep(8)
               break
             if time.monotonic()>=deadline:
-              raise SystemExit('Insufficient persisted chunks for reliable DEM check: '+str(seen))
+              raise SystemExit('Insufficient persisted DEM-center chunks: '+str(seen))
             time.sleep(4)
-          print('REGION_FLUSH_READY:',seen,'stored chunks')
+          print('REGION_FLUSH_READY:',seen,'persisted DEM-center chunks')
           PY
       - name: Verify ACTUAL Anvil block heights match USGS sampled terrain
         working-directory: neoforge
