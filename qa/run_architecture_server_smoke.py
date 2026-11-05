@@ -16,7 +16,7 @@ LOG_PATH = ROOT / "run/architecture-pilot-server-smoke.log"
 
 def prepare_nbt_diagnostics():
     """Create isolated one-block templates to pinpoint NBT/state failures."""
-    sys.path.insert(0, str(ROOT / "scripts"))
+    sys.path.insert(0, str(ROOT.parent / "scripts"))
     from generate_original_architecture import Building, build_forest_ranger_lodge
 
     pack = ROOT / "run/architecture-58-smoke/datapacks/realscale_nbt_diagnostics"
