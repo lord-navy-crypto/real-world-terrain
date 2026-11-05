@@ -213,27 +213,34 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
     def test_mod_name_and_archive_name_are_realscale_only(self):
         gradle = (ROOT / "neoforge/build.gradle").read_text()
         toml = (RES / "META-INF/neoforge.mods.toml").read_text()
-        self.assertIn("2.0.0-preview.2-test.6", gradle)
-        self.assertIn('version="2.0.0-preview.2-test.6"', toml)
+        self.assertIn("2.0.0-preview.2-test.9", gradle)
+        self.assertIn('version="2.0.0-preview.2-test.9"', toml)
         self.assertIn("RealScale-NeoForge-1.21.1", gradle)
         self.assertNotIn("TVA", toml)
         self.assertNotIn("RealScale-TVA", gradle)
 
-    def test_compat_module_is_standalone(self):
-        addon = ROOT / "dh-chunky-guard"
-        self.assertTrue((addon / "build.gradle").is_file())
-        self.assertTrue(
-            (addon / "src/main/java/org/realscale/compat/dhchunky/mixin/ChunkyLifecycleSetupMixin.java").is_file()
-        )
+    def test_dh_chunky_compat_is_embedded_in_realscale(self):
+        compat = ROOT / "neoforge/src/main/java/org/realscale/neoforge/compat/dhchunky"
+        self.assertTrue((compat / "ChunkyBridgeMetrics.java").is_file())
+        self.assertTrue((compat / "DhChunkyGuardCommands.java").is_file())
+        self.assertTrue((compat / "mixin/ChunkyLifecycleSetupMixin.java").is_file())
+        self.assertTrue((compat / "mixin/DhChunkyMixinConfigPlugin.java").is_file())
+        self.assertTrue((RES / "realscale.dhchunky.mixins.json").is_file())
+
+        mod_source = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text()
+        self.assertIn("DhChunkyGuardCommands::registerCommands", mod_source)
+
+        meta = (RES / "META-INF/neoforge.mods.toml").read_text()
+        self.assertIn('modId="distanthorizons"', meta)
+        self.assertIn('modId="chunky"', meta)
+        self.assertIn('modId="dhchunkyguard"', meta)
+        self.assertIn('config="realscale.dhchunky.mixins.json"', meta)
+
         main = read(WORLD / "natural_three_realms.json")
         self.assertEqual(
             main["dimensions"]["minecraft:overworld"]["type"],
             "realscale:realism_max_overworld",
         )
-        meta = (RES / "META-INF/neoforge.mods.toml").read_text()
-        self.assertNotIn('modId="distanthorizons"', meta)
-        self.assertNotIn('modId="chunky"', meta)
-
 
 if __name__ == "__main__":
     unittest.main()
