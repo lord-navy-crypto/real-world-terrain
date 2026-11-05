@@ -74,7 +74,9 @@ class NorthSouthDefaultClimateTest(unittest.TestCase):
         self.assertIn("GeographicClimateMath.geodeticLatitudeDeg(ctx.blockZ())",latitude_source)
         climate_math=(SOURCE/"GeographicClimateMath.java").read_text()
         self.assertIn("GeoMath.CLIMATE_POLE_DISTANCE_BLOCKS",climate_math)
-        self.assertNotIn("equatorZ,poleDistance",latitude_source)
+        compute=latitude_source.split("@Override public double compute",1)[1].split("@Override public DensityFunction mapAll",1)[0]
+        self.assertNotIn("equatorZ",compute)
+        self.assertNotIn("poleDistance",compute)
         self.assertEqual(round(10_001_966/20),500_098)
         # The world coordinate itself remains the direct one-block/one-metre Z.
         self.assertNotIn("ctx.blockZ()/20",latitude_source)
