@@ -64,7 +64,24 @@ jobs:
           while time.time()<deadline and p.poll() is None and not done.is_set():time.sleep(1)
           if done.is_set():
             print('NEOFORGE_SERVER_BOOT_OK: reached Done milestone')
-            time.sleep(18)
+            # The DEM is centered on world (0, 0), while Minecraft's chosen
+            # spawn can be far away. Explicitly generate the central 8x8 chunk
+            # square so the Anvil audit samples the measured-only DEM interior.
+            p.stdin.write('forceload add -64 -64 63 63\\n');p.stdin.flush()
+            deadline=time.time()+240
+            forced=False
+            while time.time()<deadline and p.poll() is None:
+              try: line=next((line for line in out if 'Marked' in line and 'chunk' in line.lower()),None)
+              except Exception: line=None
+              if line:
+                forced=True
+                break
+              time.sleep(1)
+            if not forced:
+              raise SystemExit('Central DEM forceload was not acknowledged')
+            p.stdin.write('save-all flush\\n');p.stdin.flush()
+            time.sleep(12)
+            print('USGS_DEM_CENTER_FORCED_AND_FLUSHED: 8x8 chunks')
           else:
             print('NEOFORGE_SERVER_BOOT_FAIL:',p.poll())
           try:
