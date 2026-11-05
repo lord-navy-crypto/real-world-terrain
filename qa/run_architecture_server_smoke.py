@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Boot NeoForge and verify licensed/original architecture through local RCON."""
 from __future__ import annotations
+import json
 import queue
 import socket
 import struct
@@ -56,6 +57,18 @@ def prepare_nbt_diagnostics():
 RCON_HOST = "127.0.0.1"
 RCON_PORT = 25575
 RCON_PASSWORD = "architecture-smoke-local-only"
+
+
+def prepare_architecture_pack_config():
+    """Select the optional architecture pack by default in this isolated smoke world."""
+    config = ROOT / "run" / "config" / "realscale-terrain-lab.json"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text(json.dumps({
+        "structureDensity": 4,
+        "dimensionStructureDensity": 2,
+        "architectureStructuresEnabled": True,
+    }, indent=2) + "\\n", encoding="utf-8")
+    print("ARCHITECTURE_PACK_CONFIGURED_DEFAULT_ON:", config, flush=True)
 TEMPLATES = (
     "modern_house", "glass_greenhouse", "city_library",
     "forest_ranger_lodge", "plains_farmstead", "alpine_waystation",
@@ -176,6 +189,7 @@ def wait_for_test_bay_chunks(sock, packet_id, origin_x, origin_z=0, y=160, timeo
     return packet_id
 
 
+prepare_architecture_pack_config()
 diagnostic_state_ids = prepare_nbt_diagnostics()
 
 proc = subprocess.Popen(
@@ -222,19 +236,13 @@ try:
     print("RCON enabled packs before selection:", active_before, flush=True)
     if pack_id not in available and pack_id not in active_before:
         raise RuntimeError(f"Optional architecture data pack was not discovered: {pack_id}")
-    if pack_id in active_before:
-        active = active_before
-        print("Architecture pack was already enabled by the isolated test world.", flush=True)
-    else:
-        # Enabling a data pack performs a full resource reload; allow that
-        # reload to complete before the RCON response is expected.
-        sock.settimeout(90)
-        enabled = rcon_command(sock, 4, f"datapack enable {pack_id}")
-        sock.settimeout(8)
-        print("RCON enable architecture pack:", enabled, flush=True)
-        if "Enabled" not in enabled and "already enabled" not in enabled.lower():
-            raise RuntimeError(f"Architecture data pack could not be enabled: {enabled}")
-        active = rcon_command(sock, 5, "datapack list enabled")
+    if pack_id not in active_before:
+        raise RuntimeError(
+            "Architecture pack was not selected by default from "
+            "architectureStructuresEnabled=true in the Terrain Lab config"
+        )
+    active = active_before
+    print("Architecture pack is selected by the saved next-world default.", flush=True)
     print("RCON enabled packs:", active, flush=True)
     if pack_id not in active:
         raise RuntimeError("Architecture data pack did not remain enabled after reload")
