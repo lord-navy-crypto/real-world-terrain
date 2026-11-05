@@ -64,8 +64,8 @@ jobs:
                   assert path in names, path
               metadata = jar.read("META-INF/neoforge.mods.toml").decode("utf-8")
               assert 'modId="realscale"' in metadata
-              assert 'modId="dhchunkyguard"\\ntype="incompatible"' in metadata
-              assert '[[mods]]\\nmodId="dhchunkyguard"' not in metadata
+              assert 'modId="dhchunkyguard"\ntype="incompatible"' in metadata
+              assert '[[mods]]\nmodId="dhchunkyguard"' not in metadata
               assert not any(path.startswith(("com/seibel/", "org/popcraft/")) for path in names)
           print("REALSCALE_SINGLE_JAR_DH_CHUNKY_COMPAT_VALID")
           PY
