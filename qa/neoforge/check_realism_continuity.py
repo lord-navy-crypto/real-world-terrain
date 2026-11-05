@@ -82,8 +82,8 @@ def meridional_profile_from_noise(settings_path):
 def meridional_latitude_degrees(z,profile):
     """WGS84 geodetic latitude parity with the fixed Java 1:20 model.
 
-    The legacy profile fields are inspected for compatibility, but never
-    control the current calculation: equator Z=0 and 500,098 blocks per pole.
+    The legacy profile argument is accepted only for API compatibility and is
+    ignored: equator Z=0 and 500,098 blocks per pole.
     """
     del profile
     equator_z=0
