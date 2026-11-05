@@ -76,23 +76,43 @@ def main(root: pathlib.Path) -> None:
             raise RuntimeError("Central USGS forceload was not acknowledged: " + reply)
         print("USGS_DEM_CENTER_FORCELOAD_ACK:", reply, flush=True)
 
-        for x, z in CENTER_CHUNK_SAMPLES:
-            deadline = time.monotonic() + 240
-            command = (
-                f"execute in minecraft:overworld if loaded {x} 128 {z} run seed"
-            )
-            while True:
+        # The DEM audit samples the entire central 8x8-chunk square.
+        # Wait for every target chunk, not only the four corners: a forceload
+        # acknowledgement alone is not proof that generation has completed.
+        pending = [
+            (chunk_x * 16 + 8, chunk_z * 16 + 8)
+            for chunk_z in range(-4, 4)
+            for chunk_x in range(-4, 4)
+        ]
+        deadline = time.monotonic() + 240
+        while pending:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError(
+                    "USGS center sample chunks were not all generated: "
+                    + repr(pending[:12]) + f" (remaining={len(pending)})"
+                )
+            next_pending = []
+            for x, z in pending:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
-                    raise TimeoutError(
-                        f"USGS sample chunk at block {x},{z} was not fully generated"
+                    next_pending.append((x, z))
+                    continue
+                rcon.sock.settimeout(min(15.0, remaining))
+                try:
+                    sample_reply = rcon.send(
+                        f"execute in minecraft:overworld if loaded {x} 128 {z} run seed"
                     )
-                rcon.sock.settimeout(min(30.0, remaining))
-                sample_reply = rcon.send(command)
+                except TimeoutError:
+                    next_pending.append((x, z))
+                    continue
                 if "Seed:" in sample_reply:
                     print("USGS_CENTER_CHUNK_READY:", x, z, flush=True)
-                    break
-                time.sleep(min(2.0, max(0.0, deadline - time.monotonic())))
+                else:
+                    next_pending.append((x, z))
+            pending = next_pending
+            if pending:
+                time.sleep(1.0)
 
         save_reply = rcon.send("save-all flush")
         print("USGS_CENTER_SAVE_ACK:", save_reply, flush=True)
