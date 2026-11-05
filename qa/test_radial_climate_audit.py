@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate that live-world climate QA measures the ACTUAL radial density graph."""
+"""Validate live-world WGS84 meridional latitude and legacy radial graph audits."""
 import json
 import math
 import sys
