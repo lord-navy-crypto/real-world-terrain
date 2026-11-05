@@ -73,10 +73,10 @@ jobs:
         working-directory: neoforge
         run: python3 ../qa/run_dh_chunky_runtime_smoke.py
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && hashFiles('neoforge/build/libs/*.jar') != ''
         with:
           name: RealScale-NeoForge-1.21.1-integrated-DH-Chunky
           path: |
             neoforge/build/libs/*.jar
             neoforge/run/dh-chunky-runtime-smoke.log
-          if-no-files-found: error
+          if-no-files-found: warn
