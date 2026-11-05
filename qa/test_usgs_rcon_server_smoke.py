@@ -23,6 +23,7 @@ class UsGsRconServerSmokeTests(unittest.TestCase):
         self.assertIn("realscale:usgs_big_sur", script)
         self.assertIn("for chunk_z in range(-4, 4)", script)
         self.assertIn("for chunk_x in range(-4, 4)", script)
+        workflow = (ROOT / ".github/workflows/server.yml").read_text(encoding="utf-8")
         self.assertIn("if seen>=30", workflow)
         self.assertIn("persisted DEM-center chunks", workflow)
 
