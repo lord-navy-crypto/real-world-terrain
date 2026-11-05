@@ -200,8 +200,10 @@ def main() -> int:
             if any(BOUND_MARKER in line for line in captured):
                 break
 
-        wait_for(HOOK_MARKER, 45)
-        wait_for(BOUND_MARKER, 90)
+        if not any(HOOK_MARKER in line for line in captured):
+            wait_for(HOOK_MARKER, 45)
+        if not any(BOUND_MARKER in line for line in captured):
+            wait_for(BOUND_MARKER, 90)
 
         if any(CRASH_MARKER in line for line in captured):
             raise RuntimeError("The known ChunkyProvider startup exception appeared in the log")
