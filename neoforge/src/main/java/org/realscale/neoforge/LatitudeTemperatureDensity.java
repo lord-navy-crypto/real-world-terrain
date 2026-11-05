@@ -30,9 +30,7 @@ public record LatitudeTemperatureDensity(DensityFunction base,int equatorZ,
         KeyDispatchDataCodec.of(MAP_CODEC);
 
     @Override public double compute(DensityFunction.FunctionContext ctx){
-        double latitude=GeographicClimateMath.geodeticLatitudeDeg(
-                ctx.blockZ(), GeoMath.CLIMATE_EQUATOR_Z,
-                GeoMath.CLIMATE_POLE_DISTANCE_BLOCKS);
+        double latitude=GeographicClimateMath.geodeticLatitudeDeg(ctx.blockZ());
         return GeoMath.latitudeTemperature(base.compute(ctx),latitude,strength);
     }
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor){
