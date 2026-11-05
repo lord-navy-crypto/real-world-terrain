@@ -694,7 +694,7 @@ def main(argv=None):
                         help="Opt-in height-aware temperature biome signal (0..100)")
     parser.add_argument("--valley-warming",type=int,default=0,
                         help="Opt-in bounded relative-valley temperature boost (0..100)")
-    parser.add_argument("--latitude-mode",choices=("fixed_1_20","off"),default="fixed_1_20",
+    parser.add_argument("--latitude-mode",choices=("fixed_1_20","off"),default=None,
                         help="Only fixed WGS84 1:20 meridional climate latitude is supported; off remains for legacy CLI compatibility.")
     parser.add_argument("--latitude-strength",type=int,default=70,help="Fixed 1:20 latitude strength 0..100; zero disables it.")
     parser.add_argument("--basin-warming",type=int,default=0,
@@ -710,6 +710,7 @@ def main(argv=None):
     parser.add_argument("--launch",action="store_true",help="Launch runClient after generating a preset")
     parser.add_argument("--root",type=Path,default=None,help=argparse.SUPPRESS)
     args=parser.parse_args(argv)
+    latitude_mode = args.latitude_mode or (FIXED_LATITUDE_MODE if args.preset in FAMILIES else "off")
     if args.list:
         print("Main merged modes:",", ".join(FAMILIES))
         print("Measured (read-only): usgs_big_sur_v2; original legacy DEM: usgs_big_sur")
@@ -759,7 +760,7 @@ def main(argv=None):
         grade=args.river_grade if args.river_grade is not None else defaults[3]
         name,opts,files=apply(root,args.preset,relief,elevation,caves,grade,
                               not args.coastal_spawn,args.dry_run,args.blend,args.ridge,args.erosion,args.strata,args.biome_cooling,args.valley_warming,
-                              args.latitude_mode,args.latitude_strength,0,args.basin_warming,
+                              latitude_mode,args.latitude_strength,0,args.basin_warming,
                               0,0,args.fantasy_dimensions,args.lithostitched_blend,args.lithostitched_geology)
         print("Prepared world type: realscale:"+name)
         print("Settings:",json.dumps(opts,sort_keys=True))
