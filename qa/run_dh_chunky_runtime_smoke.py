@@ -163,7 +163,7 @@ def send_packet(sock, packet_id: int, packet_type: int, payload: str) -> None:
         packet_id.to_bytes(4, "little", signed=True)
         + packet_type.to_bytes(4, "little", signed=True)
         + payload.encode("utf-8")
-        + b"\\x00\\x00"
+        + b"\x00\x00"
     )
     sock.sendall(len(body).to_bytes(4, "little", signed=True) + body)
 
