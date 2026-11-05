@@ -144,10 +144,11 @@ class LatitudeClimateTests(unittest.TestCase):
         source = ROOT / "neoforge/src/main/java/org/realscale/neoforge"
         density = (source / "LatitudeTemperatureDensity.java").read_text()
         report = (source / "GeographicClimateInspectorClient.java").read_text()
+        screen = (source / "GeographicClimateInspectorScreen.java").read_text()
         ui = (source / "RealScaleTerrainLabClient.java").read_text()
-        self.assertIn("GeographicClimateMath.geodeticLatitudeDeg", density)
         self.assertIn("GeographicClimateMath.geodeticLatitudeDeg(ctx.blockZ())", density)
-        self.assertIn("profile.latitudeAt(pos.getZ())", report)
+        self.assertIn("GeographicClimateMath.geodeticLatitudeDeg(z)", report)
+        self.assertIn("profile.latitudeAt(pos.getZ())", screen)
         self.assertIn("Fixed 1:20 Latitude Temperature Strength", ui)
         self.assertNotIn("radial_", ui)
         self.assertNotIn("Equator Z / Ring Center Z", ui)
