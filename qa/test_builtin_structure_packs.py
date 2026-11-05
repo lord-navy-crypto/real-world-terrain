@@ -37,6 +37,8 @@ class BuiltinStructureTests(unittest.TestCase):
         self.assertIn("PackType.SERVER_DATA",loader)
         self.assertIn("PackSource.DEFAULT",loader)
         self.assertIn("PackSource.BUILT_IN",loader)
+        self.assertIn("PackSource.create(PackSource.BUILT_IN::decorate, false)",loader)
+        self.assertIn("selectedDefault ? PackSource.DEFAULT : OPTIONAL_BUILT_IN",loader)
         self.assertIn("false, // Never mandatory",loader)
         self.assertIn("return new Selection(4, 2, true)",loader)
         self.assertIn("new Selection(0, 0, false)",loader)
