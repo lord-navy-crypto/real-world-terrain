@@ -437,7 +437,8 @@ class ArchitecturePilotTests(unittest.TestCase):
     def test_registered_pack_is_optional_and_only_templates_are_packaged(self):
         source = JAVA.read_text(encoding="utf-8")
         self.assertIn('"architecture_pilot"', source)
-        self.assertIn('"RealScale | Architecture Library (58 Structures)", false)', source)
+        self.assertIn('"RealScale | Architecture Library (58 Structures)"', source)
+        self.assertIn("current.architectureEnabled()", source)
         self.assertIn("false, // Never mandatory", source)
         jars = list((ROOT / "neoforge/build/libs").glob("*.jar"))
         self.assertTrue(jars, "NeoForge jar must be built before validation")

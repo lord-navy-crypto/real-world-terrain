@@ -64,8 +64,8 @@ def _draft_options(path: Path) -> dict:
     optional = {
         "blendPercent": 25, "ridgePercent": 0, "erosionPercent": 0,
         "strataPercent": 0, "climatePercent": 0, "valleyPercent": 0,
-        "latitudeMode": "off", "latitudeStrength": 70, "equatorZ": 0,
-        "basinPercent": 0, "radialCenterX": 0, "coldLimitPercent": 60,
+        "latitudeMode": "fixed_1_20", "latitudeStrength": 70,
+        "basinPercent": 0,
         "fantasyDimensions": False, "lithostitchedBlend": False,
         "lithostitchedGeology": False,
     }
@@ -74,6 +74,9 @@ def _draft_options(path: Path) -> dict:
         if type(val) is not type(default):
             raise ValueError("Invalid type for " + key)
         optional[key] = val
+    # Older drafts used earth/preview/radial modes or off. New exports always
+    # use the fixed 1:20 model; a strength of zero is the only disable switch.
+    optional["latitudeMode"] = "fixed_1_20"
     return dict(
         preset=draft["preset"], relief=draft["reliefPercent"] / 100.0,
         elevation=draft["elevation"], caves=draft["caves"],
@@ -83,9 +86,8 @@ def _draft_options(path: Path) -> dict:
         climate=optional["climatePercent"], valley=optional["valleyPercent"],
         latitude=optional["latitudeMode"],
         latitude_strength=optional["latitudeStrength"],
-        equator_z=optional["equatorZ"], basin=optional["basinPercent"],
-        center_x=optional["radialCenterX"],
-        cold_limit=optional["coldLimitPercent"],
+        equator_z=0, basin=optional["basinPercent"],
+        center_x=0, cold_limit=0,
         fantasy_dimensions=optional["fantasyDimensions"],
         lithostitched_blend=optional["lithostitchedBlend"],
         lithostitched_geology=optional["lithostitchedGeology"],

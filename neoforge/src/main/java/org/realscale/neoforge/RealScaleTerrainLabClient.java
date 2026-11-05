@@ -140,11 +140,8 @@ public final class RealScaleTerrainLabClient {
         int strataPercent = 0;
         int climatePercent = 65;
         int valleyPercent = 0;
-        String latitudeMode = "off";
+        String latitudeMode = "fixed_1_20";
         int latitudeStrength = 70;
-        int equatorZ = 0;
-        int radialCenterX = 0;
-        int coldLimitPercent = 60;
         int basinPercent = 0;
         int reliefPercent = 100;
         int elevation = 0;
@@ -156,6 +153,7 @@ public final class RealScaleTerrainLabClient {
         // Saved world datapack choices remain owned by each world.
         int structureDensity = 4;
         int dimensionStructureDensity = 2;
+        Boolean architectureStructuresEnabled = Boolean.TRUE;
         Map<String,FamilySettings> profiles = new LinkedHashMap<>();
 
         static Draft defaults() {
@@ -181,6 +179,12 @@ public final class RealScaleTerrainLabClient {
         }
 
         private static void migrateLegacyDraft(Draft d) {
+            // Normalize historical latitude choices to the one fixed WGS84
+            // 1:20 meridional climate model. Strength 0 disables its contribution.
+            d.latitudeMode = "fixed_1_20";
+            // Gson leaves missing boxed fields null in older config files.
+            if (d.architectureStructuresEnabled == null)
+                d.architectureStructuresEnabled = Boolean.TRUE;
             // Saved YACL drafts from v1.4.1 remain readable. These names are
             // normalized only in the next-world draft, never in existing saves.
             if (d.preset == null) return;
@@ -221,17 +225,9 @@ public final class RealScaleTerrainLabClient {
                         && d.strataPercent >= 0 && d.strataPercent <= 20
                         && d.climatePercent >= 0 && d.climatePercent <= 100
                         && d.valleyPercent >= 0 && d.valleyPercent <= 100
-                        && d.latitudeMode != null
-                        && (d.latitudeMode.equals("off") || d.latitudeMode.equals("earth")
-                            || d.latitudeMode.equals("preview")
-                            || d.latitudeMode.equals("radial_earth")
-                            || d.latitudeMode.equals("radial_preview") || d.latitudeMode.equals("radial_balanced")
-                            || d.latitudeMode.equals("radial_equal_area")
-                            || d.latitudeMode.equals("radial_equal_area_single_pole"))
+                        && "fixed_1_20".equals(d.latitudeMode)
                         && d.latitudeStrength >= 0 && d.latitudeStrength <= 100
-                        && d.equatorZ >= -4096 && d.equatorZ <= 4096
-                        && d.radialCenterX >= -4096 && d.radialCenterX <= 4096
-                        && d.coldLimitPercent >= 0 && d.coldLimitPercent <= 100
+                        && d.architectureStructuresEnabled != null
                         && d.basinPercent >= 0 && d.basinPercent <= 100
                         && d.reliefPercent >= 80 && d.reliefPercent <= 125
                         && d.elevation >= -48 && d.elevation <= 48
@@ -371,52 +367,29 @@ public final class RealScaleTerrainLabClient {
                 .name(Component.literal("Built-in Vanilla Structures"))
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Overworld Structures (next world)"))
-                    .description(description("Vanilla=0, Light=2x, Active=3x, Grand=4x (default), Epic=6x. "
-                        + "All six structure packs are INCLUDED in the RealScale mod JAR. "
-                        + "Save and restart Minecraft before creating a new world; selected pack is "
-                        + "enabled automatically for that new world. This is a candidate-placement "
-                        + "multiplier, NOT a guarantee of actual buildings. Existing saves keep their "
-                        + "own datapack selections; do not use this to retune existing worlds."))
+                    .description(description("Vanilla=0, Light=2x, Active=3x, Grand=4x (default), Epic=6x. All density packs are included in the RealScale JAR. Save and restart before creating a new world; existing saves keep their own datapack selections."))
                     .binding(4, () -> d.structureDensity, v -> d.structureDensity=v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(0,2,3,4,6)).build())
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Nether + End Structures (next world)"))
-                    .description(description("Vanilla=0, Grand=2x (default), Epic=3x. "
-                        + "Preserves fortress/bastion weights and End City placement type. "
-                        + "Save and restart before creating your next world. "
-                        + "Only NEW worlds use the updated auto-enabled pack selection."))
+                    .description(description("Vanilla=0, Grand=2x (default), Epic=3x. Save and restart before creating a new world."))
                     .binding(2, () -> d.dimensionStructureDensity,
                              v -> d.dimensionStructureDensity=v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(0,2,3)).build())
+                .option(Option.<Boolean>createBuilder()
+                    .name(Component.literal("Enable Architecture Library (58 Structures)"))
+                    .description(description("ON by default for NEW worlds. Selects the built-in 58-structure pack automatically in Create World. Turn off to keep the pack available but not selected. Save and fully restart Minecraft before creating a new world; existing saves keep their own datapack choices."))
+                    .binding(Boolean.TRUE,
+                        () -> Boolean.TRUE.equals(d.architectureStructuresEnabled),
+                        v -> d.architectureStructuresEnabled=v)
+                    .controller(BooleanControllerBuilder::create).build())
                 .build())
             .category(ConfigCategory.createBuilder()
                 .name(Component.literal("Shared Climate & Latitude / Export"))
-                .option(Option.<String>createBuilder()
-                    .name(Component.literal("Latitude Climate Cycle"))
-                    .description(description("Temperature mapping only: earth = 1:1; preview = 1:20 climate compression (500,098 blocks equator-to-pole). Terrain and geographic coordinates remain 1 block = 1 metre. Equal-area radial modes are climate-only patterns."))
-                    .binding("off", () -> d.latitudeMode, v -> d.latitudeMode=v)
-                    .controller(o -> CyclingListControllerBuilder.create(o).values(
-                        "off","earth","preview","radial_earth","radial_preview","radial_balanced",
-                        "radial_equal_area","radial_equal_area_single_pole")).build())
                 .option(Option.<Integer>createBuilder()
-                    .name(Component.literal("Latitude Strength"))
-                    .description(description("0-100; regional pole/equator temperature differences."))
+                    .name(Component.literal("Fixed 1:20 Latitude Temperature Strength"))
+                    .description(description("One fixed WGS84 meridional model: equator Z=0 and approximately 500,098 blocks from equator to either pole. 1:20 applies ONLY to climate latitude; terrain coordinates and X/Z sampling remain 1 block = 1 metre. Set strength to 0 to disable the latitude contribution."))
                     .binding(70, () -> d.latitudeStrength, v -> d.latitudeStrength=v)
-                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5)).build())
-                .option(Option.<Integer>createBuilder()
-                    .name(Component.literal("Equator Z / Ring Center Z"))
-                    .description(description("Center Z of concentric latitude rings; world spawn may be elsewhere."))
-                    .binding(0, () -> d.equatorZ, v -> d.equatorZ=v)
-                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(-4096,4096).step(128)).build())
-                .option(Option.<Integer>createBuilder()
-                    .name(Component.literal("Ring Center X"))
-                    .description(description("Concentric latitude center X."))
-                    .binding(0, () -> d.radialCenterX, v -> d.radialCenterX=v)
-                    .controller(o -> IntegerSliderControllerBuilder.create(o).range(-4096,4096).step(128)).build())
-                .option(Option.<Integer>createBuilder()
-                    .name(Component.literal("Radial Cold Climate Limit"))
-                    .description(description("0-100; limits extra combined polar and mountain cooling."))
-                    .binding(60, () -> d.coldLimitPercent, v -> d.coldLimitPercent=v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5)).build())
                 .build())
             // Saves an immutable next-world configuration DRAFT only. Players

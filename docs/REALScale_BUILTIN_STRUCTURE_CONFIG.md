@@ -1,60 +1,41 @@
-# RealScale TVA — Built-in vanilla structure density + configuration
+# RealScale — Built-in vanilla structure density and architecture activation
 
 Minecraft 1.21.1 / NeoForge 21.1.x / Java 21.
 
-## In-game Config entry (client)
+## In-game configuration
 
-1. Install **RealScale TVA** and **YACL v3 3.8.1+** in the same client profile.
-2. Start Minecraft. Open **Mods > RealScale TVA > Config**.
-3. Select **Built-in Vanilla Structures**.
-4. Choose **Overworld Structures**: Vanilla (0x), 2x, 3x, **4x default**, 6x.
-5. Choose **Nether + End Structures**: Vanilla (0x), **2x default**, 3x.
-6. **Save**, fully close Minecraft and restart **before creating a new world**.
+1. Install RealScale and YACL 3.8.1+ in the same client profile.
+2. Start Minecraft and open **Mods > RealScale > Config**.
+3. Open **Built-in Vanilla Structures**.
+4. Choose the Overworld density (Vanilla 0x, 2x, 3x, 4x, or 6x).
+5. Choose the Nether + End density (Vanilla 0x, 2x, or 3x).
+6. Leave **Enable Architecture Library (58 Structures)** on to include the 58-building pack in newly created worlds. Turn it off if that world should not use the architecture library.
+7. Save, fully exit Minecraft, restart, and then create a NEW world.
 
-The Config menu is backed by the existing registered NeoForge
-`IConfigScreenFactory` extension. The selected values are saved together
-with the existing Terrain Lab draft:
+The architecture checkbox defaults to ON. The pack is still optional, not mandatory: it is selected as a default for new worlds, and players can deselect it in **Create World > Data Packs** before creating the world.
+
+The settings are stored in:
 
 `config/realscale-terrain-lab.json`
 
-Values read by the pack registrar: `structureDensity` and
-`dimensionStructureDensity`. **No exporter or external ZIP is needed for
-structure density.** Existing Lab terrain-tuning changes still require their
-previous dedicated next-world exporter; this update does NOT claim to apply
-new density functions from the menu directly.
+The registrar reads `structureDensity`, `dimensionStructureDensity`, and `architectureStructuresEnabled`. If the new architecture field is missing in an older config, it safely migrates to ON. A malformed config fails closed to vanilla structure densities and leaves the architecture pack disabled.
 
-The mod JAR now contains all six complete built-in datapacks. The
-`AddPackFindersEvent` registers them in the normal Create World > Data Packs
-screen, and chooses the Config-selected Overworld and Nether/End packs as
-**default enabled** for a NEW world. They are **not forced active**; the
-player can deselect or replace them before world creation. If you wish to
-avoid density modifications entirely, set both selectors to 0, Save,
-restart, and verify the Create World Data Packs list.
+## What gets enabled
 
-A dedicated server can set the same values in
-`config/realscale-terrain-lab.json` before starting a **new** world (YACL
-itself is client-only), or choose the built-in pack selection at world
-creation through its datapack settings.
+- The Overworld and Nether/End selectors choose the matching built-in vanilla structure-density packs.
+- The architecture checkbox selects `realscale_structures_architecture_pilot`, containing all 58 licensed/original structure definitions, template pools, biome tags, structure sets, and NBT templates.
+- The pack is discovered through NeoForge's `AddPackFindersEvent` as a built-in `SERVER_DATA` pack.
+- The pack is marked non-mandatory. `PackSource.DEFAULT` means selected by default for a new world; it does not force-enable the pack in an existing save.
 
-## Critical safety / registry semantics
+The NBT templates remain available in the mod namespace for explicit placement even when the optional worldgen pack is not selected. Natural structure generation requires the architecture pack to be enabled when the world is created.
 
-1. Datapack choices become part of the world save. The Mod menu is a
-   **next-world default**, not a command that mutates already generated
-   chunks, and selecting another value is not an in-place migration plan.
-2. The selected structure_set overrides use the vanilla `minecraft:`
-   namespace within their own embedded pack roots. They apply to those
-   **entire dimensions**, not only RealScale biome areas. Do not stack the
-   standalone density ZIPs with these built-in packs, and never enable
-   competing Overworld 2x/3x/4x/6x presets in the same world.
-3. The 12 overworld structure sets, and Nether complexes/End cities,
-   retain vanilla weights, salts, separation and spread type. Candidate
-   frequency is higher but successful structure counts are not guaranteed.
-4. Strongholds, buried treasure, mineshafts, outposts and ruined portals
-   continue using their original placement rules; changing village density
-   may still affect vanilla outpost exclusions.
-5. Changing a pack selection for an existing save may affect unexplored
-   chunks and structure locating behaviour; back up the world before
-   experimenting. Enable new densities when creating a new test world.
+## Important world-save behaviour
+
+1. These are **next-world defaults**, not in-place worldgen changes.
+2. Existing saves keep their recorded datapack selections.
+3. Structure sets in the vanilla namespace can affect their target dimensions globally, not only RealScale biomes.
+4. Do not enable competing Overworld density packs at the same time.
+5. Back up a test world before changing its datapack selections; unexplored chunks can be affected.
 
 ## Developer validation
 
@@ -63,19 +44,7 @@ cd neoforge
 gradle --no-daemon build
 cd ..
 python3 -m unittest discover -s qa -p test_builtin_structure_packs.py -v
+python3 -m unittest discover -s qa -p test_architecture_pilot_pack.py -v
 ```
 
-The CI test checks the Gradle-produced JAR contains all six embedded packs,
-that their structure_set JSONs match independent 1.21.1 reference
-generators, and that default pack selection reads the same config fields
-shown by the YACL menu.
-
-**Limitations:** Java compile + resource/JSON tests do not alone prove the
-Minecraft Mods screen renders correctly or that all structures can actually
-generate on every RealScale biome. Verify the GUI, restart behaviour,
-datapack auto-selection, new-world server load and actual structure starts
-in a playable client/server before marking this feature stable.
-
-NeoForge 1.21.1 API references:
-- `IConfigScreenFactory` — Mod list config entry.
-- `AddPackFindersEvent.addPackFinders` — built-in SERVER_DATA packs.
+The tests verify that the checkbox, config migration, built-in pack registration, and packaged architecture resources stay connected. Dedicated-server acceptance is still required to prove natural generation in a playable world.
