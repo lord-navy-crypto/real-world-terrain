@@ -88,7 +88,7 @@ class BranchFamilyUnificationTest(unittest.TestCase):
         self.assertIn('optionalFieldOf("single_pole_area",false)',codec)
         self.assertIn('FIXED_LATITUDE_MODE = "fixed_1_20"',exporter)
         self.assertIn("canonical_latitude_mode",exporter)
-        self.assertIn('"pole_distance":CLIMATE_PREVIEW_POLE_DISTANCE_BLOCKS',exporter)
+        self.assertIn('"pole_distance":FIXED_1_20_POLE_DISTANCE_BLOCKS',exporter)
         self.assertIn("GeographicClimateMath.geodeticLatitudeDeg",density)
         self.assertIn("GeoMath.CLIMATE_POLE_DISTANCE_BLOCKS",density)
         self.assertNotIn("radial_",ui)
