@@ -29,6 +29,8 @@ class RadialClimateAuditTest(unittest.TestCase):
                 self.assertAlmostEqual(meridional_latitude_degrees(-500098,profile),90)
                 self.assertAlmostEqual(meridional_latitude_degrees(500098,profile),-90)
                 self.assertAlmostEqual(meridional_latitude_degrees(0,profile),0)
+                self.assertAlmostEqual(meridional_latitude_degrees(-249247,profile),45.0,delta=0.005)
+                self.assertAlmostEqual(meridional_latitude_degrees(249247,profile),-45.0,delta=0.005)
                 self.assertIsNone(radial_profile_from_noise(settings),
                     "No playable surface profile may use radial climate latitude")
 
