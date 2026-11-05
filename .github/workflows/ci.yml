@@ -94,6 +94,8 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_dh_lod_sqlite_audit.py' -v
       - name: Verify distant forceload never passes from ticket ACK alone
         run: python3 -m unittest discover -s qa -p 'test_distant_rcon_completion.py' -v
+      - name: Verify USGS measured-center server smoke uses authenticated RCON
+        run: python3 -m unittest discover -s qa -p 'test_usgs_rcon_server_smoke.py' -v
       - name: Verify far-distance JVM stall fingerprint parser
         run: python3 -m unittest discover -s qa -p 'test_diagnose_worldgen_threads.py' -v
       - name: Verify adaptive visibility classification and conservative budget parity
