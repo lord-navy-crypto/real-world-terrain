@@ -11,8 +11,10 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * Minecraft world coordinates remain geographic metres (1 block = 1 metre).
  * Only the climate latitude progression is compressed 1:20:
  * WGS84 quarter meridian 10,001,966 m / 20 = 500,098 climate blocks.
- * The equator is a fixed configured world Z (default 0), never the spawn point.
- * The repeating triangle keeps climate transitions continuous across poles.
+ * The equator is fixed at Z=0, never the spawn point. The codec retains its
+ * historical equator_z and pole_distance fields so old worldgen JSON still
+ * loads, but runtime calculation deliberately ignores those legacy values.
+ * The live inspector and worldgen use the same WGS84 inverse-meridian math.
  */
 public record LatitudeTemperatureDensity(DensityFunction base,int equatorZ,
                                          int poleDistance,double strength)
@@ -28,7 +30,7 @@ public record LatitudeTemperatureDensity(DensityFunction base,int equatorZ,
         KeyDispatchDataCodec.of(MAP_CODEC);
 
     @Override public double compute(DensityFunction.FunctionContext ctx){
-        double latitude=GeoMath.latitudeDeg(ctx.blockZ(),equatorZ,poleDistance);
+        double latitude=GeographicClimateMath.geodeticLatitudeDeg(ctx.blockZ());
         return GeoMath.latitudeTemperature(base.compute(ctx),latitude,strength);
     }
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor){

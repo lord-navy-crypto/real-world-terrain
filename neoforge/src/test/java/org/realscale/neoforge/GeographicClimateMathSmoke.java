@@ -61,25 +61,24 @@ public final class GeographicClimateMathSmoke {
         catch (IllegalArgumentException expected) { rejected = true; }
         check(rejected, "out-of-range latitude rejected");
 
-        // Inspector-only inverse meridian arc: WGS84 45-degree arc / 20.
-        // The legacy linear worldgen latitude remains untouched.
-        double geodetic45 = GeographicClimateMath.geodeticLatitudeDeg(-249247, 0, pole);
+        // Shared inspector/worldgen inverse meridian arc: WGS84 45-degree arc / 20.
+        double geodetic45 = GeographicClimateMath.geodeticLatitudeDeg(-249247);
         check(close(geodetic45, 45.0, .005), "WGS84 45N meridian arc at 1:20");
-        check(close(GeographicClimateMath.geodeticLatitudeDeg(249247, 0, pole),
+        check(close(GeographicClimateMath.geodeticLatitudeDeg(249247),
                 -geodetic45, 1e-10), "hemispheres must mirror");
-        check(close(GeographicClimateMath.geodeticLatitudeDeg(-pole, 0, pole), 90, 0),
+        check(close(GeographicClimateMath.geodeticLatitudeDeg(-pole), 90, 0),
                 "north pole");
-        check(close(GeographicClimateMath.geodeticLatitudeDeg(pole, 0, pole), -90, 0),
+        check(close(GeographicClimateMath.geodeticLatitudeDeg(pole), -90, 0),
                 "south pole");
-        check(close(GeographicClimateMath.geodeticLatitudeDeg(2 * pole, 0, pole), 0, 0),
+        check(close(GeographicClimateMath.geodeticLatitudeDeg(2 * pole), 0, 0),
                 "opposite equator");
-        check(close(GeographicClimateMath.geodeticLatitudeDeg(-3 * pole, 0, pole), -90, 0),
+        check(close(GeographicClimateMath.geodeticLatitudeDeg(-3 * pole), -90, 0),
                 "wrapped south pole");
-        check(Math.abs(GeographicClimateMath.geodeticLatitudeDeg(-2 * pole + 1, 0, pole)
-                - GeographicClimateMath.geodeticLatitudeDeg(-2 * pole - 1, 0, pole)) < .001,
+        check(Math.abs(GeographicClimateMath.geodeticLatitudeDeg(-2 * pole + 1)
+                - GeographicClimateMath.geodeticLatitudeDeg(-2 * pole - 1)) < .001,
                 "latitude continuous across wrapped equator");
-        check(close(GeographicClimateMath.geodeticLatitudeDeg(29_999_999, 0, pole),
-                -GeographicClimateMath.geodeticLatitudeDeg(-29_999_999, 0, pole),
+        check(close(GeographicClimateMath.geodeticLatitudeDeg(29_999_999),
+                -GeographicClimateMath.geodeticLatitudeDeg(-29_999_999),
                 1e-8), "large Minecraft coordinates remain symmetric");
 
         GeographicClimateMath.SolarEstimate equinox =

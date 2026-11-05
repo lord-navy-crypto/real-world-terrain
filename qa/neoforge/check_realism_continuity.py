@@ -80,11 +80,39 @@ def meridional_profile_from_noise(settings_path):
 
 
 def meridional_latitude_degrees(z,profile):
-    """Signed latitude parity with GeoMath.latitudeDeg; north is negative Z."""
-    phase=((profile["equator_z"]-z)/profile["pole_distance"])%4.0
-    if phase<=1.0:return 90.0*phase
-    if phase<=3.0:return 90.0*(2.0-phase)
-    return 90.0*(phase-4.0)
+    """WGS84 geodetic latitude parity with the fixed Java 1:20 model.
+
+    The legacy profile argument is accepted only for API compatibility and is
+    ignored: equator Z=0 and 500,098 blocks per pole.
+    """
+    del profile
+    equator_z=0
+    pole_distance=500_098
+    phase=((equator_z-z)/pole_distance)%4.0
+    if phase<=1.0:signed_fraction=phase
+    elif phase<=3.0:signed_fraction=2.0-phase
+    else:signed_fraction=phase-4.0
+    fraction=abs(signed_fraction)
+    if fraction==0.0:return 0.0
+    if fraction>=1.0:return math.copysign(90.0,signed_fraction)
+    semi_major=6_378_137.0
+    eccentricity_squared=0.00669437999014
+    quarter_meridian=10_001_965.729
+    e2=eccentricity_squared
+    e4=e2*e2
+    e6=e4*e2
+    mu=fraction*quarter_meridian/(semi_major*(1.0-e2/4.0-3.0*e4/64.0-5.0*e6/256.0))
+    root=math.sqrt(1.0-e2)
+    e1=(1.0-root)/(1.0+root)
+    e1_2=e1*e1
+    e1_3=e1_2*e1
+    e1_4=e1_2*e1_2
+    radians=(mu
+        +(3.0*e1/2.0-27.0*e1_3/32.0)*math.sin(2.0*mu)
+        +(21.0*e1_2/16.0-55.0*e1_4/32.0)*math.sin(4.0*mu)
+        +151.0*e1_3/96.0*math.sin(6.0*mu)
+        +1097.0*e1_4/512.0*math.sin(8.0*mu))
+    return math.copysign(min(90.0,math.degrees(radians)),signed_fraction)
 
 
 def meridional_biome_audit(heights,surface_biomes,profile):

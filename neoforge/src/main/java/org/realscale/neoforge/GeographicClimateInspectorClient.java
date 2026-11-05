@@ -45,14 +45,12 @@ public final class GeographicClimateInspectorClient {
     static GeographicLatitudeProfile readGeographicProfile(Minecraft minecraft) {
         if (minecraft.level == null || !minecraft.level.dimension().equals(Level.OVERWORLD))
             return null;
-        return new GeographicLatitudeProfile(
-                GeoMath.CLIMATE_EQUATOR_Z,
-                GeoMath.CLIMATE_POLE_DISTANCE_BLOCKS);
+        return new GeographicLatitudeProfile();
     }
 
-    public record GeographicLatitudeProfile(int equatorZ, int poleDistance) {
+    public record GeographicLatitudeProfile() {
         public double latitudeAt(int z) {
-            return GeographicClimateMath.geodeticLatitudeDeg(z, equatorZ, poleDistance);
+            return GeographicClimateMath.geodeticLatitudeDeg(z);
         }
 
         public String scaleLabel() {
@@ -60,8 +58,9 @@ public final class GeographicClimateInspectorClient {
         }
 
         public String coordinateReference() {
-            return "Equator Z: " + equatorZ + " | Equator-to-pole: "
-                    + String.format(Locale.ROOT, "%,d", poleDistance) + " blocks (WGS84 meridional approximation)";
+            return "Equator Z: " + GeoMath.CLIMATE_EQUATOR_Z + " | Equator-to-pole: "
+                    + String.format(Locale.ROOT, "%,d", GeoMath.CLIMATE_POLE_DISTANCE_BLOCKS)
+                    + " blocks (WGS84 meridional approximation)";
         }
     }
 }

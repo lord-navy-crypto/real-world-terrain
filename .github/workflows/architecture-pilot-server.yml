@@ -55,8 +55,6 @@ jobs:
           level-name=architecture-pilot
           level-type=minecraft:normal
           level-seed=20261104
-          initial-enabled-packs=vanilla,mod/realscale:resourcepacks/realscale_structures_architecture_pilot
-          initial-disabled-packs=
           max-tick-time=-1
           view-distance=3
           simulation-distance=3

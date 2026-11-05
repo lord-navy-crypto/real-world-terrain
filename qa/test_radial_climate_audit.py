@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate that live-world climate QA measures the ACTUAL radial density graph."""
+"""Validate live-world WGS84 meridional latitude and legacy radial graph audits."""
 import json
 import math
 import sys
@@ -29,6 +29,8 @@ class RadialClimateAuditTest(unittest.TestCase):
                 self.assertAlmostEqual(meridional_latitude_degrees(-500098,profile),90)
                 self.assertAlmostEqual(meridional_latitude_degrees(500098,profile),-90)
                 self.assertAlmostEqual(meridional_latitude_degrees(0,profile),0)
+                self.assertAlmostEqual(meridional_latitude_degrees(-249247,profile),45.0,delta=0.005)
+                self.assertAlmostEqual(meridional_latitude_degrees(249247,profile),-45.0,delta=0.005)
                 self.assertIsNone(radial_profile_from_noise(settings),
                     "No playable surface profile may use radial climate latitude")
 

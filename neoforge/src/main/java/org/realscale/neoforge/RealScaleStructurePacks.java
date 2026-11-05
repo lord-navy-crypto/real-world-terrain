@@ -18,9 +18,10 @@ import java.nio.file.Path;
  * Built-in optional structure packs: six vanilla density presets plus a
  * mixed licensed/original RealScale architecture library.
  *
- * The selected default packs are enabled by the pack repository for NEW worlds;
- * every other density is selectable from Create World > Data Packs. Packs are
- * never forced and saved worlds retain their own selected datapack IDs.
+ * Density defaults and the 58-structure architecture pack are selected from
+ * the Terrain Lab draft for NEW worlds. Packs are never forced, and saved worlds
+ * retain their own selected datapack IDs. The architecture pack defaults on
+ * but can be deselected with the in-game checkbox.
  *
  * Since minecraft:structure_set keys are global, these packs change all
  * matching dimensions of an opting-in world, not only RealScale biomes.
@@ -28,8 +29,12 @@ import java.nio.file.Path;
 public final class RealScaleStructurePacks {
     private static final String MODID = "realscale";
     private static final Path DRAFT = Path.of("config", "realscale-terrain-lab.json");
+    // BUILT_IN itself auto-selects in this Minecraft version. Use the same
+    // built-in label with shouldAddAutomatically=false for genuine opt-out.
+    static final PackSource OPTIONAL_BUILT_IN =
+            PackSource.create(PackSource.BUILT_IN::decorate, false);
 
-    record Selection(int overworld, int otherDimensions) {
+    record Selection(int overworld, int otherDimensions, boolean architectureEnabled) {
         Selection {
             if (!validOverworld(overworld) || !validDimensions(otherDimensions))
                 throw new IllegalArgumentException("Unknown structure density");
@@ -47,25 +52,27 @@ public final class RealScaleStructurePacks {
 
     static Selection readSelection() {
         if (!Files.isRegularFile(DRAFT))
-            return new Selection(4, 2);
+            return new Selection(4, 2, true);
         try (var reader = Files.newBufferedReader(DRAFT, StandardCharsets.UTF_8)) {
             JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
             int overworld = root.has("structureDensity")
                     ? root.get("structureDensity").getAsInt() : 4;
             int dimensions = root.has("dimensionStructureDensity")
                     ? root.get("dimensionStructureDensity").getAsInt() : 2;
+            boolean architectureEnabled = !root.has("architectureStructuresEnabled")
+                    || root.get("architectureStructuresEnabled").getAsBoolean();
             if (validOverworld(overworld) && validDimensions(dimensions))
-                return new Selection(overworld, dimensions);
+                return new Selection(overworld, dimensions, architectureEnabled);
         } catch (IOException | RuntimeException e) {
             // A damaged config must never silently enable an unexpected
             // density. Keep the conservative vanilla placements in this case.
             System.err.println("[RealScale] Invalid structure density config; "
                     + "falling back to vanilla placements: " + e);
-            return new Selection(0, 0);
+            return new Selection(0, 0, false);
         }
         System.err.println("[RealScale] Unsupported structure density value; "
                 + "falling back to vanilla placements.");
-        return new Selection(0, 0);
+        return new Selection(0, 0, false);
     }
 
     public static void register(AddPackFindersEvent event) {
@@ -82,9 +89,11 @@ public final class RealScaleStructurePacks {
                     "RealScale | Nether + End Structures " + ratio + "x",
                     current.otherDimensions() == ratio);
         }
-        // Explicit opt-in: do not add buildings to ordinary vanilla worlds by default.
+        // Terrain Lab controls the next-world default. The pack remains
+        // optional (required=false); existing saves retain their own selection.
         registerOne(event, "architecture_pilot",
-                "RealScale | Architecture Library (58 Structures)", false);
+                "RealScale | Architecture Library (58 Structures)",
+                current.architectureEnabled());
     }
 
     private static void registerOne(AddPackFindersEvent event, String id,
@@ -94,7 +103,7 @@ public final class RealScaleStructurePacks {
                         MODID, "resourcepacks/realscale_structures_" + id),
                 PackType.SERVER_DATA,
                 Component.literal(displayName),
-                selectedDefault ? PackSource.DEFAULT : PackSource.BUILT_IN,
+                selectedDefault ? PackSource.DEFAULT : OPTIONAL_BUILT_IN,
                 false, // Never mandatory: an existing world may omit this pack.
                 Pack.Position.TOP);
     }
