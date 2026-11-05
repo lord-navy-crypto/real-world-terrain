@@ -71,6 +71,21 @@ def main():
             require(custom["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]==
                     baseline["dimensions"]["minecraft:overworld"]["generator"]["biome_source"],
                     "Export discarded sky-ocean/ecotone wrapper")
+            temperature_path = (
+                "data/realscale/worldgen/density_function/terrain_lab/"
+                + key + "/biome_temperature.json"
+            )
+            temperature = json.loads(archive.read(temperature_path))
+            latitude = temperature
+            while latitude["type"] != "realscale:latitude_temperature":
+                require("base" in latitude,
+                        "Exported temperature graph did not contain the fixed latitude node")
+                latitude = latitude["base"]
+            require(latitude["equator_z"] == 0
+                    and latitude["pole_distance"] == 500_098,
+                    "Old radial/earth draft was not normalized to fixed 1:20 latitude")
+            require("radial_latitude_temperature" not in json.dumps(temperature),
+                    "New exported profiles must not emit radial latitude nodes")
             custom_tag=json.loads(archive.read(
                 "data/minecraft/tags/worldgen/world_preset/normal.json"))
             require(custom_tag["values"]==[profile],
