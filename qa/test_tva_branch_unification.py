@@ -73,20 +73,26 @@ class BranchFamilyUnificationTest(unittest.TestCase):
         self.assertEqual(normal["dimensions"]["minecraft:the_nether"],
                          wonder["dimensions"]["minecraft:the_nether"])
 
-    def test_both_area_climate_algorithms_remain_selectable(self):
+    def test_new_profiles_use_one_fixed_wgs84_1_to_20_latitude_model(self):
         src=(JAVA/"GeoMath.java").read_text()
         codec=(JAVA/"RadialLatitudeTemperatureDensity.java").read_text()
+        density=(JAVA/"LatitudeTemperatureDensity.java").read_text()
         exporter=(ROOT/"scripts/terrain_lab.py").read_text()
         ui=(JAVA/"RealScaleTerrainLabClient.java").read_text()
         for method in ("balancedRadialLatitudeDeg",
                        "areaBalancedRadialLatitudeDeg",
                        "singlePoleAreaRadialLatitudeDeg"):
             self.assertIn(method,src)
+        # Keep old radial codecs available for saved-world deserialization,
+        # but do not expose or generate radial modes for new worlds.
         self.assertIn('optionalFieldOf("single_pole_area",false)',codec)
-        for mode in ("radial_balanced","radial_equal_area",
-                     "radial_equal_area_single_pole"):
-            self.assertIn(mode,exporter)
-            self.assertIn(mode,ui)
+        self.assertIn('FIXED_LATITUDE_MODE = "fixed_1_20"',exporter)
+        self.assertIn("canonical_latitude_mode",exporter)
+        self.assertIn('"pole_distance":CLIMATE_PREVIEW_POLE_DISTANCE_BLOCKS',exporter)
+        self.assertIn("GeographicClimateMath.geodeticLatitudeDeg",density)
+        self.assertIn("GeoMath.CLIMATE_POLE_DISTANCE_BLOCKS",density)
+        self.assertNotIn("radial_",ui)
+        self.assertNotIn('"type":"realscale:radial_latitude_temperature"',exporter)
 
 if __name__=="__main__":
     unittest.main()
