@@ -29,6 +29,10 @@ import java.nio.file.Path;
 public final class RealScaleStructurePacks {
     private static final String MODID = "realscale";
     private static final Path DRAFT = Path.of("config", "realscale-terrain-lab.json");
+    // BUILT_IN itself auto-selects in this Minecraft version. Use the same
+    // built-in label with shouldAddAutomatically=false for genuine opt-out.
+    static final PackSource OPTIONAL_BUILT_IN =
+            PackSource.create(PackSource.BUILT_IN::decorate, false);
 
     record Selection(int overworld, int otherDimensions, boolean architectureEnabled) {
         Selection {
@@ -99,7 +103,7 @@ public final class RealScaleStructurePacks {
                         MODID, "resourcepacks/realscale_structures_" + id),
                 PackType.SERVER_DATA,
                 Component.literal(displayName),
-                selectedDefault ? PackSource.DEFAULT : PackSource.BUILT_IN,
+                selectedDefault ? PackSource.DEFAULT : OPTIONAL_BUILT_IN,
                 false, // Never mandatory: an existing world may omit this pack.
                 Pack.Position.TOP);
     }
