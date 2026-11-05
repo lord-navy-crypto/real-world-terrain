@@ -68,7 +68,7 @@ public final class RealScaleStructurePacks {
         }
         System.err.println("[RealScale] Unsupported structure density value; "
                 + "falling back to vanilla placements.");
-        return new Selection(0, 0);
+        return new Selection(0, 0, false);
     }
 
     public static void register(AddPackFindersEvent event) {
