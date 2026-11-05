@@ -1,4 +1,4 @@
-name: TVA experimental terrain smoothing A/B proof
+name: RealScale experimental terrain smoothing A/B proof
 on:
   pull_request:
     paths: ['neoforge/**', 'qa/**', '.github/workflows/tva-smoothing-probe.yml']
@@ -25,6 +25,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Test continuity audit with meridional, radial and unconfigured latitude modes
+        run: python3 -m unittest discover -s qa -p 'test_realism_continuity.py' -v
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'

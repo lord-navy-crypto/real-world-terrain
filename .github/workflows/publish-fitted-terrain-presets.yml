@@ -1,0 +1,112 @@
+name: Publish fitted RealScale terrain presets
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  publish-fitted-presets:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 2
+      - name: Check one-time publication marker
+        id: gate
+        shell: bash
+        run: |
+          subject="$(git log -1 --format=%s)"
+          if [[ "$subject" == *"[publish-terrain-presets]"* ]]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "Publication marker found; generating the fitted preset resources."
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "No publication marker; skipping write-capable generation."
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.publish == 'true'
+        with:
+          python-version: "3.12"
+      - name: Install calibration dependencies
+        if: steps.gate.outputs.publish == 'true'
+        run: python -m pip install -r research/v1.1/requirements.txt
+      - name: Acquire and fit all six real DEM targets
+        if: steps.gate.outputs.publish == 'true'
+        run: python research/v1.1/tools/build_terrain_profiles.py --all --seed 42 --out-dir build/terrain-archetype-calibration
+      - name: Compile profile-backed worldgen resources
+        if: steps.gate.outputs.publish == 'true'
+        run: |
+          python research/v1.1/tools/compile_terrain_archetype_profiles.py \
+            --profiles-dir build/terrain-archetype-calibration/profiles \
+            --out-dir build/terrain-archetype-calibration/compiled-pack
+      - name: Publish generated data and merge localized preset names
+        if: steps.gate.outputs.publish == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          pack=build/terrain-archetype-calibration/compiled-pack
+          settings=neoforge/src/main/resources/data/realscale/worldgen/noise_settings
+          densities=neoforge/src/main/resources/data/realscale/worldgen/density_function
+          presets=neoforge/src/main/resources/data/realscale/worldgen/world_preset
+          tags=neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset
+          langs=neoforge/src/main/resources/assets/minecraft/lang
+          mkdir -p "$settings" "$densities" "$presets" "$tags" "$langs" research/v1.1/profiles
+          cp "$pack"/data/realscale/worldgen/noise_settings/tva_*_fitted.json "$settings/"
+          for dir in "$pack"/data/realscale/worldgen/density_function/tva_*_fitted; do
+            cp -a "$dir" "$densities/"
+          done
+          for preset in alpine canyon glacial volcanic karst dune; do
+            cp "$pack/data/realscale/worldgen/world_preset/${preset}_three_realms.json" "$presets/"
+          done
+          cp "$pack/data/minecraft/tags/worldgen/world_preset/normal.json" "$tags/normal.json"
+          cp "$pack/data/minecraft/tags/worldgen/world_preset/extended.json" "$tags/extended.json"
+          cp build/terrain-archetype-calibration/profiles/*.json research/v1.1/profiles/
+          cp "$pack/terrain-profile-provenance.json" research/v1.1/profiles/terrain-profile-provenance.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("neoforge/src/main/resources/assets/minecraft/lang")
+          generated = Path("build/terrain-archetype-calibration/compiled-pack/assets/minecraft/lang")
+          for locale in ("en_us", "zh_cn"):
+              destination = root / f"{locale}.json"
+              current = json.loads(destination.read_text(encoding="utf-8"))
+              labels = json.loads((generated / f"{locale}.json").read_text(encoding="utf-8"))
+              current.update(labels)
+              destination.write_text(json.dumps(current, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PY
+      - name: Verify profile and preset contracts before publishing
+        if: steps.gate.outputs.publish == 'true'
+        run: |
+          python -m unittest discover -s research/v1.1/tests -p "test_*.py" -v
+          python3 scripts/check_tva_sacred_timeline.py
+          python3 -m unittest discover -s qa -p "test_realscale_branding_compat.py" -v
+          python3 -m unittest discover -s qa -p "test_real_cave_biome_source.py" -v
+          python3 -m unittest discover -s qa -p "test_sky_ocean_classification_bypass.py" -v
+          python3 -m unittest discover -s qa -p "test_tva_smoothed_families.py" -v
+          python3 -m unittest discover -s qa -p "test_tva_woven_optional_features.py" -v
+          python3 -m unittest discover -s qa -p "test_terrain_lab.py" -v
+      - name: Commit and push the verified generated presets
+        if: steps.gate.outputs.publish == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_*_fitted.json
+          git add neoforge/src/main/resources/data/realscale/worldgen/density_function/tva_*_fitted
+          git add neoforge/src/main/resources/data/realscale/worldgen/world_preset/{alpine,canyon,glacial,volcanic,karst,dune}_three_realms.json
+          git add neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/{normal,extended}.json
+          git add neoforge/src/main/resources/assets/minecraft/lang/{en_us,zh_cn}.json
+          git add research/v1.1/profiles/*.json
+          if git diff --cached --quiet; then
+            echo "No generated resource changes to publish."
+            exit 0
+          fi
+          git commit -m "worldgen: publish six DEM-fitted terrain presets"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

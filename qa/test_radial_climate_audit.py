@@ -10,22 +10,27 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(Path(__file__).resolve().parent/"neoforge"))
 from check_realism_continuity import (
-    radial_profile_from_noise,radial_latitude_degrees,radial_biome_audit
+    radial_profile_from_noise,radial_latitude_degrees,radial_biome_audit,
+    meridional_profile_from_noise,meridional_latitude_degrees
 )
 
 
 class RadialClimateAuditTest(unittest.TestCase):
-    def test_active_canonical_temperature_graphs_are_detected(self):
+    def test_active_canonical_temperature_graphs_use_1_to_20_north_south_latitude(self):
         root=ROOT/"neoforge/src/main/resources/data/realscale/worldgen/noise_settings"
         for preset in ("tva_natural_smoothed","tva_alpine_smoothed",
                        "tva_canyon_smoothed","usgs_big_sur_v2"):
             with self.subTest(preset=preset):
-                radial=radial_profile_from_noise(root/(preset+".json"))
-                self.assertIsNotNone(radial,
-                    "Nested climate_budget temperature must NOT be reported not_radial")
-                self.assertTrue(radial["area_balanced"])
-                self.assertFalse(radial["single_pole_area"])
-                self.assertEqual(radial["pole_distance"],8192)
+                settings=root/(preset+".json")
+                profile=meridional_profile_from_noise(settings)
+                self.assertIsNotNone(profile)
+                self.assertEqual(profile["equator_z"],0)
+                self.assertEqual(profile["pole_distance"],500098)
+                self.assertAlmostEqual(meridional_latitude_degrees(-500098,profile),90)
+                self.assertAlmostEqual(meridional_latitude_degrees(500098,profile),-90)
+                self.assertAlmostEqual(meridional_latitude_degrees(0,profile),0)
+                self.assertIsNone(radial_profile_from_noise(settings),
+                    "No playable surface profile may use radial climate latitude")
 
     def test_reference_nodes_and_original_single_pole_are_followed(self):
         with tempfile.TemporaryDirectory() as td:

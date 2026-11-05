@@ -90,8 +90,12 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_natural_probe_horizontal_memo.py' -v
       - name: Verify multi-waypoint real-far-route completion and timing contract
         run: python3 -m unittest discover -s qa -p 'test_distant_route_contract.py' -v
+      - name: Test read-only DH LOD SQLite persistence audit
+        run: python3 -m unittest discover -s qa -p 'test_dh_lod_sqlite_audit.py' -v
       - name: Verify distant forceload never passes from ticket ACK alone
         run: python3 -m unittest discover -s qa -p 'test_distant_rcon_completion.py' -v
+      - name: Verify USGS measured-center server smoke uses authenticated RCON
+        run: python3 -m unittest discover -s qa -p 'test_usgs_rcon_server_smoke.py' -v
       - name: Verify far-distance JVM stall fingerprint parser
         run: python3 -m unittest discover -s qa -p 'test_diagnose_worldgen_threads.py' -v
       - name: Verify adaptive visibility classification and conservative budget parity
@@ -233,11 +237,11 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_geo_wonder_regions.py' -v
       - name: Verify NeoForge experimental world uses authenticated save and stop
         run: python3 -m unittest discover -s qa -p 'test_geo_wonders_rcon_shutdown.py' -v
-      - name: Ensure canonical sacred timeline excludes experimental geology and invasion
+      - name: Ensure canonical sacred timeline excludes experimental geology and preserves three realms
         run: python3 -m unittest discover -s qa -p 'test_sacred_timeline_promotions.py' -v
-      - name: Verify woven opt-in Wonders + invasion and preserved performance cache
+      - name: Verify independent opt-in Natural Wonders and preserved performance cache
         run: python3 -m unittest discover -s qa -p 'test_tva_woven_optional_features.py' -v
-      - name: Verify Natural Wonders and six-way invasion registrations and safety gates
+      - name: Verify Natural Wonders registrations and safety gates
         run: python3 -m unittest discover -s qa -p 'test_natural_wonders*.py' -v
       - name: Validate mountain cave microhabitats, legacy features and roof safety
         run: python3 -m unittest discover -s qa -p 'test_highland_cave_recovery.py' -v
@@ -355,6 +359,16 @@ jobs:
           python3 -m unittest discover -s qa -p 'test_spawn_chunk_probe.py' -v
           python3 -m unittest discover -s qa -p 'test_structure_and_geoecology.py' -v
           python3 -m unittest discover -s qa -p 'test_river_channel_registration.py' -v
+      - name: Verify no dimensional invasion and preserve latitude climate
+        run: python3 -m unittest discover -s qa -p 'test_no_dimensional_invasion.py' -v
+      - name: Verify deterministic low-to-mid RealScale spawn profiles
+        run: |
+          python3 -m unittest discover -s qa -p 'test_realscale_spawn_profile.py' -v
+          mkdir -p build/realscale-spawn-math
+          javac -d build/realscale-spawn-math \
+            neoforge/src/main/java/org/realscale/neoforge/RealScaleSpawnMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/RealScaleSpawnMathSmoke.java
+          java -cp build/realscale-spawn-math org.realscale.neoforge.RealScaleSpawnMathSmoke
       - name: Prove ALL inherited worldgen density reference graphs resolve
         run: python3 -m unittest discover -s qa -p test_all_worldgen_graphs.py -v
       - name: Verify TVA Terrain Lab independent families, Grand realms and saved-world menu stability
@@ -364,6 +378,8 @@ jobs:
         run: gradle --no-daemon --stacktrace build
       - name: Verify RealScale JAR contains selectable structure packs and Config integration
         run: python3 -m unittest discover -s qa -p 'test_builtin_structure_packs.py' -v
+      - name: Verify GDMC architecture asset licensing, NBT conversion and optional worldgen pack
+        run: python3 -m unittest discover -s qa -p 'test_architecture_pilot_pack.py' -v
       - name: Export real TVA YACL Terrain Lab datapack from compiled JAR
         run: |
           python3 qa/test_tva_exporter_end_to_end.py

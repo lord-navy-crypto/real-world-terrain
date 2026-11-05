@@ -1,0 +1,78 @@
+# Terrain Archetype Fitting v0.2
+
+## Design contract
+
+RealScale has one generic **Natural Landscapes** default and six planned real-data-fitted archetypes. The archetypes are statistical models, not raw elevation playback:
+
+1. Alpine Mountains — Everest/Himalaya
+2. Canyons & Valleys — Grand Canyon
+3. Glacial Valleys — Yosemite Valley
+4. Volcanic Landscapes — Hawaiʻi shield volcanoes
+5. Karst Landscapes — Guilin tower karst
+6. Sand Dunes — Namib Sand Sea
+
+Each target is defined in `research/v1.1/data/terrain_dem_targets.json`. The first common baseline is Copernicus DEM GLO-90, a global 90 m DSM in meters with WGS84 horizontal coordinates and EGM2008 vertical datum. GLO-90 is useful for broad morphology, but not fine cliffs, small dolines or individual dune ripples. Where available, USGS 3DEP bare-earth products are preferred for a higher-resolution second calibration of the U.S. targets.
+
+## Data acquisition and provenance
+
+Run:
+
+```bash
+python3 -m pip install -r research/v1.1/requirements.txt
+python3 research/v1.1/tools/build_terrain_profiles.py --all --seed 42 --out-dir build/terrain-archetype-calibration
+```
+
+The acquisition tool downloads the exact public COG tile, crops the declared study window, and writes a provenance sidecar with the original tile hash and cropped DEM hash. Raw tiles and crops stay outside version control. The profile contains source URLs, product identifiers, hashes, CRS, grid spacing, vertical datum, elevation units and fit statistics.
+
+The build workflow also runs this pipeline and publishes a 30-day artifact containing the compact JSON profiles, synthetic previews and summary—not the raw source tiles.
+
+## Fitted parameters
+
+The fitter extracts elevation percentiles, P05–P95 relief, slope quantiles, fine/mid/coarse RMS amplitudes, directional semivariograms, variogram exponent, anisotropy, and the dominant non-zero spatial wavelength/orientation. The preview kernel uses these measured parameters with a new seed to synthesize a new field. Family transforms create ridge-sharpened alpine terrain, cliff/valley canyon relief, broad U-shaped glacial valleys, shield cones/calderas, tower-karst/doline forms and wind-aligned dune ridges.
+
+The preview is a statistical prototype, not a geological process simulator. A fitted morphology does not establish tectonic, glacial, volcanic, dissolution or aeolian causality.
+
+## Runtime integration status
+
+The six fitted profiles are compiled into six selectable NeoForge density graphs and six world presets. Each graph consumes measured relief, multiscale RMS ratios, slope-derived ridge/cliff/valley indices, spectral wavelength and orientation. The original DEM grids are never replayed or packaged. The seven-mode menu shares the same biome-source chain and keeps the Nether and End definitions identical; only the Overworld noise-settings reference changes among the six fitted modes.
+
+The runtime kernel currently applies **relative morphology modifiers over the existing base density field**. This is a procedural parametric model, not a neural network and not an absolute-heightfield renderer. It does not yet map every vertical meter to one Minecraft block or reproduce Everest's exact summit elevation and the Grand Canyon's exact river-floor elevation. Minecraft's finite vertical budget makes that a separate, explicit vertical-compression decision rather than something the fitter should silently guess.
+
+The actual-server smoke matrix boots each fitted world preset, checks the saved fitted noise-settings ID, and requires saved region output. This verifies registry decoding and real chunk persistence; it does not by itself prove visual similarity. The next quality gate is a multi-seed generated-terrain comparison against the source DEM's elevation, slope, relief and wavelength distributions, with the chosen vertical mapping documented before claiming full 1:1 vertical real scale.
+
+## Official data references
+
+- Copernicus DEM public GLO-90 tile listing and COG naming: <https://copernicus-dem-90m.s3.amazonaws.com/readme.html>
+- Copernicus DEM product handbook, including EGM2008 vertical reference: <https://dataspace.copernicus.eu/sites/default/files/media/files/2024-06/geo1988-copernicusdem-spe-002_producthandbook_i5.0.pdf>
+- Copernicus DEM public dataset and license: <https://registry.opendata.aws/copernicus-dem/>
+- USGS 3DEP products and resolutions: <https://www.usgs.gov/3d-elevation-program/about-3dep-products-services>
+- USGS 3DEP 1/3 arc-second product metadata: <https://data.usgs.gov/datacatalog/data/USGS%3A3a81321b-c153-416f-98b7-cc8e5f0e17c3>
+
+
+## Publishing the fitted presets
+
+The controlled `.github/workflows/publish-fitted-terrain-presets.yml` workflow regenerates all six profiles from public source tiles, compiles the profile coefficients into the six runtime density graphs, merges the seven-mode menu/localizations, runs the focused regression gates, and commits only the compact profiles plus generated resources after every preflight test passes. It activates only when the head commit subject contains `[publish-terrain-presets]` on a same-repository pull request. Raw DEM tiles and cropped rasters remain build-local and are never committed.
+
+
+The publication preflight deliberately runs the focused seven-preset, source-provenance, shared-biome-chain, and worldgen resource contract suites. The separate Terrain Lab suite contains older, unrelated assumptions about experimental dimension toggles; it is not used as a gate for publishing the fitted presets.
+
+
+The first actual NeoForge server smoke exposed a real registry-reference mismatch in the generated settings: the Realism MAX graph names its continentalness, erosion and ridge signals `continental_field`, `erosion_field` and `mountain_axis`, unlike the older Himalayan/Grand Canyon graphs. The compiler now maps those source-specific registry IDs explicitly and the compiler test verifies each target exists before resources can be published.
+
+
+A second runtime registry check caught the same legacy field-name mismatch inside the custom density kernel's `continents` input (not only in `noise_settings`). The compiler now shares one source-specific registry ID across the noise router, adjusted climate graph and archetype kernel, and the contract test asserts the kernel input is bound.
+
+
+The Terrain Lab regression suite remains a separate QA suite and is not a publication-preflight gate. Its legacy fantasy toggle is tested to preserve the 512-block Grand Nether/End rather than silently switching a canonical world to the separate 256-block historical experiment.
+
+
+Publication preflight now also checks that YACL Terrain Lab drafts remain an explicit export operation rather than an automatic Gradle task, so fitted preset publication cannot silently rewrite unrelated experimental worlds.
+
+
+## Current calibration and runtime status
+
+The six public Copernicus DEM GLO-90 crops are fitted to compact multiscale coefficients and compiled into the six NeoForge `realscale:terrain_archetype` density resources. The raw rasters are not replayed in the infinite world. The fitted wavelength, orientation, relief budget, macro/meso/micro ratios, ridge, cliff, and valley statistics parameterize the family kernels.
+
+This is a **morphology-calibrated procedural preset**, not an exact reconstruction of absolute elevations. The existing 2,096-block world-height budget remains in place; a validated meters-to-vertical-blocks mapping and measured generated-terrain error report are still follow-up work. Calibration previews are synthetic outputs from fitted parameters, not screenshots or direct output samples from the NeoForge runtime.
+
+The actual-server smoke matrix now boots all six world presets, checks the saved generator and noise-settings IDs, force-loads a small bounded Overworld area, and requires non-empty saved Anvil region files. This verifies real chunk generation and persistence rather than only checking JSON or a world-menu label.

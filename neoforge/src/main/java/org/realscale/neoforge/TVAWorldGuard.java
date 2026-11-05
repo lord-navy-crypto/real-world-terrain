@@ -25,12 +25,4 @@ public final class TVAWorldGuard {
             || source instanceof SkyOceanBiomeSource sky && sky.containsGeoWonders();
     }
 
-    /** Opt-in cross-realm invasion, not an implicit effect of any RealScale preset. */
-    public static boolean hasCrossRealmInvasion(FeaturePlaceContext<?> context) {
-        if (!hasRealScaleGenerator(context)) return false;
-        BiomeSource source=context.chunkGenerator().getBiomeSource();
-        return source instanceof CrossRealmBiomeSource
-            || source instanceof CrossRealmShowcaseBiomeSource
-            || source instanceof SkyOceanBiomeSource sky && sky.containsCrossRealm();
-    }
 }

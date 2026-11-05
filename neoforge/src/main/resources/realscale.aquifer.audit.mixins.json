@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_21",
+  "package": "org.realscale.neoforge.mixin",
+  "plugin": "org.realscale.neoforge.mixin.AquiferReadOnlyAuditMixinPlugin",
+  "mixins": [
+    "AquiferReadOnlyAuditMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

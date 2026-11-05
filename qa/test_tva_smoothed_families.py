@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TVA core families must use independent interpolated density graphs, while
+"""RealScale core families must use independent interpolated density graphs, while
 every legacy generator registry remains available unchanged.
 """
 import json
@@ -48,11 +48,13 @@ class CoreSmoothing(unittest.TestCase):
       "realscale:"+smoothed+"/terrain_density")
     self.assertTrue((R/"noise_settings"/(legacy+".json")).is_file())
     self.assertTrue((R/"density_function"/legacy/"height_signal.json").is_file())
- def test_four_curated_families_and_separate_combined_opt_in(self):
-  stable=["realscale:"+x for x,_,_ in FAMILIES]+["realscale:tva_measured_three_realms"]
-  optional="realscale:tva_wonders_invasion_three_realms"
+ def test_seven_canonical_menu_entries_and_hidden_experiment_resources(self):
+  stable=["realscale:"+x for x in ("natural_three_realms","alpine_three_realms","canyon_three_realms","glacial_three_realms","volcanic_three_realms","karst_three_realms","dune_three_realms")]
+  self.assertTrue((R/"world_preset/tva_natural_wonders_experimental_three_realms.json").is_file())
+  self.assertFalse((R/"world_preset/tva_wonders_invasion_three_realms.json").exists())
+  self.assertTrue((R/"world_preset/tva_cave_ocean_ecology_test_three_realms.json").is_file())
   for tag in ("normal","extended"):
    path=ROOT/"minecraft/tags/worldgen/world_preset"/(tag+".json")
-   self.assertEqual(read(path)["values"],stable+[optional])
+   self.assertEqual(read(path)["values"],stable)
    self.assertEqual(len(read(path)["values"]),len(set(read(path)["values"])))
 if __name__=="__main__": unittest.main()

@@ -64,11 +64,15 @@ class MountainBasinPlateauTest(unittest.TestCase):
             self.assertEqual(adjusted["type"],"realscale:mountain_basin_temperature")
             self.assertEqual(adjusted["height_signal"],
                              f"realscale:{preset}/original_height_signal")
-            base=adjusted["base"]
-            self.assertEqual(base["type"],"realscale:radial_latitude_temperature")
-            self.assertTrue(base["area_balanced"])
-            self.assertTrue(base["balanced"])
-            self.assertGreater(base["altitude_cooling"],0)
+            latitude=adjusted["base"]
+            self.assertEqual(latitude["type"],"realscale:latitude_temperature")
+            self.assertEqual(latitude["equator_z"],0)
+            self.assertEqual(latitude["pole_distance"],500098)
+            self.assertEqual(latitude["strength"],0.58)
+            # Altitude cooling remains inside the latitude node's base signal;
+            # only the geographic temperature mapping is changed to N/S.
+            self.assertEqual(latitude["base"]["type"],"minecraft:add")
+            self.assertEqual(latitude["base"]["argument2"]["type"],"minecraft:mul")
             landform=read(DATA/"density_function"/preset/"height_signal.json")
             if preset=="tva_natural_smoothed":
                 self.assertEqual(landform["type"],"realscale:measured_horizontal_memo")
@@ -85,8 +89,9 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertEqual(usgs["type"],"realscale:dem_density_seamless")
         self.assertEqual(usgs["blend_meters"],2048)
         usgs_noise=read(DATA/"noise_settings/usgs_big_sur_v2.json")
-        self.assertEqual(usgs_noise["noise_router"]["temperature"]["adjusted"]["type"],
-                         "realscale:radial_latitude_temperature")
+        usgs_latitude=usgs_noise["noise_router"]["temperature"]["adjusted"]
+        self.assertEqual(usgs_latitude["type"],"realscale:latitude_temperature")
+        self.assertEqual(usgs_latitude["pole_distance"],500098)
         self.assertEqual(usgs_noise["noise_router"]["final_density"]["type"],
                          "realscale:grand_overworld_caverns")
         for old in ("realism_max","himalayan","grand_canyon"):

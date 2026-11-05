@@ -30,12 +30,11 @@ class SacredPromotionTest(unittest.TestCase):
  def test_no_unverified_features_can_run_without_explicit_opt_in(self):
   guard=(S/"TVAWorldGuard.java").read_text()
   self.assertIn("hasExperimentalWonders",guard)
-  self.assertIn("hasCrossRealmInvasion",guard)
+  self.assertNotIn("hasCrossRealmInvasion",guard)
   self.assertIn("source instanceof GeoWondersBiomeSource",guard)
   for name in ("EarthWonderFeature","GeoWonderRegionFeature","CaveWonderNetworkFeature"):
    self.assertIn("TVAWorldGuard.hasExperimentalWonders(context)",(S/(name+".java")).read_text())
   self.assertIn("TVAWorldGuard.hasExperimentalWonders(context)",
                 (S/"EarthSystemsAccentFeature.java").read_text())
-  self.assertIn("TVAWorldGuard.hasCrossRealmInvasion(context)",
-                (S/"DimensionalInvasionFeature.java").read_text())
+  self.assertFalse((S/"DimensionalInvasionFeature.java").exists())
 if __name__=="__main__":unittest.main()

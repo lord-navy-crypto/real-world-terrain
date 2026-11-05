@@ -1,4 +1,4 @@
-name: TVA ocean seeds - real marine biome and water-column integrity
+name: RealScale ocean seeds - real marine biome and water-column integrity
 on:
   pull_request:
     paths:

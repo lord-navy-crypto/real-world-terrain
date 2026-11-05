@@ -1,6 +1,16 @@
 # RealScale Terrain
 
-Minecraft 1.21.1 / NeoForge / Java 21 的真实尺度地形实验项目。当前可安装成果为 **v1.1 测试候选版**：USGS Big Sur 高程覆盖层 + 七个程序化世界预设。地表单位为 1 方块 = 1 米；这不意味着原始观测分辨率为 1 米。
+Minecraft 1.21.1 / NeoForge / Java 21 的真实尺度地形实验项目。仓库保留 **v1.1 历史测试候选版**：USGS Big Sur 高程覆盖层 + 七个历史程序化预设。当前开发分支正在把新世界入口精简为四个规范地形家族，并建立由真实 DEM 拟合参数驱动的离线原型。地表单位为 1 方块 = 1 米；这不意味着原始观测分辨率为 1 米。
+
+## 当前实验预览与兼容组件（2026-10-23）
+
+最新实验性主模组采用 **RealScale 2.0.0-preview.2-test.6** 命名，下载 JAR 的前缀为 **RealScale-NeoForge-1.21.1**。本分支将新世界菜单精简为四项：自然地貌、高山地貌、峡谷与河谷、实测地形。地质奇观、洞穴生物群系和海洋栖息地作为可组合的共享层；跨维度入侵仍保留为隐藏的实验资源。旧世界注册 ID 与可选实验资源继续保留，避免删除历史兼容路径。对已有世界，请先备份再测试新版本。
+
+RealScale 与 Distant Horizons / Chunky 的独立兼容补丁统一在本仓库的 [`dh-chunky-guard/`](dh-chunky-guard/) 管理。它拥有**单独的 Java / Mixin / Gradle 和 JAR 构建**，不是 RealScale 主模组必需依赖；需要使用精确匹配的 DH 3.3.3、Chunky 1.4.23、NeoForge 1.21.1。不要把两款 RealScale 主模组 JAR 同时安装，也不要同时安装两个 Guard 版本。
+
+详细说明请见 [品牌命名与旧世界迁移约定](docs/REAL_SCALE_BRANDING_COMPATIBILITY.md)。实验性优化尚未完成全部旧存档等价性及 Mac 光影实测，**不应以 Stable 名义发布**。
+
+主模组各版本更新请参阅 [RealScale 更新日志](neoforge/CHANGELOG.md)。DH–Chunky 独立补丁的更新记录请参阅 [兼容补丁更新日志](dh-chunky-guard/CHANGELOG.md)。
 
 ## 当前交付与边界
 
@@ -20,6 +30,16 @@ Minecraft 1.21.1 / NeoForge / Java 21 的真实尺度地形实验项目。当前
 优先下载 [与原始交付字节一致的 v1.1 JAR](dist/v1.1/RealScaleTerrain_NeoForge_1.21.1_FinalBattle_v1.1.jar)（SHA-256: `638ef85e4b3978e6344ec8b52d37e0c463c21bfd2a7cf7e8564d5b7eab5ada43`），或从 [dist/v1.1](dist/v1.1/) 浏览其他构建产物；将 JAR，放入 Minecraft 1.21.1、NeoForge 21.1.249、Java 21 实例的 `mods` 文件夹。关闭游戏后操作，先备份实例。只装一份 RealScale，创建新的实验世界，选择 USGS Big Sur 预设，建议种子 `785312`，观察世界原点附近。
 
 DEM 覆盖约 480×480 米，32 米网格由约 54–67 米间距的 USGS 服务值重采样而来；内侧 96 米过渡带混合回 Realism MAX。真实降水、岩性、侵蚀与完整河网不在这个 JAR 中。客户端画面、村庄落地、长距离河流和性能仍待测试。
+
+## 可选建筑库（当前架构开发分支）
+
+当前架构开发分支还包含一个独立的 **RealScale Architecture Library**：
+- 58 种 Minecraft 1.21.1 结构模板：3 种经 Apache-2.0 许可核验的 GDMC 导入，以及 55 种原创设计。
+- 原创设计包括 50 种批量生成建筑，其中 15 种是多建筑组合聚落，代表性设计包括林地小村、平原集市、河畔聚落、葡萄园庄园、牧羊农场、铁路货运站、河畔锯木场和湿地聚落。
+- NBT 模板位于模组基础数据资源中，可用于显式 `/place template` 放置；自然生成的群系标签、结构定义和结构集则位于独立可选数据包。
+- 新世界创建时，在 **Data Packs** 中选择 **RealScale | Architecture Library (58 Structures)**，才会启用自然生成。普通世界不会被强制添加这些建筑。
+
+来源、生成器、群系分布和验证边界见 [建筑生成说明](docs/architecture/ORIGINAL_ARCHITECTURE_GENERATOR.md) 与 [资产来源记录](docs/architecture/ASSET_PROVENANCE.md)。
 
 ## 构建与验证
 

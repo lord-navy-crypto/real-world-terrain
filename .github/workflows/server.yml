@@ -42,61 +42,14 @@ jobs:
           max-players=1
           max-tick-time=-1
           online-mode=true
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
           PROPERTIES
           done
-      - name: Start actual NeoForge server; verify mod registry and new world
+      - name: Start actual NeoForge server and generate the measured USGS center using authenticated RCON
         working-directory: neoforge
-        run: |
-          python3 - <<'PY'
-          import subprocess,threading,time,os,signal,json,pathlib,re
-          log=pathlib.Path('build/neoforge-server-smoke.log')
-          log.parent.mkdir(exist_ok=True,parents=True)
-          p=subprocess.Popen(['gradle','--no-daemon','runServer','--stacktrace'],stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1,
-                             start_new_session=True)
-          out=[];done=threading.Event()
-          def reader():
-            for line in p.stdout:
-              out.append(line)
-              if 'Done (' in line and 'For help' in line:done.set()
-          t=threading.Thread(target=reader,daemon=True);t.start()
-          deadline=time.time()+480
-          while time.time()<deadline and p.poll() is None and not done.is_set():time.sleep(1)
-          if done.is_set():
-            print('NEOFORGE_SERVER_BOOT_OK: reached Done milestone')
-            time.sleep(18)
-          else:
-            print('NEOFORGE_SERVER_BOOT_FAIL:',p.poll())
-          try:
-            if p.poll() is None:
-              p.stdin.write('stop\n');p.stdin.flush()
-              p.wait(timeout=45)
-          except Exception:
-            if p.poll() is None:
-              os.killpg(p.pid,signal.SIGINT)
-              try:p.wait(timeout=15)
-              except subprocess.TimeoutExpired:
-                os.killpg(p.pid,signal.SIGKILL);p.wait()
-          t.join(timeout=2)
-          log.write_text(''.join(out))
-          text=log.read_text()
-          print('SERVER_LOG_TAIL:',text[-5500:])
-          print('NeoForge Done marker:',done.is_set(),'lines:',len(out))
-          files=list(pathlib.Path('run').glob('**/level.dat'))
-          print('Level DAT candidates:',[str(x) for x in files])
-          valid=False
-          import gzip
-          for f in files:
-            try:
-              data=gzip.decompress(f.read_bytes())
-              if b'realscale:usgs_big_sur' in data:
-                valid=True;print('Correct generator in saved level.dat:',f)
-              else:print('WARNING generated other preset',f)
-            except Exception as e:print('Could not read level.dat',f,e)
-          if not done.is_set() or not valid:
-            raise SystemExit('NeoForge new-world smoke NOT VERIFIED')
-          print('GAME ENGINE WORLDGEN SMOKE: PASS')
-          PY
+        run: python3 ../qa/neoforge/rcon_usgs_center_smoke.py .
       - name: Wait for saved region chunks before USGS height verification
         working-directory: neoforge
         run: |
@@ -106,16 +59,29 @@ jobs:
           seen=0
           while True:
             seen=0
-            for region in pathlib.Path('run').glob('**/region/*.mca'):
+            for region in pathlib.Path('run').glob('**/region/r.*.*.mca'):
+              parts=region.stem.split('.')
+              if len(parts)!=3:
+                continue
+              rx,rz=int(parts[1]),int(parts[2])
               data=region.read_bytes()[:4096]
-              seen+=sum(int.from_bytes(data[i:i+3], 'big') > 0 for i in range(0, min(4096,len(data)), 4))
-            if seen>=300:
+              for index in range(1024):
+                if int.from_bytes(data[index*4:index*4+3], 'big') == 0:
+                  continue
+                cx=rx*32+(index%32)
+                cz=rz*32+(index//32)
+                if -4<=cx<=3 and -4<=cz<=3:
+                  seen+=1
+            # The audited DEM window is the same 8x8 chunk square. Thirty
+            # persisted center chunks provide far more than the 30 height
+            # samples required by check_actual_chunk_heights.py.
+            if seen>=30:
               time.sleep(8)
               break
             if time.monotonic()>=deadline:
-              raise SystemExit('Insufficient persisted chunks for reliable DEM check: '+str(seen))
+              raise SystemExit('Insufficient persisted DEM-center chunks: '+str(seen))
             time.sleep(4)
-          print('REGION_FLUSH_READY:',seen,'stored chunks')
+          print('REGION_FLUSH_READY:',seen,'persisted DEM-center chunks')
           PY
       - name: Verify ACTUAL Anvil block heights match USGS sampled terrain
         working-directory: neoforge

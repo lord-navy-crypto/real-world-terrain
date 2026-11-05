@@ -1,4 +1,4 @@
-name: TVA Sacred Timeline three-realm dedicated server
+name: RealScale natural three-realm worldgen regression
 # Keep only the newest PR validation; old experimental commits must not
 # monopolize expensive high-ceiling Minecraft server runners.
 concurrency:
@@ -9,6 +9,8 @@ on:
     paths:
       - 'neoforge/**'
       - '.github/workflows/tva-sacred-world.yml'
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'qa/neoforge/audit_dh_lod_sqlite.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -34,7 +36,11 @@ jobs:
             cat > "$dir/server.properties" <<'PROPERTIES'
           level-name=tva-sacred-test
           level-type=realscale:tva_sacred_timeline_three_realms
-          level-seed=785312
+          level-seed=2
+          server-ip=127.0.0.1
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=realscale_ci_probe_only
           spawn-protection=0
           view-distance=3
           simulation-distance=3
@@ -43,46 +49,30 @@ jobs:
           online-mode=true
           PROPERTIES
           done
-      - name: Boot NeoForge and persist world generated with natural ecotone BiomeSource
+      - name: Boot NeoForge and generate distant chunks via authenticated RCON
+        working-directory: neoforge
+        run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . 'realscale:tva_sacred_timeline_three_realms' distant
+      - name: Verify persisted TVA three-realm source chain
         working-directory: neoforge
         run: |
           python3 - <<'PY'
-          import subprocess,threading,time,os,signal,gzip,pathlib
-          logfile=pathlib.Path('build/tva-sacred-server.log')
-          logfile.parent.mkdir(exist_ok=True,parents=True)
-          p=subprocess.Popen(['gradle','--no-daemon','runServer','--stacktrace'],stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1,
-                             start_new_session=True)
-          lines=[];ready=threading.Event()
-          def read():
-            for line in p.stdout:
-              lines.append(line)
-              if 'Done (' in line and 'For help' in line:ready.set()
-          t=threading.Thread(target=read,daemon=True);t.start()
-          deadline=time.time()+420
-          while time.time()<deadline and p.poll() is None and not ready.is_set():time.sleep(1)
-          if ready.is_set():time.sleep(15)
-          try:
-            if p.poll() is None:
-              p.stdin.write('stop\n');p.stdin.flush();p.wait(timeout=50)
-          except Exception:
-            if p.poll() is None:
-              os.killpg(p.pid,signal.SIGINT)
-              try:p.wait(timeout=15)
-              except subprocess.TimeoutExpired:
-                os.killpg(p.pid,signal.SIGKILL);p.wait()
-          t.join(timeout=3)
-          logfile.write_text(''.join(lines))
-          print('server_boot_ready',ready.is_set(),'output_tail',logfile.read_text()[-9000:])
-          found=False
-          for path in pathlib.Path('run').glob('**/level.dat'):
-            data=gzip.decompress(path.read_bytes())
-            if b'realscale:sky_ocean' in data and b'realscale:natural_ecotones' in data and b'realscale:grand_nether' in data and b'realscale:grand_end' in data:
-              print('TVA_SACRED_PRESET_PERSISTED',path)
-              found=True
-          if not ready.is_set() or not found:
-            raise SystemExit('FAIL: ecotone preset did not boot into a persisted new world')
-          print('PASS: ecotone source registry decode and dedicated server world boot')
+          import gzip
+          from pathlib import Path
+          level = Path("run/tva-sacred-test/level.dat")
+          if not level.is_file():
+              raise SystemExit("FAIL: TVA level.dat was not persisted")
+          data = gzip.decompress(level.read_bytes())
+          required = (
+              b"realscale:sky_ocean",
+              b"realscale:natural_ecotones",
+              b"realscale:grand_nether",
+              b"realscale:grand_end",
+          )
+          missing = [token.decode() for token in required if token not in data]
+          if missing:
+              raise SystemExit("FAIL: persisted TVA source chain missing " + str(missing))
+          print("TVA_SACRED_PRESET_PERSISTED", level)
+          print("PASS: sky/ocean, natural ecotones and both Grand dimensions")
           PY
       - name: Check Anvil chunk palettes for actual climate-boundary ecotone selections
         working-directory: neoforge
@@ -93,8 +83,9 @@ jobs:
         with:
           name: TVA-Sacred-Three-Realm-Server-Proof
           path: |
-            neoforge/build/tva-sacred-server.log
+            neoforge/build/rcon_distant_server.log
+            neoforge/build/dh-chunky-lod-storage.json
             neoforge/build/ecotone-anvil-qa.json
-            neoforge/run/**/tva-sacred-test/level.dat
-            neoforge/run/**/tva-sacred-test/region/*.mca
+            neoforge/run/tva-sacred-test/level.dat
+            neoforge/run/tva-sacred-test/region/*.mca
           if-no-files-found: warn

@@ -2,8 +2,8 @@ package org.realscale.neoforge;
 
 import net.neoforged.fml.common.Mod;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.registries.RegisterEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import org.realscale.neoforge.compat.dhchunky.DhChunkyGuardCommands;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -14,7 +14,7 @@ public final class RealScaleMod {
         RealScaleVehicles.register(bus);
         bus.addListener(RealScaleStructurePacks::register);
         bus.addListener(this::registerDensity);
-        // Read-only DH/Chunky lifecycle diagnostics are part of the RealScale mod.
+        NeoForge.EVENT_BUS.addListener(RealScaleSpawnPosition::onCreateSpawnPosition);
         NeoForge.EVENT_BUS.addListener(DhChunkyGuardCommands::registerCommands);
     }
     private void registerDensity(RegisterEvent event) {
@@ -27,6 +27,7 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "grand_overworld_caverns"), GrandOverworldCaverns.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "range_min_exact"), RangeMinDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "mountain_relief"), MountainReliefDensity.MAP_CODEC);
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "terrain_archetype"), TerrainArchetypeDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "ridge_erosion"), RidgeErosionDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "strata"), StrataDensity.MAP_CODEC);
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "valley_temperature"), ValleyTemperatureDensity.MAP_CODEC);
@@ -47,17 +48,13 @@ public final class RealScaleMod {
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones"),
                     NaturalEcotoneBiomeSource.CODEC)
         );
-        event.register(Registries.BIOME_SOURCE, helper ->
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cross_realm_showcase"),
-                    CrossRealmShowcaseBiomeSource.CODEC)
-        );
-        event.register(Registries.BIOME_SOURCE, helper ->
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cross_realm_invasion"),
-                    CrossRealmBiomeSource.CODEC)
-        );
-        event.register(Registries.BIOME_SOURCE, helper ->
+event.register(Registries.BIOME_SOURCE, helper ->
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_ocean"),
                     SkyOceanBiomeSource.CODEC)
+        );
+        event.register(Registries.BIOME_SOURCE, helper ->
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_depth_habitats"),
+                    CaveDepthBiomeSource.CODEC)
         );
         event.register(Registries.FEATURE, helper -> {
             // Terrain Lab's bank-protected, source-only river channels. The
@@ -79,24 +76,6 @@ public final class RealScaleMod {
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.UPLAND_SCREE));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "coastal_driftwood"),
                     new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.COASTAL_DRIFTWOOD));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_nether_overworld"),
-                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.NETHER_IN_OVERWORLD));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_end_overworld"),
-                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.END_IN_OVERWORLD));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_overworld_nether"),
-                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.OVERWORLD_IN_NETHER));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_end_nether"),
-                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.END_IN_NETHER));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_overworld_end"),
-                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.OVERWORLD_IN_END));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_patch_nether_end"),
-                    new CrossRealmTerrainPatchFeature(CrossRealmTerrainPatchFeature.Kind.NETHER_IN_END));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_nether"),
-                    new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.NETHER));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_end"),
-                    new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.END));
-            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "invasion_overworld"),
-                    new DimensionalInvasionFeature(DimensionalInvasionFeature.Invader.OVERWORLD));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "sky_blossom_island"),
                     new SkyIslandFeature());
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"),
@@ -203,6 +182,26 @@ public final class RealScaleMod {
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.CORAL_REEF_FLOOR));
             helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "estuary_shallows"),
                     new GrandEcologyFeature(GrandEcologyFeature.Kind.ESTUARY_SHALLOWS));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_fungal_grottos"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_FUNGAL));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_calcite_shelves"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_CALCITE));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_volcanic_basalt"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_VOLCANIC));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_glacial_rock"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_GLACIAL));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_spring_moss"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_SPRING));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cold_water_reef"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.COLD_WATER_REEF));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "kelp_meadow"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.KELP_MEADOW));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "warm_reef_garden"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.WARM_REEF_GARDEN));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_glow_lichen"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_GLOW));
+            helper.register(ResourceLocation.fromNamespaceAndPath("realscale", "cave_fossil_matrix"),
+                    new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_FOSSIL));
         });
     }
 }
