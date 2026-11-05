@@ -110,7 +110,9 @@ def prepare_server() -> None:
         "view-distance=3\n"
         "simulation-distance=3\n"
         "online-mode=false\n"
-        "enable-rcon=false\n"
+        "enable-rcon=true\n"
+        "rcon.password=realscale-dhchunky-smoke-local-only\n"
+        "rcon.port=25575\n"
         "spawn-protection=0\n"
     )
     for game_dir in (RUN, RUN / "server"):
@@ -139,6 +141,68 @@ def stop_server(proc: subprocess.Popen[str] | None) -> None:
         except subprocess.TimeoutExpired:
             proc.kill()
             proc.wait(timeout=10)
+
+
+RCON_HOST = "127.0.0.1"
+RCON_PORT = 25575
+RCON_PASSWORD = "realscale-dhchunky-smoke-local-only"
+
+
+def recv_exact(sock, count: int) -> bytes:
+    data = bytearray()
+    while len(data) < count:
+        chunk = sock.recv(count - len(data))
+        if not chunk:
+            raise ConnectionError("RCON connection closed")
+        data.extend(chunk)
+    return bytes(data)
+
+
+def send_packet(sock, packet_id: int, packet_type: int, payload: str) -> None:
+    body = (
+        packet_id.to_bytes(4, "little", signed=True)
+        + packet_type.to_bytes(4, "little", signed=True)
+        + payload.encode("utf-8")
+        + b"\\x00\\x00"
+    )
+    sock.sendall(len(body).to_bytes(4, "little", signed=True) + body)
+
+
+def recv_packet(sock):
+    length = int.from_bytes(recv_exact(sock, 4), "little", signed=True)
+    body = recv_exact(sock, length)
+    packet_id = int.from_bytes(body[:4], "little", signed=True)
+    packet_type = int.from_bytes(body[4:8], "little", signed=True)
+    return packet_id, packet_type, body[8:-2].decode("utf-8", errors="replace")
+
+
+def connect_rcon(timeout: int = 45):
+    import socket
+
+    deadline = time.monotonic() + timeout
+    last_error = None
+    while time.monotonic() < deadline:
+        try:
+            sock = socket.create_connection((RCON_HOST, RCON_PORT), timeout=3)
+            sock.settimeout(8)
+            send_packet(sock, 1, 3, RCON_PASSWORD)
+            packet_id, packet_type, _ = recv_packet(sock)
+            if packet_id != 1 or packet_type != 2:
+                sock.close()
+                raise PermissionError("RCON authentication was rejected")
+            return sock
+        except Exception as exc:
+            last_error = exc
+            time.sleep(1)
+    raise TimeoutError(f"RCON did not become ready: {last_error}")
+
+
+def rcon_command(sock, packet_id: int, command: str) -> str:
+    send_packet(sock, packet_id, 2, command)
+    response_id, _response_type, response = recv_packet(sock)
+    if response_id != packet_id:
+        raise RuntimeError(f"Unexpected RCON response id {response_id}: {response}")
+    return response
 
 
 def main() -> int:
@@ -190,26 +254,39 @@ def main() -> int:
         wait_for("Done (", 600)
         print("NEOFORGE_WITH_DH_AND_CHUNKY_SERVER_BOOT_OK", flush=True)
 
-        # Force several distinct full-chunk events. If DH encountered the
-        # known early-provider race, a later event must let its native bind retry.
-        assert proc.stdin is not None
-        for x in (0, 16, 32, 48, 64, 80, 96, 112):
-            proc.stdin.write(f"forceload add {x} 0\n")
-            proc.stdin.flush()
-            time.sleep(0.4)
-            if any(BOUND_MARKER in line for line in captured):
-                break
+        sock = connect_rcon()
+        try:
+            # Force distinct full-chunk events. If DH saw the provider too early,
+            # a later real chunk event must let its native listener bind retry.
+            packet_id = 2
+            for x in (0, 16, 32, 48, 64, 80, 96, 112):
+                rcon_command(sock, packet_id, f"forceload add {x} 0")
+                packet_id += 1
+                time.sleep(0.4)
+                if any(BOUND_MARKER in line for line in captured):
+                    break
 
-        if not any(HOOK_MARKER in line for line in captured):
-            wait_for(HOOK_MARKER, 45)
-        if not any(BOUND_MARKER in line for line in captured):
-            wait_for(BOUND_MARKER, 90)
+            if not any(HOOK_MARKER in line for line in captured):
+                wait_for(HOOK_MARKER, 45)
+            if not any(BOUND_MARKER in line for line in captured):
+                wait_for(BOUND_MARKER, 90)
 
-        if any(CRASH_MARKER in line for line in captured):
-            raise RuntimeError("The known ChunkyProvider startup exception appeared in the log")
+            if any(CRASH_MARKER in line for line in captured):
+                raise RuntimeError(
+                    "The known ChunkyProvider startup exception appeared in the log"
+                )
 
-        print("DH_CHUNKY_NATIVE_LISTENER_BIND_CONFIRMED", flush=True)
-        print("REALSCALE_DH_CHUNKY_RUNTIME_SMOKE_PASS", flush=True)
+            time.sleep(1)
+            if proc.poll() is not None:
+                raise RuntimeError("NeoForge exited after the DH-Chunky listener bind")
+            print("DH_CHUNKY_NATIVE_LISTENER_BIND_CONFIRMED", flush=True)
+            print("REALSCALE_DH_CHUNKY_RUNTIME_SMOKE_PASS", flush=True)
+            rcon_command(sock, packet_id, "stop")
+            packet_id += 1
+        finally:
+            sock.close()
+
+        proc.wait(timeout=35)
         return 0
     except Exception as exc:
         print(f"DH_CHUNKY_RUNTIME_SMOKE_FAILED: {exc}", file=sys.stderr, flush=True)
