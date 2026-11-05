@@ -694,7 +694,7 @@ def main(argv=None):
                         help="Opt-in height-aware temperature biome signal (0..100)")
     parser.add_argument("--valley-warming",type=int,default=0,
                         help="Opt-in bounded relative-valley temperature boost (0..100)")
-    parser.add_argument("--latitude-mode",choices=("fixed_1_20","off"),default="off",
+    parser.add_argument("--latitude-mode",choices=("fixed_1_20","off"),default="fixed_1_20",
                         help="Only fixed WGS84 1:20 meridional climate latitude is supported; off remains for legacy CLI compatibility.")
     parser.add_argument("--latitude-strength",type=int,default=70,help="Fixed 1:20 latitude strength 0..100; zero disables it.")
     parser.add_argument("--basin-warming",type=int,default=0,
