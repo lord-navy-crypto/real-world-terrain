@@ -30,7 +30,10 @@ class DhChunkyGuardTests(unittest.TestCase):
         plugin = PLUGIN.read_text(encoding="utf-8")
         self.assertIn('hasVersion("distanthorizons", "3.3.3")', plugin)
         self.assertIn('hasVersion("chunky", "1.4.23")', plugin)
-        self.assertIn("return false;", plugin)
+        self.assertIn("FMLLoader.getLoadingModList()", plugin)
+        self.assertIn("loadingModList.getMods()", plugin)
+        self.assertIn("ModInfo::getVersion", plugin)
+        self.assertNotIn("ModList.get()", plugin)
 
     def test_dh_and_chunky_are_optional_not_hard_dependencies(self):
         toml = TOML.read_text(encoding="utf-8")
