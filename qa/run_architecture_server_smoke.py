@@ -67,7 +67,7 @@ def prepare_architecture_pack_config():
         "structureDensity": 4,
         "dimensionStructureDensity": 2,
         "architectureStructuresEnabled": True,
-    }, indent=2) + "\\n", encoding="utf-8")
+    }, indent=2) + "\n", encoding="utf-8")
     print("ARCHITECTURE_PACK_CONFIGURED_DEFAULT_ON:", config, flush=True)
 TEMPLATES = (
     "modern_house", "glass_greenhouse", "city_library",
