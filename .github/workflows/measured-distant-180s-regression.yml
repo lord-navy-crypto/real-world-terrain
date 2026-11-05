@@ -7,6 +7,7 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/**'
       - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'qa/neoforge/audit_dh_lod_sqlite.py'
       - '.github/workflows/measured-distant-180s-regression.yml'
   pull_request:
     paths:
@@ -24,6 +25,7 @@ on:
       - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/usgs_big_sur_v2/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/realism_max/**'
       - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'qa/neoforge/audit_dh_lod_sqlite.py'
       - '.github/workflows/measured-distant-180s-regression.yml'
   workflow_dispatch:
 permissions:
