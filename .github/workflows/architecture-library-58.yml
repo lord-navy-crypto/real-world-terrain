@@ -82,7 +82,7 @@ jobs:
             printf 'eula=true\n' > "$dir/eula.txt"
             cat > "$dir/server.properties" <<'PROPERTIES'
           level-name=architecture-58-smoke
-          level-type=minecraft\:normal
+          level-type=realscale:tva_sacred_timeline_three_realms
           level-seed=580058
           spawn-protection=0
           view-distance=3
