@@ -417,15 +417,20 @@ class ArchitecturePilotTests(unittest.TestCase):
                                       / (biome.split(":", 1)[1] + ".json"))
                         self.assertTrue(biome_file.is_file(), f"Unknown RealScale biome: {biome}")
 
-    def test_rcon_diagnostic_pack_is_created_in_the_selected_world(self):
+    def test_rcon_diagnostic_pack_tracks_each_workflows_selected_world(self):
         script = (ROOT / "qa/run_architecture_server_smoke.py").read_text(encoding="utf-8")
-        workflow = (ROOT / ".github/workflows/architecture-pilot-server.yml").read_text(encoding="utf-8")
-        self.assertIn("working-directory: neoforge", workflow)
-        self.assertIn("level-name=architecture-pilot", workflow)
+        pilot = (ROOT / ".github/workflows/architecture-pilot-server.yml").read_text(encoding="utf-8")
+        full = (ROOT / ".github/workflows/architecture-library-58.yml").read_text(encoding="utf-8")
+        self.assertIn("working-directory: neoforge", pilot)
+        self.assertIn("level-name=architecture-pilot", pilot)
+        self.assertIn("working-directory: neoforge", full)
+        self.assertIn("level-name=architecture-58-smoke", full)
+        self.assertIn('world_name = line.partition("=")[2].strip()', script)
         self.assertIn(
-            'run/architecture-pilot/datapacks/realscale_nbt_diagnostics',
+            'ROOT / "run" / world_name / "datapacks" / "realscale_nbt_diagnostics"',
             script,
         )
+        self.assertNotIn("architecture-pilot/datapacks", script)
         self.assertNotIn("architecture-58-smoke/datapacks", script)
         self.assertIn('f\'datapack enable "{diagnostic_pack}"\'', script)
 
