@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 /**
  * Apply the DH/Chunky lifecycle patch only to the exact pair it was tested
  * against. Mixin config plugins run before ModLoader constructs ModList, so
- * use FMLLoader's already-discovered LoadingModList instead of ModList.get().
+ * use FMLLoader's already-discovered LoadingModList instead of the later runtime registry.
  */
 public final class DhChunkyMixinConfigPlugin implements IMixinConfigPlugin {
     private static final AtomicBoolean realscale$reportedSkip = new AtomicBoolean();
