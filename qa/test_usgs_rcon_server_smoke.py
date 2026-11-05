@@ -21,6 +21,10 @@ class UsGsRconServerSmokeTests(unittest.TestCase):
         self.assertIn("if loaded", script)
         self.assertIn("save-all flush", script)
         self.assertIn("realscale:usgs_big_sur", script)
+        self.assertIn("for chunk_z in range(-4, 4)", script)
+        self.assertIn("for chunk_x in range(-4, 4)", script)
+        self.assertIn("if seen>=30", workflow)
+        self.assertIn("persisted DEM-center chunks", workflow)
 
 
 if __name__ == "__main__":
