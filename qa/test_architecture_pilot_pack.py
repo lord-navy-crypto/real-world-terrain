@@ -433,6 +433,10 @@ class ArchitecturePilotTests(unittest.TestCase):
         self.assertNotIn("architecture-pilot/datapacks", script)
         self.assertNotIn("architecture-58-smoke/datapacks", script)
         self.assertIn('f\'datapack enable "{diagnostic_pack}"\'', script)
+        self.assertIn("prepare_architecture_pack_config", script)
+        self.assertIn('"architectureStructuresEnabled": True', script)
+        self.assertIn("Architecture pack was not selected by default", script)
+        self.assertNotIn('f"datapack enable {pack_id}"', script)
 
     def test_registered_pack_is_optional_and_only_templates_are_packaged(self):
         source = JAVA.read_text(encoding="utf-8")
