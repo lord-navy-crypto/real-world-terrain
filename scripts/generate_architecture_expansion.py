@@ -252,7 +252,7 @@ EXPANSION_DESIGNS = (
     dict(name="canal_boatyard", size=(33, 16, 25), kind="waterfront",
          wall="minecraft:oak_planks", floor="minecraft:oak_planks",
          roof="spruce", foundation="minecraft:stone_bricks", frame="oak",
-         feature="minecraft:barrel", accent="minecraft:water",
+         feature="minecraft:barrel", accent="minecraft:prismarine_bricks",
          path="minecraft:gravel", wall_height=5,
          description="A canal boatyard with a covered repair shed, towpath, mooring bollards, cargo racks and a service quay."),
     dict(name="volcanic_obsidian_works", size=(29, 18, 27), kind="industrial",
