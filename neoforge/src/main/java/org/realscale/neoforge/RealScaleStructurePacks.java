@@ -18,7 +18,7 @@ import java.nio.file.Path;
  * Built-in optional structure packs: six vanilla density presets plus a
  * mixed licensed/original RealScale architecture library.
  *
- * Density defaults and the 58-structure architecture pack are selected from
+ * Density defaults and the 100-structure architecture pack are selected from
  * the Terrain Lab draft for NEW worlds. Packs are never forced, and saved worlds
  * retain their own selected datapack IDs. The architecture pack defaults on
  * but can be deselected with the in-game checkbox.
@@ -92,7 +92,7 @@ public final class RealScaleStructurePacks {
         // Terrain Lab controls the next-world default. The pack remains
         // optional (required=false); existing saves retain their own selection.
         registerOne(event, "architecture_pilot",
-                "RealScale | Architecture Library (58 Structures)",
+                "RealScale | Architecture Library (100 Structures)",
                 current.architectureEnabled());
     }
 

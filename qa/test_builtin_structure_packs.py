@@ -29,7 +29,7 @@ class BuiltinStructureTests(unittest.TestCase):
         self.assertIn("Built-in Vanilla Structures",ui)
         self.assertIn("dimensionStructureDensity",ui)
         self.assertIn("structureDensity",ui)
-        self.assertIn("Enable Architecture Library (58 Structures)",ui)
+        self.assertIn("Enable Architecture Library (100 Structures)",ui)
         self.assertIn("architectureStructuresEnabled",ui)
         self.assertIn("architectureStructuresEnabled",loader)
         self.assertIn("current.architectureEnabled()",loader)
