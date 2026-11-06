@@ -174,6 +174,7 @@ def prepare_mods() -> Path:
 
 def prepare_properties():
     (TEST_ROOT / "eula.txt").write_text("eula=true\n", encoding="utf-8")
+    (TEST_ROOT / "user_jvm_args.txt").write_text("-Xms1G\n-Xmx3G\n", encoding="utf-8")
     properties = (
         "server-port=25566\n"
         "level-name=packaged-dh-chunky-smoke\n"
