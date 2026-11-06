@@ -1107,7 +1107,7 @@ def _build_bridge_gate(b: Building, spec: dict):
             for y in range(5, min(b.height - 2, 10)):
                 b.fill(gate_x - 1, y, z, gate_x + 1, y, z, spec["wall"])
         b.fill(gate_x - 1, min(b.height - 2, 10), cz - 3,
-               gate_x + 1, min(b.height - 2, 10), cz + 3, spec["frame"])
+               gate_x + 1, min(b.height - 2, 10), cz + 3, _roof_planks(spec))
         b.set(gate_x, 6, cz, spec["feature"])
         _lantern(b, gate_x, 7, cz - 3)
         _lantern(b, gate_x, 7, cz + 3)
