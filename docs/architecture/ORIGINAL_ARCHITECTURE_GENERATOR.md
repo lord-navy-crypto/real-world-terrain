@@ -111,9 +111,10 @@ space is clear:
 - roof vents/chimneys for suitable hearth, lodging and production buildings.
 
 The pass is idempotent: running it twice does not stack duplicate fixtures.
-It uses vanilla 1.21.1 block states and leaves the three Apache-2.0 GDMC
-source-derived templates unchanged so their converted geometry remains
-faithful to the credited source assets.
+It uses vanilla 1.21.1 block states. The three Apache-2.0 GDMC source files
+remain byte-for-byte unchanged and their digests are verified before
+conversion; their converted NBT copies receive the same additive detailing
+without changing dimensions or removing attribution.
 
 ## Validation
 
