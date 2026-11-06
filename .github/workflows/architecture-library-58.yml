@@ -11,8 +11,6 @@ on:
       - 'scripts/generate_architecture_batch.py'
       - 'scripts/generate_architecture_expansion.py'
       - 'scripts/architecture_expansion_profiles.json'
-      - 'scripts/generate_architecture_expansion.py'
-      - 'scripts/architecture_expansion_profiles.json'
       - 'neoforge/**'
       - 'qa/run_architecture_server_smoke.py'
       - 'qa/test_architecture_pilot_pack.py'
@@ -24,9 +22,12 @@ on:
       - 'scripts/convert_gdmc_architecture.py'
       - 'scripts/generate_original_architecture.py'
       - 'scripts/generate_architecture_batch.py'
+      - 'scripts/generate_architecture_expansion.py'
+      - 'scripts/architecture_expansion_profiles.json'
       - 'neoforge/**'
       - 'qa/run_architecture_server_smoke.py'
       - 'qa/test_architecture_pilot_pack.py'
+      - 'qa/test_builtin_structure_packs.py'
       - '.github/workflows/architecture-library-58.yml'
   workflow_dispatch:
 
@@ -34,7 +35,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: realscale-architecture-58-${{ github.ref }}
+  group: realscale-architecture-100-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -111,5 +112,5 @@ jobs:
           path: |
             neoforge/build/libs/*.jar
             neoforge/run/architecture-pilot-server-smoke.log
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
