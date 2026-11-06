@@ -651,6 +651,11 @@ def _build_default_site(b: Building, spec: dict):
     _feature_pair(b, spec, cx, 2, cz)
 
 
+def _roof_planks(spec: dict) -> str:
+    roof = spec["roof"]
+    return roof if roof.startswith("minecraft:") else f"minecraft:{roof}_planks"
+
+
 def _build_longhouse(b: Building, spec: dict):
     """Long-span communal hall with internal bays, loading porch and service yard."""
     cx, cz = b.width // 2, b.length // 2
@@ -738,7 +743,7 @@ def _build_windcatcher_courtyard(b: Building, spec: dict):
         for y in range(2, min(b.height - 3, 10)):
             b.shell(x - 1, y, z - 1, x + 1, y, z + 1, spec["wall"])
         b.fill(x - 1, min(b.height - 3, 10), z - 1,
-               x + 1, min(b.height - 3, 10), z + 1, spec["roof"] + "_planks"
+               x + 1, min(b.height - 3, 10), z + 1, _roof_planks(spec)
                if spec["roof"].startswith("minecraft:") else f"minecraft:{spec['roof']}_planks")
         b.set(x, 3, z, "minecraft:iron_bars")
 
@@ -949,7 +954,7 @@ def _build_radial_compound(b: Building, spec: dict):
                 b.log(px + dx, 2, pz + dz, spec["frame"])
                 b.log(px + dx, 3, pz + dz, spec["frame"])
         b.fill(px - 2, 4, pz - 2, px + 2, 4, pz + 2,
-               "minecraft:hay_block" if index % 2 == 0 else spec["roof"] + "_planks")
+               "minecraft:hay_block" if index % 2 == 0 else _roof_planks(spec))
         b.set(px, 2, pz, spec["feature"])
     b.fill(cx - 1, 1, 2, cx + 1, 1, cz - 5, spec["path"])
     b.fill(cx - 1, 1, cz + 5, cx + 1, 1, b.length - 3, spec["path"])
