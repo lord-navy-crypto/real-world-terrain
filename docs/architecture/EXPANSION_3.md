@@ -32,6 +32,32 @@ entities or command blocks. The new templates are copied into both the mod's
 base structure namespace (for explicit `/place template`) and the optional
 architecture datapack (for natural generation).
 
+## Architectural diversity pass
+
+The 42 designs now use **22 explicit architectural forms**, rather than
+routing most of them through one generic house-and-yard builder:
+
+- **Longhouse and workshop forms:** multi-bay communal halls, fabrication
+  courts, loading porches and separated service sheds.
+- **Courtyard forms:** inward-facing compounds, desert windcatcher courts and
+  garden pavilions with reflecting pools and pergolas.
+- **Elevated forms:** pile-supported canopy houses, raised granaries and
+  boardwalk connections for wetland and floodplain sites.
+- **Terrain forms:** stepped retaining terraces, switchback approaches and
+  elevated lookout platforms.
+- **Production forms:** industrial yards with stacks, cranes, rail spurs and
+  material bays; windmills with vertical sails and grain halls; irrigated
+  orchards with branching channels.
+- **Waterfront forms:** warehouses, pile-supported quays, boat slips, cranes
+  and cargo areas; bridge gates add monumental entry arches.
+- **Civic and communal forms:** cloisters, columned public halls, radial
+  compounds, market squares, tower complexes and a tapered lighthouse.
+
+Each form has its own massing and circulation logic. Individual designs still
+supply their own biome-appropriate walls, frames, roofs, foundations, features
+and accents. The library remains at 100 templates; this pass improves the
+architectural differences without inflating the structure count.
+
 ## Natural-generation density
 
 The 42 new structure sets use separate salts and biome allow-lists. Their
