@@ -58,6 +58,10 @@ supply their own biome-appropriate walls, frames, roofs, foundations, features
 and accents. The library remains at 100 templates; this pass improves the
 architectural differences without inflating the structure count.
 
+The shared detailing pass also deepens the existing 97 original layouts with
+role-specific fixtures, lighting, entrance canopies and suitable roof vents.
+These are additions inside the existing templates, not new structure IDs.
+
 ## Natural-generation density
 
 The 42 new structure sets use separate salts and biome allow-lists. Their
