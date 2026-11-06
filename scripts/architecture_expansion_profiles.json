@@ -1,0 +1,380 @@
+[
+  {
+    "id": "forest_logging_camp",
+    "spacing": 152,
+    "separation": 42,
+    "salt": 140100,
+    "biomes": [
+      "minecraft:forest"
+    ]
+  },
+  {
+    "id": "birch_sap_harvest",
+    "spacing": 74,
+    "separation": 20,
+    "salt": 140101,
+    "biomes": [
+      "minecraft:birch_forest"
+    ]
+  },
+  {
+    "id": "taiga_trapper_station",
+    "spacing": 85,
+    "separation": 23,
+    "salt": 140102,
+    "biomes": [
+      "minecraft:taiga"
+    ]
+  },
+  {
+    "id": "taiga_sled_depot",
+    "spacing": 52,
+    "separation": 14,
+    "salt": 140103,
+    "biomes": [
+      "minecraft:old_growth_spruce_taiga"
+    ]
+  },
+  {
+    "id": "glacial_fishing_station",
+    "spacing": 35,
+    "separation": 9,
+    "salt": 140104,
+    "biomes": [
+      "minecraft:snowy_plains"
+    ]
+  },
+  {
+    "id": "reindeer_herders_camp",
+    "spacing": 37,
+    "separation": 10,
+    "salt": 140105,
+    "biomes": [
+      "minecraft:grove"
+    ]
+  },
+  {
+    "id": "alpine_shepherd_refuge",
+    "spacing": 38,
+    "separation": 10,
+    "salt": 140106,
+    "biomes": [
+      "realscale:rocky_alpine_meadow"
+    ]
+  },
+  {
+    "id": "cliffside_hermitage",
+    "spacing": 37,
+    "separation": 10,
+    "salt": 140107,
+    "biomes": [
+      "minecraft:windswept_hills"
+    ]
+  },
+  {
+    "id": "mountain_ore_survey",
+    "spacing": 35,
+    "separation": 9,
+    "salt": 140108,
+    "biomes": [
+      "minecraft:stony_peaks"
+    ]
+  },
+  {
+    "id": "avalanche_shelter",
+    "spacing": 37,
+    "separation": 10,
+    "salt": 140109,
+    "biomes": [
+      "minecraft:snowy_slopes"
+    ]
+  },
+  {
+    "id": "jungle_canopy_outpost",
+    "spacing": 35,
+    "separation": 9,
+    "salt": 140110,
+    "biomes": [
+      "minecraft:jungle"
+    ]
+  },
+  {
+    "id": "bamboo_craftsman_yard",
+    "spacing": 35,
+    "separation": 9,
+    "salt": 140111,
+    "biomes": [
+      "minecraft:bamboo_jungle"
+    ]
+  },
+  {
+    "id": "rainforest_herbalist_station",
+    "spacing": 36,
+    "separation": 10,
+    "salt": 140112,
+    "biomes": [
+      "realscale:tropical_littoral_forest"
+    ]
+  },
+  {
+    "id": "mangrove_fishery",
+    "spacing": 35,
+    "separation": 9,
+    "salt": 140113,
+    "biomes": [
+      "minecraft:mangrove_swamp"
+    ]
+  },
+  {
+    "id": "marsh_reed_market",
+    "spacing": 35,
+    "separation": 9,
+    "salt": 140114,
+    "biomes": [
+      "minecraft:swamp"
+    ]
+  },
+  {
+    "id": "peat_bog_timber_camp",
+    "spacing": 34,
+    "separation": 9,
+    "salt": 140115,
+    "biomes": [
+      "realscale:peat_bog_taiga"
+    ]
+  },
+  {
+    "id": "desert_windcatcher_house",
+    "spacing": 37,
+    "separation": 10,
+    "salt": 140116,
+    "biomes": [
+      "minecraft:desert"
+    ]
+  },
+  {
+    "id": "oasis_date_grove",
+    "spacing": 36,
+    "separation": 10,
+    "salt": 140117,
+    "biomes": [
+      "realscale:oasis_fringe"
+    ]
+  },
+  {
+    "id": "badlands_saltworks",
+    "spacing": 37,
+    "separation": 10,
+    "salt": 140118,
+    "biomes": [
+      "minecraft:badlands"
+    ]
+  },
+  {
+    "id": "mesa_mine_headframe",
+    "spacing": 36,
+    "separation": 10,
+    "salt": 140119,
+    "biomes": [
+      "minecraft:wooded_badlands"
+    ]
+  },
+  {
+    "id": "savanna_cattle_kraal",
+    "spacing": 61,
+    "separation": 17,
+    "salt": 140120,
+    "biomes": [
+      "minecraft:savanna"
+    ]
+  },
+  {
+    "id": "steppe_grain_depot",
+    "spacing": 57,
+    "separation": 15,
+    "salt": 140121,
+    "biomes": [
+      "realscale:forest_steppe"
+    ]
+  },
+  {
+    "id": "prairie_seed_elevator",
+    "spacing": 54,
+    "separation": 15,
+    "salt": 140122,
+    "biomes": [
+      "realscale:shrub_prairie"
+    ]
+  },
+  {
+    "id": "rural_dairy_barn",
+    "spacing": 62,
+    "separation": 17,
+    "salt": 140123,
+    "biomes": [
+      "minecraft:meadow"
+    ]
+  },
+  {
+    "id": "horse_relay_post",
+    "spacing": 68,
+    "separation": 19,
+    "salt": 140124,
+    "biomes": [
+      "minecraft:sunflower_plains"
+    ]
+  },
+  {
+    "id": "river_ferry_crossing",
+    "spacing": 35,
+    "separation": 9,
+    "salt": 140125,
+    "biomes": [
+      "minecraft:river"
+    ]
+  },
+  {
+    "id": "riverside_boathouse",
+    "spacing": 37,
+    "separation": 10,
+    "salt": 140126,
+    "biomes": [
+      "realscale:floodplain_margin"
+    ]
+  },
+  {
+    "id": "floodplain_granary",
+    "spacing": 46,
+    "separation": 12,
+    "salt": 140127,
+    "biomes": [
+      "realscale:wet_meadow"
+    ]
+  },
+  {
+    "id": "delta_reed_market",
+    "spacing": 38,
+    "separation": 10,
+    "salt": 140128,
+    "biomes": [
+      "realscale:seasonal_floodforest"
+    ]
+  },
+  {
+    "id": "coastal_signal_station",
+    "spacing": 36,
+    "separation": 10,
+    "salt": 140129,
+    "biomes": [
+      "minecraft:beach"
+    ]
+  },
+  {
+    "id": "island_lighthouse_outpost",
+    "spacing": 37,
+    "separation": 10,
+    "salt": 140130,
+    "biomes": [
+      "minecraft:stony_shore"
+    ]
+  },
+  {
+    "id": "coastal_salvage_yard",
+    "spacing": 36,
+    "separation": 10,
+    "salt": 140131,
+    "biomes": [
+      "realscale:coastal_heath"
+    ]
+  },
+  {
+    "id": "cherry_grove_tea_house",
+    "spacing": 35,
+    "separation": 9,
+    "salt": 140132,
+    "biomes": [
+      "minecraft:cherry_grove"
+    ]
+  },
+  {
+    "id": "mountain_monastery_scriptorium",
+    "spacing": 40,
+    "separation": 11,
+    "salt": 140133,
+    "biomes": [
+      "minecraft:dark_forest"
+    ]
+  },
+  {
+    "id": "town_clock_tower",
+    "spacing": 80,
+    "separation": 22,
+    "salt": 140134,
+    "biomes": [
+      "minecraft:plains"
+    ]
+  },
+  {
+    "id": "roadside_inn",
+    "spacing": 93,
+    "separation": 26,
+    "salt": 140135,
+    "biomes": [
+      "realscale:riverine_woodland"
+    ]
+  },
+  {
+    "id": "civic_courthouse",
+    "spacing": 52,
+    "separation": 14,
+    "salt": 140136,
+    "biomes": [
+      "realscale:birch_parkland"
+    ]
+  },
+  {
+    "id": "pilgrim_waystation",
+    "spacing": 42,
+    "separation": 11,
+    "salt": 140137,
+    "biomes": [
+      "realscale:semi_arid_scrubland"
+    ]
+  },
+  {
+    "id": "stone_aqueduct",
+    "spacing": 35,
+    "separation": 9,
+    "salt": 140138,
+    "biomes": [
+      "minecraft:frozen_river"
+    ]
+  },
+  {
+    "id": "canal_boatyard",
+    "spacing": 39,
+    "separation": 10,
+    "salt": 140139,
+    "biomes": [
+      "realscale:marshy_woodland"
+    ]
+  },
+  {
+    "id": "volcanic_obsidian_works",
+    "spacing": 36,
+    "separation": 10,
+    "salt": 140140,
+    "biomes": [
+      "minecraft:eroded_badlands"
+    ]
+  },
+  {
+    "id": "forest_ranger_academy",
+    "spacing": 129,
+    "separation": 36,
+    "salt": 140141,
+    "biomes": [
+      "realscale:woodland_meadow"
+    ]
+  }
+]
