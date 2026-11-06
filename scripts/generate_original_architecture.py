@@ -79,14 +79,15 @@ class Building:
         return not block_name.endswith((
             "_leaves", "_pane", "_fence", "_wall", "_stairs", "_slab",
             "_carpet", "_flower", "_sapling", "_door", "_trapdoor",
+            "_log", "_wood",
         ))
 
     def _detail_surface_candidates(self):
         candidates = []
         center_x, center_z = self.width // 2, self.length // 2
-        for y in range(2, min(self.height - 1, 10)):
-            for z in range(2, self.length - 2):
-                for x in range(2, self.width - 2):
+        for y in range(1, min(self.height - 1, 10)):
+            for z in range(1, self.length - 1):
+                for x in range(1, self.width - 1):
                     if self.blocks[(x, y, z)][0] != "minecraft:air":
                         continue
                     if self.blocks[(x, y + 1, z)][0] != "minecraft:air":
@@ -281,6 +282,7 @@ class Building:
         self._add_entrance_canopy()
         candidates = self._detail_surface_candidates()
         if not candidates:
+            self._add_roof_vent()
             return self
 
         name = self.name.lower()
@@ -339,7 +341,6 @@ class Building:
                 "minecraft:bookshelf", "minecraft:flower_pot",
             )
 
-        existing = {block_name for block_name, _ in self.blocks.values()}
         seed = sum((index + 1) * ord(char) for index, char in enumerate(self.name))
         ordered_fixtures = fixtures[seed % len(fixtures):] + fixtures[:seed % len(fixtures)]
         used = set()
@@ -367,8 +368,6 @@ class Building:
 
         placed = 0
         for fixture in ordered_fixtures:
-            if fixture in existing:
-                continue
             position = next(
                 (candidate for candidate in candidates
                  if candidate not in used
@@ -379,7 +378,6 @@ class Building:
                 break
             self._place_architecture_fixture(position, fixture)
             used.add(position)
-            existing.add(fixture)
             placed += 1
             if placed >= 2:
                 break
