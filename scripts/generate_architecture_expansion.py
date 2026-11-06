@@ -743,8 +743,7 @@ def _build_windcatcher_courtyard(b: Building, spec: dict):
         for y in range(2, min(b.height - 3, 10)):
             b.shell(x - 1, y, z - 1, x + 1, y, z + 1, spec["wall"])
         b.fill(x - 1, min(b.height - 3, 10), z - 1,
-               x + 1, min(b.height - 3, 10), z + 1, _roof_planks(spec)
-               if spec["roof"].startswith("minecraft:") else f"minecraft:{spec['roof']}_planks")
+               x + 1, min(b.height - 3, 10), z + 1, _roof_planks(spec))
         b.set(x, 3, z, "minecraft:iron_bars")
 
 
