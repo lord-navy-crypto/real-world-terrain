@@ -269,6 +269,55 @@ EXPANSION_DESIGNS = (
          description="A forest ranger academy with a teaching lodge, map room, practice range, equipment store and a connected courtyard."),
 )
 
+# Explicit architectural forms prevent the biome-specific designs from collapsing
+# into one generic cottage-with-a-yard layout. Each form has a distinct massing
+# and circulation plan; materials and functional details still come from the
+# individual design specification above.
+DESIGN_FORMS = {
+    "forest_logging_camp": "longhouse",
+    "birch_sap_harvest": "greenhouse",
+    "taiga_trapper_station": "longhouse",
+    "taiga_sled_depot": "industrial_yard",
+    "glacial_fishing_station": "dockyard",
+    "reindeer_herders_camp": "radial_compound",
+    "alpine_shepherd_refuge": "terraced",
+    "cliffside_hermitage": "terraced",
+    "mountain_ore_survey": "industrial_yard",
+    "avalanche_shelter": "terraced",
+    "jungle_canopy_outpost": "stilt_village",
+    "bamboo_craftsman_yard": "workshop_court",
+    "rainforest_herbalist_station": "greenhouse",
+    "mangrove_fishery": "dockyard",
+    "marsh_reed_market": "market_square",
+    "peat_bog_timber_camp": "longhouse",
+    "desert_windcatcher_house": "windcatcher_courtyard",
+    "oasis_date_grove": "irrigated_garden",
+    "badlands_saltworks": "industrial_yard",
+    "mesa_mine_headframe": "industrial_yard",
+    "savanna_cattle_kraal": "radial_compound",
+    "steppe_grain_depot": "longhouse",
+    "prairie_seed_elevator": "windmill_grain",
+    "rural_dairy_barn": "longhouse",
+    "horse_relay_post": "stable_courtyard",
+    "river_ferry_crossing": "bridge_gate",
+    "riverside_boathouse": "dockyard",
+    "floodplain_granary": "stilt_granary",
+    "delta_reed_market": "market_square",
+    "coastal_signal_station": "tower_complex",
+    "island_lighthouse_outpost": "lighthouse",
+    "coastal_salvage_yard": "dockyard",
+    "cherry_grove_tea_house": "garden_pavilion",
+    "mountain_monastery_scriptorium": "cloister",
+    "town_clock_tower": "tower_complex",
+    "roadside_inn": "stable_courtyard",
+    "civic_courthouse": "civic_hall",
+    "pilgrim_waystation": "courtyard",
+    "stone_aqueduct": "aqueduct",
+    "canal_boatyard": "dockyard",
+    "volcanic_obsidian_works": "industrial_yard",
+    "forest_ranger_academy": "cloister",
+}
+
 
 def _door(b: Building, x: int, y: int, z: int, wood: str, facing: str = "north"):
     b.set(x, y, z, f"minecraft:{wood}_door", facing=facing, half="lower",
