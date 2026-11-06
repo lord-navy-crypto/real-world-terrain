@@ -323,6 +323,25 @@ class ArchitecturePilotTests(unittest.TestCase):
             f"enriched={enriched}, unchanged={unchanged}",
         )
 
+    def test_detail_candidates_prioritize_roofed_interior_surfaces(self):
+        building = original_generator.Building(
+            "interior_priority", (11, 8, 11), "Synthetic interior-priority test"
+        )
+        building.fill(1, 0, 1, 9, 0, 9, "minecraft:cobblestone")
+        building.shell(2, 2, 2, 8, 4, 8, "minecraft:oak_planks")
+        building.fill(2, 5, 2, 8, 5, 8, "minecraft:oak_planks")
+
+        candidates = building._detail_surface_candidates()
+        self.assertTrue(candidates)
+        first = candidates[0]
+        self.assertTrue(
+            any(
+                building.blocks[(first[0], cover_y, first[2])][0] != "minecraft:air"
+                for cover_y in range(first[1] + 2, min(building.height, first[1] + 8))
+            ),
+            f"first detail candidate should be roof-covered interior space: {first}",
+        )
+
     def test_batch_designs_have_archetype_specific_blocks_and_profiles(self):
         self.assertTrue(PACK.is_dir(),
                         "Run Gradle processResources or build before this test")

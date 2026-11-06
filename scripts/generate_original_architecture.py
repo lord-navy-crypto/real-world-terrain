@@ -95,13 +95,38 @@ class Building:
                     support = self.blocks[(x, y - 1, z)][0]
                     if not self._detail_support_is_solid(support):
                         continue
+
+                    # Prefer actual interior floor space over exposed site aprons:
+                    # roof cover and adjacent wall mass are stronger signals than
+                    # proximity to the template edge alone.
+                    wall_neighbors = 0
+                    for nx, nz in ((x - 1, z), (x + 1, z), (x, z - 1), (x, z + 1)):
+                        if (
+                            self.blocks[(nx, y, nz)][0] != "minecraft:air"
+                            or self.blocks[(nx, y + 1, nz)][0] != "minecraft:air"
+                        ):
+                            wall_neighbors += 1
+                    cover_end = min(self.height, y + 8)
+                    has_roof_cover = any(
+                        self.blocks[(x, cover_y, z)][0] != "minecraft:air"
+                        for cover_y in range(y + 2, cover_end)
+                    )
+                    interior_rank = (
+                        0 if has_roof_cover and wall_neighbors >= 1
+                        else 1 if has_roof_cover
+                        else 2 if wall_neighbors >= 2
+                        else 3
+                    )
                     edge_distance = min(
                         x - 1, self.width - 2 - x,
                         z - 1, self.length - 2 - z,
                     )
                     center_distance = abs(x - center_x) + abs(z - center_z)
                     candidates.append((
-                        (abs(y - 2), edge_distance, -center_distance, y, z, x),
+                        (
+                            interior_rank, -wall_neighbors, -edge_distance,
+                            center_distance, abs(y - 2), y, z, x,
+                        ),
                         (x, y, z),
                     ))
         candidates.sort(key=lambda item: item[0])
@@ -366,6 +391,7 @@ class Building:
                     self._place_architecture_fixture(second, "minecraft:lantern")
                     used.add(second)
 
+        fixture_target = 3 if len(candidates) >= 40 else 2
         placed = 0
         for fixture in ordered_fixtures:
             position = next(
@@ -379,7 +405,7 @@ class Building:
             self._place_architecture_fixture(position, fixture)
             used.add(position)
             placed += 1
-            if placed >= 2:
+            if placed >= fixture_target:
                 break
 
         self._add_roof_vent()

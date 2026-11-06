@@ -63,5 +63,35 @@ class DhChunkyGuardTests(unittest.TestCase):
         self.assertNotIn("Noise", code)
 
 
+    def test_provider_probe_uses_bounded_backoff_and_caches_success(self):
+        code = SOURCE.read_text(encoding="utf-8")
+        metrics = (COMPAT / "ChunkyBridgeMetrics.java").read_text(encoding="utf-8")
+        self.assertIn("AtomicLong", code)
+        self.assertIn("realscale$MIN_PROBE_INTERVAL_NANOS = 50_000_000L", code)
+        self.assertIn("realscale$MAX_PROBE_INTERVAL_NANOS = 1_000_000_000L", code)
+        self.assertIn("realscale$nextProbeNanos.compareAndSet", code)
+        self.assertIn("realscale$probeBackoffNanos.updateAndGet", code)
+        self.assertIn("realscale$providerReady.set(true)", code)
+        self.assertIn("ChunkyBridgeMetrics.backoffSkipped();", code)
+        self.assertIn("backoffSkips=", metrics)
+
+    def test_runtime_smokes_execute_a_bounded_chunky_pregeneration_task(self):
+        runtime = (ROOT / "qa/run_dh_chunky_runtime_smoke.py").read_text(encoding="utf-8")
+        packaged = (ROOT / "qa/run_packaged_jar_dh_chunky_smoke.py").read_text(encoding="utf-8")
+        for required in (
+            "def run_chunky_pregen(",
+            '"chunky center 512 512"',
+            '"chunky radius 32"',
+            '"chunky shape square"',
+            '"chunky start"',
+            '"chunky progress"',
+            "Task finished",
+            "REALSCALE_DH_CHUNKY_PREGEN_PASS",
+        ):
+            self.assertIn(required, runtime)
+        self.assertIn("from run_dh_chunky_runtime_smoke import run_chunky_pregen", packaged)
+        self.assertIn("PACKAGED_JAR_DH_CHUNKY_PREGEN_PASS", packaged)
+        self.assertIn("run_chunky_pregen(", packaged)
+
 if __name__ == "__main__":
     unittest.main()
