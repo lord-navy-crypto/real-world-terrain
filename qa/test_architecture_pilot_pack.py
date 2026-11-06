@@ -517,6 +517,7 @@ class ArchitecturePilotTests(unittest.TestCase):
         self.assertIn("working-directory: neoforge", full)
         self.assertIn("level-name=architecture-100-smoke", full)
         self.assertIn("run_dh_chunky_runtime_smoke.py", full)
+        self.assertIn("run_packaged_jar_dh_chunky_smoke.py", full)
         self.assertIn("Verify DH 3.3.3 and Chunky 1.4.23", full)
         self.assertIn('world_name = line.partition("=")[2].strip()', script)
         self.assertIn(
