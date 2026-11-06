@@ -3,7 +3,7 @@ name: RealScale 100-Structure Build and Dedicated-Server QA
 on:
   push:
     branches:
-      - feature/architecture-library-100-density-20261106
+      - main
     paths:
       - 'assets/architecture/**'
       - 'scripts/convert_gdmc_architecture.py'
