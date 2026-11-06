@@ -57,7 +57,9 @@ The 100-template acceptance workflow:
 - verifies the per-biome village-density budget;
 - builds the NeoForge JAR;
 - starts an isolated dedicated server and places all 100 templates through RCON;
-- saves and cleanly shuts down the test world.
+- runs the DH 3.3.3 + Chunky 1.4.23 lifecycle smoke against the expanded build;
+- installs the built RealScale JAR into an official NeoForge 21.1.249 server beside the two external mod JARs and verifies native listener binding;
+- saves and cleanly shuts down both test servers.
 
 The server placement test verifies that every template can be loaded and placed.
 A separate fixed-seed exploration playtest is still needed to evaluate the
