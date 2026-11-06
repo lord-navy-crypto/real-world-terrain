@@ -8,6 +8,7 @@ on:
       - "neoforge/src/main/resources/META-INF/neoforge.mods.toml"
       - "neoforge/src/main/resources/realscale.dhchunky.mixins.json"
       - "qa/test_dh_chunky_*.py"
+      - "qa/run_dh_chunky_runtime_smoke.py"
       - ".github/workflows/dh-chunky-integrated.yml"
   pull_request:
     paths:
@@ -16,6 +17,7 @@ on:
       - "neoforge/src/main/resources/META-INF/neoforge.mods.toml"
       - "neoforge/src/main/resources/realscale.dhchunky.mixins.json"
       - "qa/test_dh_chunky_*.py"
+      - "qa/run_dh_chunky_runtime_smoke.py"
       - ".github/workflows/dh-chunky-integrated.yml"
   workflow_dispatch:
 permissions:
@@ -23,7 +25,7 @@ permissions:
 jobs:
   build-integrated-mod:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -67,8 +69,14 @@ jobs:
               assert not any(path.startswith(("com/seibel/", "org/popcraft/")) for path in names)
           print("REALSCALE_SINGLE_JAR_DH_CHUNKY_COMPAT_VALID")
           PY
+      - name: Run actual RealScale + Distant Horizons + Chunky server integration
+        working-directory: neoforge
+        run: python3 ../qa/run_dh_chunky_runtime_smoke.py
       - uses: actions/upload-artifact@v4
+        if: always() && hashFiles('neoforge/build/libs/*.jar') != ''
         with:
           name: RealScale-NeoForge-1.21.1-integrated-DH-Chunky
-          path: neoforge/build/libs/*.jar
-          if-no-files-found: error
+          path: |
+            neoforge/build/libs/*.jar
+            neoforge/run/dh-chunky-runtime-smoke.log
+          if-no-files-found: warn
