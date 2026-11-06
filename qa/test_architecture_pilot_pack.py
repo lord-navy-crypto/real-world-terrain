@@ -510,6 +510,8 @@ class ArchitecturePilotTests(unittest.TestCase):
         self.assertNotIn("initial-enabled-packs", full)
         self.assertIn("working-directory: neoforge", full)
         self.assertIn("level-name=architecture-100-smoke", full)
+        self.assertIn("run_dh_chunky_runtime_smoke.py", full)
+        self.assertIn("Verify DH 3.3.3 and Chunky 1.4.23", full)
         self.assertIn('world_name = line.partition("=")[2].strip()', script)
         self.assertIn(
             'ROOT / "run" / world_name / "datapacks" / "realscale_nbt_diagnostics"',
