@@ -298,6 +298,126 @@ class Building:
                  facing="north", lit="true",
                  signal_fire="false", waterlogged="false")
 
+    def _add_interior_partition(self):
+        """Create one reachable room divider where the existing shell supports it."""
+        self._architecture_partition_applied = False
+        if self.width < 9 or self.length < 9 or self.height < 6:
+            return False
+
+        room_y = 2
+        def open_roofed_cell(x, z):
+            if not (1 <= x < self.width - 1 and 1 <= z < self.length - 1):
+                return False
+            if self.blocks[(x, room_y, z)][0] != "minecraft:air":
+                return False
+            if self.blocks[(x, room_y + 1, z)][0] != "minecraft:air":
+                return False
+            if not self._detail_support_is_solid(
+                self.blocks[(x, room_y - 1, z)][0]
+            ):
+                return False
+            return any(
+                self.blocks[(x, cover_y, z)][0] != "minecraft:air"
+                for cover_y in range(room_y + 2, min(self.height, room_y + 8))
+            )
+
+        def anchored_wall(x, z):
+            return (
+                self.blocks[(x, room_y, z)][0] != "minecraft:air"
+                or self.blocks[(x, room_y + 1, z)][0] != "minecraft:air"
+            )
+
+        candidates = []
+        # Each candidate is a continuous, roofed floor strip with room space
+        # on both sides and existing wall mass at both ends.
+        for orientation, plane_limit, span_limit in (
+            ("x", self.width, self.length),
+            ("z", self.length, self.width),
+        ):
+            for plane in range(3, plane_limit - 3):
+                run = []
+                for offset in range(2, span_limit - 1):
+                    if orientation == "x":
+                        x, z = plane, offset
+                        side_a = (plane - 1, offset)
+                        side_b = (plane + 1, offset)
+                    else:
+                        x, z = offset, plane
+                        side_a = (offset, plane - 1)
+                        side_b = (offset, plane + 1)
+                    valid = (
+                        open_roofed_cell(x, z)
+                        and open_roofed_cell(*side_a)
+                        and open_roofed_cell(*side_b)
+                    )
+                    if valid:
+                        run.append(offset)
+                        continue
+
+                    if len(run) >= 5:
+                        first, last = run[0], run[-1]
+                        if orientation == "x":
+                            before = (plane, first - 1)
+                            after = (plane, last + 1)
+                            depth = min(plane - 2, self.width - 3 - plane)
+                        else:
+                            before = (first - 1, plane)
+                            after = (last + 1, plane)
+                            depth = min(plane - 2, self.length - 3 - plane)
+                        if anchored_wall(*before) and anchored_wall(*after) and depth >= 2:
+                            candidates.append((
+                                (len(run), depth, -abs(plane - plane_limit // 2),
+                                 orientation, plane, first),
+                                orientation, plane, first, last,
+                            ))
+                    run = []
+
+                if len(run) >= 5:
+                    first, last = run[0], run[-1]
+                    if orientation == "x":
+                        before = (plane, first - 1)
+                        after = (plane, last + 1)
+                        depth = min(plane - 2, self.width - 3 - plane)
+                    else:
+                        before = (first - 1, plane)
+                        after = (last + 1, plane)
+                        depth = min(plane - 2, self.length - 3 - plane)
+                    if anchored_wall(*before) and anchored_wall(*after) and depth >= 2:
+                        candidates.append((
+                            (len(run), depth, -abs(plane - plane_limit // 2),
+                             orientation, plane, first),
+                            orientation, plane, first, last,
+                        ))
+
+        if not candidates:
+            return False
+
+        _, orientation, plane, first, last = max(candidates, key=lambda item: item[0])
+        run_length = last - first + 1
+        opening_width = 2 if run_length >= 7 else 1
+        opening_start = first + (run_length - opening_width) // 2
+        palette = {name for name, _ in self.blocks.values()}
+        wall_block = next((
+            name for name in (
+                "minecraft:oak_planks", "minecraft:spruce_planks",
+                "minecraft:birch_planks", "minecraft:dark_oak_planks",
+                "minecraft:stone_bricks", "minecraft:bricks",
+                "minecraft:cobblestone", "minecraft:sandstone",
+            ) if name in palette
+        ), None)
+        if wall_block is None:
+            return False
+
+        for offset in range(first, last + 1):
+            if opening_start <= offset < opening_start + opening_width:
+                continue
+            x, z = (plane, offset) if orientation == "x" else (offset, plane)
+            self.set(x, room_y, z, wall_block)
+            self.set(x, room_y + 1, z, wall_block)
+
+        self._architecture_partition_applied = True
+        return True
+
     def enrich_architecture(self):
         """Add deterministic lighting, role-specific fixtures and missing entry details."""
         if getattr(self, "_architecture_details_applied", False):
@@ -305,6 +425,7 @@ class Building:
         self._architecture_details_applied = True
 
         self._add_entrance_canopy()
+        self._add_interior_partition()
         candidates = self._detail_surface_candidates()
         if not candidates:
             self._add_roof_vent()

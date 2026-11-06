@@ -219,6 +219,7 @@ def run_chunky_pregen(sock, packet_id: int, captured: list[str], marker: str) ->
         if re.search(r"unknown command|unknown argument|no permission|not permitted|invalid", response, re.I):
             raise RuntimeError(f"Chunky rejected its selection command: {command}: {response}")
 
+    task_log_start = len(captured)
     start_response = rcon_command(sock, packet_id, "chunky start")
     packet_id += 1
     print(f"CHUNKY_START: {start_response}", flush=True)
@@ -236,13 +237,20 @@ def run_chunky_pregen(sock, packet_id: int, captured: list[str], marker: str) ->
         progress = rcon_command(sock, packet_id, "chunky progress")
         packet_id += 1
         print(f"CHUNKY_PROGRESS: {progress}", flush=True)
-        evidence = progress + "\n" + "".join(captured[-300:])
-        processed = re.findall(r"Processed:\s*([\d,]+)\s+chunks", evidence, re.I)
-        completed_chunks = max((int(value.replace(",", "")) for value in processed), default=0)
-        finished = re.search(r"Task finished|Finished pre-generation", evidence, re.I)
-        complete_percent = re.search(r"\(\s*100(?:\.0+)?%\s*\)", evidence)
-        if completed_chunks > 0 and (finished or complete_percent):
-            print(f"{marker}: chunks={completed_chunks}", flush=True)
+        task_log = "".join(captured[task_log_start:])
+        finished = re.search(
+            r"\[Chunky\] Task finished for minecraft:overworld\. "
+            r"Processed:\s*([\d,]+)\s+chunks\s+\(100(?:\.0+)?%\)",
+            task_log,
+            re.I,
+        )
+        dh_paused = "Chunky running. Disabling DH world gen" in task_log
+        dh_resumed = "Chunky no longer running. Re-enabling DH world gen" in task_log
+        if finished and dh_paused and dh_resumed:
+            completed_chunks = int(finished.group(1).replace(",", ""))
+            if completed_chunks <= 0:
+                raise RuntimeError("Chunky reported a completed task without processing chunks")
+            print(f"{marker}: chunks={completed_chunks}; DH pause/resume confirmed", flush=True)
             return packet_id
         time.sleep(0.75)
 

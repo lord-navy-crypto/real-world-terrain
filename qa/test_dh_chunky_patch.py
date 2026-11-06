@@ -93,5 +93,22 @@ class DhChunkyGuardTests(unittest.TestCase):
         self.assertIn("PACKAGED_JAR_DH_CHUNKY_PREGEN_PASS", packaged)
         self.assertIn("run_chunky_pregen(", packaged)
 
+    def test_ci_runs_the_packaged_jar_server_smoke(self):
+        workflow = (ROOT / ".github/workflows/dh-chunky-integrated.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "Verify the packaged RealScale JAR in an official NeoForge server with DH and Chunky",
+            workflow,
+        )
+        self.assertIn(
+            "python3 ../qa/run_packaged_jar_dh_chunky_smoke.py",
+            workflow,
+        )
+        self.assertIn(
+            "packaged-dh-chunky-runtime-smoke.log",
+            workflow,
+        )
+
 if __name__ == "__main__":
     unittest.main()

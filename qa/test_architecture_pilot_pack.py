@@ -323,6 +323,22 @@ class ArchitecturePilotTests(unittest.TestCase):
             f"enriched={enriched}, unchanged={unchanged}",
         )
 
+    def test_large_roofed_interiors_gain_an_anchored_room_partition(self):
+        building = original_generator.Building(
+            "room_partition_test", (11, 8, 11), "Synthetic enclosed room"
+        )
+        building.fill(1, 0, 1, 9, 0, 9, "minecraft:cobblestone")
+        building.fill(2, 1, 2, 8, 1, 8, "minecraft:oak_planks")
+        building.shell(2, 2, 2, 8, 4, 8, "minecraft:oak_planks")
+        building.fill(2, 5, 2, 8, 5, 8, "minecraft:oak_planks")
+
+        self.assertTrue(building._add_interior_partition())
+        self.assertTrue(building._architecture_partition_applied)
+        self.assertEqual(building.blocks[(5, 2, 3)][0], "minecraft:oak_planks")
+        self.assertEqual(building.blocks[(5, 3, 3)][0], "minecraft:oak_planks")
+        self.assertEqual(building.blocks[(5, 2, 5)][0], "minecraft:air")
+        self.assertEqual(building.blocks[(5, 3, 5)][0], "minecraft:air")
+
     def test_detail_candidates_prioritize_roofed_interior_surfaces(self):
         building = original_generator.Building(
             "interior_priority", (11, 8, 11), "Synthetic interior-priority test"
