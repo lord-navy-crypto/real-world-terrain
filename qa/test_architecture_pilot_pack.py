@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """License, batch generation, NBT, worldgen and packaging tests."""
+import ast
 import gzip
 import json
 import struct
@@ -474,8 +475,14 @@ class ArchitecturePilotTests(unittest.TestCase):
         village_candidate_density = 1.0 / (34 * 34)
         for profile in profiles:
             with self.subTest(template=profile["id"]):
-                self.assertEqual(profile["biomes"].__len__(), 1)
+                self.assertEqual(len(profile["biomes"]), 1)
                 biome = profile["biomes"][0]
+                structure_set = json.loads(
+                    (PACK / f"data/realscale/worldgen/structure_set/{profile['id']}.json").read_text()
+                )
+                self.assertEqual(structure_set["placement"]["spacing"], profile["spacing"])
+                self.assertEqual(structure_set["placement"]["separation"], profile["separation"])
+                self.assertEqual(structure_set["placement"]["salt"], profile["salt"])
                 density = density_by_biome[biome]
                 # Candidate density is kept at or just below vanilla village
                 # spacing in each target biome, so 100 sets do not stack into
@@ -485,6 +492,16 @@ class ArchitecturePilotTests(unittest.TestCase):
 
     def test_rcon_diagnostic_pack_tracks_each_workflows_selected_world(self):
         script = (ROOT / "qa/run_architecture_server_smoke.py").read_text(encoding="utf-8")
+        parsed = ast.parse(script)
+        template_assignment = next(
+            node.value for node in parsed.body
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "TEMPLATES"
+                    for target in node.targets)
+        )
+        server_templates = ast.literal_eval(template_assignment)
+        self.assertEqual(len(server_templates), 100)
+        self.assertEqual(set(server_templates), set(ALL_EXPECTED))
         pilot = (ROOT / ".github/workflows/architecture-pilot-server.yml").read_text(encoding="utf-8")
         full = (ROOT / ".github/workflows/architecture-library-58.yml").read_text(encoding="utf-8")
         self.assertIn("working-directory: neoforge", pilot)
