@@ -1027,10 +1027,10 @@ def _build_cloister(b: Building, spec: dict):
         for z in (z1, z2):
             for y in range(2, 6):
                 b.log(x, y, z, spec["frame"])
-    b.fill(x1, 6, z1, x2, 6, z1, spec["roof"] + "_planks")
-    b.fill(x1, 6, z2, x2, 6, z2, spec["roof"] + "_planks")
-    b.fill(x1, 6, z1, x1, 6, z2, spec["roof"] + "_planks")
-    b.fill(x2, 6, z1, x2, 6, z2, spec["roof"] + "_planks")
+    b.fill(x1, 6, z1, x2, 6, z1, _roof_planks(spec))
+    b.fill(x1, 6, z2, x2, 6, z2, _roof_planks(spec))
+    b.fill(x1, 6, z1, x1, 6, z2, _roof_planks(spec))
+    b.fill(x2, 6, z1, x2, 6, z2, _roof_planks(spec))
     b.fill(cx - 2, 1, cz + 3, cx + 2, 1, cz + 6, spec["foundation"])
     b.set(cx, 2, cz + 4, "minecraft:flower_pot")
     _lantern(b, x1, 7, z1)
