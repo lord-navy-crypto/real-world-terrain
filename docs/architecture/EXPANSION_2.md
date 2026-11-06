@@ -23,7 +23,7 @@ Twenty original designs are added in this batch:
 - Riverside sawmill
 - Marsh reed hamlet
 
-The batch adds ten new multi-building compounds, bringing the full catalog to fifteen compounds. The complete architecture library has 58 templates: 55 original designs and three individually licensed Apache-2.0 imports.
+The batch adds ten new multi-building compounds, bringing the catalog at the end of Expansion 2 to fifteen compounds. At that point the library contained 58 templates: 55 original designs and three individually licensed Apache-2.0 imports. Expansion 3 subsequently adds 42 original designs, bringing the complete catalog to 100 templates.
 
 All templates are generated from source-controlled block-layout rules. NBT templates live in the mod's base data namespace; biome tags and worldgen registration remain in the explicitly optional architecture data pack.
 
