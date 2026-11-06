@@ -1183,7 +1183,6 @@ def build_expansion_design(spec: dict) -> Building:
     if form not in ("stilt_village", "stilt_granary", "bridge_gate", "aqueduct"):
         b.fill(cx - 6, 0, cz - 6, cx + 6, 0, cz + 6, spec["foundation"])
     _build_expansion_form(b, spec)
-    b.enrich_architecture()
     return b
 
 
