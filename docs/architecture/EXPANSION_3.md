@@ -39,7 +39,9 @@ spacing is tuned per target biome against the existing 58 structure sets. The
 QA budget sums the approximate random-spread candidate rate
 `1 / spacing²` for every structure allowed in each biome and keeps the total
 at or just below the vanilla village candidate baseline
-`1 / 34²`. Spacing and separation are measured in chunks.
+`1 / 34²`. The current 42-biome budget evaluates between 94.6% and 100%
+of that baseline (average 98.5%) across the new target biomes. Spacing and
+separation are measured in chunks.
 
 This is deliberately an aggregate budget: a jungle outpost can be frequent in
 jungle without causing 100 independent structure sets to stack in every
