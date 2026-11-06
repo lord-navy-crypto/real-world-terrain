@@ -9,6 +9,8 @@ from __future__ import annotations
 import argparse, gzip, hashlib, struct
 from pathlib import Path
 
+from generate_original_architecture import Building
+
 ASSETS = {
     "modern_house_1.schematic": ("modern_house", (12, 10, 12),
         "8febc4e110e8324e5955d6492ba8993c12285abc8e7696dffb9c50af30882e01"),
@@ -260,34 +262,25 @@ def convert_schematic(source, output):
                     palette.append(block_state)
                 entries.append((x, y, z, palette_index[block_state]))
 
-    palette_payloads = []
-    for block_name, properties in palette:
-        fields = [(8, "Name", string_payload(block_name))]
-        if properties:
-            fields.append((10, "Properties", compound_payload([
-                (8, key, string_payload(value)) for key, value in properties
-            ])))
-        palette_payloads.append(compound_payload(fields))
-
-    block_payloads = []
+    building = Building(
+        name,
+        expected_size,
+        f"Apache-2.0 GDMC source-derived {name.replace('_', ' ')} with additive RealScale detailing.",
+    )
     for x, y, z, state_index in entries:
-        block_payloads.append(compound_payload([
-            (9, "pos", int_list_payload([x, y, z])),
-            (3, "state", int_payload(state_index)),
-        ]))
+        building.set(x, y, z, palette[state_index])
 
-    root_fields = [
-        (3, "DataVersion", int_payload(DATA_VERSION)),
-        (9, "size", int_list_payload([width, height, length])),
-        (9, "palette", list_payload(10, palette_payloads)),
-        (9, "blocks", list_payload(10, block_payloads)),
-        (9, "entities", list_payload(10, [])),
-    ]
-    encoded = tag(10, "", compound_payload(root_fields))
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_bytes(gzip.compress(encoded, compresslevel=9, mtime=0))
-    return {"template": name, "size": expected_size, "palette": len(palette),
-            "blocks": len(entries), "sha256": hashlib.sha256(output.read_bytes()).hexdigest()}
+    # Keep the source schematic and its digest untouched. The shared detailing
+    # pass adds only new vanilla blocks inside the existing declared dimensions.
+    result = building.write(output)
+    return {
+        "template": name,
+        "size": expected_size,
+        "palette": result["palette"],
+        "blocks": result["blocks"],
+        "source_sha256": digest,
+        "sha256": result["sha256"],
+    }
 
 def main():
     parser = argparse.ArgumentParser()

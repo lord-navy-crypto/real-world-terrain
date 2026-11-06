@@ -22,6 +22,7 @@ on:
       - "neoforge/src/main/resources/realscale.dhchunky.mixins.json"
       - "qa/test_dh_chunky_*.py"
       - "qa/run_dh_chunky_runtime_smoke.py"
+      - "qa/run_packaged_jar_dh_chunky_smoke.py"
       - ".github/workflows/dh-chunky-integrated.yml"
   workflow_dispatch:
 permissions:
@@ -76,6 +77,9 @@ jobs:
       - name: Run actual RealScale + Distant Horizons + Chunky server integration
         working-directory: neoforge
         run: python3 ../qa/run_dh_chunky_runtime_smoke.py
+      - name: Verify the packaged RealScale JAR in an official NeoForge server with DH and Chunky
+        working-directory: neoforge
+        run: python3 ../qa/run_packaged_jar_dh_chunky_smoke.py
       - uses: actions/upload-artifact@v4
         if: always() && hashFiles('neoforge/build/libs/*.jar') != ''
         with:
@@ -83,4 +87,5 @@ jobs:
           path: |
             neoforge/build/libs/*.jar
             neoforge/run/dh-chunky-runtime-smoke.log
+            neoforge/build/packaged-dh-chunky-smoke/packaged-dh-chunky-runtime-smoke.log
           if-no-files-found: warn

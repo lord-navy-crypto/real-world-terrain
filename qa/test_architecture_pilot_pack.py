@@ -238,6 +238,26 @@ class ArchitecturePilotTests(unittest.TestCase):
         self.assertGreaterEqual(
             len({spec["feature"] for spec in expansion_generator.EXPANSION_DESIGNS}), 18
         )
+        self.assertEqual(set(expansion_generator.DESIGN_FORMS), set(EXPANSION_NAMES))
+        self.assertGreaterEqual(len(set(expansion_generator.DESIGN_FORMS.values())), 20)
+
+        # Exercise every dedicated form in memory. This catches out-of-bounds
+        # placements before NBT export and proves the layouts are not merely
+        # material swaps of the same occupied-block footprint.
+        geometry_signatures = set()
+        for spec in expansion_generator.EXPANSION_DESIGNS:
+            building = expansion_generator.build_expansion_design(spec)
+            occupied = tuple(
+                position for position, block in building.blocks.items()
+                if block[0] != "minecraft:air"
+            )
+            self.assertGreater(len(occupied), 100, spec["name"])
+            self.assertTrue(
+                all(block[0].startswith("minecraft:") for block in building.blocks.values()),
+                spec["name"],
+            )
+            geometry_signatures.add(occupied)
+        self.assertGreaterEqual(len(geometry_signatures), 18)
         self.assertTrue(EXPANSION.is_dir(),
                         "Run Gradle processResources or build before this test")
         for spec in expansion_generator.EXPANSION_DESIGNS:
@@ -255,6 +275,98 @@ class ArchitecturePilotTests(unittest.TestCase):
                         if palette_names and root["palette"][block["state"]]["Name"] != "minecraft:air"),
                     100,
                 )
+
+    def test_shared_detailing_pass_enriches_existing_original_catalog(self):
+        factories = (
+            tuple(original_generator.BUILDINGS)
+            + tuple(batch_generator.BUILDINGS)
+            + tuple(expansion_generator.BUILDINGS)
+        )
+        self.assertEqual(len(factories), 97)
+        names = set()
+        enriched = 0
+        unchanged = []
+        for factory in factories:
+            building = factory()
+            names.add(building.name)
+            before = {
+                position: block for position, block in building.blocks.items()
+                if block[0] != "minecraft:air"
+            }
+            building.enrich_architecture()
+            after = {
+                position: block for position, block in building.blocks.items()
+                if block[0] != "minecraft:air"
+            }
+            self.assertTrue(building._architecture_details_applied, building.name)
+            self.assertTrue(
+                all(block[0].startswith("minecraft:") for block in after.values()),
+                building.name,
+            )
+            self.assertEqual(
+                len(building.blocks),
+                building.width * building.height * building.length,
+                building.name,
+            )
+            if len(after) > len(before):
+                enriched += 1
+            else:
+                unchanged.append(building.name)
+            snapshot = dict(building.blocks)
+            building.enrich_architecture()
+            self.assertEqual(building.blocks, snapshot, building.name)
+
+        self.assertEqual(len(names), 97)
+        self.assertGreaterEqual(
+            enriched, 85,
+            f"The shared detail pass should enrich nearly every existing original layout; "
+            f"enriched={enriched}, unchanged={unchanged}",
+        )
+
+    def test_large_roofed_interiors_gain_an_anchored_room_partition(self):
+        building = original_generator.Building(
+            "room_partition_test", (11, 8, 11), "Synthetic enclosed room"
+        )
+        building.fill(1, 0, 1, 9, 0, 9, "minecraft:cobblestone")
+        building.fill(2, 1, 2, 8, 1, 8, "minecraft:oak_planks")
+        building.shell(2, 2, 2, 8, 4, 8, "minecraft:oak_planks")
+        building.fill(2, 5, 2, 8, 5, 8, "minecraft:oak_planks")
+
+        self.assertTrue(building._add_interior_partition())
+        self.assertTrue(building._architecture_partition_applied)
+
+        # The deterministic scorer may choose either perpendicular divider.
+        # Both must be anchored to the room shell and preserve a central passage.
+        x_divider = all(
+            building.blocks[(5, y, z)][0] == "minecraft:oak_planks"
+            for y in (2, 3) for z in (3, 4, 6, 7)
+        )
+        z_divider = all(
+            building.blocks[(x, y, 5)][0] == "minecraft:oak_planks"
+            for y in (2, 3) for x in (3, 4, 6, 7)
+        )
+        self.assertTrue(x_divider or z_divider)
+        self.assertEqual(building.blocks[(5, 2, 5)][0], "minecraft:air")
+        self.assertEqual(building.blocks[(5, 3, 5)][0], "minecraft:air")
+
+    def test_detail_candidates_prioritize_roofed_interior_surfaces(self):
+        building = original_generator.Building(
+            "interior_priority", (11, 8, 11), "Synthetic interior-priority test"
+        )
+        building.fill(1, 0, 1, 9, 0, 9, "minecraft:cobblestone")
+        building.shell(2, 2, 2, 8, 4, 8, "minecraft:oak_planks")
+        building.fill(2, 5, 2, 8, 5, 8, "minecraft:oak_planks")
+
+        candidates = building._detail_surface_candidates()
+        self.assertTrue(candidates)
+        first = candidates[0]
+        self.assertTrue(
+            any(
+                building.blocks[(first[0], cover_y, first[2])][0] != "minecraft:air"
+                for cover_y in range(first[1] + 2, min(building.height, first[1] + 8))
+            ),
+            f"first detail candidate should be roof-covered interior space: {first}",
+        )
 
     def test_batch_designs_have_archetype_specific_blocks_and_profiles(self):
         self.assertTrue(PACK.is_dir(),

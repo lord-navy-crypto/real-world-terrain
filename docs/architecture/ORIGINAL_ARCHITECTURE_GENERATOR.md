@@ -97,6 +97,25 @@ candidate becomes a successful structure.
 - Candidate spacing is not a promise of a successful structure count.
   Terrain, biome checks and collisions can reject starts.
 
+## Existing-template detailing pass
+
+The original five designs, the 50-design batch, and the 42 Expansion 3
+designs share one deterministic detailing pass. It does not create new
+template IDs or change declared dimensions. It adds only when the target
+space is clear:
+
+- entrance approach blocks and a small canopy where a design lacks a porch;
+- role-specific work fixtures for farms, workshops, markets, civic buildings,
+  transport sites and defensive outposts;
+- additional lanterns where a layout is under-lit;
+- roof vents/chimneys for suitable hearth, lodging and production buildings.
+
+The pass is idempotent: running it twice does not stack duplicate fixtures.
+It uses vanilla 1.21.1 block states. The three Apache-2.0 GDMC source files
+remain byte-for-byte unchanged and their digests are verified before
+conversion; their converted NBT copies receive the same additive detailing
+without changing dimensions or removing attribution.
+
 ## Validation
 
 ```sh

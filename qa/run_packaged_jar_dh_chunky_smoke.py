@@ -213,6 +213,9 @@ def main() -> int:
         run_script = install_official_neoforge_server()
         prepare_mods()
         prepare_properties()
+        import sys
+        sys.path.insert(0, str(ROOT.parent / "qa"))
+        from run_dh_chunky_runtime_smoke import run_chunky_pregen
 
         proc = subprocess.Popen(
             ["bash", str(run_script), "nogui"],
@@ -252,6 +255,10 @@ def main() -> int:
                 wait_for(events, proc, captured, HOOK_MARKER, 60)
             if not any(BOUND_MARKER in line for line in captured):
                 wait_for(events, proc, captured, BOUND_MARKER, 120)
+
+            packet_id = run_chunky_pregen(
+                sock, packet_id, captured, "PACKAGED_JAR_DH_CHUNKY_PREGEN_PASS"
+            )
 
             if any(CRASH_MARKER in line for line in captured):
                 raise RuntimeError("The known ChunkyProvider initialization exception appeared")

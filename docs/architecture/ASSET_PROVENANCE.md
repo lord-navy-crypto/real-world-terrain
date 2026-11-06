@@ -36,7 +36,11 @@ The conversion intentionally omits legacy block-entity payloads and entities:
 chests are empty, signs are blank, and flower pots are empty. Crop age, farmland
 moisture, water, block orientation, and supported stair/slab/door states are
 converted. The converted templates are modified files under Apache 2.0; this
-conversion is recorded here and in the converter's source header.
+conversion is recorded here and in the converter's source header. The
+converter verifies the original source SHA-256 before each build, then applies
+the shared additive detailing pass to the converted NBT copy only. The source
+schematics and their recorded hashes remain unchanged; dimensions, attribution
+and the Apache-2.0 notice are retained.
 
 The source `.schematic` files are not packaged in the JAR. The three converted
 `.nbt` templates are included in the mod's base data namespace; the optional
