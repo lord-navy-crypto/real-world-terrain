@@ -41,7 +41,7 @@ concurrency:
 jobs:
   build-and-server-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 65
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -108,6 +108,10 @@ jobs:
         working-directory: neoforge
         run: python3 ../qa/run_dh_chunky_runtime_smoke.py
 
+      - name: Verify the packaged RealScale JAR in an official NeoForge server with DH and Chunky
+        working-directory: neoforge
+        run: python3 ../qa/run_packaged_jar_dh_chunky_smoke.py
+
       - name: Upload installable JAR and server acceptance logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -117,5 +121,6 @@ jobs:
             neoforge/build/libs/*.jar
             neoforge/run/architecture-pilot-server-smoke.log
             neoforge/run/dh-chunky-runtime-smoke.log
+            neoforge/build/packaged-dh-chunky-smoke/packaged-dh-chunky-runtime-smoke.log
           if-no-files-found: warn
           retention-days: 30
