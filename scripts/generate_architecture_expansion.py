@@ -950,6 +950,8 @@ def _build_radial_compound(b: Building, spec: dict):
     for index, (x1, z1, x2, z2) in enumerate(pens):
         _add_fence_pen(b, x1, z1, x2, z2, spec["frame"])
         px, pz = (x1 + x2) // 2, (z1 + z2) // 2
+        b.set(px, 2, z1, f"minecraft:{spec['frame']}_fence_gate",
+              facing="north", open="false", powered="false", in_wall="false")
         for dx in (-1, 1):
             for dz in (-1, 1):
                 b.log(px + dx, 2, pz + dz, spec["frame"])
@@ -999,6 +1001,8 @@ def _build_stable_courtyard(b: Building, spec: dict):
                spec["wall"], spec["floor"], spec["roof"], spec["frame"], spec)
     b.fill(3, 1, cz + 4, b.width - 4, 1, b.length - 3, spec["path"])
     _add_fence_pen(b, 3, cz + 6, b.width - 4, b.length - 3, spec["frame"])
+    b.set(cx, 2, cz + 6, f"minecraft:{spec['frame']}_fence_gate",
+          facing="north", open="false", powered="false", in_wall="false")
     stable_x1, stable_x2 = cx + 5, b.width - 5
     for x in range(stable_x1 + 1, stable_x2, 3):
         b.fill(x, 2, 4, x, 4, cz, spec["wall"])
