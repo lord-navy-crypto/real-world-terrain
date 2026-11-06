@@ -101,6 +101,7 @@ def generatedStructureResources = layout.buildDirectory.dir("generated/realscale
 def generatedLicensedArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-licensed-architecture-templates")
 def generatedOriginalArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-original-architecture-templates")
 def generatedBatchArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-batch-architecture-templates")
+def generatedExpansionArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-expansion-architecture-templates")
 
 // Gradle 9 removed Project.exec. Use ProviderFactory.exec so these
 // deterministic resource generators work on both the Gradle 8 and 9 CI lanes.
@@ -152,9 +153,23 @@ tasks.register("generateArchitectureBatchTemplates") {
     }
 }
 
+tasks.register("generateArchitectureExpansionTemplates") {
+    inputs.file(file("../scripts/generate_architecture_expansion.py"))
+    inputs.file(file("../scripts/generate_original_architecture.py"))
+    outputs.dir(generatedExpansionArchitectureTemplates)
+    doLast {
+        def output = generatedExpansionArchitectureTemplates.get().asFile
+        project.delete(output)
+        runArchitecturePython("../scripts/generate_architecture_expansion.py", [
+            "--output", output.absolutePath
+        ])
+    }
+}
+
 tasks.register("generateBuiltInStructurePacks") {
     dependsOn("generateArchitectureTemplates", "generateOriginalArchitectureTemplates",
-              "generateArchitectureBatchTemplates")
+              "generateArchitectureBatchTemplates", "generateArchitectureExpansionTemplates")
+    inputs.file(file("../scripts/architecture_expansion_profiles.json"))
     outputs.dir(generatedStructureResources)
     doLast {
         def root = generatedStructureResources.get().asFile
@@ -238,16 +253,21 @@ tasks.register("generateBuiltInStructurePacks") {
                 "data/realscale/structure/architecture")
         def batchTemplateSource = new File(generatedBatchArchitectureTemplates.get().asFile,
                 "data/realscale/structure/architecture")
+        def expansionTemplateSource = new File(generatedExpansionArchitectureTemplates.get().asFile,
+                "data/realscale/structure/architecture")
         if (!licensedTemplateSource.isDirectory())
             throw new GradleException("Converted licensed architecture templates are missing: " + licensedTemplateSource)
         if (!originalTemplateSource.isDirectory())
             throw new GradleException("Original generated architecture templates are missing: " + originalTemplateSource)
         if (!batchTemplateSource.isDirectory())
             throw new GradleException("Batch-generated architecture templates are missing: " + batchTemplateSource)
+        if (!expansionTemplateSource.isDirectory())
+            throw new GradleException("Expansion architecture templates are missing: " + expansionTemplateSource)
         project.copy {
             from(licensedTemplateSource)
             from(originalTemplateSource)
             from(batchTemplateSource)
+            from(expansionTemplateSource)
             into(templateTarget)
         }
 
@@ -259,6 +279,7 @@ tasks.register("generateBuiltInStructurePacks") {
             from(licensedTemplateSource)
             from(originalTemplateSource)
             from(batchTemplateSource)
+            from(expansionTemplateSource)
             into(optionalTemplateTarget)
         }
 
@@ -479,6 +500,12 @@ tasks.register("generateBuiltInStructurePacks") {
             [id:"riverside_sawmill", spacing:896, separation:256, salt:140078, biomes:["minecraft:river", "minecraft:forest", "minecraft:taiga", "realscale:riverine_woodland", "realscale:floodplain_margin", "realscale:wet_meadow", "realscale:seasonal_floodforest"]],
             [id:"marsh_reed_hamlet", spacing:896, separation:256, salt:140079, biomes:["minecraft:swamp", "minecraft:mangrove_swamp", "minecraft:river", "realscale:wet_meadow", "realscale:marshy_woodland", "realscale:reed_marsh_edge", "realscale:seasonal_floodforest"]],
         ]
+
+        // The 42-template expansion is maintained as a JSON manifest so the
+        // density budget can be audited independently from the NBT generator.
+        def expansionProfiles = new groovy.json.JsonSlurper().parse(
+                file("../scripts/architecture_expansion_profiles.json"))
+        architectureProfiles.addAll(expansionProfiles)
 
         architectureProfiles.each { profile ->
             def id = profile.id
