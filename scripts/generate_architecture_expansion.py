@@ -710,6 +710,18 @@ def _build_greenhouse(b: Building, spec: dict):
     b.fill(cx - 1, 1, z1 + 1, cx + 1, 1, z2 - 1, "minecraft:water")
     b.set(x2 - 2, 2, z2 - 2, "minecraft:composter", level="0")
     b.set(x1 + 2, 2, z2 - 2, "minecraft:barrel", facing="up", open="false")
+    # The rear potting bay carries each greenhouse's own signature feature.
+    feature_x, feature_z = x2 - 2, z2 - 4
+    if spec["feature"] in ("minecraft:flowering_azalea", "minecraft:jungle_leaves",
+                           "minecraft:cherry_leaves"):
+        b.set(feature_x, 1, feature_z, "minecraft:moss_block")
+        if spec["feature"].endswith("_leaves"):
+            b.set(feature_x, 2, feature_z, spec["feature"],
+                  persistent="true", distance="1")
+        else:
+            b.set(feature_x, 2, feature_z, spec["feature"])
+    else:
+        b.set(feature_x, 2, feature_z, spec["feature"])
     _lantern(b, x1 + 1, 3, z1 + 1)
     _lantern(b, x2 - 1, 3, z1 + 1)
 
@@ -1171,6 +1183,7 @@ def build_expansion_design(spec: dict) -> Building:
     if form not in ("stilt_village", "stilt_granary", "bridge_gate", "aqueduct"):
         b.fill(cx - 6, 0, cz - 6, cx + 6, 0, cz + 6, spec["foundation"])
     _build_expansion_form(b, spec)
+    b.enrich_architecture()
     return b
 
 
