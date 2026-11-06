@@ -285,6 +285,7 @@ class ArchitecturePilotTests(unittest.TestCase):
         self.assertEqual(len(factories), 97)
         names = set()
         enriched = 0
+        unchanged = []
         for factory in factories:
             building = factory()
             names.add(building.name)
@@ -309,6 +310,8 @@ class ArchitecturePilotTests(unittest.TestCase):
             )
             if len(after) > len(before):
                 enriched += 1
+            else:
+                unchanged.append(building.name)
             snapshot = dict(building.blocks)
             building.enrich_architecture()
             self.assertEqual(building.blocks, snapshot, building.name)
@@ -316,7 +319,8 @@ class ArchitecturePilotTests(unittest.TestCase):
         self.assertEqual(len(names), 97)
         self.assertGreaterEqual(
             enriched, 85,
-            "The shared detail pass should enrich nearly every existing original layout",
+            f"The shared detail pass should enrich nearly every existing original layout; "
+            f"enriched={enriched}, unchanged={unchanged}",
         )
 
     def test_batch_designs_have_archetype_specific_blocks_and_profiles(self):
