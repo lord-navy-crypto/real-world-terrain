@@ -9,7 +9,7 @@ Minecraft 1.21.1 / NeoForge 21.1.x / Java 21.
 3. Open **Built-in Vanilla Structures**.
 4. Choose the Overworld density (Vanilla 0x, 2x, 3x, 4x, or 6x).
 5. Choose the Nether + End density (Vanilla 0x, 2x, or 3x).
-6. Leave **Enable Architecture Library (58 Structures)** on to include the 58-building pack in newly created worlds. Turn it off if that world should not use the architecture library.
+6. Leave **Enable Architecture Library (100 Structures)** on to include the 100-building pack in newly created worlds. Turn it off if that world should not use the architecture library.
 7. Save, fully exit Minecraft, restart, and then create a NEW world.
 
 The architecture checkbox defaults to ON. The pack is still optional, not mandatory: it is selected as a default for new worlds, and players can deselect it in **Create World > Data Packs** before creating the world.
@@ -23,7 +23,7 @@ The registrar reads `structureDensity`, `dimensionStructureDensity`, and `archit
 ## What gets enabled
 
 - The Overworld and Nether/End selectors choose the matching built-in vanilla structure-density packs.
-- The architecture checkbox selects `realscale_structures_architecture_pilot`, containing all 58 licensed/original structure definitions, template pools, biome tags, structure sets, and NBT templates.
+- The architecture checkbox selects `realscale_structures_architecture_pilot`, containing all 100 licensed/original structure definitions, template pools, biome tags, structure sets, and NBT templates.
 - The pack is discovered through NeoForge's `AddPackFindersEvent` as a built-in `SERVER_DATA` pack.
 - The pack is marked non-mandatory. `PackSource.DEFAULT` means selected by default for a new world; it does not force-enable the pack in an existing save.
 
