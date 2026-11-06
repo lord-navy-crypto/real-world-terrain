@@ -238,6 +238,26 @@ class ArchitecturePilotTests(unittest.TestCase):
         self.assertGreaterEqual(
             len({spec["feature"] for spec in expansion_generator.EXPANSION_DESIGNS}), 18
         )
+        self.assertEqual(set(expansion_generator.DESIGN_FORMS), set(EXPANSION_NAMES))
+        self.assertGreaterEqual(len(set(expansion_generator.DESIGN_FORMS.values())), 20)
+
+        # Exercise every dedicated form in memory. This catches out-of-bounds
+        # placements before NBT export and proves the layouts are not merely
+        # material swaps of the same occupied-block footprint.
+        geometry_signatures = set()
+        for spec in expansion_generator.EXPANSION_DESIGNS:
+            building = expansion_generator.build_expansion_design(spec)
+            occupied = tuple(
+                position for position, block in building.blocks.items()
+                if block[0] != "minecraft:air"
+            )
+            self.assertGreater(len(occupied), 100, spec["name"])
+            self.assertTrue(
+                all(block[0].startswith("minecraft:") for block in building.blocks.values()),
+                spec["name"],
+            )
+            geometry_signatures.add(occupied)
+        self.assertGreaterEqual(len(geometry_signatures), 18)
         self.assertTrue(EXPANSION.is_dir(),
                         "Run Gradle processResources or build before this test")
         for spec in expansion_generator.EXPANSION_DESIGNS:
