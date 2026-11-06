@@ -13,11 +13,13 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import convert_gdmc_architecture as converter
 import generate_original_architecture as original_generator
 import generate_architecture_batch as batch_generator
+import generate_architecture_expansion as expansion_generator
 
 SOURCE = ROOT / "assets/architecture/gdmc-source"
 LICENSED = ROOT / "neoforge/build/generated/realscale-licensed-architecture-templates/data/realscale/structure/architecture"
 ORIGINAL = ROOT / "neoforge/build/generated/realscale-original-architecture-templates/data/realscale/structure/architecture"
 BATCH = ROOT / "neoforge/build/generated/realscale-batch-architecture-templates/data/realscale/structure/architecture"
+EXPANSION = ROOT / "neoforge/build/generated/realscale-expansion-architecture-templates/data/realscale/structure/architecture"
 PACK = ROOT / "neoforge/build/generated/realscale-structure-packs/resourcepacks/realscale_structures_architecture_pilot"
 JAVA = ROOT / "neoforge/src/main/java/org/realscale/neoforge/RealScaleStructurePacks.java"
 LICENSE = ROOT / "licenses/GDMC-APACHE-2.0.txt"
@@ -62,10 +64,19 @@ BATCH_EXPECTED = {
            BATCH_FACTORIES[name]().length)
     for name in BATCH_NAMES
 }
+EXPANSION_NAMES = tuple(spec["name"] for spec in expansion_generator.EXPANSION_DESIGNS)
+EXPANSION_FACTORIES = {factory().name: factory for factory in expansion_generator.BUILDINGS}
+EXPANSION_EXPECTED = {
+    name: (EXPANSION_FACTORIES[name]().width,
+           EXPANSION_FACTORIES[name]().height,
+           EXPANSION_FACTORIES[name]().length)
+    for name in EXPANSION_NAMES
+}
 ALL_EXPECTED = {
     **{name: size for name, (size, _) in LICENSED_EXPECTED.items()},
     **ORIGINAL_EXPECTED,
     **BATCH_EXPECTED,
+    **EXPANSION_EXPECTED,
 }
 
 
@@ -132,8 +143,9 @@ def compound_child(data, offset, wanted_name):
 
 class ArchitecturePilotTests(unittest.TestCase):
     def test_structure_coordinates_use_int_lists_required_by_1211_codec(self):
-        paths = sorted(LICENSED.glob("*.nbt")) + sorted(ORIGINAL.glob("*.nbt")) + sorted(BATCH.glob("*.nbt"))
-        self.assertEqual(len(paths), 58)
+        paths = (sorted(LICENSED.glob("*.nbt")) + sorted(ORIGINAL.glob("*.nbt"))
+                 + sorted(BATCH.glob("*.nbt")) + sorted(EXPANSION.glob("*.nbt")))
+        self.assertEqual(len(paths), 100)
         for path in paths:
             with self.subTest(template=path.name):
                 data = gzip.decompress(path.read_bytes())
@@ -213,6 +225,29 @@ class ArchitecturePilotTests(unittest.TestCase):
                 palette_names = {entry["Name"] for entry in root["palette"]}
                 self.assertGreater(len(palette_names), 3)
                 self.assertTrue(any(name != "minecraft:air" for name in palette_names))
+
+    def test_expansion_generator_creates_forty_two_distinct_original_designs(self):
+        self.assertEqual(len(expansion_generator.BUILDINGS), 42)
+        self.assertEqual(len(EXPANSION_NAMES), 42)
+        self.assertEqual(len(set(EXPANSION_NAMES)), 42)
+        self.assertEqual(set(EXPANSION_FACTORIES), set(EXPANSION_NAMES))
+        self.assertTrue(EXPANSION.is_dir(),
+                        "Run Gradle processResources or build before this test")
+        for spec in expansion_generator.EXPANSION_DESIGNS:
+            template = spec["name"]
+            with self.subTest(template=template):
+                path = EXPANSION / f"{template}.nbt"
+                self.assertTrue(path.is_file(), path)
+                root = read_template(path, EXPANSION_EXPECTED[template])
+                palette_names = {entry["Name"] for entry in root["palette"]}
+                self.assertIn(spec["feature"], palette_names)
+                self.assertIn(spec["accent"], palette_names)
+                self.assertGreaterEqual(len(palette_names), 8)
+                self.assertGreater(
+                    sum(1 for block in root["blocks"]
+                        if palette_names and root["palette"][block["state"]]["Name"] != "minecraft:air"),
+                    100,
+                )
 
     def test_batch_designs_have_archetype_specific_blocks_and_profiles(self):
         self.assertTrue(PACK.is_dir(),
@@ -376,7 +411,7 @@ class ArchitecturePilotTests(unittest.TestCase):
                         "Run Gradle processResources or build before this test")
         meta = json.loads((PACK / "pack.mcmeta").read_text(encoding="utf-8"))
         self.assertEqual(meta["pack"]["pack_format"], 48)
-        self.assertEqual(len(ALL_EXPECTED), 58)
+        self.assertEqual(len(ALL_EXPECTED), 100)
         for template in ALL_EXPECTED:
             with self.subTest(template=template):
                 structure = json.loads(
@@ -417,16 +452,47 @@ class ArchitecturePilotTests(unittest.TestCase):
                                       / (biome.split(":", 1)[1] + ".json"))
                         self.assertTrue(biome_file.is_file(), f"Unknown RealScale biome: {biome}")
 
+    def test_expansion_profiles_match_village_candidate_density_budget(self):
+        profile_path = ROOT / "scripts/architecture_expansion_profiles.json"
+        profiles = json.loads(profile_path.read_text(encoding="utf-8"))
+        self.assertEqual(len(profiles), 42)
+        self.assertEqual({p["id"] for p in profiles}, set(EXPANSION_NAMES))
+
+        density_by_biome = {}
+        for template in ALL_EXPECTED:
+            placement = json.loads(
+                (PACK / f"data/realscale/worldgen/structure_set/{template}.json").read_text()
+            )["placement"]
+            biome_tag = json.loads(
+                (PACK / f"data/realscale/tags/worldgen/biome/has_structure/{template}.json").read_text()
+            )
+            spacing = placement["spacing"]
+            self.assertGreater(spacing, placement["separation"])
+            for biome in biome_tag["values"]:
+                density_by_biome[biome] = density_by_biome.get(biome, 0.0) + 1.0 / (spacing * spacing)
+
+        village_candidate_density = 1.0 / (34 * 34)
+        for profile in profiles:
+            with self.subTest(template=profile["id"]):
+                self.assertEqual(profile["biomes"].__len__(), 1)
+                biome = profile["biomes"][0]
+                density = density_by_biome[biome]
+                # Candidate density is kept at or just below vanilla village
+                # spacing in each target biome, so 100 sets do not stack into
+                # a world-wide structure flood.
+                self.assertLessEqual(density, village_candidate_density * 1.01)
+                self.assertGreaterEqual(density, village_candidate_density * 0.94)
+
     def test_rcon_diagnostic_pack_tracks_each_workflows_selected_world(self):
         script = (ROOT / "qa/run_architecture_server_smoke.py").read_text(encoding="utf-8")
         pilot = (ROOT / ".github/workflows/architecture-pilot-server.yml").read_text(encoding="utf-8")
-        full = (ROOT / ".github/workflows/architecture-library-58.yml").read_text(encoding="utf-8")
+        full = (ROOT / ".github/workflows/architecture-library-100.yml").read_text(encoding="utf-8")
         self.assertIn("working-directory: neoforge", pilot)
         self.assertIn("level-name=architecture-pilot", pilot)
         self.assertNotIn("initial-enabled-packs", pilot)
         self.assertNotIn("initial-enabled-packs", full)
         self.assertIn("working-directory: neoforge", full)
-        self.assertIn("level-name=architecture-58-smoke", full)
+        self.assertIn("level-name=architecture-100-smoke", full)
         self.assertIn('world_name = line.partition("=")[2].strip()', script)
         self.assertIn(
             'ROOT / "run" / world_name / "datapacks" / "realscale_nbt_diagnostics"',
@@ -443,7 +509,7 @@ class ArchitecturePilotTests(unittest.TestCase):
     def test_registered_pack_is_optional_and_only_templates_are_packaged(self):
         source = JAVA.read_text(encoding="utf-8")
         self.assertIn('"architecture_pilot"', source)
-        self.assertIn('"RealScale | Architecture Library (58 Structures)"', source)
+        self.assertIn('"RealScale | Architecture Library (100 Structures)"', source)
         self.assertIn("current.architectureEnabled()", source)
         self.assertIn("false, // Never mandatory", source)
         jars = list((ROOT / "neoforge/build/libs").glob("*.jar"))
@@ -472,6 +538,7 @@ class ArchitecturePilotTests(unittest.TestCase):
             self.assertFalse(any(name.endswith(".schematic") for name in names))
             self.assertNotIn("original-architecture-manifest.json", names)
             self.assertNotIn("batch-architecture-manifest.json", names)
+            self.assertNotIn("expansion-architecture-manifest.json", names)
 
 
 if __name__ == "__main__":
