@@ -1155,29 +1155,12 @@ def _build_expansion_form(b: Building, spec: dict):
 def build_expansion_design(spec: dict) -> Building:
     b = Building(spec["name"], spec["size"], spec["description"])
     cx, cz = b.width // 2, b.length // 2
-    # A small grounded site apron; the main design is built above it.
-    b.fill(cx - 6, 0, cz - 6, cx + 6, 0, cz + 6, spec["foundation"])
-    kind = spec["kind"]
-    if kind == "tower":
-        _build_tower(b, spec)
-    elif kind == "bridge":
-        _build_bridge(b, spec)
-    elif kind == "aqueduct":
-        _build_aqueduct(b, spec)
-    elif kind == "market":
-        _build_market(b, spec)
-    elif kind == "jungle":
-        _build_jungle(b, spec)
-    elif kind == "marsh":
-        _build_marsh(b, spec)
-    elif kind == "waterfront":
-        _build_waterfront(b, spec)
-    elif kind == "cliff":
-        _build_cliff(b, spec)
-    elif kind == "badlands":
-        _build_badlands(b, spec)
-    else:
-        _build_default_site(b, spec)
+    form = DESIGN_FORMS[spec["name"]]
+    # Non-raised forms receive a compact foundation apron. Elevated structures
+    # build their own piles and walkways instead of receiving a solid ground pad.
+    if form not in ("stilt_village", "stilt_granary", "bridge_gate", "aqueduct"):
+        b.fill(cx - 6, 0, cz - 6, cx + 6, 0, cz + 6, spec["foundation"])
+    _build_expansion_form(b, spec)
     return b
 
 
