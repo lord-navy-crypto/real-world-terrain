@@ -13,10 +13,11 @@ This module intentionally combines two independent sources of building designs:
    doors, rooms, crop plots, courtyards and vertical features) and writes
    Minecraft 1.21.1 structure NBT.
 
-The original design pipeline now has two generators:
+The original design pipeline now has three generators:
 
 - `scripts/generate_original_architecture.py`: five foundational original designs.
 - `scripts/generate_architecture_batch.py`: 50 additional designs produced in one deterministic batch from reusable building primitives, including fifteen multi-building settlement compounds.
+- `scripts/generate_architecture_expansion.py`: 42 further original designs, including alpine refuges, jungle canopy sites, marsh markets, desert works, civic buildings, bridges, aqueducts and industrial compounds.
 
 The complete original catalog currently contains:
 
@@ -42,7 +43,7 @@ The complete original catalog currently contains:
 The pack is intentionally optional. In Minecraft 1.21.1:
 
 1. Open **Create New World → Data Packs**.
-2. Find **RealScale | Architecture Library (58 Structures)** under Available.
+2. Find **RealScale | Architecture Library (100 Structures)** under Available.
 3. Move it to Selected, confirm the pack prompt, and create the world.
 
 For an existing world, use **Edit World → Data Packs** and make a backup first.
@@ -65,17 +66,19 @@ Minecraft `.nbt` templates are embedded in the mod's base data namespace,
 so explicit `/place template` use does not depend on enabling the optional
 worldgen pack. The biome tags, structure definitions, template pools and
 structure sets live in the separate opt-in pack. The original design scripts,
-licensed source files and source websites are not required at runtime. The batch pipeline adds 50 more
-original templates, bringing the total to 55 original structures plus
-three separately licensed imports (58 templates overall). No network request or external
+licensed source files and source websites are not required at runtime. The batch pipeline adds 50 designs and Expansion 3 adds another 42, bringing the total to 97 original structures plus three separately licensed imports (100 templates overall). No network request or external
 structure-library dependency is made by the game.
 
 Minecraft's `random_spread` structure sets choose candidate locations using
 world seed, spacing, separation and a per-structure salt. Biome allow-lists
 prevent a lighthouse from appearing inland or a desert courtyard in a snowy
 forest. Each design is a separate structure with its own spacing and biome
-list; the architecture datapack remains opt-in and can be disabled at world
-creation.
+list; the architecture datapack remains optional and can be disabled at world
+creation. Expansion 3 uses a per-biome candidate-density budget: the summed
+random-spread candidate rate in each target biome is held at or just below the
+vanilla village baseline (one candidate grid per 34×34 chunks). Spacing is in
+chunks. This is a candidate-placement budget, not a guarantee that every
+candidate becomes a successful structure.
 
 ## Design and generation constraints
 
@@ -97,12 +100,14 @@ creation.
 ```sh
 python3 scripts/generate_original_architecture.py --output /tmp/realscale-original
 python3 scripts/generate_architecture_batch.py --output /tmp/realscale-batch
+python3 scripts/generate_architecture_expansion.py --output /tmp/realscale-expansion
 python3 -m unittest discover -s qa -p test_architecture_pilot_pack.py -v
 cd neoforge && gradle --no-daemon build
 ```
 
 The architecture server workflow then boots a real NeoForge server and uses
 `/place template` for all imported and original templates. This proves the
-Minecraft registry can load each NBT template; separate fixed-seed worldgen
-playtests are still required before increasing structure frequency or
+Minecraft registry can load each NBT template. The build also audits the 100
+structure definitions and their per-biome candidate-density budget. Fixed-seed
+biome-discovery and natural-generation playtests are still required before
 marking the pack stable.
