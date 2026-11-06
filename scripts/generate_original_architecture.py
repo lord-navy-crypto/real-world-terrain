@@ -216,8 +216,8 @@ class Building:
         heat_tokens = (
             "lodge", "farmstead", "barn", "inn", "blacksmith", "bakery",
             "clinic", "waystation", "camp", "shelter", "caravanserai",
-            "kiln", "sawmill", "mill", "workshop", "cider", "storehouse",
-            "cottage", "house", "smith", "forge", "herbalist",
+            "kiln", "sawmill", "workshop", "cider", "storehouse",
+            "cottage", "smith", "forge", "herbalist",
         )
         if not any(token in name for token in heat_tokens):
             return
