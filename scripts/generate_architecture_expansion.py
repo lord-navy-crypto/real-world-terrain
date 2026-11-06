@@ -394,8 +394,21 @@ def _build_aqueduct(b: Building, spec: dict):
                 for y in range(0, channel_y - 1):
                     b.set(x, y, z, spec["foundation"])
                 b.fill(x - 1, channel_y - 2, z, x + 1, channel_y - 2, z, spec["wall"])
+                b.set(x, 1, z, "minecraft:cracked_stone_bricks")
+                b.set(x, 2, z, "minecraft:chiseled_stone_bricks")
+                b.set(x, 3, z, "minecraft:polished_andesite")
+    # Inspection platforms and stair access make this a traversable water
+    # system, not just a floating line of water blocks.
+    for z in (cz - 3, cz + 3):
+        b.fill(1, channel_y - 1, z, 3, channel_y - 1, z, "minecraft:polished_andesite")
+        b.fill(b.width - 4, channel_y - 1, z, b.width - 2, channel_y - 1, z,
+               "minecraft:polished_andesite")
+        for x in (3, b.width - 4):
+            b.stair(x, channel_y - 2, z, "stone_brick", "north" if z < cz else "south")
     for x in range(2, b.width - 2, 4):
         _lantern(b, x, channel_y + 2, cz - 3)
+        b.set(x, channel_y - 3, cz - 2, "minecraft:chain")
+    b.set(cx, channel_y - 2, cz, "minecraft:chiseled_stone_bricks")
     _feature_pair(b, spec, cx, channel_y + 2, cz)
 
 
@@ -579,7 +592,7 @@ def _build_default_site(b: Building, spec: dict):
         for x in range(cx - 5, cx + 6, 3):
             for y in range(2, 6):
                 b.log(x, y, 1, spec["frame"])
-        b.fill(cx - 6, 6, 0, cx + 6, 6, 2, spec["roof"] + "_planks")
+        b.fill(cx - 6, 6, 0, cx + 6, 6, 2, f"minecraft:{spec['roof']}_planks")
         for step in range(3):
             b.fill(cx - 5 + step, 1 + step, 0, cx + 5 - step, 1 + step, 0, spec["foundation"])
     elif kind == "cliff":
