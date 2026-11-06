@@ -9,6 +9,9 @@ on:
       - "neoforge/src/main/resources/realscale.dhchunky.mixins.json"
       - "qa/test_dh_chunky_*.py"
       - "qa/run_dh_chunky_runtime_smoke.py"
+      - "neoforge/build.gradle"
+      - "scripts/generate_architecture_expansion.py"
+      - "scripts/architecture_expansion_profiles.json"
       - ".github/workflows/dh-chunky-integrated.yml"
   pull_request:
     paths:
@@ -25,7 +28,7 @@ permissions:
 jobs:
   build-integrated-mod:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
