@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate 42 original RealScale architecture designs for the 100-template library.
+"""Generate 42 original RealScale designs across 22 architectural forms for the 100-template library.
 
 All expansion structures are authored from deterministic block-layout rules.
 They use vanilla 1.21.1 block states and the repository's NBT writer; no external
