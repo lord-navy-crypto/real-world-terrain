@@ -276,6 +276,49 @@ class ArchitecturePilotTests(unittest.TestCase):
                     100,
                 )
 
+    def test_shared_detailing_pass_enriches_existing_original_catalog(self):
+        factories = (
+            tuple(original_generator.BUILDINGS)
+            + tuple(batch_generator.BUILDINGS)
+            + tuple(expansion_generator.BUILDINGS)
+        )
+        self.assertEqual(len(factories), 97)
+        names = set()
+        enriched = 0
+        for factory in factories:
+            building = factory()
+            names.add(building.name)
+            before = {
+                position: block for position, block in building.blocks.items()
+                if block[0] != "minecraft:air"
+            }
+            building.enrich_architecture()
+            after = {
+                position: block for position, block in building.blocks.items()
+                if block[0] != "minecraft:air"
+            }
+            self.assertTrue(building._architecture_details_applied, building.name)
+            self.assertTrue(
+                all(block[0].startswith("minecraft:") for block in after.values()),
+                building.name,
+            )
+            self.assertEqual(
+                len(building.blocks),
+                building.width * building.height * building.length,
+                building.name,
+            )
+            if len(after) > len(before):
+                enriched += 1
+            snapshot = dict(building.blocks)
+            building.enrich_architecture()
+            self.assertEqual(building.blocks, snapshot, building.name)
+
+        self.assertEqual(len(names), 97)
+        self.assertGreaterEqual(
+            enriched, 85,
+            "The shared detail pass should enrich nearly every existing original layout",
+        )
+
     def test_batch_designs_have_archetype_specific_blocks_and_profiles(self):
         self.assertTrue(PACK.is_dir(),
                         "Run Gradle processResources or build before this test")
