@@ -377,8 +377,8 @@ public final class RealScaleTerrainLabClient {
                              v -> d.dimensionStructureDensity=v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(0,2,3)).build())
                 .option(Option.<Boolean>createBuilder()
-                    .name(Component.literal("Enable Architecture Library (58 Structures)"))
-                    .description(description("ON by default for NEW worlds. Selects the built-in 58-structure pack automatically in Create World. Turn off to keep the pack available but not selected. Save and fully restart Minecraft before creating a new world; existing saves keep their own datapack choices."))
+                    .name(Component.literal("Enable Architecture Library (100 Structures)"))
+                    .description(description("ON by default for NEW worlds. Selects the built-in 100-structure pack automatically in Create World. Turn off to keep the pack available but not selected. Save and fully restart Minecraft before creating a new world; existing saves keep their own datapack choices."))
                     .binding(Boolean.TRUE,
                         () -> Boolean.TRUE.equals(d.architectureStructuresEnabled),
                         v -> d.architectureStructuresEnabled=v)
