@@ -209,8 +209,8 @@ def main() -> int:
     TEST_ROOT.mkdir(parents=True, exist_ok=True)
 
     try:
-        prepare_mods()
         run_script = install_official_neoforge_server()
+        prepare_mods()
         prepare_properties()
 
         proc = subprocess.Popen(
