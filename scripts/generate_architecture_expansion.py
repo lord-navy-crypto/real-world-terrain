@@ -725,7 +725,9 @@ def _build_courtyard(b: Building, spec: dict):
                spec["wall"], spec["floor"], spec["roof"], spec["frame"], spec)
     b.fill(cx - 5, 1, cz - 1, cx + 5, 1, b.length - 4, spec["path"])
     b.fill(cx - 2, 1, cz + 1, cx + 2, 1, cz + 5, spec["foundation"])
-    b.fill(cx - 1, 2, cz + 2, cx + 1, 2, cz + 4, "minecraft:water_cauldron", level="3")
+    b.set(cx, 2, cz + 3, "minecraft:water_cauldron", level="3")
+    for x in (cx - 2, cx + 2):
+        b.set(x, 2, cz + 3, spec["accent"])
     for x in (cx - 3, cx + 3):
         for y in range(2, 6):
             b.log(x, y, b.length - 3, spec["frame"])
