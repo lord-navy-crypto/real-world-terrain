@@ -334,8 +334,18 @@ class ArchitecturePilotTests(unittest.TestCase):
 
         self.assertTrue(building._add_interior_partition())
         self.assertTrue(building._architecture_partition_applied)
-        self.assertEqual(building.blocks[(5, 2, 3)][0], "minecraft:oak_planks")
-        self.assertEqual(building.blocks[(5, 3, 3)][0], "minecraft:oak_planks")
+
+        # The deterministic scorer may choose either perpendicular divider.
+        # Both must be anchored to the room shell and preserve a central passage.
+        x_divider = all(
+            building.blocks[(5, y, z)][0] == "minecraft:oak_planks"
+            for y in (2, 3) for z in (3, 4, 6, 7)
+        )
+        z_divider = all(
+            building.blocks[(x, y, 5)][0] == "minecraft:oak_planks"
+            for y in (2, 3) for x in (3, 4, 6, 7)
+        )
+        self.assertTrue(x_divider or z_divider)
         self.assertEqual(building.blocks[(5, 2, 5)][0], "minecraft:air")
         self.assertEqual(building.blocks[(5, 3, 5)][0], "minecraft:air")
 
