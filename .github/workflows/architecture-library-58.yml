@@ -1,14 +1,18 @@
-name: RealScale 58-Structure Build and Dedicated-Server QA
+name: RealScale 100-Structure Build and Dedicated-Server QA
 
 on:
   push:
     branches:
-      - feature/architecture-library-58-20261104
+      - feature/architecture-library-100-density-20261106
     paths:
       - 'assets/architecture/**'
       - 'scripts/convert_gdmc_architecture.py'
       - 'scripts/generate_original_architecture.py'
       - 'scripts/generate_architecture_batch.py'
+      - 'scripts/generate_architecture_expansion.py'
+      - 'scripts/architecture_expansion_profiles.json'
+      - 'scripts/generate_architecture_expansion.py'
+      - 'scripts/architecture_expansion_profiles.json'
       - 'neoforge/**'
       - 'qa/run_architecture_server_smoke.py'
       - 'qa/test_architecture_pilot_pack.py'
@@ -36,7 +40,7 @@ concurrency:
 jobs:
   build-and-server-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
 
@@ -53,11 +57,11 @@ jobs:
         with:
           gradle-version: '8.14.3'
 
-      - name: Build NeoForge mod and generate all architecture NBT
+      - name: Build NeoForge mod and generate all 100 architecture NBT
         working-directory: neoforge
         run: gradle --no-daemon --stacktrace clean build
 
-      - name: Validate the complete 58-template inventory, NBT, licenses and pack wiring
+      - name: Validate the complete 100-template inventory, NBT, licenses, density budget and pack wiring
         run: |
           python3 -m unittest discover -s qa -p 'test_architecture_pilot_pack.py' -v
           python3 -m unittest discover -s qa -p 'test_builtin_structure_packs.py' -v
@@ -66,8 +70,8 @@ jobs:
           root = Path("neoforge/build/resources/main/data/realscale/structure/architecture")
           files = sorted(root.glob("*.nbt"))
           print("PACKAGED_ARCHITECTURE_TEMPLATE_COUNT:", len(files))
-          if len(files) != 58:
-              raise SystemExit(f"Expected 58 packaged templates, found {len(files)}")
+          if len(files) != 100:
+              raise SystemExit(f"Expected 100 packaged templates, found {len(files)}")
           print("PACKAGED_ARCHITECTURE_TEMPLATE_IDS:")
           for path in files:
               print(path.stem)
@@ -80,7 +84,7 @@ jobs:
             mkdir -p "$dir"
             printf 'eula=true\n' > "$dir/eula.txt"
             cat > "$dir/server.properties" <<'PROPERTIES'
-          level-name=architecture-58-smoke
+          level-name=architecture-100-smoke
           level-type=minecraft\:normal
           level-seed=580058
           spawn-protection=0
@@ -95,7 +99,7 @@ jobs:
           PROPERTIES
           done
 
-      - name: Boot dedicated server and place all 58 templates through RCON
+      - name: Boot dedicated server and place all 100 templates through RCON
         working-directory: neoforge
         run: python3 ../qa/run_architecture_server_smoke.py
 
@@ -103,7 +107,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: RealScale-Architecture-58-NeoForge-1.21.1
+          name: RealScale-Architecture-100-NeoForge-1.21.1
           path: |
             neoforge/build/libs/*.jar
             neoforge/run/architecture-pilot-server-smoke.log
