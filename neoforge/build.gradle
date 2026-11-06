@@ -96,7 +96,7 @@ sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
 
 
 // Embed every selectable structure preset inside the RealScale JAR itself.
-// No Python or external structure ZIPs are needed to play or build the mod.
+// No external Python packages or structure ZIPs are required; the build uses the standard Python 3 runtime.
 def generatedStructureResources = layout.buildDirectory.dir("generated/realscale-structure-packs")
 def generatedLicensedArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-licensed-architecture-templates")
 def generatedOriginalArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-original-architecture-templates")
@@ -233,8 +233,8 @@ tasks.register("generateBuiltInStructurePacks") {
             }
         }
 
-        // Separate, non-mandatory architecture pack: three converted NBT templates
-        // plus biome-aware single-piece jigsaw structure definitions.
+        // Separate, non-mandatory architecture pack: all 100 licensed/original NBT
+        // templates plus biome-aware single-piece jigsaw structure definitions.
         def architecturePack = new File(root, "resourcepacks/realscale_structures_architecture_pilot")
         architecturePack.mkdirs()
         new File(architecturePack, "pack.mcmeta").setText(
