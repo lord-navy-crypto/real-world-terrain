@@ -232,6 +232,12 @@ class ArchitecturePilotTests(unittest.TestCase):
         self.assertEqual(len(EXPANSION_NAMES), 42)
         self.assertEqual(len(set(EXPANSION_NAMES)), 42)
         self.assertEqual(set(EXPANSION_FACTORIES), set(EXPANSION_NAMES))
+        self.assertGreaterEqual(
+            len({spec["kind"] for spec in expansion_generator.EXPANSION_DESIGNS}), 15
+        )
+        self.assertGreaterEqual(
+            len({spec["feature"] for spec in expansion_generator.EXPANSION_DESIGNS}), 18
+        )
         self.assertTrue(EXPANSION.is_dir(),
                         "Run Gradle processResources or build before this test")
         for spec in expansion_generator.EXPANSION_DESIGNS:
