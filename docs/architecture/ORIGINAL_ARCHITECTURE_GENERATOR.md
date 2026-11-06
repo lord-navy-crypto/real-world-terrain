@@ -37,6 +37,8 @@ The complete original catalog currently contains:
 | `snowbound_storehouse`, `desert_cistern`, `tropical_boardwalk_house`, `fishing_village_compound`, `marsh_reed_hamlet` | Climate-specific storage, water supply, raised homes and coastal/wetland settlements | Snowy slopes, arid basins, tropical wetlands, shores and marshes |
 | `forest_ranger_lodge`, `plains_farmstead`, `alpine_waystation`, `coastal_lighthouse`, `desert_caravanserai` | Foundational cabin, farmstead, mountain shelter, lighthouse and courtyard inn | Temperate forest, plains, alpine, coastal and semi-arid biomes |
 
+Expansion 3 adds 42 more original designs across mountain, snowy, jungle, wetland, desert, badlands, savanna, prairie, river, coast and civic families. See [EXPANSION_3.md](EXPANSION_3.md) for the complete new-design inventory and biome-density policy.
+
 
 ## Enable the architecture library in a world
 
