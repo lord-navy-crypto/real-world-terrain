@@ -486,7 +486,7 @@ class ArchitecturePilotTests(unittest.TestCase):
     def test_rcon_diagnostic_pack_tracks_each_workflows_selected_world(self):
         script = (ROOT / "qa/run_architecture_server_smoke.py").read_text(encoding="utf-8")
         pilot = (ROOT / ".github/workflows/architecture-pilot-server.yml").read_text(encoding="utf-8")
-        full = (ROOT / ".github/workflows/architecture-library-100.yml").read_text(encoding="utf-8")
+        full = (ROOT / ".github/workflows/architecture-library-58.yml").read_text(encoding="utf-8")
         self.assertIn("working-directory: neoforge", pilot)
         self.assertIn("level-name=architecture-pilot", pilot)
         self.assertNotIn("initial-enabled-packs", pilot)
@@ -499,7 +499,7 @@ class ArchitecturePilotTests(unittest.TestCase):
             script,
         )
         self.assertNotIn("architecture-pilot/datapacks", script)
-        self.assertNotIn("architecture-58-smoke/datapacks", script)
+        self.assertNotIn("architecture-100-smoke/datapacks", script)
         self.assertIn('f\'datapack enable "{diagnostic_pack}"\'', script)
         self.assertIn("prepare_architecture_pack_config", script)
         self.assertIn('"architectureStructuresEnabled": True', script)
