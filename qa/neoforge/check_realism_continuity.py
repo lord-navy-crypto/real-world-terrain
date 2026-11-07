@@ -510,13 +510,20 @@ def adjacent_height_deltas(heights):
             across=neighbor-h
             after=following-neighbor
             residual=abs(across-(before+after)*0.5)
+            is_x_edge=(nx==x+1)
+            # Interior comparison stencils must stay wholly inside one
+            # interpolation/chunk cell. The edge immediately after a seam
+            # also contains the step in its three-point stencil; counting it
+            # as "inner" would dilute a real discontinuity.
+            chunk_inner_stencil=(x%16==1) if is_x_edge else (z%16==1)
+            grid_inner_stencil=(x%4==1) if is_x_edge else (z%4==1)
             if is_chunk_edge:
                 chunk_curvature_edge.append(residual)
-            else:
+            elif chunk_inner_stencil:
                 chunk_curvature_inner.append(residual)
             if is_grid_edge:
                 grid_curvature_edge.append(residual)
-            else:
+            elif grid_inner_stencil:
                 grid_curvature_inner.append(residual)
     return (adjacent,grid_edge,grid_inner,chunk_edge,chunk_inner,
             grid_curvature_edge,grid_curvature_inner,
