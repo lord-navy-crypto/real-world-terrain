@@ -23,6 +23,13 @@ def load_reports(root: Path) -> dict[str, dict]:
     missing = EXPECTED - reports.keys()
     if missing:
         raise RuntimeError(f"Missing saved-world heightmap reports: {sorted(missing)}")
+    target_bounds = {slug: reports[slug].get("target_chunk_bounds") for slug in sorted(EXPECTED)}
+    if any(bounds is None for bounds in target_bounds.values()):
+        raise RuntimeError("One or more fitted heightmap reports lack explicit target chunk bounds")
+    unique_bounds = {json.dumps(bounds, sort_keys=True) for bounds in target_bounds.values()}
+    if len(unique_bounds) != 1:
+        raise RuntimeError(f"Fitted modes were not sampled at identical X/Z chunk bounds: {target_bounds}")
+
     for slug, report in reports.items():
         if report.get("schema") != "realscale:fitted_archetype_heightmap_audit/v1":
             raise RuntimeError(f"Unexpected report schema for {slug}")
@@ -86,6 +93,7 @@ def compare(reports: dict[str, dict]) -> dict:
         "modes": sorted(EXPECTED),
         "common_chunks": len(common_chunks),
         "common_columns": all_columns,
+        "target_chunk_bounds": next(iter(target_bounds.values())),
         "heightmap_signatures": signatures,
         "fitted_vs_natural": comparisons,
         "pass": True,

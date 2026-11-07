@@ -31,7 +31,8 @@ def find_world(run_root: Path, world_name: str) -> Path:
     raise FileNotFoundError(f"Could not find saved world {world_name!r} under {run_root}")
 
 
-def audit(world: Path, slug: str, target_chunk_min: int, target_chunk_max: int) -> dict:
+def audit(world: Path, slug: str, target_chunk_min_x: int, target_chunk_max_x: int,
+          target_chunk_min_z: int, target_chunk_max_z: int) -> dict:
     regions = sorted((world / "region").glob("r.*.*.mca"))
     if not regions:
         raise RuntimeError(f"No Anvil region files under {world / 'region'}")
@@ -48,8 +49,8 @@ def audit(world: Path, slug: str, target_chunk_min: int, target_chunk_max: int) 
                 continue
             # Only count the explicit forceload sample area. Spawn chunks can
             # differ between presets, so they must never satisfy this gate.
-            if not (target_chunk_min <= cx <= target_chunk_max
-                    and target_chunk_min <= cz <= target_chunk_max):
+            if not (target_chunk_min_x <= cx <= target_chunk_max_x
+                    and target_chunk_min_z <= cz <= target_chunk_max_z):
                 continue
             # WORLD_SURFACE is capped by the water surface in oceans. Compare
             # OCEAN_FLOOR as the primary terrain signal so submerged landforms
@@ -100,8 +101,14 @@ def audit(world: Path, slug: str, target_chunk_min: int, target_chunk_max: int) 
         "world_min_y": -64,
         "world_height": 2096,
         "region_files": len(regions),
-        "target_chunk_min": target_chunk_min,
-        "target_chunk_max": target_chunk_max,
+        "target_chunk_min": min(target_chunk_min_x, target_chunk_min_z),
+        "target_chunk_max": max(target_chunk_max_x, target_chunk_max_z),
+        "target_chunk_bounds": {
+            "min_x": target_chunk_min_x,
+            "max_x": target_chunk_max_x,
+            "min_z": target_chunk_min_z,
+            "max_z": target_chunk_max_z,
+        },
         "decoded_chunks": decoded_chunks,
         "sampled_columns": len(flat),
         "terrain_floor_y_min": min(flat),
@@ -129,14 +136,21 @@ def main() -> None:
     parser.add_argument("--slug", required=True)
     parser.add_argument("--target-chunk-min", type=int, default=60)
     parser.add_argument("--target-chunk-max", type=int, default=68)
+    parser.add_argument("--target-chunk-min-x", type=int)
+    parser.add_argument("--target-chunk-max-x", type=int)
+    parser.add_argument("--target-chunk-min-z", type=int)
+    parser.add_argument("--target-chunk-max-z", type=int)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
+    min_x = args.target_chunk_min if args.target_chunk_min_x is None else args.target_chunk_min_x
+    max_x = args.target_chunk_max if args.target_chunk_max_x is None else args.target_chunk_max_x
+    min_z = args.target_chunk_min if args.target_chunk_min_z is None else args.target_chunk_min_z
+    max_z = args.target_chunk_max if args.target_chunk_max_z is None else args.target_chunk_max_z
     report = audit(
         find_world(args.run_root, args.world_name),
         args.slug,
-        args.target_chunk_min,
-        args.target_chunk_max,
+        min_x, max_x, min_z, max_z,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
