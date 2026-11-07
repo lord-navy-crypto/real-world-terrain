@@ -96,6 +96,18 @@ public final class TerrainArchetypeHorizontalCacheBenchmark {
         return checksum;
     }
 
+    private static void verifyRawParity(String family,TerrainArchetypeMath math,
+            Inputs in,double cos,double sin) {
+        for(int i=0;i<SAMPLES;i++) {
+            double expected=reference(family,in.original[i],in.continent[i],
+                    in.signal[i],in.x[i],in.z[i],cos,sin);
+            double actual=math.compute(in.original[i],in.continent[i],in.signal[i],
+                    in.x[i],in.z[i]);
+            if(Double.doubleToRawLongBits(expected)!=Double.doubleToRawLongBits(actual))
+                throw new AssertionError("Raw-bit mismatch in "+family+" at sample "+i);
+        }
+    }
+
     private static long runCached(TerrainArchetypeMath math,Inputs in) {
         long checksum=0;
         for(int i=0;i<SAMPLES;i++) {
@@ -118,10 +130,7 @@ public final class TerrainArchetypeHorizontalCacheBenchmark {
             TerrainArchetypeMath math=new TerrainArchetypeMath(
                     family,0.63,0.58,0.39,0.71,0.48,0.62,0.53,0.69,
                     1.25,0.29,9800.0);
-            long expected=runReference(family,in,cos,sin);
-            long actual=runCached(math,in);
-            if(expected!=actual)throw new AssertionError(
-                    "Raw-bit mismatch in horizontal cache benchmark: "+family);
+            verifyRawParity(family,math,in,cos,sin);
             for(int i=0;i<3;i++) {
                 sink^=runReference(family,in,cos,sin);
                 sink^=runCached(math,in);
@@ -129,8 +138,6 @@ public final class TerrainArchetypeHorizontalCacheBenchmark {
             long[] reference=new long[5],cached=new long[5];
             for(int i=0;i<5;i++) {
                 long start=System.nanoTime();
-                reference[i]=System.nanoTime()-start;
-                start=System.nanoTime();
                 sink^=runReference(family,in,cos,sin);
                 reference[i]=System.nanoTime()-start;
                 start=System.nanoTime();
