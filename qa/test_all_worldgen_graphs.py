@@ -105,8 +105,9 @@ class WorldgenGraphIntegrity(unittest.TestCase):
         self.assertEqual(wrapped["small_caves"],"realscale:realism_max/cave_core")
         self.assertEqual(load(DENSITY/"usgs_big_sur/terrain_density.json")["type"],
                          "realscale:dem_density")
-        self.assertEqual(load(DENSITY/"usgs_big_sur_v2/terrain_density.json")["type"],
-                         "realscale:dem_density_seamless")
+        new_terrain=load(DENSITY/"usgs_big_sur_v2/terrain_density.json")
+        self.assertEqual(new_terrain["type"],"minecraft:interpolated")
+        self.assertEqual(new_terrain["argument"]["type"],"realscale:dem_density_seamless")
 
 if __name__=="__main__":
     unittest.main()
