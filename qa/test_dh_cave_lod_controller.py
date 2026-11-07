@@ -49,7 +49,7 @@ class DhCaveLodControllerTests(unittest.TestCase):
         controller = (JAVA / "DistantHorizonsCaveLodController.java").read_text(encoding="utf-8")
         self.assertIn('if(lastLevel!=null)DistantHorizonsCaveLodController.restore();', client)
         self.assertIn('DistantHorizonsCaveLodController.restore();', client)
-        self.assertIn('if(Objects.equals(currentApiValue,appliedValue))', controller)
+        self.assertIn('if(!Objects.equals(currentApiValue,appliedValue))', controller)
         self.assertIn('clearValue.invoke(caveCullingValue)', controller)
 
 
