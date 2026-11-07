@@ -60,6 +60,35 @@ public class MeasuredHorizontalMemoDensityTest {
                 Double.doubleToRawLongBits(memo.value()));
     }
 
+
+    @Test void exactHorizontalDensityMemoEvaluatesOnceAcrossAll2096YLevels() {
+        java.util.concurrent.atomic.AtomicInteger calls=
+                new java.util.concurrent.atomic.AtomicInteger();
+        DensityFunction horizontal=new DensityFunction.SimpleFunction() {
+            @Override public double compute(DensityFunction.FunctionContext ctx) {
+                calls.incrementAndGet();
+                return Math.sin(ctx.blockX()*0.003125)
+                        +Math.cos(ctx.blockZ()*0.001953125);
+            }
+            @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {
+                return this;
+            }
+            @Override public double minValue() { return -2.0; }
+            @Override public double maxValue() { return 2.0; }
+            @Override public net.minecraft.util.KeyDispatchDataCodec<? extends DensityFunction>
+                    codec() { return null; }
+        };
+        var memo=new MeasuredHorizontalMemoDensity(horizontal);
+        long expected=Double.doubleToRawLongBits(
+                Math.sin(1024*0.003125)+Math.cos(-512*0.001953125));
+        for(int y=-64;y<2032;y++) {
+            double value=memo.compute(new DensityFunction.SinglePointContext(1024,y,-512));
+            assertEquals(expected,Double.doubleToRawLongBits(value),
+                    "Horizontal result changed at Y="+y);
+        }
+        assertEquals(1,calls.get(),"A horizontal signal should be computed once per X/Z");
+    }
+
     @Test void independentlyAllocatedWorkerCachesStayIsolated() {
         IntStream.range(0,8).parallel().forEach(worker->{
             var memo=new MeasuredColumnMemo();
