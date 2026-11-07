@@ -108,6 +108,8 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/AdaptiveVisibilityTelemetrySmoke.java
           java -cp build/visibility-budget-smoke org.realscale.neoforge.AdaptiveVisibilityBudgetSmoke
           java -cp build/visibility-budget-smoke org.realscale.neoforge.AdaptiveVisibilityTelemetrySmoke
+      - name: Verify optional fail-open Distant Horizons cave LOD controller
+        run: python3 -m unittest discover -s qa -p 'test_dh_cave_lod_controller.py' -v
       - name: Verify opt-in FPS/frame-time sampling without GPU
         run: |
           mkdir -p build/fps-interval-smoke
