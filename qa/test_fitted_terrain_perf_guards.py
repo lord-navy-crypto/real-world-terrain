@@ -30,6 +30,16 @@ class FittedTerrainPerfGuards(unittest.TestCase):
         self.assertIn('case "glacial" ->',src)
         self.assertIn('case "dune" ->',src)
 
+    def test_measured_dem_density_uses_one_combined_column_lookup(self):
+        density=(JAVA/"RealDemSeamlessDensity.java").read_text(encoding="utf-8")
+        math=(JAVA/"RealDemSeamlessMath.java").read_text(encoding="utf-8")
+        self.assertIn("cachedColumnSample(x,z,blendMeters)",density)
+        self.assertNotIn("cachedWeightOutside(x,z,blendMeters)",density)
+        self.assertNotIn("cachedExtendedHeight(x,z)",density)
+        self.assertIn("COLUMN_SAMPLE_CACHE_SIZE = 4096",math)
+        self.assertIn("cache.lastX==x && cache.lastZ==z",math)
+        self.assertIn("cache.lastFadeWidth==fadeMeters",math)
+
     def test_giant_cave_mask_cache_reuses_the_last_horizontal_column(self):
         src=(JAVA/"GrandOverworldCaveNetwork.java").read_text(encoding="utf-8")
         self.assertIn("boolean lastColumnValid;",src)
