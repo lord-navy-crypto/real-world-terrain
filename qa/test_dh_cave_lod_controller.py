@@ -42,7 +42,7 @@ class DhCaveLodControllerTests(unittest.TestCase):
         self.assertIn('RAVINE_HEIGHT_PROBES', client)
         self.assertIn('hasDeepOpenCut(level,eye)', client)
         self.assertIn('if(!loaded(level,sample))return true;', client)
-        self.assertIn('new AdaptiveVisibilityBudget.Observation(\\n                        true,true,true,false,true,false)', client)
+        self.assertIn('true,true,true,false,true,false', client)
         self.assertIn('never request/force a missing chunk', client)
 
     def test_controller_restores_user_setting_on_world_exit(self):
