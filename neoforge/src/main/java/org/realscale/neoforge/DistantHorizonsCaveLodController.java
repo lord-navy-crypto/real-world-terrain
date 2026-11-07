@@ -28,7 +28,6 @@ final class DistantHorizonsCaveLodController {
     private static Method clearValue;
     private static boolean ownsOverride;
     private static Boolean appliedValue;
-    private static boolean loggedUnavailable;
     private static boolean loggedRefused;
     private static boolean loggedFailure;
 
@@ -99,16 +98,24 @@ final class DistantHorizonsCaveLodController {
         }
         try{
             Object currentApiValue=getApiValue.invoke(caveCullingValue);
-            if(Objects.equals(currentApiValue,appliedValue)){
-                if(clearValue!=null)clearValue.invoke(caveCullingValue);
-                else if(setValueOneArg!=null)setValueOneArg.invoke(caveCullingValue,new Object[]{null});
-                else if(setValueTwoArgs!=null)setValueTwoArgs.invoke(
-                        caveCullingValue,null,"RealScale adaptive cave visibility");
+            if(!Objects.equals(currentApiValue,appliedValue)){
+                // Another API user changed the setting after us; leave it alone.
+                clearLocalState();
+                return;
             }
+            boolean cleared=false;
+            if(clearValue!=null)
+                cleared=Boolean.TRUE.equals(clearValue.invoke(caveCullingValue));
+            if(!cleared&&setValueOneArg!=null)
+                cleared=Boolean.TRUE.equals(setValueOneArg.invoke(
+                        caveCullingValue,new Object[]{null}));
+            if(!cleared&&setValueTwoArgs!=null)
+                cleared=Boolean.TRUE.equals(setValueTwoArgs.invoke(
+                        caveCullingValue,null,"RealScale adaptive cave visibility"));
+            if(cleared)clearLocalState();
+            else failOnce("DH did not release the cave culling override; will retry restoration");
         }catch(ReflectiveOperationException|RuntimeException ex){
             failOnce("Could not restore DH cave culling config: "+ex.getClass().getSimpleName());
-        }finally{
-            clearLocalState();
         }
     }
 
