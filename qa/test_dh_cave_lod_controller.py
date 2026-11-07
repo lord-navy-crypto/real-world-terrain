@@ -10,7 +10,8 @@ class DhCaveLodControllerTests(unittest.TestCase):
     def test_controller_is_opt_in_and_uses_public_dh_config_api(self):
         source = (JAVA / "DistantHorizonsCaveLodController.java").read_text(encoding="utf-8")
         self.assertIn('realscale.experimental.client.underground_lod_culling', source)
-        self.assertIn('ModList.get().isLoaded("distanthorizons")', source)
+        self.assertIn('DH_MOD_ID="distanthorizons"', source)
+        self.assertIn('ModList.get().isLoaded(DH_MOD_ID)', source)
         self.assertIn('DhApi$Delayed', source)
         self.assertIn('IDhApiConfig', source)
         self.assertIn('IDhApiGraphicsConfig', source)
@@ -41,7 +42,7 @@ class DhCaveLodControllerTests(unittest.TestCase):
         self.assertIn('RAVINE_HEIGHT_PROBES', client)
         self.assertIn('hasDeepOpenCut(level,eye)', client)
         self.assertIn('if(!loaded(level,sample))return true;', client)
-        self.assertIn('openingOrRavine', client)
+        self.assertIn('new AdaptiveVisibilityBudget.Observation(\\n                        true,true,true,false,true,false)', client)
         self.assertIn('never request/force a missing chunk', client)
 
     def test_controller_restores_user_setting_on_world_exit(self):
