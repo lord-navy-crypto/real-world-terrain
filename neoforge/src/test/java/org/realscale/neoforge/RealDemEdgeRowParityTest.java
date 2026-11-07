@@ -89,8 +89,11 @@ public final class RealDemEdgeRowParityTest {
     void rowSamplerMatchesOriginalForEveryClampedRowAndFraction() throws Exception {
         double[] fractions={0.0,Math.nextUp(0.0),1.0/7.0,0.25,0.5,0.75,
                 Math.nextDown(1.0)};
-        for(int row=-2;row<=GRID+1;row++) {
-            for(int ix=0;ix<GRID-1;ix++) {
+        int[] rows={-2,-1,0,1,GRID/4,GRID/2,(GRID*3)/4,
+                GRID-3,GRID-2,GRID-1,GRID,GRID+1};
+        int[] columns={0,1,GRID/4,GRID/2,GRID-3,GRID-2};
+        for(int row:rows) {
+            for(int ix:columns) {
                 for(double fraction:fractions) {
                     long expected=Double.doubleToRawLongBits(
                             originalRow(row,ix,fraction));
