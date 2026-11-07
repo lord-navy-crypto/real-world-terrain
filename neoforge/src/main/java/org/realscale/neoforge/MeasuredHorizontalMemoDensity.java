@@ -8,10 +8,11 @@ import net.minecraft.world.level.levelgen.DensityFunction;
 /**
  * Exact memo for an explicitly Y-INVARIANT height signal.
  *
- * The measured preset's realism_max/height_signal is a 2D flat_cache
- * function. Worldgen / structure height probes repeatedly ask that SAME
+ * Production height signals may use different fitted source families, but
+ * this wrapper is permitted only when the complete input graph is proven
+ * independent of Y. Worldgen / structure probes repeatedly ask that SAME
  * X,Z signal at hundreds of Y levels in a 2096-high world. Reusing the
- * original returned double avoids re-running a large seeded spline graph.
+ * original returned double avoids re-running the same seeded graph.
  *
  * The caller must NEVER wrap a Y-dependent expression, noise warp or
  * final_density in this node. No noise is interpolated, approximated or
@@ -44,7 +45,9 @@ public final class MeasuredHorizontalMemoDensity
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
         MeasuredColumnMemo memo=caches.get();
-        if(memo.lookup(ctx.blockX(),ctx.blockZ()))return memo.value();
+        boolean hit=memo.lookup(ctx.blockX(),ctx.blockZ());
+        if(DensityPerfSampler.ENABLED)DensityPerfSampler.horizontalMemoProbe(hit);
+        if(hit)return memo.value();
         double value=input.compute(ctx);
         memo.store(value);
         return value;
