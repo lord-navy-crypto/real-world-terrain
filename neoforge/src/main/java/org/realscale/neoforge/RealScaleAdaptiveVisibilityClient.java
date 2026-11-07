@@ -32,6 +32,9 @@ public final class RealScaleAdaptiveVisibilityClient {
 
     private static final boolean PROFILE =
             Boolean.getBoolean("realscale.client.visibility.profile");
+    private static final boolean DH_CAVE_LOD =
+            DistantHorizonsCaveLodController.enabled();
+    private static final boolean ACTIVE = PROFILE || DH_CAVE_LOD;
     private static final int REPORT_EVERY_SAMPLES = 20;
     private static final int MAX_SIGHTLINE_REACH = 24;
     private static final int[][] SKY_PROBES = {
@@ -54,11 +57,12 @@ public final class RealScaleAdaptiveVisibilityClient {
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        if (!PROFILE) return; // no client queries or sampling when disabled
+        if (!ACTIVE) return; // no client queries or sampling when both opt-ins are disabled
         Minecraft client = Minecraft.getInstance();
         ClientLevel level = client.level;
         LocalPlayer player = client.player;
         if (level != lastLevel) {
+            if(lastLevel!=null)DistantHorizonsCaveLodController.restore();
             TRACKER.reset();
             telemetry = new AdaptiveVisibilityTelemetry();
             lastLevel = level;
@@ -66,7 +70,10 @@ public final class RealScaleAdaptiveVisibilityClient {
             ticks = 0;
             sinceLog = 0;
         }
-        if (level == null || player == null) return;
+        if (level == null || player == null) {
+            if(level==null)DistantHorizonsCaveLodController.restore();
+            return;
+        }
 
         // Cheap scalar displacement every tick; all block/sky/ray queries are
         // deferred. Teleport invalidates stale surface/cave policy IMMEDIATELY.
@@ -79,6 +86,9 @@ public final class RealScaleAdaptiveVisibilityClient {
             if (horizontalSq>24.0*24.0 || Math.abs(dy)>24.0) {
                 AdaptiveVisibilityBudget.Mode previousMode=TRACKER.mode();
                 TRACKER.observe(unknown());
+                if(DH_CAVE_LOD)
+                    DistantHorizonsCaveLodController.observe(
+                            AdaptiveVisibilityBudget.Mode.TRANSITION);
                 lastSamplePos=BlockPos.containing(player.getEyePosition());
                 ticks=0;
                 if(previousMode!=AdaptiveVisibilityBudget.Mode.TRANSITION)
@@ -88,8 +98,12 @@ public final class RealScaleAdaptiveVisibilityClient {
             }
         }
 
-        int interval=AdaptiveVisibilityBudget.samplingIntervalTicks(
-                TRACKER.mode(),horizontalSq+dy*dy);
+        // The opt-in DH controller samples twice per second so a cave entry
+        // reveals distant cave LODs promptly; the diagnostic-only mode keeps
+        // its lower-cost adaptive cadence.
+        int interval=DH_CAVE_LOD?10:
+                AdaptiveVisibilityBudget.samplingIntervalTicks(
+                        TRACKER.mode(),horizontalSq+dy*dy);
         if (++ticks<interval) return;
         ticks=0;
 
@@ -99,12 +113,18 @@ public final class RealScaleAdaptiveVisibilityClient {
         AdaptiveVisibilityBudget.Observation sample=observe(level,player,eye);
         AdaptiveVisibilityBudget.Mode before=TRACKER.mode();
         AdaptiveVisibilityBudget.Mode mode=TRACKER.observe(sample);
-        telemetry.recordSample(mode,sample.known(),System.nanoTime()-started);
-        if(mode!=before)
-            System.err.println("[RealScale adaptive visibility] "+before+
-                    " -> "+mode+" at "+eye.toShortString()+
-                    " (ADVISORY only; no renderer changes)");
-        if (++sinceLog>=REPORT_EVERY_SAMPLES) {
+        if(DH_CAVE_LOD)DistantHorizonsCaveLodController.observe(mode);
+        if(PROFILE)telemetry.recordSample(mode,sample.known(),System.nanoTime()-started);
+        if(mode!=before){
+            if(PROFILE)
+                System.err.println("[RealScale adaptive visibility] "+before+
+                        " -> "+mode+" at "+eye.toShortString()+
+                        " (classifier; vanilla section meshes unchanged)");
+            if(DH_CAVE_LOD)
+                System.err.println("[RealScale DH cave LOD] visibility mode="+mode+
+                        " targetCull="+AdaptiveVisibilityBudget.shouldCullDistantHorizonCaves(mode));
+        }
+        if(PROFILE && ++sinceLog>=REPORT_EVERY_SAMPLES) {
             sinceLog=0;
             System.err.println("[RealScale adaptive visibility] "+telemetry.summary()+
                     " at "+eye.toShortString());
@@ -192,7 +212,7 @@ public final class RealScaleAdaptiveVisibilityClient {
 
     /** Read-only context for opt-in FPS attribution, never a renderer hook. */
     public static AdaptiveVisibilityBudget.Mode currentMode() {
-        return PROFILE ? TRACKER.mode() :
+        return ACTIVE ? TRACKER.mode() :
                 AdaptiveVisibilityBudget.Mode.TRANSITION;
     }
 
