@@ -5,7 +5,8 @@ import java.util.Arrays;
 /** Paired benchmark for the former two-cache and new one-cache DEM column paths. */
 public final class RealDemColumnSampleBenchmark {
     private static final int COLUMNS=1024,VERTICAL=64,SAMPLES=COLUMNS*VERTICAL;
-    private static final int FADE=2048,BASE_BITS=Double.doubleToRawLongBits(0.125);
+    private static final int FADE=2048;
+    private static final long BASE_BITS=Double.doubleToRawLongBits(0.125);
     private static volatile long sink;
     private RealDemColumnSampleBenchmark() {}
 
