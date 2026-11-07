@@ -54,6 +54,21 @@ final class AdaptiveVisibilityBudgetTest {
         assertEquals(40,AdaptiveVisibilityBudget.samplingIntervalTicks(AdaptiveVisibilityBudget.Mode.SEALED_CAVE,4.0));
     }
 
+    @Test void distantHorizonsSamplingThrottlesOnlyStableStationaryModes() {
+        assertEquals(10,AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(
+                AdaptiveVisibilityBudget.Mode.TRANSITION,0.0));
+        assertEquals(20,AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(
+                AdaptiveVisibilityBudget.Mode.OPEN_SURFACE,0.0));
+        assertEquals(20,AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(
+                AdaptiveVisibilityBudget.Mode.SEALED_CAVE,0.0));
+        assertEquals(10,AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(
+                AdaptiveVisibilityBudget.Mode.OPEN_SURFACE,16.01));
+        assertEquals(10,AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(
+                AdaptiveVisibilityBudget.Mode.SEALED_CAVE,Double.NaN));
+        assertEquals(10,AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(
+                AdaptiveVisibilityBudget.Mode.SEALED_CAVE,-1.0));
+    }
+
     @Test void playerVisibleWorkAlwaysRetainsHighestPriority() {
         for(AdaptiveVisibilityBudget.Mode mode:AdaptiveVisibilityBudget.Mode.values())
             assertEquals(100,AdaptiveVisibilityBudget.priority(mode,AdaptiveVisibilityBudget.Task.VISIBLE_OR_PLAYER_CHANGED));

@@ -121,6 +121,19 @@ public final class AdaptiveVisibilityBudgetSmoke {
         yes(AdaptiveVisibilityBudget.samplingIntervalTicks(S,1024)==10,
                 "Fast travel should not retain a slow sampling interval");
 
+        // DH's expensive world probes are halved only in stable, stationary
+        // modes; transitions and movement retain the faster 0.5s cadence.
+        yes(AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(T,0)==10,
+                "DH transition mode must retain responsive probing");
+        yes(AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(S,0)==20,
+                "DH stable surface should use one-second sampling");
+        yes(AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(C,0)==20,
+                "DH stable cave should use one-second sampling");
+        yes(AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(S,17)==10,
+                "DH movement should restore fast probing");
+        yes(AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(C,Double.NaN)==10,
+                "Invalid movement data must fail to fast probing");
+
         tracker.reset();
         yes(tracker.mode()==T && tracker.transitions()==0 && tracker.samples()==0,
             "World switch must reset prior visibility state");

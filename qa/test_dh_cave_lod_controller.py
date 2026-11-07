@@ -36,6 +36,9 @@ class DhCaveLodControllerTests(unittest.TestCase):
         self.assertIn('DistantHorizonsCaveLodController.observe(mode)', client)
         self.assertIn('DistantHorizonsCaveLodController.observe(', client)
         self.assertIn('Mode.TRANSITION', client)
+        self.assertIn('distantHorizonSamplingIntervalTicks(', client)
+        self.assertIn('return 20;', policy)
+        self.assertIn('squaredBlockDisplacement>16.0', policy)
 
     def test_open_ravines_and_unloaded_neighbors_fail_open(self):
         client = (JAVA / "RealScaleAdaptiveVisibilityClient.java").read_text(encoding="utf-8")

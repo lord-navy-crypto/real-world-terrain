@@ -45,3 +45,17 @@ The virtual boundary improves conservative classification for the existing opt-i
 ## Phase 19 — benchmark-guided cache selection
 
 The same-process horizontal-kernel benchmark showed that Dune's cached phase path was slower than the independent direct reference (0.732x reference/production ratio). Its invariant phase is only one multiply-add and a scale, so the cache lookup and key handling cost more than recomputation. Dune now calculates that phase directly. Alpine, Canyon and Glacial retain their measured caches because their saved trigonometric/shape work produced 1.556x, 2.408x and 2.315x reference/production speedups in the same CI run. Raw-bit parity remains required for all four families.
+
+
+
+## Phase 20 — lower-cost stable cave-visibility sampling
+
+The opt-in Distant Horizons classifier previously performed its full five-column sky test, surface-height checks and (for strong cave candidates) bounded exterior sightlines every 10 ticks, even after the player had remained in a confidently classified surface or sealed cave.
+
+It now uses a two-rate schedule:
+- TRANSITION, invalid movement data, or movement beyond the local threshold: every 10 ticks (0.5s at 20 TPS).
+- Stable OPEN_SURFACE or SEALED_CAVE with low displacement: every 20 ticks (1s).
+
+The first changed/ambiguous observation still moves the tracker immediately to TRANSITION, so a cave exit stops surface culling without waiting for three confirming samples. The faster cadence then resumes while the new mode is established. This reduces repeated client-side sky/heightmap/line-of-sight probes by up to 50% in stable stationary scenes. It does not claim a whole-game FPS gain and does not change vanilla section rendering.
+
+The diagnostic-only sampler keeps its existing cadence. The classifier remains opt-in and disabled by default.

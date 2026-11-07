@@ -108,6 +108,25 @@ public final class AdaptiveVisibilityBudget {
         return 40; // at 20 TPS, 2s when stable and stationary
     }
 
+    /**
+     * Distant Horizons mode: sample quickly while the camera is uncertain or
+     * moving, then halve the expensive probe frequency once the classification
+     * is stable. This controls only the classifier cadence, never render work.
+     *
+     * A 10-tick transition cadence keeps cave entrances responsive; stable
+     * surface/cave states use 20 ticks (1s at 20 TPS). Invalid displacement
+     * values fail fast rather than retaining a stale visibility decision.
+     */
+    public static int distantHorizonSamplingIntervalTicks(
+            Mode mode,double squaredBlockDisplacement) {
+        if(mode==null || mode==Mode.TRANSITION
+                || !Double.isFinite(squaredBlockDisplacement)
+                || squaredBlockDisplacement<0.0
+                || squaredBlockDisplacement>16.0)
+            return 10;
+        return 20;
+    }
+
     /** Three consecutive confident observations; usually sampled once/sec. */
     public static final int REQUIRED_CONFIDENT_SAMPLES = 3;
 

@@ -109,12 +109,16 @@ public final class RealScaleAdaptiveVisibilityClient {
             }
         }
 
-        // The opt-in DH controller samples twice per second so a cave entry
-        // reveals distant cave LODs promptly; the diagnostic-only mode keeps
-        // its lower-cost adaptive cadence.
-        int interval=DH_CAVE_LOD?10:
-                AdaptiveVisibilityBudget.samplingIntervalTicks(
-                        TRACKER.mode(),horizontalSq+dy*dy);
+        // DH mode samples every 0.5s while uncertain or moving, then every
+        // 1s once surface/cave classification is stable. This halves repeated
+        // sky/heightmap/LOS probes in stationary scenes without slowing entry:
+        // the first changed observation immediately returns to TRANSITION.
+        double displacementSq=horizontalSq+dy*dy;
+        int interval=DH_CAVE_LOD
+                ?AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(
+                        TRACKER.mode(),displacementSq)
+                :AdaptiveVisibilityBudget.samplingIntervalTicks(
+                        TRACKER.mode(),displacementSq);
         if (++ticks<interval) return;
         ticks=0;
 
