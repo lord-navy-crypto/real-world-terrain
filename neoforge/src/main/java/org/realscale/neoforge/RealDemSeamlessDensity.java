@@ -28,7 +28,18 @@ public record RealDemSeamlessDensity(DensityFunction base, int blendMeters)
         KeyDispatchDataCodec.of(MAP_CODEC);
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
+        if(!DensityPerfSampler.ENABLED)return computeUnprofiled(ctx);
+        long started=DensityPerfSampler.begin(DensityPerfSampler.Stage.REAL_DEM_SEAMLESS);
+        try{return computeUnprofiled(ctx);}
+        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.REAL_DEM_SEAMLESS,started);}
+    }
+
+    private double computeUnprofiled(DensityFunction.FunctionContext ctx) {
         int x=ctx.blockX(),z=ctx.blockZ();
+        // The fade is exactly zero outside its circular support. Reject these
+        // world columns before creating/probing a large per-worker DEM cache.
+        if(RealDemSeamlessMath.outsideFadeRegion(x,z,blendMeters))
+            return base.compute(ctx);
         RealDemSeamlessMath.ColumnSample sample=
                 RealDemSeamlessMath.cachedColumnSample(x,z,blendMeters);
         double w=sample.weight;

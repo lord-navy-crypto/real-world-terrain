@@ -60,6 +60,39 @@ class FittedTerrainPerfGuards(unittest.TestCase):
         self.assertIn("Math.max(macroGain, 0.12)",src)
         self.assertIn("0.28 * mesoGain",src)  # canyon retains its own fitted meso-scale coefficient
 
+    def test_real_dem_far_field_exits_before_allocating_column_cache(self):
+        density=(JAVA/"RealDemSeamlessDensity.java").read_text(encoding="utf-8")
+        math=(JAVA/"RealDemSeamlessMath.java").read_text(encoding="utf-8")
+        self.assertLess(
+            density.index("outsideFadeRegion(x,z,blendMeters)"),
+            density.index("cachedColumnSample(x,z,blendMeters)"))
+        self.assertIn("static boolean outsideFadeRegion(int x,int z,int fadeMeters)",math)
+        self.assertIn("dx*dx+dz*dz >= (long)fadeMeters*fadeMeters",math)
+
+    def test_density_profiler_covers_real_dem_and_fitted_archetype_paths(self):
+        sampler=(JAVA/"DensityPerfSampler.java").read_text(encoding="utf-8")
+        self.assertIn("REAL_DEM_LEGACY",sampler)
+        self.assertIn("REAL_DEM_SEAMLESS",sampler)
+        self.assertIn("TERRAIN_ARCHETYPE",sampler)
+        for filename,stage in (
+            ("RealDemDensity.java","REAL_DEM_LEGACY"),
+            ("RealDemSeamlessDensity.java","REAL_DEM_SEAMLESS"),
+            ("TerrainArchetypeDensity.java","TERRAIN_ARCHETYPE"),
+        ):
+            src=(JAVA/filename).read_text(encoding="utf-8")
+            self.assertIn(f"DensityPerfSampler.Stage.{stage}",src)
+            self.assertIn("if(!DensityPerfSampler.ENABLED)",src)
+
+    def test_virtual_underground_boundary_is_used_conservatively(self):
+        boundary=(JAVA/"VirtualUndergroundBoundary.java").read_text(encoding="utf-8")
+        client=(JAVA/"RealScaleAdaptiveVisibilityClient.java").read_text(encoding="utf-8")
+        self.assertIn("conservativeBoundaryY(h0,h1,h2,h3,h4)",client)
+        self.assertIn("isBelowBoundary(eye.getY(),boundaryY)",client)
+        self.assertIn("MAX_LOCAL_SURFACE_SPREAD_BLOCKS",boundary)
+        self.assertIn("MIN_ROOF_CLEARANCE_BLOCKS",boundary)
+        self.assertIn("Integer.MIN_VALUE",boundary)
+        self.assertNotIn("setBlock(",client)
+
     def test_wavelength_constants_computed_once_outside_each_density_sample(self):
         src=(JAVA/"TerrainArchetypeMath.java").read_text(encoding="utf-8")
         expected={
@@ -72,14 +105,17 @@ class FittedTerrainPerfGuards(unittest.TestCase):
             with self.subTest(field=field):
                 self.assertIn(f"this.{field} = {expression};",src)
                 self.assertIn(f"private final double {field};",src)
-                self.assertIn(f"double radius = {field};" if field=="volcanicRadius" else (
-                    f"double width = {field};" if field=="glacialWidth" else
-                    f"double {'towerRadius' if field=='karstTowerRadius' else 'sinkRadius'} = {field};"),src)
+        # Glacial geometry consumes the immutable precomputed width directly;
+        # it intentionally no longer creates a per-sample local width value.
+        self.assertIn("glacialWidth*0.22*Math.sin(",src)
+        self.assertIn("smoothstep(glacialWidth*0.28,glacialWidth,across)",src)
+        self.assertIn("double radius = volcanicRadius;",src)
+        self.assertIn("double towerRadius = karstTowerRadius;",src)
+        self.assertIn("double sinkRadius = karstSinkRadius;",src)
         # Preserve the original kernel mathematics; only fixed scale lookup
-        # locations and the outer zero-effect check are allowed to change.
+        # locations and mathematically exact zero-support guards may change.
         self.assertIn("Math.hypot(x1 - x2, z1 - z2)",src)
         self.assertIn("Math.pow(radial / 0.12, 2.0)",src)
-        self.assertIn("smoothstep(width * 0.28, width, across)",src)
 
 
 if __name__=="__main__":

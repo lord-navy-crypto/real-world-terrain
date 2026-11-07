@@ -145,7 +145,7 @@ final class TerrainArchetypeSiteCacheTest {
             }
             case "glacial" -> {
                 int cellX=Math.floorDiv(x,2048);
-                double width=343.0;
+                double width=Math.max(180.0,Math.min(1600.0,9800.0*0.035));
                 double centerX=cellX*2048.0+1024.0
                         +width*0.22*Math.sin(2.0*Math.PI*z/9800.0+cellX*1.17);
                 double acrossX=Math.abs(x-centerX);

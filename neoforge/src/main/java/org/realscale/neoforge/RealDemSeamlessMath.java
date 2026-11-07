@@ -56,18 +56,35 @@ final class RealDemSeamlessMath {
     private static final ThreadLocal<ColumnSampleCache> COLUMN_SAMPLE_CACHE =
             ThreadLocal.withInitial(ColumnSampleCache::new);
 
-    private static double exactWeightOutside(int x,int z,int fadeMeters) {
-        if(fadeMeters<=0)return weightOutside(x,z,fadeMeters);
+    private static boolean insideMeasuredRectangle(int x,int z) {
+        return x>=DEM.originX() && x<=DEM.maxX()
+                && z>=DEM.originZ() && z<=DEM.maxZ();
+    }
+
+    /**
+     * Exact support test for the circular DEM fade. A true result means the
+     * original weight is mathematically zero, so callers can return their
+     * procedural base BEFORE touching a ThreadLocal cache or interpolator.
+     * Positive codec widths keep the squared-distance arithmetic bounded by
+     * the rectangular guard; non-positive widths retain the legacy path.
+     */
+    static boolean outsideFadeRegion(int x,int z,int fadeMeters) {
+        if(fadeMeters<=0 || insideMeasuredRectangle(x,z))return false;
         final int minX=DEM.originX(),maxX=DEM.maxX();
         final int minZ=DEM.originZ(),maxZ=DEM.maxZ();
-        if(x>=minX && x<=maxX && z>=minZ && z<=maxZ)return 1.0;
         if((long)x<=(long)minX-fadeMeters
                 ||(long)x>=(long)maxX+fadeMeters
                 ||(long)z<=(long)minZ-fadeMeters
-                ||(long)z>=(long)maxZ+fadeMeters)return 0.0;
+                ||(long)z>=(long)maxZ+fadeMeters)return true;
         final long dx=x<minX?(long)minX-x:x>maxX?(long)x-maxX:0L;
         final long dz=z<minZ?(long)minZ-z:z>maxZ?(long)z-maxZ:0L;
-        if(dx*dx+dz*dz>=(long)fadeMeters*fadeMeters)return 0.0;
+        return dx*dx+dz*dz >= (long)fadeMeters*fadeMeters;
+    }
+
+    private static double exactWeightOutside(int x,int z,int fadeMeters) {
+        if(fadeMeters<=0)return weightOutside(x,z,fadeMeters);
+        if(insideMeasuredRectangle(x,z))return 1.0;
+        if(outsideFadeRegion(x,z,fadeMeters))return 0.0;
         return weightOutside(x,z,fadeMeters);
     }
 

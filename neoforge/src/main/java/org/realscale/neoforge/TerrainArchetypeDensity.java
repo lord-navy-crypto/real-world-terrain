@@ -122,6 +122,13 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
 
     @Override
     public double compute(DensityFunction.FunctionContext ctx) {
+        if(!DensityPerfSampler.ENABLED)return computeUnprofiled(ctx);
+        long started=DensityPerfSampler.begin(DensityPerfSampler.Stage.TERRAIN_ARCHETYPE);
+        try{return computeUnprofiled(ctx);}
+        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.TERRAIN_ARCHETYPE,started);}
+    }
+
+    private double computeUnprofiled(DensityFunction.FunctionContext ctx) {
         double original = base.compute(ctx);
         // Alpine relief is mathematically zero for all continental/selector
         // inputs at or below 0.65. Run this independent exclusion BEFORE

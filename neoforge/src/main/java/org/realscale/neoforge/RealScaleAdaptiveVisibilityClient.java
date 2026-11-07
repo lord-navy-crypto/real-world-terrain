@@ -176,11 +176,23 @@ public final class RealScaleAdaptiveVisibilityClient {
         }
         // All five probes are covered. Check roof thickness first: a thin
         // roof or covered edge is ambiguous and needs normal priorities.
-        int surfaceY=level.getHeight(
-                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+        // Build a virtual local surface boundary from the same five columns
+        // already proven loaded by the sky probes. The minimum surface height
+        // is conservative: every probe column must have sufficient roof above
+        // the camera. A sharp local height discontinuity is ambiguous (cliff,
+        // ravine wall or cave mouth), so it fails open instead of hiding LODs.
+        int h0=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 eye.getX(),eye.getZ());
-        boolean thickCover=surfaceY>eye.getY()+12;
-        if(!thickCover)
+        int h1=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                eye.getX()+8,eye.getZ());
+        int h2=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                eye.getX()-8,eye.getZ());
+        int h3=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                eye.getX(),eye.getZ()+8);
+        int h4=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                eye.getX(),eye.getZ()-8);
+        int boundaryY=VirtualUndergroundBoundary.conservativeBoundaryY(h0,h1,h2,h3,h4);
+        if(!VirtualUndergroundBoundary.isBelowBoundary(eye.getY(),boundaryY))
             return new AdaptiveVisibilityBudget.Observation(
                     true,false,false,false,true,false);
         Exterior exterior=exteriorInLoadedRange(level,player,eye);

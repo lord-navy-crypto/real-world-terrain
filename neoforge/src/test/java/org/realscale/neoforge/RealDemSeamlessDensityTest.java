@@ -72,6 +72,27 @@ public final class RealDemSeamlessDensityTest {
                    "An artificial exterior terrace kink remains");
     }
 
+    @Test void farFieldSupportGuardMatchesTheOriginalZeroWeightDomain() {
+        for(int fade:new int[]{256,768,2048,4096}) {
+            for(int x=-4608;x<=4608;x+=83) {
+                for(int z=-4608;z<=4608;z+=97) {
+                    boolean expected=RealDemSeamlessMath.weightOutside(x,z,fade)==0.0;
+                    assertEquals(expected,
+                            RealDemSeamlessMath.outsideFadeRegion(x,z,fade),
+                            "Support rejection changed at "+x+","+z+" fade="+fade);
+                }
+            }
+            for(int x:new int[]{Integer.MIN_VALUE,Integer.MAX_VALUE,
+                    DEM_SOURCE.originX()-fade,DEM_SOURCE.originX()-fade+1,
+                    DEM_SOURCE.originX(),DEM_SOURCE.maxX(),
+                    DEM_SOURCE.maxX()+fade-1,DEM_SOURCE.maxX()+fade}) {
+                boolean expected=RealDemSeamlessMath.weightOutside(x,0,fade)==0.0;
+                assertEquals(expected,RealDemSeamlessMath.outsideFadeRegion(x,0,fade),
+                        "Extreme/cardinal support mismatch at x="+x+" fade="+fade);
+            }
+        }
+    }
+
     @Test void combinedColumnSampleMatchesIndependentCachesAcrossTheFullFadeDomain() {
         for(int fade:new int[]{256,768,2048,4096}) {
             for(int x=-4608;x<=4608;x+=83) {
