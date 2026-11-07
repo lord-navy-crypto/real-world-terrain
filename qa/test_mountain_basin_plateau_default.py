@@ -86,6 +86,11 @@ class MountainBasinPlateauTest(unittest.TestCase):
 
     def test_measured_usgs_preserved_and_old_worlds_unchanged(self):
         usgs=read(DATA/"density_function/usgs_big_sur_v2/terrain_density.json")
+        # The measured DEM is evaluated on the same interpolated density grid
+        # as the procedural base. Inspect the wrapped density node rather than
+        # assuming the DEM codec is the JSON root.
+        self.assertEqual(usgs["type"],"minecraft:interpolated")
+        usgs=usgs["argument"]
         self.assertEqual(usgs["type"],"realscale:dem_density_seamless")
         self.assertEqual(usgs["blend_meters"],2048)
         usgs_noise=read(DATA/"noise_settings/usgs_big_sur_v2.json")
