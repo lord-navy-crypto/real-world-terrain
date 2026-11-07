@@ -41,6 +41,12 @@ public final class RealScaleAdaptiveVisibilityClient {
     private static final int[][] SKY_PROBES = {
         {0,0},{8,0},{-8,0},{0,8},{0,-8}
     };
+    // Extra height probes are used only by the opt-in DH cave-LOD controller.
+    // They conservatively reject deep open cuts/ravines before enabling culling.
+    private static final int[][] RAVINE_HEIGHT_PROBES = {
+        {16,0},{-16,0},{0,16},{0,-16},
+        {16,16},{16,-16},{-16,16},{-16,-16}
+    };
     private static final int[][] SIGHT_DIRECTIONS = {
         {1,0},{-1,0},{0,1},{0,-1}
     };
@@ -154,9 +160,16 @@ public final class RealScaleAdaptiveVisibilityClient {
                     true,skyAtCamera,true,false,true,false);
         // Exposed, open surface: sky is positive in all five sample columns.
         // No heightmap query is required to infer the absence of a roof.
-        if(skyCount==SKY_PROBES.length)
+        if(skyCount==SKY_PROBES.length){
+            // A deep open cut can expose sky at the camera while still
+            // revealing cave walls below. Never enable DH cave LOD culling
+            // unless nearby loaded heightmaps also rule out a ravine/cliff.
+            if(DH_CAVE_LOD&&hasDeepOpenCut(level,eye))
+                return new AdaptiveVisibilityBudget.Observation(
+                        true,true,true,false,true,false);
             return new AdaptiveVisibilityBudget.Observation(
                     true,true,true,false,false,false);
+        }
         // All five probes are covered. Check roof thickness first: a thin
         // roof or covered edge is ambiguous and needs normal priorities.
         int surfaceY=level.getHeight(
@@ -171,6 +184,20 @@ public final class RealScaleAdaptiveVisibilityClient {
         return new AdaptiveVisibilityBudget.Observation(
                 true,false,false,true,false,false,
                 exterior==Exterior.VISIBLE);
+    }
+
+    private static boolean hasDeepOpenCut(ClientLevel level,BlockPos eye) {
+        for(int[] offset:RAVINE_HEIGHT_PROBES){
+            BlockPos sample=eye.offset(offset[0],0,offset[1]);
+            // Missing neighboring chunks mean visibility is uncertain:
+            // fail open rather than force-loading them for a classification.
+            if(!loaded(level,sample))return true;
+            int surfaceY=level.getHeight(
+                    Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                    sample.getX(),sample.getZ());
+            if(surfaceY>eye.getY()+12)return true;
+        }
+        return false;
     }
 
     private static boolean loaded(ClientLevel level,BlockPos p) {
