@@ -37,6 +37,39 @@ final class TerrainArchetypeMath {
     // samples many Y values for the same X/Z, so cache the expensive radial
     // shield/caldera shape per worker rather than repeating hash/hypot/pow/exp.
     private static final int VOLCANIC_CACHE_SLOTS = 1024;
+    // A 2048-block fitted region has a fixed, seed-derived geographic center.
+    // Reusing this per worker avoids re-hashing region seeds and generating
+    // the same tower/sinksite positions for every horizontal density sample.
+    // Replacements only change performance; all coordinates are recomputed
+    // with the original expressions on a region miss.
+    private final ThreadLocal<SiteGeometry> siteGeometryCache =
+            ThreadLocal.withInitial(SiteGeometry::new);
+    private static final class SiteGeometry {
+        int cellX,cellZ;
+        boolean valid;
+        double centerX,centerZ,sinkX,sinkZ;
+    }
+    private SiteGeometry siteGeometry(int cellX,int cellZ) {
+        SiteGeometry site=siteGeometryCache.get();
+        if(site.valid && site.cellX==cellX && site.cellZ==cellZ)return site;
+        long hash=MountainReliefMath.siteHash(cellX,cellZ);
+        double centerX=cellX*(double)CELL+CELL*0.5
+                +MountainReliefMath.centerOffsetX(hash);
+        double centerZ=cellZ*(double)CELL+CELL*0.5
+                +MountainReliefMath.centerOffsetZ(hash);
+        long sinkHash=MountainReliefMath.mix(hash ^ 0x6a09e667f3bcc909L);
+        double sinkX=centerX+MountainReliefMath.centerOffsetX(sinkHash)*1.8;
+        double sinkZ=centerZ+MountainReliefMath.centerOffsetZ(sinkHash)*1.8;
+        site.centerX=centerX;
+        site.centerZ=centerZ;
+        site.sinkX=sinkX;
+        site.sinkZ=sinkZ;
+        site.cellX=cellX;
+        site.cellZ=cellZ;
+        site.valid=true;
+        return site;
+    }
+
     private final ThreadLocal<VolcanicShapeCache> volcanicShapeCache =
             ThreadLocal.withInitial(VolcanicShapeCache::new);
 
@@ -170,13 +203,9 @@ final class TerrainArchetypeMath {
 
         int cellX = Math.floorDiv(x, CELL);
         int cellZ = Math.floorDiv(z, CELL);
-        long site = MountainReliefMath.siteHash(cellX, cellZ);
-        double centerX = cellX * (double) CELL + CELL * 0.5
-                + MountainReliefMath.centerOffsetX(site);
-        double centerZ = cellZ * (double) CELL + CELL * 0.5
-                + MountainReliefMath.centerOffsetZ(site);
+        SiteGeometry site=siteGeometry(cellX,cellZ);
         double radius = volcanicRadius;
-        double radial = distance(x, z, centerX, centerZ) / radius;
+        double radial = distance(x, z, site.centerX, site.centerZ) / radius;
         double shape;
         if (radial >= 1.0) {
             shape = 0.0;
@@ -195,20 +224,13 @@ final class TerrainArchetypeMath {
     private double karstTowers(double original, double gate, double x, double z, double signal) {
         int cellX = Math.floorDiv((int)x, CELL);
         int cellZ = Math.floorDiv((int)z, CELL);
-        long hash = MountainReliefMath.siteHash(cellX, cellZ);
-        double centerX = cellX * (double) CELL + CELL * 0.5
-                + MountainReliefMath.centerOffsetX(hash);
-        double centerZ = cellZ * (double) CELL + CELL * 0.5
-                + MountainReliefMath.centerOffsetZ(hash);
-        double radial = distance(x, z, centerX, centerZ);
+        SiteGeometry site=siteGeometry(cellX,cellZ);
+        double radial = distance(x, z, site.centerX, site.centerZ);
         double towerRadius = karstTowerRadius;
         double tower = 1.0 - smoothstep(towerRadius * 0.55, towerRadius, radial);
-        long sinkHash = MountainReliefMath.mix(hash ^ 0x6a09e667f3bcc909L);
-        double sinkX = centerX + MountainReliefMath.centerOffsetX(sinkHash) * 1.8;
-        double sinkZ = centerZ + MountainReliefMath.centerOffsetZ(sinkHash) * 1.8;
         double sinkRadius = karstSinkRadius;
         double sink = 1.0 - smoothstep(sinkRadius * 0.45, sinkRadius,
-                distance(x, z, sinkX, sinkZ));
+                distance(x, z, site.sinkX, site.sinkZ));
         double noiseTower = Math.max(0.0, signal) * 0.08 * ridgeGain();
         return original + gate * reliefGain * (0.36 * Math.max(ridgeIndex, 0.12) * tower
                 + noiseTower - 0.22 * Math.max(valleyIndex, 0.12) * sink);
