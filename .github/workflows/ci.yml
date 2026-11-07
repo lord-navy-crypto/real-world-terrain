@@ -275,10 +275,13 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkReference.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkSmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkParitySmoke.java \
-            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveLocalitySmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveLocalitySmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkPrePhase25.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveCacheBenchmark.java
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkSmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkParitySmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveLocalitySmoke
+          java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveCacheBenchmark
           python3 -m unittest discover -s qa -p 'test_grand_nether_locality_guards.py' -v
       - uses: gradle/actions/setup-gradle@v4
         with:
