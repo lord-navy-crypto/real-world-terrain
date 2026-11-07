@@ -79,6 +79,9 @@ public final class RealScaleAdaptiveVisibilityClient {
         }
         if (level == null || player == null) {
             DistantHorizonsCaveLodController.restore();
+            TRACKER.reset();
+            lastSamplePos=null;
+            ticks=0;
             return;
         }
 
