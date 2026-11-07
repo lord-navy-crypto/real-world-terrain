@@ -24,11 +24,19 @@ public final class GrandNetherCaveNetwork {
     private static final class CellCache {
         int gx = Integer.MIN_VALUE, gz = Integer.MIN_VALUE;
         private static final int COLUMN_SLOTS = 512;
+        private static final int COLUMN_BUCKETS = COLUMN_SLOTS / 2;
+        // Two-way bounded cache: alternating colliding columns no longer
+        // evict each other's 19-component X/Z broad-phase masks.
+        final byte[] columnVictim = new byte[COLUMN_BUCKETS];
         final int[] columnX = new int[COLUMN_SLOTS];
         final int[] columnZ = new int[COLUMN_SLOTS];
         final int[] columnEpoch = new int[COLUMN_SLOTS];
-        // Up to 19 individual rooms and connectors fit in one bit mask.
         final int[] columnComponents = new int[COLUMN_SLOTS];
+        // Height queries repeatedly revisit an exact X/Z column. This
+        // last-column shortcut avoids hashing even when the table is full.
+        int lastColumnX,lastColumnZ,lastColumnMask;
+        boolean lastColumnValid;
+        long maskBuilds;
         int epoch=1;
         final Hall[][] halls = new Hall[2][5];
         final Hall[][] satellites = new Hall[2][2];
@@ -39,6 +47,7 @@ public final class GrandNetherCaveNetwork {
         void initialize(int x, int z) {
             if (gx == x && gz == z) return;
             gx = x; gz = z;
+            lastColumnValid=false;
             if (++epoch == 0) {
                 java.util.Arrays.fill(columnEpoch,0);
                 epoch=1;
@@ -57,8 +66,75 @@ public final class GrandNetherCaveNetwork {
             interlayerKey = tubeBendKey(halls[0][0], halls[1][0]);
         }
     }
-    private static final ThreadLocal<CellCache> CACHED_HALLS =
-            ThreadLocal.withInitial(CellCache::new);
+    /**
+     * A structure-placement height query can alternate between distant
+     * 256-block Nether cave cells. Keep eight fixed region snapshots per
+     * worldgen worker, two ways per bucket, so A -> B -> A reuses identical
+     * halls, passage bend keys, and per-column broad-phase masks.
+     *
+     * No world/seed keyed global cache. Replacements only recompute the same
+     * deterministic geometry; nothing is stored in a Minecraft world.
+     */
+    private static final class RegionCache {
+        private static final int REGION_SLOTS=8,REGION_BUCKETS=REGION_SLOTS/2;
+        private final CellCache[] regions=new CellCache[REGION_SLOTS];
+        private final byte[] victim=new byte[REGION_BUCKETS];
+        private CellCache recent;
+        private long regionBuilds;
+
+        CellCache get(int gx,int gz) {
+            CellCache previous=recent;
+            if(previous!=null && previous.gx==gx && previous.gz==gz)
+                return previous;
+            int hash=gx*0x9e3779b9 ^ Integer.rotateLeft(gz*0x85ebca6b,13);
+            int bucket=(hash^(hash>>>16))&(REGION_BUCKETS-1);
+            int first=bucket<<1,second=first+1;
+            CellCache a=regions[first];
+            if(a!=null && a.gx==gx && a.gz==gz) {
+                recent=a;
+                return a;
+            }
+            CellCache b=regions[second];
+            if(b!=null && b.gx==gx && b.gz==gz) {
+                recent=b;
+                return b;
+            }
+            int slot;
+            if(a==null)slot=first;
+            else if(b==null)slot=second;
+            else {
+                slot=first+(victim[bucket]&1);
+                victim[bucket]^=1;
+            }
+            CellCache cache=regions[slot];
+            if(cache==null) {
+                cache=new CellCache();
+                regions[slot]=cache;
+            }
+            cache.initialize(gx,gz);
+            regionBuilds++;
+            recent=cache;
+            return cache;
+        }
+
+        long columnBuilds() {
+            long sum=0L;
+            for(CellCache cache:regions)
+                if(cache!=null)sum+=cache.maskBuilds;
+            return sum;
+        }
+    }
+    private static final ThreadLocal<RegionCache> CACHED_HALLS =
+            ThreadLocal.withInitial(RegionCache::new);
+
+    /**
+     * Read-only per-thread debug counters for deterministic cache-locality
+     * tests; no production sampling, logging or heap allocation on hot paths.
+     */
+    static long[] cacheLocalityStats() {
+        RegionCache local=CACHED_HALLS.get();
+        return new long[]{local.regionBuilds,local.columnBuilds()};
+    }
 
     public record Hall(double x, double y, double z, double radiusX,
                        double radiusY, double radiusZ) {}
@@ -195,16 +271,43 @@ public final class GrandNetherCaveNetwork {
         int dx=Math.floorMod(x,CELL),dz=Math.floorMod(z,CELL);
         // A +/-5 or +/-4 seeded warp can choose a different cave cell.
         if(dx<=5 || dx>=CELL-6 || dz<=4 || dz>=CELL-5)return -1;
-        CellCache c=CACHED_HALLS.get();
-        c.initialize(Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
-        int slot=(x*0x9e3779b9 ^ z*0x85ebca6b)&(CellCache.COLUMN_SLOTS-1);
-        if(c.columnEpoch[slot]==c.epoch && c.columnX[slot]==x
-                && c.columnZ[slot]==z)return c.columnComponents[slot];
+        CellCache c=CACHED_HALLS.get().get(
+                Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
+        if(c.lastColumnValid && c.lastColumnX==x && c.lastColumnZ==z)
+            return c.lastColumnMask;
+        int hash=x*0x9e3779b9 ^ z*0x85ebca6b;
+        int bucket=(hash^(hash>>>16))&(CellCache.COLUMN_BUCKETS-1);
+        int first=bucket<<1,second=first+1;
+        if(c.columnEpoch[first]==c.epoch && c.columnX[first]==x
+                && c.columnZ[first]==z) {
+            c.lastColumnX=x;c.lastColumnZ=z;
+            c.lastColumnMask=c.columnComponents[first];
+            c.lastColumnValid=true;
+            return c.lastColumnMask;
+        }
+        if(c.columnEpoch[second]==c.epoch && c.columnX[second]==x
+                && c.columnZ[second]==z) {
+            c.lastColumnX=x;c.lastColumnZ=z;
+            c.lastColumnMask=c.columnComponents[second];
+            c.lastColumnValid=true;
+            return c.lastColumnMask;
+        }
         int mask=componentMask(c,x-5.0,x+5.0,z-4.0,z+4.0);
+        int slot;
+        if(c.columnEpoch[first]!=c.epoch)slot=first;
+        else if(c.columnEpoch[second]!=c.epoch)slot=second;
+        else {
+            slot=first+(c.columnVictim[bucket]&1);
+            c.columnVictim[bucket]^=1;
+        }
         c.columnEpoch[slot]=c.epoch;
         c.columnX[slot]=x;
         c.columnZ[slot]=z;
         c.columnComponents[slot]=mask;
+        c.maskBuilds++;
+        c.lastColumnX=x;c.lastColumnZ=z;
+        c.lastColumnMask=mask;
+        c.lastColumnValid=true;
         return mask;
     }
 
@@ -225,7 +328,8 @@ public final class GrandNetherCaveNetwork {
         int mask=componentMaskForColumn(originalX,originalZ);
         if(mask==-1)return strength(x,y,z);
         if(mask==0)return 0;
-        CellCache cache=CACHED_HALLS.get();
+        CellCache cache=CACHED_HALLS.get().get(
+                Math.floorDiv(originalX,CELL),Math.floorDiv(originalZ,CELL));
         double answer=0;
         for(int layer=0;layer<2;layer++) {
             int shift=layer*9;
@@ -308,8 +412,7 @@ public final class GrandNetherCaveNetwork {
         if(y<MIN_Y || y>MAX_Y)return 0;
         int gx=(int)Math.floor(x/CELL);
         int gz=(int)Math.floor(z/CELL);
-        CellCache cache=CACHED_HALLS.get();
-        cache.initialize(gx,gz);
+        CellCache cache=CACHED_HALLS.get().get(gx,gz);
         double answer=0;
         for(int layer=0;layer<2;layer++) {
             Hall center=cache.halls[layer][0];
