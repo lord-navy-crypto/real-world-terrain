@@ -40,3 +40,26 @@ sinkholes, so its contribution is deliberately preserved. The volcanic
 off-site output remains the original density. No terrain features are
 removed. Additional raw-bit tests sample footprint edges and neighbors
 on both axes and all signed quadrants.
+
+
+## Phase 13 — Reuse vertical-column geometry and strengthen fitted dune relief
+
+The JFR profile showed repeated horizontal geometry work during vertical
+density sampling. Volcanic now checks a per-worker last-column key before
+hashing/probing its existing fixed-size shape cache. Karst now caches its
+horizontal tower/sink shape pair per worker and X/Z column; the selector
+noise contribution remains evaluated per sample and is never cached.
+
+The new karst cache is bounded, two-stage (last-column plus direct-mapped),
+thread-confined, keyed by exact signed X/Z coordinates, and stores only
+horizontal geometry. A JUnit regression repeats each column over many
+vertical samples with changing selector values, including negative-region
+coordinates and land-gate transitions. Existing uncached reference tests
+continue to compare raw IEEE-754 output bits.
+
+The fitted Dune profile's previous meso-gain amplitude produced less than
+one block of density-equivalent relief for the supplied profile. Since the
+measured wavelength is a macro-scale ridge field, Dune now uses the fitted
+macro gain for ridge amplitude. A new JUnit test requires multiple active-land
+samples to exceed one block-equivalent relief. This is a deliberate terrain
+quality correction, not a performance claim.

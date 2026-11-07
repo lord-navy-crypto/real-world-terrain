@@ -77,7 +77,26 @@ final class TerrainArchetypeMath {
         private final long[] keys = new long[VOLCANIC_CACHE_SLOTS];
         private final double[] shapes = new double[VOLCANIC_CACHE_SLOTS];
         private final boolean[] occupied = new boolean[VOLCANIC_CACHE_SLOTS];
+        // Most NoiseChunk requests revisit one X/Z for many Y samples. Check
+        // this before hashing/probing the direct-mapped table.
+        private boolean lastValid;
+        private long lastKey;
+        private double lastShape;
     }
+
+    private static final int KARST_CACHE_SLOTS = 1024;
+    private static final class KarstShapeCache {
+        private final long[] keys = new long[KARST_CACHE_SLOTS];
+        private final double[] towers = new double[KARST_CACHE_SLOTS];
+        private final double[] sinks = new double[KARST_CACHE_SLOTS];
+        private final boolean[] occupied = new boolean[KARST_CACHE_SLOTS];
+        private boolean lastValid;
+        private long lastKey;
+        private double lastTower;
+        private double lastSink;
+    }
+    private final ThreadLocal<KarstShapeCache> karstShapeCache =
+            ThreadLocal.withInitial(KarstShapeCache::new);
 
     TerrainArchetypeMath(String family, double macroGain, double mesoGain,
             double microGain, double reliefGain, double ridgeSharpness,
@@ -194,11 +213,15 @@ final class TerrainArchetypeMath {
 
     private double volcanicShapeAt(int x, int z) {
         long key = ((long) x << 32) ^ (z & 0xffffffffL);
+        VolcanicShapeCache cache = volcanicShapeCache.get();
+        if (cache.lastValid && cache.lastKey == key) return cache.lastShape;
         int hash = x * 0x9e3779b9 ^ Integer.rotateLeft(z * 0x85ebca6b, 13);
         int slot = (hash ^ (hash >>> 16)) & (VOLCANIC_CACHE_SLOTS - 1);
-        VolcanicShapeCache cache = volcanicShapeCache.get();
         if (cache.occupied[slot] && cache.keys[slot] == key) {
-            return cache.shapes[slot];
+            cache.lastValid = true;
+            cache.lastKey = key;
+            cache.lastShape = cache.shapes[slot];
+            return cache.lastShape;
         }
 
         int cellX = Math.floorDiv(x, CELL);
@@ -226,16 +249,28 @@ final class TerrainArchetypeMath {
         cache.keys[slot] = key;
         cache.shapes[slot] = shape;
         cache.occupied[slot] = true;
+        cache.lastValid = true;
+        cache.lastKey = key;
+        cache.lastShape = shape;
         return shape;
     }
 
-    private double karstTowers(double original, double gate, double x, double z, double signal) {
-        int cellX = Math.floorDiv((int)x, CELL);
-        int cellZ = Math.floorDiv((int)z, CELL);
-        SiteGeometry site=siteGeometry(cellX,cellZ);
-        // Outside the two enclosing squares, both original smoothstep
-        // expressions are exactly 1.0 and their complements are +0.0.
-        // Only evaluate hypot for locations that might contribute.
+    private void karstShapesAt(KarstShapeCache cache, int x, int z) {
+        long key = ((long) x << 32) ^ (z & 0xffffffffL);
+        if (cache.lastValid && cache.lastKey == key) return;
+        int hash = x * 0x9e3779b9 ^ Integer.rotateLeft(z * 0x85ebca6b, 13);
+        int slot = (hash ^ (hash >>> 16)) & (KARST_CACHE_SLOTS - 1);
+        if (cache.occupied[slot] && cache.keys[slot] == key) {
+            cache.lastValid = true;
+            cache.lastKey = key;
+            cache.lastTower = cache.towers[slot];
+            cache.lastSink = cache.sinks[slot];
+            return;
+        }
+
+        int cellX = Math.floorDiv(x, CELL);
+        int cellZ = Math.floorDiv(z, CELL);
+        SiteGeometry site = siteGeometry(cellX, cellZ);
         double towerRadius = karstTowerRadius;
         double tower = 0.0;
         if (Math.abs(x-site.centerX) < towerRadius
@@ -250,16 +285,32 @@ final class TerrainArchetypeMath {
             sink = 1.0 - smoothstep(sinkRadius * 0.45, sinkRadius,
                     distance(x, z, site.sinkX, site.sinkZ));
         }
+        cache.keys[slot] = key;
+        cache.towers[slot] = tower;
+        cache.sinks[slot] = sink;
+        cache.occupied[slot] = true;
+        cache.lastValid = true;
+        cache.lastKey = key;
+        cache.lastTower = tower;
+        cache.lastSink = sink;
+    }
+
+    private double karstTowers(double original, double gate, double x, double z, double signal) {
+        KarstShapeCache cache = karstShapeCache.get();
+        karstShapesAt(cache, (int)x, (int)z);
         double noiseTower = Math.max(0.0, signal) * 0.08 * ridgeGain();
-        return original + gate * reliefGain * (0.36 * Math.max(ridgeIndex, 0.12) * tower
-                + noiseTower - 0.22 * Math.max(valleyIndex, 0.12) * sink);
+        return original + gate * reliefGain * (0.36 * Math.max(ridgeIndex, 0.12) * cache.lastTower
+                + noiseTower - 0.22 * Math.max(valleyIndex, 0.12) * cache.lastSink);
     }
 
     private double duneRidges(double original, double gate, double x, double z, double signal) {
         double across = orientedAcross(x, z);
         double phase = TAU * across / dominantWavelengthM + signal * 0.12;
         double wave = Math.sin(phase) + 0.28 * Math.sin(2.0 * phase + 0.6);
-        return original + gate * reliefGain * 0.10 * Math.max(mesoGain, 0.12)
+        // The fitted dune wavelength is a macro-scale landform. Use the
+        // measured macro gain for ridge amplitude; the old meso gain left the
+        // fitted relief below half a block for the supplied DEM profile.
+        return original + gate * reliefGain * 0.10 * Math.max(macroGain, 0.12)
                 * anisotropyGain * wave;
     }
 

@@ -118,6 +118,22 @@ final class TerrainArchetypeSiteCacheTest {
         }
     }
 
+    @Test void repeatedKarstColumnsWithChangingSignalsRemainBitExact(){
+        TerrainArchetypeMath math=fitted("karst");
+        for(int x=-4096;x<=4096;x+=64){
+            for(int z=-4096;z<=4096;z+=64){
+                for(int y=0;y<48;y++){
+                    // Simulate repeated vertical samples for one horizontal
+                    // column. Signal deliberately varies to prove only the
+                    // geometric tower/sink terms, not the selector term, cache.
+                    double signal=Math.sin(y*0.173);
+                    double continent=(y%7==0)?-0.05:0.35;
+                    checkRaw(math,"karst",1.01,continent,signal,x,z);
+                }
+            }
+        }
+    }
+
     @Test void shuffledAndMultithreadedRegionTransitionsAreBitExact(){
         IntStream.range(0,4).parallel().forEach(worker->{
             Random random=new Random(137L+worker*31);

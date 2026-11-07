@@ -108,6 +108,39 @@ final class TerrainArchetypeDensityTest {
         }
     }
 
+
+    @Test
+    void fittedDuneRidgesExceedOneBlockEquivalentAtActiveLandSamples() throws Exception {
+        String resourcePath =
+                "/data/realscale/worldgen/density_function/tva_dune_fitted/height_signal.json";
+        JsonObject resource;
+        try (InputStream stream = getClass().getResourceAsStream(resourcePath)) {
+            assertNotNull(stream, "Missing fitted dune profile");
+            resource = JsonParser.parseReader(
+                    new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+        }
+        TerrainArchetypeMath fitted = new TerrainArchetypeMath(
+                "dune", number(resource,"macro_gain"), number(resource,"meso_gain"),
+                number(resource,"micro_gain"), number(resource,"relief_gain"),
+                number(resource,"ridge_sharpness"), number(resource,"cliff_index"),
+                number(resource,"valley_index"), number(resource,"ridge_index"),
+                number(resource,"anisotropy_gain"), number(resource,"dune_axis_radians"),
+                number(resource,"dominant_wavelength_m"));
+        int oneBlockEquivalentSamples=0;
+        double maximumBlockEquivalent=0.0;
+        for(int x=-4096;x<=4096;x+=64){
+            for(int z=-4096;z<=4096;z+=64){
+                double delta=Math.abs(fitted.compute(1.0,0.5,0.1,x,z)-1.0)*128.0;
+                maximumBlockEquivalent=Math.max(maximumBlockEquivalent,delta);
+                if(delta>=1.0)oneBlockEquivalentSamples++;
+            }
+        }
+        assertTrue(oneBlockEquivalentSamples>=4,
+                "Fitted dune relief is too weak to change even one block: "
+                        + "samples="+oneBlockEquivalentSamples
+                        + ", maxBlockEquivalent="+maximumBlockEquivalent);
+    }
+
     @Test
     void hawaiiVolcanicColumnMemoMatchesUncachedReference() throws Exception {
         String resourcePath =

@@ -19,6 +19,17 @@ class FittedTerrainPerfGuards(unittest.TestCase):
                         part.index("selectorFreeFamily ? 0.0 : selector.compute(ctx)"))
         self.assertIn('this.selectorFreeFamily = "glacial".equals(family) || "volcanic".equals(family);',src)
 
+    def test_karst_and_volcano_cache_horizontal_shape_before_repeated_y_samples(self):
+        src=(JAVA/"TerrainArchetypeMath.java").read_text(encoding="utf-8")
+        self.assertIn("private static final int KARST_CACHE_SLOTS = 1024;",src)
+        self.assertIn("private final ThreadLocal<KarstShapeCache> karstShapeCache",src)
+        self.assertIn("if (cache.lastValid && cache.lastKey == key) return cache.lastShape;",src)
+        self.assertIn("private void karstShapesAt(KarstShapeCache cache, int x, int z)",src)
+        self.assertIn("cache.lastTower",src)
+        self.assertIn("cache.lastSink",src)
+        self.assertIn("Math.max(macroGain, 0.12)",src)
+        self.assertIn("Math.max(mesoGain, 0.12)",src)  # canyon/other kernels still retain their own fitted scales
+
     def test_wavelength_constants_computed_once_outside_each_density_sample(self):
         src=(JAVA/"TerrainArchetypeMath.java").read_text(encoding="utf-8")
         expected={
