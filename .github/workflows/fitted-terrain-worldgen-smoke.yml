@@ -109,6 +109,7 @@ jobs:
         env:
           PRESET_SLUG: ${{ matrix.slug }}
           NOISE_SETTINGS_ID: ${{ matrix.noise_settings }}
+          JAVA_TOOL_OPTIONS: "-Drealscale.density.profile=true"
         run: |
           python3 - <<'PY'
           import gzip, os, pathlib, signal, socket, struct, subprocess, threading, time
