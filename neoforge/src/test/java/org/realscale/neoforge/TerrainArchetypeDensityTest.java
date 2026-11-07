@@ -142,6 +142,41 @@ final class TerrainArchetypeDensityTest {
     }
 
     @Test
+    void fittedVolcanicShieldExceedsOneBlockEquivalentAtActiveLandSamples() throws Exception {
+        String resourcePath =
+                "/data/realscale/worldgen/density_function/tva_volcanic_fitted/height_signal.json";
+        JsonObject resource;
+        try (InputStream stream = getClass().getResourceAsStream(resourcePath)) {
+            assertNotNull(stream, "Missing fitted volcanic profile");
+            resource = JsonParser.parseReader(
+                    new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+        }
+        TerrainArchetypeMath fitted = new TerrainArchetypeMath(
+                "volcanic", number(resource,"macro_gain"), number(resource,"meso_gain"),
+                number(resource,"micro_gain"), number(resource,"relief_gain"),
+                number(resource,"ridge_sharpness"), number(resource,"cliff_index"),
+                number(resource,"valley_index"), number(resource,"ridge_index"),
+                number(resource,"anisotropy_gain"), number(resource,"dune_axis_radians"),
+                number(resource,"dominant_wavelength_m"));
+        long site = MountainReliefMath.siteHash(0,0);
+        double centerX = 1024.0 + MountainReliefMath.centerOffsetX(site);
+        double centerZ = 1024.0 + MountainReliefMath.centerOffsetZ(site);
+        int visibleSamples=0;
+        double maximumBlockEquivalent=0.0;
+        for(int dx=-192;dx<=192;dx+=16){
+            for(int dz=-192;dz<=192;dz+=16){
+                double delta=Math.abs(fitted.compute(
+                        1.0,0.5,0.0,centerX+dx,centerZ+dz)-1.0)*128.0;
+                maximumBlockEquivalent=Math.max(maximumBlockEquivalent,delta);
+                if(delta>=1.0)visibleSamples++;
+            }
+        }
+        assertTrue(visibleSamples>=4,
+                "Fitted volcanic geometry has no visible land relief: samples="
+                        +visibleSamples+", maxBlockEquivalent="+maximumBlockEquivalent);
+    }
+
+    @Test
     void hawaiiVolcanicColumnMemoMatchesUncachedReference() throws Exception {
         String resourcePath =
                 "/data/realscale/worldgen/density_function/tva_volcanic_fitted/height_signal.json";
