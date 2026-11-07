@@ -53,6 +53,16 @@ public final class AdaptiveVisibilityBudget {
     }
 
     /**
+     * Distant Horizons only: hide sky-dark cave LOD geometry while the player
+     * is confidently on open surface. Every uncertain/underground state is
+     * fail-open so cave entrances are not hidden. Vanilla section rendering
+     * is never affected by this policy.
+     */
+    public static boolean shouldCullDistantHorizonCaves(Mode mode) {
+        return mode == Mode.OPEN_SURFACE;
+    }
+
+    /**
      * Larger scores are more urgent. All tasks remain eligible; no result
      * implies that a section is invisible or may be omitted from rendering.
      * This is advisory only until an explicitly supported renderer interface
