@@ -52,12 +52,43 @@ A same-process microbenchmark first checks every sample for raw-bit equality,
 then reports the median interpolation-only speed ratio. It is not presented as
 full chunk-generation throughput or FPS.
 
-## Underground deferred rendering: status and safe implementation boundary
+## Optional Distant Horizons cave LOD culling
 
-The existing `AdaptiveVisibilityBudget` and
-`RealScaleAdaptiveVisibilityClient` are **classification and telemetry only**.
-They do not currently suppress, defer, or reorder Minecraft or Distant Horizons
-render work. This branch does not claim otherwise.
+The branch adds a first, deliberately limited implementation of the underground
+visibility idea for **Distant Horizons' distant fake-chunk cave geometry**.
+It is disabled by default and requires:
+
+```text
+-Drealscale.experimental.client.underground_lod_culling=true
+```
+
+When enabled:
+
+- A confidently classified `OPEN_SURFACE` may enable DH's
+  `caveCullingEnabled` option.
+- `SEALED_CAVE` and every `TRANSITION`/unknown state disable that culling,
+  revealing cave LOD geometry again.
+- The classifier samples more frequently (0.5 seconds) while this option is on.
+- Open cuts/ravines are treated conservatively using nearby heightmap probes.
+  If any required neighboring chunk is not already loaded, the classifier
+  fails open; it never force-loads a chunk to decide visibility.
+- The adapter uses DH's public config API reflectively, only takes control if
+  the config is API-overridable and no other API override is present, and
+  clears its override when leaving a world so the user's saved DH setting is
+  restored. It does not change `caveCullingHeight`.
+
+This affects **DH distant LOD cave visibility only**. It does not delay vanilla
+nearby section mesh builds, alter world generation, or remove underground
+blocks. The relevant API contracts are documented in the
+[Distant Horizons delayed API config](https://distant-horizons-team.gitlab.io/distant-horizons/com/seibel/distanthorizons/api/DhApi.Delayed.html),
+[graphics config](https://distant-horizons-team.gitlab.io/distant-horizons/com/seibel/distanthorizons/api/interfaces/config/client/IDhApiGraphicsConfig.html),
+and [config value interface](https://distant-horizons-team.gitlab.io/distant-horizons/com/seibel/distanthorizons/api/interfaces/config/IDhApiConfigValue.html).
+
+## Vanilla underground section deferral: status and safe implementation boundary
+
+The existing `AdaptiveVisibilityBudget` priority scores and
+`ClientChunkUploadBudget` are not yet connected to a per-section task scheduler.
+The DH LOD controller above does not solve that separate problem.
 
 A simple Y-threshold or blanket "do not render underground" switch is unsafe:
 caves can be visible through ravines, skylights, shafts, cliff openings,
