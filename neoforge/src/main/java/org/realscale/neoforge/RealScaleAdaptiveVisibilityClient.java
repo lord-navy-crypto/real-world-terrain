@@ -16,7 +16,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 /**
- * Opt-in client-only exposure classifier: advisory, NOT render culling.
+ * Opt-in client-only exposure classifier. It never culls vanilla sections;
+ * the optional DH adapter consumes its conservative mode for distant cave LODs.
  *
  * Features: no forced loads, variable sampling cadence, immediate fail-open
  * after teleports/unloaded samples, 5 local sky probes and at most 4 bounded
