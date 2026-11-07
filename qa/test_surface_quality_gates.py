@@ -40,10 +40,15 @@ class SurfaceGates(unittest.TestCase):
     def test_saved_heightmap_curvature_detects_a_real_grid_step(self):
         # Repeated 8-block steps at every 4-block boundary represent a
         # systematic interpolation-grid discontinuity, not one isolated cliff.
+        # The production quality gate deliberately requires >500 samples
+        # on both sides before it reports a systematic seam. Use a synthetic
+        # patch large enough to exercise that same evidence threshold.
         heights={(x,z):2*x+3*z+8*(x//4)
-                 for x in range(-8,25) for z in range(-2,6)}
+                 for x in range(-8,25) for z in range(-20,21)}
         (_,grid_edge,grid_inner,chunk_edge,chunk_inner,
          grid_curve,inner_grid_curve,chunk_curve,inner_chunk_curve)=adjacent_height_deltas(heights)
+        self.assertGreater(len(grid_curve),500)
+        self.assertGreater(len(inner_grid_curve),500)
         self.assertTrue(grid_curve)
         self.assertGreater(max(grid_curve),4.0)
         r=terrain_quality_gates(chunk_edge,chunk_inner,grid_edge,grid_inner,
