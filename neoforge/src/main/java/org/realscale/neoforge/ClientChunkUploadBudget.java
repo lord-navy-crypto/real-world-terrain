@@ -21,6 +21,7 @@ public final class ClientChunkUploadBudget {
     private int frameMaxTasks;
     private long transitionBypasses;
     private long backlogRescueFrames;
+    private long adaptiveReducedFrames;
 
     /** Explicit local categories; this pure-Java scheduler has no client dependencies. */
     public enum VisibilityMode { TRANSITION, OPEN_SURFACE, SEALED_CAVE }
@@ -54,6 +55,16 @@ public final class ClientChunkUploadBudget {
      */
     public void beginModeAwareFrame(boolean gameplay,VisibilityMode mode,
             int pendingUploads) {
+        beginModeAwareFrame(gameplay,mode,pendingUploads,false);
+    }
+
+    /**
+     * The frame-cost governor may temporarily disable the 2x upload boost.
+     * This never blocks the first task, mutates the vanilla queue, or changes
+     * the transition/unknown fail-open bypass.
+     */
+    public void beginModeAwareFrame(boolean gameplay,VisibilityMode mode,
+            int pendingUploads,boolean framePressure) {
         if(!gameplay) {
             beginFrame(false);
             return;
@@ -70,6 +81,12 @@ public final class ClientChunkUploadBudget {
         if(pendingUploads>=64) {
             multiplier=Math.max(2,multiplier);
             backlogRescueFrames++;
+        }
+        // A slow client should not add more upload work to an overloaded
+        // render frame. Keep the existing base quota and FIFO forward progress.
+        if(framePressure) {
+            multiplier=1;
+            adaptiveReducedFrames++;
         }
         frameMaxTasks=Math.min(64,maxTasks*multiplier);
         frameMaxNanos=Math.min(10_000_000L,maxNanos*multiplier);
@@ -108,6 +125,7 @@ public final class ClientChunkUploadBudget {
     public int frameMaxTasks(){return frameMaxTasks;}
     public long transitionBypasses(){return transitionBypasses;}
     public long backlogRescueFrames(){return backlogRescueFrames;}
+    public long adaptiveReducedFrames(){return adaptiveReducedFrames;}
 
     public static ClientChunkUploadBudget fromProperties() {
         long ms=Long.getLong("realscale.experimental.client.upload_budget_us",2000L);

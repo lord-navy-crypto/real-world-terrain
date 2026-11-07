@@ -78,6 +78,27 @@ final class ClientChunkUploadModeAwareTest {
         assertFalse(budget.active());
     }
 
+    @Test void adaptivePressureDisablesTheExtraBoostButKeepsFifoProgress() {
+        ClientChunkUploadBudget budget=newBudget();
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.SEALED_CAVE,128,true);
+        assertTrue(budget.active());
+        assertEquals(8,budget.frameMaxTasks());
+        assertEquals(2_000_000L,budget.frameMaxNanos());
+        assertEquals(1,budget.adaptiveReducedFrames());
+        assertTrue(budget.canTakeTask());
+        budget.completed(100_000L);
+        assertEquals(1,budget.totalTasks());
+
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE,0,true);
+        assertEquals(8,budget.frameMaxTasks());
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.TRANSITION,128,true);
+        assertFalse(budget.active());
+        assertEquals(1,budget.transitionBypasses());
+    }
+
     @Test void perFrameQuotaResetsAndNoFinishedTaskIsLost() {
         ClientChunkUploadBudget budget=newBudget();
         budget.beginModeAwareFrame(true,

@@ -27,6 +27,12 @@ public final class RealScaleChunkUploadClient {
     public static final boolean MODE_AWARE=ENABLED &&
             Boolean.parseBoolean(System.getProperty(
                     "realscale.experimental.client.uploadbudget.modeaware","false"));
+    public static final boolean ADAPTIVE=MODE_AWARE &&
+            Boolean.parseBoolean(System.getProperty(
+                    "realscale.experimental.client.uploadbudget.adaptive","false"));
+    private static final ClientUploadFrameGovernor GOVERNOR=
+            new ClientUploadFrameGovernor();
+    private static long frameBeginNanos;
     private static final boolean PROFILE=ENABLED ||
             Boolean.getBoolean("realscale.client.chunkqueue.profile");
     public static final ClientChunkUploadBudget BUDGET =
@@ -48,6 +54,9 @@ public final class RealScaleChunkUploadClient {
             reset(world);
         }
         if(ENABLED) {
+            // Measure only with the explicit third opt-in. A Pre-to-Post
+            // interval includes frame pacing and is not GPU-only render time.
+            frameBeginNanos=ADAPTIVE&&playing?System.nanoTime():0L;
             if(MODE_AWARE) {
                 SectionRenderDispatcher dispatcher=playing
                         ?mc.levelRenderer.getSectionRenderDispatcher():null;
@@ -60,7 +69,8 @@ public final class RealScaleChunkUploadClient {
                     case TRANSITION -> ClientChunkUploadBudget.VisibilityMode.TRANSITION;
                 };
                 BUDGET.beginModeAwareFrame(playing,uploadMode,
-                        dispatcher==null?0:Math.max(0,dispatcher.getToUpload()));
+                        dispatcher==null?0:Math.max(0,dispatcher.getToUpload()),
+                        ADAPTIVE&&GOVERNOR.constrained());
             } else BUDGET.beginFrame(playing);
         }
     }
@@ -69,6 +79,10 @@ public final class RealScaleChunkUploadClient {
         if(!PROFILE)return;
         Minecraft mc=Minecraft.getInstance();
         if(ENABLED){
+            if(ADAPTIVE && frameBeginNanos!=0L){
+                GOVERNOR.observe(System.nanoTime()-frameBeginNanos);
+                frameBeginNanos=0L;
+            }
             if(BUDGET.active()){
                 uploaded+=BUDGET.tasksThisFrame();
                 if(BUDGET.spentNanosThisFrame()>=BUDGET.frameMaxNanos()
@@ -103,6 +117,10 @@ public final class RealScaleChunkUploadClient {
                             RealScaleAdaptiveVisibilityClient.currentMode():"not_sampled")+
                     " transition_bypass_frames="+BUDGET.transitionBypasses()+
                     " backlog_rescue_frames="+BUDGET.backlogRescueFrames()+
+                    " adaptive="+ADAPTIVE+
+                    " adaptive_constrained="+GOVERNOR.constrained()+
+                    " adaptive_slow_frames="+GOVERNOR.slowFrames()+
+                    " adaptive_reduced_frames="+BUDGET.adaptiveReducedFrames()+
                     " frames="+frames+
                     " backlog_frames="+framesWithBacklog+
                     " avg_compile_pending="+String.format(java.util.Locale.ROOT,"%.2f",totalQueued/denom)+
@@ -131,5 +149,7 @@ public final class RealScaleChunkUploadClient {
         lastReportNanos=0L;
         lastReportedDeferred=BUDGET.deferredCalls();
         if(ENABLED)BUDGET.endFrame();
+        frameBeginNanos=0L;
+        if(ADAPTIVE)GOVERNOR.reset();
     }
 }

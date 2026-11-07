@@ -21,6 +21,19 @@ class RealScaleDhClientTests(unittest.TestCase):
         self.assertIn("beginFrame(false);",budget)
         self.assertIn("frameMaxTasks=Math.min(64,maxTasks*multiplier);",budget)
         self.assertIn("no_section_reordering=true",uploader)
+    def test_frame_profiler_is_actually_opt_in(self):
+        profiler=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleClientFrameProfiler.java").read_text()
+        self.assertIn('"realscale.client.fps.profile","false"',profiler)
+        self.assertNotIn('"realscale.client.fps.profile","true"',profiler)
+    def test_adaptive_upload_governor_requires_all_opt_in_flags(self):
+        uploader=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleChunkUploadClient.java").read_text()
+        budget=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/ClientChunkUploadBudget.java").read_text()
+        self.assertIn("public static final boolean ADAPTIVE=MODE_AWARE &&",uploader)
+        self.assertIn('"realscale.experimental.client.uploadbudget.adaptive","false"',uploader)
+        self.assertIn("ADAPTIVE&&GOVERNOR.constrained()",uploader)
+        self.assertIn("framePressure",budget)
+        self.assertIn("multiplier=1;",budget)
+        self.assertIn("adaptiveReducedFrames++",budget)
     def test_2096_world_height_kept_for_all_lod_work(self):
         raw=(ROOT/"neoforge/src/main/resources/data/realscale/dimension_type/realism_max_overworld.json").read_text()
         world=json.loads(raw)

@@ -60,3 +60,36 @@ alters **upload throughput**, not Section-level compilation order, occlusion,
 or draw calls. It is not a replacement for Sodium/Embeddium visibility
 traversal. A real client A/B is still needed to check frame pacing against
 terrain appearance latency; server CI cannot prove FPS or no popping.
+
+
+## Phase 22 — optional frame-pressure feedback and a default-on profiler fix
+
+The FPS logger accidentally used `"true"` as the fallback value for
+`realscale.client.fps.profile` despite being documented as opt-in. This is
+corrected to `"false"`: ordinary clients no longer sample per-frame FPS
+histograms or query the client world in this event subscriber by default.
+
+A third opt-in flag enables experimental frame-pressure feedback:
+
+```text
+-Drealscale.experimental.client.uploadbudget=true
+-Drealscale.experimental.client.uploadbudget.modeaware=true
+-Drealscale.experimental.client.uploadbudget.adaptive=true
+```
+
+It observes the previous frame's Pre-to-Post elapsed time (includes scheduling
+and possible VSync; NOT pure GPU time). Two consecutive frames >=28ms restrict
+the next stable surface/cave upload quota to the original base budget, even if
+the cave/large-backlog path otherwise requests 2x. Four consecutive healthy
+frames <=18ms restore the optional 2x budget. Intervening frames reset streaks
+and cannot induce unstable rapid switching. A gap >500ms resets the governor
+instead of treating a debugger pause or OS suspend as continuous frame lag.
+
+TRANSITION and unknown states always bypass the Mixin. Every enabled
+gameplay frame still permits at least one original FIFO upload Runnable.
+No changes are made to Section mesh identity, section-compile queue order,
+worldgen, DH cave LOD geometry or Minecraft's render distance.
+
+The frame governor is entirely OFF by default. It may lower client stalls in
+a given hardware configuration, but it could also delay distant geometry.
+Only paired physical-client A/B can confirm the tradeoff.
