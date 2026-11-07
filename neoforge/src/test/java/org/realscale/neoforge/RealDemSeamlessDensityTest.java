@@ -158,6 +158,28 @@ public final class RealDemSeamlessDensityTest {
         }
     }
 
+    @Test void circularFadeShortcutMatchesSourceAlongAllFourTileCorners() {
+        RealDemDataSource dem=RealDemDataSource.loadMeasured();
+        for(int fade : new int[]{256,768,2048,4096}) {
+            int step=Math.max(1,fade/72);
+            for(int signX : new int[]{-1,1})
+                for(int signZ : new int[]{-1,1}) {
+                    int edgeX=signX<0?dem.originX():dem.maxX();
+                    int edgeZ=signZ<0?dem.originZ():dem.maxZ();
+                    for(int dx=0;dx<=fade+step;dx+=step)
+                        for(int dz=0;dz<=fade+step;dz+=step)
+                            assertFadeWeightBits(
+                                edgeX+signX*dx,edgeZ+signZ*dz,fade);
+                    // Exact cardinal boundary where the smoothstep first
+                    // reaches zero, plus inside/outside neighbor coordinates.
+                    for(int r : new int[]{fade-1,fade,fade+1}) {
+                        assertFadeWeightBits(edgeX+signX*r,edgeZ,fade);
+                        assertFadeWeightBits(edgeX,edgeZ+signZ*r,fade);
+                    }
+                }
+        }
+    }
+
     @Test void cachedFadeWeightIsBitExactAcrossWorkerThreads() {
         java.util.stream.IntStream.range(0, 8).parallel().forEach(worker -> {
             for (int i = 0; i < 3000; i++) {

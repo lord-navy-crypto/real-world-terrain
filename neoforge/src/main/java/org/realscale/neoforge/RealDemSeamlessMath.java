@@ -102,6 +102,17 @@ final class RealDemSeamlessMath {
                 || (long)z <= (long)minZ - fadeMeters
                 || (long)z >= (long)maxZ + fadeMeters)
             return 0.0;
+        // The rectangular guard above bounds dx,dz to [0,fadeMeters).
+        // These are integral block distances; their squares and the radius
+        // square fit exactly into long even at the codec's maximum width.
+        // Any point outside the transition *circle* has identically zero
+        // original smoothstep weight. Avoid both hypot and a cache lookup.
+        final long dx = x < minX ? (long)minX - x :
+                x > maxX ? (long)x - maxX : 0L;
+        final long dz = z < minZ ? (long)minZ - z :
+                z > maxZ ? (long)z - maxZ : 0L;
+        if (dx*dx + dz*dz >= (long)fadeMeters*fadeMeters)
+            return 0.0;
 
         final long coordinate = ((long) x << 32) | (z & 0xffffffffL);
         final WeightCache cache = WEIGHT_CACHE.get();

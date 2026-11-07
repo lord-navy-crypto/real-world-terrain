@@ -31,7 +31,7 @@ public record RealDemSeamlessDensity(DensityFunction base, int blendMeters)
         int x=ctx.blockX(),z=ctx.blockZ();
         double w=RealDemSeamlessMath.cachedWeightOutside(x,z,blendMeters);
         if (w<=0.0) return base.compute(ctx);
-        double solid=(RealDemSeamlessMath.cachedExtendedHeight(ctx.blockX(),ctx.blockZ())-ctx.blockY())/128.0;
+        double solid=(RealDemSeamlessMath.cachedExtendedHeight(x,z)-ctx.blockY())/128.0;
         if (w>=1.0) return solid;
         return solid*w + base.compute(ctx)*(1.0-w);
     }
