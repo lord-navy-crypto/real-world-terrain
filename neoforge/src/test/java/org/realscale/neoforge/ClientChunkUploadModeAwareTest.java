@@ -99,6 +99,59 @@ final class ClientChunkUploadModeAwareTest {
         assertEquals(1,budget.transitionBypasses());
     }
 
+    @Test void optionalPredictionAvoidsStartingLikelyOverBudgetTask() {
+        ClientChunkUploadBudget budget=newBudget();
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE,10,false,true);
+        assertTrue(budget.canTakeTask());
+        budget.completed(700_000L);
+        assertEquals(700_000L,budget.estimatedTaskNanos());
+        assertTrue(budget.canTakeTask());
+        budget.completed(700_000L);
+        assertEquals(700_000L,budget.estimatedTaskNanos());
+        assertFalse(budget.canTakeTask());
+        assertEquals(2,budget.tasksThisFrame());
+        assertEquals(1L,budget.predictiveStops());
+        // An ordinary mode-aware frame without the opt-in keeps the old
+        // stopwatch-only semantics with the exact same accumulated cost.
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE,10);
+        budget.completed(700_000L);
+        budget.completed(700_000L);
+        assertTrue(budget.canTakeTask());
+    }
+
+    @Test void predictionNeverPreventsFirstRunnableOrTransitionDrain() {
+        ClientChunkUploadBudget budget=newBudget();
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE,1,false,true);
+        budget.completed(9_000_000L);
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE,1,false,true);
+        assertTrue(budget.canTakeTask());
+        assertEquals(9_000_000L,budget.estimatedTaskNanos());
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.TRANSITION,128,false,true);
+        assertFalse(budget.active());
+        budget.resetPrediction();
+        assertEquals(0L,budget.estimatedTaskNanos());
+    }
+
+    @Test void predictiveTaskEstimateIsBoundedAndClearedAcrossWorlds() {
+        ClientChunkUploadBudget budget=newBudget();
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.SEALED_CAVE,8,false,true);
+        budget.completed(Long.MAX_VALUE);
+        assertEquals(20_000_000L,budget.estimatedTaskNanos());
+        budget.resetPrediction();
+        assertEquals(0L,budget.estimatedTaskNanos());
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.SEALED_CAVE,8,false,true);
+        assertTrue(budget.canTakeTask());
+        budget.completed(100_000L);
+        assertEquals(100_000L,budget.estimatedTaskNanos());
+    }
+
     @Test void perFrameQuotaResetsAndNoFinishedTaskIsLost() {
         ClientChunkUploadBudget budget=newBudget();
         budget.beginModeAwareFrame(true,

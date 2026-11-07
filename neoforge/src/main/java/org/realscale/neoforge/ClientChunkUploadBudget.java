@@ -22,6 +22,9 @@ public final class ClientChunkUploadBudget {
     private long transitionBypasses;
     private long backlogRescueFrames;
     private long adaptiveReducedFrames;
+    private boolean predictiveThisFrame;
+    private long estimatedTaskNanos;
+    private long predictiveStops;
 
     /** Explicit local categories; this pure-Java scheduler has no client dependencies. */
     public enum VisibilityMode { TRANSITION, OPEN_SURFACE, SEALED_CAVE }
@@ -42,6 +45,7 @@ public final class ClientChunkUploadBudget {
         spentNanos=0L;
         frameMaxNanos=maxNanos;
         frameMaxTasks=maxTasks;
+        predictiveThisFrame=false;
     }
 
     /**
@@ -65,6 +69,16 @@ public final class ClientChunkUploadBudget {
      */
     public void beginModeAwareFrame(boolean gameplay,VisibilityMode mode,
             int pendingUploads,boolean framePressure) {
+        beginModeAwareFrame(gameplay,mode,pendingUploads,framePressure,false);
+    }
+
+    /**
+     * Predictive limiting is a THIRD explicitly gated experiment: estimate
+     * the next FIFO Runnable using an allocation-free 3:1 moving average.
+     * Never refuse the first task of an active frame, even after a slow one.
+     */
+    public void beginModeAwareFrame(boolean gameplay,VisibilityMode mode,
+            int pendingUploads,boolean framePressure,boolean predictive) {
         if(!gameplay) {
             beginFrame(false);
             return;
@@ -75,6 +89,7 @@ public final class ClientChunkUploadBudget {
             return;
         }
         beginFrame(true);
+        predictiveThisFrame=predictive;
         int multiplier=mode==VisibilityMode.SEALED_CAVE?2:1;
         // A large old backlog must make forward progress; bounded catch-up
         // avoids permanent delayed terrain without changing FIFO order.
@@ -98,7 +113,14 @@ public final class ClientChunkUploadBudget {
 
     /** Remaining slots are shared across repeated vanilla calls in one frame. */
     public boolean canTakeTask() {
-        return inFrame && tasks<frameMaxTasks && spentNanos<frameMaxNanos;
+        if(!inFrame || tasks>=frameMaxTasks || spentNanos>=frameMaxNanos)
+            return false;
+        if(predictiveThisFrame && tasks>0 && estimatedTaskNanos>0L
+                && estimatedTaskNanos>frameMaxNanos-spentNanos) {
+            predictiveStops++;
+            return false;
+        }
+        return true;
     }
 
     /** Called even if upload Runnable takes longer than the entire allowance. */
@@ -109,6 +131,13 @@ public final class ClientChunkUploadBudget {
         long positive=Math.max(0,elapsedNanos);
         spentNanos=Long.MAX_VALUE-spentNanos<positive ?
                 Long.MAX_VALUE : spentNanos+positive;
+        if(predictiveThisFrame && positive>0L) {
+            // A single blocking upload cannot poison the estimate with
+            // enormous (or overflowed) durations.
+            long bounded=Math.min(20_000_000L,positive);
+            estimatedTaskNanos=estimatedTaskNanos==0L?bounded:
+                    (estimatedTaskNanos*3L+bounded)/4L;
+        }
     }
 
     public void recordDeferred(){
@@ -126,6 +155,13 @@ public final class ClientChunkUploadBudget {
     public long transitionBypasses(){return transitionBypasses;}
     public long backlogRescueFrames(){return backlogRescueFrames;}
     public long adaptiveReducedFrames(){return adaptiveReducedFrames;}
+    public long predictiveStops(){return predictiveStops;}
+    public long estimatedTaskNanos(){return estimatedTaskNanos;}
+    /** World changes and menus discard obsolete task-cost estimates. */
+    public void resetPrediction(){
+        estimatedTaskNanos=0L;
+        predictiveThisFrame=false;
+    }
 
     public static ClientChunkUploadBudget fromProperties() {
         long ms=Long.getLong("realscale.experimental.client.upload_budget_us",2000L);

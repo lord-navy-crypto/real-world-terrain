@@ -44,6 +44,16 @@ class RealScaleDhClientTests(unittest.TestCase):
         self.assertIn("!Double.isFinite(dx)",policy)
         self.assertIn("if(ADAPTIVE && !playing)GOVERNOR.reset()",uploader)
         self.assertIn("currentModeFor(world,client.player)",(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleClientFrameProfiler.java").read_text())
+    def test_predictive_fifo_upload_stops_are_opt_in_and_bounded(self):
+        uploader=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleChunkUploadClient.java").read_text()
+        budget=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/ClientChunkUploadBudget.java").read_text()
+        self.assertIn("public static final boolean PREDICTIVE=MODE_AWARE &&",uploader)
+        self.assertIn('"realscale.experimental.client.uploadbudget.predictive","false"',uploader)
+        self.assertIn("PREDICTIVE && !playing",uploader)
+        self.assertIn("estimatedTaskNanos>frameMaxNanos-spentNanos",budget)
+        self.assertIn("tasks>0",budget)
+        self.assertIn("Math.min(20_000_000L,positive)",budget)
+        self.assertIn("resetPrediction()",budget)
     def test_2096_world_height_kept_for_all_lod_work(self):
         raw=(ROOT/"neoforge/src/main/resources/data/realscale/dimension_type/realism_max_overworld.json").read_text()
         world=json.loads(raw)
