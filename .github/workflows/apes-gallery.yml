@@ -36,6 +36,9 @@ jobs:
           level-type=realscale:apes_gallery_three_realms
           level-seed=785312
           spawn-protection=0
+          # The 2096-high checkerboard has expensive first-chunk generation.
+          # Do not precompute an unnecessary spawn radius before RCON can run.
+          spawn-chunk-radius=0
           view-distance=3
           simulation-distance=3
           max-players=1
@@ -63,7 +66,7 @@ jobs:
               lines.append(line)
               if 'Done (' in line and 'For help' in line:ready.set()
           t=threading.Thread(target=read,daemon=True);t.start()
-          deadline=time.time()+420
+          deadline=time.time()+540
           while time.time()<deadline and p.poll() is None and not ready.is_set():time.sleep(1)
           # Gradle runServer does not reliably forward post-boot stdin
           # commands to Minecraft. Use the actual local dedicated-server RCON.

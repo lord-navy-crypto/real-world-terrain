@@ -110,9 +110,14 @@ jobs:
           PRESET_SLUG: ${{ matrix.slug }}
           NOISE_SETTINGS_ID: ${{ matrix.noise_settings }}
           JAVA_TOOL_OPTIONS: "-Drealscale.density.profile=true"
+          # Shared, fixed seed-42 plains vicinity from the previous natural
+          # saved-world report. Never use each preset's different nearest-
+          # plains search result for a cross-preset heightmap comparison.
+          FITTED_COMMON_CENTER_X: "-784"
+          FITTED_COMMON_CENTER_Z: "-496"
         run: |
           python3 - <<'PY'
-          import gzip, os, pathlib, re, signal, socket, struct, subprocess, threading, time
+          import gzip, os, pathlib, signal, socket, struct, subprocess, threading, time
           slug = os.environ["PRESET_SLUG"]
           expected_noise = os.environ["NOISE_SETTINGS_ID"].encode()
           world_name = f"fitted-{slug}-smoke"
@@ -179,35 +184,23 @@ jobs:
                       raise RuntimeError("Minecraft RCON authentication was rejected")
                   if auth_id != 1:
                       raise RuntimeError(f"Unexpected RCON auth response id: {auth_id}")
-                  locate_result = rcon_command(rcon, "locate biome minecraft:plains", 2)
-                  print("RCON_LOCATE_PLAINS_RESULT:", locate_result)
-                  match = re.search(r"\[(-?\d+),\s*(?:~|-?\d+),\s*(-?\d+)\]", locate_result)
-                  if not match:
-                      raise RuntimeError(f"Could not parse nearest plains coordinates: {locate_result}")
-                  land_x, land_z = int(match.group(1)), int(match.group(2))
-                  cell_x, cell_z = land_x // 2048, land_z // 2048
-
-                  # Volcanic geometry is centered inside each 2048-block cell.
-                  # Select a nearby cell center that is a land biome, then
-                  # sample a 5x5 chunk window around that center. This prevents
-                  # land-gated Dune/Volcanic profiles being tested only at sea.
-                  candidates = [(0,0),(1,0),(-1,0),(0,1),(0,-1),
-                                (1,1),(1,-1),(-1,1),(-1,-1)]
-                  sample_center = None
-                  for index, (dx, dz) in enumerate(candidates):
-                      center_x = (cell_x + dx) * 2048 + 1024
-                      center_z = (cell_z + dz) * 2048 + 1024
-                      check = rcon_command(
-                          rcon,
-                          f"execute unless biome {center_x} 64 {center_z} #minecraft:is_ocean run say REALSCALE_LAND_CELL",
-                          10 + index)
-                      if "REALSCALE_LAND_CELL" in check:
-                          sample_center = (center_x, center_z)
-                          break
-                  if sample_center is None:
-                      sample_center = (land_x, land_z)
-
-                  center_x, center_z = sample_center
+                  # A meaningful cross-preset heightmap parity check
+                  # MUST sample the same absolute X/Z in every world. The
+                  # previous per-preset nearest-plains search caused seven
+                  # unrelated 5x5 windows and made comparison impossible.
+                  #
+                  # Anchor derives from the already persisted seed-42 natural
+                  # plains sample (chunk -49,-31). Keep it shared across all
+                  # seven matrices; a lack of actual profile differences
+                  # remains a genuine FAIL, never a false green.
+                  center_x = int(os.environ["FITTED_COMMON_CENTER_X"])
+                  center_z = int(os.environ["FITTED_COMMON_CENTER_Z"])
+                  print("FITTED_SHARED_SAMPLE_CENTER:", (center_x, center_z))
+                  land_check = rcon_command(
+                      rcon,
+                      f"execute unless biome {center_x} 64 {center_z} #minecraft:is_ocean run say FITTED_FIXED_ANCHOR_LAND",
+                      9)
+                  print("FITTED_SHARED_ANCHOR_LAND_CHECK:", land_check)
                   min_chunk_x, max_chunk_x = center_x // 16 - 2, center_x // 16 + 2
                   min_chunk_z, max_chunk_z = center_z // 16 - 2, center_z // 16 + 2
                   min_block_x, max_block_x = min_chunk_x * 16, (max_chunk_x + 1) * 16 - 1

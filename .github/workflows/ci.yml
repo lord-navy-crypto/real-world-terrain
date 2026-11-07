@@ -121,6 +121,8 @@ jobs:
           java -cp build/fps-interval-smoke org.realscale.neoforge.ClientFrameIntervalStatsSmoke
       - name: Verify reproducible client FPS log comparisons
         run: python3 -m unittest discover -s qa -p 'test_compare_client_fps.py' -v
+      - name: Guard matched real fitted Anvil sampling and bounded APES startup
+        run: python3 -m unittest discover -s qa -p 'test_realworldgen_ci_fair_sampling.py' -v
       - name: Verify read-only tall-world Section inventory (not GPU visibility)
         run: python3 -m unittest discover -s qa -p 'test_vertical_section_budget.py' -v
       - name: Verify unified TVA source, cave and client opt-in release invariants
