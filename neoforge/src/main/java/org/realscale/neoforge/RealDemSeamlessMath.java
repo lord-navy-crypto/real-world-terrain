@@ -170,9 +170,14 @@ final class RealDemSeamlessMath {
     }
 
     private static double sampleRow(int row,int ix,double a) {
-        double p0=corner(row,ix),p1=corner(row,ix+1);
-        double pm=ix>0?corner(row,ix-1):2*p0-p1;
-        double pp=ix<GRID-2?corner(row,ix+2):2*p1-p0;
+        // measuredHeight bounds ix to [0, GRID-2]. Every spline corner
+        // uses the same clamped source row, so select that row once rather
+        // than repeating row and column clamps for each corner access.
+        // Keep endpoint extrapolation and smoothSegment arithmetic exact.
+        final double[] heights=HEIGHTS[Math.max(0,Math.min(GRID-1,row))];
+        double p0=heights[ix],p1=heights[ix+1];
+        double pm=ix>0?heights[ix-1]:2*p0-p1;
+        double pp=ix<GRID-2?heights[ix+2]:2*p1-p0;
         return smoothSegment(pm,p0,p1,pp,a);
     }
 
@@ -183,12 +188,13 @@ final class RealDemSeamlessMath {
         int ix=Math.min(GRID-2,(int)Math.floor(gx));
         int iz=Math.min(GRID-2,(int)Math.floor(gz));
         double a=gx-ix,b=gz-iz;
-        double r0=sampleRow(iz-1,ix,a);
+        // At the north/south raster edges one of the four original spline
+        // rows is discarded by endpoint extrapolation. Evaluate only rows
+        // that contribute, preserving the exact original operands.
         double r1=sampleRow(iz,ix,a);
         double r2=sampleRow(iz+1,ix,a);
-        double r3=sampleRow(iz+2,ix,a);
-        double lower=iz>0?r0:2*r1-r2;
-        double upper=iz<GRID-2?r3:2*r2-r1;
+        double lower=iz>0?sampleRow(iz-1,ix,a):2*r1-r2;
+        double upper=iz<GRID-2?sampleRow(iz+2,ix,a):2*r2-r1;
         return smoothSegment(lower,r1,r2,upper,b);
     }
 
