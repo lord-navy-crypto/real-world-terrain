@@ -354,6 +354,15 @@ jobs:
           python3 -m unittest discover -s qa -p test_custom_geomorphology.py -v
       - name: Verify the four TVA menu presets use isolated seed-proven smoothed density graphs
         run: python3 -m unittest discover -s qa -p 'test_tva_smoothed_families.py' -v
+      - name: Benchmark exact fitted horizontal morphology cache against uncached reference
+        run: |
+          mkdir -p build/fitted-horizontal-cache-benchmark
+          javac -d build/fitted-horizontal-cache-benchmark \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/TerrainArchetypeMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/TerrainArchetypeHorizontalCacheBenchmark.java
+          java -cp build/fitted-horizontal-cache-benchmark org.realscale.neoforge.TerrainArchetypeHorizontalCacheBenchmark
       - name: Ensure 2096-height Anvil heightmaps never decode using Canyon's shorter generator height
         run: python3 -m unittest discover -s qa -p 'test_tva_heightmap_decoding.py' -v
       - name: Build and verify six optional structure density packs
