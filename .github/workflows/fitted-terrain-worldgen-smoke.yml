@@ -112,7 +112,7 @@ jobs:
           JAVA_TOOL_OPTIONS: "-Drealscale.density.profile=true"
         run: |
           python3 - <<'PY'
-          import gzip, os, pathlib, signal, socket, struct, subprocess, threading, time
+          import gzip, os, pathlib, re, signal, socket, struct, subprocess, threading, time
           slug = os.environ["PRESET_SLUG"]
           expected_noise = os.environ["NOISE_SETTINGS_ID"].encode()
           world_name = f"fitted-{slug}-smoke"
@@ -179,19 +179,61 @@ jobs:
                       raise RuntimeError("Minecraft RCON authentication was rejected")
                   if auth_id != 1:
                       raise RuntimeError(f"Unexpected RCON auth response id: {auth_id}")
-                  force_result = rcon_command(rcon, "forceload add 992 992 1071 1071", 2)
+                  locate_result = rcon_command(rcon, "locate biome minecraft:plains", 2)
+                  print("RCON_LOCATE_PLAINS_RESULT:", locate_result)
+                  match = re.search(r"\[(-?\d+),\s*(?:~|-?\d+),\s*(-?\d+)\]", locate_result)
+                  if not match:
+                      raise RuntimeError(f"Could not parse nearest plains coordinates: {locate_result}")
+                  land_x, land_z = int(match.group(1)), int(match.group(2))
+                  cell_x, cell_z = land_x // 2048, land_z // 2048
+
+                  # Volcanic geometry is centered inside each 2048-block cell.
+                  # Select a nearby cell center that is a land biome, then
+                  # sample a 5x5 chunk window around that center. This prevents
+                  # land-gated Dune/Volcanic profiles being tested only at sea.
+                  candidates = [(0,0),(1,0),(-1,0),(0,1),(0,-1),
+                                (1,1),(1,-1),(-1,1),(-1,-1)]
+                  sample_center = None
+                  for index, (dx, dz) in enumerate(candidates):
+                      center_x = (cell_x + dx) * 2048 + 1024
+                      center_z = (cell_z + dz) * 2048 + 1024
+                      check = rcon_command(
+                          rcon,
+                          f"execute unless biome {center_x} 64 {center_z} #minecraft:is_ocean run say REALSCALE_LAND_CELL",
+                          10 + index)
+                      if "REALSCALE_LAND_CELL" in check:
+                          sample_center = (center_x, center_z)
+                          break
+                  if sample_center is None:
+                      sample_center = (land_x, land_z)
+
+                  center_x, center_z = sample_center
+                  min_chunk_x, max_chunk_x = center_x // 16 - 2, center_x // 16 + 2
+                  min_chunk_z, max_chunk_z = center_z // 16 - 2, center_z // 16 + 2
+                  min_block_x, max_block_x = min_chunk_x * 16, (max_chunk_x + 1) * 16 - 1
+                  min_block_z, max_block_z = min_chunk_z * 16, (max_chunk_z + 1) * 16 - 1
+                  force_command = (
+                      f"forceload add {min_block_x} {min_block_z} "
+                      f"{max_block_x} {max_block_z}")
+                  force_result = rcon_command(rcon, force_command, 30)
                   print("RCON_FORCELOAD_RESULT:", force_result)
                   if "Unknown command" in force_result or "Failed" in force_result:
                       raise RuntimeError(f"Minecraft rejected target forceload: {force_result}")
-                  # Direct RCON starts the target sample immediately after the
-                  # server is ready; it does not depend on scheduled game ticks.
-                  # Five-by-five chunks still provide 6,400 X/Z columns while
-                  # avoiding a large, expensive sample for the slowest modes.
+                  bounds = {
+                      "center_x": center_x, "center_z": center_z,
+                      "min_x": min_chunk_x, "max_x": max_chunk_x,
+                      "min_z": min_chunk_z, "max_z": max_chunk_z,
+                  }
+                  bounds_path = pathlib.Path(f"build/fitted-{slug}-target-bounds.json")
+                  bounds_path.parent.mkdir(parents=True, exist_ok=True)
+                  bounds_path.write_text(__import__("json").dumps(bounds, indent=2) + "\n")
+                  print("FITTED_LAND_SAMPLE_BOUNDS:", bounds)
+                  # Five-by-five chunks still provide 6,400 X/Z columns.
                   time.sleep(240)
-                  save_result = rcon_command(rcon, "save-all flush", 3)
+                  save_result = rcon_command(rcon, "save-all flush", 40)
                   print("RCON_SAVE_RESULT:", save_result)
                   try:
-                      print("RCON_STOP_RESULT:", rcon_command(rcon, "stop", 4))
+                      print("RCON_STOP_RESULT:", rcon_command(rcon, "stop", 41))
                   except (OSError, ConnectionError, RuntimeError) as exc:
                       print("RCON_STOP_CONNECTION_CLOSED:", repr(exc))
               except Exception as exc:
@@ -253,13 +295,22 @@ jobs:
         env:
           PRESET_SLUG: ${{ matrix.slug }}
         run: |
-          python3 ../qa/neoforge/audit_fitted_archetype_heightmaps.py \
-            --run-root run \
-            --world-name "fitted-${PRESET_SLUG}-smoke" \
-            --slug "${PRESET_SLUG}" \
-            --target-chunk-min 62 \
-            --target-chunk-max 66 \
-            --output "build/fitted-${PRESET_SLUG}-height-summary.json"
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          slug = os.environ["PRESET_SLUG"]
+          bounds = json.loads(pathlib.Path(f"build/fitted-{slug}-target-bounds.json").read_text())
+          subprocess.run([
+              "python3", "../qa/neoforge/audit_fitted_archetype_heightmaps.py",
+              "--run-root", "run",
+              "--world-name", f"fitted-{slug}-smoke",
+              "--slug", slug,
+              "--target-chunk-min-x", str(bounds["min_x"]),
+              "--target-chunk-max-x", str(bounds["max_x"]),
+              "--target-chunk-min-z", str(bounds["min_z"]),
+              "--target-chunk-max-z", str(bounds["max_z"]),
+              "--output", f"build/fitted-{slug}-height-summary.json",
+          ], check=True)
+          PY
       - name: Upload fitted-archetype heightmap summary
         if: always()
         uses: actions/upload-artifact@v4
