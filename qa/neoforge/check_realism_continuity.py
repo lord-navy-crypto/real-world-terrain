@@ -563,19 +563,31 @@ def terrain_quality_gates(chunk_border_deltas, within_chunk_deltas,
         if not values:return None
         ordered=sorted(values)
         return ordered[round((len(ordered)-1)*0.95)]
+    chunk_edge_p95=p95(chunk_curve_edge)
+    chunk_inner_p95=p95(chunk_curve_inner)
+    grid_edge_p95=p95(grid_curve_edge)
+    grid_inner_p95=p95(grid_curve_inner)
     chunk_curvature_p95_ratio=ratio(
-        [p95(chunk_curve_edge)] if chunk_curve_edge else [],
-        [p95(chunk_curve_inner)] if chunk_curve_inner else [])
+        [chunk_edge_p95] if chunk_edge_p95 is not None else [],
+        [chunk_inner_p95] if chunk_inner_p95 is not None else [])
     grid_curvature_p95_ratio=ratio(
-        [p95(grid_curve_edge)] if grid_curve_edge else [],
-        [p95(grid_curve_inner)] if grid_curve_inner else [])
+        [grid_edge_p95] if grid_edge_p95 is not None else [],
+        [grid_inner_p95] if grid_inner_p95 is not None else [])
+    chunk_curvature_p95_delta=(None if chunk_edge_p95 is None or chunk_inner_p95 is None
+                               else chunk_edge_p95-chunk_inner_p95)
+    grid_curvature_p95_delta=(None if grid_edge_p95 is None or grid_inner_p95 is None
+                              else grid_edge_p95-grid_inner_p95)
     inland_wet=high_nonriver_water/max(1,sample_columns)
     issues=[]
     if chunk_curvature_ratio is not None and len(chunk_curve_edge)>500 and len(chunk_curve_inner)>500:
-        if chunk_curvature_ratio>1.8 and (chunk_curvature_p95_ratio or 0.0)>2.0:
+        if (chunk_curvature_ratio>1.8
+                and (chunk_curvature_p95_ratio or 0.0)>2.0
+                and (chunk_curvature_p95_delta or 0.0)>6.0):
             issues.append("Systematic 16-block chunk-border height seam")
     if grid_curvature_ratio is not None and len(grid_curve_edge)>500 and len(grid_curve_inner)>500:
-        if grid_curvature_ratio>1.8 and (grid_curvature_p95_ratio or 0.0)>2.0:
+        if (grid_curvature_ratio>1.8
+                and (grid_curvature_p95_ratio or 0.0)>2.0
+                and (grid_curvature_p95_delta or 0.0)>6.0):
             issues.append("Systematic 4-block interpolation-grid height seam")
     if sample_columns>=500 and isolated_spikes>max(4,sample_columns//2500):
         issues.append("Excess isolated 4-neighbor spikes or one-block pits")
@@ -588,6 +600,8 @@ def terrain_quality_gates(chunk_border_deltas, within_chunk_deltas,
       "four_grid_boundary_curvature_mean_ratio":grid_curvature_ratio,
       "chunk_border_curvature_p95_ratio":chunk_curvature_p95_ratio,
       "four_grid_boundary_curvature_p95_ratio":grid_curvature_p95_ratio,
+      "chunk_border_curvature_p95_delta":chunk_curvature_p95_delta,
+      "four_grid_boundary_curvature_p95_delta":grid_curvature_p95_delta,
       "isolated_spikes":isolated_spikes,
       "high_nonriver_water_columns":high_nonriver_water,
       "high_nonriver_water_fraction":round(inland_wet,6),
