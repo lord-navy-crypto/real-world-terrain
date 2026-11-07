@@ -19,6 +19,17 @@ class FittedTerrainPerfGuards(unittest.TestCase):
                         part.index("selectorFreeFamily ? 0.0 : selector.compute(ctx)"))
         self.assertIn('this.selectorFreeFamily = "glacial".equals(family) || "volcanic".equals(family);',src)
 
+    def test_horizontal_morphology_kernels_reuse_exact_column_shapes(self):
+        src=(JAVA/"TerrainArchetypeMath.java").read_text(encoding="utf-8")
+        self.assertIn("private static final int HORIZONTAL_CACHE_SLOTS = 1024;",src)
+        self.assertIn("private final ThreadLocal<HorizontalShapeCache> horizontalShapeCache",src)
+        self.assertIn("private void horizontalShapesAt(HorizontalShapeCache cache,double x,double z)",src)
+        self.assertIn("cache.lastXBits==xBits && cache.lastZBits==zBits",src)
+        self.assertIn('case "alpine" ->',src)
+        self.assertIn('case "canyon" ->',src)
+        self.assertIn('case "glacial" ->',src)
+        self.assertIn('case "dune" ->',src)
+
     def test_karst_and_volcano_cache_horizontal_shape_before_repeated_y_samples(self):
         src=(JAVA/"TerrainArchetypeMath.java").read_text(encoding="utf-8")
         self.assertIn("private static final int KARST_CACHE_SLOTS = 1024;",src)

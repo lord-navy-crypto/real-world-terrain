@@ -84,6 +84,20 @@ final class TerrainArchetypeMath {
         private double lastShape;
     }
 
+    private static final int HORIZONTAL_CACHE_SLOTS = 1024;
+    private static final class HorizontalShapeCache {
+        private final long[] xBits = new long[HORIZONTAL_CACHE_SLOTS];
+        private final long[] zBits = new long[HORIZONTAL_CACHE_SLOTS];
+        private final double[] first = new double[HORIZONTAL_CACHE_SLOTS];
+        private final double[] second = new double[HORIZONTAL_CACHE_SLOTS];
+        private final boolean[] occupied = new boolean[HORIZONTAL_CACHE_SLOTS];
+        private boolean lastValid;
+        private long lastXBits,lastZBits;
+        private double lastFirst,lastSecond;
+    }
+    private final ThreadLocal<HorizontalShapeCache> horizontalShapeCache =
+            ThreadLocal.withInitial(HorizontalShapeCache::new);
+
     private static final int KARST_CACHE_SLOTS = 1024;
     private static final class KarstShapeCache {
         private final long[] keys = new long[KARST_CACHE_SLOTS];
@@ -144,25 +158,86 @@ final class TerrainArchetypeMath {
         };
     }
 
+    /**
+     * Exact per-worker cache for the horizontal part of the four non-radial
+     * fitted kernels. Their ridge/valley geometry is invariant over Y, while
+     * the original density, land gate, highland gate and selector may vary.
+     * Full double-bit coordinate keys preserve the helper's package-private
+     * API and prevent aliases even if a future caller supplies fractional X/Z.
+     */
+    private void horizontalShapesAt(HorizontalShapeCache cache,double x,double z) {
+        long xBits=Double.doubleToRawLongBits(x);
+        long zBits=Double.doubleToRawLongBits(z);
+        if(cache.lastValid && cache.lastXBits==xBits && cache.lastZBits==zBits)return;
+        int hash=(int)(xBits^(xBits>>>32)^Long.rotateLeft(zBits,13)^(zBits>>>32));
+        int slot=(hash^(hash>>>16))&(HORIZONTAL_CACHE_SLOTS-1);
+        if(cache.occupied[slot] && cache.xBits[slot]==xBits
+                && cache.zBits[slot]==zBits) {
+            cache.lastXBits=xBits;
+            cache.lastZBits=zBits;
+            cache.lastFirst=cache.first[slot];
+            cache.lastSecond=cache.second[slot];
+            cache.lastValid=true;
+            return;
+        }
+
+        double first=0.0,second=0.0;
+        switch(family) {
+            case "alpine" -> {
+                double across=orientedAcross(x,z);
+                double phase=TAU*across/dominantWavelengthM;
+                first=0.85+0.15*Math.pow(
+                        Math.max(0.0,Math.cos(phase)),2.0);
+            }
+            case "canyon" -> {
+                double across=orientedAcross(x,z);
+                double valleyDistance=Math.abs(
+                        Math.sin(Math.PI*across/dominantWavelengthM));
+                first=1.0-smoothstep(0.0,0.18,valleyDistance);
+                second=smoothstep(0.18,0.25,valleyDistance)
+                        *(1.0-smoothstep(0.25,0.42,valleyDistance));
+            }
+            case "glacial" -> {
+                int cellX=Math.floorDiv((int)x,CELL);
+                double centerX=cellX*(double)CELL+CELL*0.5
+                        +glacialWidth*0.22*Math.sin(
+                                TAU*z/dominantWavelengthM+cellX*1.17);
+                double across=Math.abs(x-centerX);
+                first=1.0-smoothstep(glacialWidth*0.28,glacialWidth,across);
+            }
+            case "dune" -> first=TAU*orientedAcross(x,z)/dominantWavelengthM;
+            default -> { }
+        }
+        cache.xBits[slot]=xBits;
+        cache.zBits[slot]=zBits;
+        cache.first[slot]=first;
+        cache.second[slot]=second;
+        cache.occupied[slot]=true;
+        cache.lastXBits=xBits;
+        cache.lastZBits=zBits;
+        cache.lastFirst=first;
+        cache.lastSecond=second;
+        cache.lastValid=true;
+    }
+
     private double alpine(double original, double landGate, double signal, double x, double z) {
         double highlandGate = smoothstep(0.65, 1.7, original);
         // The dominant orientation and wavelength are fitted from each real
         // DEM crop. Keep these broad signals subtle so the fitted scale guides
         // morphology without turning the entire world into repeated stripes.
-        double across = orientedAcross(x, z);
-        double phase = TAU * across / dominantWavelengthM;
-        double ridgeBands = 0.85 + 0.15 * Math.pow(Math.max(0.0, Math.cos(phase)), 2.0);
+        HorizontalShapeCache cache=horizontalShapeCache.get();
+        horizontalShapesAt(cache,x,z);
+        double ridgeBands=cache.lastFirst;
         return original + landGate * highlandGate * reliefGain
                 * 0.22 * macroGain * ridgeSharpness * ridgeBands
                 * (1.0 - Math.abs(signal));
     }
 
     private double canyon(double original, double landGate, double signal, double x, double z) {
-        double across = orientedAcross(x, z);
-        double valleyDistance = Math.abs(Math.sin(Math.PI * across / dominantWavelengthM));
-        double canyonTrough = 1.0 - smoothstep(0.0, 0.18, valleyDistance);
-        double canyonShoulder = smoothstep(0.18, 0.25, valleyDistance)
-                * (1.0 - smoothstep(0.25, 0.42, valleyDistance));
+        HorizontalShapeCache cache=horizontalShapeCache.get();
+        horizontalShapesAt(cache,x,z);
+        double canyonTrough=cache.lastFirst;
+        double canyonShoulder=cache.lastSecond;
         return original - landGate * reliefGain
                 * (0.28 * mesoGain * cliffIndex * Math.abs(signal)
                 + 0.10 * valleyIndex * canyonTrough)
@@ -192,14 +267,11 @@ final class TerrainArchetypeMath {
     }
 
     private double glacialValley(double original, double gate, double x, double z) {
-        int cellX = Math.floorDiv((int)x, CELL);
-        double width = glacialWidth;
-        double centerX = cellX * (double) CELL + CELL * 0.5
-                + width * 0.22 * Math.sin(TAU * z / dominantWavelengthM + cellX * 1.17);
-        double across = Math.abs(x - centerX);
+        HorizontalShapeCache cache=horizontalShapeCache.get();
+        horizontalShapesAt(cache,x,z);
         // Flat-bottomed center followed by a broad U-shaped valley wall;
         // width follows the measured wavelength of the glacial-valley crop.
-        double trough = 1.0 - smoothstep(width * 0.28, width, across);
+        double trough=cache.lastFirst;
         return original - gate * reliefGain * 0.44 * Math.max(valleyIndex, 0.12) * trough;
     }
 
@@ -304,8 +376,9 @@ final class TerrainArchetypeMath {
     }
 
     private double duneRidges(double original, double gate, double x, double z, double signal) {
-        double across = orientedAcross(x, z);
-        double phase = TAU * across / dominantWavelengthM + signal * 0.12;
+        HorizontalShapeCache cache=horizontalShapeCache.get();
+        horizontalShapesAt(cache,x,z);
+        double phase = cache.lastFirst + signal * 0.12;
         double wave = Math.sin(phase) + 0.28 * Math.sin(2.0 * phase + 0.6);
         // The fitted dune wavelength is a macro-scale landform. Use the
         // measured macro gain for ridge amplitude; the old meso gain left the

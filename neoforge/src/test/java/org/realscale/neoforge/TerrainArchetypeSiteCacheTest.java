@@ -118,6 +118,73 @@ final class TerrainArchetypeSiteCacheTest {
         }
     }
 
+    private static double uncachedHorizontalReference(
+            String family,double original,double continent,double rawSignal,
+            int x,int z,double axisCos,double axisSin) {
+        double gate=smoothstep(-0.10,0.22,continent);
+        if(gate<=0.0)return original;
+        double signal=Math.max(-1.0,Math.min(1.0,rawSignal));
+        double across=x*axisCos+z*axisSin;
+        return switch(family) {
+            case "alpine" -> {
+                double highland=smoothstep(0.65,1.7,original);
+                double phase=2.0*Math.PI*across/9800.0;
+                double bands=0.85+0.15*Math.pow(
+                        Math.max(0.0,Math.cos(phase)),2.0);
+                yield original+gate*highland*0.71*0.22*0.63*0.48
+                        *bands*(1.0-Math.abs(signal));
+            }
+            case "canyon" -> {
+                double vd=Math.abs(Math.sin(Math.PI*across/9800.0));
+                double trough=1.0-smoothstep(0.0,0.18,vd);
+                double shoulder=smoothstep(0.18,0.25,vd)
+                        *(1.0-smoothstep(0.25,0.42,vd));
+                yield original-gate*0.71*(0.28*0.58*0.62*Math.abs(signal)
+                        +0.10*0.53*trough)
+                        +gate*0.71*0.025*0.62*shoulder;
+            }
+            case "glacial" -> {
+                int cellX=Math.floorDiv(x,2048);
+                double width=343.0;
+                double centerX=cellX*2048.0+1024.0
+                        +width*0.22*Math.sin(2.0*Math.PI*z/9800.0+cellX*1.17);
+                double acrossX=Math.abs(x-centerX);
+                double trough=1.0-smoothstep(width*0.28,width,acrossX);
+                yield original-gate*0.71*0.44*Math.max(0.53,0.12)*trough;
+            }
+            case "dune" -> {
+                double phase=2.0*Math.PI*across/9800.0+signal*0.12;
+                double wave=Math.sin(phase)+0.28*Math.sin(2.0*phase+0.6);
+                yield original+gate*0.71*0.10*Math.max(0.63,0.12)*1.25*wave;
+            }
+            default -> original;
+        };
+    }
+
+    @Test void repeatedHorizontalKernelsRemainBitExactAcrossVerticalSamples(){
+        double axisCos=Math.cos(0.29),axisSin=Math.sin(0.29);
+        for(String family:new String[]{"alpine","canyon","glacial","dune"}){
+            TerrainArchetypeMath math=fitted(family);
+            for(int x=-4096;x<=4096;x+=127){
+                for(int z=-4096;z<=4096;z+=131){
+                    for(int y=0;y<10;y++){
+                        double original=0.42+y*0.137;
+                        double continent=(y%4==0)?-0.05:0.35;
+                        double signal=Math.sin(y*0.173);
+                        double expected=uncachedHorizontalReference(
+                                family,original,continent,signal,x,z,axisCos,axisSin);
+                        double actual=math.compute(
+                                original,continent,signal,x,z);
+                        assertEquals(Double.doubleToRawLongBits(expected),
+                                Double.doubleToRawLongBits(actual),
+                                "Horizontal morphology memo changed "+family
+                                        +" at "+x+","+z+" sample="+y);
+                    }
+                }
+            }
+        }
+    }
+
     @Test void repeatedKarstColumnsWithChangingSignalsRemainBitExact(){
         TerrainArchetypeMath math=fitted("karst");
         for(int x=-4096;x<=4096;x+=64){
