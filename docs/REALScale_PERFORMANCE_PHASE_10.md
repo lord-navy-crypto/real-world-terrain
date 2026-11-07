@@ -34,3 +34,20 @@ The measured-world quality gates report 16-block and 4-block height seams
 although the deterministic interpolation parity test passes. Those gates
 remain enabled and their cause must be audited separately against `main`.
 Do not suppress their failures as a performance workaround.
+
+## Exact DEM source-corner reuse
+
+In the exterior region beyond *both* edges of the DEM rectangle, the clamped
+X/Z coordinate is one of exactly four fixed source-raster corners. The
+original calculation reevaluated the same three bicubic samples (corner,
+X-axis inward neighbor, Z-axis inward neighbor) for each distinct exterior
+column. The current implementation precomputes those twelve immutable sample
+values when loading the source raster. The extrapolated slopes, clamping,
+tapering, vertical density formula and output arithmetic order are **unchanged**.
+
+The corner shortcut is valid for both the original 16x16 pilot and a
+SHA-validated 65/129/257/513 grid; edge strips and interior columns keep
+their original interpolation. A frozen original reference verifies raw
+IEEE-754 bit equality at fractional boundary offsets and random quadrant
+coordinates. An independent microbenchmark reports its limited hot-path
+speedup; it must not be interpreted as overall worldgen acceleration.

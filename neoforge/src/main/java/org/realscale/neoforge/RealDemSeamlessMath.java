@@ -10,6 +10,13 @@ final class RealDemSeamlessMath {
     private static final double CELL = DEM.cellMeters();
     private static final int GRID = DEM.width();
     private static final double[][] HEIGHTS = loadHeights();
+    // Four source-corner values and their inward neighbors are immutable for
+    // the lifetime of the selected, SHA-verified DEM raster. Most of the
+    // circular exterior blend region lies beyond two source tile edges;
+    // those columns otherwise repeat three costly bicubic interpolations.
+    private static final CornerSamples[] SOURCE_CORNERS = loadCornerSamples();
+
+    private record CornerSamples(double center, double xNeighbor, double zNeighbor) {}
 
     /*
      * Minecraft re-evaluates final_density at many Y cells for each X/Z.
@@ -153,6 +160,24 @@ final class RealDemSeamlessMath {
         return h;
     }
 
+    private static CornerSamples[] loadCornerSamples() {
+        CornerSamples[] corners = new CornerSamples[4];
+        for(int zi=0;zi<2;zi++) {
+            for(int xi=0;xi<2;xi++) {
+                double cx=xi==0?DEM.originX():DEM.maxX();
+                double cz=zi==0?DEM.originZ():DEM.maxZ();
+                // Cache only input spline samples, NOT extrapolated output.
+                // Slope math remains in extendedHeight in its original order.
+                corners[zi*2+xi]=new CornerSamples(
+                    measuredHeight(cx,cz),
+                    measuredHeight(cx+(xi==0?CELL:-CELL),cz),
+                    measuredHeight(cx,cz+(zi==0?CELL:-CELL))
+                );
+            }
+        }
+        return corners;
+    }
+
     private static double limit(double value,double low,double high) {
         return Math.max(low,Math.min(high,value));
     }
@@ -225,16 +250,24 @@ final class RealDemSeamlessMath {
     static double extendedHeight(double x,double z) {
         double cx=limit(x,DEM.originX(),DEM.maxX());
         double cz=limit(z,DEM.originZ(),DEM.maxZ());
-        double center=measuredHeight(cx,cz);
-        double originalCenter=center;
         double dx=x-cx,dz=z-cz;
+        // Only quadrant-exterior columns have both displacements nonzero.
+        // At their clamped source corner, the 3 bicubic samples are constant.
+        // Direct edge strips and interior columns retain the original reads.
+        CornerSamples corner=(dx!=0.0&&dz!=0.0)
+                ?SOURCE_CORNERS[(z<DEM.originZ()?0:2)+(x<DEM.originX()?0:1)]
+                :null;
+        double center=corner==null?measuredHeight(cx,cz):corner.center();
+        double originalCenter=center;
         if(dx!=0.0) {
-            double neighbor=measuredHeight(cx+(dx<0?CELL:-CELL),cz);
+            double neighbor=corner==null
+                    ?measuredHeight(cx+(dx<0?CELL:-CELL),cz):corner.xNeighbor();
             double slope=(neighbor-center)/(dx<0?CELL:-CELL);
             center+=limit(slope,-1.25,1.25)*taperedOutsideDisplacement(dx);
         }
         if(dz!=0.0) {
-            double neighbor=measuredHeight(cx,cz+(dz<0?CELL:-CELL));
+            double neighbor=corner==null
+                    ?measuredHeight(cx,cz+(dz<0?CELL:-CELL)):corner.zNeighbor();
             // Keep Z gradient independent of the X-axis extrapolation.
             double slope=(neighbor-originalCenter)/(dz<0?CELL:-CELL);
             center+=limit(slope,-1.25,1.25)*taperedOutsideDisplacement(dz);

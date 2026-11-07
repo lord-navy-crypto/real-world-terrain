@@ -158,6 +158,58 @@ public final class RealDemSeamlessDensityTest {
         }
     }
 
+    private static double uncachedExteriorReference(double x,double z) {
+        RealDemDataSource source=RealDemDataSource.loadMeasured();
+        double cell=source.cellMeters();
+        double cx=Math.max(source.originX(),Math.min(source.maxX(),x));
+        double cz=Math.max(source.originZ(),Math.min(source.maxZ(),z));
+        double center=RealDemSeamlessMath.measuredHeight(cx,cz);
+        double originalCenter=center;
+        double dx=x-cx,dz=z-cz;
+        if(dx!=0.0) {
+            double neighbor=RealDemSeamlessMath.measuredHeight(
+                    cx+(dx<0?cell:-cell),cz);
+            double slope=(neighbor-center)/(dx<0?cell:-cell);
+            center+=Math.max(-1.25,Math.min(1.25,slope))
+                    *RealDemSeamlessMath.taperedOutsideDisplacement(dx);
+        }
+        if(dz!=0.0) {
+            double neighbor=RealDemSeamlessMath.measuredHeight(
+                    cx,cz+(dz<0?cell:-cell));
+            double slope=(neighbor-originalCenter)/(dz<0?cell:-cell);
+            center+=Math.max(-1.25,Math.min(1.25,slope))
+                    *RealDemSeamlessMath.taperedOutsideDisplacement(dz);
+        }
+        return Math.max(-64.0,Math.min(2031.0,center));
+    }
+
+    @Test void precomputedSourceCornersRemainRawBitExactInAllExteriorQuadrants() {
+        RealDemDataSource source=RealDemDataSource.loadMeasured();
+        java.util.Random random=new java.util.Random(0x17a31L);
+        for(int zi=0;zi<2;zi++)
+            for(int xi=0;xi<2;xi++) {
+                int bx=xi==0?source.originX():source.maxX();
+                int bz=zi==0?source.originZ():source.maxZ();
+                int signX=xi==0?-1:1,signZ=zi==0?-1:1;
+                for(double dx:new double[]{0.001,0.5,1.0,31.5,128,1024,2048})
+                    for(double dz:new double[]{0.001,0.5,1.0,31.5,128,1024,2048}) {
+                        double x=bx+signX*dx,z=bz+signZ*dz;
+                        assertEquals(
+                            Double.doubleToRawLongBits(uncachedExteriorReference(x,z)),
+                            Double.doubleToRawLongBits(RealDemSeamlessMath.extendedHeight(x,z)),
+                            "Bit difference at quadrant exterior "+x+","+z);
+                    }
+                for(int i=0;i<4000;i++) {
+                    double x=bx+signX*(0.001+random.nextDouble()*4096);
+                    double z=bz+signZ*(0.001+random.nextDouble()*4096);
+                    assertEquals(
+                        Double.doubleToRawLongBits(uncachedExteriorReference(x,z)),
+                        Double.doubleToRawLongBits(RealDemSeamlessMath.extendedHeight(x,z)),
+                        "Bit difference at random exterior "+x+","+z);
+                }
+            }
+    }
+
     @Test void circularFadeShortcutMatchesSourceAlongAllFourTileCorners() {
         RealDemDataSource dem=RealDemDataSource.loadMeasured();
         for(int fade : new int[]{256,768,2048,4096}) {
