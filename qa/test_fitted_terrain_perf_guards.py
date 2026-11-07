@@ -28,7 +28,7 @@ class FittedTerrainPerfGuards(unittest.TestCase):
         self.assertIn("cache.lastTower",src)
         self.assertIn("cache.lastSink",src)
         self.assertIn("Math.max(macroGain, 0.12)",src)
-        self.assertIn("Math.max(mesoGain, 0.12)",src)  # canyon/other kernels still retain their own fitted scales
+        self.assertIn("0.28 * mesoGain",src)  # canyon retains its own fitted meso-scale coefficient
 
     def test_wavelength_constants_computed_once_outside_each_density_sample(self):
         src=(JAVA/"TerrainArchetypeMath.java").read_text(encoding="utf-8")
