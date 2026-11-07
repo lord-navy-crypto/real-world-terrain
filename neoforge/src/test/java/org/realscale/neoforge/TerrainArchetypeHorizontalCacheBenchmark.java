@@ -133,7 +133,7 @@ public final class TerrainArchetypeHorizontalCacheBenchmark {
             verifyRawParity(family,math,in,cos,sin);
             for(int i=0;i<3;i++) {
                 sink^=runReference(family,in,cos,sin);
-                sink^=runCached(math,in);
+                sink^=runProduction(math,in);
             }
             long[] reference=new long[5],production=new long[5];
             for(int i=0;i<5;i++) {
@@ -141,7 +141,7 @@ public final class TerrainArchetypeHorizontalCacheBenchmark {
                 sink^=runReference(family,in,cos,sin);
                 reference[i]=System.nanoTime()-start;
                 start=System.nanoTime();
-                sink^=runCached(math,in);
+                sink^=runProduction(math,in);
                 production[i]=System.nanoTime()-start;
             }
             double refMs=median(reference)/1_000_000.0;

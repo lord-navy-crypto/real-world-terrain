@@ -139,6 +139,10 @@ class FittedTerrainPerfGuards(unittest.TestCase):
         cache_start=src.index("private void horizontalShapesAt(")
         cache_end=src.index("private double alpine(",cache_start)
         self.assertNotIn('case "dune"',src[cache_start:cache_end])
+        benchmark=(JAVA/"TerrainArchetypeHorizontalCacheBenchmark.java").read_text(encoding="utf-8")
+        self.assertIn("runProduction",benchmark)
+        self.assertNotIn("runCached",benchmark)
+        self.assertIn("production_median_ms",benchmark)
 
 
 if __name__=="__main__":
