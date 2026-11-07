@@ -82,7 +82,8 @@ def audit(world: Path, slug: str, target_chunk_min_x: int, target_chunk_max_x: i
         raise RuntimeError(
             f"Insufficient persisted OCEAN_FLOOR samples in the RCON-forced sample area for {slug}: "
             f"chunks={decoded_chunks}, columns={len(flat)}, "
-            f"target_chunks={target_chunk_min}..{target_chunk_max}"
+            f"target_chunks_x={target_chunk_min_x}..{target_chunk_max_x}, "
+            f"target_chunks_z={target_chunk_min_z}..{target_chunk_max_z}"
         )
 
     canonical = json.dumps(
