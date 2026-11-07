@@ -128,5 +128,18 @@ class FittedTerrainPerfGuards(unittest.TestCase):
                 self.assertIn(expected,path.read_text(encoding="utf-8"))
 
 
+    def test_dune_kernel_bypasses_horizontal_cache_when_direct_math_is_cheaper(self):
+        src=(JAVA/"TerrainArchetypeMath.java").read_text(encoding="utf-8")
+        start=src.index("private double duneRidges(")
+        end=src.index("private double ridgeGain(",start)
+        dune=src[start:end]
+        self.assertIn("TAU*orientedAcross(x,z)/dominantWavelengthM",dune)
+        self.assertNotIn("horizontalShapesAt",dune)
+        self.assertNotIn("horizontalShapeCache.get()",dune)
+        cache_start=src.index("private void horizontalShapesAt(")
+        cache_end=src.index("private double alpine(",cache_start)
+        self.assertNotIn('case "dune"',src[cache_start:cache_end])
+
+
 if __name__=="__main__":
     unittest.main()

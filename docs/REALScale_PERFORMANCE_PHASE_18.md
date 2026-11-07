@@ -40,3 +40,8 @@ The virtual boundary improves conservative classification for the existing opt-i
 - Existing cave/visibility policy tests
 - Seven fitted-world saved-heightmap comparison at identical coordinates (still a separate CI test-design blocker)
 - Pinned Distant Horizons 3.3.3 + Chunky 1.4.23 in-game validation before enabling the feature by default
+
+
+## Phase 19 — benchmark-guided cache selection
+
+The same-process horizontal-kernel benchmark showed that Dune's cached phase path was slower than the independent direct reference (0.732x reference/production ratio). Its invariant phase is only one multiply-add and a scale, so the cache lookup and key handling cost more than recomputation. Dune now calculates that phase directly. Alpine, Canyon and Glacial retain their measured caches because their saved trigonometric/shape work produced 1.556x, 2.408x and 2.315x reference/production speedups in the same CI run. Raw-bit parity remains required for all four families.

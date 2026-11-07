@@ -3,8 +3,8 @@ package org.realscale.neoforge;
 import java.util.Arrays;
 
 /**
- * Informational paired microbenchmark for the production fitted horizontal
- * morphology cache. It reports timings but has no noisy CI speed threshold.
+ * Informational paired microbenchmark for production fitted horizontal kernels.
+ * It reports reference-vs-production timings without a noisy CI speed threshold.
  * Every measured result is checked against an independent uncached formula.
  */
 public final class TerrainArchetypeHorizontalCacheBenchmark {
@@ -108,7 +108,7 @@ public final class TerrainArchetypeHorizontalCacheBenchmark {
         }
     }
 
-    private static long runCached(TerrainArchetypeMath math,Inputs in) {
+    private static long runProduction(TerrainArchetypeMath math,Inputs in) {
         long checksum=0;
         for(int i=0;i<SAMPLES;i++) {
             double value=math.compute(in.original[i],in.continent[i],in.signal[i],
@@ -135,21 +135,21 @@ public final class TerrainArchetypeHorizontalCacheBenchmark {
                 sink^=runReference(family,in,cos,sin);
                 sink^=runCached(math,in);
             }
-            long[] reference=new long[5],cached=new long[5];
+            long[] reference=new long[5],production=new long[5];
             for(int i=0;i<5;i++) {
                 long start=System.nanoTime();
                 sink^=runReference(family,in,cos,sin);
                 reference[i]=System.nanoTime()-start;
                 start=System.nanoTime();
                 sink^=runCached(math,in);
-                cached[i]=System.nanoTime()-start;
+                production[i]=System.nanoTime()-start;
             }
             double refMs=median(reference)/1_000_000.0;
-            double cachedMs=median(cached)/1_000_000.0;
+            double productionMs=median(production)/1_000_000.0;
             System.out.printf(
-                    "REALSCALE_HORIZONTAL_CACHE_BENCHMARK family=%s samples=%d "
-                    +"reference_median_ms=%.3f cached_median_ms=%.3f speedup=%.3fx raw_bits=identical%n",
-                    family,SAMPLES,refMs,cachedMs,refMs/cachedMs);
+                    "REALSCALE_HORIZONTAL_KERNEL_BENCHMARK family=%s samples=%d "
+                    +"reference_median_ms=%.3f production_median_ms=%.3f speedup=%.3fx raw_bits=identical%n",
+                    family,SAMPLES,refMs,productionMs,refMs/productionMs);
         }
         if(sink==Long.MIN_VALUE)System.out.println("benchmark sink="+sink);
     }

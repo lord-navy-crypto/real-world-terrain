@@ -159,8 +159,8 @@ final class TerrainArchetypeMath {
     }
 
     /**
-     * Exact per-worker cache for the horizontal part of the four non-radial
-     * fitted kernels. Their ridge/valley geometry is invariant over Y, while
+     * Exact per-worker cache for the horizontal part of the three measured
+     * fitted kernels that benefit from reuse. Their ridge/valley geometry is invariant over Y, while
      * the original density, land gate, highland gate and selector may vary.
      * Full double-bit coordinate keys preserve the helper's package-private
      * API and prevent aliases even if a future caller supplies fractional X/Z.
@@ -205,7 +205,6 @@ final class TerrainArchetypeMath {
                 double across=Math.abs(x-centerX);
                 first=1.0-smoothstep(glacialWidth*0.28,glacialWidth,across);
             }
-            case "dune" -> first=TAU*orientedAcross(x,z)/dominantWavelengthM;
             default -> { }
         }
         cache.xBits[slot]=xBits;
@@ -376,9 +375,10 @@ final class TerrainArchetypeMath {
     }
 
     private double duneRidges(double original, double gate, double x, double z, double signal) {
-        HorizontalShapeCache cache=horizontalShapeCache.get();
-        horizontalShapesAt(cache,x,z);
-        double phase = cache.lastFirst + signal * 0.12;
+        // The Dune phase is only one multiply-add and a scale. Paired CI
+        // benchmarks showed the cache lookup costs more than recomputing it,
+        // so keep this kernel direct while the heavier three kernels stay memoized.
+        double phase = TAU*orientedAcross(x,z)/dominantWavelengthM + signal * 0.12;
         double wave = Math.sin(phase) + 0.28 * Math.sin(2.0 * phase + 0.6);
         // The fitted dune wavelength is a macro-scale landform. Use the
         // measured macro gain for ridge amplitude; the old meso gain left the
