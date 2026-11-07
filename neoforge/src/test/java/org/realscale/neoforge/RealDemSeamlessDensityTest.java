@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /** The independent v2 DEM never changes historical sampled altitudes. */
 public final class RealDemSeamlessDensityTest {
     private static final RealDemTile ORIGINAL=RealDemTile.load();
+    private static final RealDemDataSource DEM_SOURCE=RealDemDataSource.loadMeasured();
 
     @Test void exactHeightAtAll256MeasuredGridPoints() {
         for(int z=-240;z<=240;z+=32)
@@ -159,7 +160,7 @@ public final class RealDemSeamlessDensityTest {
     }
 
     private static double uncachedExteriorReference(double x,double z) {
-        RealDemDataSource source=RealDemDataSource.loadMeasured();
+        RealDemDataSource source=DEM_SOURCE;
         double cell=source.cellMeters();
         double cx=Math.max(source.originX(),Math.min(source.maxX(),x));
         double cz=Math.max(source.originZ(),Math.min(source.maxZ(),z));

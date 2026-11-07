@@ -4,13 +4,14 @@ import java.util.Arrays;
 
 /** Measures only source-corner extrapolation, with original math kept here. */
 public final class RealDemCornerBenchmark {
+    private static final RealDemDataSource DEM=RealDemDataSource.loadMeasured();
     private static final int COUNT=32768;
     private static final int RUNS=9;
     private static final int[] X=new int[COUNT],Z=new int[COUNT];
     private static volatile double sink;
 
     static {
-        RealDemDataSource source=RealDemDataSource.loadMeasured();
+        RealDemDataSource source=DEM;
         for(int i=0;i<COUNT;i++){
             boolean lowX=(i&1)==0,lowZ=(i&2)==0;
             int bx=lowX?source.originX():source.maxX();
@@ -28,7 +29,7 @@ public final class RealDemCornerBenchmark {
 
     /** Frozen original implementation: recomputes 3 bicubic samples every call. */
     private static double original(double x,double z) {
-        RealDemDataSource source=RealDemDataSource.loadMeasured();
+        RealDemDataSource source=DEM;
         double cell=source.cellMeters();
         double cx=clamp(x,source.originX(),source.maxX());
         double cz=clamp(z,source.originZ(),source.maxZ());
