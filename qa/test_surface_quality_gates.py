@@ -38,8 +38,10 @@ class SurfaceGates(unittest.TestCase):
             grid_curve=([0.5]*1000,[0.5]*1000))
         self.assertTrue(r["pass"],r["issues"])
     def test_saved_heightmap_curvature_detects_a_real_grid_step(self):
-        heights={(x,z):2*x+3*z+(8 if x>=8 else 0)
-                 for x in range(-2,22) for z in range(-2,6)}
+        # Repeated 8-block steps at every 4-block boundary represent a
+        # systematic interpolation-grid discontinuity, not one isolated cliff.
+        heights={(x,z):2*x+3*z+8*(x//4)
+                 for x in range(-8,25) for z in range(-2,6)}
         (_,grid_edge,grid_inner,chunk_edge,chunk_inner,
          grid_curve,inner_grid_curve,chunk_curve,inner_chunk_curve)=adjacent_height_deltas(heights)
         self.assertTrue(grid_curve)
