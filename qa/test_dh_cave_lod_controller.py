@@ -21,7 +21,8 @@ class DhCaveLodControllerTests(unittest.TestCase):
         self.assertIn('restore()', source)
         # Do not rewrite the user's cave threshold or any terrain data.
         self.assertNotIn('caveCullingHeight', source)
-        self.assertIn('vanilla section meshes unchanged', source)
+        self.assertIn('vanilla section meshes', source)
+        self.assertIn('worldgen', source)
 
     def test_only_confident_open_surface_culls_distant_cave_lods(self):
         policy = (JAVA / "AdaptiveVisibilityBudget.java").read_text(encoding="utf-8")
