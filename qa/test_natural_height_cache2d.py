@@ -62,6 +62,67 @@ class NaturalCache2DTests(unittest.TestCase):
             if "y_scale" in datum:
                 self.assertEqual(datum["y_scale"],0)
 
+    def test_smoothed_and_fitted_profiles_memoize_only_the_horizontal_signal(self):
+        profiles={
+            "tva_alpine_smoothed":("realscale:mountain_relief",
+                                   "himalayan/height_signal","himalayan/continents",True),
+            "tva_canyon_smoothed":("realscale:mountain_relief",
+                                   "grand_canyon/height_signal","grand_canyon/continents",True),
+            "tva_alpine_fitted":("realscale:terrain_archetype",
+                                 "himalayan/height_signal","himalayan/continents",False),
+            "tva_canyon_fitted":("realscale:terrain_archetype",
+                                 "grand_canyon/height_signal","grand_canyon/continents",False),
+            "tva_glacial_fitted":("realscale:terrain_archetype",
+                                  "himalayan/height_signal","himalayan/continents",False),
+            "tva_volcanic_fitted":("realscale:terrain_archetype",
+                                   "realism_max/height_signal","realism_max/continental_field",False),
+            "tva_karst_fitted":("realscale:terrain_archetype",
+                                "grand_canyon/height_signal","grand_canyon/continents",False),
+            "tva_dune_fitted":("realscale:terrain_archetype",
+                               "realism_max/height_signal","realism_max/continental_field",False),
+        }
+        for profile,(kernel,base_graph,continents,memo_at_signal) in profiles.items():
+            with self.subTest(profile=profile):
+                root=load(profile+"/height_signal")
+                if memo_at_signal:
+                    self.assertEqual(root["type"],"realscale:measured_horizontal_memo")
+                    node=root["input"]
+                else:
+                    self.assertEqual(root["type"],kernel)
+                    node=root
+                self.assertEqual(node["type"],kernel)
+                self.assertEqual(node["continents"],"realscale:"+continents)
+                self.assertEqual(load(continents)["type"],"minecraft:flat_cache")
+                self.assertEqual(node["selector"]["type"],"minecraft:noise")
+                self.assertEqual(node["selector"]["y_scale"],0)
+                original=load(profile+"/original_height_signal")
+                self.assertEqual(original["type"],"minecraft:interpolated")
+                self.assertEqual(original["argument"],"realscale:"+base_graph)
+                self.assertEqual(load(base_graph)["type"],"minecraft:flat_cache")
+
+                # Fitted profiles already memoize at terrain_density; do not
+                # add a second cache around their source height signal.
+                terrain=load(profile+"/terrain_density")
+                self.assertEqual(terrain["argument2"]["type"],
+                                 "minecraft:y_clamped_gradient")
+                if memo_at_signal:
+                    self.assertEqual(terrain["argument1"],
+                                     "realscale:"+profile+"/height_signal")
+                else:
+                    self.assertEqual(terrain["argument1"],{
+                        "type":"realscale:measured_horizontal_memo",
+                        "input":"realscale:"+profile+"/height_signal"
+                    })
+
+        # Both custom kernels are horizontal-only. Their Y gradient remains
+        # outside the memo in terrain_density.json.
+        for source in ("MountainReliefDensity.java","TerrainArchetypeDensity.java"):
+            text=(ROOT/"neoforge/src/main/java/org/realscale/neoforge"/source).read_text(
+                encoding="utf-8")
+            self.assertNotIn("blockY()",text,source)
+            self.assertIn("blockX()",text,source)
+            self.assertIn("blockZ()",text,source)
+
     def test_other_families_do_not_change_to_2d_cache(self):
         for name in ("tva_alpine_smoothed/height_signal",
                      "tva_canyon_smoothed/height_signal"):

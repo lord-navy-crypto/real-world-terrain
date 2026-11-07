@@ -33,9 +33,11 @@ class CoreSmoothing(unittest.TestCase):
     self.assertEqual(read(R/"density_function"/smoothed/"original_height_signal.json"),
       {"type":"minecraft:interpolated","argument":"realscale:"+legacy+"/height_signal"})
     restored=read(R/"density_function"/smoothed/"height_signal.json")
+    # All three production smoothed worlds now cache their proven 2D
+    # relief signal. Check the unwrapped geometry, not the outer memo type.
+    self.assertEqual(restored["type"],"realscale:measured_horizontal_memo")
+    restored=restored["input"]
     if smoothed=="tva_natural_smoothed":
-     self.assertEqual(restored["type"],"realscale:measured_horizontal_memo")
-     restored=restored["input"]
      self.assertEqual(restored["type"],"minecraft:cache_2d")
      restored=restored["argument"]
     self.assertEqual(restored["type"],"realscale:mountain_relief")

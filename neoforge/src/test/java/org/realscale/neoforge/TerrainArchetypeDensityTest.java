@@ -23,6 +23,37 @@ final class TerrainArchetypeDensityTest {
     };
 
     @Test
+    void immutableFittedScalesRemainRawBitIdenticalToOriginalCalculations() throws Exception {
+        record Scale(String field, double fraction, double minimum, double maximum) {}
+        Scale[] scales = {
+                new Scale("glacialWidth", 0.035, 180.0, 1600.0),
+                new Scale("volcanicRadius", 0.025, 250.0, 800.0),
+                new Scale("karstTowerRadius", 0.025, 80.0, 450.0),
+                new Scale("karstSinkRadius", 0.012, 40.0, 200.0)
+        };
+        double[] wavelengthCases = {
+                1.0, 100.0, 1000.0, 4000.0, 7000.0, 15000.0,
+                30000.0, 60000.0, 200000.0, 1000000.0
+        };
+        for (double wavelength : wavelengthCases) {
+            TerrainArchetypeMath fitted = new TerrainArchetypeMath(
+                    "karst", 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+                    0.5, 1.0, 0.37, wavelength);
+            for (Scale scale : scales) {
+                var field = TerrainArchetypeMath.class.getDeclaredField(scale.field());
+                field.setAccessible(true);
+                double original = Math.max(scale.minimum(),
+                        Math.min(scale.maximum(), wavelength * scale.fraction()));
+                double cached = field.getDouble(fitted);
+                assertEquals(Double.doubleToRawLongBits(original),
+                        Double.doubleToRawLongBits(cached),
+                        "Fitted coefficient changed floating-point bits: "
+                                + scale.field() + " wavelength=" + wavelength);
+            }
+        }
+    }
+
+    @Test
     void compiledFittedCoefficientsChangeRuntimeDensity() throws Exception {
         for (String family : FAMILIES) {
             String resourcePath = "/data/realscale/worldgen/density_function/tva_"
@@ -75,6 +106,74 @@ final class TerrainArchetypeDensityTest {
                     family + " fitted coefficients did not measurably change enough density samples; "
                             + "changed=" + changedSamples + ", maxDelta=" + maximumDelta);
         }
+    }
+
+
+    @Test
+    void fittedDuneRidgesExceedOneBlockEquivalentAtActiveLandSamples() throws Exception {
+        String resourcePath =
+                "/data/realscale/worldgen/density_function/tva_dune_fitted/height_signal.json";
+        JsonObject resource;
+        try (InputStream stream = getClass().getResourceAsStream(resourcePath)) {
+            assertNotNull(stream, "Missing fitted dune profile");
+            resource = JsonParser.parseReader(
+                    new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+        }
+        TerrainArchetypeMath fitted = new TerrainArchetypeMath(
+                "dune", number(resource,"macro_gain"), number(resource,"meso_gain"),
+                number(resource,"micro_gain"), number(resource,"relief_gain"),
+                number(resource,"ridge_sharpness"), number(resource,"cliff_index"),
+                number(resource,"valley_index"), number(resource,"ridge_index"),
+                number(resource,"anisotropy_gain"), number(resource,"dune_axis_radians"),
+                number(resource,"dominant_wavelength_m"));
+        int oneBlockEquivalentSamples=0;
+        double maximumBlockEquivalent=0.0;
+        for(int x=-4096;x<=4096;x+=64){
+            for(int z=-4096;z<=4096;z+=64){
+                double delta=Math.abs(fitted.compute(1.0,0.5,0.1,x,z)-1.0)*128.0;
+                maximumBlockEquivalent=Math.max(maximumBlockEquivalent,delta);
+                if(delta>=1.0)oneBlockEquivalentSamples++;
+            }
+        }
+        assertTrue(oneBlockEquivalentSamples>=4,
+                "Fitted dune relief is too weak to change even one block: "
+                        + "samples="+oneBlockEquivalentSamples
+                        + ", maxBlockEquivalent="+maximumBlockEquivalent);
+    }
+
+    @Test
+    void fittedVolcanicShieldExceedsOneBlockEquivalentAtActiveLandSamples() throws Exception {
+        String resourcePath =
+                "/data/realscale/worldgen/density_function/tva_volcanic_fitted/height_signal.json";
+        JsonObject resource;
+        try (InputStream stream = getClass().getResourceAsStream(resourcePath)) {
+            assertNotNull(stream, "Missing fitted volcanic profile");
+            resource = JsonParser.parseReader(
+                    new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+        }
+        TerrainArchetypeMath fitted = new TerrainArchetypeMath(
+                "volcanic", number(resource,"macro_gain"), number(resource,"meso_gain"),
+                number(resource,"micro_gain"), number(resource,"relief_gain"),
+                number(resource,"ridge_sharpness"), number(resource,"cliff_index"),
+                number(resource,"valley_index"), number(resource,"ridge_index"),
+                number(resource,"anisotropy_gain"), number(resource,"dune_axis_radians"),
+                number(resource,"dominant_wavelength_m"));
+        long site = MountainReliefMath.siteHash(0,0);
+        double centerX = 1024.0 + MountainReliefMath.centerOffsetX(site);
+        double centerZ = 1024.0 + MountainReliefMath.centerOffsetZ(site);
+        int visibleSamples=0;
+        double maximumBlockEquivalent=0.0;
+        for(int dx=-192;dx<=192;dx+=16){
+            for(int dz=-192;dz<=192;dz+=16){
+                double delta=Math.abs(fitted.compute(
+                        1.0,0.5,0.0,centerX+dx,centerZ+dz)-1.0)*128.0;
+                maximumBlockEquivalent=Math.max(maximumBlockEquivalent,delta);
+                if(delta>=1.0)visibleSamples++;
+            }
+        }
+        assertTrue(visibleSamples>=4,
+                "Fitted volcanic geometry has no visible land relief: samples="
+                        +visibleSamples+", maxBlockEquivalent="+maximumBlockEquivalent);
     }
 
     @Test

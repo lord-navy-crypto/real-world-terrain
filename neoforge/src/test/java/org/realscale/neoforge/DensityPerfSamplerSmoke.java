@@ -46,6 +46,12 @@ public final class DensityPerfSamplerSmoke {
         check(cache.contains("resolved_hits=1 resolved_misses=1")&&
                 cache.contains("base_hits=1 base_misses=1"),
                 "Wrong independent ecotone cache counters: "+cache);
-        System.out.println("TVA_DENSITY_SAMPLER_ENABLED_PASS "+snap);
+        DensityPerfSampler.horizontalMemoProbe(true);
+        DensityPerfSampler.horizontalMemoProbe(false);
+        String memo=DensityPerfSampler.horizontalMemoSnapshot();
+        check(memo.contains("hits=1 misses=1")
+                        &&memo.contains("hit_rate_percent=50.00"),
+                "Wrong horizontal memo hit-rate counters: "+memo);
+        System.out.println("TVA_DENSITY_SAMPLER_ENABLED_PASS "+snap+" "+memo);
     }
 }

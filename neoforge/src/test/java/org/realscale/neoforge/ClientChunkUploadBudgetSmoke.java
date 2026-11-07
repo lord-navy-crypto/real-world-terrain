@@ -28,6 +28,28 @@ public final class ClientChunkUploadBudgetSmoke {
         yes(budget.deferredCalls()==2L,"Deferred calls counted, not dropped");
         budget.endFrame();
         yes(!budget.canTakeTask(),"Post closes frame");
+        // Actual mode-aware upload throughput: no Section reordering.
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE,0);
+        yes(budget.active() && budget.frameMaxTasks()==8
+                && budget.frameMaxNanos()==2_000_000L,
+                "Surface retains original upload quota");
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.SEALED_CAVE,0);
+        yes(budget.active() && budget.frameMaxTasks()==16
+                && budget.frameMaxNanos()==4_000_000L,
+                "Cave can upload twice as many queued meshes per frame");
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE,128);
+        yes(budget.frameMaxTasks()==16 && budget.backlogRescueFrames()==1,
+                "Large backlog triggers bounded catch-up");
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.TRANSITION,200);
+        yes(!budget.active() && budget.transitionBypasses()==1,
+                "Entrance/unknown bypasses throttle entirely");
+        budget.beginModeAwareFrame(false,
+                ClientChunkUploadBudget.VisibilityMode.SEALED_CAVE,200);
+        yes(!budget.active(),"Menus must always bypass mode-aware throttling");
         yes(budget.totalTasks()==9,"All completed Runnable counts retained");
         boolean rejected=false;
         try{new ClientChunkUploadBudget(0,1);}catch(IllegalArgumentException x){

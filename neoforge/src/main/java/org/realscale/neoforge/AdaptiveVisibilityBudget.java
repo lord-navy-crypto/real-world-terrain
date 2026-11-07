@@ -53,6 +53,16 @@ public final class AdaptiveVisibilityBudget {
     }
 
     /**
+     * Distant Horizons only: hide sky-dark cave LOD geometry while the player
+     * is confidently on open surface. Every uncertain/underground state is
+     * fail-open so cave entrances are not hidden. Vanilla section rendering
+     * is never affected by this policy.
+     */
+    public static boolean shouldCullDistantHorizonCaves(Mode mode) {
+        return mode == Mode.OPEN_SURFACE;
+    }
+
+    /**
      * Larger scores are more urgent. All tasks remain eligible; no result
      * implies that a section is invisible or may be omitted from rendering.
      * This is advisory only until an explicitly supported renderer interface
@@ -96,6 +106,44 @@ public final class AdaptiveVisibilityBudget {
         if (mode == Mode.TRANSITION || squaredBlockDisplacement > 16.0)
             return 10;
         return 40; // at 20 TPS, 2s when stable and stationary
+    }
+
+    /**
+     * Distant Horizons mode: sample quickly while the camera is uncertain or
+     * moving, then halve the expensive probe frequency once the classification
+     * is stable. This controls only the classifier cadence, never render work.
+     *
+     * A 10-tick transition cadence keeps cave entrances responsive; stable
+     * surface/cave states use 20 ticks (1s at 20 TPS). Invalid displacement
+     * values fail fast rather than retaining a stale visibility decision.
+     */
+    public static int distantHorizonSamplingIntervalTicks(
+            Mode mode,double squaredBlockDisplacement) {
+        if(mode==null || mode==Mode.TRANSITION
+                || !Double.isFinite(squaredBlockDisplacement)
+                || squaredBlockDisplacement<0.0
+                || squaredBlockDisplacement>16.0)
+            return 10;
+        return 20;
+    }
+
+    /**
+     * A sampled exposure mode is safe to consume from a render frame only
+     * while it belongs to the same loaded world and the camera has not
+     * moved beyond the classifier's 24-block teleport invalidation radius.
+     *
+     * Pure scalar predicate: no sky, chunk, visibility or raycast queries.
+     * Unknown worlds, submerged viewpoints and non-finite coordinates
+     * must fail open to Minecraft's original upload scheduling.
+     */
+    public static boolean freshForUpload(boolean sameWorld,boolean sampled,
+            boolean supportedDimension,boolean submerged,
+            double dx,double dy,double dz) {
+        if(!sameWorld || !sampled || !supportedDimension || submerged
+                || !Double.isFinite(dx) || !Double.isFinite(dy)
+                || !Double.isFinite(dz))
+            return false;
+        return Math.abs(dy)<=24.0 && dx*dx+dz*dz<=24.0*24.0;
     }
 
     /** Three consecutive confident observations; usually sampled once/sec. */

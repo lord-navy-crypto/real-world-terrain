@@ -24,6 +24,13 @@ public record RealDemDensity(DensityFunction base,int blendMeters) implements De
         ThreadLocal.withInitial(() -> new RealDemColumnCache(DEM));
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
+        if(!DensityPerfSampler.ENABLED)return computeUnprofiled(ctx);
+        long started=DensityPerfSampler.begin(DensityPerfSampler.Stage.REAL_DEM_LEGACY);
+        try{return computeUnprofiled(ctx);}
+        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.REAL_DEM_LEGACY,started);}
+    }
+
+    private double computeUnprofiled(DensityFunction.FunctionContext ctx) {
         final int x=ctx.blockX(), z=ctx.blockZ();
         // Most generated chunks are outside the ~480m pilot: no cache lookup
         // or interpolation is needed. Equality is also zero DEM influence.

@@ -27,11 +27,11 @@ class MountainBasinPlateauTest(unittest.TestCase):
                     "type":"minecraft:interpolated",
                     "argument":f"realscale:{family}/height_signal"})
                 shape=read(root/"height_signal.json")
+                # Every supported smoothing profile now has exactly one outer
+                # X/Z memo. Unwrap it before checking the unchanged relief.
+                self.assertEqual(shape["type"],"realscale:measured_horizontal_memo")
+                shape=shape["input"]
                 if preset=="tva_natural_smoothed":
-                    # Native 2D cache is only an outer wrapper; every basin
-                    # and plateau parameter remains exactly as before.
-                    self.assertEqual(shape["type"],"realscale:measured_horizontal_memo")
-                    shape=shape["input"]
                     self.assertEqual(shape["type"],"minecraft:cache_2d")
                     shape=shape["argument"]
                 self.assertEqual(shape["type"],"realscale:mountain_relief")
@@ -74,9 +74,9 @@ class MountainBasinPlateauTest(unittest.TestCase):
             self.assertEqual(latitude["base"]["type"],"minecraft:add")
             self.assertEqual(latitude["base"]["argument2"]["type"],"minecraft:mul")
             landform=read(DATA/"density_function"/preset/"height_signal.json")
+            self.assertEqual(landform["type"],"realscale:measured_horizontal_memo")
+            landform=landform["input"]
             if preset=="tva_natural_smoothed":
-                self.assertEqual(landform["type"],"realscale:measured_horizontal_memo")
-                landform=landform["input"]
                 self.assertEqual(landform["type"],"minecraft:cache_2d")
                 landform=landform["argument"]
             self.assertEqual(adjusted["selector"],landform["selector"])
@@ -86,6 +86,11 @@ class MountainBasinPlateauTest(unittest.TestCase):
 
     def test_measured_usgs_preserved_and_old_worlds_unchanged(self):
         usgs=read(DATA/"density_function/usgs_big_sur_v2/terrain_density.json")
+        # The measured DEM is evaluated on the same interpolated density grid
+        # as the procedural base. Inspect the wrapped density node rather than
+        # assuming the DEM codec is the JSON root.
+        self.assertEqual(usgs["type"],"minecraft:interpolated")
+        usgs=usgs["argument"]
         self.assertEqual(usgs["type"],"realscale:dem_density_seamless")
         self.assertEqual(usgs["blend_meters"],2048)
         usgs_noise=read(DATA/"noise_settings/usgs_big_sur_v2.json")

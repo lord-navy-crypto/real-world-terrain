@@ -82,6 +82,8 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_sacred_horizontal_memo.py' -v
       - name: Verify Sacred surface cache2d is scoped to invariant horizontal mountain signals
         run: python3 -m unittest discover -s qa -p 'test_natural_height_cache2d.py' -v
+      - name: Verify fitted terrain hot-path exclusions and immutable scale coefficients
+        run: python3 -m unittest discover -s qa -p 'test_fitted_terrain_perf_guards.py' -v
       - name: Verify bit-exact Measured final-density reuse without cave loss
         run: python3 -m unittest discover -s qa -p 'test_range_min_density_exact.py' -v
       - name: Ensure Lithostitched is optional and baseline vanilla structures remain available
@@ -108,6 +110,8 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/AdaptiveVisibilityTelemetrySmoke.java
           java -cp build/visibility-budget-smoke org.realscale.neoforge.AdaptiveVisibilityBudgetSmoke
           java -cp build/visibility-budget-smoke org.realscale.neoforge.AdaptiveVisibilityTelemetrySmoke
+      - name: Verify optional fail-open Distant Horizons cave LOD controller
+        run: python3 -m unittest discover -s qa -p 'test_dh_cave_lod_controller.py' -v
       - name: Verify opt-in FPS/frame-time sampling without GPU
         run: |
           mkdir -p build/fps-interval-smoke
@@ -117,6 +121,8 @@ jobs:
           java -cp build/fps-interval-smoke org.realscale.neoforge.ClientFrameIntervalStatsSmoke
       - name: Verify reproducible client FPS log comparisons
         run: python3 -m unittest discover -s qa -p 'test_compare_client_fps.py' -v
+      - name: Guard matched real fitted Anvil sampling and bounded APES startup
+        run: python3 -m unittest discover -s qa -p 'test_realworldgen_ci_fair_sampling.py' -v
       - name: Verify read-only tall-world Section inventory (not GPU visibility)
         run: python3 -m unittest discover -s qa -p 'test_vertical_section_budget.py' -v
       - name: Verify unified TVA source, cave and client opt-in release invariants
@@ -270,9 +276,15 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/GrandNetherCaveNetwork.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkReference.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkSmoke.java \
-            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkParitySmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkParitySmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveLocalitySmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveNetworkPrePhase25.java \
+            neoforge/src/test/java/org/realscale/neoforge/GrandNetherCaveCacheBenchmark.java
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkSmoke
           java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveNetworkParitySmoke
+          java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveLocalitySmoke
+          java -cp build/grand-cave-smoke org.realscale.neoforge.GrandNetherCaveCacheBenchmark
+          python3 -m unittest discover -s qa -p 'test_grand_nether_locality_guards.py' -v
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
@@ -298,8 +310,16 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
             neoforge/src/main/java/org/realscale/neoforge/RealDemDataSource.java \
             neoforge/src/main/java/org/realscale/neoforge/RealDemSeamlessMath.java \
-            neoforge/src/test/java/org/realscale/neoforge/RealDemSeamlessMathSmoke.java
+            neoforge/src/test/java/org/realscale/neoforge/RealDemSeamlessMathSmoke.java \
+            neoforge/src/test/java/org/realscale/neoforge/RealDemSeamlessMathBenchmark.java \
+            neoforge/src/test/java/org/realscale/neoforge/RealDemFadeWeightBenchmark.java \
+            neoforge/src/test/java/org/realscale/neoforge/RealDemCornerBenchmark.java \
+            neoforge/src/test/java/org/realscale/neoforge/RealDemColumnSampleBenchmark.java
           java -cp build/usgs-v2-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemSeamlessMathSmoke
+          java -cp build/usgs-v2-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemSeamlessMathBenchmark
+          java -cp build/usgs-v2-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemFadeWeightBenchmark
+          java -cp build/usgs-v2-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemCornerBenchmark
+          java -cp build/usgs-v2-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemColumnSampleBenchmark
       - name: TVA multi-branch integration contract
         run: python3 scripts/check_tva_sacred_timeline.py
       - name: Verify Java/Python sky-island hash and five-island coordinate parity
@@ -344,6 +364,15 @@ jobs:
           python3 -m unittest discover -s qa -p test_custom_geomorphology.py -v
       - name: Verify the four TVA menu presets use isolated seed-proven smoothed density graphs
         run: python3 -m unittest discover -s qa -p 'test_tva_smoothed_families.py' -v
+      - name: Benchmark exact fitted horizontal morphology cache against uncached reference
+        run: |
+          mkdir -p build/fitted-horizontal-cache-benchmark
+          javac -d build/fitted-horizontal-cache-benchmark \
+            neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/TerrainArchetypeMath.java \
+            neoforge/src/test/java/org/realscale/neoforge/TerrainArchetypeHorizontalCacheBenchmark.java
+          java -cp build/fitted-horizontal-cache-benchmark org.realscale.neoforge.TerrainArchetypeHorizontalCacheBenchmark
       - name: Ensure 2096-height Anvil heightmaps never decode using Canyon's shorter generator height
         run: python3 -m unittest discover -s qa -p 'test_tva_heightmap_decoding.py' -v
       - name: Build and verify six optional structure density packs
