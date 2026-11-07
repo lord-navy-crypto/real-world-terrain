@@ -30,6 +30,15 @@ class FittedTerrainPerfGuards(unittest.TestCase):
         self.assertIn('case "glacial" ->',src)
         self.assertIn('case "dune" ->',src)
 
+    def test_giant_cave_mask_cache_reuses_the_last_horizontal_column(self):
+        src=(JAVA/"GrandOverworldCaveNetwork.java").read_text(encoding="utf-8")
+        self.assertIn("boolean lastColumnValid;",src)
+        self.assertIn("long lastColumnMask;",src)
+        self.assertIn("lastColumnValid=false;",src)
+        self.assertIn("if(c.lastColumnValid && c.lastColumnX==x && c.lastColumnZ==z)",src)
+        self.assertIn("c.lastColumnMask=c.columnComponents[first];",src)
+        self.assertIn("c.lastColumnMask=c.columnComponents[second];",src)
+
     def test_karst_and_volcano_cache_horizontal_shape_before_repeated_y_samples(self):
         src=(JAVA/"TerrainArchetypeMath.java").read_text(encoding="utf-8")
         self.assertIn("private static final int KARST_CACHE_SLOTS = 1024;",src)
