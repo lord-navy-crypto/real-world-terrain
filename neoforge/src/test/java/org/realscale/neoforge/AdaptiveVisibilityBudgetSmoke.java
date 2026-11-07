@@ -99,6 +99,13 @@ public final class AdaptiveVisibilityBudgetSmoke {
         yes(tracker.observe(visibleHorizon)==T,
                 "Seeing exterior instantly cancels cave scheduling advice");
 
+        yes(AdaptiveVisibilityBudget.shouldCullDistantHorizonCaves(S),
+                "Only a confirmed open surface may cull distant cave LOD geometry");
+        yes(!AdaptiveVisibilityBudget.shouldCullDistantHorizonCaves(C),
+                "A confirmed cave must reveal distant cave LOD geometry");
+        yes(!AdaptiveVisibilityBudget.shouldCullDistantHorizonCaves(T),
+                "Unknown/transition views must fail open and reveal cave LOD geometry");
+
         // Less sampling overhead when stationary; moving/transition means
         // fast rechecks, but sampling rate does not itself change rendering.
         yes(AdaptiveVisibilityBudget.samplingIntervalTicks(T,0)==10,
