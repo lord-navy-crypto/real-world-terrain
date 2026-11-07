@@ -25,6 +25,13 @@ final class TerrainArchetypeMath {
     private final double dominantWavelengthM;
     private final double axisCos;
     private final double axisSin;
+    // Fixed at codec/preset creation: these measured-wavelength scales do not
+    // vary by X/Z or Y. Compute them once with the original floating-point
+    // expression; no resampling, approximation or rounding is introduced.
+    private final double glacialWidth;
+    private final double volcanicRadius;
+    private final double karstTowerRadius;
+    private final double karstSinkRadius;
 
     // Volcanic geometry depends only on horizontal block coordinates. Worldgen
     // samples many Y values for the same X/Z, so cache the expensive radial
@@ -58,6 +65,10 @@ final class TerrainArchetypeMath {
         this.dominantWavelengthM = dominantWavelengthM;
         this.axisCos = Math.cos(duneAxisRadians);
         this.axisSin = Math.sin(duneAxisRadians);
+        this.glacialWidth = fittedScale(0.035, 180.0, 1600.0);
+        this.volcanicRadius = fittedScale(0.025, 250.0, 800.0);
+        this.karstTowerRadius = fittedScale(0.025, 80.0, 450.0);
+        this.karstSinkRadius = fittedScale(0.012, 40.0, 200.0);
     }
 
     double compute(double original, double continent, double rawSignal,
@@ -130,7 +141,7 @@ final class TerrainArchetypeMath {
 
     private double glacialValley(double original, double gate, double x, double z) {
         int cellX = Math.floorDiv((int)x, CELL);
-        double width = fittedScale(0.035, 180.0, 1600.0);
+        double width = glacialWidth;
         double centerX = cellX * (double) CELL + CELL * 0.5
                 + width * 0.22 * Math.sin(TAU * z / dominantWavelengthM + cellX * 1.17);
         double across = Math.abs(x - centerX);
@@ -164,7 +175,7 @@ final class TerrainArchetypeMath {
                 + MountainReliefMath.centerOffsetX(site);
         double centerZ = cellZ * (double) CELL + CELL * 0.5
                 + MountainReliefMath.centerOffsetZ(site);
-        double radius = fittedScale(0.025, 250.0, 800.0);
+        double radius = volcanicRadius;
         double radial = distance(x, z, centerX, centerZ) / radius;
         double shape;
         if (radial >= 1.0) {
@@ -190,12 +201,12 @@ final class TerrainArchetypeMath {
         double centerZ = cellZ * (double) CELL + CELL * 0.5
                 + MountainReliefMath.centerOffsetZ(hash);
         double radial = distance(x, z, centerX, centerZ);
-        double towerRadius = fittedScale(0.025, 80.0, 450.0);
+        double towerRadius = karstTowerRadius;
         double tower = 1.0 - smoothstep(towerRadius * 0.55, towerRadius, radial);
         long sinkHash = MountainReliefMath.mix(hash ^ 0x6a09e667f3bcc909L);
         double sinkX = centerX + MountainReliefMath.centerOffsetX(sinkHash) * 1.8;
         double sinkZ = centerZ + MountainReliefMath.centerOffsetZ(sinkHash) * 1.8;
-        double sinkRadius = fittedScale(0.012, 40.0, 200.0);
+        double sinkRadius = karstSinkRadius;
         double sink = 1.0 - smoothstep(sinkRadius * 0.45, sinkRadius,
                 distance(x, z, sinkX, sinkZ));
         double noiseTower = Math.max(0.0, signal) * 0.08 * ridgeGain();

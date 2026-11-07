@@ -23,6 +23,37 @@ final class TerrainArchetypeDensityTest {
     };
 
     @Test
+    void immutableFittedScalesRemainRawBitIdenticalToOriginalCalculations() throws Exception {
+        record Scale(String field, double fraction, double minimum, double maximum) {}
+        Scale[] scales = {
+                new Scale("glacialWidth", 0.035, 180.0, 1600.0),
+                new Scale("volcanicRadius", 0.025, 250.0, 800.0),
+                new Scale("karstTowerRadius", 0.025, 80.0, 450.0),
+                new Scale("karstSinkRadius", 0.012, 40.0, 200.0)
+        };
+        double[] wavelengthCases = {
+                1.0, 100.0, 1000.0, 4000.0, 7000.0, 15000.0,
+                30000.0, 60000.0, 200000.0, 1000000.0
+        };
+        for (double wavelength : wavelengthCases) {
+            TerrainArchetypeMath fitted = new TerrainArchetypeMath(
+                    "karst", 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+                    0.5, 1.0, 0.37, wavelength);
+            for (Scale scale : scales) {
+                var field = TerrainArchetypeMath.class.getDeclaredField(scale.field());
+                field.setAccessible(true);
+                double original = Math.max(scale.minimum(),
+                        Math.min(scale.maximum(), wavelength * scale.fraction()));
+                double cached = field.getDouble(fitted);
+                assertEquals(Double.doubleToRawLongBits(original),
+                        Double.doubleToRawLongBits(cached),
+                        "Fitted coefficient changed floating-point bits: "
+                                + scale.field() + " wavelength=" + wavelength);
+            }
+        }
+    }
+
+    @Test
     void compiledFittedCoefficientsChangeRuntimeDensity() throws Exception {
         for (String family : FAMILIES) {
             String resourcePath = "/data/realscale/worldgen/density_function/tva_"
