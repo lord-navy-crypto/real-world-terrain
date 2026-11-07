@@ -22,9 +22,10 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * after teleports/unloaded samples, 5 local sky probes and at most 4 bounded
  * 24-block sightline checks to prevent many tunnel-mouth misclassifications.
  *
- * No shader integration, Sodium mixins, chunk tickets, render distance changes
- * or worldgen edits. Enabled only with:
+ * The optional DH adapter only toggles Distant Horizons' own cave LOD culling;
+ * it does not suppress vanilla section meshes or alter worldgen. Enabled with:
  * -Drealscale.client.visibility.profile=true
+ * or -Drealscale.experimental.client.underground_lod_culling=true
  */
 @EventBusSubscriber(modid="realscale", value=Dist.CLIENT)
 public final class RealScaleAdaptiveVisibilityClient {
@@ -71,7 +72,7 @@ public final class RealScaleAdaptiveVisibilityClient {
             sinceLog = 0;
         }
         if (level == null || player == null) {
-            if(level==null)DistantHorizonsCaveLodController.restore();
+            DistantHorizonsCaveLodController.restore();
             return;
         }
 
