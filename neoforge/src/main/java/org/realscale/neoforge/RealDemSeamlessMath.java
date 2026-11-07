@@ -31,6 +31,85 @@ final class RealDemSeamlessMath {
     // existing ones. Keep a bounded 4096-slot working set (up from 256)
     // plus a zero-hash last-column fast path. Cache miss always evaluates
     // the EXACT original bicubic function, preserving DEM heights bitwise.
+    /**
+     * One lookup supplies both horizontal DEM inputs to the production
+     * density wrapper. This avoids two independent ThreadLocal lookups for
+     * every Y sample in the exterior transition ring.
+     */
+    static final class ColumnSample {
+        double weight;
+        double height;
+    }
+    private static final int COLUMN_SAMPLE_CACHE_SIZE = 4096;
+    private static final class ColumnSampleCache {
+        final int[] xs=new int[COLUMN_SAMPLE_CACHE_SIZE];
+        final int[] zs=new int[COLUMN_SAMPLE_CACHE_SIZE];
+        final int[] fadeWidths=new int[COLUMN_SAMPLE_CACHE_SIZE];
+        final double[] weights=new double[COLUMN_SAMPLE_CACHE_SIZE];
+        final double[] heights=new double[COLUMN_SAMPLE_CACHE_SIZE];
+        final boolean[] valid=new boolean[COLUMN_SAMPLE_CACHE_SIZE];
+        boolean lastValid;
+        int lastX,lastZ,lastFadeWidth;
+        double lastWeight,lastHeight;
+        final ColumnSample sample=new ColumnSample();
+    }
+    private static final ThreadLocal<ColumnSampleCache> COLUMN_SAMPLE_CACHE =
+            ThreadLocal.withInitial(ColumnSampleCache::new);
+
+    private static double exactWeightOutside(int x,int z,int fadeMeters) {
+        if(fadeMeters<=0)return weightOutside(x,z,fadeMeters);
+        final int minX=DEM.originX(),maxX=DEM.maxX();
+        final int minZ=DEM.originZ(),maxZ=DEM.maxZ();
+        if(x>=minX && x<=maxX && z>=minZ && z<=maxZ)return 1.0;
+        if((long)x<=(long)minX-fadeMeters
+                ||(long)x>=(long)maxX+fadeMeters
+                ||(long)z<=(long)minZ-fadeMeters
+                ||(long)z>=(long)maxZ+fadeMeters)return 0.0;
+        final long dx=x<minX?(long)minX-x:x>maxX?(long)x-maxX:0L;
+        final long dz=z<minZ?(long)minZ-z:z>maxZ?(long)z-maxZ:0L;
+        if(dx*dx+dz*dz>=(long)fadeMeters*fadeMeters)return 0.0;
+        return weightOutside(x,z,fadeMeters);
+    }
+
+    static ColumnSample cachedColumnSample(int x,int z,int fadeMeters) {
+        ColumnSampleCache cache=COLUMN_SAMPLE_CACHE.get();
+        if(cache.lastValid && cache.lastX==x && cache.lastZ==z
+                && cache.lastFadeWidth==fadeMeters) {
+            cache.sample.weight=cache.lastWeight;
+            cache.sample.height=cache.lastHeight;
+            return cache.sample;
+        }
+        int hash=x*0x9e3779b9 ^ Integer.rotateLeft(z*0x85ebca6b,13)
+                ^ fadeMeters*0xc2b2ae35;
+        int slot=(hash^(hash>>>16))&(COLUMN_SAMPLE_CACHE_SIZE-1);
+        final double weight,height;
+        if(cache.valid[slot] && cache.xs[slot]==x && cache.zs[slot]==z
+                && cache.fadeWidths[slot]==fadeMeters) {
+            weight=cache.weights[slot];
+            height=cache.heights[slot];
+        } else {
+            weight=exactWeightOutside(x,z,fadeMeters);
+            // Preserve the original NaN path for invalid non-codec callers;
+            // normal registered profiles always use a positive fade width.
+            height=weight<=0.0?0.0:extendedHeight(x,z);
+            cache.xs[slot]=x;
+            cache.zs[slot]=z;
+            cache.fadeWidths[slot]=fadeMeters;
+            cache.weights[slot]=weight;
+            cache.heights[slot]=height;
+            cache.valid[slot]=true;
+        }
+        cache.lastX=x;
+        cache.lastZ=z;
+        cache.lastFadeWidth=fadeMeters;
+        cache.lastWeight=weight;
+        cache.lastHeight=height;
+        cache.lastValid=true;
+        cache.sample.weight=weight;
+        cache.sample.height=height;
+        return cache.sample;
+    }
+
     private static final int CACHE_SIZE = 4096;
     private static final class HeightCache {
         final int[] xs = new int[CACHE_SIZE];

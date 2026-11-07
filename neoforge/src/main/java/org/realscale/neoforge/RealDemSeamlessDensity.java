@@ -29,9 +29,11 @@ public record RealDemSeamlessDensity(DensityFunction base, int blendMeters)
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
         int x=ctx.blockX(),z=ctx.blockZ();
-        double w=RealDemSeamlessMath.cachedWeightOutside(x,z,blendMeters);
+        RealDemSeamlessMath.ColumnSample sample=
+                RealDemSeamlessMath.cachedColumnSample(x,z,blendMeters);
+        double w=sample.weight;
         if (w<=0.0) return base.compute(ctx);
-        double solid=(RealDemSeamlessMath.cachedExtendedHeight(x,z)-ctx.blockY())/128.0;
+        double solid=(sample.height-ctx.blockY())/128.0;
         if (w>=1.0) return solid;
         return solid*w + base.compute(ctx)*(1.0-w);
     }

@@ -72,6 +72,56 @@ public final class RealDemSeamlessDensityTest {
                    "An artificial exterior terrace kink remains");
     }
 
+    @Test void combinedColumnSampleMatchesIndependentCachesAcrossTheFullFadeDomain() {
+        for(int fade:new int[]{256,768,2048,4096}) {
+            for(int x=-4608;x<=4608;x+=83) {
+                for(int z=-4608;z<=4608;z+=97) {
+                    RealDemSeamlessMath.ColumnSample sample=
+                            RealDemSeamlessMath.cachedColumnSample(x,z,fade);
+                    double expectedWeight=RealDemSeamlessMath.cachedWeightOutside(x,z,fade);
+                    assertEquals(Double.doubleToRawLongBits(expectedWeight),
+                            Double.doubleToRawLongBits(sample.weight),
+                            "Combined DEM sample changed fade weight at "+x+","+z);
+                    if(expectedWeight>0.0) {
+                        double expectedHeight=RealDemSeamlessMath.cachedExtendedHeight(x,z);
+                        assertEquals(Double.doubleToRawLongBits(expectedHeight),
+                                Double.doubleToRawLongBits(sample.height),
+                                "Combined DEM sample changed extended height at "+x+","+z);
+                    }
+                    // Repeated vertical samples must return the same per-column
+                    // pair, including when the next column evicts the direct map.
+                    RealDemSeamlessMath.ColumnSample repeated=
+                            RealDemSeamlessMath.cachedColumnSample(x,z,fade);
+                    assertEquals(Double.doubleToRawLongBits(expectedWeight),
+                            Double.doubleToRawLongBits(repeated.weight));
+                    if(expectedWeight>0.0)
+                        assertEquals(Double.doubleToRawLongBits(
+                                RealDemSeamlessMath.cachedExtendedHeight(x,z)),
+                                Double.doubleToRawLongBits(repeated.height));
+                }
+            }
+        }
+    }
+
+    @Test void combinedColumnSampleCacheIsThreadConfinedAndBitExact() {
+        java.util.stream.IntStream.range(0,8).parallel().forEach(worker -> {
+            for(int i=0;i<3000;i++) {
+                int x=((worker*131+i*53)%8400)-4200;
+                int z=((worker*197+i*71)%8400)-4200;
+                int fade=(i&1)==0?768:2048;
+                RealDemSeamlessMath.ColumnSample sample=
+                        RealDemSeamlessMath.cachedColumnSample(x,z,fade);
+                double weight=RealDemSeamlessMath.weightOutside(x,z,fade);
+                assertEquals(Double.doubleToRawLongBits(weight),
+                        Double.doubleToRawLongBits(sample.weight));
+                if(weight>0.0)
+                    assertEquals(Double.doubleToRawLongBits(
+                            RealDemSeamlessMath.extendedHeight(x,z)),
+                            Double.doubleToRawLongBits(sample.height));
+            }
+        });
+    }
+
     @Test void cachedHeightIsIdenticalForEverySampleAndRepeatedVerticalUse() {
         for(int x=-2464;x<=2464;x+=37)
             for(int z=-2464;z<=2464;z+=43) {
