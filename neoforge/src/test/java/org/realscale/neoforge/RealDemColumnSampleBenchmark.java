@@ -13,8 +13,10 @@ public final class RealDemColumnSampleBenchmark {
     static {
         int i=0;
         for(int c=0;c<COLUMNS;c++) {
-            int x=(c%32)*128-1984;
-            int z=(c/32)*128-1984;
+            // A 512x512 window in the actual 2048m DEM transition ring:
+            // every column has a non-zero fade weight, matching the hot path.
+            int x=800+(c%32)*16;
+            int z=800+(c/32)*16;
             for(int y=0;y<VERTICAL;y++) {
                 XS[i]=x;ZS[i]=z;YS[i]=-64+y*32;i++;
             }
@@ -41,6 +43,8 @@ public final class RealDemColumnSampleBenchmark {
 
     private static void verify() {
         for(int i=0;i<SAMPLES;i++) {
+            if(RealDemSeamlessMath.cachedWeightOutside(XS[i],ZS[i],FADE)<=0.0)
+                throw new AssertionError("Benchmark sample escaped the DEM transition ring");
             long a=Double.doubleToRawLongBits(separate(XS[i],ZS[i],YS[i]));
             long b=Double.doubleToRawLongBits(combined(XS[i],ZS[i],YS[i]));
             if(a!=b)throw new AssertionError("DEM column sample raw-bit mismatch at "+i);
