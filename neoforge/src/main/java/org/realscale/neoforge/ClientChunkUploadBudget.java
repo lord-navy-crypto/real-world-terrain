@@ -17,6 +17,13 @@ public final class ClientChunkUploadBudget {
     private long spentNanos;
     private long throttledCalls;
     private long totalTasks;
+    private long frameMaxNanos;
+    private int frameMaxTasks;
+    private long transitionBypasses;
+    private long backlogRescueFrames;
+
+    /** Explicit local categories; this pure-Java scheduler has no client dependencies. */
+    public enum VisibilityMode { TRANSITION, OPEN_SURFACE, SEALED_CAVE }
 
     public ClientChunkUploadBudget(long maxNanos,int maxTasks) {
         if(maxNanos<100_000L || maxNanos>20_000_000L ||
@@ -24,12 +31,48 @@ public final class ClientChunkUploadBudget {
             throw new IllegalArgumentException("Invalid client upload budget");
         this.maxNanos=maxNanos;
         this.maxTasks=maxTasks;
+        frameMaxNanos=maxNanos;
+        frameMaxTasks=maxTasks;
     }
 
     public void beginFrame(boolean gameplay) {
         inFrame=gameplay;
         tasks=0;
         spentNanos=0L;
+        frameMaxNanos=maxNanos;
+        frameMaxTasks=maxTasks;
+    }
+
+    /**
+     * Opt-in mode-aware scheduling for the EXISTING vanilla FIFO upload queue.
+     * TRANSITION/unknown bypasses this Mixin completely: Minecraft drains its
+     * own queue immediately so cave mouths and teleports are not throttled.
+     *
+     * The queue does not expose a stable RenderSection identity per Runnable,
+     * so this deliberately changes only per-frame throughput, never order,
+     * visibility, individual Section priority, or mesh contents.
+     */
+    public void beginModeAwareFrame(boolean gameplay,VisibilityMode mode,
+            int pendingUploads) {
+        if(!gameplay) {
+            beginFrame(false);
+            return;
+        }
+        if(mode==null || mode==VisibilityMode.TRANSITION) {
+            beginFrame(false);
+            transitionBypasses++;
+            return;
+        }
+        beginFrame(true);
+        int multiplier=mode==VisibilityMode.SEALED_CAVE?2:1;
+        // A large old backlog must make forward progress; bounded catch-up
+        // avoids permanent delayed terrain without changing FIFO order.
+        if(pendingUploads>=64) {
+            multiplier=Math.max(2,multiplier);
+            backlogRescueFrames++;
+        }
+        frameMaxTasks=Math.min(64,maxTasks*multiplier);
+        frameMaxNanos=Math.min(10_000_000L,maxNanos*multiplier);
     }
 
     /** End BEFORE menus/disconnects or future vanilla invocations. */
@@ -38,7 +81,7 @@ public final class ClientChunkUploadBudget {
 
     /** Remaining slots are shared across repeated vanilla calls in one frame. */
     public boolean canTakeTask() {
-        return inFrame && tasks<maxTasks && spentNanos<maxNanos;
+        return inFrame && tasks<frameMaxTasks && spentNanos<frameMaxNanos;
     }
 
     /** Called even if upload Runnable takes longer than the entire allowance. */
@@ -61,6 +104,10 @@ public final class ClientChunkUploadBudget {
     public long totalTasks(){return totalTasks;}
     public long maxNanos(){return maxNanos;}
     public int maxTasks(){return maxTasks;}
+    public long frameMaxNanos(){return frameMaxNanos;}
+    public int frameMaxTasks(){return frameMaxTasks;}
+    public long transitionBypasses(){return transitionBypasses;}
+    public long backlogRescueFrames(){return backlogRescueFrames;}
 
     public static ClientChunkUploadBudget fromProperties() {
         long ms=Long.getLong("realscale.experimental.client.upload_budget_us",2000L);

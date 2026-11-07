@@ -27,6 +27,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * it does not suppress vanilla section meshes or alter worldgen. Enabled with:
  * -Drealscale.client.visibility.profile=true
  * or -Drealscale.experimental.client.underground_lod_culling=true
+ * or BOTH experimental upload budget properties with modeaware=true
  */
 @EventBusSubscriber(modid="realscale", value=Dist.CLIENT)
 public final class RealScaleAdaptiveVisibilityClient {
@@ -36,7 +37,9 @@ public final class RealScaleAdaptiveVisibilityClient {
             Boolean.getBoolean("realscale.client.visibility.profile");
     private static final boolean DH_CAVE_LOD =
             DistantHorizonsCaveLodController.enabled();
-    private static final boolean ACTIVE = PROFILE || DH_CAVE_LOD;
+    private static final boolean UPLOAD_MODE_AWARE =
+            RealScaleChunkUploadClient.MODE_AWARE;
+    private static final boolean ACTIVE = PROFILE || DH_CAVE_LOD || UPLOAD_MODE_AWARE;
     private static final int REPORT_EVERY_SAMPLES = 20;
     private static final int MAX_SIGHTLINE_REACH = 24;
     private static final int[][] SKY_PROBES = {
@@ -114,7 +117,7 @@ public final class RealScaleAdaptiveVisibilityClient {
         // sky/heightmap/LOS probes in stationary scenes without slowing entry:
         // the first changed observation immediately returns to TRANSITION.
         double displacementSq=horizontalSq+dy*dy;
-        int interval=DH_CAVE_LOD
+        int interval=(DH_CAVE_LOD||UPLOAD_MODE_AWARE)
                 ?AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(
                         TRACKER.mode(),displacementSq)
                 :AdaptiveVisibilityBudget.samplingIntervalTicks(
@@ -172,7 +175,7 @@ public final class RealScaleAdaptiveVisibilityClient {
             // A deep open cut can expose sky at the camera while still
             // revealing cave walls below. Never enable DH cave LOD culling
             // unless nearby loaded heightmaps also rule out a ravine/cliff.
-            if(DH_CAVE_LOD&&hasDeepOpenCut(level,eye))
+            if((DH_CAVE_LOD||UPLOAD_MODE_AWARE)&&hasDeepOpenCut(level,eye))
                 return new AdaptiveVisibilityBudget.Observation(
                         true,true,true,false,true,false);
             return new AdaptiveVisibilityBudget.Observation(

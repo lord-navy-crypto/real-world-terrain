@@ -32,3 +32,31 @@ Does not guarantee per-task upload time or total GPU duration: a single Runnable
 GitHub PR CI can compile the NeoForge 1.21.1 client & run pure-Java quota smoke tests and real dedicated-server smoke tests. Those cannot prove rendering correctness because GitHub Linux CI has no reliable playable graphical client. Physical-client A/B is explicitly required.
 
 Reference: NeoForge 1.21.1 RenderFrameEvent.Pre/Post and Minecraft 1.21.1 SectionRenderDispatcher public API/mapping.
+
+
+## Phase 21 — actual mode-aware vanilla upload scheduling (opt-in)
+
+New additional JVM switch (requires the original uploadbudget=true):
+`-Drealscale.experimental.client.uploadbudget.modeaware=true`.
+
+This **connects the already-existing conservative cave/surface classifier to
+the actual vanilla render-thread FIFO queue**. It does not infer Section Y from
+Runnable objects or replace the renderer's original visibility traversal.
+
+Per gameplay render frame:
+- `TRANSITION`, cave entrance, unknown environment or renderer unavailable:
+  **bypass** experimental upload throttling and let Minecraft drain normally.
+- `OPEN_SURFACE`: use the normal configured frame budget (default 8 tasks /
+  2 milliseconds).
+- `SEALED_CAVE`: allow up to twice the configured frame budget (default
+  16 tasks / 4 milliseconds) so near-cave geometry is uploaded more promptly.
+- With >=64 queued upload Runnables, activate a bounded 2x catch-up budget.
+  Per-frame limits never exceed 64 tasks or 10 milliseconds.
+- Menus, world transitions, synchronous drains and disconnects still bypass
+  the override. When the feature is off, every prior default is unchanged.
+
+No tasks are dropped, reordered, hidden or permanently skipped. The policy
+alters **upload throughput**, not Section-level compilation order, occlusion,
+or draw calls. It is not a replacement for Sodium/Embeddium visibility
+traversal. A real client A/B is still needed to check frame pacing against
+terrain appearance latency; server CI cannot prove FPS or no popping.

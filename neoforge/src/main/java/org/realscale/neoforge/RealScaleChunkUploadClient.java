@@ -22,6 +22,11 @@ public final class RealScaleChunkUploadClient {
 
     public static final boolean ENABLED=Boolean.parseBoolean(System.getProperty(
             "realscale.experimental.client.uploadbudget","false"));
+    // Both properties are required. Mode-aware scheduling never activates
+    // the experimental upload Mixin by itself.
+    public static final boolean MODE_AWARE=ENABLED &&
+            Boolean.parseBoolean(System.getProperty(
+                    "realscale.experimental.client.uploadbudget.modeaware","false"));
     private static final boolean PROFILE=ENABLED ||
             Boolean.getBoolean("realscale.client.chunkqueue.profile");
     public static final ClientChunkUploadBudget BUDGET =
@@ -42,7 +47,22 @@ public final class RealScaleChunkUploadClient {
         if(world!=lastWorld){
             reset(world);
         }
-        if(ENABLED)BUDGET.beginFrame(playing);
+        if(ENABLED) {
+            if(MODE_AWARE) {
+                SectionRenderDispatcher dispatcher=playing
+                        ?mc.levelRenderer.getSectionRenderDispatcher():null;
+                AdaptiveVisibilityBudget.Mode state=playing&&dispatcher!=null
+                        ?RealScaleAdaptiveVisibilityClient.currentMode()
+                        :AdaptiveVisibilityBudget.Mode.TRANSITION;
+                ClientChunkUploadBudget.VisibilityMode uploadMode=switch(state) {
+                    case OPEN_SURFACE -> ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE;
+                    case SEALED_CAVE -> ClientChunkUploadBudget.VisibilityMode.SEALED_CAVE;
+                    case TRANSITION -> ClientChunkUploadBudget.VisibilityMode.TRANSITION;
+                };
+                BUDGET.beginModeAwareFrame(playing,uploadMode,
+                        dispatcher==null?0:Math.max(0,dispatcher.getToUpload()));
+            } else BUDGET.beginFrame(playing);
+        }
     }
 
     @SubscribeEvent public static void onPost(RenderFrameEvent.Post event){
@@ -51,8 +71,8 @@ public final class RealScaleChunkUploadClient {
         if(ENABLED){
             if(BUDGET.active()){
                 uploaded+=BUDGET.tasksThisFrame();
-                if(BUDGET.spentNanosThisFrame()>=BUDGET.maxNanos()
-                        ||BUDGET.tasksThisFrame()>=BUDGET.maxTasks())
+                if(BUDGET.spentNanosThisFrame()>=BUDGET.frameMaxNanos()
+                        ||BUDGET.tasksThisFrame()>=BUDGET.frameMaxTasks())
                     budgetFrames++;
             }
             BUDGET.endFrame();
@@ -77,7 +97,12 @@ public final class RealScaleChunkUploadClient {
             double denom=(double)frames;
             long currentDeferred=BUDGET.deferredCalls();
             System.err.println("REALSCALE_CLIENT_CHUNK_QUEUE "+
-                    "mode="+(ENABLED?"upload_budget":"vanilla_probe")+
+                    "mode="+(MODE_AWARE?"mode_aware_upload_budget":
+                            ENABLED?"upload_budget":"vanilla_probe")+
+                    " visibility="+(MODE_AWARE?
+                            RealScaleAdaptiveVisibilityClient.currentMode():"not_sampled")+
+                    " transition_bypass_frames="+BUDGET.transitionBypasses()+
+                    " backlog_rescue_frames="+BUDGET.backlogRescueFrames()+
                     " frames="+frames+
                     " backlog_frames="+framesWithBacklog+
                     " avg_compile_pending="+String.format(java.util.Locale.ROOT,"%.2f",totalQueued/denom)+
@@ -88,7 +113,8 @@ public final class RealScaleChunkUploadClient {
                     " uploaded_by_budget="+uploaded+
                     " budget_frames="+budgetFrames+
                     " deferred_calls="+(currentDeferred-lastReportedDeferred)+
-                    " no_render_distance_or_worldgen_change=true");
+                    " no_render_distance_or_worldgen_change=true"+
+                    " no_section_reordering=true");
             lastReportedDeferred=currentDeferred;
         }
         frames=framesWithBacklog=totalQueued=totalUploading=budgetFrames=uploaded=0;
