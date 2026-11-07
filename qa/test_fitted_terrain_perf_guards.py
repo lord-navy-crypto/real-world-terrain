@@ -118,5 +118,15 @@ class FittedTerrainPerfGuards(unittest.TestCase):
         self.assertIn("Math.pow(radial / 0.12, 2.0)",src)
 
 
+    def test_glacial_reference_benchmarks_retain_exact_fitted_width_expression(self):
+        expected="double width=Math.max(180.0,Math.min(1600.0,9800.0*0.035));"
+        for path in (
+            ROOT/"neoforge/src/test/java/org/realscale/neoforge/TerrainArchetypeSiteCacheTest.java",
+            ROOT/"neoforge/src/test/java/org/realscale/neoforge/TerrainArchetypeHorizontalCacheBenchmark.java",
+        ):
+            with self.subTest(path=path.name):
+                self.assertIn(expected,path.read_text(encoding="utf-8"))
+
+
 if __name__=="__main__":
     unittest.main()
