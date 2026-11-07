@@ -261,6 +261,26 @@ public final class RealScaleAdaptiveVisibilityClient {
         return Exterior.NONE;
     }
 
+    /**
+     * Render-frame-safe snapshot. The client-tick classifier can lag a frame
+     * behind dimension changes or teleports; never reuse its last confident
+     * cave/surface mode for a different world or a moved-away camera.
+     * No heightmap, block-state, chunk or ray queries on the render thread.
+     */
+    public static AdaptiveVisibilityBudget.Mode currentModeFor(
+            ClientLevel world,LocalPlayer player) {
+        if(!ACTIVE || world==null || player==null || lastSamplePos==null)
+            return AdaptiveVisibilityBudget.Mode.TRANSITION;
+        double dx=player.getX()-lastSamplePos.getX();
+        double dy=player.getEyeY()-lastSamplePos.getY();
+        double dz=player.getZ()-lastSamplePos.getZ();
+        if(!AdaptiveVisibilityBudget.freshForUpload(
+                world==lastLevel,true,world.dimension().equals(Level.OVERWORLD),
+                player.isUnderWater(),dx,dy,dz))
+            return AdaptiveVisibilityBudget.Mode.TRANSITION;
+        return TRACKER.mode();
+    }
+
     /** Read-only context for opt-in FPS attribution, never a renderer hook. */
     public static AdaptiveVisibilityBudget.Mode currentMode() {
         return ACTIVE ? TRACKER.mode() :

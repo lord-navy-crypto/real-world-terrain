@@ -69,6 +69,29 @@ final class AdaptiveVisibilityBudgetTest {
                 AdaptiveVisibilityBudget.Mode.SEALED_CAVE,-1.0));
     }
 
+    @Test void staleModeSnapshotFromOtherWorldOrTeleportFailsOpen() {
+        assertTrue(AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,false,0.5,0.1,-1.0));
+        assertTrue(AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,false,24.0,24.0,0.0));
+        assertFalse(AdaptiveVisibilityBudget.freshForUpload(
+                false,true,true,false,0.0,0.0,0.0));
+        assertFalse(AdaptiveVisibilityBudget.freshForUpload(
+                true,false,true,false,0.0,0.0,0.0));
+        assertFalse(AdaptiveVisibilityBudget.freshForUpload(
+                true,true,false,false,0.0,0.0,0.0));
+        assertFalse(AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,true,0.0,0.0,0.0));
+        assertFalse(AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,false,24.01,0.0,0.0));
+        assertFalse(AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,false,0.0,24.01,0.0));
+        assertFalse(AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,false,Double.NaN,0.0,0.0));
+        assertFalse(AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,false,0.0,Double.POSITIVE_INFINITY,0.0));
+    }
+
     @Test void playerVisibleWorkAlwaysRetainsHighestPriority() {
         for(AdaptiveVisibilityBudget.Mode mode:AdaptiveVisibilityBudget.Mode.values())
             assertEquals(100,AdaptiveVisibilityBudget.priority(mode,AdaptiveVisibilityBudget.Task.VISIBLE_OR_PLAYER_CHANGED));

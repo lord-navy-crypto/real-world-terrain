@@ -63,7 +63,7 @@ public final class RealScaleClientFrameProfiler {
             return;
         }
         AdaptiveVisibilityBudget.Mode mode =
-                RealScaleAdaptiveVisibilityClient.currentMode();
+                RealScaleAdaptiveVisibilityClient.currentModeFor(world,client.player);
         if(lastMode!=mode){
             // Mixing surface/cave observations contaminates scene metrics.
             reset(world,now);

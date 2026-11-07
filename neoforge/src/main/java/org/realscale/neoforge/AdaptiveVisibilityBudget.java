@@ -127,6 +127,25 @@ public final class AdaptiveVisibilityBudget {
         return 20;
     }
 
+    /**
+     * A sampled exposure mode is safe to consume from a render frame only
+     * while it belongs to the same loaded world and the camera has not
+     * moved beyond the classifier's 24-block teleport invalidation radius.
+     *
+     * Pure scalar predicate: no sky, chunk, visibility or raycast queries.
+     * Unknown worlds, submerged viewpoints and non-finite coordinates
+     * must fail open to Minecraft's original upload scheduling.
+     */
+    public static boolean freshForUpload(boolean sameWorld,boolean sampled,
+            boolean supportedDimension,boolean submerged,
+            double dx,double dy,double dz) {
+        if(!sameWorld || !sampled || !supportedDimension || submerged
+                || !Double.isFinite(dx) || !Double.isFinite(dy)
+                || !Double.isFinite(dz))
+            return false;
+        return Math.abs(dy)<=24.0 && dx*dx+dz*dz<=24.0*24.0;
+    }
+
     /** Three consecutive confident observations; usually sampled once/sec. */
     public static final int REQUIRED_CONFIDENT_SAMPLES = 3;
 

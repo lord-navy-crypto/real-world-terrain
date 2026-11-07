@@ -53,6 +53,9 @@ public final class RealScaleChunkUploadClient {
         if(world!=lastWorld){
             reset(world);
         }
+        // A menu or disconnect cannot carry an old slow-frame streak into
+        // the next playable scene, even when the level object is unchanged.
+        if(ADAPTIVE && !playing)GOVERNOR.reset();
         if(ENABLED) {
             // Measure only with the explicit third opt-in. A Pre-to-Post
             // interval includes frame pacing and is not GPU-only render time.
@@ -61,7 +64,7 @@ public final class RealScaleChunkUploadClient {
                 SectionRenderDispatcher dispatcher=playing
                         ?mc.levelRenderer.getSectionRenderDispatcher():null;
                 AdaptiveVisibilityBudget.Mode state=playing&&dispatcher!=null
-                        ?RealScaleAdaptiveVisibilityClient.currentMode()
+                        ?RealScaleAdaptiveVisibilityClient.currentModeFor(world,mc.player)
                         :AdaptiveVisibilityBudget.Mode.TRANSITION;
                 ClientChunkUploadBudget.VisibilityMode uploadMode=switch(state) {
                     case OPEN_SURFACE -> ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE;
@@ -114,7 +117,7 @@ public final class RealScaleChunkUploadClient {
                     "mode="+(MODE_AWARE?"mode_aware_upload_budget":
                             ENABLED?"upload_budget":"vanilla_probe")+
                     " visibility="+(MODE_AWARE?
-                            RealScaleAdaptiveVisibilityClient.currentMode():"not_sampled")+
+                            RealScaleAdaptiveVisibilityClient.currentModeFor(mc.level,mc.player):"not_sampled")+
                     " transition_bypass_frames="+BUDGET.transitionBypasses()+
                     " backlog_rescue_frames="+BUDGET.backlogRescueFrames()+
                     " adaptive="+ADAPTIVE+

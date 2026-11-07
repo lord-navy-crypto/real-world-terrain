@@ -12,15 +12,14 @@ class UnifiedTimelineTests(unittest.TestCase):
                   "ClientFrameIntervalStats.java","RealScaleAdaptiveVisibilityClient.java",
                   "RealScaleClientFrameProfiler.java"):
             self.assertTrue((SRC/p).is_file(),p)
-        for p in ("RealScaleAdaptiveVisibilityClient.java","RealScaleClientFrameProfiler.java"):
-            code=(SRC/p).read_text()
-            # Release builds use default-OFF Boolean.getBoolean. The
-            # separately versioned integrated TEST build intentionally uses
-            # Boolean.parseBoolean(System.getProperty(flag,"true")) and
-            # supports an explicit false override for faithful A/B tests.
-            self.assertTrue("Boolean.getBoolean(" in code
-                            or ("Boolean.parseBoolean(System.getProperty(" in code
-                                and '"true"' in code),p)
+        classifier=(SRC/"RealScaleAdaptiveVisibilityClient.java").read_text()
+        self.assertIn('Boolean.getBoolean("realscale.client.visibility.profile")',classifier)
+        profiler=(SRC/"RealScaleClientFrameProfiler.java").read_text()
+        # Both diagnostic profilers must remain default-OFF. Earlier TEST
+        # configurations accepted default-ON and silently did extra frame work.
+        self.assertIn('"realscale.client.fps.profile","false"',profiler)
+        self.assertNotIn('"realscale.client.fps.profile","true"',profiler)
+        for code in (classifier,profiler):
             self.assertIn("Dist.CLIENT",code)
             self.assertNotIn("setRenderDistance",code)
             self.assertNotIn("setSimulationDistance",code)

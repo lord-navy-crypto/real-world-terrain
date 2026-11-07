@@ -134,6 +134,18 @@ public final class AdaptiveVisibilityBudgetSmoke {
         yes(AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(C,Double.NaN)==10,
                 "Invalid movement data must fail to fast probing");
 
+        yes(AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,false,0,0,0),
+                "Fresh world stationary mode should remain usable");
+        yes(!AdaptiveVisibilityBudget.freshForUpload(
+                false,true,true,false,0,0,0),
+                "Different dimension must not reuse the previous mode");
+        yes(!AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,false,25,0,0),
+                "Teleports must fail open even before next client tick");
+        yes(!AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,false,Double.NaN,0,0),
+                "Invalid camera position must fail open");
         tracker.reset();
         yes(tracker.mode()==T && tracker.transitions()==0 && tracker.samples()==0,
             "World switch must reset prior visibility state");

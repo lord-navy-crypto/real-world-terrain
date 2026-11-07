@@ -34,6 +34,16 @@ class RealScaleDhClientTests(unittest.TestCase):
         self.assertIn("framePressure",budget)
         self.assertIn("multiplier=1;",budget)
         self.assertIn("adaptiveReducedFrames++",budget)
+    def test_renderer_never_reuses_stale_world_or_teleport_modes(self):
+        classifier=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleAdaptiveVisibilityClient.java").read_text()
+        uploader=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleChunkUploadClient.java").read_text()
+        policy=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/AdaptiveVisibilityBudget.java").read_text()
+        self.assertIn("currentModeFor(world,mc.player)",uploader)
+        self.assertIn("freshForUpload(",classifier)
+        self.assertIn("world==lastLevel",classifier)
+        self.assertIn("!Double.isFinite(dx)",policy)
+        self.assertIn("if(ADAPTIVE && !playing)GOVERNOR.reset()",uploader)
+        self.assertIn("currentModeFor(world,client.player)",(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleClientFrameProfiler.java").read_text())
     def test_2096_world_height_kept_for_all_lod_work(self):
         raw=(ROOT/"neoforge/src/main/resources/data/realscale/dimension_type/realism_max_overworld.json").read_text()
         world=json.loads(raw)
