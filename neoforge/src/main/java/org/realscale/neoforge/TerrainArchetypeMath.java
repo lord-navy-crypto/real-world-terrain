@@ -205,14 +205,22 @@ final class TerrainArchetypeMath {
         int cellZ = Math.floorDiv(z, CELL);
         SiteGeometry site=siteGeometry(cellX,cellZ);
         double radius = volcanicRadius;
-        double radial = distance(x, z, site.centerX, site.centerZ) / radius;
         double shape;
-        if (radial >= 1.0) {
+        // A point outside the enclosing square cannot lie inside the
+        // circular volcano footprint. This exact zero-support rejection
+        // avoids Math.hypot and expensive pow/exp on most columns.
+        if (Math.abs(x-site.centerX) >= radius
+                || Math.abs(z-site.centerZ) >= radius) {
             shape = 0.0;
         } else {
-            double shield = Math.pow(Math.max(0.0, 1.0 - radial), 1.35);
-            double caldera = 0.16 * Math.exp(-Math.pow(radial / 0.12, 2.0));
-            shape = shield - caldera;
+            double radial = distance(x, z, site.centerX, site.centerZ) / radius;
+            if (radial >= 1.0) {
+                shape = 0.0;
+            } else {
+                double shield = Math.pow(Math.max(0.0, 1.0 - radial), 1.35);
+                double caldera = 0.16 * Math.exp(-Math.pow(radial / 0.12, 2.0));
+                shape = shield - caldera;
+            }
         }
 
         cache.keys[slot] = key;
@@ -225,12 +233,23 @@ final class TerrainArchetypeMath {
         int cellX = Math.floorDiv((int)x, CELL);
         int cellZ = Math.floorDiv((int)z, CELL);
         SiteGeometry site=siteGeometry(cellX,cellZ);
-        double radial = distance(x, z, site.centerX, site.centerZ);
+        // Outside the two enclosing squares, both original smoothstep
+        // expressions are exactly 1.0 and their complements are +0.0.
+        // Only evaluate hypot for locations that might contribute.
         double towerRadius = karstTowerRadius;
-        double tower = 1.0 - smoothstep(towerRadius * 0.55, towerRadius, radial);
+        double tower = 0.0;
+        if (Math.abs(x-site.centerX) < towerRadius
+                && Math.abs(z-site.centerZ) < towerRadius) {
+            double radial = distance(x, z, site.centerX, site.centerZ);
+            tower = 1.0 - smoothstep(towerRadius * 0.55, towerRadius, radial);
+        }
         double sinkRadius = karstSinkRadius;
-        double sink = 1.0 - smoothstep(sinkRadius * 0.45, sinkRadius,
-                distance(x, z, site.sinkX, site.sinkZ));
+        double sink = 0.0;
+        if (Math.abs(x-site.sinkX) < sinkRadius
+                && Math.abs(z-site.sinkZ) < sinkRadius) {
+            sink = 1.0 - smoothstep(sinkRadius * 0.45, sinkRadius,
+                    distance(x, z, site.sinkX, site.sinkZ));
+        }
         double noiseTower = Math.max(0.0, signal) * 0.08 * ridgeGain();
         return original + gate * reliefGain * (0.36 * Math.max(ridgeIndex, 0.12) * tower
                 + noiseTower - 0.22 * Math.max(valleyIndex, 0.12) * sink);

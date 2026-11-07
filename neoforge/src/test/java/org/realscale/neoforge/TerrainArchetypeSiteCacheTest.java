@@ -85,6 +85,39 @@ final class TerrainArchetypeSiteCacheTest {
         }
     }
 
+    @Test void radialSupportEdgesRemainBitExact(){
+        for(String family:new String[]{"karst","volcanic"}){
+            TerrainArchetypeMath math=fitted(family);
+            for(int regionX:new int[]{-2,-1,0,1,2})
+                for(int regionZ:new int[]{-2,-1,0,1,2}){
+                    long hash=MountainReliefMath.siteHash(regionX,regionZ);
+                    double cx=regionX*2048.0+1024.0
+                            +MountainReliefMath.centerOffsetX(hash);
+                    double cz=regionZ*2048.0+1024.0
+                            +MountainReliefMath.centerOffsetZ(hash);
+                    long sinkHash=MountainReliefMath.mix(hash^0x6a09e667f3bcc909L);
+                    double sx=cx+MountainReliefMath.centerOffsetX(sinkHash)*1.8;
+                    double sz=cz+MountainReliefMath.centerOffsetZ(sinkHash)*1.8;
+                    double[] radii=family.equals("volcanic")
+                            ?new double[]{Math.max(250,Math.min(800,9800*0.025))}
+                            :new double[]{Math.max(80,Math.min(450,9800*0.025)),
+                                          Math.max(40,Math.min(200,9800*0.012))};
+                    for(int n=0;n<radii.length;n++){
+                        double x0=n==0?cx:sx,z0=n==0?cz:sz;
+                        double radius=radii[n];
+                        for(double sign:new double[]{-1,1})
+                            for(int offset:new int[]{-2,-1,0,1,2})
+                                for(int tangent:new int[]{-2,-1,0,1,2}){
+                                    int x=(int)Math.rint(x0+sign*(radius+offset));
+                                    int z=(int)Math.rint(z0+tangent);
+                                    checkRaw(math,family,1.01,0.35,0.39,x,z);
+                                    checkRaw(math,family,1.01,0.35,0.39,z,x);
+                                }
+                    }
+                }
+        }
+    }
+
     @Test void shuffledAndMultithreadedRegionTransitionsAreBitExact(){
         IntStream.range(0,4).parallel().forEach(worker->{
             Random random=new Random(137L+worker*31);
