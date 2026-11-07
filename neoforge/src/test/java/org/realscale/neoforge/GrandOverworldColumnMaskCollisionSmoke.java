@@ -46,6 +46,22 @@ public final class GrandOverworldColumnMaskCollisionSmoke {
         for(int i=0;i<2000;i++)for(int j=0;j<2;j++)
             GrandOverworldCaveNetwork.mayContainVoidNearColumn(
                     pairs.get(j)[0],pairs.get(j)[1]);
+        // A single column repeated across Y must hit the last-column path
+        // without changing the two-way collision table's stored mask.
+        int[] repeated=pairs.get(0);
+        long repeatedMask=GrandOverworldCaveNetwork.componentMaskForColumn(
+                repeated[0],repeated[1]);
+        for(int i=0;i<2000;i++)
+            check(GrandOverworldCaveNetwork.componentMaskForColumn(
+                    repeated[0],repeated[1])==repeatedMask,
+                    "Last-column memo changed the exact broad-phase mask");
+        check((boolean)read(cache,"lastColumnValid"),
+                "Last-column memo was not marked valid");
+        check((int)read(cache,"lastColumnX")==repeated[0]
+                        && (int)read(cache,"lastColumnZ")==repeated[1],
+                "Last-column memo key does not match the requested X/Z");
+        check((long)read(cache,"lastColumnMask")==repeatedMask,
+                "Last-column memo returned a different component mask");
         // Test the actual optimized geometry over varied Y and warped XZ.
         for(int[] point:pairs)for(int y:new int[]{-40,110,205,395,790,1330,1660}) {
             double x=point[0]+3.0,z=point[1]-2.0;
@@ -71,7 +87,7 @@ public final class GrandOverworldColumnMaskCollisionSmoke {
                         "Eviction cross-contaminated cave density");
             }
         System.out.println("REALSCALE_OVERWORLD_COLUMN_2WAY_PASS masks=3 "
-                +"alternations=4000 bit_parity=30");
+                +"alternations=4000 last_column_repeats=2000 bit_parity=30");
     }
     private static Object readStatic(Class<?> cls,String field)throws Exception {
         Field f=cls.getDeclaredField(field);
