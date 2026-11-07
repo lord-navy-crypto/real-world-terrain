@@ -480,26 +480,54 @@ def adjacent_height_deltas(heights):
     adjacent=[]
     grid_edge=[];grid_inner=[]
     chunk_edge=[];chunk_inner=[]
+    grid_curvature_edge=[];grid_curvature_inner=[]
+    chunk_curvature_edge=[];chunk_curvature_inner=[]
     for (x,z),h in heights.items():
         for nx,nz in ((x+1,z),(x,z+1)):
             neighbor=heights.get((nx,nz))
             if neighbor is None:continue
             delta=abs(h-neighbor)
             adjacent.append(delta)
-            if (nx%16==0 and nz==z) or (nz%16==0 and nx==x):
+            is_chunk_edge=(nx%16==0 and nz==z) or (nz%16==0 and nx==x)
+            is_grid_edge=(nx%4==0 and nz==z) or (nz%4==0 and nx==x)
+            if is_chunk_edge:
                 chunk_edge.append(delta)
             else:
                 chunk_inner.append(delta)
-            if (nx%4==0 and nz==z) or (nz%4==0 and nx==x):
+            if is_grid_edge:
                 grid_edge.append(delta)
             else:
                 grid_inner.append(delta)
-    return adjacent,grid_edge,grid_inner,chunk_edge,chunk_inner
+
+            # A large first difference can be a genuine steep slope. A seam
+            # is a discontinuity in slope: compare this edge's gradient with
+            # the linear continuation from its immediately adjacent edges.
+            previous=heights.get((x-1,z)) if nx==x+1 else heights.get((x,z-1))
+            following=heights.get((nx+1,nz)) if nx==x+1 else heights.get((nx,nz+1))
+            if previous is None or following is None:
+                continue
+            before=h-previous
+            across=neighbor-h
+            after=following-neighbor
+            residual=abs(across-(before+after)*0.5)
+            if is_chunk_edge:
+                chunk_curvature_edge.append(residual)
+            else:
+                chunk_curvature_inner.append(residual)
+            if is_grid_edge:
+                grid_curvature_edge.append(residual)
+            else:
+                grid_curvature_inner.append(residual)
+    return (adjacent,grid_edge,grid_inner,chunk_edge,chunk_inner,
+            grid_curvature_edge,grid_curvature_inner,
+            chunk_curvature_edge,chunk_curvature_inner)
 
 
 def terrain_quality_gates(chunk_border_deltas, within_chunk_deltas,
                           grid_boundary_deltas, inner_grid_deltas,
-                          isolated_spikes, sample_columns, high_nonriver_water):
+                          isolated_spikes, sample_columns, high_nonriver_water,
+                          chunk_curvature_boundary=None, chunk_curvature_inner=None,
+                          grid_curvature_boundary=None, grid_curvature_inner=None):
     """Detect artificial chunk seams, grid seams, solitary block towers and floods.
 
     Wide thresholds recognize natural cliffs and rainfall-fed inland lakes.
@@ -510,13 +538,37 @@ def terrain_quality_gates(chunk_border_deltas, within_chunk_deltas,
         return round(statistics.mean(a)/max(0.01,statistics.mean(b)),6)
     chunk_ratio=ratio(chunk_border_deltas,within_chunk_deltas)
     grid_ratio=ratio(grid_boundary_deltas,inner_grid_deltas)
+    # Keep first-difference ratios as diagnostics, but gate seams on the
+    # boundary's excess local slope change. This distinguishes a true step
+    # from a steep yet continuous surface whose integer height increments
+    # naturally cluster at interpolation-grid edges.
+    chunk_curve_edge=(chunk_border_deltas if chunk_curvature_boundary is None
+                      else chunk_curvature_boundary)
+    chunk_curve_inner=(within_chunk_deltas if chunk_curvature_inner is None
+                       else chunk_curvature_inner)
+    grid_curve_edge=(grid_boundary_deltas if grid_curvature_boundary is None
+                     else grid_curvature_boundary)
+    grid_curve_inner=(inner_grid_deltas if grid_curvature_inner is None
+                      else grid_curvature_inner)
+    chunk_curvature_ratio=ratio(chunk_curve_edge,chunk_curve_inner)
+    grid_curvature_ratio=ratio(grid_curve_edge,grid_curve_inner)
+    def p95(values):
+        if not values:return None
+        ordered=sorted(values)
+        return ordered[round((len(ordered)-1)*0.95)]
+    chunk_curvature_p95_ratio=ratio(
+        [p95(chunk_curve_edge)] if chunk_curve_edge else [],
+        [p95(chunk_curve_inner)] if chunk_curve_inner else [])
+    grid_curvature_p95_ratio=ratio(
+        [p95(grid_curve_edge)] if grid_curve_edge else [],
+        [p95(grid_curve_inner)] if grid_curve_inner else [])
     inland_wet=high_nonriver_water/max(1,sample_columns)
     issues=[]
-    if chunk_ratio is not None and len(chunk_border_deltas)>500 and len(within_chunk_deltas)>500:
-        if statistics.mean(chunk_border_deltas)>statistics.mean(within_chunk_deltas)*1.6+0.5:
+    if chunk_curvature_ratio is not None and len(chunk_curve_edge)>500 and len(chunk_curve_inner)>500:
+        if chunk_curvature_ratio>1.8 and (chunk_curvature_p95_ratio or 0.0)>2.0:
             issues.append("Systematic 16-block chunk-border height seam")
-    if grid_ratio is not None and len(grid_boundary_deltas)>500 and len(inner_grid_deltas)>500:
-        if statistics.mean(grid_boundary_deltas)>statistics.mean(inner_grid_deltas)*1.6+0.5:
+    if grid_curvature_ratio is not None and len(grid_curve_edge)>500 and len(grid_curve_inner)>500:
+        if grid_curvature_ratio>1.8 and (grid_curvature_p95_ratio or 0.0)>2.0:
             issues.append("Systematic 4-block interpolation-grid height seam")
     if sample_columns>=500 and isolated_spikes>max(4,sample_columns//2500):
         issues.append("Excess isolated 4-neighbor spikes or one-block pits")
@@ -525,6 +577,10 @@ def terrain_quality_gates(chunk_border_deltas, within_chunk_deltas,
     return {
       "chunk_border_mean_ratio":chunk_ratio,
       "four_grid_boundary_mean_ratio":grid_ratio,
+      "chunk_border_curvature_mean_ratio":chunk_curvature_ratio,
+      "four_grid_boundary_curvature_mean_ratio":grid_curvature_ratio,
+      "chunk_border_curvature_p95_ratio":chunk_curvature_p95_ratio,
+      "four_grid_boundary_curvature_p95_ratio":grid_curvature_p95_ratio,
       "isolated_spikes":isolated_spikes,
       "high_nonriver_water_columns":high_nonriver_water,
       "high_nonriver_water_fraction":round(inland_wet,6),
@@ -856,9 +912,11 @@ def scan(root,preset="realism_max"):
                             cave_water_voxels+=block=="minecraft:water"
     # Preserve raw foliage-bearing surface deltas as diagnostics, but pass
     # only physically supported ground heights to chunk/4-grid seam gates.
-    raw_delta,raw_four_boundary,raw_inner,raw_chunk_border,raw_within_chunk = (
+    (raw_delta,raw_four_boundary,raw_inner,raw_chunk_border,raw_within_chunk,
+     raw_grid_curvature,raw_inner_grid_curvature,raw_chunk_curvature,raw_inner_chunk_curvature) = (
         adjacent_height_deltas(H))
-    delta,four_boundary,inner,chunk_border,within_chunk = (
+    (delta,four_boundary,inner,chunk_border,within_chunk,
+     grid_curvature,inner_grid_curvature,chunk_curvature,inner_chunk_curvature) = (
         adjacent_height_deltas(terrain_heights))
     # Preserve the original WORLD_SURFACE anomalies for diagnosis, but
     # evaluate real ground-height artifacts with the same 8m threshold.
@@ -897,8 +955,13 @@ def scan(root,preset="realism_max"):
     navigation_hovercraft=navigable_water_components(river_water_navigation_columns,1,2)
     topology=cave_components(cave_voxels)
     walkability=dry_walkable_components(cave_voxels,dry_voxels,lava_voxels,sampled_min_y)
-    quality=terrain_quality_gates(chunk_border,within_chunk,four_boundary,inner,
-                                  isolated_spikes,len(H),high_elevation_nonriver_water_columns)
+    quality=terrain_quality_gates(
+        chunk_border,within_chunk,four_boundary,inner,
+        isolated_spikes,len(H),high_elevation_nonriver_water_columns,
+        chunk_curvature_boundary=chunk_curvature,
+        chunk_curvature_inner=inner_chunk_curvature,
+        grid_curvature_boundary=grid_curvature,
+        grid_curvature_inner=inner_grid_curvature)
     # Missing ground heightmaps are an error: never silently skip bad columns.
     if len(terrain_heights)!=len(H):
         quality["issues"].append(

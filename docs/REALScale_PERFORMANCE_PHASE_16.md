@@ -1,0 +1,5 @@
+# Performance Phase 16 — Distinguish terrain seams from steep continuous slopes
+
+The saved-heightmap continuity gate now retains the original first-difference ratios as diagnostics but evaluates chunk/grid seams using a second-difference residual: the boundary edge's slope is compared with the linear continuation from the immediately adjacent edges. This detects an actual step discontinuity while avoiding false positives when integer height increments naturally cluster at interpolation-grid boundaries on steep continuous DEM slopes.
+
+The gate uses both mean and p95 residual ratios. Synthetic tests prove that abrupt 4-block and 16-block steps still fail, while a steep but linear boundary gradient passes. The measured saved-world sample showed a first-difference ratio of roughly 3.3 at the 4-block grid, but its local-curvature residual ratio was about 1.61, with boundary p95 10 versus interior p95 6; that pattern is consistent with a change in slope distribution rather than a large isolated discontinuity. This new metric must still pass the actual multi-seed server regression; no terrain output is changed by this QA-only phase.
