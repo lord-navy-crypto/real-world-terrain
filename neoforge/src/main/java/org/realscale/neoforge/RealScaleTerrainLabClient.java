@@ -154,6 +154,8 @@ public final class RealScaleTerrainLabClient {
         int structureDensity = 4;
         int dimensionStructureDensity = 2;
         Boolean architectureStructuresEnabled = Boolean.TRUE;
+        // OFF by default; new high-rise district generation is experimental.
+        Boolean urbanDistrictsEnabled = Boolean.FALSE;
         Map<String,FamilySettings> profiles = new LinkedHashMap<>();
 
         static Draft defaults() {
@@ -185,6 +187,8 @@ public final class RealScaleTerrainLabClient {
             // Gson leaves missing boxed fields null in older config files.
             if (d.architectureStructuresEnabled == null)
                 d.architectureStructuresEnabled = Boolean.TRUE;
+            if (d.urbanDistrictsEnabled == null)
+                d.urbanDistrictsEnabled = Boolean.FALSE;
             // Saved YACL drafts from v1.4.1 remain readable. These names are
             // normalized only in the next-world draft, never in existing saves.
             if (d.preset == null) return;
@@ -228,6 +232,7 @@ public final class RealScaleTerrainLabClient {
                         && "fixed_1_20".equals(d.latitudeMode)
                         && d.latitudeStrength >= 0 && d.latitudeStrength <= 100
                         && d.architectureStructuresEnabled != null
+                        && d.urbanDistrictsEnabled != null
                         && d.basinPercent >= 0 && d.basinPercent <= 100
                         && d.reliefPercent >= 80 && d.reliefPercent <= 125
                         && d.elevation >= -48 && d.elevation <= 48
@@ -382,6 +387,13 @@ public final class RealScaleTerrainLabClient {
                     .binding(Boolean.TRUE,
                         () -> Boolean.TRUE.equals(d.architectureStructuresEnabled),
                         v -> d.architectureStructuresEnabled=v)
+                    .controller(BooleanControllerBuilder::create).build())
+                .option(Option.<Boolean>createBuilder()
+                    .name(Component.literal("Enable Modern Cities (Experimental)"))
+                    .description(description("OFF by default. Selects a separate high-rise city-district datapack for newly created worlds after saving and restarting. A city candidate occurs in compatible flat-land biomes only; no existing saves or the 100-building library are changed."))
+                    .binding(Boolean.FALSE,
+                        () -> Boolean.TRUE.equals(d.urbanDistrictsEnabled),
+                        v -> d.urbanDistrictsEnabled=v)
                     .controller(BooleanControllerBuilder::create).build())
                 .build())
             .category(ConfigCategory.createBuilder()

@@ -75,6 +75,18 @@ public final class RealScaleStructurePacks {
         return new Selection(0, 0, false);
     }
 
+    /** Missing/malformed old drafts must not enable untested city generation. */
+    static boolean urbanDistrictsEnabled() {
+        if (!Files.isRegularFile(DRAFT)) return false;
+        try (var reader=Files.newBufferedReader(DRAFT,StandardCharsets.UTF_8)) {
+            var root=JsonParser.parseReader(reader).getAsJsonObject();
+            return root.has("urbanDistrictsEnabled")
+                    && root.get("urbanDistrictsEnabled").getAsBoolean();
+        } catch(IOException|RuntimeException ignored) {
+            return false;
+        }
+    }
+
     public static void register(AddPackFindersEvent event) {
         if (event.getPackType() != PackType.SERVER_DATA) return;
 
@@ -94,6 +106,11 @@ public final class RealScaleStructurePacks {
         registerOne(event, "architecture_pilot",
                 "RealScale | Architecture Library (100 Structures)",
                 current.architectureEnabled());
+        // Cities have their own optional pack; existing world datapack state
+        // is never silently rewritten. The checkbox affects NEW worlds only.
+        registerOne(event, "urban_districts",
+                "RealScale | Modern Cities (4 High-Rise Districts)",
+                urbanDistrictsEnabled());
     }
 
     private static void registerOne(AddPackFindersEvent event, String id,

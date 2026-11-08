@@ -102,6 +102,7 @@ def generatedLicensedArchitectureTemplates = layout.buildDirectory.dir("generate
 def generatedOriginalArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-original-architecture-templates")
 def generatedBatchArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-batch-architecture-templates")
 def generatedExpansionArchitectureTemplates = layout.buildDirectory.dir("generated/realscale-expansion-architecture-templates")
+def generatedUrbanTemplates = layout.buildDirectory.dir("generated/realscale-urban-district-templates")
 
 // Gradle 9 removed Project.exec. Use ProviderFactory.exec so these
 // deterministic resource generators work on both the Gradle 8 and 9 CI lanes.
@@ -166,10 +167,26 @@ tasks.register("generateArchitectureExpansionTemplates") {
     }
 }
 
+tasks.register("generateUrbanDistrictTemplates") {
+    inputs.file(file("../scripts/generate_urban_districts.py"))
+    inputs.file(file("../scripts/urban_district_profiles.json"))
+    inputs.file(file("../scripts/generate_original_architecture.py"))
+    outputs.dir(generatedUrbanTemplates)
+    doLast {
+        def output = generatedUrbanTemplates.get().asFile
+        project.delete(output)
+        runArchitecturePython("../scripts/generate_urban_districts.py", [
+            "--output", output.absolutePath
+        ])
+    }
+}
+
 tasks.register("generateBuiltInStructurePacks") {
     dependsOn("generateArchitectureTemplates", "generateOriginalArchitectureTemplates",
-              "generateArchitectureBatchTemplates", "generateArchitectureExpansionTemplates")
+              "generateArchitectureBatchTemplates", "generateArchitectureExpansionTemplates",
+              "generateUrbanDistrictTemplates")
     inputs.file(file("../scripts/architecture_expansion_profiles.json"))
+    inputs.file(file("../scripts/urban_district_profiles.json"))
     outputs.dir(generatedStructureResources)
     doLast {
         def root = generatedStructureResources.get().asFile
@@ -556,6 +573,86 @@ tasks.register("generateBuiltInStructurePacks") {
                 values:profile.biomes
             ])
         }
+
+        // A separate, OFF-by-default urban pack. None of the existing 100
+        // architecture templates, density profiles or vanilla placements
+        // change when the user disables the new cities for the next world.
+        def urbanSpec = new groovy.json.JsonSlurper().parse(
+                file("../scripts/urban_district_profiles.json"))
+        def urbanPack = new File(root, "resourcepacks/realscale_structures_urban_districts")
+        urbanPack.mkdirs()
+        new File(urbanPack, "pack.mcmeta").setText(
+            groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                pack:[pack_format:48,
+                    description:"RealScale experimental modern cities — four original high-rise districts"]
+            ])) + "\n", "UTF-8")
+
+        def urbanSource = new File(generatedUrbanTemplates.get().asFile,
+                "data/realscale/structure/urban")
+        if (!urbanSource.isDirectory())
+            throw new GradleException("Urban structure NBT missing: " + urbanSource)
+        def districtIds = urbanSpec.districts.collect { it.id }
+        if (districtIds.size()!=4 || districtIds.toSet().size()!=4)
+            throw new GradleException("Expected four unique city-district templates")
+        districtIds.each { name ->
+            if (!new File(urbanSource,name+".nbt").isFile())
+                throw new GradleException("Missing urban template " + name)
+        }
+        // The base namespace permits /place template even when cities are
+        // disabled; worldgen JSON exists ONLY in the optional city pack.
+        project.copy {
+            from(urbanSource)
+            into(new File(root, "data/realscale/structure/urban"))
+        }
+        project.copy {
+            from(urbanSource)
+            into(new File(urbanPack, "data/realscale/structure/urban"))
+        }
+        def writeUrbanJson = { String rel, Object data ->
+            def target=new File(urbanPack,rel)
+            target.parentFile.mkdirs()
+            target.setText(groovy.json.JsonOutput.prettyPrint(
+                    groovy.json.JsonOutput.toJson(data))+"\n","UTF-8")
+        }
+        writeUrbanJson("data/realscale/worldgen/structure/urban_district.json",[
+            type:"minecraft:jigsaw",
+            biomes:"#realscale:has_structure/urban_district",
+            step:"surface_structures",
+            spawn_overrides:[:],
+            terrain_adaptation:"beard_thin",
+            start_pool:"realscale:urban/districts",
+            size:0,
+            start_height:[absolute:0],
+            project_start_to_heightmap:"WORLD_SURFACE_WG",
+            max_distance_from_center:80,
+            use_expansion_hack:false,
+            liquid_settings:"ignore_waterlogging"
+        ])
+        writeUrbanJson("data/realscale/worldgen/template_pool/urban/districts.json",[
+            fallback:"minecraft:empty",
+            elements:urbanSpec.districts.collect { item ->
+                [weight:item.weight,element:[
+                    element_type:"minecraft:single_pool_element",
+                    location:"realscale:urban/"+item.id,
+                    processors:"minecraft:empty",
+                    projection:"rigid"
+                ]]
+            }
+        ])
+        writeUrbanJson("data/realscale/worldgen/structure_set/urban_districts.json",[
+            structures:[[structure:"realscale:urban_district",weight:1]],
+            placement:[
+                type:"minecraft:random_spread",
+                salt:urbanSpec.placement.salt,
+                spacing:urbanSpec.placement.spacing,
+                separation:urbanSpec.placement.separation,
+                spread_type:urbanSpec.placement.spread_type,
+                exclusion_zone:[other_set:"minecraft:villages",chunk_count:8]
+            ]
+        ])
+        writeUrbanJson("data/realscale/tags/worldgen/biome/has_structure/urban_district.json",[
+            replace:false,values:urbanSpec.biomes
+        ])
     }
 }
 sourceSets.main.resources.srcDir(generatedStructureResources)
