@@ -3,6 +3,7 @@ package org.realscale.neoforge.compat.dhchunky.mixin;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.realscale.neoforge.compat.dhchunky.ChunkyBridgeMetrics;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -33,6 +34,12 @@ public abstract class ChunkyLifecycleSetupMixin {
     @Shadow(remap = false) private boolean listenerBound;
     @Unique private static final AtomicBoolean realscale$warned = new AtomicBoolean();
     @Unique private static final AtomicBoolean realscale$hookSeen = new AtomicBoolean();
+    @Unique private static final AtomicBoolean realscale$providerReady = new AtomicBoolean();
+    @Unique private static final AtomicLong realscale$nextProbeNanos = new AtomicLong();
+    @Unique private static final AtomicLong realscale$probeBackoffNanos =
+            new AtomicLong(50_000_000L);
+    @Unique private static final long realscale$MIN_PROBE_INTERVAL_NANOS = 50_000_000L;
+    @Unique private static final long realscale$MAX_PROBE_INTERVAL_NANOS = 1_000_000_000L;
     @Unique private static volatile Method realscale$providerGet;
     // JVM flags are immutable for this mod lifetime. Avoid property parsing
     // on every full-chunk event after DH has bound its native listener.
@@ -51,25 +58,57 @@ public abstract class ChunkyLifecycleSetupMixin {
             System.err.println("REALSCALE_DH_CHUNKY_GUARD_HOOK_ENTERED");
         }
 
-        // Timed only during the pre-bind handshake, never after listenerBound flips.
-        long started = System.nanoTime();
-        boolean providerReady = realscale$isChunkyProviderReady();
-        ChunkyBridgeMetrics.probe(providerReady, System.nanoTime() - started);
-        if (!providerReady) {
-            ChunkyBridgeMetrics.deferred();
-            // Cancel BEFORE DH flips listenerBound; retry at next real chunk event.
-            if (realscale$warned.compareAndSet(false, true)) {
-                System.err.println(
-                    "REALSCALE_DH_CHUNKY_GUARD_DEFERRED: Chunky provider not ready; "
-                    + "leaving DH listener unbound until next chunk event");
+        // Once the provider has been observed, do not reflectively probe it again.
+        // Before that point, bound retries to 50 ms..1 s so a burst of early chunk
+        // events cannot turn the startup race into repeated reflection work.
+        if (!realscale$providerReady.get()) {
+            long now = System.nanoTime();
+            long scheduled = realscale$nextProbeNanos.get();
+            if (scheduled != 0L && now - scheduled < 0L) {
+                if (!realscale$providerReady.get()) {
+                    ChunkyBridgeMetrics.deferred();
+                    ChunkyBridgeMetrics.backoffSkipped();
+                    ci.cancel();
+                    return;
+                }
+            } else if (!realscale$nextProbeNanos.compareAndSet(
+                    scheduled, now + realscale$probeBackoffNanos.get())) {
+                if (!realscale$providerReady.get()) {
+                    ChunkyBridgeMetrics.deferred();
+                    ChunkyBridgeMetrics.backoffSkipped();
+                    ci.cancel();
+                    return;
+                }
             }
-            ci.cancel();
-        } else if (realscale$warned.get()) {
-            ChunkyBridgeMetrics.ready();
-            System.err.println(
-                "REALSCALE_DH_CHUNKY_GUARD_READY: Chunky provider is now registered; "
-                + "allowing native DH event registration");
-            realscale$warned.set(false);
+
+            if (!realscale$providerReady.get()) {
+                long started = System.nanoTime();
+                boolean providerReady = realscale$isChunkyProviderReady();
+                ChunkyBridgeMetrics.probe(providerReady, System.nanoTime() - started);
+                if (!providerReady) {
+                    realscale$probeBackoffNanos.updateAndGet(
+                        current -> Math.min(realscale$MAX_PROBE_INTERVAL_NANOS, current * 2L));
+                    ChunkyBridgeMetrics.deferred();
+                    // Cancel BEFORE DH flips listenerBound; a later real chunk event retries.
+                    if (realscale$warned.compareAndSet(false, true)) {
+                        System.err.println(
+                            "REALSCALE_DH_CHUNKY_GUARD_DEFERRED: Chunky provider not ready; "
+                            + "leaving DH listener unbound until a later chunk event");
+                    }
+                    ci.cancel();
+                    return;
+                }
+
+                realscale$providerReady.set(true);
+                realscale$nextProbeNanos.set(0L);
+                realscale$probeBackoffNanos.set(realscale$MIN_PROBE_INTERVAL_NANOS);
+                if (realscale$warned.compareAndSet(true, false)) {
+                    ChunkyBridgeMetrics.ready();
+                    System.err.println(
+                        "REALSCALE_DH_CHUNKY_GUARD_READY: Chunky provider is now registered; "
+                        + "allowing native DH event registration");
+                }
+            }
         }
     }
 

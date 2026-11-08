@@ -68,6 +68,470 @@ class Building:
                  east="false", north="false", south="false",
                  waterlogged="false", west="false")
 
+    def _detail_support_is_solid(self, block_name: str) -> bool:
+        if block_name in {
+            "minecraft:air", "minecraft:water", "minecraft:lava",
+            "minecraft:glass", "minecraft:glass_pane", "minecraft:iron_bars",
+            "minecraft:chain", "minecraft:rail", "minecraft:torch",
+            "minecraft:redstone_torch", "minecraft:lantern",
+        }:
+            return False
+        return not block_name.endswith((
+            "_leaves", "_pane", "_fence", "_wall", "_stairs", "_slab",
+            "_carpet", "_flower", "_sapling", "_door", "_trapdoor",
+            "_log", "_wood",
+        ))
+
+    def _detail_surface_candidates(self):
+        candidates = []
+        center_x, center_z = self.width // 2, self.length // 2
+        for y in range(1, min(self.height - 1, 10)):
+            for z in range(1, self.length - 1):
+                for x in range(1, self.width - 1):
+                    if self.blocks[(x, y, z)][0] != "minecraft:air":
+                        continue
+                    if self.blocks[(x, y + 1, z)][0] != "minecraft:air":
+                        continue
+                    support = self.blocks[(x, y - 1, z)][0]
+                    if not self._detail_support_is_solid(support):
+                        continue
+
+                    # Prefer actual interior floor space over exposed site aprons:
+                    # roof cover and adjacent wall mass are stronger signals than
+                    # proximity to the template edge alone.
+                    wall_neighbors = 0
+                    for nx, nz in ((x - 1, z), (x + 1, z), (x, z - 1), (x, z + 1)):
+                        if (
+                            self.blocks[(nx, y, nz)][0] != "minecraft:air"
+                            or self.blocks[(nx, y + 1, nz)][0] != "minecraft:air"
+                        ):
+                            wall_neighbors += 1
+                    cover_end = min(self.height, y + 8)
+                    has_roof_cover = any(
+                        self.blocks[(x, cover_y, z)][0] != "minecraft:air"
+                        for cover_y in range(y + 2, cover_end)
+                    )
+                    interior_rank = (
+                        0 if has_roof_cover and wall_neighbors >= 1
+                        else 1 if has_roof_cover
+                        else 2 if wall_neighbors >= 2
+                        else 3
+                    )
+                    edge_distance = min(
+                        x - 1, self.width - 2 - x,
+                        z - 1, self.length - 2 - z,
+                    )
+                    center_distance = abs(x - center_x) + abs(z - center_z)
+                    candidates.append((
+                        (
+                            interior_rank, -wall_neighbors, -edge_distance,
+                            center_distance, abs(y - 2), y, z, x,
+                        ),
+                        (x, y, z),
+                    ))
+        candidates.sort(key=lambda item: item[0])
+        return [position for _, position in candidates]
+
+    def _place_architecture_fixture(self, position, block_name: str):
+        x, y, z = position
+        if block_name == "minecraft:lantern":
+            self.set(x, y, z, block_name, hanging="false")
+        elif block_name == "minecraft:barrel":
+            self.set(x, y, z, block_name, facing="up", open="false")
+        elif block_name == "minecraft:chest":
+            self.set(x, y, z, block_name, facing="north",
+                     type="single", waterlogged="false")
+        elif block_name == "minecraft:campfire":
+            self.set(x, y, z, block_name, facing="north", lit="true",
+                     signal_fire="false", waterlogged="false")
+        elif block_name == "minecraft:bell":
+            self.set(x, y, z, block_name, attachment="floor",
+                     facing="north", powered="false")
+        elif block_name == "minecraft:rail":
+            self.set(x, y, z, block_name, shape="east_west",
+                     powered="false", waterlogged="false")
+        else:
+            self.set(x, y, z, block_name)
+
+    def _add_entrance_canopy(self):
+        doors = []
+        for (x, y, z), (block_name, properties) in self.blocks.items():
+            if block_name.endswith("_door"):
+                props = dict(properties)
+                if props.get("half") == "lower":
+                    doors.append((x, y, z, props.get("facing", "north")))
+        if not doors:
+            return
+
+        palette = {block_name for block_name, _ in self.blocks.values()}
+        wood = next((
+            name.split(":")[-1].removesuffix("_log")
+            for name in sorted(palette)
+            if name.endswith("_log") and "stripped_" not in name
+        ), "oak")
+        path_block = next((
+            name for name in (
+                "minecraft:dirt_path", "minecraft:coarse_dirt",
+                "minecraft:gravel", "minecraft:stone_bricks",
+                "minecraft:cobblestone", "minecraft:sandstone",
+                "minecraft:mud_bricks",
+            ) if name in palette
+        ), "minecraft:cobblestone")
+        slab_block = f"minecraft:{wood}_slab"
+        if slab_block not in palette:
+            slab_block = "minecraft:stone_brick_slab"
+        directions = {
+            "north": (0, -1, 1, 0),
+            "south": (0, 1, 1, 0),
+            "west": (-1, 0, 0, 1),
+            "east": (1, 0, 0, 1),
+        }
+
+        for x, y, z, facing in sorted(doors):
+            if facing not in directions or y + 2 >= self.height:
+                continue
+            dx, dz, px, pz = directions[facing]
+            front_x, front_z = x + dx, z + dz
+            posts = (
+                (front_x + px, front_z + pz),
+                (front_x - px, front_z - pz),
+            )
+            canopy = (
+                (front_x - px, front_z - pz),
+                (front_x, front_z),
+                (front_x + px, front_z + pz),
+            )
+            if any(
+                not (1 <= sx < self.width - 1 and 1 <= sz < self.length - 1)
+                for sx, sz in canopy
+            ):
+                continue
+            if any(
+                self.blocks[(sx, y, sz)][0] != "minecraft:air"
+                or self.blocks[(sx, y + 1, sz)][0] != "minecraft:air"
+                for sx, sz in posts
+            ):
+                continue
+            if any(
+                self.blocks[(sx, y + 2, sz)][0] != "minecraft:air"
+                for sx, sz in canopy
+            ):
+                continue
+
+            # Only add the canopy when it is genuinely missing; existing porches
+            # and entrance halls are left intact.
+            for sx, sz in posts:
+                if self.blocks[(sx, y - 1, sz)][0] == "minecraft:air":
+                    self.set(sx, y - 1, sz, path_block)
+                self.log(sx, y, sz, wood)
+                self.log(sx, y + 1, sz, wood)
+            for sx, sz in canopy:
+                self.set(sx, y + 2, sz, slab_block,
+                         type="bottom", waterlogged="false")
+            for step in (2, 3):
+                px2, pz2 = x + dx * step, z + dz * step
+                if not (1 <= px2 < self.width - 1 and 1 <= pz2 < self.length - 1):
+                    break
+                if self.blocks[(px2, y, pz2)][0] == "minecraft:air":
+                    if self.blocks[(px2, y - 1, pz2)][0] == "minecraft:air":
+                        self.set(px2, y - 1, pz2, path_block)
+            return
+
+    def _add_roof_vent(self):
+        name = self.name.lower()
+        heat_tokens = (
+            "lodge", "farmstead", "barn", "inn", "blacksmith", "bakery",
+            "clinic", "waystation", "camp", "shelter", "caravanserai",
+            "kiln", "sawmill", "workshop", "cider", "storehouse",
+            "cottage", "smith", "forge", "herbalist",
+        )
+        if not any(token in name for token in heat_tokens):
+            return
+        if any(
+            block_name in ("minecraft:campfire", "minecraft:smoker",
+                           "minecraft:blast_furnace")
+            for block_name, _ in self.blocks.values()
+        ) and "camp" not in name and "kiln" not in name and "forge" not in name:
+            return
+
+        palette = {block_name for block_name, _ in self.blocks.values()}
+        chimney_block = next((
+            name for name in (
+                "minecraft:stone_bricks", "minecraft:bricks",
+                "minecraft:cobblestone", "minecraft:deepslate_bricks",
+            ) if name in palette
+        ), "minecraft:stone_bricks")
+        roof_positions = []
+        for z in range(2, self.length - 2):
+            for x in range(2, self.width - 2):
+                top_y = -1
+                top_name = "minecraft:air"
+                for y in range(self.height - 2, 3, -1):
+                    block_name = self.blocks[(x, y, z)][0]
+                    if block_name != "minecraft:air":
+                        top_y, top_name = y, block_name
+                        break
+                if top_y < 4 or top_y + 3 >= self.height:
+                    continue
+                if not top_name.endswith(("_stairs", "_slab", "_planks")):
+                    continue
+                if any(
+                    self.blocks[(x, top_y + offset, z)][0] != "minecraft:air"
+                    for offset in (1, 2, 3)
+                ):
+                    continue
+                edge_distance = min(
+                    x - 1, self.width - 2 - x,
+                    z - 1, self.length - 2 - z,
+                )
+                roof_positions.append((
+                    (-top_y, edge_distance, abs(x - self.width // 2), z, x),
+                    (x, top_y, z),
+                ))
+        if not roof_positions:
+            return
+        roof_positions.sort(key=lambda item: item[0])
+        x, top_y, z = roof_positions[0][1]
+        self.set(x, top_y + 1, z, chimney_block)
+        self.set(x, top_y + 2, z, chimney_block)
+        self.set(x, top_y + 3, z, "minecraft:campfire",
+                 facing="north", lit="true",
+                 signal_fire="false", waterlogged="false")
+
+    def _add_interior_partition(self):
+        """Create one reachable room divider where the existing shell supports it."""
+        self._architecture_partition_applied = False
+        if self.width < 9 or self.length < 9 or self.height < 6:
+            return False
+
+        room_y = 2
+        def open_roofed_cell(x, z):
+            if not (1 <= x < self.width - 1 and 1 <= z < self.length - 1):
+                return False
+            if self.blocks[(x, room_y, z)][0] != "minecraft:air":
+                return False
+            if self.blocks[(x, room_y + 1, z)][0] != "minecraft:air":
+                return False
+            if not self._detail_support_is_solid(
+                self.blocks[(x, room_y - 1, z)][0]
+            ):
+                return False
+            return any(
+                self.blocks[(x, cover_y, z)][0] != "minecraft:air"
+                for cover_y in range(room_y + 2, min(self.height, room_y + 8))
+            )
+
+        def anchored_wall(x, z):
+            return (
+                self.blocks[(x, room_y, z)][0] != "minecraft:air"
+                or self.blocks[(x, room_y + 1, z)][0] != "minecraft:air"
+            )
+
+        candidates = []
+        # Each candidate is a continuous, roofed floor strip with room space
+        # on both sides and existing wall mass at both ends.
+        for orientation, plane_limit, span_limit in (
+            ("x", self.width, self.length),
+            ("z", self.length, self.width),
+        ):
+            for plane in range(3, plane_limit - 3):
+                run = []
+                for offset in range(2, span_limit - 1):
+                    if orientation == "x":
+                        x, z = plane, offset
+                        side_a = (plane - 1, offset)
+                        side_b = (plane + 1, offset)
+                    else:
+                        x, z = offset, plane
+                        side_a = (offset, plane - 1)
+                        side_b = (offset, plane + 1)
+                    valid = (
+                        open_roofed_cell(x, z)
+                        and open_roofed_cell(*side_a)
+                        and open_roofed_cell(*side_b)
+                    )
+                    if valid:
+                        run.append(offset)
+                        continue
+
+                    if len(run) >= 5:
+                        first, last = run[0], run[-1]
+                        if orientation == "x":
+                            before = (plane, first - 1)
+                            after = (plane, last + 1)
+                            depth = min(plane - 2, self.width - 3 - plane)
+                        else:
+                            before = (first - 1, plane)
+                            after = (last + 1, plane)
+                            depth = min(plane - 2, self.length - 3 - plane)
+                        if anchored_wall(*before) and anchored_wall(*after) and depth >= 2:
+                            candidates.append((
+                                (len(run), depth, -abs(plane - plane_limit // 2),
+                                 orientation, plane, first),
+                                orientation, plane, first, last,
+                            ))
+                    run = []
+
+                if len(run) >= 5:
+                    first, last = run[0], run[-1]
+                    if orientation == "x":
+                        before = (plane, first - 1)
+                        after = (plane, last + 1)
+                        depth = min(plane - 2, self.width - 3 - plane)
+                    else:
+                        before = (first - 1, plane)
+                        after = (last + 1, plane)
+                        depth = min(plane - 2, self.length - 3 - plane)
+                    if anchored_wall(*before) and anchored_wall(*after) and depth >= 2:
+                        candidates.append((
+                            (len(run), depth, -abs(plane - plane_limit // 2),
+                             orientation, plane, first),
+                            orientation, plane, first, last,
+                        ))
+
+        if not candidates:
+            return False
+
+        _, orientation, plane, first, last = max(candidates, key=lambda item: item[0])
+        run_length = last - first + 1
+        opening_width = 2 if run_length >= 7 else 1
+        opening_start = first + (run_length - opening_width) // 2
+        palette = {name for name, _ in self.blocks.values()}
+        wall_block = next((
+            name for name in (
+                "minecraft:oak_planks", "minecraft:spruce_planks",
+                "minecraft:birch_planks", "minecraft:dark_oak_planks",
+                "minecraft:stone_bricks", "minecraft:bricks",
+                "minecraft:cobblestone", "minecraft:sandstone",
+            ) if name in palette
+        ), None)
+        if wall_block is None:
+            return False
+
+        for offset in range(first, last + 1):
+            if opening_start <= offset < opening_start + opening_width:
+                continue
+            x, z = (plane, offset) if orientation == "x" else (offset, plane)
+            self.set(x, room_y, z, wall_block)
+            self.set(x, room_y + 1, z, wall_block)
+
+        self._architecture_partition_applied = True
+        return True
+
+    def enrich_architecture(self):
+        """Add deterministic lighting, role-specific fixtures and missing entry details."""
+        if getattr(self, "_architecture_details_applied", False):
+            return self
+        self._architecture_details_applied = True
+
+        self._add_entrance_canopy()
+        self._add_interior_partition()
+        candidates = self._detail_surface_candidates()
+        if not candidates:
+            self._add_roof_vent()
+            return self
+
+        name = self.name.lower()
+        if any(token in name for token in (
+            "farm", "orchard", "grove", "apiary", "ranch", "sheepfold",
+            "dairy", "cattle", "vineyard", "herbalist", "garden",
+            "greenhouse", "seed", "granary", "agriculture",
+        )):
+            fixtures = (
+                "minecraft:composter", "minecraft:barrel",
+                "minecraft:hay_block", "minecraft:cauldron",
+            )
+        elif any(token in name for token in (
+            "blacksmith", "forge", "workshop", "quarry", "mine", "ore",
+            "sawmill", "kiln", "charcoal", "industrial", "obsidian",
+            "mason", "lumber", "depot",
+        )):
+            fixtures = (
+                "minecraft:anvil", "minecraft:blast_furnace",
+                "minecraft:barrel", "minecraft:grindstone",
+            )
+        elif any(token in name for token in (
+            "fishing", "boat", "coastal", "water", "canal", "river",
+            "pier", "lighthouse", "ferry", "dock",
+        )):
+            fixtures = (
+                "minecraft:barrel", "minecraft:smoker",
+                "minecraft:cartography_table", "minecraft:lantern",
+            )
+        elif any(token in name for token in (
+            "school", "clinic", "monastery", "chapel", "academy",
+            "courthouse", "observatory", "library", "tea_house",
+        )):
+            fixtures = (
+                "minecraft:lectern", "minecraft:bookshelf",
+                "minecraft:flower_pot", "minecraft:cartography_table",
+            )
+        elif any(token in name for token in (
+            "market", "trade", "inn", "caravan", "station", "store",
+            "relay", "waystation",
+        )):
+            fixtures = (
+                "minecraft:barrel", "minecraft:chest",
+                "minecraft:loom", "minecraft:cartography_table",
+            )
+        elif any(token in name for token in (
+            "watch", "fort", "ranger", "signal", "tower", "outpost",
+        )):
+            fixtures = (
+                "minecraft:target", "minecraft:cartography_table",
+                "minecraft:barrel", "minecraft:chest",
+            )
+        else:
+            fixtures = (
+                "minecraft:crafting_table", "minecraft:barrel",
+                "minecraft:bookshelf", "minecraft:flower_pot",
+            )
+
+        seed = sum((index + 1) * ord(char) for index, char in enumerate(self.name))
+        ordered_fixtures = fixtures[seed % len(fixtures):] + fixtures[:seed % len(fixtures)]
+        used = set()
+
+        lantern_count = sum(
+            1 for block_name, _ in self.blocks.values()
+            if block_name == "minecraft:lantern"
+        )
+        if lantern_count < 2:
+            light_slots = candidates[:]
+            if light_slots:
+                first = light_slots.pop(0)
+                self._place_architecture_fixture(first, "minecraft:lantern")
+                used.add(first)
+                if lantern_count == 0 and light_slots:
+                    second = max(
+                        (position for position in light_slots if position not in used),
+                        key=lambda position: (
+                            abs(position[0] - first[0]) + abs(position[2] - first[2]),
+                            -position[1], position[2], position[0],
+                        ),
+                    )
+                    self._place_architecture_fixture(second, "minecraft:lantern")
+                    used.add(second)
+
+        fixture_target = 3 if len(candidates) >= 40 else 2
+        placed = 0
+        for fixture in ordered_fixtures:
+            position = next(
+                (candidate for candidate in candidates
+                 if candidate not in used
+                 and self.blocks[candidate][0] == "minecraft:air"),
+                None,
+            )
+            if position is None:
+                break
+            self._place_architecture_fixture(position, fixture)
+            used.add(position)
+            placed += 1
+            if placed >= fixture_target:
+                break
+
+        self._add_roof_vent()
+        return self
+
     def gable_roof(self, x1, x2, z1, z2, eave_y, peak_rise, wood="spruce"):
         """A symmetric, block-stepped roof with solid gable ends."""
         for x in range(x1, x2 + 1):
@@ -82,6 +546,7 @@ class Building:
                 self.set(x, y, z2, f"minecraft:{wood}_planks")
 
     def write(self, output: Path):
+        self.enrich_architecture()
         palette = list(dict.fromkeys(self.blocks.values()))
         indices = {entry: i for i, entry in enumerate(palette)}
         palette_tags = []

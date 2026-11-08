@@ -14,6 +14,7 @@ public final class ChunkyBridgeMetrics {
     private static final AtomicLong providerProbes = new AtomicLong();
     private static final AtomicLong failedProbes = new AtomicLong();
     private static final AtomicLong deferredCallbacks = new AtomicLong();
+    private static final AtomicLong backoffSkips = new AtomicLong();
     private static final AtomicLong readyTransitions = new AtomicLong();
     private static final AtomicLong nativeBindings = new AtomicLong();
     private static final AtomicLong totalProbeNanos = new AtomicLong();
@@ -30,6 +31,7 @@ public final class ChunkyBridgeMetrics {
     }
 
     public static void deferred() { deferredCallbacks.incrementAndGet(); }
+    public static void backoffSkipped() { backoffSkips.incrementAndGet(); }
     public static void ready() { readyTransitions.incrementAndGet(); }
     public static void bound() { nativeBindings.incrementAndGet(); }
 
@@ -42,9 +44,9 @@ public final class ChunkyBridgeMetrics {
             "realscale.dhchunky.guard.enabled", "true"));
         return String.format(Locale.ROOT,
             "RealScale DH-Chunky Guard (embedded) enabled=%s probes=%d notReady=%d deferred=%d "
-                + "readySignals=%d nativeBindsSinceLaunch=%d avgProbeUs=%.1f maxProbeUs=%.1f "
-                + "GPU_LOD=unverified",
-            enabled, checks, failedProbes.get(), deferredCallbacks.get(),
+                + "backoffSkips=%d readySignals=%d nativeBindsSinceLaunch=%d "
+                + "avgProbeUs=%.1f maxProbeUs=%.1f GPU_LOD=unverified",
+            enabled, checks, failedProbes.get(), deferredCallbacks.get(), backoffSkips.get(),
             readyTransitions.get(), binds, avgUs, maxUs);
     }
 

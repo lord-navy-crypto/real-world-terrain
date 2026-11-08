@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import queue
+import re
 import shutil
 import subprocess
 import sys
@@ -205,6 +206,57 @@ def rcon_command(sock, packet_id: int, command: str) -> str:
     return response
 
 
+def run_chunky_pregen(sock, packet_id: int, captured: list[str], marker: str) -> int:
+    """Exercise Chunky's real pre-generation command path on a small disposable area."""
+    for command in (
+        "chunky center 512 512",
+        "chunky radius 32",
+        "chunky shape square",
+    ):
+        response = rcon_command(sock, packet_id, command)
+        packet_id += 1
+        print(f"CHUNKY_COMMAND: {command} -> {response}", flush=True)
+        if re.search(r"unknown command|unknown argument|no permission|not permitted|invalid", response, re.I):
+            raise RuntimeError(f"Chunky rejected its selection command: {command}: {response}")
+
+    task_log_start = len(captured)
+    start_response = rcon_command(sock, packet_id, "chunky start")
+    packet_id += 1
+    print(f"CHUNKY_START: {start_response}", flush=True)
+    if re.search(r"unknown command|no permission|not permitted|failed to start", start_response, re.I):
+        raise RuntimeError(f"Chunky could not start its pre-generation task: {start_response}")
+    if not re.search(r"start|task|pre.?generat", start_response, re.I) and not any(
+        re.search(r"Task started|pre.?generation task", line, re.I) for line in captured
+    ):
+        raise RuntimeError(f"Chunky did not confirm task start: {start_response}")
+
+    deadline = time.monotonic() + 120
+    while time.monotonic() < deadline:
+        if any(CRASH_MARKER in line for line in captured):
+            raise RuntimeError("The DH-Chunky provider exception appeared during Chunky pre-generation")
+        progress = rcon_command(sock, packet_id, "chunky progress")
+        packet_id += 1
+        print(f"CHUNKY_PROGRESS: {progress}", flush=True)
+        task_log = "".join(captured[task_log_start:])
+        finished = re.search(
+            r"\[Chunky\] Task finished for minecraft:overworld\. "
+            r"Processed:\s*([\d,]+)\s+chunks\s+\(100(?:\.0+)?%\)",
+            task_log,
+            re.I,
+        )
+        dh_paused = "Chunky running. Disabling DH world gen" in task_log
+        dh_resumed = "Chunky no longer running. Re-enabling DH world gen" in task_log
+        if finished and dh_paused and dh_resumed:
+            completed_chunks = int(finished.group(1).replace(",", ""))
+            if completed_chunks <= 0:
+                raise RuntimeError("Chunky reported a completed task without processing chunks")
+            print(f"{marker}: chunks={completed_chunks}; DH pause/resume confirmed", flush=True)
+            return packet_id
+        time.sleep(0.75)
+
+    raise TimeoutError("Chunky did not complete the bounded pre-generation task within 120 seconds")
+
+
 def main() -> int:
     download_and_verify_mods()
     prepare_server()
@@ -270,6 +322,10 @@ def main() -> int:
                 wait_for(HOOK_MARKER, 45)
             if not any(BOUND_MARKER in line for line in captured):
                 wait_for(BOUND_MARKER, 90)
+
+            packet_id = run_chunky_pregen(
+                sock, packet_id, captured, "REALSCALE_DH_CHUNKY_PREGEN_PASS"
+            )
 
             if any(CRASH_MARKER in line for line in captured):
                 raise RuntimeError(
