@@ -125,7 +125,18 @@ evicting useful columns during interleaved vertical sampling.
 The table capacity is raised from 512 to 2,048 entries per worker. This adds
 only a few tens of kilobytes of bounded primitive storage per active worldgen
 worker and does not change any mask, cave geometry, noise, or density output.
-The same seed-42 dedicated-server profile is rerun to compare the hit rate
-under the same target-chunk and server setup. Keep this increase only if the
-real-world profile confirms a useful hit-rate improvement; a larger cache is
-not assumed to be faster merely because it is larger.
+The same seed-42 dedicated-server profile was rerun with the same
+target chunk, server setup and 74 persisted FULL chunks. The 2,048-entry
+cache recorded **3,257,854 hits and 167,743 misses (95.10% hit rate)** over
+exactly **3,425,597 probes**. The 512-entry baseline recorded 2,574,916 hits
+and 850,681 misses (75.17%) over the same number of probes. This is a
+**19.93-percentage-point hit-rate increase and an 80.28% reduction in misses**.
+The diagnostic sample also reported 65 ns mean per cave density-function call
+versus 66–68 ns in the earlier run; because the two hosted runs were not
+executed on a pinned identical machine, treat that timing difference as
+directional only, not a proven end-to-end speedup.
+
+The larger table remains bounded and worker-local. No cave geometry, noise,
+density output, chunk contents, biome or world-save semantics change. The
+cache-size decision is retained because the deterministic real-server probe
+count shows a substantial miss reduction at a small memory cost.
