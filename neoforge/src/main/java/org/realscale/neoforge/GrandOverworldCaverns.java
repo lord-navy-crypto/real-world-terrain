@@ -126,7 +126,10 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
             return entrance>0?Math.min(original,-2.0*entrance):original;
         long mask=y>GrandOverworldCaveNetwork.MAX_GEOMETRY_Y+2
                 ?0L:GrandOverworldCaveNetwork.componentMaskForColumn(x,z);
-        boolean extra=GrandOverworldCaveDesignV2.mayTouchColumn(x,y,z);
+        int extraMask=(y<GrandOverworldCaveDesignV2.MIN_EXTRA_Y-2
+                ||y>GrandOverworldCaveDesignV2.MAX_EXTRA_Y+2)
+                ?0:GrandOverworldCaveDesignV2.componentMaskForColumn(x,z);
+        boolean extra=GrandOverworldCaveDesignV2.mayTouchColumn(x,y,z,extraMask);
         if(mask==0L && !extra) {
             double chosen=carve(original,smallCaves.compute(ctx),0);
             return Math.min(chosen,entrance>0?-2.0*entrance:original);
@@ -136,7 +139,8 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
         double existing=mask!=0L
                 ?GrandOverworldCaveNetwork.strengthFromColumnWithMask(
                         x,z,wx,wy,wz,mask):0;
-        double addition=extra?GrandOverworldCaveDesignV2.strength(wx,wy,wz):0;
+        double addition=extra?GrandOverworldCaveDesignV2.strengthFromColumn(
+                x,z,wx,wy,wz,extraMask):0;
         double strength=Math.max(existing,addition);
         double giantVoid=strength>0?-2.4*strength:original;
         double chosen=(strength>0 && giantVoid<=smallCaves.minValue())

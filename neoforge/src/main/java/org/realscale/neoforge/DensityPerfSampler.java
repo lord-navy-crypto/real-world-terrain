@@ -36,6 +36,27 @@ final class DensityPerfSampler {
     private static final LongAdder ECOTONE_BASE_MISSES=new LongAdder();
     private static final LongAdder HORIZONTAL_MEMO_HITS=new LongAdder();
     private static final LongAdder HORIZONTAL_MEMO_MISSES=new LongAdder();
+    private static final LongAdder CAVE_V2_COLUMN_HITS=new LongAdder();
+    private static final LongAdder CAVE_V2_COLUMN_MISSES=new LongAdder();
+    private static final LongAdder CAVE_V2_FEATURE_EVALUATIONS=new LongAdder();
+
+    static void caveV2ColumnCacheProbe(boolean hit) {
+        if(!ENABLED)return;
+        (hit?CAVE_V2_COLUMN_HITS:CAVE_V2_COLUMN_MISSES).increment();
+    }
+
+    static void caveV2FeatureEvaluations(int count) {
+        if(ENABLED && count>0)CAVE_V2_FEATURE_EVALUATIONS.add(count);
+    }
+
+    static String caveV2CacheSnapshot() {
+        long hits=CAVE_V2_COLUMN_HITS.sum(),misses=CAVE_V2_COLUMN_MISSES.sum();
+        long total=hits+misses;
+        double rate=total==0?0.0:hits*100.0/total;
+        return "column_hits="+hits+" column_misses="+misses
+                +" column_hit_rate_percent="+String.format(java.util.Locale.ROOT,"%.2f",rate)
+                +" exact_feature_evaluations="+CAVE_V2_FEATURE_EVALUATIONS.sum();
+    }
 
     static void horizontalMemoProbe(boolean hit) {
         if(!ENABLED)return;
@@ -77,6 +98,9 @@ final class DensityPerfSampler {
             if(HORIZONTAL_MEMO_HITS.sum()+HORIZONTAL_MEMO_MISSES.sum()>0)
                 System.err.println("[RealScale horizontal memo profile] "
                         +horizontalMemoSnapshot());
+            if(CAVE_V2_COLUMN_HITS.sum()+CAVE_V2_COLUMN_MISSES.sum()>0)
+                System.err.println("[RealScale cave V2 memo profile] "
+                        +caveV2CacheSnapshot());
         },"realscale-density-profile-summary"));
     }
 

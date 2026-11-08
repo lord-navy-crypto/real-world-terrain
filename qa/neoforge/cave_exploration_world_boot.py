@@ -44,8 +44,10 @@ for folder in ("run","run/server","run/gametestserver"):
         "rcon.password=realscale_ci_probe_only\n"
     )
 
+env=os.environ.copy()
+env["JAVA_TOOL_OPTIONS"]=(env.get("JAVA_TOOL_OPTIONS","")+" -Drealscale.density.profile=true").strip()
 p=subprocess.Popen(["gradle","--no-daemon","runServer","--stacktrace"],
-                   cwd=ROOT,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,
+                   cwd=ROOT,env=env,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,
                    stderr=subprocess.STDOUT,text=True,bufsize=1,
                    start_new_session=True)
 log=[]

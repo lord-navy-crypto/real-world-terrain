@@ -79,3 +79,37 @@ Do not describe its original density as bitwise equal to the new world:
 bitwise preservation applies only to legacy presets. Actual dedicated-server
 Anvil chunk generation and a physical-client cave-tour screenshot/FPS run are
 separate release gates, not implied by pure Java tests.
+
+
+## Phase 29 — exact per-column feature-mask memoization
+
+The V2 evaluator previously repeated a four-tier combined AABB check at each
+vertical density sample, then called both curved tunnels and the annex hall
+even when only one of those three features could intersect the sample.
+
+The new path adds a bounded 512-slot, two-way, worker-local X/Z column memo.
+Its 12-bit mask independently selects each tier's loop, spur, and terminal
+annex. A height-aware test rejects the selected features outside their exact
+vertical support before noise evaluation. The final evaluator then calls only
+the selected tunnel/hall kernels.
+
+The mask bounds mirror the exact conservative bounds in
+`GrandOverworldCaveNetwork.tunnelStrength` (`radius+17` horizontally and
+`radius*verticalScale+16` vertically) and `hallStrength` (the exact ellipsoid
+radii). It includes the declared +/-6 X, +/-5 Z and +/-2 Y noise warp. Any
+future caller outside that support or across a 768-cell boundary falls back
+to the full reference evaluator. The unmasked evaluator remains available for
+bitwise parity tests.
+
+This also removes an over-aggressive local-edge rejection inherited from the
+first V2 broad phase: the old `localX<24` / `localZ<24` test did not account
+for a positive density warp toward the interior. The feature AABB mask now
+decides each edge column conservatively, so valid near-edge geometry cannot
+be hidden by a coarse local-coordinate threshold.
+
+Opt-in `-Drealscale.density.profile=true` now reports V2 column-mask hit/miss
+counts and exact feature-kernel evaluation counts. These are diagnostics only;
+they do not alter production worldgen. CI checks bit-for-bit equality against
+the original full evaluator at positive and negative coordinates, all
+nine combinations of the legal X/Z warp extrema, vertical warp extrema,
+cell-edge probes, cache collisions, and parallel workers.

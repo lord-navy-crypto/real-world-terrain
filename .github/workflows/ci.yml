@@ -263,6 +263,7 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldCorridorSineParitySmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldSingleMaskParitySmoke.java \
             neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveDesignV2.java \
+            neoforge/src/main/java/org/realscale/neoforge/DensityPerfSampler.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldCaveDesignV2Smoke.java
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldCaveNetworkSmoke
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldEntranceCacheParitySmoke
