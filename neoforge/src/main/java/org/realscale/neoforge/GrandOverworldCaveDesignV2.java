@@ -252,7 +252,7 @@ public final class GrandOverworldCaveDesignV2 {
                         x,y,z,layer.source,layer.annex,layer.spur,layer.spurKey));
                 evaluated++;
             }
-            if((mask&(1<<(bit+2))!=0) && layer.annexBounds.containsY(y)) {
+            if((mask&(1<<(bit+2)))!=0 && layer.annexBounds.containsY(y)) {
                 result=Math.max(result,hallStrength(x,y,z,layer.annex));
                 evaluated++;
             }
