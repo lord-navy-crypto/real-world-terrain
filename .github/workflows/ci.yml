@@ -414,6 +414,8 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_builtin_structure_packs.py' -v
       - name: Verify GDMC architecture asset licensing, NBT conversion and optional worldgen pack
         run: python3 -m unittest discover -s qa -p 'test_architecture_pilot_pack.py' -v
+      - name: Verify four optional urban districts, skyscraper geometry and complete JAR wiring
+        run: python3 -m unittest discover -s qa -p 'test_urban_districts.py' -v
       - name: Export real TVA YACL Terrain Lab datapack from compiled JAR
         run: |
           python3 qa/test_tva_exporter_end_to_end.py
