@@ -1,5 +1,6 @@
 package org.realscale.neoforge;
 
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.KeyDispatchDataCodec;
@@ -14,13 +15,19 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * before blocks are made, and so can excavate enormous real tunnel volumes.
  */
 public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
-                                    DensityFunction smallCaves)
+                                    DensityFunction smallCaves, boolean galleryV2)
         implements DensityFunction.SimpleFunction {
+    /** Existing codecs and saves preserve their original three-field form. */
+    public GrandOverworldCaverns(DensityFunction base,DensityFunction warp,
+            DensityFunction smallCaves) {
+        this(base,warp,smallCaves,false);
+    }
     public static final MapCodec<GrandOverworldCaverns> MAP_CODEC =
             RecordCodecBuilder.mapCodec(i -> i.group(
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(GrandOverworldCaverns::base),
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("warp").forGetter(GrandOverworldCaverns::warp),
-                    DensityFunction.HOLDER_HELPER_CODEC.fieldOf("small_caves").forGetter(GrandOverworldCaverns::smallCaves)
+                    DensityFunction.HOLDER_HELPER_CODEC.fieldOf("small_caves").forGetter(GrandOverworldCaverns::smallCaves),
+                    Codec.BOOL.optionalFieldOf("gallery_v2",false).forGetter(GrandOverworldCaverns::galleryV2)
             ).apply(i,GrandOverworldCaverns::new));
     private static final KeyDispatchDataCodec<GrandOverworldCaverns> DISPATCH =
             KeyDispatchDataCodec.of(MAP_CODEC);
@@ -40,9 +47,10 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
     }
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {
-        if(!DensityPerfSampler.ENABLED)return computeUnprofiled(ctx);
+        if(!DensityPerfSampler.ENABLED)
+            return galleryV2?computeExpanded(ctx):computeUnprofiled(ctx);
         long start=DensityPerfSampler.begin(DensityPerfSampler.Stage.OVERWORLD_CAVE);
-        try{return computeUnprofiled(ctx);}
+        try{return galleryV2?computeExpanded(ctx):computeUnprofiled(ctx);}
         finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.OVERWORLD_CAVE,start);}
     }
 
@@ -100,9 +108,45 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
         return Math.min(chosen,entrance>0 ? -2.0*entrance : original);
     }
 
+    /**
+     * Separate opt-in exploration world only: preserve legacy density exactly
+     * for all old presets, but connect satellite rooms into walkable loops
+     * and add tier-shaped annexes in the new saved noise settings.
+     */
+    private double computeExpanded(DensityFunction.FunctionContext ctx) {
+        double original=base.compute(ctx);
+        int y=ctx.blockY();
+        if(y<GrandOverworldCaveNetwork.MIN_Y
+                ||y>GrandOverworldCaveNetwork.MAX_Y || original<=0.0)
+            return original;
+        int x=ctx.blockX(),z=ctx.blockZ();
+        double entrance=y>=110
+                ?GrandOverworldCaveNetwork.entranceStrength(x,y,z):0;
+        if(original<=0.24)
+            return entrance>0?Math.min(original,-2.0*entrance):original;
+        long mask=y>GrandOverworldCaveNetwork.MAX_GEOMETRY_Y+2
+                ?0L:GrandOverworldCaveNetwork.componentMaskForColumn(x,z);
+        boolean extra=GrandOverworldCaveDesignV2.mayTouchColumn(x,y,z);
+        if(mask==0L && !extra) {
+            double chosen=carve(original,smallCaves.compute(ctx),0);
+            return Math.min(chosen,entrance>0?-2.0*entrance:original);
+        }
+        double shift=Math.max(-1.0,Math.min(1.0,warp.compute(ctx)));
+        double wx=x+shift*6.0,wy=y+shift*2.0,wz=z-shift*5.0;
+        double existing=mask!=0L
+                ?GrandOverworldCaveNetwork.strengthFromColumnWithMask(
+                        x,z,wx,wy,wz,mask):0;
+        double addition=extra?GrandOverworldCaveDesignV2.strength(wx,wy,wz):0;
+        double strength=Math.max(existing,addition);
+        double giantVoid=strength>0?-2.4*strength:original;
+        double chosen=(strength>0 && giantVoid<=smallCaves.minValue())
+                ?giantVoid:carve(original,smallCaves.compute(ctx),strength);
+        return Math.min(chosen,entrance>0?-2.0*entrance:original);
+    }
+
     @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {
         return visitor.apply(new GrandOverworldCaverns(base.mapAll(visitor),
-                warp.mapAll(visitor),smallCaves.mapAll(visitor)));
+                warp.mapAll(visitor),smallCaves.mapAll(visitor),galleryV2));
     }
     @Override public double minValue() {
         return Math.min(-3.0, Math.min(base.minValue(), smallCaves.minValue()));
