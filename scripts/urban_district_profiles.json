@@ -1,0 +1,34 @@
+{
+  "biomes": [
+    "minecraft:plains",
+    "minecraft:sunflower_plains",
+    "minecraft:savanna",
+    "realscale:forest_steppe",
+    "realscale:shrub_prairie",
+    "realscale:woodland_meadow"
+  ],
+  "placement": {
+    "spacing": 128,
+    "separation": 48,
+    "salt": 140111,
+    "spread_type": "linear"
+  },
+  "districts": [
+    {
+      "id": "commercial_skyscrapers",
+      "weight": 2
+    },
+    {
+      "id": "civic_centre",
+      "weight": 2
+    },
+    {
+      "id": "residential_quarter",
+      "weight": 3
+    },
+    {
+      "id": "industrial_edge",
+      "weight": 1
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /** The independent v2 DEM never changes historical sampled altitudes. */
 public final class RealDemSeamlessDensityTest {
     private static final RealDemTile ORIGINAL=RealDemTile.load();
+    private static final RealDemDataSource DEM_SOURCE=RealDemDataSource.loadMeasured();
 
     @Test void exactHeightAtAll256MeasuredGridPoints() {
         for(int z=-240;z<=240;z+=32)
@@ -69,6 +70,77 @@ public final class RealDemSeamlessDensityTest {
                    -RealDemSeamlessMath.taperedOutsideDisplacement(128);
         assertTrue(Math.abs(before-after)<0.01,
                    "An artificial exterior terrace kink remains");
+    }
+
+    @Test void farFieldSupportGuardMatchesTheOriginalZeroWeightDomain() {
+        for(int fade:new int[]{256,768,2048,4096}) {
+            for(int x=-4608;x<=4608;x+=83) {
+                for(int z=-4608;z<=4608;z+=97) {
+                    boolean expected=RealDemSeamlessMath.weightOutside(x,z,fade)==0.0;
+                    assertEquals(expected,
+                            RealDemSeamlessMath.outsideFadeRegion(x,z,fade),
+                            "Support rejection changed at "+x+","+z+" fade="+fade);
+                }
+            }
+            for(int x:new int[]{Integer.MIN_VALUE,Integer.MAX_VALUE,
+                    DEM_SOURCE.originX()-fade,DEM_SOURCE.originX()-fade+1,
+                    DEM_SOURCE.originX(),DEM_SOURCE.maxX(),
+                    DEM_SOURCE.maxX()+fade-1,DEM_SOURCE.maxX()+fade}) {
+                boolean expected=RealDemSeamlessMath.weightOutside(x,0,fade)==0.0;
+                assertEquals(expected,RealDemSeamlessMath.outsideFadeRegion(x,0,fade),
+                        "Extreme/cardinal support mismatch at x="+x+" fade="+fade);
+            }
+        }
+    }
+
+    @Test void combinedColumnSampleMatchesIndependentCachesAcrossTheFullFadeDomain() {
+        for(int fade:new int[]{256,768,2048,4096}) {
+            for(int x=-4608;x<=4608;x+=83) {
+                for(int z=-4608;z<=4608;z+=97) {
+                    RealDemSeamlessMath.ColumnSample sample=
+                            RealDemSeamlessMath.cachedColumnSample(x,z,fade);
+                    double expectedWeight=RealDemSeamlessMath.cachedWeightOutside(x,z,fade);
+                    assertEquals(Double.doubleToRawLongBits(expectedWeight),
+                            Double.doubleToRawLongBits(sample.weight),
+                            "Combined DEM sample changed fade weight at "+x+","+z);
+                    if(expectedWeight>0.0) {
+                        double expectedHeight=RealDemSeamlessMath.cachedExtendedHeight(x,z);
+                        assertEquals(Double.doubleToRawLongBits(expectedHeight),
+                                Double.doubleToRawLongBits(sample.height),
+                                "Combined DEM sample changed extended height at "+x+","+z);
+                    }
+                    // Repeated vertical samples must return the same per-column
+                    // pair, including when the next column evicts the direct map.
+                    RealDemSeamlessMath.ColumnSample repeated=
+                            RealDemSeamlessMath.cachedColumnSample(x,z,fade);
+                    assertEquals(Double.doubleToRawLongBits(expectedWeight),
+                            Double.doubleToRawLongBits(repeated.weight));
+                    if(expectedWeight>0.0)
+                        assertEquals(Double.doubleToRawLongBits(
+                                RealDemSeamlessMath.cachedExtendedHeight(x,z)),
+                                Double.doubleToRawLongBits(repeated.height));
+                }
+            }
+        }
+    }
+
+    @Test void combinedColumnSampleCacheIsThreadConfinedAndBitExact() {
+        java.util.stream.IntStream.range(0,8).parallel().forEach(worker -> {
+            for(int i=0;i<3000;i++) {
+                int x=((worker*131+i*53)%8400)-4200;
+                int z=((worker*197+i*71)%8400)-4200;
+                int fade=(i&1)==0?768:2048;
+                RealDemSeamlessMath.ColumnSample sample=
+                        RealDemSeamlessMath.cachedColumnSample(x,z,fade);
+                double weight=RealDemSeamlessMath.weightOutside(x,z,fade);
+                assertEquals(Double.doubleToRawLongBits(weight),
+                        Double.doubleToRawLongBits(sample.weight));
+                if(weight>0.0)
+                    assertEquals(Double.doubleToRawLongBits(
+                            RealDemSeamlessMath.extendedHeight(x,z)),
+                            Double.doubleToRawLongBits(sample.height));
+            }
+        });
     }
 
     @Test void cachedHeightIsIdenticalForEverySampleAndRepeatedVerticalUse() {
@@ -155,6 +227,80 @@ public final class RealDemSeamlessDensityTest {
                     assertFadeWeightBits(x, z, fade);
                 }
             }
+        }
+    }
+
+    private static double uncachedExteriorReference(double x,double z) {
+        RealDemDataSource source=DEM_SOURCE;
+        double cell=source.cellMeters();
+        double cx=Math.max(source.originX(),Math.min(source.maxX(),x));
+        double cz=Math.max(source.originZ(),Math.min(source.maxZ(),z));
+        double center=RealDemSeamlessMath.measuredHeight(cx,cz);
+        double originalCenter=center;
+        double dx=x-cx,dz=z-cz;
+        if(dx!=0.0) {
+            double neighbor=RealDemSeamlessMath.measuredHeight(
+                    cx+(dx<0?cell:-cell),cz);
+            double slope=(neighbor-center)/(dx<0?cell:-cell);
+            center+=Math.max(-1.25,Math.min(1.25,slope))
+                    *RealDemSeamlessMath.taperedOutsideDisplacement(dx);
+        }
+        if(dz!=0.0) {
+            double neighbor=RealDemSeamlessMath.measuredHeight(
+                    cx,cz+(dz<0?cell:-cell));
+            double slope=(neighbor-originalCenter)/(dz<0?cell:-cell);
+            center+=Math.max(-1.25,Math.min(1.25,slope))
+                    *RealDemSeamlessMath.taperedOutsideDisplacement(dz);
+        }
+        return Math.max(-64.0,Math.min(2031.0,center));
+    }
+
+    @Test void precomputedSourceCornersRemainRawBitExactInAllExteriorQuadrants() {
+        RealDemDataSource source=RealDemDataSource.loadMeasured();
+        java.util.Random random=new java.util.Random(0x17a31L);
+        for(int zi=0;zi<2;zi++)
+            for(int xi=0;xi<2;xi++) {
+                int bx=xi==0?source.originX():source.maxX();
+                int bz=zi==0?source.originZ():source.maxZ();
+                int signX=xi==0?-1:1,signZ=zi==0?-1:1;
+                for(double dx:new double[]{0.001,0.5,1.0,31.5,128,1024,2048})
+                    for(double dz:new double[]{0.001,0.5,1.0,31.5,128,1024,2048}) {
+                        double x=bx+signX*dx,z=bz+signZ*dz;
+                        assertEquals(
+                            Double.doubleToRawLongBits(uncachedExteriorReference(x,z)),
+                            Double.doubleToRawLongBits(RealDemSeamlessMath.extendedHeight(x,z)),
+                            "Bit difference at quadrant exterior "+x+","+z);
+                    }
+                for(int i=0;i<4000;i++) {
+                    double x=bx+signX*(0.001+random.nextDouble()*4096);
+                    double z=bz+signZ*(0.001+random.nextDouble()*4096);
+                    assertEquals(
+                        Double.doubleToRawLongBits(uncachedExteriorReference(x,z)),
+                        Double.doubleToRawLongBits(RealDemSeamlessMath.extendedHeight(x,z)),
+                        "Bit difference at random exterior "+x+","+z);
+                }
+            }
+    }
+
+    @Test void circularFadeShortcutMatchesSourceAlongAllFourTileCorners() {
+        RealDemDataSource dem=RealDemDataSource.loadMeasured();
+        for(int fade : new int[]{256,768,2048,4096}) {
+            int step=Math.max(1,fade/72);
+            for(int signX : new int[]{-1,1})
+                for(int signZ : new int[]{-1,1}) {
+                    int edgeX=signX<0?dem.originX():dem.maxX();
+                    int edgeZ=signZ<0?dem.originZ():dem.maxZ();
+                    for(int dx=0;dx<=fade+step;dx+=step)
+                        for(int dz=0;dz<=fade+step;dz+=step)
+                            assertFadeWeightBits(
+                                edgeX+signX*dx,edgeZ+signZ*dz,fade);
+                    // Exact cardinal boundary where the smoothstep first
+                    // reaches zero, plus inside/outside neighbor coordinates.
+                    for(int r : new int[]{fade-1,fade,fade+1}) {
+                        assertFadeWeightBits(edgeX+signX*r,edgeZ,fade);
+                        assertFadeWeightBits(edgeX,edgeZ+signZ*r,fade);
+                    }
+                }
         }
     }
 

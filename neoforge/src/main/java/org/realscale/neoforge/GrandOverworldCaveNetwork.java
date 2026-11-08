@@ -52,6 +52,12 @@ public final class GrandOverworldCaveNetwork {
         final int[] columnEpoch=new int[COLUMN_SLOTS];
         // 47 independently masked chambers and tunnels fit into one long.
         final long[] columnComponents=new long[COLUMN_SLOTS];
+        // A NoiseChunk repeatedly queries the same X/Z broad-phase mask at
+        // many Y samples. Keep the most recent exact column beside the
+        // two-way table so vertical repeats avoid hashing and array probes.
+        int lastColumnX,lastColumnZ;
+        long lastColumnMask;
+        boolean lastColumnValid;
         int epoch=1;
         final Hall[][] halls=new Hall[LAYERS][5];
         final Hall[][] galleries=new Hall[LAYERS][2];
@@ -69,6 +75,7 @@ public final class GrandOverworldCaveNetwork {
         void load(int x,int z) {
             if(gx==x && gz==z)return;
             gx=x;gz=z;
+            lastColumnValid=false;
             // Entries for a different 768x768 network cell are invalid.
             // No cross-thread access or world-wide unbounded state.
             if (++epoch == 0) {
@@ -428,14 +435,24 @@ public final class GrandOverworldCaveNetwork {
         if(localX<=6 || localX>=CELL-7 || localZ<=5 || localZ>=CELL-6)
             return -1L;
         Cache c=LOCAL.get().get(Math.floorDiv(x,CELL),Math.floorDiv(z,CELL));
+        if(c.lastColumnValid && c.lastColumnX==x && c.lastColumnZ==z)
+            return c.lastColumnMask;
         int bucket=columnBucket(x,z);
         int first=bucket<<1,second=first+1;
         if(c.columnEpoch[first]==c.epoch && c.columnX[first]==x
-                && c.columnZ[first]==z)
-            return c.columnComponents[first];
+                && c.columnZ[first]==z) {
+            c.lastColumnX=x;c.lastColumnZ=z;
+            c.lastColumnMask=c.columnComponents[first];
+            c.lastColumnValid=true;
+            return c.lastColumnMask;
+        }
         if(c.columnEpoch[second]==c.epoch && c.columnX[second]==x
-                && c.columnZ[second]==z)
-            return c.columnComponents[second];
+                && c.columnZ[second]==z) {
+            c.lastColumnX=x;c.lastColumnZ=z;
+            c.lastColumnMask=c.columnComponents[second];
+            c.lastColumnValid=true;
+            return c.lastColumnMask;
+        }
         long mask=columnComponentMask(c,x-6.0,x+6.0,z-5.0,z+5.0);
         final int target;
         if(c.columnEpoch[first]!=c.epoch)target=first;
@@ -448,6 +465,9 @@ public final class GrandOverworldCaveNetwork {
         c.columnX[target]=x;
         c.columnZ[target]=z;
         c.columnComponents[target]=mask;
+        c.lastColumnX=x;c.lastColumnZ=z;
+        c.lastColumnMask=mask;
+        c.lastColumnValid=true;
         return mask;
     }
 

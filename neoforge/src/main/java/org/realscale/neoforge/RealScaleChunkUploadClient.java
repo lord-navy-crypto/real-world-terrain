@@ -22,6 +22,20 @@ public final class RealScaleChunkUploadClient {
 
     public static final boolean ENABLED=Boolean.parseBoolean(System.getProperty(
             "realscale.experimental.client.uploadbudget","false"));
+    // Both properties are required. Mode-aware scheduling never activates
+    // the experimental upload Mixin by itself.
+    public static final boolean MODE_AWARE=ENABLED &&
+            Boolean.parseBoolean(System.getProperty(
+                    "realscale.experimental.client.uploadbudget.modeaware","false"));
+    public static final boolean ADAPTIVE=MODE_AWARE &&
+            Boolean.parseBoolean(System.getProperty(
+                    "realscale.experimental.client.uploadbudget.adaptive","false"));
+    public static final boolean PREDICTIVE=MODE_AWARE &&
+            Boolean.parseBoolean(System.getProperty(
+                    "realscale.experimental.client.uploadbudget.predictive","false"));
+    private static final ClientUploadFrameGovernor GOVERNOR=
+            new ClientUploadFrameGovernor();
+    private static long frameBeginNanos;
     private static final boolean PROFILE=ENABLED ||
             Boolean.getBoolean("realscale.client.chunkqueue.profile");
     public static final ClientChunkUploadBudget BUDGET =
@@ -42,17 +56,44 @@ public final class RealScaleChunkUploadClient {
         if(world!=lastWorld){
             reset(world);
         }
-        if(ENABLED)BUDGET.beginFrame(playing);
+        // A menu or disconnect cannot carry an old slow-frame streak into
+        // the next playable scene, even when the level object is unchanged.
+        if(ADAPTIVE && !playing)GOVERNOR.reset();
+        if(PREDICTIVE && !playing)BUDGET.resetPrediction();
+        if(ENABLED) {
+            // Measure only with the explicit third opt-in. A Pre-to-Post
+            // interval includes frame pacing and is not GPU-only render time.
+            frameBeginNanos=ADAPTIVE&&playing?System.nanoTime():0L;
+            if(MODE_AWARE) {
+                SectionRenderDispatcher dispatcher=playing
+                        ?mc.levelRenderer.getSectionRenderDispatcher():null;
+                AdaptiveVisibilityBudget.Mode state=playing&&dispatcher!=null
+                        ?RealScaleAdaptiveVisibilityClient.currentModeFor(world,mc.player)
+                        :AdaptiveVisibilityBudget.Mode.TRANSITION;
+                ClientChunkUploadBudget.VisibilityMode uploadMode=switch(state) {
+                    case OPEN_SURFACE -> ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE;
+                    case SEALED_CAVE -> ClientChunkUploadBudget.VisibilityMode.SEALED_CAVE;
+                    case TRANSITION -> ClientChunkUploadBudget.VisibilityMode.TRANSITION;
+                };
+                BUDGET.beginModeAwareFrame(playing,uploadMode,
+                        dispatcher==null?0:Math.max(0,dispatcher.getToUpload()),
+                        ADAPTIVE&&GOVERNOR.constrained(),PREDICTIVE);
+            } else BUDGET.beginFrame(playing);
+        }
     }
 
     @SubscribeEvent public static void onPost(RenderFrameEvent.Post event){
         if(!PROFILE)return;
         Minecraft mc=Minecraft.getInstance();
         if(ENABLED){
+            if(ADAPTIVE && frameBeginNanos!=0L){
+                GOVERNOR.observe(System.nanoTime()-frameBeginNanos);
+                frameBeginNanos=0L;
+            }
             if(BUDGET.active()){
                 uploaded+=BUDGET.tasksThisFrame();
-                if(BUDGET.spentNanosThisFrame()>=BUDGET.maxNanos()
-                        ||BUDGET.tasksThisFrame()>=BUDGET.maxTasks())
+                if(BUDGET.spentNanosThisFrame()>=BUDGET.frameMaxNanos()
+                        ||BUDGET.tasksThisFrame()>=BUDGET.frameMaxTasks())
                     budgetFrames++;
             }
             BUDGET.endFrame();
@@ -77,7 +118,19 @@ public final class RealScaleChunkUploadClient {
             double denom=(double)frames;
             long currentDeferred=BUDGET.deferredCalls();
             System.err.println("REALSCALE_CLIENT_CHUNK_QUEUE "+
-                    "mode="+(ENABLED?"upload_budget":"vanilla_probe")+
+                    "mode="+(MODE_AWARE?"mode_aware_upload_budget":
+                            ENABLED?"upload_budget":"vanilla_probe")+
+                    " visibility="+(MODE_AWARE?
+                            RealScaleAdaptiveVisibilityClient.currentModeFor(mc.level,mc.player):"not_sampled")+
+                    " transition_bypass_frames="+BUDGET.transitionBypasses()+
+                    " backlog_rescue_frames="+BUDGET.backlogRescueFrames()+
+                    " adaptive="+ADAPTIVE+
+                    " adaptive_constrained="+GOVERNOR.constrained()+
+                    " adaptive_slow_frames="+GOVERNOR.slowFrames()+
+                    " adaptive_reduced_frames="+BUDGET.adaptiveReducedFrames()+
+                    " predictive="+PREDICTIVE+
+                    " estimated_task_us="+(BUDGET.estimatedTaskNanos()/1000L)+
+                    " predictive_stops="+BUDGET.predictiveStops()+
                     " frames="+frames+
                     " backlog_frames="+framesWithBacklog+
                     " avg_compile_pending="+String.format(java.util.Locale.ROOT,"%.2f",totalQueued/denom)+
@@ -88,7 +141,8 @@ public final class RealScaleChunkUploadClient {
                     " uploaded_by_budget="+uploaded+
                     " budget_frames="+budgetFrames+
                     " deferred_calls="+(currentDeferred-lastReportedDeferred)+
-                    " no_render_distance_or_worldgen_change=true");
+                    " no_render_distance_or_worldgen_change=true"+
+                    " no_section_reordering=true");
             lastReportedDeferred=currentDeferred;
         }
         frames=framesWithBacklog=totalQueued=totalUploading=budgetFrames=uploaded=0;
@@ -105,5 +159,8 @@ public final class RealScaleChunkUploadClient {
         lastReportNanos=0L;
         lastReportedDeferred=BUDGET.deferredCalls();
         if(ENABLED)BUDGET.endFrame();
+        frameBeginNanos=0L;
+        if(ADAPTIVE)GOVERNOR.reset();
+        if(PREDICTIVE)BUDGET.resetPrediction();
     }
 }

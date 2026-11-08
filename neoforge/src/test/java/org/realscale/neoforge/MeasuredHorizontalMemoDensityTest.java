@@ -1,5 +1,6 @@
 package org.realscale.neoforge;
 
+
 import org.junit.jupiter.api.Test;
 import java.util.stream.IntStream;
 import static org.junit.jupiter.api.Assertions.*;
@@ -59,6 +60,7 @@ public class MeasuredHorizontalMemoDensityTest {
         assertEquals(0x7ff8000000000001L,
                 Double.doubleToRawLongBits(memo.value()));
     }
+
 
     @Test void independentlyAllocatedWorkerCachesStayIsolated() {
         IntStream.range(0,8).parallel().forEach(worker->{

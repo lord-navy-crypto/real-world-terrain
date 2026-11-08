@@ -10,6 +10,13 @@ final class RealDemSeamlessMath {
     private static final double CELL = DEM.cellMeters();
     private static final int GRID = DEM.width();
     private static final double[][] HEIGHTS = loadHeights();
+    // Four source-corner values and their inward neighbors are immutable for
+    // the lifetime of the selected, SHA-verified DEM raster. Most of the
+    // circular exterior blend region lies beyond two source tile edges;
+    // those columns otherwise repeat three costly bicubic interpolations.
+    private static final CornerSamples[] SOURCE_CORNERS = loadCornerSamples();
+
+    private record CornerSamples(double center, double xNeighbor, double zNeighbor) {}
 
     /*
      * Minecraft re-evaluates final_density at many Y cells for each X/Z.
@@ -24,6 +31,102 @@ final class RealDemSeamlessMath {
     // existing ones. Keep a bounded 4096-slot working set (up from 256)
     // plus a zero-hash last-column fast path. Cache miss always evaluates
     // the EXACT original bicubic function, preserving DEM heights bitwise.
+    /**
+     * One lookup supplies both horizontal DEM inputs to the production
+     * density wrapper. This avoids two independent ThreadLocal lookups for
+     * every Y sample in the exterior transition ring.
+     */
+    static final class ColumnSample {
+        double weight;
+        double height;
+    }
+    private static final int COLUMN_SAMPLE_CACHE_SIZE = 4096;
+    private static final class ColumnSampleCache {
+        final int[] xs=new int[COLUMN_SAMPLE_CACHE_SIZE];
+        final int[] zs=new int[COLUMN_SAMPLE_CACHE_SIZE];
+        final int[] fadeWidths=new int[COLUMN_SAMPLE_CACHE_SIZE];
+        final double[] weights=new double[COLUMN_SAMPLE_CACHE_SIZE];
+        final double[] heights=new double[COLUMN_SAMPLE_CACHE_SIZE];
+        final boolean[] valid=new boolean[COLUMN_SAMPLE_CACHE_SIZE];
+        boolean lastValid;
+        int lastX,lastZ,lastFadeWidth;
+        double lastWeight,lastHeight;
+        final ColumnSample sample=new ColumnSample();
+    }
+    private static final ThreadLocal<ColumnSampleCache> COLUMN_SAMPLE_CACHE =
+            ThreadLocal.withInitial(ColumnSampleCache::new);
+
+    private static boolean insideMeasuredRectangle(int x,int z) {
+        return x>=DEM.originX() && x<=DEM.maxX()
+                && z>=DEM.originZ() && z<=DEM.maxZ();
+    }
+
+    /**
+     * Exact support test for the circular DEM fade. A true result means the
+     * original weight is mathematically zero, so callers can return their
+     * procedural base BEFORE touching a ThreadLocal cache or interpolator.
+     * Positive codec widths keep the squared-distance arithmetic bounded by
+     * the rectangular guard; non-positive widths retain the legacy path.
+     */
+    static boolean outsideFadeRegion(int x,int z,int fadeMeters) {
+        if(fadeMeters<=0 || insideMeasuredRectangle(x,z))return false;
+        final int minX=DEM.originX(),maxX=DEM.maxX();
+        final int minZ=DEM.originZ(),maxZ=DEM.maxZ();
+        if((long)x<=(long)minX-fadeMeters
+                ||(long)x>=(long)maxX+fadeMeters
+                ||(long)z<=(long)minZ-fadeMeters
+                ||(long)z>=(long)maxZ+fadeMeters)return true;
+        final long dx=x<minX?(long)minX-x:x>maxX?(long)x-maxX:0L;
+        final long dz=z<minZ?(long)minZ-z:z>maxZ?(long)z-maxZ:0L;
+        return dx*dx+dz*dz >= (long)fadeMeters*fadeMeters;
+    }
+
+    private static double exactWeightOutside(int x,int z,int fadeMeters) {
+        if(fadeMeters<=0)return weightOutside(x,z,fadeMeters);
+        if(insideMeasuredRectangle(x,z))return 1.0;
+        if(outsideFadeRegion(x,z,fadeMeters))return 0.0;
+        return weightOutside(x,z,fadeMeters);
+    }
+
+    static ColumnSample cachedColumnSample(int x,int z,int fadeMeters) {
+        ColumnSampleCache cache=COLUMN_SAMPLE_CACHE.get();
+        if(cache.lastValid && cache.lastX==x && cache.lastZ==z
+                && cache.lastFadeWidth==fadeMeters) {
+            cache.sample.weight=cache.lastWeight;
+            cache.sample.height=cache.lastHeight;
+            return cache.sample;
+        }
+        int hash=x*0x9e3779b9 ^ Integer.rotateLeft(z*0x85ebca6b,13)
+                ^ fadeMeters*0xc2b2ae35;
+        int slot=(hash^(hash>>>16))&(COLUMN_SAMPLE_CACHE_SIZE-1);
+        final double weight,height;
+        if(cache.valid[slot] && cache.xs[slot]==x && cache.zs[slot]==z
+                && cache.fadeWidths[slot]==fadeMeters) {
+            weight=cache.weights[slot];
+            height=cache.heights[slot];
+        } else {
+            weight=exactWeightOutside(x,z,fadeMeters);
+            // Preserve the original NaN path for invalid non-codec callers;
+            // normal registered profiles always use a positive fade width.
+            height=weight<=0.0?0.0:extendedHeight(x,z);
+            cache.xs[slot]=x;
+            cache.zs[slot]=z;
+            cache.fadeWidths[slot]=fadeMeters;
+            cache.weights[slot]=weight;
+            cache.heights[slot]=height;
+            cache.valid[slot]=true;
+        }
+        cache.lastX=x;
+        cache.lastZ=z;
+        cache.lastFadeWidth=fadeMeters;
+        cache.lastWeight=weight;
+        cache.lastHeight=height;
+        cache.lastValid=true;
+        cache.sample.weight=weight;
+        cache.sample.height=height;
+        return cache.sample;
+    }
+
     private static final int CACHE_SIZE = 4096;
     private static final class HeightCache {
         final int[] xs = new int[CACHE_SIZE];
@@ -102,6 +205,17 @@ final class RealDemSeamlessMath {
                 || (long)z <= (long)minZ - fadeMeters
                 || (long)z >= (long)maxZ + fadeMeters)
             return 0.0;
+        // The rectangular guard above bounds dx,dz to [0,fadeMeters).
+        // These are integral block distances; their squares and the radius
+        // square fit exactly into long even at the codec's maximum width.
+        // Any point outside the transition *circle* has identically zero
+        // original smoothstep weight. Avoid both hypot and a cache lookup.
+        final long dx = x < minX ? (long)minX - x :
+                x > maxX ? (long)x - maxX : 0L;
+        final long dz = z < minZ ? (long)minZ - z :
+                z > maxZ ? (long)z - maxZ : 0L;
+        if (dx*dx + dz*dz >= (long)fadeMeters*fadeMeters)
+            return 0.0;
 
         final long coordinate = ((long) x << 32) | (z & 0xffffffffL);
         final WeightCache cache = WEIGHT_CACHE.get();
@@ -142,6 +256,24 @@ final class RealDemSeamlessMath {
         return h;
     }
 
+    private static CornerSamples[] loadCornerSamples() {
+        CornerSamples[] corners = new CornerSamples[4];
+        for(int zi=0;zi<2;zi++) {
+            for(int xi=0;xi<2;xi++) {
+                double cx=xi==0?DEM.originX():DEM.maxX();
+                double cz=zi==0?DEM.originZ():DEM.maxZ();
+                // Cache only input spline samples, NOT extrapolated output.
+                // Slope math remains in extendedHeight in its original order.
+                corners[zi*2+xi]=new CornerSamples(
+                    measuredHeight(cx,cz),
+                    measuredHeight(cx+(xi==0?CELL:-CELL),cz),
+                    measuredHeight(cx,cz+(zi==0?CELL:-CELL))
+                );
+            }
+        }
+        return corners;
+    }
+
     private static double limit(double value,double low,double high) {
         return Math.max(low,Math.min(high,value));
     }
@@ -170,9 +302,14 @@ final class RealDemSeamlessMath {
     }
 
     private static double sampleRow(int row,int ix,double a) {
-        double p0=corner(row,ix),p1=corner(row,ix+1);
-        double pm=ix>0?corner(row,ix-1):2*p0-p1;
-        double pp=ix<GRID-2?corner(row,ix+2):2*p1-p0;
+        // measuredHeight bounds ix to [0, GRID-2]. Every spline corner
+        // uses the same clamped source row, so select that row once rather
+        // than repeating row and column clamps for each corner access.
+        // Keep endpoint extrapolation and smoothSegment arithmetic exact.
+        final double[] heights=HEIGHTS[Math.max(0,Math.min(GRID-1,row))];
+        double p0=heights[ix],p1=heights[ix+1];
+        double pm=ix>0?heights[ix-1]:2*p0-p1;
+        double pp=ix<GRID-2?heights[ix+2]:2*p1-p0;
         return smoothSegment(pm,p0,p1,pp,a);
     }
 
@@ -183,12 +320,13 @@ final class RealDemSeamlessMath {
         int ix=Math.min(GRID-2,(int)Math.floor(gx));
         int iz=Math.min(GRID-2,(int)Math.floor(gz));
         double a=gx-ix,b=gz-iz;
-        double r0=sampleRow(iz-1,ix,a);
+        // At the north/south raster edges one of the four original spline
+        // rows is discarded by endpoint extrapolation. Evaluate only rows
+        // that contribute, preserving the exact original operands.
         double r1=sampleRow(iz,ix,a);
         double r2=sampleRow(iz+1,ix,a);
-        double r3=sampleRow(iz+2,ix,a);
-        double lower=iz>0?r0:2*r1-r2;
-        double upper=iz<GRID-2?r3:2*r2-r1;
+        double lower=iz>0?sampleRow(iz-1,ix,a):2*r1-r2;
+        double upper=iz<GRID-2?sampleRow(iz+2,ix,a):2*r2-r1;
         return smoothSegment(lower,r1,r2,upper,b);
     }
 
@@ -208,16 +346,24 @@ final class RealDemSeamlessMath {
     static double extendedHeight(double x,double z) {
         double cx=limit(x,DEM.originX(),DEM.maxX());
         double cz=limit(z,DEM.originZ(),DEM.maxZ());
-        double center=measuredHeight(cx,cz);
-        double originalCenter=center;
         double dx=x-cx,dz=z-cz;
+        // Only quadrant-exterior columns have both displacements nonzero.
+        // At their clamped source corner, the 3 bicubic samples are constant.
+        // Direct edge strips and interior columns retain the original reads.
+        CornerSamples corner=(dx!=0.0&&dz!=0.0)
+                ?SOURCE_CORNERS[(z<DEM.originZ()?0:2)+(x<DEM.originX()?0:1)]
+                :null;
+        double center=corner==null?measuredHeight(cx,cz):corner.center();
+        double originalCenter=center;
         if(dx!=0.0) {
-            double neighbor=measuredHeight(cx+(dx<0?CELL:-CELL),cz);
+            double neighbor=corner==null
+                    ?measuredHeight(cx+(dx<0?CELL:-CELL),cz):corner.xNeighbor();
             double slope=(neighbor-center)/(dx<0?CELL:-CELL);
             center+=limit(slope,-1.25,1.25)*taperedOutsideDisplacement(dx);
         }
         if(dz!=0.0) {
-            double neighbor=measuredHeight(cx,cz+(dz<0?CELL:-CELL));
+            double neighbor=corner==null
+                    ?measuredHeight(cx,cz+(dz<0?CELL:-CELL)):corner.zNeighbor();
             // Keep Z gradient independent of the X-axis extrapolation.
             double slope=(neighbor-originalCenter)/(dz<0?CELL:-CELL);
             center+=limit(slope,-1.25,1.25)*taperedOutsideDisplacement(dz);

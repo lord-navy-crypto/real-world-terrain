@@ -120,14 +120,20 @@ API discovery and a reproducible client A/B proving an uncovered hot path.
 **Implemented in the separate Stage 2 draft branch** (without touching
 Sodium, Embeddium, vanilla rendering queues, saves or real worldgen):
 
-- Opt-in client sampler still defaults OFF. The observational cadence now
-  adapts to state: `TRANSITION` or a player moving >4 blocks from the previous
-  sample gets a probe every **10 ticks**; stable, stationary open-surface or
-  sealed-cave states probe every **40 ticks**. Teleport-like jumps of >24
-  blocks immediately reset policy to conservative transition.
+- Opt-in client sampler still defaults OFF. The diagnostic-only
+  `visibility.profile` cadence adapts to state: `TRANSITION` or movement
+  beyond 4 blocks gets a probe every **10 ticks**; stable, stationary surface
+  or sealed-cave states probe every **40 ticks**. When the experimental
+  Distant Horizons cave-LOD controller is also enabled, stable states use
+  **20 ticks** instead, while transition/movement stays at 10 ticks (Phase 20).
+  Teleport-like jumps of >24 blocks immediately reset policy to conservative
+  transition.
 - Five local loaded-chunk sky probes distinguish open sky, covered cave and
-  mixed entrance. A solid-roof candidate uses the existing heightmap once;
-  mixed exposure or thin cover bypasses extra calls and stays transition.
+  mixed entrance. A covered candidate builds its virtual boundary from five
+  already-loaded heightmap columns, using the lowest local surface and a
+  12-block roof margin. The open-surface DH path also checks up to eight
+  already-loaded heightmap probes to reject deep ravines/cliffs. Mixed
+  exposure or thin cover bypasses expensive sightline work and stays transition.
 - For a potential sealed cave, test at most **four 24-block cardinal sightlines**
   toward sky-exposed, already-loaded endpoints; a clear view of the outside
   causes `TRANSITION`, not `SEALED_CAVE`. Unknown chunks and non-occluding

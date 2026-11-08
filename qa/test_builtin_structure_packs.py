@@ -52,6 +52,7 @@ class BuiltinStructureTests(unittest.TestCase):
             "Run Gradle processResources or build before this integration test")
         expected_names={f"realscale_structures_{p}" for p in PROFILES}
         expected_names.add("realscale_structures_architecture_pilot")
+        expected_names.add("realscale_structures_urban_districts")
         self.assertEqual({x.name for x in GENERATED.iterdir() if x.is_dir()},
                          expected_names)
         for profile, expected in PROFILES.items():
@@ -93,6 +94,15 @@ class BuiltinStructureTests(unittest.TestCase):
                 self.assertIn("data/realscale/structure/architecture/" + asset, names)
             for structure in ("modern_house", "glass_greenhouse", "city_library"):
                 self.assertIn(architecture_prefix + "data/realscale/worldgen/structure/" + structure + ".json", names)
+            city_prefix = "resourcepacks/realscale_structures_urban_districts/"
+            self.assertIn(city_prefix+"pack.mcmeta",names)
+            for district in ("commercial_skyscrapers","civic_centre",
+                             "residential_quarter","industrial_edge"):
+                self.assertIn("data/realscale/structure/urban/"+district+".nbt",names)
+                self.assertIn(city_prefix+"data/realscale/structure/urban/"+district+".nbt",names)
+            self.assertIn(city_prefix+"data/realscale/worldgen/structure/urban_district.json",names)
+            self.assertIn(city_prefix+"data/realscale/worldgen/template_pool/urban/districts.json",names)
+            self.assertIn(city_prefix+"data/realscale/worldgen/structure_set/urban_districts.json",names)
             self.assertFalse(any(n.endswith(".schematic") for n in names),
                              "Legacy source schematics must stay outside the JAR")
 

@@ -99,6 +99,13 @@ public final class AdaptiveVisibilityBudgetSmoke {
         yes(tracker.observe(visibleHorizon)==T,
                 "Seeing exterior instantly cancels cave scheduling advice");
 
+        yes(AdaptiveVisibilityBudget.shouldCullDistantHorizonCaves(S),
+                "Only a confirmed open surface may cull distant cave LOD geometry");
+        yes(!AdaptiveVisibilityBudget.shouldCullDistantHorizonCaves(C),
+                "A confirmed cave must reveal distant cave LOD geometry");
+        yes(!AdaptiveVisibilityBudget.shouldCullDistantHorizonCaves(T),
+                "Unknown/transition views must fail open and reveal cave LOD geometry");
+
         // Less sampling overhead when stationary; moving/transition means
         // fast rechecks, but sampling rate does not itself change rendering.
         yes(AdaptiveVisibilityBudget.samplingIntervalTicks(T,0)==10,
@@ -114,6 +121,31 @@ public final class AdaptiveVisibilityBudgetSmoke {
         yes(AdaptiveVisibilityBudget.samplingIntervalTicks(S,1024)==10,
                 "Fast travel should not retain a slow sampling interval");
 
+        // DH's expensive world probes are halved only in stable, stationary
+        // modes; transitions and movement retain the faster 0.5s cadence.
+        yes(AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(T,0)==10,
+                "DH transition mode must retain responsive probing");
+        yes(AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(S,0)==20,
+                "DH stable surface should use one-second sampling");
+        yes(AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(C,0)==20,
+                "DH stable cave should use one-second sampling");
+        yes(AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(S,17)==10,
+                "DH movement should restore fast probing");
+        yes(AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(C,Double.NaN)==10,
+                "Invalid movement data must fail to fast probing");
+
+        yes(AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,false,0,0,0),
+                "Fresh world stationary mode should remain usable");
+        yes(!AdaptiveVisibilityBudget.freshForUpload(
+                false,true,true,false,0,0,0),
+                "Different dimension must not reuse the previous mode");
+        yes(!AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,false,25,0,0),
+                "Teleports must fail open even before next client tick");
+        yes(!AdaptiveVisibilityBudget.freshForUpload(
+                true,true,true,false,Double.NaN,0,0),
+                "Invalid camera position must fail open");
         tracker.reset();
         yes(tracker.mode()==T && tracker.transitions()==0 && tracker.samples()==0,
             "World switch must reset prior visibility state");

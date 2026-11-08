@@ -32,3 +32,64 @@ Does not guarantee per-task upload time or total GPU duration: a single Runnable
 GitHub PR CI can compile the NeoForge 1.21.1 client & run pure-Java quota smoke tests and real dedicated-server smoke tests. Those cannot prove rendering correctness because GitHub Linux CI has no reliable playable graphical client. Physical-client A/B is explicitly required.
 
 Reference: NeoForge 1.21.1 RenderFrameEvent.Pre/Post and Minecraft 1.21.1 SectionRenderDispatcher public API/mapping.
+
+
+## Phase 21 — actual mode-aware vanilla upload scheduling (opt-in)
+
+New additional JVM switch (requires the original uploadbudget=true):
+`-Drealscale.experimental.client.uploadbudget.modeaware=true`.
+
+This **connects the already-existing conservative cave/surface classifier to
+the actual vanilla render-thread FIFO queue**. It does not infer Section Y from
+Runnable objects or replace the renderer's original visibility traversal.
+
+Per gameplay render frame:
+- `TRANSITION`, cave entrance, unknown environment or renderer unavailable:
+  **bypass** experimental upload throttling and let Minecraft drain normally.
+- `OPEN_SURFACE`: use the normal configured frame budget (default 8 tasks /
+  2 milliseconds).
+- `SEALED_CAVE`: allow up to twice the configured frame budget (default
+  16 tasks / 4 milliseconds) so near-cave geometry is uploaded more promptly.
+- With >=64 queued upload Runnables, activate a bounded 2x catch-up budget.
+  Per-frame limits never exceed 64 tasks or 10 milliseconds.
+- Menus, world transitions, synchronous drains and disconnects still bypass
+  the override. When the feature is off, every prior default is unchanged.
+
+No tasks are dropped, reordered, hidden or permanently skipped. The policy
+alters **upload throughput**, not Section-level compilation order, occlusion,
+or draw calls. It is not a replacement for Sodium/Embeddium visibility
+traversal. A real client A/B is still needed to check frame pacing against
+terrain appearance latency; server CI cannot prove FPS or no popping.
+
+
+## Phase 22 — optional frame-pressure feedback and a default-on profiler fix
+
+The FPS logger accidentally used `"true"` as the fallback value for
+`realscale.client.fps.profile` despite being documented as opt-in. This is
+corrected to `"false"`: ordinary clients no longer sample per-frame FPS
+histograms or query the client world in this event subscriber by default.
+
+A third opt-in flag enables experimental frame-pressure feedback:
+
+```text
+-Drealscale.experimental.client.uploadbudget=true
+-Drealscale.experimental.client.uploadbudget.modeaware=true
+-Drealscale.experimental.client.uploadbudget.adaptive=true
+```
+
+It observes the previous frame's Pre-to-Post elapsed time (includes scheduling
+and possible VSync; NOT pure GPU time). Two consecutive frames >=28ms restrict
+the next stable surface/cave upload quota to the original base budget, even if
+the cave/large-backlog path otherwise requests 2x. Four consecutive healthy
+frames <=18ms restore the optional 2x budget. Intervening frames reset streaks
+and cannot induce unstable rapid switching. A gap >500ms resets the governor
+instead of treating a debugger pause or OS suspend as continuous frame lag.
+
+TRANSITION and unknown states always bypass the Mixin. Every enabled
+gameplay frame still permits at least one original FIFO upload Runnable.
+No changes are made to Section mesh identity, section-compile queue order,
+worldgen, DH cave LOD geometry or Minecraft's render distance.
+
+The frame governor is entirely OFF by default. It may lower client stalls in
+a given hardware configuration, but it could also delay distant geometry.
+Only paired physical-client A/B can confirm the tradeoff.

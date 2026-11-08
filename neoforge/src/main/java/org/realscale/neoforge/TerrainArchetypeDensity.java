@@ -20,6 +20,8 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
     private final DensityFunction continents;
     private final DensityFunction selector;
     private final String family;
+    private final boolean alpineFamily;
+    private final boolean selectorFreeFamily;
     private final double macroGain;
     private final double mesoGain;
     private final double microGain;
@@ -56,6 +58,8 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
         this.continents = continents;
         this.selector = selector;
         this.family = family;
+        this.alpineFamily = "alpine".equals(family);
+        this.selectorFreeFamily = "glacial".equals(family) || "volcanic".equals(family);
         this.macroGain = macroGain;
         this.mesoGain = mesoGain;
         this.microGain = microGain;
@@ -118,17 +122,26 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
 
     @Override
     public double compute(DensityFunction.FunctionContext ctx) {
+        if(!DensityPerfSampler.ENABLED)return computeUnprofiled(ctx);
+        long started=DensityPerfSampler.begin(DensityPerfSampler.Stage.TERRAIN_ARCHETYPE);
+        try{return computeUnprofiled(ctx);}
+        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.TERRAIN_ARCHETYPE,started);}
+    }
+
+    private double computeUnprofiled(DensityFunction.FunctionContext ctx) {
         double original = base.compute(ctx);
+        // Alpine relief is mathematically zero for all continental/selector
+        // inputs at or below 0.65. Run this independent exclusion BEFORE
+        // sampling continental noise, which is costly in lowland columns.
+        if (alpineFamily && original <= 0.65) return original;
         double continent = continents.compute(ctx);
         // The land gate is exactly zero below this boundary. Avoid
         // unnecessary selector noise work in ocean columns.
         if (continent <= -0.10) return original;
-        // Alpine relief only applies above this highland threshold.
-        if ("alpine".equals(family) && original <= 0.65) return original;
-        // Glacier and volcano kernels do not use the selector input.
-        // Suppressing that sample changes no fitted morphology values.
-        double signal = ("glacial".equals(family) || "volcanic".equals(family))
-                ? 0.0 : selector.compute(ctx);
+        // Glacier and volcano kernels never consume selector input. The flags
+        // are computed once per codec instance instead of comparing strings
+        // for every sampled block.
+        double signal = selectorFreeFamily ? 0.0 : selector.compute(ctx);
         return morphology.compute(original, continent, signal, ctx.blockX(), ctx.blockZ());
     }
 

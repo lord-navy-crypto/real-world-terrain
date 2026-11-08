@@ -143,9 +143,15 @@ class SavedGroundHeightmapTest(unittest.TestCase):
         # in every z row. A high mean seam ratio must remain a failure.
         heights={(x,z):(240 if x>=8192 else 75)
                  for x in range(8180,8205) for z in range(-350,351)}
-        delta,grid_edge,grid_inner,edge,inner=adjacent_height_deltas(heights)
-        quality=terrain_quality_gates(edge,inner,grid_edge,grid_inner,
-                                      0,len(heights),0)
+        (delta,grid_edge,grid_inner,edge,inner,
+         grid_curve_edge,grid_curve_inner,chunk_curve_edge,chunk_curve_inner) = (
+            adjacent_height_deltas(heights))
+        quality=terrain_quality_gates(
+            edge,inner,grid_edge,grid_inner,0,len(heights),0,
+            chunk_curvature_boundary=chunk_curve_edge,
+            chunk_curvature_inner=chunk_curve_inner,
+            grid_curvature_boundary=grid_curve_edge,
+            grid_curvature_inner=grid_curve_inner)
         self.assertTrue(edge)
         self.assertGreater(max(edge),160)
         self.assertFalse(quality["pass"])
@@ -157,7 +163,8 @@ class SavedGroundHeightmapTest(unittest.TestCase):
         # Do not compare unrelated x/z columns across empty space.
         values={(0,0):70,(1,0):72,(32768,-32768):151,
                 (32769,-32768):153,(-32768,32768):90}
-        delta,grid_edge,grid_inner,chunk_edge,chunk_inner=(
+        (delta,grid_edge,grid_inner,chunk_edge,chunk_inner,
+         grid_curve_edge,grid_curve_inner,chunk_curve_edge,chunk_curve_inner) = (
             adjacent_height_deltas(values))
         self.assertEqual(sorted(delta),[2,2])
         self.assertEqual(sum(len(v) for v in (chunk_edge,chunk_inner)),2)

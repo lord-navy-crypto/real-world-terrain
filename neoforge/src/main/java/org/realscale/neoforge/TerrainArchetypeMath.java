@@ -25,11 +25,51 @@ final class TerrainArchetypeMath {
     private final double dominantWavelengthM;
     private final double axisCos;
     private final double axisSin;
+    // Fixed at codec/preset creation: these measured-wavelength scales do not
+    // vary by X/Z or Y. Compute them once with the original floating-point
+    // expression; no resampling, approximation or rounding is introduced.
+    private final double glacialWidth;
+    private final double volcanicRadius;
+    private final double karstTowerRadius;
+    private final double karstSinkRadius;
 
     // Volcanic geometry depends only on horizontal block coordinates. Worldgen
     // samples many Y values for the same X/Z, so cache the expensive radial
     // shield/caldera shape per worker rather than repeating hash/hypot/pow/exp.
     private static final int VOLCANIC_CACHE_SLOTS = 1024;
+    // A 2048-block fitted region has a fixed, seed-derived geographic center.
+    // Reusing this per worker avoids re-hashing region seeds and generating
+    // the same tower/sinksite positions for every horizontal density sample.
+    // Replacements only change performance; all coordinates are recomputed
+    // with the original expressions on a region miss.
+    private final ThreadLocal<SiteGeometry> siteGeometryCache =
+            ThreadLocal.withInitial(SiteGeometry::new);
+    private static final class SiteGeometry {
+        int cellX,cellZ;
+        boolean valid;
+        double centerX,centerZ,sinkX,sinkZ;
+    }
+    private SiteGeometry siteGeometry(int cellX,int cellZ) {
+        SiteGeometry site=siteGeometryCache.get();
+        if(site.valid && site.cellX==cellX && site.cellZ==cellZ)return site;
+        long hash=MountainReliefMath.siteHash(cellX,cellZ);
+        double centerX=cellX*(double)CELL+CELL*0.5
+                +MountainReliefMath.centerOffsetX(hash);
+        double centerZ=cellZ*(double)CELL+CELL*0.5
+                +MountainReliefMath.centerOffsetZ(hash);
+        long sinkHash=MountainReliefMath.mix(hash ^ 0x6a09e667f3bcc909L);
+        double sinkX=centerX+MountainReliefMath.centerOffsetX(sinkHash)*1.8;
+        double sinkZ=centerZ+MountainReliefMath.centerOffsetZ(sinkHash)*1.8;
+        site.centerX=centerX;
+        site.centerZ=centerZ;
+        site.sinkX=sinkX;
+        site.sinkZ=sinkZ;
+        site.cellX=cellX;
+        site.cellZ=cellZ;
+        site.valid=true;
+        return site;
+    }
+
     private final ThreadLocal<VolcanicShapeCache> volcanicShapeCache =
             ThreadLocal.withInitial(VolcanicShapeCache::new);
 
@@ -37,7 +77,40 @@ final class TerrainArchetypeMath {
         private final long[] keys = new long[VOLCANIC_CACHE_SLOTS];
         private final double[] shapes = new double[VOLCANIC_CACHE_SLOTS];
         private final boolean[] occupied = new boolean[VOLCANIC_CACHE_SLOTS];
+        // Most NoiseChunk requests revisit one X/Z for many Y samples. Check
+        // this before hashing/probing the direct-mapped table.
+        private boolean lastValid;
+        private long lastKey;
+        private double lastShape;
     }
+
+    private static final int HORIZONTAL_CACHE_SLOTS = 1024;
+    private static final class HorizontalShapeCache {
+        private final long[] xBits = new long[HORIZONTAL_CACHE_SLOTS];
+        private final long[] zBits = new long[HORIZONTAL_CACHE_SLOTS];
+        private final double[] first = new double[HORIZONTAL_CACHE_SLOTS];
+        private final double[] second = new double[HORIZONTAL_CACHE_SLOTS];
+        private final boolean[] occupied = new boolean[HORIZONTAL_CACHE_SLOTS];
+        private boolean lastValid;
+        private long lastXBits,lastZBits;
+        private double lastFirst,lastSecond;
+    }
+    private final ThreadLocal<HorizontalShapeCache> horizontalShapeCache =
+            ThreadLocal.withInitial(HorizontalShapeCache::new);
+
+    private static final int KARST_CACHE_SLOTS = 1024;
+    private static final class KarstShapeCache {
+        private final long[] keys = new long[KARST_CACHE_SLOTS];
+        private final double[] towers = new double[KARST_CACHE_SLOTS];
+        private final double[] sinks = new double[KARST_CACHE_SLOTS];
+        private final boolean[] occupied = new boolean[KARST_CACHE_SLOTS];
+        private boolean lastValid;
+        private long lastKey;
+        private double lastTower;
+        private double lastSink;
+    }
+    private final ThreadLocal<KarstShapeCache> karstShapeCache =
+            ThreadLocal.withInitial(KarstShapeCache::new);
 
     TerrainArchetypeMath(String family, double macroGain, double mesoGain,
             double microGain, double reliefGain, double ridgeSharpness,
@@ -58,6 +131,10 @@ final class TerrainArchetypeMath {
         this.dominantWavelengthM = dominantWavelengthM;
         this.axisCos = Math.cos(duneAxisRadians);
         this.axisSin = Math.sin(duneAxisRadians);
+        this.glacialWidth = fittedScale(0.035, 180.0, 1600.0);
+        this.volcanicRadius = fittedScale(0.025, 250.0, 800.0);
+        this.karstTowerRadius = fittedScale(0.025, 80.0, 450.0);
+        this.karstSinkRadius = fittedScale(0.012, 40.0, 200.0);
     }
 
     double compute(double original, double continent, double rawSignal,
@@ -81,25 +158,85 @@ final class TerrainArchetypeMath {
         };
     }
 
+    /**
+     * Exact per-worker cache for the horizontal part of the three measured
+     * fitted kernels that benefit from reuse. Their ridge/valley geometry is invariant over Y, while
+     * the original density, land gate, highland gate and selector may vary.
+     * Full double-bit coordinate keys preserve the helper's package-private
+     * API and prevent aliases even if a future caller supplies fractional X/Z.
+     */
+    private void horizontalShapesAt(HorizontalShapeCache cache,double x,double z) {
+        long xBits=Double.doubleToRawLongBits(x);
+        long zBits=Double.doubleToRawLongBits(z);
+        if(cache.lastValid && cache.lastXBits==xBits && cache.lastZBits==zBits)return;
+        int hash=(int)(xBits^(xBits>>>32)^Long.rotateLeft(zBits,13)^(zBits>>>32));
+        int slot=(hash^(hash>>>16))&(HORIZONTAL_CACHE_SLOTS-1);
+        if(cache.occupied[slot] && cache.xBits[slot]==xBits
+                && cache.zBits[slot]==zBits) {
+            cache.lastXBits=xBits;
+            cache.lastZBits=zBits;
+            cache.lastFirst=cache.first[slot];
+            cache.lastSecond=cache.second[slot];
+            cache.lastValid=true;
+            return;
+        }
+
+        double first=0.0,second=0.0;
+        switch(family) {
+            case "alpine" -> {
+                double across=orientedAcross(x,z);
+                double phase=TAU*across/dominantWavelengthM;
+                first=0.85+0.15*Math.pow(
+                        Math.max(0.0,Math.cos(phase)),2.0);
+            }
+            case "canyon" -> {
+                double across=orientedAcross(x,z);
+                double valleyDistance=Math.abs(
+                        Math.sin(Math.PI*across/dominantWavelengthM));
+                first=1.0-smoothstep(0.0,0.18,valleyDistance);
+                second=smoothstep(0.18,0.25,valleyDistance)
+                        *(1.0-smoothstep(0.25,0.42,valleyDistance));
+            }
+            case "glacial" -> {
+                int cellX=Math.floorDiv((int)x,CELL);
+                double centerX=cellX*(double)CELL+CELL*0.5
+                        +glacialWidth*0.22*Math.sin(
+                                TAU*z/dominantWavelengthM+cellX*1.17);
+                double across=Math.abs(x-centerX);
+                first=1.0-smoothstep(glacialWidth*0.28,glacialWidth,across);
+            }
+            default -> { }
+        }
+        cache.xBits[slot]=xBits;
+        cache.zBits[slot]=zBits;
+        cache.first[slot]=first;
+        cache.second[slot]=second;
+        cache.occupied[slot]=true;
+        cache.lastXBits=xBits;
+        cache.lastZBits=zBits;
+        cache.lastFirst=first;
+        cache.lastSecond=second;
+        cache.lastValid=true;
+    }
+
     private double alpine(double original, double landGate, double signal, double x, double z) {
         double highlandGate = smoothstep(0.65, 1.7, original);
         // The dominant orientation and wavelength are fitted from each real
         // DEM crop. Keep these broad signals subtle so the fitted scale guides
         // morphology without turning the entire world into repeated stripes.
-        double across = orientedAcross(x, z);
-        double phase = TAU * across / dominantWavelengthM;
-        double ridgeBands = 0.85 + 0.15 * Math.pow(Math.max(0.0, Math.cos(phase)), 2.0);
+        HorizontalShapeCache cache=horizontalShapeCache.get();
+        horizontalShapesAt(cache,x,z);
+        double ridgeBands=cache.lastFirst;
         return original + landGate * highlandGate * reliefGain
                 * 0.22 * macroGain * ridgeSharpness * ridgeBands
                 * (1.0 - Math.abs(signal));
     }
 
     private double canyon(double original, double landGate, double signal, double x, double z) {
-        double across = orientedAcross(x, z);
-        double valleyDistance = Math.abs(Math.sin(Math.PI * across / dominantWavelengthM));
-        double canyonTrough = 1.0 - smoothstep(0.0, 0.18, valleyDistance);
-        double canyonShoulder = smoothstep(0.18, 0.25, valleyDistance)
-                * (1.0 - smoothstep(0.25, 0.42, valleyDistance));
+        HorizontalShapeCache cache=horizontalShapeCache.get();
+        horizontalShapesAt(cache,x,z);
+        double canyonTrough=cache.lastFirst;
+        double canyonShoulder=cache.lastSecond;
         return original - landGate * reliefGain
                 * (0.28 * mesoGain * cliffIndex * Math.abs(signal)
                 + 0.10 * valleyIndex * canyonTrough)
@@ -129,14 +266,11 @@ final class TerrainArchetypeMath {
     }
 
     private double glacialValley(double original, double gate, double x, double z) {
-        int cellX = Math.floorDiv((int)x, CELL);
-        double width = fittedScale(0.035, 180.0, 1600.0);
-        double centerX = cellX * (double) CELL + CELL * 0.5
-                + width * 0.22 * Math.sin(TAU * z / dominantWavelengthM + cellX * 1.17);
-        double across = Math.abs(x - centerX);
+        HorizontalShapeCache cache=horizontalShapeCache.get();
+        horizontalShapesAt(cache,x,z);
         // Flat-bottomed center followed by a broad U-shaped valley wall;
         // width follows the measured wavelength of the glacial-valley crop.
-        double trough = 1.0 - smoothstep(width * 0.28, width, across);
+        double trough=cache.lastFirst;
         return original - gate * reliefGain * 0.44 * Math.max(valleyIndex, 0.12) * trough;
     }
 
@@ -150,64 +284,106 @@ final class TerrainArchetypeMath {
 
     private double volcanicShapeAt(int x, int z) {
         long key = ((long) x << 32) ^ (z & 0xffffffffL);
+        VolcanicShapeCache cache = volcanicShapeCache.get();
+        if (cache.lastValid && cache.lastKey == key) return cache.lastShape;
         int hash = x * 0x9e3779b9 ^ Integer.rotateLeft(z * 0x85ebca6b, 13);
         int slot = (hash ^ (hash >>> 16)) & (VOLCANIC_CACHE_SLOTS - 1);
-        VolcanicShapeCache cache = volcanicShapeCache.get();
         if (cache.occupied[slot] && cache.keys[slot] == key) {
-            return cache.shapes[slot];
+            cache.lastValid = true;
+            cache.lastKey = key;
+            cache.lastShape = cache.shapes[slot];
+            return cache.lastShape;
         }
 
         int cellX = Math.floorDiv(x, CELL);
         int cellZ = Math.floorDiv(z, CELL);
-        long site = MountainReliefMath.siteHash(cellX, cellZ);
-        double centerX = cellX * (double) CELL + CELL * 0.5
-                + MountainReliefMath.centerOffsetX(site);
-        double centerZ = cellZ * (double) CELL + CELL * 0.5
-                + MountainReliefMath.centerOffsetZ(site);
-        double radius = fittedScale(0.025, 250.0, 800.0);
-        double radial = distance(x, z, centerX, centerZ) / radius;
+        SiteGeometry site=siteGeometry(cellX,cellZ);
+        double radius = volcanicRadius;
         double shape;
-        if (radial >= 1.0) {
+        // A point outside the enclosing square cannot lie inside the
+        // circular volcano footprint. This exact zero-support rejection
+        // avoids Math.hypot and expensive pow/exp on most columns.
+        if (Math.abs(x-site.centerX) >= radius
+                || Math.abs(z-site.centerZ) >= radius) {
             shape = 0.0;
         } else {
-            double shield = Math.pow(Math.max(0.0, 1.0 - radial), 1.35);
-            double caldera = 0.16 * Math.exp(-Math.pow(radial / 0.12, 2.0));
-            shape = shield - caldera;
+            double radial = distance(x, z, site.centerX, site.centerZ) / radius;
+            if (radial >= 1.0) {
+                shape = 0.0;
+            } else {
+                double shield = Math.pow(Math.max(0.0, 1.0 - radial), 1.35);
+                double caldera = 0.16 * Math.exp(-Math.pow(radial / 0.12, 2.0));
+                shape = shield - caldera;
+            }
         }
 
         cache.keys[slot] = key;
         cache.shapes[slot] = shape;
         cache.occupied[slot] = true;
+        cache.lastValid = true;
+        cache.lastKey = key;
+        cache.lastShape = shape;
         return shape;
     }
 
+    private void karstShapesAt(KarstShapeCache cache, int x, int z) {
+        long key = ((long) x << 32) ^ (z & 0xffffffffL);
+        if (cache.lastValid && cache.lastKey == key) return;
+        int hash = x * 0x9e3779b9 ^ Integer.rotateLeft(z * 0x85ebca6b, 13);
+        int slot = (hash ^ (hash >>> 16)) & (KARST_CACHE_SLOTS - 1);
+        if (cache.occupied[slot] && cache.keys[slot] == key) {
+            cache.lastValid = true;
+            cache.lastKey = key;
+            cache.lastTower = cache.towers[slot];
+            cache.lastSink = cache.sinks[slot];
+            return;
+        }
+
+        int cellX = Math.floorDiv(x, CELL);
+        int cellZ = Math.floorDiv(z, CELL);
+        SiteGeometry site = siteGeometry(cellX, cellZ);
+        double towerRadius = karstTowerRadius;
+        double tower = 0.0;
+        if (Math.abs(x-site.centerX) < towerRadius
+                && Math.abs(z-site.centerZ) < towerRadius) {
+            double radial = distance(x, z, site.centerX, site.centerZ);
+            tower = 1.0 - smoothstep(towerRadius * 0.55, towerRadius, radial);
+        }
+        double sinkRadius = karstSinkRadius;
+        double sink = 0.0;
+        if (Math.abs(x-site.sinkX) < sinkRadius
+                && Math.abs(z-site.sinkZ) < sinkRadius) {
+            sink = 1.0 - smoothstep(sinkRadius * 0.45, sinkRadius,
+                    distance(x, z, site.sinkX, site.sinkZ));
+        }
+        cache.keys[slot] = key;
+        cache.towers[slot] = tower;
+        cache.sinks[slot] = sink;
+        cache.occupied[slot] = true;
+        cache.lastValid = true;
+        cache.lastKey = key;
+        cache.lastTower = tower;
+        cache.lastSink = sink;
+    }
+
     private double karstTowers(double original, double gate, double x, double z, double signal) {
-        int cellX = Math.floorDiv((int)x, CELL);
-        int cellZ = Math.floorDiv((int)z, CELL);
-        long hash = MountainReliefMath.siteHash(cellX, cellZ);
-        double centerX = cellX * (double) CELL + CELL * 0.5
-                + MountainReliefMath.centerOffsetX(hash);
-        double centerZ = cellZ * (double) CELL + CELL * 0.5
-                + MountainReliefMath.centerOffsetZ(hash);
-        double radial = distance(x, z, centerX, centerZ);
-        double towerRadius = fittedScale(0.025, 80.0, 450.0);
-        double tower = 1.0 - smoothstep(towerRadius * 0.55, towerRadius, radial);
-        long sinkHash = MountainReliefMath.mix(hash ^ 0x6a09e667f3bcc909L);
-        double sinkX = centerX + MountainReliefMath.centerOffsetX(sinkHash) * 1.8;
-        double sinkZ = centerZ + MountainReliefMath.centerOffsetZ(sinkHash) * 1.8;
-        double sinkRadius = fittedScale(0.012, 40.0, 200.0);
-        double sink = 1.0 - smoothstep(sinkRadius * 0.45, sinkRadius,
-                distance(x, z, sinkX, sinkZ));
+        KarstShapeCache cache = karstShapeCache.get();
+        karstShapesAt(cache, (int)x, (int)z);
         double noiseTower = Math.max(0.0, signal) * 0.08 * ridgeGain();
-        return original + gate * reliefGain * (0.36 * Math.max(ridgeIndex, 0.12) * tower
-                + noiseTower - 0.22 * Math.max(valleyIndex, 0.12) * sink);
+        return original + gate * reliefGain * (0.36 * Math.max(ridgeIndex, 0.12) * cache.lastTower
+                + noiseTower - 0.22 * Math.max(valleyIndex, 0.12) * cache.lastSink);
     }
 
     private double duneRidges(double original, double gate, double x, double z, double signal) {
-        double across = orientedAcross(x, z);
-        double phase = TAU * across / dominantWavelengthM + signal * 0.12;
+        // The Dune phase is only one multiply-add and a scale. Paired CI
+        // benchmarks showed the cache lookup costs more than recomputing it,
+        // so keep this kernel direct while the heavier three kernels stay memoized.
+        double phase = TAU*orientedAcross(x,z)/dominantWavelengthM + signal * 0.12;
         double wave = Math.sin(phase) + 0.28 * Math.sin(2.0 * phase + 0.6);
-        return original + gate * reliefGain * 0.10 * Math.max(mesoGain, 0.12)
+        // The fitted dune wavelength is a macro-scale landform. Use the
+        // measured macro gain for ridge amplitude; the old meso gain left the
+        // fitted relief below half a block for the supplied DEM profile.
+        return original + gate * reliefGain * 0.10 * Math.max(macroGain, 0.12)
                 * anisotropyGain * wave;
     }
 

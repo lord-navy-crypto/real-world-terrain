@@ -19,7 +19,7 @@ final class DensityPerfSampler {
     static final boolean ENABLED=Boolean.getBoolean("realscale.density.profile");
     static final int STRIDE=1024;
     enum Stage { OVERWORLD_CAVE, NETHER_CAVE, ECOTONE_BIOME, SKY_BIOME,
-        MOUNTAIN_RELIEF }
+        MOUNTAIN_RELIEF, TERRAIN_ARCHETYPE, REAL_DEM_LEGACY, REAL_DEM_SEAMLESS }
     private static final ThreadLocal<int[]> CALLS=ThreadLocal.withInitial(
             ()->new int[Stage.values().length]);
     // Keep metric-array cardinality coupled to Stage so adding a new
@@ -34,6 +34,43 @@ final class DensityPerfSampler {
     private static final LongAdder ECOTONE_RESULT_MISSES=new LongAdder();
     private static final LongAdder ECOTONE_BASE_HITS=new LongAdder();
     private static final LongAdder ECOTONE_BASE_MISSES=new LongAdder();
+    private static final LongAdder HORIZONTAL_MEMO_HITS=new LongAdder();
+    private static final LongAdder HORIZONTAL_MEMO_MISSES=new LongAdder();
+    private static final LongAdder CAVE_V2_COLUMN_HITS=new LongAdder();
+    private static final LongAdder CAVE_V2_COLUMN_MISSES=new LongAdder();
+    private static final LongAdder CAVE_V2_FEATURE_EVALUATIONS=new LongAdder();
+
+    static void caveV2ColumnCacheProbe(boolean hit) {
+        if(!ENABLED)return;
+        (hit?CAVE_V2_COLUMN_HITS:CAVE_V2_COLUMN_MISSES).increment();
+    }
+
+    static void caveV2FeatureEvaluations(int count) {
+        if(ENABLED && count>0)CAVE_V2_FEATURE_EVALUATIONS.add(count);
+    }
+
+    static String caveV2CacheSnapshot() {
+        long hits=CAVE_V2_COLUMN_HITS.sum(),misses=CAVE_V2_COLUMN_MISSES.sum();
+        long total=hits+misses;
+        double rate=total==0?0.0:hits*100.0/total;
+        return "column_hits="+hits+" column_misses="+misses
+                +" column_hit_rate_percent="+String.format(java.util.Locale.ROOT,"%.2f",rate)
+                +" exact_feature_evaluations="+CAVE_V2_FEATURE_EVALUATIONS.sum();
+    }
+
+    static void horizontalMemoProbe(boolean hit) {
+        if(!ENABLED)return;
+        (hit?HORIZONTAL_MEMO_HITS:HORIZONTAL_MEMO_MISSES).increment();
+    }
+
+    static String horizontalMemoSnapshot() {
+        long hits=HORIZONTAL_MEMO_HITS.sum();
+        long misses=HORIZONTAL_MEMO_MISSES.sum();
+        long total=hits+misses;
+        double rate=total==0?0.0:hits*100.0/total;
+        return "hits="+hits+" misses="+misses
+                +" hit_rate_percent="+String.format(java.util.Locale.ROOT,"%.2f",rate);
+    }
 
     static void ecotoneCacheProbe(boolean resolved,boolean hit) {
         if(!ENABLED)return;
@@ -58,6 +95,12 @@ final class DensityPerfSampler {
             if(ECOTONE_RESULT_HITS.sum()+ECOTONE_RESULT_MISSES.sum()>0)
                 System.err.println("[RealScale ecotone cache profile] "
                         +ecotoneCacheSnapshot());
+            if(HORIZONTAL_MEMO_HITS.sum()+HORIZONTAL_MEMO_MISSES.sum()>0)
+                System.err.println("[RealScale horizontal memo profile] "
+                        +horizontalMemoSnapshot());
+            if(CAVE_V2_COLUMN_HITS.sum()+CAVE_V2_COLUMN_MISSES.sum()>0)
+                System.err.println("[RealScale cave V2 memo profile] "
+                        +caveV2CacheSnapshot());
         },"realscale-density-profile-summary"));
     }
 
