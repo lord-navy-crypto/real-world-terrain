@@ -83,6 +83,17 @@ class UrbanDistrictIntegration(unittest.TestCase):
                         for x in range(x1,x2+1) for z in range(z1,z2+1))
                     self.assertGreater(count,0)
 
+    def test_civic_fountain_is_contained_at_the_water_level(self):
+        # Center of the southwest park is (9,37). Every water source has
+        # a solid y=1 ring, not just a y=0 floor beneath flowing water.
+        city=self.cell_index["civic_centre"]
+        for x in range(7,12):
+            for z in range(35,40):
+                if x in (7,11) or z in (35,39):
+                    self.assertEqual(city[(x,1,z)],"minecraft:stone_bricks")
+                else:
+                    self.assertEqual(city[(x,1,z)],"minecraft:water")
+
     def test_skyscraper_roof_and_safe_internal_floors(self):
         commercial=self.cell_index["commercial_skyscrapers"]
         self.assertGreater(sum(block!="minecraft:air"

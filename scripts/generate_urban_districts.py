@@ -139,6 +139,12 @@ def civic_park(b, box, fountain=False):
     b.fill(x1,0,cz-1,x2,0,cz+1,"minecraft:stone_bricks")
     if fountain:
         b.fill(cx-2,0,cz-2,cx+2,0,cz+2,"minecraft:polished_andesite")
+        # Surround water at the SAME Y as its sources; a floor-only basin
+        # spills into the streets when fluid ticks begin in a live world.
+        for bx in range(cx-2,cx+3):
+            for bz in range(cz-2,cz+3):
+                if bx in (cx-2,cx+2) or bz in (cz-2,cz+2):
+                    b.set(bx,1,bz,"minecraft:stone_bricks")
         b.fill(cx-1,1,cz-1,cx+1,1,cz+1,"minecraft:water",level="0")
         b.set(cx,2,cz,"minecraft:sea_lantern")
     else:

@@ -91,3 +91,12 @@ The city biome allowlist now excludes mountain meadows and savanna plateaus
 to reduce steep-terrain candidates. No terrain-viability guarantee is implied:
 world-surface projection and beard-thin are not substitutes for a full
 four-corner slope/water check. The optional pack remains OFF by default.
+
+
+## Fluid safety
+
+The civic park's 3×3 ornamental water basin now has a complete solid
+perimeter at source-water Y=1, not just a floor at Y=0. A per-block NBT
+regression verifies all 16 perimeter positions and all nine contained
+source-water positions. This prevents fluid updates from spilling the
+fountain into the central streets and nearby structures.
