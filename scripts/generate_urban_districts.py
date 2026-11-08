@@ -109,7 +109,15 @@ def city_tower(b, box, top, palette_idx, *, apartments=False):
         b.set(x1+1,top,z,"minecraft:iron_bars")
         b.set(x2-1,top,z,"minecraft:iron_bars")
     entry=(x1+x2)//2
-    door(b,entry,z1)
+    # Each building faces the central east-west avenue. North-side
+    # parcels open south; south-side parcels open north. A short paved
+    # pedestrian link reaches the 3-block sidewalk instead of grass.
+    if z1<24:
+        door(b,entry,z2,"south")
+        b.fill(entry,0,z2+1,entry,0,20,"minecraft:smooth_stone")
+    else:
+        door(b,entry,z1,"north")
+        b.fill(entry,0,27,entry,0,z1-1,"minecraft:smooth_stone")
     # Ladder is supported by z1 wall and traverses every internal floor.
     for y in range(2,top):
         b.set(x1+2,y,z1+1,"minecraft:ladder", facing="north", waterlogged="false")
@@ -157,7 +165,13 @@ def draw_workshop(b, box, top, material_index):
         for x in (x1,x2):
             b.set(x,4,z,glass)
     b.fill(x1,top-1,z1,x2,top-1,z2,"minecraft:gray_concrete")
-    door(b,(x1+x2)//2,z1)
+    entry=(x1+x2)//2
+    if z1<24:
+        door(b,entry,z2,"south")
+        b.fill(entry,0,z2+1,entry,0,20,"minecraft:smooth_stone")
+    else:
+        door(b,entry,z1,"north")
+        b.fill(entry,0,27,entry,0,z1-1,"minecraft:smooth_stone")
     for x,z in ((x1+3,z1+3),(x2-3,z2-3)):
         b.set(x,1,z,"minecraft:furnace",facing="north",lit="false")
     for y in range(top,top+3):

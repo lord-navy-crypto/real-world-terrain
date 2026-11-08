@@ -2,9 +2,7 @@
   "biomes": [
     "minecraft:plains",
     "minecraft:sunflower_plains",
-    "minecraft:meadow",
     "minecraft:savanna",
-    "minecraft:savanna_plateau",
     "realscale:forest_steppe",
     "realscale:shrub_prairie",
     "realscale:woodland_meadow"

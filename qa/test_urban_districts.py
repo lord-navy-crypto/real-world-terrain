@@ -65,6 +65,17 @@ class UrbanDistrictIntegration(unittest.TestCase):
                     },f"{name} disconnected road at ({x},{z})")
                 for x,z in ((19,19),(28,19),(19,28),(28,28)):
                     self.assertEqual(index[(x,6,z)],"minecraft:sea_lantern")
+                # Door orientation and entrance walks must face a city
+                # sidewalk, not the outside wilderness.
+                for x1,z1,x2,z2 in city.PARCELS:
+                    if name=="civic_centre" and z1==30 and x1==2:
+                        continue  # Civic SW parcel is a public park.
+                    entry=(x1+1+x2-1)//2
+                    frontage=(z2-1) if z1<24 else (z1+1)
+                    self.assertEqual(index[(entry,1,frontage)],"minecraft:oak_door")
+                    self.assertEqual(index[(entry,2,frontage)],"minecraft:oak_door")
+                    path_z=(z2 if z1<24 else z1)
+                    self.assertEqual(index[(entry,0,path_z)],"minecraft:smooth_stone")
                 # Four distinct parcels exist in a single, connected city
                 # block; road width prevents footprint overlap.
                 for x1,z1,x2,z2 in city.PARCELS:

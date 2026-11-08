@@ -42,8 +42,9 @@ in CHUNKS (nominal square grid side 2,048 blocks), salt=140111, plus
 a vanilla village exclusion radius of 8 chunks. The four district templates
 are selected by fixed weights 2:2:3:1. Actual accepted starts can be much
 rarer, because the terrain biome and exclusion tests can reject candidates.
-Only plains, meadows, savannas and specified dry grassland RealScale
-biomes are allowed; oceans, rivers, cliffs, steep alpine mountains and
+Only plains, ordinary savannas and specified dry grassland RealScale
+biomes are allowed; steeper mountain meadows and savanna plateaus,
+oceans, rivers, cliffs, steep alpine mountains and
 the Nether/End are not city start biomes.
 
 The jigsaw start projects onto WORLD_SURFACE_WG and requests
@@ -75,3 +76,18 @@ WGS84/1:20 climate, Distant Horizons and Chunky are not modified.
 - Actual on-screen city silhouette, slopes/water/roof intersections,
   real-world natural spawn frequency, FPS and DH/Chunky client behavior
   remain separate acceptance gates for the user's physical playtest.
+
+
+## Phase 31 entrance and terrain-risk correction
+
+A pre-test audit found that all four original variants placed north-facing
+doors even on the north city parcels, where the cross avenue is to the south.
+This has now been corrected: each north-side building faces SOUTH and each
+south-side building faces NORTH, with an explicit paved pedestrian link from
+its door to the avenue sidewalk. The dedicated QA reads the actual generated
+block states at each entrance instead of merely counting doors in a palette.
+
+The city biome allowlist now excludes mountain meadows and savanna plateaus
+to reduce steep-terrain candidates. No terrain-viability guarantee is implied:
+world-surface projection and beard-thin are not substitutes for a full
+four-corner slope/water check. The optional pack remains OFF by default.
