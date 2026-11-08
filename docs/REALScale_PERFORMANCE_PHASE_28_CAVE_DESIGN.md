@@ -7,8 +7,10 @@ cells, four major geological elevation bands, large halls, two satellite
 galleries per band, tall shafts, three-cell arteries and rare highland entrances.
 
 An **additional experimental world preset**
-`realscale:cave_exploration_three_realms` is now available in the Minecraft
-extended world preset list, using its own saved noise settings ID
+`realscale:cave_exploration_three_realms` is deliberately not added to the default/extended world creation menus, which
+must preserve the stable seven existing options. Select this explicit world
+preset ID in a new test world via a server's `level-type` property, using its
+own saved noise settings ID
 `realscale:tva_cave_exploration`.
 
 It enables `"gallery_v2": true` only inside that new overworld noise router.
@@ -46,6 +48,22 @@ bends, smooth walls and cross-chunk continuity remain consistent.
 - The existing 47-component Grand Overworld mask, full legacy density
   evaluator, DEM, climates, cave biomes, Nether/End realms, structures, DH and
   Chunky compatibility settings are untouched.
+
+
+
+## Default world-picker compatibility and real server acceptance
+
+The existing seven normal and extended menu entries remain unchanged. To
+create the experimental server world set `level-type=realscale:cave_exploration_three_realms`
+on a NEW world before its first generation.
+
+`.github/workflows/cave-exploration-world.yml` starts a real NeoForge
+dedicated server with that preset and seed 42, disables needless spawn radius
+pre-generation, RCON-force-loads one target chunk at (384,384), waits for
+`minecraft:full`, issues `save-all flush`, and inspects both the generated
+`level.dat` codec IDs and saved Anvil target chunk. This proves server
+compatibility and actual chunk persistence; it is NOT yet a physical player
+cave traversal or old/new block-array A/B.
 
 ## Validation
 

@@ -37,7 +37,7 @@ class CaveExplorationPresetContracts(unittest.TestCase):
         normal=json.loads((ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json").read_text())
         extended=json.loads((ROOT/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/extended.json").read_text())
         self.assertNotIn("realscale:cave_exploration_three_realms",normal["values"])
-        self.assertIn("realscale:cave_exploration_three_realms",extended["values"])
+        self.assertNotIn("realscale:cave_exploration_three_realms",extended["values"])
 
     def test_legacy_codec_defaults_off_and_extra_caves_have_safe_bounds(self):
         codec=(J/"GrandOverworldCaverns.java").read_text()
@@ -50,5 +50,8 @@ class CaveExplorationPresetContracts(unittest.TestCase):
         self.assertIn("ThreadLocal.withInitial",geo)
         self.assertIn("geometryFitsInsideCell",geo)
         self.assertIn("tunnelStrength(",geo)
+        workflow=(ROOT/".github/workflows/cave-exploration-world.yml").read_text()
+        self.assertIn("Cave Exploration experimental saved-world generation",workflow)
+        self.assertIn("cave_exploration_world_boot.py",workflow)
 
 if __name__=="__main__":unittest.main()
