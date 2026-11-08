@@ -47,7 +47,7 @@ class CaveExplorationPresetContracts(unittest.TestCase):
         self.assertIn("componentMaskForColumn(x,z)",codec)
         self.assertIn("mayTouchColumn(x,y,z,extraMask)",codec)
         self.assertIn("strengthFromColumn(",codec)
-        self.assertIn("COLUMN_SLOTS=512",geo)
+        self.assertIn("COLUMN_SLOTS=2048",geo)
         self.assertIn("caveV2ColumnCacheProbe",geo)
         self.assertIn("caveV2FeatureEvaluations",geo)
         self.assertIn("MIN_EXTRA_Y=0,MAX_EXTRA_Y=1600",geo)

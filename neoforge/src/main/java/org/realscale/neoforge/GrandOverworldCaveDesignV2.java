@@ -129,7 +129,7 @@ public final class GrandOverworldCaveDesignV2 {
         Region recent;
         // A 512-entry, two-way, worker-local memo. A column is sampled at
         // many Y values, so cache its exact 12-feature X/Z candidate mask.
-        private static final int COLUMN_SLOTS=512,COLUMN_BUCKETS=COLUMN_SLOTS/2;
+        private static final int COLUMN_SLOTS=2048,COLUMN_BUCKETS=COLUMN_SLOTS/2;
         final int[] columnX=new int[COLUMN_SLOTS];
         final int[] columnZ=new int[COLUMN_SLOTS];
         final int[] columnMask=new int[COLUMN_SLOTS];

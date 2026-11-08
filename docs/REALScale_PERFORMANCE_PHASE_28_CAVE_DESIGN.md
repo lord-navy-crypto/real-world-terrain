@@ -87,7 +87,7 @@ The V2 evaluator previously repeated a four-tier combined AABB check at each
 vertical density sample, then called both curved tunnels and the annex hall
 even when only one of those three features could intersect the sample.
 
-The new path adds a bounded 512-slot, two-way, worker-local X/Z column memo.
+The new path adds a bounded 2,048-slot, two-way, worker-local X/Z column memo.
 Its 12-bit mask independently selects each tier's loop, spur, and terminal
 annex. A height-aware test rejects the selected features outside their exact
 vertical support before noise evaluation. The final evaluator then calls only
@@ -113,3 +113,19 @@ they do not alter production worldgen. CI checks bit-for-bit equality against
 the original full evaluator at positive and negative coordinates, all
 nine combinations of the legal X/Z warp extrema, vertical warp extrema,
 cell-edge probes, cache collisions, and parallel workers.
+
+
+## Phase 30 — measured cache-capacity A/B
+
+The first actual server profile recorded 2,574,916 X/Z column-cache hits and
+850,681 misses (75.17% hit rate) across 3,425,597 probes. The last-column
+fast slot was already effective, but the bounded two-way table was still
+evicting useful columns during interleaved vertical sampling.
+
+The table capacity is raised from 512 to 2,048 entries per worker. This adds
+only a few tens of kilobytes of bounded primitive storage per active worldgen
+worker and does not change any mask, cave geometry, noise, or density output.
+The same seed-42 dedicated-server profile is rerun to compare the hit rate
+under the same target-chunk and server setup. Keep this increase only if the
+real-world profile confirms a useful hit-rate improvement; a larger cache is
+not assumed to be faster merely because it is larger.
