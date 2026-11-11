@@ -86,17 +86,18 @@ public final class LotmEvents {
         if (player.tickCount % 40 != 0) return;
         LotmPath path = LotmPath.of(player);
         if (path == null) return;
+        int sequence = LotmState.sequence(player);
+        if (sequence < 8 || sequence > 9) return;
         LotmActing.onPlayerTick(player);
         // Regenerate discreetly; night-rested Sleepless users regain spirituality faster.
         int recovery = LotmConfig.SPIRIT_RECOVERY.get();
         if (path == LotmPath.SLEEPLESS && !player.level().isDay()) recovery += 1;
         LotmState.regenerate(player, recovery);
         if (player.tickCount % 80 != 0) return;
-        int sequence = LotmState.sequence(player);
-        if (path == LotmPath.SEER && sequence <= 8) {
+        if (path == LotmPath.SEER && sequence == 8) {
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 120, 0, true, false));
         }
-        if (path == LotmPath.MYSTERY_PRYER && sequence <= 8) {
+        if (path == LotmPath.MYSTERY_PRYER && sequence == 8) {
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 120, 0, true, false));
         }
         if (path == LotmPath.SLEEPLESS && !player.level().isDay()) {

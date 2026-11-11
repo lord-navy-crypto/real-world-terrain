@@ -40,6 +40,12 @@ class LotmProgressionTest {
                 9, 0, true, 70, 90));
     }
 
+    @Test void sequenceCapNeverFallsBelowEight() {
+        assertEquals(8, LotmProgression.nextSequence(9));
+        assertEquals(8, LotmProgression.nextSequence(8));
+        assertEquals(8, LotmProgression.nextSequence(7));
+    }
+
     @Test void cannotChangePathWithForeignCharacteristic() {
         assertEquals("path", LotmProgression.validate("sleepless", 9, "seer",
                 8, 100, true, 70, 90));

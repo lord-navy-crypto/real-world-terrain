@@ -17,7 +17,7 @@ public final class LotmActing {
 
     public static void onPlayerTick(ServerPlayer player) {
         LotmPath path = LotmPath.of(player);
-        if (path == null) return;
+        if (!isActive(player) || path == null) return;
         String biome = player.level().getBiome(player.blockPosition()).unwrapKey()
                 .map(key -> key.location().toString()).orElse("");
         if (biome.isEmpty()) return;
@@ -26,9 +26,12 @@ public final class LotmActing {
         ListTag seen = tag.getList(key, Tag.TAG_STRING);
         StringTag id = StringTag.valueOf(biome);
         if (!seen.contains(id)) {
-            seen.add(id);
-            tag.put(key, seen);
-            award(player, "exploration", 4);
+            int reward = award(player, "exploration", 4);
+            // Do not permanently mark a biome while the daily cap is full.
+            if (reward > 0) {
+                seen.add(id);
+                tag.put(key, seen);
+            }
         }
     }
 
@@ -37,7 +40,7 @@ public final class LotmActing {
 
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         Player player = event.getPlayer();
-        if (player.level().isClientSide() || LotmPath.of(player) == null) return;
+        if (player.level().isClientSide() || !isActive(player)) return;
         Block block = event.getState().getBlock();
         if (block == LotmContent.STAR_ORE.get() || block == LotmContent.CURSED_ORE.get()
                 || block == LotmContent.GRAVE_ORE.get() || block == LotmContent.MIDNIGHT_BLOOM.get()
@@ -48,7 +51,7 @@ public final class LotmActing {
     }
 
     public static int dailyUsed(Player player, String category) {
-        if (LotmPath.of(player) == null || dailyCap(category) == 0) return 0;
+        if (!isActive(player) || dailyCap(category) == 0) return 0;
         resetDailyIfNeeded(player);
         return Math.max(0, player.getPersistentData().getInt(PREFIX + category));
     }
@@ -75,10 +78,10 @@ public final class LotmActing {
         }
     }
 
-    private static void award(Player player, String category, int points) {
-        if (points <= 0 || LotmPath.of(player) == null) return;
+    private static int award(Player player, String category, int points) {
+        if (points <= 0 || !isActive(player)) return 0;
         int cap = dailyCap(category);
-        if (cap == 0) return;
+        if (cap == 0) return 0;
         resetDailyIfNeeded(player);
         CompoundTag tag = player.getPersistentData();
         String key = PREFIX + category;
@@ -88,6 +91,28 @@ public final class LotmActing {
         if (reward > 0) {
             tag.putInt(key, used + reward);
             LotmState.recordPractice(player, reward);
+        }
+        return reward;
+    }
+
+    private static boolean isActive(Player player) {
+        int sequence = LotmState.sequence(player);
+        return LotmPath.of(player) != null && (sequence == 9 || sequence == 8);
+    }
+
+    /** Preserve daily limits and unique-biome discovery across death and respawn. */
+    public static void copy(Player original, Player clone) {
+        CompoundTag source = original.getPersistentData();
+        CompoundTag target = clone.getPersistentData();
+        for (String key : new String[] {DAY_KEY, PREFIX + "exploration", PREFIX + "skill",
+                PREFIX + "research", PREFIX + "fieldwork"}) {
+            if (source.contains(key)) target.put(key, source.get(key).copy());
+        }
+        for (LotmPath path : LotmPath.values()) {
+            for (int sequence : new int[] {9, 8}) {
+                String key = "realscale_lotm_seen_" + path.id() + "_" + sequence;
+                if (source.contains(key)) target.put(key, source.get(key).copy());
+            }
         }
     }
 }

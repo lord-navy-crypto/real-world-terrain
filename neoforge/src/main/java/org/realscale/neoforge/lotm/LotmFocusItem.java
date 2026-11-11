@@ -40,6 +40,10 @@ public final class LotmFocusItem extends Item {
         }
         if (player.getCooldowns().isOnCooldown(this)) return InteractionResultHolder.fail(stack);
         int sequence = LotmState.sequence(player);
+        if (sequence < 8 || sequence > 9) {
+            player.displayClientMessage(Component.translatable("message.realscale.lotm.skills.archived"), true);
+            return InteractionResultHolder.fail(stack);
+        }
         int cost = LotmBalance.focusCost(path.id()) + (9 - sequence) * 5;
         if (!LotmState.consume(player, cost)) {
             player.displayClientMessage(Component.translatable("message.realscale.lotm.low_spirit"), true);
@@ -56,7 +60,7 @@ public final class LotmFocusItem extends Item {
                     apply(other, MobEffects.GLOWING, 140, 0);
                     discovered++;
                 }
-                if (sequence <= 8) apply(player, MobEffects.SLOW_FALLING, 180, 0);
+                if (sequence == 8) apply(player, MobEffects.SLOW_FALLING, 180, 0);
             }
             case MYSTERY_PRYER -> {
                 // Mystery observation is intentionally expensive only on player activation.
@@ -69,28 +73,27 @@ public final class LotmFocusItem extends Item {
                             state.is(LotmContent.CURSED_ORE.get()) ||
                             state.is(LotmContent.GRAVE_ORE.get()) ||
                             state.is(LotmContent.MIDNIGHT_BLOOM.get()) ||
-                            state.is(LotmContent.SPIRIT_QUARTZ_ORE.get()) ||
                             state.is(LotmContent.FACE_ROSE.get()) ||
                             state.is(LotmContent.SOUL_BELLFLOWER.get()) ||
                             state.is(LotmContent.BLOOD_ROSE.get()) ||
                             state.is(LotmContent.RELIC_CACHE.get())) discovered++;
                 }
-                if (sequence <= 8) apply(player, MobEffects.MOVEMENT_SPEED, 100, 0);
+                if (sequence == 8) apply(player, MobEffects.MOVEMENT_SPEED, 100, 0);
             }
             case SLEEPLESS -> {
                 for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class, range,
                         other -> other instanceof Monster)) {
                     apply(other, MobEffects.GLOWING, 100, 0);
-                    if (sequence <= 8) apply(other, MobEffects.MOVEMENT_SLOWDOWN, 120, 0);
+                    if (sequence == 8) apply(other, MobEffects.MOVEMENT_SLOWDOWN, 120, 0);
                     discovered++;
                 }
-                if (sequence <= 8) apply(player, MobEffects.REGENERATION, 100, 0);
+                if (sequence == 8) apply(player, MobEffects.REGENERATION, 100, 0);
             }
             case CORPSE_COLLECTOR -> {
                 for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class, range,
                         other -> other instanceof Zombie || other instanceof Skeleton || other instanceof Phantom)) {
                     apply(other, MobEffects.GLOWING, 150, 0);
-                    if (sequence <= 8) apply(other, MobEffects.WEAKNESS, 120, 0);
+                    if (sequence == 8) apply(other, MobEffects.WEAKNESS, 120, 0);
                     discovered++;
                 }
                 if (sequence <= 8) apply(player, MobEffects.REGENERATION, 100, 0);
