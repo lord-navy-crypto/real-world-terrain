@@ -93,5 +93,6 @@ public final class LotmState {
         target.putInt(PRACTICE_KEY, practice(original));
         target.putInt(INSTABILITY_KEY, instability(original));
         LotmActing.copy(original, clone);
+        LotmSkills.copyCooldowns(original, clone);
     }
 }

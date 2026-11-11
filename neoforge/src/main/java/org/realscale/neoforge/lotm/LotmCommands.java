@@ -70,6 +70,8 @@ public final class LotmCommands {
                 context.getSource().sendSuccess(() -> Component.translatable(
                         "message.realscale.lotm.skills.header",
                         Component.translatable("lotm.realscale.path." + path.id()), sequence), false);
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        "message.realscale.lotm.skills.controls"), false);
                 for (int rank = 9; rank >= Math.max(8, sequence); rank--) {
                     final int activeRank = rank;
                     context.getSource().sendSuccess(() -> Component.translatable(

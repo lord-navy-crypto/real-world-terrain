@@ -166,5 +166,12 @@
   "message.realscale.lotm.skills.corpse_collector.9": "收尸人（序列9）：感知附近亡灵，并具有基础抗寒能力。",
   "message.realscale.lotm.skills.corpse_collector.8": "掘墓人（序列8）：聚焦时削弱附近亡灵，并获得短暂恢复。",
   "message.realscale.lotm.skills.archived": "序列7暂时封存；本版本不开放该阶段的晋升和技能。",
-  "message.realscale.lotm.disabled": "LOTM 系统当前已在服务器配置中关闭。"
+  "message.realscale.lotm.disabled": "LOTM 系统当前已在服务器配置中关闭。",
+  "key.categories.realscale.lotm": "RealScale：诡秘之主",
+  "key.realscale.lotm.primary": "途径主技能",
+  "key.realscale.lotm.secondary": "途径辅助技能",
+  "message.realscale.lotm.skills.controls": "技能键：Z 主技能，X 辅助技能（可在控制设置中重新绑定）。",
+  "message.realscale.lotm.skill.cooldown": "技能仍在冷却中，请稍候。",
+  "message.realscale.lotm.skill.result": "技能已发动：感知到 %s 处线索；剩余灵性：%s/100。",
+  "message.realscale.lotm.skill.none": "附近没有感应到相应的非凡线索。"
 }

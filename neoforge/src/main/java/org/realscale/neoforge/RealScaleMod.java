@@ -18,6 +18,7 @@ public final class RealScaleMod {
     public RealScaleMod(IEventBus bus, ModContainer container) {
         LotmContent.register(bus);
         LotmAlchemyContent.register(bus);
+        bus.addListener(LotmSkillPayload::register);
         bus.addListener(this::registerLotmCapabilities);
         container.registerConfig(ModConfig.Type.COMMON, LotmConfig.SPEC);
         NeoForge.EVENT_BUS.addListener(LotmEvents::onJoin);

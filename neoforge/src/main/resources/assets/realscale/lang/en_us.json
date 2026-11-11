@@ -166,5 +166,12 @@
   "message.realscale.lotm.skills.corpse_collector.9": "Corpse Collector (Sequence 9): senses nearby undead and resists freezing.",
   "message.realscale.lotm.skills.corpse_collector.8": "Gravedigger (Sequence 8): weakens nearby undead and gains brief recovery when focusing.",
   "message.realscale.lotm.skills.archived": "Sequence 7 is archived; its advancement and abilities are disabled in this release.",
-  "message.realscale.lotm.disabled": "LOTM gameplay is disabled in the server configuration."
+  "message.realscale.lotm.disabled": "LOTM gameplay is disabled in the server configuration.",
+  "key.categories.realscale.lotm": "RealScale: Lord of the Mysteries",
+  "key.realscale.lotm.primary": "Pathway primary skill",
+  "key.realscale.lotm.secondary": "Pathway secondary skill",
+  "message.realscale.lotm.skills.controls": "Skill keys: Z for primary, X for secondary. Rebind them in Controls.",
+  "message.realscale.lotm.skill.cooldown": "That skill is still cooling down.",
+  "message.realscale.lotm.skill.result": "Skill activated: %s clues sensed; spirituality remaining: %s/100.",
+  "message.realscale.lotm.skill.none": "No matching occult clues were sensed nearby."
 }

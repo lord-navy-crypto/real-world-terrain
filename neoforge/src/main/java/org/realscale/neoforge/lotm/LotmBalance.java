@@ -30,6 +30,33 @@ public final class LotmBalance {
 
     public static final int DIVINATION_COST = 18;
 
+    /** Server-validated costs for the two configurable pathway skill keys. */
+    public static int skillCost(String pathway, int slot, int sequence) {
+        if (sequence < 8 || sequence > 9) return MAX_SPIRIT;
+        int base = switch (slot) {
+            case 1 -> focusCost(pathway);
+            case 2 -> switch (pathway) {
+                case "seer" -> DIVINATION_COST;
+                case "mystery_pryer" -> 16;
+                case "sleepless" -> 12;
+                case "corpse_collector" -> 14;
+                default -> MAX_SPIRIT;
+            };
+            default -> MAX_SPIRIT;
+        };
+        if (base >= MAX_SPIRIT) return MAX_SPIRIT;
+        return base + (9 - sequence) * (slot == 1 ? 5 : 4);
+    }
+
+    public static int skillCooldownTicks(int slot, int sequence) {
+        if (sequence < 8 || sequence > 9) return Integer.MAX_VALUE;
+        return switch (slot) {
+            case 1 -> sequence == 8 ? 135 : 160;
+            case 2 -> sequence == 8 ? 180 : 220;
+            default -> Integer.MAX_VALUE;
+        };
+    }
+
     /** Only Sequence 9 and 8 recipes are active in this release. */
     public static int alchemyTicks(int sequence, int sequence9, int sequence8) {
         return switch (sequence) {

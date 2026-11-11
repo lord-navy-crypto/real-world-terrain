@@ -34,6 +34,7 @@ class LotmDataGraphTests(unittest.TestCase):
         for (path, seq), (a, b) in MATERIALS.items():
             normal_name = f"lotm_{path}_potion.json" if seq == 9 else f"lotm_{path}_s8_potion.json"
             normal = load(DATA / "recipe" / normal_name)
+            self.assertEqual("realscale:lotm_alchemy", normal["type"])
             normal_items = {x["item"] for x in normal["ingredients"]}
             self.assertIn("realscale:lotm_" + a, normal_items)
             self.assertIn("realscale:lotm_" + b, normal_items)
@@ -42,11 +43,34 @@ class LotmDataGraphTests(unittest.TestCase):
             expected = f"realscale:lotm_{path}_potion" if seq == 9 else f"realscale:lotm_{path}_s8_potion"
             self.assertEqual(expected, normal["result"]["id"])
             alternate = load(DATA / "recipe" / f"lotm_{path}_s{seq}_potion_characteristic.json")
+            self.assertEqual("realscale:lotm_alchemy", alternate["type"])
             alternate_items = {x["item"] for x in alternate["ingredients"]}
             self.assertIn("realscale:lotm_empty_vial", alternate_items)
             self.assertIn("realscale:lotm_occult_catalyst", alternate_items)
             self.assertIn(f"realscale:lotm_{path}_s{seq}_characteristic", alternate_items)
             self.assertEqual(expected, alternate["result"]["id"])
+
+    def test_geckolib_animation_and_skill_key_contracts_are_wired(self):
+        metadata = (ROOT / "neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text(encoding="utf-8")
+        self.assertIn('modId="geckolib"', metadata)
+        self.assertIn('versionRange="[4.9.3,)"', metadata)
+        geo = load(ASSETS / "geo/lotm_alchemy_apparatus.geo.json")
+        animations = load(ASSETS / "animations/lotm_alchemy_apparatus.animation.json")
+        self.assertIn("minecraft:geometry", geo)
+        self.assertIn("animation.realscale.lotm_alchemy_apparatus.idle", animations["animations"])
+        self.assertIn("animation.realscale.lotm_alchemy_apparatus.brew", animations["animations"])
+        recipe_code = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmAlchemyBlockEntity.java").read_text(encoding="utf-8")
+        self.assertIn("GeoBlockEntity", recipe_code)
+        self.assertIn("ALCHEMY_RECIPE_TYPE", recipe_code)
+        potion = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmPotionItem.java").read_text(encoding="utf-8")
+        self.assertIn("UseAnim.DRINK", potion)
+        self.assertIn("DRINK_TICKS = 32", potion)
+        payload = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmSkillPayload.java").read_text(encoding="utf-8")
+        keys = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/client/LotmKeyMappings.java").read_text(encoding="utf-8")
+        self.assertIn("playToServer", payload)
+        self.assertIn("PacketDistributor", (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/client/LotmClientGameEvents.java").read_text(encoding="utf-8"))
+        self.assertIn("GLFW_KEY_Z", keys)
+        self.assertIn("GLFW_KEY_X", keys)
 
     def test_sequence7_recipes_are_absent_but_legacy_icons_remain(self):
         for path in PATHWAYS:

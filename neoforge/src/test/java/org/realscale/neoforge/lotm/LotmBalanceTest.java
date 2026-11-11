@@ -25,6 +25,20 @@ class LotmBalanceTest {
         assertEquals(100, LotmBalance.focusCost("unrecognized"));
     }
 
+    @Test void skillCostsAndCooldownsAreBoundedByPathAndSequence() {
+        assertEquals(14, LotmBalance.skillCost("seer", 1, 9));
+        assertEquals(19, LotmBalance.skillCost("seer", 1, 8));
+        assertEquals(18, LotmBalance.skillCost("seer", 2, 9));
+        assertEquals(22, LotmBalance.skillCost("seer", 2, 8));
+        assertEquals(16, LotmBalance.skillCost("mystery_pryer", 2, 9));
+        assertEquals(100, LotmBalance.skillCost("unknown", 1, 9));
+        assertEquals(100, LotmBalance.skillCost("seer", 3, 9));
+        assertEquals(160, LotmBalance.skillCooldownTicks(1, 9));
+        assertEquals(135, LotmBalance.skillCooldownTicks(1, 8));
+        assertEquals(220, LotmBalance.skillCooldownTicks(2, 9));
+        assertEquals(180, LotmBalance.skillCooldownTicks(2, 8));
+    }
+
     @Test void bearingUsesCardinalAndVerticalDirections() {
         assertEquals("north", LotmBalance.bearing(2, -4, 0));
         assertEquals("east", LotmBalance.bearing(8, 1, 0));
