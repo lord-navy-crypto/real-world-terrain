@@ -72,6 +72,24 @@ class LotmDataGraphTests(unittest.TestCase):
         self.assertIn("GLFW_KEY_Z", keys)
         self.assertIn("GLFW_KEY_X", keys)
 
+    def test_runtime_dependency_packaging_and_curios_optional_slot(self):
+        metadata = (ROOT / "neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text(encoding="utf-8")
+        self.assertIn('modId="geckolib"\\ntype="required"', metadata)
+        self.assertIn('modId="curios"\\ntype="optional"', metadata)
+        runtime = (ROOT / "qa/run_dh_chunky_runtime_smoke.py").read_text(encoding="utf-8")
+        packaged = (ROOT / "qa/run_packaged_jar_dh_chunky_smoke.py").read_text(encoding="utf-8")
+        self.assertIn('"Grwn5rUB"', runtime)
+        self.assertIn('"8BmcQJ2H"', runtime)
+        self.assertIn('"geckolib-neoforge-1.21.1-4.9.3.jar"', runtime)
+        self.assertIn('"geckolib-neoforge-1.21.1-4.9.3.jar"', packaged)
+        slot = load(ROOT / "neoforge/src/main/resources/data/realscale/curios/slots/occult_focus.json")
+        entity = load(ROOT / "neoforge/src/main/resources/data/realscale/curios/entities/player.json")
+        tag = load(ROOT / "neoforge/src/main/resources/data/curios/tags/items/occult_focus.json")
+        self.assertEqual(1, slot["size"])
+        self.assertIn("occult_focus", entity["slots"])
+        self.assertIn("realscale:lotm_spirit_focus", tag["values"])
+        self.assertIn("realscale:lotm_divination_pendulum", tag["values"])
+
     def test_sequence7_recipes_are_absent_but_legacy_icons_remain(self):
         for path in PATHWAYS:
             self.assertFalse((DATA / "recipe" / f"lotm_{path}_s7_potion.json").exists())

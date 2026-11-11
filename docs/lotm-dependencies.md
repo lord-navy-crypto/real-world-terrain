@@ -15,10 +15,10 @@ GeckoLib is a separate runtime mod. It must be present in the client and server 
 | Mod | Compatible line | Purpose | Behaviour without it |
 |---|---|---|---|
 | Curios API | 9.5.1+1.21.1 NeoForge | Adds an Occult Focus accessory slot for the Spirit Focus and Divination Pendulum | Both items remain usable from the normal inventory |
-| Pufferfish's Skills | NeoForge 1.21.1 build | Optional visual skill-tree framework and online layout editor | Existing RealScale Z/X skills remain active |
-| Patchouli | 1.21.1-93 NeoForge | Optional in-game field guide for pathways, materials and apparatus recipes | Existing commands and tooltips remain available |
+| Pufferfish's Skills | NeoForge 1.21.1 build | Candidate for a visual skill-tree framework and online layout editor; integration is not yet enabled | Existing RealScale Z/X skills remain active |
+| Patchouli | 1.21.1-93 NeoForge | Candidate for an in-game field guide; book integration is not yet enabled | Existing commands and tooltips remain available |
 
-Optional mods are not bundled into the RealScale JAR. Install the exact NeoForge 1.21.1 build on the sides required by each mod. Pufferfish's Skills is a framework rather than a ready-made tree; the LOTM categories and their progression bridge must be configured by this project. We will keep `LotmState` as the authoritative pathway/sequence record rather than create a second, conflicting progression system.
+Optional mods are not bundled into the RealScale JAR. Install the exact NeoForge 1.21.1 build on the sides required by each mod. Curios integration is active. Pufferfish's Skills and Patchouli are evaluated candidates, not active dependencies in this build. Pufferfish's Skills is a framework rather than a ready-made tree; if selected, the LOTM categories and progression bridge must be configured by this project. We will keep `LotmState` as the authoritative pathway/sequence record rather than create a second, conflicting progression system.
 
 ## Curios integration
 
