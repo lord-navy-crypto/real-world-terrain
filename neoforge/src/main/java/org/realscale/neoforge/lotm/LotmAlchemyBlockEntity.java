@@ -108,7 +108,11 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, LotmAlchemyBlockEntity machine) {
-        if (!(level instanceof ServerLevel server) || !LotmConfig.ENABLED.get()) return;
+        if (!(level instanceof ServerLevel server)) return;
+        if (!LotmConfig.ENABLED.get()) {
+            machine.setBrewingState(false);
+            return;
+        }
         CraftingInput input = CraftingInput.of(2, 2, List.of(
                 machine.inventory.getStackInSlot(0), machine.inventory.getStackInSlot(1),
                 machine.inventory.getStackInSlot(2), machine.inventory.getStackInSlot(3)));
@@ -154,6 +158,7 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
         machine.progress = 0;
         machine.maxProgress = 0;
         machine.activeRecipe = null;
+        machine.setBrewingState(false);
         machine.setChanged();
     }
 
@@ -164,7 +169,10 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
                 <= Math.min(output.getMaxStackSize(), result.getMaxStackSize()));
     }
     private void resetProgress() {
-        if (progress == 0 && maxProgress == 0 && activeRecipe == null) return;
+        if (progress == 0 && maxProgress == 0 && activeRecipe == null) {
+            setBrewingState(false);
+            return;
+        }
         progress = 0;
         maxProgress = 0;
         activeRecipe = null;
