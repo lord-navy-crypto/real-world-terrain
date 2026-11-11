@@ -7,7 +7,9 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MobType;
+import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.monster.Skeleton;
+import net.minecraft.world.entity.monster.Phantom;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -59,7 +61,7 @@ public final class LotmFocusItem extends Item {
             }
             case CORPSE_COLLECTOR -> {
                 for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class, range,
-                        other -> other != player && other.getMobType() == MobType.UNDEAD)) {
+                        other -> other != player && (other instanceof Zombie || other instanceof Skeleton || other instanceof Phantom))) {
                     other.addEffect(new MobEffectInstance(MobEffects.GLOWING, 120, 0, false, false));
                     discovered++;
                 }
