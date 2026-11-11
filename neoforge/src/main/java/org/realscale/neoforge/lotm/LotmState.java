@@ -7,6 +7,7 @@ import net.minecraft.world.entity.player.Player;
 public final class LotmState {
     public static final String SPIRIT_KEY = "realscale_lotm_spirituality";
     public static final String PRACTICE_KEY = "realscale_lotm_practice";
+    public static final String INSTABILITY_KEY = "realscale_lotm_characteristic_instability";
     private LotmState() {}
 
     public static void initialize(Player player, LotmPath path) {
@@ -15,6 +16,28 @@ public final class LotmState {
         tag.putInt(LotmPath.NBT_SEQUENCE, 9);
         tag.putInt(SPIRIT_KEY, LotmBalance.MAX_SPIRIT);
         tag.putInt(PRACTICE_KEY, 0);
+        tag.putInt(INSTABILITY_KEY, 0);
+    }
+
+    public static void advance(Player player, LotmPath path, int sequence, boolean direct) {
+        if (sequence == 9) {
+            initialize(player, path);
+        } else {
+            var tag = player.getPersistentData();
+            tag.putInt(LotmPath.NBT_SEQUENCE, sequence);
+            tag.putInt(PRACTICE_KEY, 0);
+            tag.putInt(SPIRIT_KEY, direct ? 30 : LotmBalance.MAX_SPIRIT);
+            if (direct) tag.putInt(INSTABILITY_KEY, tag.getInt(INSTABILITY_KEY) + 1);
+        }
+    }
+
+    public static int sequence(Player player) {
+        return LotmPath.of(player) == null ? -1
+                : player.getPersistentData().getInt(LotmPath.NBT_SEQUENCE);
+    }
+
+    public static int instability(Player player) {
+        return player.getPersistentData().getInt(INSTABILITY_KEY);
     }
 
     public static int spirit(Player player) {
@@ -57,5 +80,6 @@ public final class LotmState {
         target.putInt(LotmPath.NBT_SEQUENCE, source.getInt(LotmPath.NBT_SEQUENCE));
         target.putInt(SPIRIT_KEY, spirit(original));
         target.putInt(PRACTICE_KEY, practice(original));
+        target.putInt(INSTABILITY_KEY, instability(original));
     }
 }
