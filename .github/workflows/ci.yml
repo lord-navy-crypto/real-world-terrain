@@ -26,6 +26,8 @@ jobs:
           python-version: '3.12'
       - name: Verify recovered source, artifacts and actual saved world
         run: python3 qa/verify_repository.py
+      - name: Validate all LOTM Sequence 9-7 resource and characteristic paths
+        run: python3 -m unittest discover -s qa -p 'test_lotm_sequence7_resources.py' -v
       - name: Validate custom biome registry resources (static)
         run: python3 scripts/check_custom_biomes.py
       - name: Validate Grand Ecology registrations and preserved dimensions
