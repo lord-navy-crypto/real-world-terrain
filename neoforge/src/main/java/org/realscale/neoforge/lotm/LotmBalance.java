@@ -30,11 +30,11 @@ public final class LotmBalance {
 
     public static final int DIVINATION_COST = 18;
 
-    public static int alchemyTicks(int sequence, int sequence9, int sequence8, int sequence7) {
+    /** Only Sequence 9 and 8 recipes are active in this release. */
+    public static int alchemyTicks(int sequence, int sequence9, int sequence8) {
         return switch (sequence) {
             case 9 -> Math.max(1, sequence9);
             case 8 -> Math.max(1, sequence8);
-            case 7 -> Math.max(1, sequence7);
             default -> 0;
         };
     }

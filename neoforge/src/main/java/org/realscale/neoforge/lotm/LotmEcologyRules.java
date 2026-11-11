@@ -36,6 +36,16 @@ public final class LotmEcologyRules {
 
     public static boolean ruinBiome(String id) { return RUINS.contains(id); }
 
+    /** Ten active Sequence 9/8 variants; the seven Sequence 7 variants are archived. */
+    public static final Set<String> ACTIVE_VARIANTS = Set.of(
+        "starlit_squid", "nightmare_eye", "night_owl", "black_spotted_frog", "shroudman",
+        "hornacis_goat", "ironarm_beast", "four_eyed_turtle", "crimson_howler", "death_crow"
+    );
+    public static final Set<String> ARCHIVED_SEQUENCE7_VARIANTS = Set.of(
+        "mist_treant", "evil_pattern_panther", "stag_beast", "grey_grandmother",
+        "dream_crow", "nightmare_shadow", "spectral_cat"
+    );
+
     public static final Map<String,String> DROPS = Map.ofEntries(
         Map.entry("starlit_squid","lavas_squid_essence"),
         Map.entry("nightmare_eye","nightmare_eye_shard"),
@@ -70,20 +80,12 @@ public final class LotmEcologyRules {
         if (type.equals("bat") && FORESTS.contains(biome) && hit(roll,24,percent)) return "night_owl";
         if (type.equals("frog") && WETLAND.contains(biome) && hit(roll,20,percent)) return "black_spotted_frog";
         if (type.equals("zombie") && WETLAND.contains(biome) && hit(roll,36,percent)) return "shroudman";
-        if (type.equals("zombie") && FORESTS.contains(biome) && hit(roll,54,percent)) return "mist_treant";
         if (type.equals("goat") && ALPINE.contains(biome) && hit(roll,28,percent)) return "hornacis_goat";
         if (type.equals("husk") && (biome.equals("minecraft:desert") || biome.equals("minecraft:badlands"))
                 && hit(roll,38,percent)) return "ironarm_beast";
         if (type.equals("turtle") && COAST.contains(biome) && hit(roll,25,percent)) return "four_eyed_turtle";
         if (type.equals("wolf") && FORESTS.contains(biome) && hit(roll,38,percent)) return "crimson_howler";
         if (type.equals("parrot") && TROPICAL.contains(biome) && hit(roll,45,percent)) return "death_crow";
-        if (type.equals("parrot") && TROPICAL.contains(biome) && hit(roll,47,percent)) return "grey_grandmother";
-        if (type.equals("ocelot") && TROPICAL.contains(biome) && hit(roll,30,percent)) return "evil_pattern_panther";
-        if (type.equals("cow") && FORESTS.contains(biome) && hit(roll,45,percent)) return "stag_beast";
-        if (type.equals("phantom") && hit(roll,38,percent)) return "dream_crow";
-        if (type.equals("enderman") && DARK.contains(biome) && hit(roll,45,percent)) return "nightmare_shadow";
-        if (type.equals("cat") && (FORESTS.contains(biome) || biome.equals("minecraft:plains"))
-                && hit(roll,36,percent)) return "spectral_cat";
         return null;
     }
 }

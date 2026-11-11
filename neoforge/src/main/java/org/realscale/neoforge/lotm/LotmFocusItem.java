@@ -19,7 +19,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Four distinct Sequence 9-7 play styles, all server-authoritative and bounded.
+ * Four distinct Sequence 9/8 play styles, all server-authoritative and bounded.
  * Magician short-step is only enabled if both destination cells and ground are safe.
  */
 public final class LotmFocusItem extends Item {
@@ -62,7 +62,7 @@ public final class LotmFocusItem extends Item {
         }
 
         int discovered = 0;
-        AABB range = new AABB(player.blockPosition()).inflate(sequence == 7 ? 20.0D : 14.0D);
+        AABB range = new AABB(player.blockPosition()).inflate(14.0D);
         switch (path) {
             case SEER -> {
                 // Seer senses, Clown coordination, Magician short fire-step / illusion.
@@ -72,10 +72,6 @@ public final class LotmFocusItem extends Item {
                     discovered++;
                 }
                 if (sequence <= 8) apply(player, MobEffects.SLOW_FALLING, 180, 0);
-                if (sequence <= 7) {
-                    if (player.isShiftKeyDown() && phaseStep(level, player)) discovered++;
-                    else apply(player, MobEffects.INVISIBILITY, 90, 0);
-                }
             }
             case MYSTERY_PRYER -> {
                 // Mystery observation is intentionally expensive only on player activation.
@@ -95,25 +91,15 @@ public final class LotmFocusItem extends Item {
                             state.is(LotmContent.RELIC_CACHE.get())) discovered++;
                 }
                 if (sequence <= 8) apply(player, MobEffects.MOVEMENT_SPEED, 100, 0);
-                if (sequence <= 7) {
-                    apply(player, MobEffects.NIGHT_VISION, 260, 0);
-                    for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class, range,
-                            other -> other != player && other.getPersistentData().contains(LotmEvents.VARIANT))) {
-                        apply(other, MobEffects.GLOWING, 140, 0);
-                        discovered++;
-                    }
-                }
             }
             case SLEEPLESS -> {
                 for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class, range,
                         other -> other instanceof Monster)) {
                     apply(other, MobEffects.GLOWING, 100, 0);
                     if (sequence <= 8) apply(other, MobEffects.MOVEMENT_SLOWDOWN, 120, 0);
-                    if (sequence <= 7) apply(other, MobEffects.WEAKNESS, 100, 0);
                     discovered++;
                 }
                 if (sequence <= 8) apply(player, MobEffects.REGENERATION, 100, 0);
-                if (sequence <= 7) apply(player, MobEffects.NIGHT_VISION, 280, 0);
             }
             case CORPSE_COLLECTOR -> {
                 for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class, range,
@@ -123,14 +109,6 @@ public final class LotmFocusItem extends Item {
                     discovered++;
                 }
                 if (sequence <= 8) apply(player, MobEffects.REGENERATION, 100, 0);
-                if (sequence <= 7) {
-                    apply(player, MobEffects.NIGHT_VISION, 250, 0);
-                    for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class, range,
-                            other -> other != player && other.getPersistentData().contains(LotmEvents.VARIANT))) {
-                        apply(other, MobEffects.GLOWING, 100, 0);
-                        discovered++;
-                    }
-                }
             }
         }
         if (discovered > 0) {
@@ -139,7 +117,7 @@ public final class LotmFocusItem extends Item {
         }
         player.displayClientMessage(Component.translatable(
                 "message.realscale.lotm.sense_spirit", discovered, LotmState.spirit(player)), true);
-        player.getCooldowns().addCooldown(this, sequence == 7 ? 110 : sequence == 8 ? 135 : 160);
+        player.getCooldowns().addCooldown(this, sequence == 8 ? 135 : 160);
         return InteractionResultHolder.consume(stack);
     }
 }

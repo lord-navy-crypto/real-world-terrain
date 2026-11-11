@@ -103,9 +103,6 @@ public final class LotmEvents {
             player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 260, 0, true, false));
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 120, 0, true, false));
         }
-        if (path == LotmPath.CORPSE_COLLECTOR && sequence <= 7 && !player.level().isDay()) {
-            player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 260, 0, true, false));
-        }
         if (path == LotmPath.CORPSE_COLLECTOR && player.getTicksFrozen() > 0) {
             // Temperature hardiness is represented conservatively without changing combat damage.
             player.setTicksFrozen(0);

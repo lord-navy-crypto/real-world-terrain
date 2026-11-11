@@ -26,7 +26,7 @@ public final class LotmContent {
             () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.BLUE_ORCHID)
                     .noCollission().noOcclusion().strength(0.1F).sound(SoundType.GRASS)));
 
-    // Distinct scenery resources for Sequence 8/7: three flowers, a quartz ore and a ruin cache.
+    // Sequence 8 scenery plus retained Sequence 7 archive assets: three flowers, quartz ore and a ruin cache.
     public static final Supplier<Block> FACE_ROSE = BLOCKS.register("lotm_face_rose",
             () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.BLUE_ORCHID)
                     .noCollission().noOcclusion().strength(0.1F).sound(SoundType.GRASS)));
@@ -119,6 +119,8 @@ public final class LotmContent {
             "grey_grandmother_eye", "dream_crow_heart", "nightmare_shadow_core",
             "spectral_cat_paw", "spirit_quartz", "occult_catalyst"
         }) material(material);
+        // Keep S7 registry IDs so older pilot worlds/items do not become unknown IDs.
+        // S7 recipes, drops and advancement are disabled until that tier is reopened.
         for (LotmPath path : LotmPath.values()) {
             for (int rank = 9; rank >= 7; rank--) {
                 final int sequence = rank;

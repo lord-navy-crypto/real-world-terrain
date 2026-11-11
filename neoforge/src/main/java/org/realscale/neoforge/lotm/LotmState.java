@@ -3,7 +3,7 @@ package org.realscale.neoforge.lotm;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 
-/** Server-owned Sequence 9 spirituality/practice, stored alongside the v1 save keys. */
+/** Server-owned Sequence 9/8 spirituality and digestion, preserving legacy NBT keys. */
 public final class LotmState {
     public static final String SPIRIT_KEY = "realscale_lotm_spirituality";
     public static final String PRACTICE_KEY = "realscale_lotm_practice";
@@ -20,6 +20,7 @@ public final class LotmState {
     }
 
     public static void advance(Player player, LotmPath path, int sequence, boolean direct) {
+        if (sequence < 8 || sequence > 9) return; // Sequence 7+ is archived in this release.
         if (sequence == 9) {
             initialize(player, path);
         } else {
