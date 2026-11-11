@@ -12,6 +12,16 @@ import net.minecraft.world.entity.animal.frog.Frog;
 import net.minecraft.world.entity.animal.Squid;
 import net.minecraft.world.entity.monster.Spider;
 import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.entity.monster.Phantom;
+import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.animal.goat.Goat;
+import net.minecraft.world.entity.animal.Turtle;
+import net.minecraft.world.entity.animal.Wolf;
+import net.minecraft.world.entity.animal.Parrot;
+import net.minecraft.world.entity.animal.Ocelot;
+import net.minecraft.world.entity.animal.Cow;
+import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -40,8 +50,20 @@ public final class LotmEvents {
                 : living instanceof Spider ? "spider"
                 : living instanceof Bat ? "bat"
                 : living instanceof Frog ? "frog"
+                : living instanceof Goat ? "goat"
+                : living instanceof Husk ? "husk"
+                : living instanceof Turtle ? "turtle"
+                : living instanceof Wolf ? "wolf"
+                : living instanceof Parrot ? "parrot"
+                : living instanceof Ocelot ? "ocelot"
+                : living instanceof Cow ? "cow"
+                : living instanceof Phantom ? "phantom"
+                : living instanceof EnderMan ? "enderman"
+                : living instanceof Cat ? "cat"
                 : living instanceof Zombie ? "zombie" : "";
-        String variant = LotmEcologyRules.pickVariant(type, biomeId, entity.getRandom().nextInt(1_000_000));
+        String variant = type.isEmpty() ? null : LotmEcologyRules.pickVariant(
+                type, biomeId, entity.getRandom().nextInt(1_000_000),
+                LotmConfig.VARIANT_RARITY_PERCENT.get());
         if (variant != null) {
             entity.getPersistentData().putString(VARIANT, variant);
             entity.setCustomName(Component.translatable("entity.realscale.lotm." + variant));
@@ -52,14 +74,9 @@ public final class LotmEvents {
     public static void onDrops(LivingDropsEvent event) {
         if (!LotmConfig.ENABLED.get() || !LotmConfig.CREATURE_VARIANTS.get()) return;
         LivingEntity entity = event.getEntity();
-        Supplier<Item> material = switch (entity.getPersistentData().getString(VARIANT)) {
-            case "starlit_squid" -> LotmContent.LAVAS_SQUID_ESSENCE;
-            case "nightmare_eye" -> LotmContent.NIGHTMARE_EYE_SHARD;
-            case "night_owl" -> LotmContent.NIGHT_OWL_TOKEN;
-            case "black_spotted_frog" -> LotmContent.BLACK_SPOTTED_FROG_TOKEN;
-            case "shroudman" -> LotmContent.SHROUDMAN_CRYSTAL;
-            default -> null;
-        };
+        String id = LotmEcologyRules.DROPS.get(entity.getPersistentData().getString(VARIANT));
+        if (id == null) return;
+        Supplier<Item> material = LotmContent.materialItem(id);
         if (material != null) event.getDrops().add(new ItemEntity(entity.level(),
                 entity.getX(), entity.getY(), entity.getZ(), new ItemStack(material.get())));
     }
@@ -70,7 +87,8 @@ public final class LotmEvents {
         LotmPath path = LotmPath.of(player);
         if (path == null) return;
         // Regenerate discreetly; night-rested Sleepless users regain spirituality faster.
-        int recovery = path == LotmPath.SLEEPLESS && !player.level().isDay() ? 3 : 2;
+        int recovery = LotmConfig.SPIRIT_RECOVERY.get();
+        if (path == LotmPath.SLEEPLESS && !player.level().isDay()) recovery += 1;
         LotmState.regenerate(player, recovery);
         if (player.tickCount % 80 != 0) return;
         if (path == LotmPath.SLEEPLESS && !player.level().isDay()) {

@@ -23,6 +23,7 @@ public final class RealScaleMod {
         NeoForge.EVENT_BUS.addListener(LotmCommands::register);
         RealScaleVehicles.register(bus);
         bus.addListener(RealScaleStructurePacks::register);
+        bus.addListener(LotmWorldgen::register);
         bus.addListener(this::registerDensity);
         NeoForge.EVENT_BUS.addListener(RealScaleSpawnPosition::onCreateSpawnPosition);
         NeoForge.EVENT_BUS.addListener(DhChunkyGuardCommands::registerCommands);
