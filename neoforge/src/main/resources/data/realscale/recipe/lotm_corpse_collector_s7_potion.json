@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_empty_vial"
+    },
+    {
+      "item": "realscale:lotm_occult_catalyst"
+    },
+    {
+      "item": "realscale:lotm_spectral_cat_paw"
+    },
+    {
+      "item": "realscale:lotm_spirit_quartz"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_corpse_collector_s7_potion",
+    "count": 1
+  }
+}

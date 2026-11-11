@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_empty_vial"
+    },
+    {
+      "item": "realscale:lotm_occult_catalyst"
+    },
+    {
+      "item": "realscale:lotm_stag_beast_antler"
+    },
+    {
+      "item": "realscale:lotm_grey_grandmother_eye"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_mystery_pryer_s7_potion",
+    "count": 1
+  }
+}

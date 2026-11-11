@@ -20,10 +20,13 @@ ITEMS = [
     "lotm_mystery_pryer_potion", "lotm_sleepless_potion",
     "lotm_corpse_collector_potion", "lotm_shroudman_crystal",
     "lotm_divination_pendulum",
+    "lotm_hornacis_goat_horn", "lotm_ironarm_spine", "lotm_four_eyed_turtle_heart", "lotm_crimson_howler_voice", "lotm_death_crow_eye", "lotm_mist_treant_root", "lotm_evil_pattern_panther_essence", "lotm_stag_beast_antler", "lotm_grey_grandmother_eye", "lotm_dream_crow_heart", "lotm_nightmare_shadow_core", "lotm_spectral_cat_paw", "lotm_spirit_quartz", "lotm_occult_catalyst", "lotm_seer_s9_characteristic", "lotm_seer_s8_characteristic", "lotm_seer_s8_potion", "lotm_seer_s7_characteristic", "lotm_seer_s7_potion", "lotm_mystery_pryer_s9_characteristic", "lotm_mystery_pryer_s8_characteristic", "lotm_mystery_pryer_s8_potion", "lotm_mystery_pryer_s7_characteristic", "lotm_mystery_pryer_s7_potion", "lotm_sleepless_s9_characteristic", "lotm_sleepless_s8_characteristic", "lotm_sleepless_s8_potion", "lotm_sleepless_s7_characteristic", "lotm_sleepless_s7_potion", "lotm_corpse_collector_s9_characteristic", "lotm_corpse_collector_s8_characteristic", "lotm_corpse_collector_s8_potion", "lotm_corpse_collector_s7_characteristic", "lotm_corpse_collector_s7_potion",
 ]
 BLOCKS = [
     "lotm_star_crystal_ore", "lotm_cursed_crystal_ore",
     "lotm_grave_crystal_ore", "lotm_midnight_bloom",
+    "lotm_face_rose", "lotm_soul_bellflower", "lotm_blood_rose",
+    "lotm_spirit_quartz_ore", "lotm_relic_cache",
 ]
 PALETTE = [
     (86, 170, 225), (149, 77, 178), (115, 156, 174),
@@ -56,7 +59,7 @@ def pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
             return rgba(light if noise % 4 == 0 else base)
         return rgba(stone)
 
-    if name == "lotm_midnight_bloom":
+    if name in ("lotm_midnight_bloom", "lotm_face_rose", "lotm_soul_bellflower", "lotm_blood_rose"):
         if y >= 7 and x in (7, 8):
             return (61, 125, 75, 255)
         if y in (10, 11) and x in (5, 6, 9, 10):

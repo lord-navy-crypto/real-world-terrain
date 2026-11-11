@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_empty_vial"
+    },
+    {
+      "item": "realscale:lotm_occult_catalyst"
+    },
+    {
+      "item": "realscale:lotm_crimson_howler_voice"
+    },
+    {
+      "item": "realscale:lotm_soul_bellflower"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_sleepless_s8_potion",
+    "count": 1
+  }
+}
