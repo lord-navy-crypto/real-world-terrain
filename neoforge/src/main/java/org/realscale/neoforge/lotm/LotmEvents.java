@@ -86,6 +86,7 @@ public final class LotmEvents {
         if (player.tickCount % 40 != 0) return;
         LotmPath path = LotmPath.of(player);
         if (path == null) return;
+        LotmActing.onPlayerTick(player);
         // Regenerate discreetly; night-rested Sleepless users regain spirituality faster.
         int recovery = LotmConfig.SPIRIT_RECOVERY.get();
         if (path == LotmPath.SLEEPLESS && !player.level().isDay()) recovery += 1;

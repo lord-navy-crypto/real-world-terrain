@@ -30,6 +30,15 @@ public final class LotmBalance {
 
     public static final int DIVINATION_COST = 18;
 
+    public static int alchemyTicks(int sequence, int sequence9, int sequence8, int sequence7) {
+        return switch (sequence) {
+            case 9 -> Math.max(1, sequence9);
+            case 8 -> Math.max(1, sequence8);
+            case 7 -> Math.max(1, sequence7);
+            default -> 0;
+        };
+    }
+
     /** Omen orientation is deliberately coarse: no omniscience at Sequence 9. */
     public static String bearing(int dx, int dz, int dy) {
         if (Math.abs(dy) > 5 && Math.abs(dy) > Math.max(Math.abs(dx), Math.abs(dz))) {

@@ -22,7 +22,7 @@ public final class LotmCommands {
                         "message.realscale.lotm.status", path.id(),
                         player.getPersistentData().getInt(LotmPath.NBT_SEQUENCE),
                         LotmState.spirit(player), LotmBalance.MAX_SPIRIT,
-                        LotmState.practice(player)), false);
+                        LotmState.digestion(player)), false);
                 context.getSource().sendSuccess(() -> Component.translatable(
                         "message.realscale.lotm.instability", LotmState.instability(player)), false);
                 return 1;

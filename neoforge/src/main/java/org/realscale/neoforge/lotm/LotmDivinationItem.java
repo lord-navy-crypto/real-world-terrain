@@ -54,7 +54,7 @@ public final class LotmDivinationItem extends Item {
                     nearest.getZ() - origin.getZ(), nearest.getY() - origin.getY());
             player.displayClientMessage(Component.translatable("message.realscale.lotm.omen",
                     Component.translatable("message.realscale.lotm.bearing." + direction)), true);
-            LotmState.recordPractice(player, 3);
+            LotmActing.recordResearch(player, 3);
         }
         player.getCooldowns().addCooldown(this, 200);
         return InteractionResultHolder.consume(stack);

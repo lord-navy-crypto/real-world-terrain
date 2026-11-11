@@ -41,6 +41,9 @@ public final class LotmContent {
     public static final Supplier<Block> RELIC_CACHE = BLOCKS.register("lotm_relic_cache",
             () -> new LotmRelicCacheBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.MOSSY_STONE_BRICKS)
                     .strength(2.5F)));
+    public static final Supplier<Block> ALCHEMY_APPARATUS = BLOCKS.register("lotm_alchemy_apparatus",
+            () -> new LotmAlchemyBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE_BRICKS)
+                    .strength(4.0F).requiresCorrectToolForDrops()));
 
     public static final Supplier<? extends Item> STAR_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_star_crystal_ore", STAR_ORE);
     public static final Supplier<? extends Item> CURSED_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_cursed_crystal_ore", CURSED_ORE);
@@ -51,6 +54,8 @@ public final class LotmContent {
     public static final Supplier<? extends Item> BLOOD_ROSE_ITEM = ITEMS.registerSimpleBlockItem("lotm_blood_rose", BLOOD_ROSE);
     public static final Supplier<? extends Item> SPIRIT_QUARTZ_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_spirit_quartz_ore", SPIRIT_QUARTZ_ORE);
     public static final Supplier<? extends Item> RELIC_CACHE_ITEM = ITEMS.registerSimpleBlockItem("lotm_relic_cache", RELIC_CACHE);
+    public static final Supplier<? extends Item> ALCHEMY_APPARATUS_ITEM =
+            ITEMS.registerSimpleBlockItem("lotm_alchemy_apparatus", ALCHEMY_APPARATUS);
     public static final Supplier<Item> STAR_CRYSTAL = ITEMS.registerSimpleItem("lotm_star_crystal", new Item.Properties());
     public static final Supplier<Item> CURSED_CRYSTAL = ITEMS.registerSimpleItem("lotm_cursed_crystal", new Item.Properties());
     public static final Supplier<Item> GRAVE_CRYSTAL = ITEMS.registerSimpleItem("lotm_grave_crystal", new Item.Properties());
@@ -62,6 +67,7 @@ public final class LotmContent {
     public static final Supplier<? extends Item> DIVINATION_PENDULUM = ITEMS.registerItem("lotm_divination_pendulum",
             LotmDivinationItem::new, new Item.Properties().stacksTo(1));
     public static final Supplier<Item> EMPTY_VIAL = ITEMS.registerSimpleItem("lotm_empty_vial", new Item.Properties());
+    public static final Supplier<Item> SPIRIT_EMBER = ITEMS.registerSimpleItem("lotm_spirit_ember", new Item.Properties());
     public static final Supplier<? extends Item> SPIRIT_FOCUS = ITEMS.registerItem("lotm_spirit_focus",
             LotmFocusItem::new, new Item.Properties().stacksTo(1));
 

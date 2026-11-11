@@ -13,6 +13,10 @@ public final class LotmConfig {
     public static final ModConfigSpec.IntValue POTION_PRACTICE;
     public static final ModConfigSpec.IntValue CHARACTERISTIC_PRACTICE;
     public static final ModConfigSpec.IntValue SPIRIT_RECOVERY;
+    public static final ModConfigSpec.IntValue ALCHEMY_SEQUENCE9_TICKS;
+    public static final ModConfigSpec.IntValue ALCHEMY_SEQUENCE8_TICKS;
+    public static final ModConfigSpec.IntValue ALCHEMY_SEQUENCE7_TICKS;
+    public static final ModConfigSpec.IntValue DIGESTION_REWARD_PERCENT;
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
         b.push("lotm");
@@ -32,6 +36,14 @@ public final class LotmConfig {
                 .defineInRange("characteristicPractice", 90, 0, 100);
         SPIRIT_RECOVERY = b.comment("Spirituality regained each 40 server ticks.")
                 .defineInRange("spiritRecovery", 2, 0, 20);
+        ALCHEMY_SEQUENCE9_TICKS = b.comment("Sequence 9 potion processing time in game ticks.")
+                .defineInRange("alchemySequence9Ticks", 120, 20, 2400);
+        ALCHEMY_SEQUENCE8_TICKS = b.comment("Sequence 8 potion processing time in game ticks.")
+                .defineInRange("alchemySequence8Ticks", 240, 20, 4800);
+        ALCHEMY_SEQUENCE7_TICKS = b.comment("Sequence 7 potion processing time in game ticks.")
+                .defineInRange("alchemySequence7Ticks", 360, 20, 7200);
+        DIGESTION_REWARD_PERCENT = b.comment("Scale NPC-free acting rewards (100 = default).")
+                .defineInRange("digestionRewardPercent", 100, 0, 300);
         b.pop();
         SPEC = b.build();
     }

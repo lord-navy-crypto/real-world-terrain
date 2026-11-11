@@ -25,6 +25,10 @@ public final class LotmPotionItem extends Item {
         this.characteristic = characteristic;
     }
 
+    public LotmPath pathway() { return pathway; }
+    public int sequence() { return sequence; }
+    public boolean isCharacteristic() { return characteristic; }
+
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);

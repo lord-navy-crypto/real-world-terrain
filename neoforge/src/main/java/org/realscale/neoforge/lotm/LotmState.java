@@ -52,6 +52,16 @@ public final class LotmState {
                 LotmBalance.MAX_PRACTICE);
     }
 
+    /** RPG-facing name; reads the legacy practice key for existing saves. */
+    public static int digestion(Player player) {
+        return practice(player);
+    }
+
+    /** RPG-facing name; preserves the legacy persisted NBT key. */
+    public static void recordDigestion(Player player, int amount) {
+        recordPractice(player, amount);
+    }
+
     public static boolean consume(Player player, int amount) {
         if (LotmPath.of(player) == null || amount < 0) return false;
         int current = spirit(player);

@@ -133,7 +133,10 @@ public final class LotmFocusItem extends Item {
                 }
             }
         }
-        if (discovered > 0) LotmState.recordPractice(player, 2 + (9 - sequence));
+        if (discovered > 0) {
+            LotmActing.recordSkillUse(player, 2 + (9 - sequence));
+            LotmActing.recordResearch(player, Math.min(4, discovered));
+        }
         player.displayClientMessage(Component.translatable(
                 "message.realscale.lotm.sense_spirit", discovered, LotmState.spirit(player)), true);
         player.getCooldowns().addCooldown(this, sequence == 7 ? 110 : sequence == 8 ? 135 : 160);

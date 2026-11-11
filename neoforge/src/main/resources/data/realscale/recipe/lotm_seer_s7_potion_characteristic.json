@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_empty_vial"
+    },
+    {
+      "item": "realscale:lotm_occult_catalyst"
+    },
+    {
+      "item": "realscale:lotm_seer_s7_characteristic"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_seer_s7_potion",
+    "count": 1
+  }
+}
