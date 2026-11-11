@@ -78,7 +78,7 @@ class LotmDataGraphTests(unittest.TestCase):
         for name in ("lotm_relic_cache", "lotm_face_rose",
                      "lotm_seer_s7_characteristic", "lotm_sleepless_s8_potion"):
             blob = module.png_bytes(name)
-            self.assertTrue(blob.startswith(b"\\x89PNG\\r\\n\\x1a\\n"))
+            self.assertTrue(blob.startswith(bytes([137, 80, 78, 71, 13, 10, 26, 10])))
             self.assertGreater(len(blob), 50)
 
     def test_locale_and_image_generator_cover_all_new_items(self):
