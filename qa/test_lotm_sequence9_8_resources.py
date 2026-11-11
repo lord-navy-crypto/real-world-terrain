@@ -98,6 +98,16 @@ class LotmDataGraphTests(unittest.TestCase):
                                'return "spectral_cat"'):
             self.assertNotIn(forbidden_rule, source)
 
+    def test_focus_and_acting_code_respect_the_active_sequence_boundary(self):
+        focus = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmFocusItem.java").read_text(encoding="utf-8")
+        events = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmEvents.java").read_text(encoding="utf-8")
+        acting = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmActing.java").read_text(encoding="utf-8")
+        self.assertNotIn("SPIRIT_QUARTZ_ORE", focus)
+        self.assertIn("sequence < 8 || sequence > 9", focus)
+        self.assertIn("sequence < 8 || sequence > 9", events)
+        self.assertIn("LotmActing.copy(original, clone)", (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmState.java").read_text(encoding="utf-8"))
+        self.assertIn("Do not permanently mark a biome while the daily cap is full", acting)
+
     def test_original_art_generator_covers_active_and_archived_resources(self):
         spec = importlib.util.spec_from_file_location(
             "lotm_visuals", ROOT / "scripts/generate_lotm_visuals.py")
