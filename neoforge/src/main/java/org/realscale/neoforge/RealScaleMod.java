@@ -1,6 +1,9 @@
 package org.realscale.neoforge;
 
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.config.ModConfig;
+import org.realscale.neoforge.lotm.*;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -10,7 +13,13 @@ import net.minecraft.resources.ResourceLocation;
 
 @Mod("realscale")
 public final class RealScaleMod {
-    public RealScaleMod(IEventBus bus) {
+    public RealScaleMod(IEventBus bus, ModContainer container) {
+        LotmContent.register(bus);
+        container.registerConfig(ModConfig.Type.COMMON, LotmConfig.SPEC);
+        NeoForge.EVENT_BUS.addListener(LotmEvents::onJoin);
+        NeoForge.EVENT_BUS.addListener(LotmEvents::onDrops);
+        NeoForge.EVENT_BUS.addListener(LotmEvents::onTick);
+        NeoForge.EVENT_BUS.addListener(LotmEvents::onClone);
         RealScaleVehicles.register(bus);
         bus.addListener(RealScaleStructurePacks::register);
         bus.addListener(this::registerDensity);
