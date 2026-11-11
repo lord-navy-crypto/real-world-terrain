@@ -18,11 +18,11 @@ public final class LotmRelicSiteFeature extends Feature<NoneFeatureConfiguration
         if (context.random().nextInt(LotmConfig.RELIC_RARITY.get()) != 0) return false;
         WorldGenLevel level = context.level();
         BlockPos center = context.origin();
-        if (!level.getBlockState(center).isAir() || level.getBlockState(center.below()).isAir()) return false;
+        if (!level.getBlockState(center).isAir() || !level.getBlockState(center.below()).isSolidRender(level, center.below())) return false;
         if (!level.getBlockState(center.above()).isAir()) return false;
         for (int x = -1; x <= 1; x++) for (int z = -1; z <= 1; z++) {
             BlockPos ground = center.offset(x, -1, z);
-            if (level.getBlockState(ground).isAir()) return false;
+            if (!level.getBlockState(ground).isSolidRender(level, ground)) return false;
             if (!level.getBlockState(ground.above()).isAir() && (x != 0 || z != 0)) return false;
         }
         for (int x = -1; x <= 1; x++) for (int z = -1; z <= 1; z++) {

@@ -48,7 +48,7 @@ def hashbyte(text: str) -> int:
 
 def pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
     key = name if name in ITEMS else name.removesuffix("_ore")
-    base = PALETTE[ITEMS.index(key)] if key in ITEMS else (136, 81, 180)
+    base = PALETTE[ITEMS.index(key) % len(PALETTE)] if key in ITEMS else (136, 81, 180)
     light = tuple(min(255, v + 67) for v in base)
     noise = hashbyte(f"{name}/{x}/{y}")
     ox, oy = x - 7.5, y - 7.5

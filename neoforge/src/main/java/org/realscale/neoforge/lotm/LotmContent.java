@@ -111,7 +111,7 @@ public final class LotmContent {
             "crimson_howler_voice", "death_crow_eye", "mist_treant_root",
             "evil_pattern_panther_essence", "stag_beast_antler",
             "grey_grandmother_eye", "dream_crow_heart", "nightmare_shadow_core",
-            "spectral_cat_paw", "spirit_quartz"
+            "spectral_cat_paw", "spirit_quartz", "occult_catalyst"
         }) material(material);
         for (LotmPath path : LotmPath.values()) {
             for (int rank = 9; rank >= 7; rank--) {
