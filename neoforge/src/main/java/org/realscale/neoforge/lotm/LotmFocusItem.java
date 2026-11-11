@@ -16,11 +16,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 
 /**
- * Four distinct Sequence 9/8 play styles, all server-authoritative and bounded.
- * Magician short-step is only enabled if both destination cells and ground are safe.
+ * Sequence 9/8 pathway focus abilities. All effects are server-authoritative and bounded.
  */
 public final class LotmFocusItem extends Item {
     public LotmFocusItem(Properties properties) { super(properties); }
@@ -28,19 +26,6 @@ public final class LotmFocusItem extends Item {
     private static void apply(LivingEntity target, net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect,
             int ticks, int amplifier) {
         target.addEffect(new MobEffectInstance(effect, ticks, amplifier, false, false));
-    }
-
-    private static boolean phaseStep(Level level, Player player) {
-        Vec3 look = player.getLookAngle();
-        BlockPos original = player.blockPosition();
-        BlockPos destination = original.offset((int)Math.round(look.x * 6.0), 0,
-                (int)Math.round(look.z * 6.0));
-        BlockPos foot = destination.below();
-        if (!level.hasChunkAt(destination) || !level.isEmptyBlock(destination)
-                || !level.isEmptyBlock(destination.above())
-                || !level.getBlockState(foot).isSolidRender(level, foot)) return false;
-        player.teleportTo(destination.getX() + 0.5, destination.getY(), destination.getZ() + 0.5);
-        return true;
     }
 
     @Override
@@ -65,7 +50,7 @@ public final class LotmFocusItem extends Item {
         AABB range = new AABB(player.blockPosition()).inflate(14.0D);
         switch (path) {
             case SEER -> {
-                // Seer senses, Clown coordination, Magician short fire-step / illusion.
+                // Seer senses and Clown coordination.
                 for (LivingEntity other : level.getEntitiesOfClass(LivingEntity.class, range,
                         other -> other != player && other.getPersistentData().contains(LotmEvents.VARIANT))) {
                     apply(other, MobEffects.GLOWING, 140, 0);
