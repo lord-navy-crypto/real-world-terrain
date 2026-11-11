@@ -20,6 +20,7 @@ public final class RealScaleMod {
         NeoForge.EVENT_BUS.addListener(LotmEvents::onDrops);
         NeoForge.EVENT_BUS.addListener(LotmEvents::onTick);
         NeoForge.EVENT_BUS.addListener(LotmEvents::onClone);
+        NeoForge.EVENT_BUS.addListener(LotmCommands::register);
         RealScaleVehicles.register(bus);
         bus.addListener(RealScaleStructurePacks::register);
         bus.addListener(this::registerDensity);

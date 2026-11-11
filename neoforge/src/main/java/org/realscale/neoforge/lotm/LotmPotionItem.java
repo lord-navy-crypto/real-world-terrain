@@ -24,8 +24,7 @@ public final class LotmPotionItem extends Item {
             player.displayClientMessage(Component.translatable("message.realscale.lotm.already_path"), true);
             return InteractionResultHolder.fail(stack);
         }
-        player.getPersistentData().putString(LotmPath.NBT_PATH, pathway.id());
-        player.getPersistentData().putInt(LotmPath.NBT_SEQUENCE, 9);
+        LotmState.initialize(player, pathway);
         if (!player.getAbilities().instabuild) stack.shrink(1);
         player.displayClientMessage(Component.translatable("message.realscale.lotm.advanced", pathway.id()), false);
         return InteractionResultHolder.consume(stack);

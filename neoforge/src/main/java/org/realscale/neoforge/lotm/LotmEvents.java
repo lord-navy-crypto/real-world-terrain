@@ -11,6 +11,7 @@ import net.minecraft.world.entity.ambient.Bat;
 import net.minecraft.world.entity.animal.frog.Frog;
 import net.minecraft.world.entity.animal.Squid;
 import net.minecraft.world.entity.monster.Spider;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -34,21 +35,17 @@ public final class LotmEvents {
         if (entity.getPersistentData().getBoolean(CHECKED)) return;
         entity.getPersistentData().putBoolean(CHECKED, true);
         Holder<Biome> biome = entity.level().getBiome(entity.blockPosition());
-        String variant = null;
-        if (living instanceof Squid && biome.is(Biomes.DEEP_OCEAN) && entity.getRandom().nextInt(24) == 0) {
-            variant = "starlit_squid";
-        } else if (living instanceof Spider && biome.is(Biomes.DARK_FOREST) && entity.getRandom().nextInt(32) == 0) {
-            variant = "nightmare_eye";
-        } else if (living instanceof Bat && (biome.is(Biomes.DARK_FOREST) || biome.is(Biomes.TAIGA))
-                && entity.getRandom().nextInt(24) == 0) {
-            variant = "night_owl";
-        } else if (living instanceof Frog && (biome.is(Biomes.SWAMP) || biome.is(Biomes.MANGROVE_SWAMP))
-                && entity.getRandom().nextInt(20) == 0) {
-            variant = "black_spotted_frog";
-        }
+        String biomeId = biome.unwrapKey().map(key -> key.location().toString()).orElse("");
+        String type = living instanceof Squid ? "squid"
+                : living instanceof Spider ? "spider"
+                : living instanceof Bat ? "bat"
+                : living instanceof Frog ? "frog"
+                : living instanceof Zombie ? "zombie" : "";
+        String variant = LotmEcologyRules.pickVariant(type, biomeId, entity.getRandom().nextInt(1_000_000));
         if (variant != null) {
             entity.getPersistentData().putString(VARIANT, variant);
             entity.setCustomName(Component.translatable("entity.realscale.lotm." + variant));
+            entity.setCustomNameVisible(true);
         }
     }
 
@@ -60,6 +57,7 @@ public final class LotmEvents {
             case "nightmare_eye" -> LotmContent.NIGHTMARE_EYE_SHARD;
             case "night_owl" -> LotmContent.NIGHT_OWL_TOKEN;
             case "black_spotted_frog" -> LotmContent.BLACK_SPOTTED_FROG_TOKEN;
+            case "shroudman" -> LotmContent.SHROUDMAN_CRYSTAL;
             default -> null;
         };
         if (material != null) event.getDrops().add(new ItemEntity(entity.level(),
@@ -68,10 +66,16 @@ public final class LotmEvents {
 
     public static void onTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || !LotmConfig.ENABLED.get()) return;
-        if (player.tickCount % 80 != 0) return;
+        if (player.tickCount % 40 != 0) return;
         LotmPath path = LotmPath.of(player);
+        if (path == null) return;
+        // Regenerate discreetly; night-rested Sleepless users regain spirituality faster.
+        int recovery = path == LotmPath.SLEEPLESS && !player.level().isDay() ? 3 : 2;
+        LotmState.regenerate(player, recovery);
+        if (player.tickCount % 80 != 0) return;
         if (path == LotmPath.SLEEPLESS && !player.level().isDay()) {
             player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 260, 0, true, false));
+            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 120, 0, true, false));
         }
         if (path == LotmPath.CORPSE_COLLECTOR && player.getTicksFrozen() > 0) {
             // Temperature hardiness is represented conservatively without changing combat damage.
@@ -80,12 +84,8 @@ public final class LotmEvents {
     }
 
     public static void onClone(PlayerEvent.Clone event) {
-        var from = event.getOriginal().getPersistentData();
-        var to = event.getEntity().getPersistentData();
-        if (from.contains(LotmPath.NBT_PATH)) {
-            to.putString(LotmPath.NBT_PATH, from.getString(LotmPath.NBT_PATH));
-            to.putInt(LotmPath.NBT_SEQUENCE, from.getInt(LotmPath.NBT_SEQUENCE));
-        }
+        if (!event.isWasDeath()) return;
+        LotmState.copy(event.getOriginal(), event.getEntity());
     }
 
     private LotmEvents() {}

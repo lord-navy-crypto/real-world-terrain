@@ -31,6 +31,10 @@ public final class LotmFocusItem extends Item {
             return InteractionResultHolder.fail(stack);
         }
         if (player.getCooldowns().isOnCooldown(this)) return InteractionResultHolder.fail(stack);
+        if (!LotmState.consume(player, LotmBalance.focusCost(path.id()))) {
+            player.displayClientMessage(Component.translatable("message.realscale.lotm.low_spirit"), true);
+            return InteractionResultHolder.fail(stack);
+        }
         int discovered = 0;
         AABB range = new AABB(player.blockPosition()).inflate(16.0D);
         switch (path) {
@@ -67,7 +71,9 @@ public final class LotmFocusItem extends Item {
                 }
             }
         }
-        player.displayClientMessage(Component.translatable("message.realscale.lotm.sense", discovered), true);
+        if (discovered > 0) LotmState.recordPractice(player, 2);
+        player.displayClientMessage(Component.translatable(
+                "message.realscale.lotm.sense_spirit", discovered, LotmState.spirit(player)), true);
         player.getCooldowns().addCooldown(this, 160);
         return InteractionResultHolder.consume(stack);
     }

@@ -35,6 +35,9 @@ public final class LotmContent {
     public static final Supplier<Item> NIGHTMARE_EYE_SHARD = ITEMS.registerSimpleItem("lotm_nightmare_eye_shard", new Item.Properties());
     public static final Supplier<Item> NIGHT_OWL_TOKEN = ITEMS.registerSimpleItem("lotm_night_owl_token", new Item.Properties());
     public static final Supplier<Item> BLACK_SPOTTED_FROG_TOKEN = ITEMS.registerSimpleItem("lotm_black_spotted_frog_token", new Item.Properties());
+    public static final Supplier<Item> SHROUDMAN_CRYSTAL = ITEMS.registerSimpleItem("lotm_shroudman_crystal", new Item.Properties());
+    public static final Supplier<? extends Item> DIVINATION_PENDULUM = ITEMS.registerItem("lotm_divination_pendulum",
+            LotmDivinationItem::new, new Item.Properties().stacksTo(1));
     public static final Supplier<Item> EMPTY_VIAL = ITEMS.registerSimpleItem("lotm_empty_vial", new Item.Properties());
     public static final Supplier<? extends Item> SPIRIT_FOCUS = ITEMS.registerItem("lotm_spirit_focus",
             LotmFocusItem::new, new Item.Properties().stacksTo(1));
