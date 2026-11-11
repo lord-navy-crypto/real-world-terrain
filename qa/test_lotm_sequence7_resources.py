@@ -58,6 +58,29 @@ class LotmDataGraphTests(unittest.TestCase):
         self.assertEqual("realscale:lotm_relic_site",
             load(DATA / "worldgen/placed_feature/lotm_relic_site.json")["feature"])
 
+    def test_materials_are_registered_and_poison_free_game_abstractions(self):
+        source = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmContent.java").read_text(encoding="utf-8")
+        for a, b in MATERIALS.values():
+            for suffix in (a, b):
+                if suffix in ("face_rose", "soul_bellflower", "blood_rose"):
+                    self.assertIn('BLOCKS.register("lotm_' + suffix + '"', source)
+                else:
+                    self.assertIn('"' + suffix + '"', source)
+        self.assertIn('"occult_catalyst"', source)
+        self.assertIn('CHARACTERISTICS.put(', source)
+
+    def test_original_art_generator_runs_for_new_items(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "lotm_visuals", ROOT / "scripts/generate_lotm_visuals.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        for name in ("lotm_relic_cache", "lotm_face_rose",
+                     "lotm_seer_s7_characteristic", "lotm_sleepless_s8_potion"):
+            blob = module.png_bytes(name)
+            self.assertTrue(blob.startswith(b"\\x89PNG\\r\\n\\x1a\\n"))
+            self.assertGreater(len(blob), 50)
+
     def test_locale_and_image_generator_cover_all_new_items(self):
         en = load(ASSETS / "lang/en_us.json")
         zh = load(ASSETS / "lang/zh_cn.json")
