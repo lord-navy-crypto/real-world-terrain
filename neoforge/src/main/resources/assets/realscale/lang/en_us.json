@@ -41,5 +41,22 @@
   "message.realscale.lotm.no_path": "No pathway chosen. Craft a Sequence 9 potion.",
   "message.realscale.lotm.already_path": "You already possess a Sequence 9 pathway.",
   "message.realscale.lotm.advanced": "Sequence 9 unlocked: %s",
-  "message.realscale.lotm.sense": "Spiritual sense detects %s nearby signals."
+  "message.realscale.lotm.sense": "Spiritual sense detects %s nearby signals.",
+  "item.realscale.lotm_shroudman_crystal": "Shroudman Crystal",
+  "item.realscale.lotm_divination_pendulum": "Divination Pendulum",
+  "entity.realscale.lotm.shroudman": "Shroudman",
+  "message.realscale.lotm.status": "Path: %s | Sequence %s | Spirituality: %s/%s | Practice: %s/100",
+  "message.realscale.lotm.guide": "Find occult creatures and crystals, craft a Sequence 9 potion, use Spirit Focus; Seers can also use a Divination Pendulum. Type /lotm status to inspect progress.",
+  "message.realscale.lotm.seer_only": "The pendulum responds only to a Seer's spirituality.",
+  "message.realscale.lotm.low_spirit": "Not enough spirituality. It recovers slowly over time.",
+  "message.realscale.lotm.sense_spirit": "Spiritual sight: %s signs | Spirituality: %s/100",
+  "message.realscale.lotm.unclear_omen": "The omen is unclear. No nearby occult material is sensed.",
+  "message.realscale.lotm.omen": "A faint omen points %s.",
+  "message.realscale.lotm.bearing.north": "north",
+  "message.realscale.lotm.bearing.south": "south",
+  "message.realscale.lotm.bearing.east": "east",
+  "message.realscale.lotm.bearing.west": "west",
+  "message.realscale.lotm.bearing.up": "up",
+  "message.realscale.lotm.bearing.down": "down",
+  "message.realscale.lotm.bearing.near": "near"
 }

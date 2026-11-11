@@ -41,5 +41,22 @@
   "message.realscale.lotm.no_path": "尚未选择途径，请合成序列9魔药。",
   "message.realscale.lotm.already_path": "你已经拥有一条序列9途径。",
   "message.realscale.lotm.advanced": "已解锁序列9：%s",
-  "message.realscale.lotm.sense": "灵性感知发现 %s 个附近的线索。"
+  "message.realscale.lotm.sense": "灵性感知发现 %s 个附近的线索。",
+  "item.realscale.lotm_shroudman_crystal": "布套人结晶",
+  "item.realscale.lotm_divination_pendulum": "占卜灵摆",
+  "entity.realscale.lotm.shroudman": "布套人",
+  "message.realscale.lotm.status": "途径：%s | 序列%s | 灵性：%s/%s | 熟练度：%s/100",
+  "message.realscale.lotm.guide": "寻找非凡生物与矿物，制作序列9魔药，使用灵性聚焦器；占卜家还能使用占卜灵摆。输入 /lotm status 查询状态。",
+  "message.realscale.lotm.seer_only": "只有占卜家的灵性能驱动灵摆。",
+  "message.realscale.lotm.low_spirit": "灵性不足，可以随时间缓慢恢复。",
+  "message.realscale.lotm.sense_spirit": "灵视发现 %s 处线索 | 剩余灵性：%s/100",
+  "message.realscale.lotm.unclear_omen": "预兆模糊，暂未感应到附近的非凡材料。",
+  "message.realscale.lotm.omen": "模糊的预兆指向：%s。",
+  "message.realscale.lotm.bearing.north": "北方",
+  "message.realscale.lotm.bearing.south": "南方",
+  "message.realscale.lotm.bearing.east": "东方",
+  "message.realscale.lotm.bearing.west": "西方",
+  "message.realscale.lotm.bearing.up": "上方",
+  "message.realscale.lotm.bearing.down": "下方",
+  "message.realscale.lotm.bearing.near": "附近"
 }
