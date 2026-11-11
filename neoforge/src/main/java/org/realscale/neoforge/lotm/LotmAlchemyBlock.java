@@ -1,6 +1,9 @@
 package org.realscale.neoforge.lotm;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -15,7 +18,22 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
 public final class LotmAlchemyBlock extends Block implements EntityBlock {
-    public LotmAlchemyBlock(Properties properties) { super(properties); }
+    public static final BooleanProperty BREWING = BooleanProperty.create("brewing");
+
+    public LotmAlchemyBlock(Properties properties) {
+        super(properties);
+        registerDefaultState(defaultBlockState().setValue(BREWING, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(BREWING);
+    }
+
+    @Override
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.ENTITYBLOCK_ANIMATED;
+    }
     @Override public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new LotmAlchemyBlockEntity(pos, state);
     }

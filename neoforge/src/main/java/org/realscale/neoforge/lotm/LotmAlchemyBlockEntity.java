@@ -14,19 +14,28 @@ import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
-import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import java.util.List;
 import java.util.Optional;
+import software.bernie.geckolib.animatable.GeoBlockEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
 /** 2x2 recipe grid + Spirit Ember fuel + output. Server-authoritative and save-safe. */
-public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuProvider {
+public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuProvider, GeoBlockEntity {
     private static final int GRID_SIZE = 4, FUEL_SLOT = 4, OUTPUT_SLOT = 5;
+    private static final RawAnimation IDLE_ANIMATION =
+            RawAnimation.begin().thenLoop("animation.realscale.lotm_alchemy_apparatus.idle");
+    private static final RawAnimation BREWING_ANIMATION =
+            RawAnimation.begin().thenLoop("animation.realscale.lotm_alchemy_apparatus.brew");
+    private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
     private int progress, maxProgress;
     private ResourceLocation activeRecipe;
 
@@ -45,7 +54,7 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
             finally { internalOutputWrite = false; }
         }
         @Override protected void onContentsChanged(int slot) {
-            if (slot < FUEL_SLOT) { progress = 0; maxProgress = 0; activeRecipe = null; }
+            if (slot < FUEL_SLOT) resetProgress();
             setChanged();
         }
     }
@@ -64,6 +73,31 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
         super(LotmAlchemyContent.ALCHEMY_BLOCK_ENTITY.get(), pos, state);
     }
     public ItemStackHandler getItemHandler() { return inventory; }
+
+    public boolean isBrewing() {
+        BlockState state = getBlockState();
+        return state.hasProperty(LotmAlchemyBlock.BREWING) && state.getValue(LotmAlchemyBlock.BREWING);
+    }
+
+    private void setBrewingState(boolean brewing) {
+        if (level == null || level.isClientSide) return;
+        BlockState state = level.getBlockState(worldPosition);
+        if (state.getBlock() instanceof LotmAlchemyBlock
+                && state.getValue(LotmAlchemyBlock.BREWING) != brewing) {
+            level.setBlock(worldPosition, state.setValue(LotmAlchemyBlock.BREWING, brewing), 3);
+        }
+    }
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>(this, "alchemy", 0,
+                state -> state.setAndContinue(isBrewing() ? BREWING_ANIMATION : IDLE_ANIMATION)));
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return animationCache;
+    }
     @Override public Component getDisplayName() {
         return Component.translatable("container.realscale.lotm_alchemy_apparatus");
     }
@@ -78,8 +112,8 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
         CraftingInput input = CraftingInput.of(2, 2, List.of(
                 machine.inventory.getStackInSlot(0), machine.inventory.getStackInSlot(1),
                 machine.inventory.getStackInSlot(2), machine.inventory.getStackInSlot(3)));
-        Optional<RecipeHolder<CraftingRecipe>> match =
-                server.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, server);
+        Optional<RecipeHolder<LotmAlchemyRecipe>> match =
+                server.getRecipeManager().getRecipeFor(LotmAlchemyContent.ALCHEMY_RECIPE_TYPE.get(), input, server);
         if (match.isEmpty()) { machine.resetProgress(); return; }
         RecipeHolder<CraftingRecipe> holder = match.get();
         ItemStack result = holder.value().assemble(input, server.registryAccess());
@@ -92,13 +126,17 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
                 LotmConfig.ALCHEMY_SEQUENCE9_TICKS.get(), LotmConfig.ALCHEMY_SEQUENCE8_TICKS.get());
         if (configuredTicks <= 0) { machine.resetProgress(); return; }
         if (machine.inventory.getStackInSlot(FUEL_SLOT).isEmpty()
-                || !machine.canAcceptOutput(result)) return;
+                || !machine.canAcceptOutput(result)) {
+            machine.setBrewingState(false);
+            return;
+        }
         if (!holder.id().equals(machine.activeRecipe) || machine.maxProgress <= 0) {
             machine.activeRecipe = holder.id();
             machine.progress = 0;
             machine.maxProgress = configuredTicks;
         }
         machine.progress++;
+        machine.setBrewingState(true);
         machine.setChanged();
         if (machine.progress < machine.maxProgress) return;
         for (int slot = 0; slot < GRID_SIZE; slot++) {
@@ -130,6 +168,7 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
         progress = 0;
         maxProgress = 0;
         activeRecipe = null;
+        setBrewingState(false);
         setChanged();
     }
     @Override public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {

@@ -1,6 +1,5 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "category": "misc",
+  "type": "realscale:lotm_alchemy",
   "ingredients": [
     {
       "item": "realscale:lotm_empty_vial"

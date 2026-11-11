@@ -70,8 +70,19 @@ repositories {
         }
         filter { includeGroup 'maven.modrinth' }
     }
+    // GeckoLib 4: animated GeoBlockEntity support for the 1.21.1 apparatus.
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'GeckoLib'
+                url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+            }
+        }
+        filter { includeGroup 'software.bernie.geckolib' }
+    }
 }
 dependencies {
+    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:${geckolib_version}" // GeckoLib 4, Minecraft 1.21.1
     implementation 'dev.isxander:yet-another-config-lib:3.8.1+1.21.1-neoforge' // YACL 3.8.1, official upstream Maven
     compileOnly 'maven.modrinth:XaDC71GB:sPmtDq1X' // OPTIONAL Terrain Lab-only codec: do not load global jigsaw redirect in baseline RealScale
     testImplementation(platform('org.junit:junit-bom:5.14.1'))

@@ -1,6 +1,5 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "category": "misc",
+  "type": "realscale:lotm_alchemy",
   "ingredients": [
     {
       "item": "realscale:lotm_empty_vial"
@@ -13,7 +12,7 @@
     }
   ],
   "result": {
-    "id": "realscale:lotm_mystery_pryer_potion",
+    "id": "realscale:lotm_mystery_pryer_s9_potion",
     "count": 1
   }
 }

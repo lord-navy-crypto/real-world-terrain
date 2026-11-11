@@ -1,0 +1,91 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.realscale.lotm_alchemy_apparatus.idle": {
+      "loop": true,
+      "animation_length": 4,
+      "bones": {
+        "orb": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "2.0": [
+              0,
+              180,
+              0
+            ],
+            "4.0": [
+              0,
+              360,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.realscale.lotm_alchemy_apparatus.brew": {
+      "loop": true,
+      "animation_length": 1.2,
+      "bones": {
+        "orb": {
+          "position": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "0.6": [
+              0,
+              1,
+              0
+            ],
+            "1.2": [
+              0,
+              0,
+              0
+            ]
+          },
+          "scale": {
+            "0.0": [
+              1,
+              1,
+              1
+            ],
+            "0.6": [
+              1.12,
+              1.12,
+              1.12
+            ],
+            "1.2": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        "glass": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              -2
+            ],
+            "0.6": [
+              0,
+              0,
+              2
+            ],
+            "1.2": [
+              0,
+              0,
+              -2
+            ]
+          }
+        }
+      }
+    }
+  }
+}
