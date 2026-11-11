@@ -124,10 +124,11 @@ class LotmDataGraphTests(unittest.TestCase):
 
     def test_focus_and_acting_code_respect_the_active_sequence_boundary(self):
         focus = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmFocusItem.java").read_text(encoding="utf-8")
+        skills = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmSkills.java").read_text(encoding="utf-8")
         events = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmEvents.java").read_text(encoding="utf-8")
         acting = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmActing.java").read_text(encoding="utf-8")
         self.assertNotIn("SPIRIT_QUARTZ_ORE", focus)
-        self.assertIn("sequence < 8 || sequence > 9", focus)
+        self.assertIn("sequence < 8 || sequence > 9", skills)
         self.assertIn("sequence < 8 || sequence > 9", events)
         self.assertIn("LotmActing.copy(original, clone)", (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmState.java").read_text(encoding="utf-8"))
         self.assertIn("Do not permanently mark a biome while the daily cap is full", acting)

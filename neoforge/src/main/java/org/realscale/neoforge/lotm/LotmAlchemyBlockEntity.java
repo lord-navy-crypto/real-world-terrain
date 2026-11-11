@@ -115,7 +115,7 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
         Optional<RecipeHolder<LotmAlchemyRecipe>> match =
                 server.getRecipeManager().getRecipeFor(LotmAlchemyContent.ALCHEMY_RECIPE_TYPE.get(), input, server);
         if (match.isEmpty()) { machine.resetProgress(); return; }
-        RecipeHolder<CraftingRecipe> holder = match.get();
+        RecipeHolder<LotmAlchemyRecipe> holder = match.get();
         ItemStack result = holder.value().assemble(input, server.registryAccess());
         if (result.isEmpty() || !(result.getItem() instanceof LotmPotionItem potion)
                 || potion.sequence() < 8 || potion.sequence() > 9) {
