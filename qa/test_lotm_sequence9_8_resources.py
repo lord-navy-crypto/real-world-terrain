@@ -74,8 +74,8 @@ class LotmDataGraphTests(unittest.TestCase):
 
     def test_runtime_dependency_packaging_and_curios_optional_slot(self):
         metadata = (ROOT / "neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text(encoding="utf-8")
-        self.assertIn('modId="geckolib"\\ntype="required"', metadata)
-        self.assertIn('modId="curios"\\ntype="optional"', metadata)
+        self.assertRegex(metadata, r'modId="geckolib"\s+type="required"')
+        self.assertRegex(metadata, r'modId="curios"\s+type="optional"')
         runtime = (ROOT / "qa/run_dh_chunky_runtime_smoke.py").read_text(encoding="utf-8")
         packaged = (ROOT / "qa/run_packaged_jar_dh_chunky_smoke.py").read_text(encoding="utf-8")
         self.assertIn('"Grwn5rUB"', runtime)
