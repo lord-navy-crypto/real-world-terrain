@@ -1,57 +1,65 @@
-# RealScale × LOTM — RPG and Alchemy
+# RealScale × LOTM — RPG 与魔药炼制
 
-This work remains inside the existing RealScale NeoForge 1.21.1 branch. It does not create a separate mod or repository. NPCs and dialogue are out of scope for this milestone.
+本扩展继续作为 RealScale NeoForge 1.21.1 的内部功能，不创建独立模组或仓库。当前范围锁定为四条途径的序列9与序列8。序列7保留注册 ID 和历史资料，但暂时封存：没有可制作配方、没有新生成的序列7专属变种、遗迹不再掉落序列7特性，也不能晋升至序列7。
 
-## First playable loop
+## 当前可玩循环
 
-1. Choose one of the four pathways by consuming its Sequence 9 potion.
-2. Explore unfamiliar biomes and locate occult materials.
-3. Use the pathway's focus or divination tool in meaningful contexts.
-4. Gain bounded digestion progress from exploration, skill use, research and fieldwork.
-5. Brew the next potion in the in-world apparatus.
-6. Consume the potion to advance one sequence; the potion item validates path and rank.
+1. 使用四条途径之一的序列9魔药，建立玩家途径。
+2. 探索不同群系，寻找超凡矿物、植物和特殊生物。
+3. 使用途径聚焦器或占卜灵摆，进行有灵性消耗的感知。
+4. 通过探索、技能使用、研究和野外采集获得有每日上限的消化进度。
+5. 在游戏内神秘学炼药装置制作序列8魔药。
+6. 消化达到要求后，使用同途径序列8魔药晋升。
 
-The initial acting tasks are descriptive prompts, not NPC quests. Server-observed actions award digestion. Unique-biome discovery and daily category caps reduce repetitive farming.
+扮演提示由游戏内命令提供，不依赖 NPC 或对话任务。服务器观察到的探索和采集行为才会发放消化奖励；重复刷取受到每日类别上限约束。
 
-## Alchemical Apparatus
+## 神秘学炼药装置
 
-| Slot | Purpose |
+| 槽位 | 用途 |
 |---|---|
-| 0–3 | 2×2 recipe inputs |
-| 4 | Spirit Ember fuel |
-| 5 | Potion output |
+| 0–3 | 2×2 配方输入 |
+| 4 | 灵性火种燃料 |
+| 5 | 魔药输出 |
 
-The apparatus reuses vanilla shapeless recipe data, so recipes remain data-driven and visible to JEI without making JEI mandatory. Sequence 9/8/7 processing times are configurable. Processing pauses when fuel is missing or output is blocked. Inventory and progress are saved with the block entity.
+装置使用原版无序合成配方数据，因此配方仍然是数据驱动的；JEI 不是强制依赖。序列9与序列8炼制时间分别默认为120和240游戏 Tick。缺少燃料或输出槽无法容纳成品时会暂停。输入、输出、进度和当前配方都会随方块实体保存。机器被拆除时会掉落内部物品。
 
-## Characteristic substitution
+## 完整非凡特性替代
 
-A matching complete Sequence 9/8/7 characteristic can replace the two pathway-specific main ingredients. The alternative recipe still uses an empty vial and occult catalyst. The apparatus consumes one Spirit Ember as a fictional in-game workstation requirement.
+对应途径和序列的完整特性可以替代该魔药的两种主要材料。替代配方仍需要秘法瓶和神秘学催化符；在炼药装置中制作时仍消耗一份灵性火种。
 
-Directly using an unprepared characteristic remains a separate high-risk game option; preparing it in the apparatus is the normal route.
+未经调和的序列8特性可以直接使用，但需要更高消化进度，并会降低当前灵性、增加不稳定记录。首次建立序列9途径不要求先拥有消化进度。
 
-## Optional dependencies worth considering
+## 扮演与消化
 
-None is mandatory for the core RealScale feature. Add integrations only after the base RPG loop is stable.
+每日类别上限：
+- 探索新群系：12点
+- 使用途径技能：8点
+- 研究非凡线索：9点
+- 采集非凡资源：6点
 
-1. **JEI** — recipe/item browser. The current apparatus reuses vanilla crafting recipes, so JEI can display ingredient combinations immediately. A dedicated machine category can be added later for time/fuel details. Minecraft 1.21.1 NeoForge builds exist. Project: https://modrinth.com/mod/jei. MIT.
-2. **Patchouli** — in-game field guide for pathways, sequence abilities, material locations, acting tasks and recipes. A 1.21.1 NeoForge release line exists (1.21.1-93). Project: https://modrinth.com/mod/patchouli. CC-BY-NC-SA-3.0; use as an optional runtime mod and do not copy its assets/code.
-3. **Curios API** — later accessory slots for pendulums, charms, seals and passive relics. NeoForge 1.21.1 release 9.5.1+1.21.1 exists. Project: https://modrinth.com/mod/curios. LGPL-3.0-or-later.
+理论每日上限为35点。每个途径、每个序列分别记录已发现的群系；晋升后消化进度重置。/lotm acting 查看扮演和每日类别进度，/lotm skills 查看当前途径已解锁能力。
 
-Do not make any of these mandatory until the user chooses them.
+## 序列7封存策略
 
-## Canon vs game adaptation
+保留序列7物品 ID、模型和语言键，以免已有测试存档中的物品变成未知物品。当前版本不注册序列7魔药配方，不让遗迹掉落序列7特性，不生成七种序列7专属生态变种，也不开放序列8→7晋升。序列7专属材料和灵界晶矿保留为封存资产，不参与当前进度循环。
 
-- Canon-inspired: pathway identities, Sequence 9–7 names, acting/digestion, potion advancement, and complete characteristics substituting for main ingredients.
-- Game adaptation: exact item ingredients, Spirit Ember fuel, processing time, digestion rewards, daily caps, spirituality costs, and skill effects.
-- All alchemy and supernatural mechanics are fictional Minecraft gameplay only.
+## 可选依赖
 
-## Acceptance checklist
+核心系统不强制依赖其他模组。JEI 可用于浏览配方；Patchouli 可用于制作游戏内指南；Curios API 可在未来提供灵摆、护符和封印物装备槽。只有在基础系统验收稳定且明确选择后，才考虑添加集成。
 
-- [ ] Gradle build and JUnit tests pass on the PR branch.
-- [ ] Place apparatus, open GUI, insert ingredients and fuel, brew all four Sequence 9 potions.
-- [ ] Test normal and characteristic-substitution recipes for all 12 potion outputs.
-- [ ] Verify no input consumption when output is blocked or fuel is missing.
-- [ ] Close/reopen GUI and reload world during processing; inventory and progress persist.
-- [ ] Dedicated server starts without loading client GUI classes.
-- [ ] Test digestion persistence, daily caps, biome uniqueness per pathway/sequence, death clone and relog.
-- [ ] Test existing RealScale worlds; no terrain/worldgen code is changed.
+## 原著设定与游戏改编
+
+原著启发：途径身份、序列名称、扮演消化、魔药晋升、完整非凡特性可替代主要材料。
+游戏改编：具体材料、灵性火种、炼制时间、消化奖励、每日上限、灵性消耗、技能效果和生物群系分布。所有超凡和炼制内容均为虚构 Minecraft 游戏机制。
+
+## 验收清单
+
+- [ ] Gradle 构建与 JUnit 测试通过。
+- [ ] 四条途径均能建立序列9身份并正常保存。
+- [ ] 四条途径均能使用普通配方和完整特性替代配方制作序列8魔药。
+- [ ] 缺燃料或输出被堵塞时不消耗输入材料。
+- [ ] 炼制进度、机器物品在退出 GUI、重载世界后保持。
+- [ ] 拆除炼药装置时，输入、燃料和输出物品不会丢失。
+- [ ] 消化进度、每日上限、群系唯一发现、死亡重生复制和重新登录通过测试。
+- [ ] 序列7配方、掉落、生态生成和晋升均处于封存状态。
+- [ ] 独立服务器启动正常；原有 RealScale 地形和存档保持不变。

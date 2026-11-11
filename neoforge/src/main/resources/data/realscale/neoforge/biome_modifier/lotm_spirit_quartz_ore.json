@@ -1,12 +1,3 @@
 {
-  "type": "neoforge:add_features",
-  "biomes": [
-    "minecraft:swamp",
-    "minecraft:dark_forest",
-    "minecraft:taiga",
-    "realscale:seasonal_floodforest",
-    "realscale:mountain_wetland"
-  ],
-  "features": "realscale:lotm_spirit_quartz_ore",
-  "step": "underground_ores"
+  "type": "neoforge:none"
 }

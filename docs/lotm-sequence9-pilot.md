@@ -1,50 +1,58 @@
-# LOTM Sequence 9 Pilot (RealScale internal expansion)
+# LOTM Sequence 9/8 Pilot — RealScale 内部扩展
 
-This is one NeoForge mod and one repository. No separate project or mod dependency is created.
+这是 RealScale NeoForge 模组内的功能扩展，不建立第二个模组或仓库。当前可玩范围是四条途径的序列9与序列8；序列7仅保留历史注册资源，暂时封存。
 
-## Four Sequence 9 pathways
+## 四条途径
 
-| Pathway | Sequence 9 | Initial playable mechanic |
-|---|---|---|
-| Fool | Seer / 占卜家 | Spirit Focus highlights nearby occult creature variants |
-| Hermit | Mystery Pryer / 窥秘人 | Spirit Focus scans for unusual crystals and blooms |
-| Darkness | Sleepless / 不眠者 | Night vision at night; focus senses nearby hostile mobs |
-| Death | Corpse Collector / 收尸人 | Freezing hardiness; focus senses nearby undead |
+| 途径 | 序列9 | 序列8 | 当前技能 |
+|---|---|---|---|
+| 愚者 | 占卜家 | 小丑 | 灵视、灵摆感知、协调与缓降 |
+| 隐者 | 窥秘人 | 格斗学者 | 非凡资源扫描、机动性提升 |
+| 黑暗 | 不眠者 | 午夜诗人 | 夜间视觉、敌对生物感知、恢复与迟缓 |
+| 死神 | 收尸人 | 掘墓人 | 亡灵感知、抗寒、削弱与恢复 |
 
-Player pathway and sequence 9 are stored in persistent player data and copied upon respawn. Only the first potion can be used, and abilities are server-authoritative.
+玩家途径和序列保存在持久化数据中，并在死亡重生时复制。魔药和特性只能建立一个途径或沿当前途径逐级晋升；服务器端验证，不能跨途径或跳级。
 
-## Ecology and progression loop
+## 当前材料循环
 
-Three small occult ore patches are biome-limited (ocean/coast, dark forest, wetlands). A rare midnight flower patch is placed on grass in shadowy forests.
+序列9：
+- 占卜家：星光鱿鱼精华、星晶。
+- 窥秘人：噩梦邪眼碎片、受诅水晶。
+- 不眠者：夜枭信物、午夜美人花。
+- 收尸人：黑斑青蛙信物、布套人结晶。
 
-Existing vanilla creatures occasionally become visibly named occult **variants**; each supplies one fantasy-only crafting component. These are explicitly placeholders, **not new creature models**:
-- Deep ocean squid: Starlit Squid → essence
-- Dark forest spider: Nightmare Eye → shard
-- Forest/cave bat: Night Owl → owl token
-- Swamp frog: Black-Spotted Frog → frog token
+序列8：
+- 占卜家：霍纳奇斯灰山羊角晶、人脸玫瑰。
+- 窥秘人：铁臂兽脊骨、四眼绿龟灵核。
+- 不眠者：红月咆哮者声核、摄魂风铃花。
+- 收尸人：告死乌鸦之眼、墓园血玫瑰。
 
-Each Sequence 9 fictional game potion requires a fantasy vial, one environmental material, and one variant item. There is deliberately **no real-world chemical or consumable preparation**.
+每份普通魔药还需要秘法瓶和神秘学催化符。完整同途径、同序列特性可以替代两种主要材料。炼药装置额外消耗灵性火种。
 
-Use `/give @s realscale:lotm_spirit_focus` to test the reusable ability item. Use `/give @s realscale:lotm_seer_potion` (or `lotm_mystery_pryer_potion`, `lotm_sleepless_potion`, `lotm_corpse_collector_potion`) for testing.
+## 超凡生态
 
-## Data/compatibility limits
+十种主动变种：
+- 序列9：星光鱿鱼、噩梦邪眼、夜枭、黑斑青蛙、布套人。
+- 序列8：霍纳奇斯灰山羊、铁臂兽、四眼绿龟、红月咆哮者、告死乌鸦。
 
-- Original RealScale density functions, dimension presets and terrain generation code remain unchanged.
-- Config `lotm.enabled` disables gameplay and `lotm.creatureVariants` disables new variant assignment and drops.
-- Biome feature injection is **datapack-controlled**. Override the four `realscale/neoforge/biome_modifier/lotm_*.json` entries with `{"type":"neoforge:none"}` to opt out of new worldgen; already generated chunks stay unchanged.
-- Existing mob visuals and Minecraft textures are **development placeholders**. Replace them with original models/textures before a polished release.
-- Abilities are deliberately a conservative subset of canon. High-sequence mechanics, true prophetic outcomes, spirit world, acting/digestion, and full progression are not included.
+它们目前由原版生物作为视觉占位，拥有特殊名称和对应材料掉落。七种序列7专属变种不再生成，相关资源仅归档。
 
-## Source distinction
+## 序列7封存边界
 
-Canonical baseline: Qidian official LOTM setting collection (https://h5.if.qidian.com/h5/workSet/main?albumId=131&bookId=1010868264&catelogId=69153).
-Secondary cross-check: fan-maintained Lord of the Mysteries path summaries.
-Variant rates, geographical ore placement, in-game vial crafting and Spirit Focus are **original gameplay adaptations**, not canonical facts.
+序列7魔药配方和特性替代配方已从当前资源包移除；遗迹匣只掉落序列9或序列8特性（75%/25%）；灵界晶矿的群系修饰符关闭；序列8无法继续晋升至序列7。已有 S7 物品 ID 和模型仍保留，供历史存档兼容。
 
-## Verification checklist
+## 世界兼容
 
-- Gradle 9.8 NeoForge `test`, `build`, `runServer` and actual client world entry.
-- Load existing RealScale saves; compare terrain and structure generation with baseline.
-- Generate fresh dark forest, deep-ocean and swamp chunks; check ore, flower and special mobs.
-- Verify each potion chooses only one pathway and saves across logout/respawn.
-- Ensure client-only rendering resources do not crash dedicated servers.
+- 不修改 RealScale 密度函数、维度预设和地形生成代码。
+- lotm.enabled 控制玩法和遗迹；lotm.creatureVariants 控制变种和掉落。
+- 矿物与花朵由 NeoForge biome modifier 注入；可通过数据包覆盖停用。已生成区块不会回滚。
+- 旧实体若已带有封存变种标签，仍可能保留原掉落映射；新生成不再赋予这些标签。
+
+## 验收
+
+- Gradle test 与 build。
+- 新旧世界加载和地形一致性。
+- 四条途径的序列9建立、序列8普通魔药晋升、特性直接晋升。
+- 炼药装置燃料、输出堵塞、进度保存和拆除掉落。
+- 群系资源、十种主动变种、遗迹匣和特性掉落。
+- 玩家重登、死亡重生、每日消化上限和独立服务器。
