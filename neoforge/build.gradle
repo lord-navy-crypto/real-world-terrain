@@ -659,3 +659,17 @@ sourceSets.main.resources.srcDir(generatedStructureResources)
 tasks.named("processResources") {
     dependsOn("generateBuiltInStructurePacks")
 }
+
+
+// Original, dependency-free LOTM pixel textures are built reproducibly from source.
+// Generated resources are packaged into the same RealScale JAR (no extra mod).
+def generatedLotmVisuals = layout.buildDirectory.dir("generated/lotm-visuals")
+tasks.register("generateLotmVisuals", Exec) {
+    inputs.file(file("../scripts/generate_lotm_visuals.py"))
+    outputs.dir(generatedLotmVisuals)
+    commandLine(System.getenv("PYTHON") ?: "python3",
+        file("../scripts/generate_lotm_visuals.py").absolutePath,
+        generatedLotmVisuals.get().asFile.absolutePath)
+}
+sourceSets.main.resources.srcDir(generatedLotmVisuals)
+tasks.named("processResources") { dependsOn("generateLotmVisuals") }
