@@ -23,6 +23,33 @@ public final class LotmCommands {
                         player.getPersistentData().getInt(LotmPath.NBT_SEQUENCE),
                         LotmState.spirit(player), LotmBalance.MAX_SPIRIT,
                         LotmState.practice(player)), false);
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        "message.realscale.lotm.instability", LotmState.instability(player)), false);
+                return 1;
+            }))
+            .then(Commands.literal("materials").executes(context -> {
+                ServerPlayer player = context.getSource().getPlayerOrException();
+                LotmPath pathway = LotmPath.of(player);
+                if (pathway == null) {
+                    context.getSource().sendSuccess(
+                            () -> Component.translatable("message.realscale.lotm.no_path"), false);
+                    return 0;
+                }
+                int next = LotmState.sequence(player) - 1;
+                if (next < 7) {
+                    context.getSource().sendSuccess(
+                            () -> Component.translatable("message.realscale.lotm.max_rank"), false);
+                    return 1;
+                }
+                context.getSource().sendSuccess(
+                        () -> Component.translatable("lotm.realscale.materials." + pathway.id() + "." + next), false);
+                return 1;
+            }))
+            .then(Commands.literal("config").executes(context -> {
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        "message.realscale.lotm.config", LotmConfig.VARIANT_RARITY_PERCENT.get(),
+                        LotmConfig.RELIC_RARITY.get(), LotmConfig.POTION_PRACTICE.get(),
+                        LotmConfig.CHARACTERISTIC_PRACTICE.get()), false);
                 return 1;
             }))
             .then(Commands.literal("guide").executes(context -> {

@@ -91,9 +91,19 @@ public final class LotmEvents {
         if (path == LotmPath.SLEEPLESS && !player.level().isDay()) recovery += 1;
         LotmState.regenerate(player, recovery);
         if (player.tickCount % 80 != 0) return;
+        int sequence = LotmState.sequence(player);
+        if (path == LotmPath.SEER && sequence <= 8) {
+            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 120, 0, true, false));
+        }
+        if (path == LotmPath.MYSTERY_PRYER && sequence <= 8) {
+            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 120, 0, true, false));
+        }
         if (path == LotmPath.SLEEPLESS && !player.level().isDay()) {
             player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 260, 0, true, false));
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 120, 0, true, false));
+        }
+        if (path == LotmPath.CORPSE_COLLECTOR && sequence <= 7 && !player.level().isDay()) {
+            player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 260, 0, true, false));
         }
         if (path == LotmPath.CORPSE_COLLECTOR && player.getTicksFrozen() > 0) {
             // Temperature hardiness is represented conservatively without changing combat damage.
