@@ -17,7 +17,8 @@ public final class LotmAlchemyBlock extends Block implements EntityBlock {
     @SuppressWarnings("unchecked")
     @Override public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         if (level.isClientSide || type != LotmAlchemyContent.ALCHEMY_BLOCK_ENTITY.get()) return null;
-        return (BlockEntityTicker<T>) LotmAlchemyBlockEntity::tick;
+        return (BlockEntityTicker<T>) (world, blockPos, blockState, blockEntity) ->
+                LotmAlchemyBlockEntity.tick(world, blockPos, blockState, (LotmAlchemyBlockEntity) blockEntity);
     }
     @Override public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer

@@ -24,6 +24,6 @@ public final class LotmAlchemyScreen extends AbstractContainerScreen<LotmAlchemy
         g.drawString(font,Component.translatable("gui.realscale.lotm_alchemy.fuel"),88,23,0xFFCBBBDD,false);
         g.drawString(font,Component.translatable("gui.realscale.lotm_alchemy.output"),139,23,0xFFCBBBDD,false);
         if(menu.getMaxProgress()>0) g.drawString(font,Component.translatable("gui.realscale.lotm_alchemy.processing"),88,66,0xFFD8C8EA,false);
-        g.drawString(font,inventory.getDisplayName(),8,101,0xFFE9DDF6,false);
+        g.drawString(font,Component.translatable("container.inventory"),8,101,0xFFE9DDF6,false);
     }
 }

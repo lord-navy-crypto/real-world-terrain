@@ -15,7 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeTypes;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -55,7 +55,7 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
         CraftingInput input = CraftingInput.of(2, 2, List.of(
             machine.inventory.getStackInSlot(0), machine.inventory.getStackInSlot(1),
             machine.inventory.getStackInSlot(2), machine.inventory.getStackInSlot(3)));
-        Optional<RecipeHolder<CraftingRecipe>> match = server.getRecipeManager().getRecipeFor(RecipeTypes.CRAFTING, input, server);
+        Optional<RecipeHolder<CraftingRecipe>> match = server.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, server);
         if (match.isEmpty()) { machine.resetProgress(); return; }
         RecipeHolder<CraftingRecipe> holder = match.get();
         ItemStack result = holder.value().assemble(input, server.registryAccess());
