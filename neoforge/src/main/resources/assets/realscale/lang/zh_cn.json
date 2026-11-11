@@ -173,5 +173,6 @@
   "message.realscale.lotm.skills.controls": "技能键：Z 主技能，X 辅助技能（可在控制设置中重新绑定）。",
   "message.realscale.lotm.skill.cooldown": "技能仍在冷却中，请稍候。",
   "message.realscale.lotm.skill.result": "技能已发动：感知到 %s 处线索；剩余灵性：%s/100。",
-  "message.realscale.lotm.skill.none": "附近没有感应到相应的非凡线索。"
+  "message.realscale.lotm.skill.none": "附近没有感应到相应的非凡线索。",
+  "curios.identifier.occult_focus": "非凡媒介"
 }

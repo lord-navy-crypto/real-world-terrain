@@ -22,6 +22,13 @@ MODS = RUN / "mods"
 # Immutable Modrinth version IDs. The API metadata supplies the official file
 # URL and SHA-512; no third-party binaries are committed to this repository.
 MODS_TO_INSTALL = (
+    # Required runtime mod for animated LOTM apparatus; verify the official
+    # Modrinth file and SHA-512 just like the other external smoke-test mods.
+    (
+        "Grwn5rUB",
+        "8BmcQJ2H",
+        "geckolib-neoforge-1.21.1-4.9.3.jar",
+    ),
     (
         "9w34y8ai",
         "uCdwusMi",

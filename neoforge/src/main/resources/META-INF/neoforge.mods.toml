@@ -27,6 +27,14 @@ versionRange="[4.9.3,)"
 ordering="AFTER"
 side="BOTH"
 
+# Optional Curios integration: focus and pendulum receive a dedicated slot.
+[[dependencies.realscale]]
+modId="curios"
+type="optional"
+versionRange="[9.5.1,)"
+ordering="AFTER"
+side="BOTH"
+
 # The restored in-game Terrain Lab GUI is provided by YACL on the CLIENT only.
 # Standalone players install YACL 3.8.1+ separately; servers never need it.
 [[dependencies.realscale]]

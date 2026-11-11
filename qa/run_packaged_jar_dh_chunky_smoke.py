@@ -159,6 +159,7 @@ def prepare_mods() -> Path:
     shutil.copy2(jars[0], mods / jars[0].name)
 
     for name in (
+        "geckolib-neoforge-1.21.1-4.9.3.jar",
         "DistantHorizons-3.3.3-1.21.1-fabric-neoforge.jar",
         "Chunky-NeoForge-1.4.23.jar",
     ):

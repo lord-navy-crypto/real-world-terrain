@@ -173,5 +173,6 @@
   "message.realscale.lotm.skills.controls": "Skill keys: Z for primary, X for secondary. Rebind them in Controls.",
   "message.realscale.lotm.skill.cooldown": "That skill is still cooling down.",
   "message.realscale.lotm.skill.result": "Skill activated: %s clues sensed; spirituality remaining: %s/100.",
-  "message.realscale.lotm.skill.none": "No matching occult clues were sensed nearby."
+  "message.realscale.lotm.skill.none": "No matching occult clues were sensed nearby.",
+  "curios.identifier.occult_focus": "Occult Focus"
 }
