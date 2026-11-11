@@ -24,10 +24,10 @@ public final class LotmContent {
             () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.BLUE_ORCHID)
                     .noCollission().noOcclusion().strength(0.1F).sound(SoundType.GRASS)));
 
-    public static final Supplier<Item> STAR_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_star_crystal_ore", STAR_ORE);
-    public static final Supplier<Item> CURSED_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_cursed_crystal_ore", CURSED_ORE);
-    public static final Supplier<Item> GRAVE_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_grave_crystal_ore", GRAVE_ORE);
-    public static final Supplier<Item> BLOOM_ITEM = ITEMS.registerSimpleBlockItem("lotm_midnight_bloom", MIDNIGHT_BLOOM);
+    public static final Supplier<? extends Item> STAR_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_star_crystal_ore", STAR_ORE);
+    public static final Supplier<? extends Item> CURSED_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_cursed_crystal_ore", CURSED_ORE);
+    public static final Supplier<? extends Item> GRAVE_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_grave_crystal_ore", GRAVE_ORE);
+    public static final Supplier<? extends Item> BLOOM_ITEM = ITEMS.registerSimpleBlockItem("lotm_midnight_bloom", MIDNIGHT_BLOOM);
     public static final Supplier<Item> STAR_CRYSTAL = ITEMS.registerSimpleItem("lotm_star_crystal", new Item.Properties());
     public static final Supplier<Item> CURSED_CRYSTAL = ITEMS.registerSimpleItem("lotm_cursed_crystal", new Item.Properties());
     public static final Supplier<Item> GRAVE_CRYSTAL = ITEMS.registerSimpleItem("lotm_grave_crystal", new Item.Properties());
@@ -36,16 +36,16 @@ public final class LotmContent {
     public static final Supplier<Item> NIGHT_OWL_TOKEN = ITEMS.registerSimpleItem("lotm_night_owl_token", new Item.Properties());
     public static final Supplier<Item> BLACK_SPOTTED_FROG_TOKEN = ITEMS.registerSimpleItem("lotm_black_spotted_frog_token", new Item.Properties());
     public static final Supplier<Item> EMPTY_VIAL = ITEMS.registerSimpleItem("lotm_empty_vial", new Item.Properties());
-    public static final Supplier<Item> SPIRIT_FOCUS = ITEMS.registerItem("lotm_spirit_focus",
+    public static final Supplier<? extends Item> SPIRIT_FOCUS = ITEMS.registerItem("lotm_spirit_focus",
             LotmFocusItem::new, new Item.Properties().stacksTo(1));
 
-    public static final Supplier<Item> SEER_POTION = ITEMS.registerItem("lotm_seer_potion",
+    public static final Supplier<? extends Item> SEER_POTION = ITEMS.registerItem("lotm_seer_potion",
             p -> new LotmPotionItem(LotmPath.SEER, p), new Item.Properties().stacksTo(1));
-    public static final Supplier<Item> PRYER_POTION = ITEMS.registerItem("lotm_mystery_pryer_potion",
+    public static final Supplier<? extends Item> PRYER_POTION = ITEMS.registerItem("lotm_mystery_pryer_potion",
             p -> new LotmPotionItem(LotmPath.MYSTERY_PRYER, p), new Item.Properties().stacksTo(1));
-    public static final Supplier<Item> SLEEPLESS_POTION = ITEMS.registerItem("lotm_sleepless_potion",
+    public static final Supplier<? extends Item> SLEEPLESS_POTION = ITEMS.registerItem("lotm_sleepless_potion",
             p -> new LotmPotionItem(LotmPath.SLEEPLESS, p), new Item.Properties().stacksTo(1));
-    public static final Supplier<Item> CORPSE_POTION = ITEMS.registerItem("lotm_corpse_collector_potion",
+    public static final Supplier<? extends Item> CORPSE_POTION = ITEMS.registerItem("lotm_corpse_collector_potion",
             p -> new LotmPotionItem(LotmPath.CORPSE_COLLECTOR, p), new Item.Properties().stacksTo(1));
 
     public static void register(IEventBus bus) { BLOCKS.register(bus); ITEMS.register(bus); }

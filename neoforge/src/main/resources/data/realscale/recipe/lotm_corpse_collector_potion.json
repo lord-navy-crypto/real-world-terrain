@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_empty_vial"
+    },
+    {
+      "item": "realscale:lotm_black_spotted_frog_token"
+    },
+    {
+      "item": "realscale:lotm_grave_crystal"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_corpse_collector_potion",
+    "count": 1
+  }
+}

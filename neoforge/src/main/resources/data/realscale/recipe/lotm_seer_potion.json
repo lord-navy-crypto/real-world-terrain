@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_empty_vial"
+    },
+    {
+      "item": "realscale:lotm_lavas_squid_essence"
+    },
+    {
+      "item": "realscale:lotm_star_crystal"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_seer_potion",
+    "count": 1
+  }
+}

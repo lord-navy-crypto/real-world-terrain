@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_empty_vial"
+    },
+    {
+      "item": "realscale:lotm_night_owl_token"
+    },
+    {
+      "item": "realscale:lotm_midnight_bloom"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_sleepless_potion",
+    "count": 1
+  }
+}

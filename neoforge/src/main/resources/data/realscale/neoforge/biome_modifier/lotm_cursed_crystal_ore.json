@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:dark_forest",
+    "minecraft:old_growth_pine_taiga",
+    "realscale:oak_to_dark_forest",
+    "realscale:pine_oak_mosaic"
+  ],
+  "features": "realscale:lotm_cursed_crystal_ore",
+  "step": "underground_ores"
+}

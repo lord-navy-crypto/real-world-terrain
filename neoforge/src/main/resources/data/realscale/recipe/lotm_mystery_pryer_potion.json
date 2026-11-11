@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_empty_vial"
+    },
+    {
+      "item": "realscale:lotm_nightmare_eye_shard"
+    },
+    {
+      "item": "realscale:lotm_cursed_crystal"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_mystery_pryer_potion",
+    "count": 1
+  }
+}
