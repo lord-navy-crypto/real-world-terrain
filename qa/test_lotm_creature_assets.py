@@ -144,6 +144,12 @@ class LotmCreatureAssetTests(unittest.TestCase):
                     "maxCount": maximum,
                 }], data["spawners"])
 
+    def test_corpse_collector_uses_the_vanilla_undead_entity_type_tag(self):
+        skills = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmSkills.java").read_text(encoding="utf-8")
+        self.assertIn("type.is(EntityTypeTags.UNDEAD)", skills)
+        self.assertIn("isUndeadType(entity.getType())", skills)
+        self.assertNotIn("MobType", skills)
+
     def test_custom_relic_site_generation_is_disabled(self):
         path = ROOT / "neoforge/src/main/resources/data/realscale/neoforge/biome_modifier/lotm_relic_site.json"
         self.assertEqual({"type": "neoforge:none"}, json.loads(path.read_text(encoding="utf-8")))
