@@ -178,6 +178,24 @@ At the time of this audit, PR #155's latest observed runs for the branch head re
 
 Most static/resource checks in the source-integrity job passed, including the LOTM creature assets/habitats/loot validation. The next action is to inspect and fix the registry-test lifecycle issue, then rerun all three workflows. Do not claim the overall build is green until fresh runs pass.
 
+## 9.1. First hardening pass (branch head 500272c)
+
+Implemented on the working branch; CI is pending and these changes are not yet marked verified:
+
+- Added `LotmCreatureRegistryIds`, a pure metadata helper, so JUnit tests can validate stable IDs without initializing NeoForge's `DeferredRegister` class outside the mod lifecycle.
+- Updated the registry test to check the ten stable IDs independently of the loader lifecycle.
+- Added a registry-lifecycle guard in `registerAttributes` so missing creature suppliers fail during actual NeoForge startup/attribute registration.
+- Updated Seer primary detection to include the ten independent `LotmCreature` entities as well as legacy tagged entities.
+- Replaced the Corpse Collector's three-class undead check with Minecraft's `MobType.UNDEAD` classification.
+
+Fresh workflows triggered for head `500272c9390e647901e38b4889275c25b360520d`:
+
+- Source integrity / tests / NeoForge build: pending.
+- Gradle 9.8 client task / NeoForge build compatibility: queued.
+- NeoForge dedicated server / saved-block verification: pending.
+
+Do not mark Phase 0 or the P0 fixes complete until the workflows finish successfully and the relevant runtime behavior is verified.
+
 ## 10. Primary references
 
 ### Pinned technical references
