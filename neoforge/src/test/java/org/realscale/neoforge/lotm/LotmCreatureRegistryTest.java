@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class LotmCreatureRegistryTest {
     @Test
-    void everyActiveCreatureHasOneStableRegisteredEntityIdAndSupplier() {
+    void everyActiveCreatureHasOneStableRegistryId() {
         assertEquals(EnumSet.allOf(LotmCreatureKind.class), LotmCreatureRegistryIds.activeKinds());
 
         Set<ResourceLocation> ids = new HashSet<>();
