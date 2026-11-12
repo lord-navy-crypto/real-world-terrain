@@ -50,10 +50,12 @@ class LotmDataGraphTests(unittest.TestCase):
             self.assertIn(f"realscale:lotm_{path}_s{seq}_characteristic", alternate_items)
             self.assertEqual(expected, alternate["result"]["id"])
 
-    def test_geckolib_animation_and_skill_key_contracts_are_wired(self):
+    def test_geckolib_animation_and_player_abilities_contracts_are_wired(self):
         metadata = (ROOT / "neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text(encoding="utf-8")
         self.assertIn('modId="geckolib"', metadata)
         self.assertIn('versionRange="[4.9.3,)"', metadata)
+        self.assertRegex(metadata, r'modId="curios"\\s+type="required"')
+        self.assertRegex(metadata, r'modId="player_abilities"\\s+type="required"')
         geo = load(ASSETS / "geo/lotm_alchemy_apparatus.geo.json")
         animations = load(ASSETS / "animations/lotm_alchemy_apparatus.animation.json")
         self.assertIn("minecraft:geometry", geo)
@@ -65,32 +67,53 @@ class LotmDataGraphTests(unittest.TestCase):
         potion = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmPotionItem.java").read_text(encoding="utf-8")
         self.assertIn("UseAnim.DRINK", potion)
         self.assertIn("DRINK_TICKS = 32", potion)
-        payload = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmSkillPayload.java").read_text(encoding="utf-8")
-        keys = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/client/LotmKeyMappings.java").read_text(encoding="utf-8")
-        self.assertIn("playToServer", payload)
-        self.assertIn("PacketDistributor", (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/client/LotmClientGameEvents.java").read_text(encoding="utf-8"))
-        self.assertIn("GLFW_KEY_Z", keys)
-        self.assertIn("GLFW_KEY_X", keys)
+        registry = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmPlayerAbilityRegistry.java").read_text(encoding="utf-8")
+        sync = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmPlayerAbilitySync.java").read_text(encoding="utf-8")
+        ability = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmPathwayAbility.java").read_text(encoding="utf-8")
+        self.assertEqual(8, registry.count('helper.register(id("lotm_'))
+        self.assertIn("AbilityRegistry.ABILITY_REGISTRY_KEY", registry)
+        self.assertIn("extends ActiveAbility", ability)
+        self.assertIn("AbilityUseType.INSTANT", ability)
+        self.assertIn("getMaxLevel()", ability)
+        self.assertIn("AbilityAPI.grant", sync)
+        self.assertIn("AbilityAPI.revoke", sync)
+        self.assertIn("getGrantsBySource", sync)
+        self.assertIn("lotm_pathway", sync)
+        self.assertIn("sanitizeUnauthorizedGrants", sync)
+        mod = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java").read_text(encoding="utf-8")
+        self.assertIn("LotmPlayerAbilityRegistry::register", mod)
+        self.assertNotIn("LotmSkillPayload::register", mod)
+        self.assertFalse((ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmSkillPayload.java").exists())
+        self.assertFalse((ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/client/LotmKeyMappings.java").exists())
+        self.assertFalse((ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/client/LotmClientGameEvents.java").exists())
 
-    def test_runtime_dependency_packaging_and_curios_optional_slot(self):
+    def test_runtime_dependency_packaging_and_curios_required_slot(self):
         metadata = (ROOT / "neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text(encoding="utf-8")
-        self.assertRegex(metadata, r'modId="geckolib"\s+type="required"')
-        self.assertRegex(metadata, r'modId="curios"\s+type="optional"')
+        self.assertRegex(metadata, r'modId="geckolib"\\s+type="required"')
+        self.assertRegex(metadata, r'modId="curios"\\s+type="required"')
+        self.assertRegex(metadata, r'modId="player_abilities"\\s+type="required"')
+        build = (ROOT / "neoforge/build.gradle").read_text(encoding="utf-8")
+        self.assertIn("maven.modrinth:vvuO3ImH:yohfFbgD", build)
+        self.assertIn("curse.maven:player-abilities-1600309:8825458", build)
+        self.assertIn("copyLotmSmokeMods", build)
         runtime = (ROOT / "qa/run_dh_chunky_runtime_smoke.py").read_text(encoding="utf-8")
         packaged = (ROOT / "qa/run_packaged_jar_dh_chunky_smoke.py").read_text(encoding="utf-8")
         self.assertIn('"Grwn5rUB"', runtime)
         self.assertIn('"8BmcQJ2H"', runtime)
-        self.assertIn('"geckolib-neoforge-1.21.1-4.9.3.jar"', runtime)
-        self.assertIn('"geckolib-neoforge-1.21.1-4.9.3.jar"', packaged)
+        self.assertIn('"vvuO3ImH"', runtime)
+        self.assertIn('"yohfFbgD"', runtime)
+        self.assertIn("install_player_abilities_from_gradle", runtime)
+        self.assertIn("source_mods.glob", packaged)
         slot = load(ROOT / "neoforge/src/main/resources/data/realscale/curios/slots/occult_focus.json")
         entity = load(ROOT / "neoforge/src/main/resources/data/realscale/curios/entities/player.json")
-        tag = load(ROOT / "neoforge/src/main/resources/data/curios/tags/items/occult_focus.json")
+        tag = load(ROOT / "neoforge/src/main/resources/data/curios/tags/item/occult_focus.json")
         self.assertEqual(1, slot["size"])
         self.assertIn("occult_focus", entity["slots"])
         self.assertIn("realscale:lotm_spirit_focus", tag["values"])
         self.assertIn("realscale:lotm_divination_pendulum", tag["values"])
+        self.assertFalse((ROOT / "neoforge/src/main/resources/data/curios/tags/items/occult_focus.json").exists())
 
-    def test_sequence7_recipes_are_absent_but_legacy_icons_remain(self):
+    def test_sequence7_recipes_are_absent_but_legacy_icons_remain(self):    def test_sequence7_recipes_are_absent_but_legacy_icons_remain(self):
         for path in PATHWAYS:
             self.assertFalse((DATA / "recipe" / f"lotm_{path}_s7_potion.json").exists())
             self.assertFalse((DATA / "recipe" / f"lotm_{path}_s7_potion_characteristic.json").exists())
@@ -157,10 +180,13 @@ class LotmDataGraphTests(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         for name in ("lotm_relic_cache", "lotm_face_rose",
-                     "lotm_seer_s7_characteristic", "lotm_sleepless_s8_potion"):
+                     "lotm_seer_s7_characteristic", "lotm_sleepless_s8_potion",
+                     "lotm_seer_primary", "lotm_mystery_pryer_secondary",
+                     "lotm_sleepless_primary", "lotm_corpse_collector_secondary"):
             blob = module.png_bytes(name)
             self.assertTrue(blob.startswith(bytes([137, 80, 78, 71, 13, 10, 26, 10])))
             self.assertGreater(len(blob), 50)
+        self.assertEqual(8, len(module.ABILITIES))
 
     def test_locale_and_visual_generator_cover_active_items_and_archived_ids(self):
         en = load(ASSETS / "lang/en_us.json")

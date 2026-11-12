@@ -1,33 +1,42 @@
-# LOTM dependency and setup profile (Minecraft 1.21.1 / NeoForge 21.1)
+# LOTM dependency and integration profile (Minecraft 1.21.1 / NeoForge 21.1)
 
-## Required
+## The three required LOTM dependencies
 
-| Dependency | Version | Side | Purpose |
-|---|---|---|---|
-| NeoForge | 21.1.x | Client + server | Mod loader |
-| GeckoLib | 4.9.3 | Client + server | Animated alchemy apparatus and future animated items |
-| YetAnotherConfigLib (YACL) | 3.8.1+1.21.1-neoforge | Client | Existing RealScale configuration screens |
+| Dependency | Version | Role |
+|---|---|---|
+| GeckoLib | 4.9.3 | Animated alchemy apparatus, animated items, and future animated entities |
+| Curios API | 9.5.1+1.21.1 | Non-vanilla equipment slots and accessory handling |
+| Player Abilities | 1.0.9 | Active/passive/triggered ability API, ability wheel, cooldowns, levels, and ability book |
 
-GeckoLib is a separate runtime mod. It must be present in the client and server `mods` folders; it is not shaded into the RealScale JAR. CI now downloads the exact official GeckoLib 4.9.3 NeoForge 1.21.1 file, verifies its Modrinth version metadata and SHA-512, and includes it in both the development and packaged-server boot tests.
+All three are required on both client and dedicated server. They are separate runtime mods; none of their JARs is shaded into the RealScale JAR. Player Abilities is All Rights Reserved, so RealScale uses its public API and does not copy or redistribute its code.
 
-## Optional integration
+The existing YetAnotherConfigLib dependency belongs to RealScale's broader configuration UI and is not an additional LOTM gameplay framework.
 
-| Mod | Compatible line | Purpose | Behaviour without it |
-|---|---|---|---|
-| Curios API | 9.5.1+1.21.1 NeoForge | Adds an Occult Focus accessory slot for the Spirit Focus and Divination Pendulum | Both items remain usable from the normal inventory |
-| Pufferfish's Skills | NeoForge 1.21.1 build | Candidate for a visual skill-tree framework and online layout editor; integration is not yet enabled | Existing RealScale Z/X skills remain active |
-| Patchouli | 1.21.1-93 NeoForge | Candidate for an in-game field guide; book integration is not yet enabled | Existing commands and tooltips remain available |
+## Responsibility boundaries
 
-Optional mods are not bundled into the RealScale JAR. Install the exact NeoForge 1.21.1 build on the sides required by each mod. Curios integration is active. Pufferfish's Skills and Patchouli are evaluated candidates, not active dependencies in this build. Pufferfish's Skills is a framework rather than a ready-made tree; if selected, the LOTM categories and progression bridge must be configured by this project. We will keep `LotmState` as the authoritative pathway/sequence record rather than create a second, conflicting progression system.
+- GeckoLib supplies animation infrastructure. RealScale owns the models, textures, sounds, animation definitions, and machine logic.
+- Curios API supplies accessory slots and inventory handling. RealScale defines the occult-focus slot, item tags, accessory items, and any gameplay effects.
+- Player Abilities supplies ability registration, levels, cooldowns, use lifecycle, active/passive/triggered behavior, a radial wheel, an ability book, and HUD display.
+- RealScale LOTM remains authoritative for pathway, sequence, spirituality, digestion, material requirements, promotion, and the actual effect code.
+
+## Player Abilities integration
+
+The current pilot registers eight active abilities: primary and secondary skills for each of the four active pathways. Player Abilities ability level 1 maps to Sequence 9; level 2 maps to Sequence 8. The grant source is realscale:lotm_pathway, and LotmState drives grants on pathway initialization, promotion, login, and player cloning.
+
+Player Abilities default controls are Z (ability wheel), X (use selected ability), C (cycle selection), and N (ability book). All are rebindable in its Controls category. RealScale's old duplicate Z/X packet and key mappings have been retired.
+
+Player Abilities automatically creates Ability Tomes for registered abilities. LOTM abilities are guarded: only the RealScale pathway grant source is accepted. Other grant sources, including Ability Tomes, are revoked; the guard also checks every player tick so a tome cannot raise an already-granted skill to a higher level.
+
+The Player Abilities ability book is the list of currently learned and usable abilities. The separate Pathway Codex skill-tree interface remains a RealScale-authored feature to build later; it will not replace Player Abilities' execution framework or create a second progression authority.
 
 ## Curios integration
 
-When Curios is installed, the project registers one `occult_focus` slot on players. The `lotm_spirit_focus` and `lotm_divination_pendulum` items are accepted there. Curios is optional: no Curios API classes are referenced by the core mod, so a server without Curios can still load RealScale.
+Curios is required. The current pilot registers one occult_focus slot on players. lotm_spirit_focus and lotm_divination_pendulum are accepted through the vanilla item tag at data/curios/tags/item/occult_focus.json. Additional ring, necklace, charm, and relic slots can be added as the equipment catalogue expands.
 
-## Runtime acceptance
+## Development and runtime verification
 
-- Build the RealScale JAR.
-- Start a clean NeoForge 21.1.249 dedicated server with RealScale + GeckoLib.
-- Start the packaged DH + Chunky smoke server with RealScale + GeckoLib + the pinned DH/Chunky versions.
-- Confirm no missing-dependency errors, then run LOTM recipe, inventory, save/reload and client-render tests.
-- Curios and other optional integrations are tested in separate matrix lanes so they cannot make the base server depend on optional mods.
+- Gradle resolves the three pinned runtime dependencies.
+- The build copies the official Player Abilities dependency to a separate smoke-test directory; it is not added to the RealScale JAR.
+- CI verifies GeckoLib and Curios through official Modrinth version metadata and SHA-512.
+- CI verifies the Player Abilities JAR's embedded player_abilities mod ID and 1.0.9 version before installing it in the disposable test server.
+- The development and packaged-server tests boot RealScale with all three LOTM dependencies plus the pinned Distant Horizons and Chunky test mods.

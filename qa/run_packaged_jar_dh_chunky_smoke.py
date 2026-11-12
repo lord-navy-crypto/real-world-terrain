@@ -158,15 +158,14 @@ def prepare_mods() -> Path:
         raise RuntimeError(f"Expected exactly one built RealScale JAR, found: {jars}")
     shutil.copy2(jars[0], mods / jars[0].name)
 
-    for name in (
-        "geckolib-neoforge-1.21.1-4.9.3.jar",
-        "DistantHorizons-3.3.3-1.21.1-fabric-neoforge.jar",
-        "Chunky-NeoForge-1.4.23.jar",
-    ):
-        source = source_mods / name
-        if not source.is_file():
-            raise RuntimeError(f"SHA-512-verified external mod is missing: {source}")
-        shutil.copy2(source, mods / name)
+    external_jars = sorted(source_mods.glob("*.jar"))
+    if len(external_jars) < 5:
+        raise RuntimeError(
+            "Expected GeckoLib, Curios, Player Abilities, Distant Horizons, and Chunky; "
+            f"found {[path.name for path in external_jars]}"
+        )
+    for source in external_jars:
+        shutil.copy2(source, mods / source.name)
 
     print("PACKAGED_REALScale_JAR:", jars[0].name, flush=True)
     print("PACKAGED_SERVER_MODS:", sorted(p.name for p in mods.glob("*.jar")), flush=True)

@@ -28,6 +28,12 @@ BLOCKS = [
     "lotm_face_rose", "lotm_soul_bellflower", "lotm_blood_rose",
     "lotm_spirit_quartz_ore", "lotm_relic_cache", "lotm_alchemy_apparatus",
 ]
+ABILITIES = [
+    "lotm_seer_primary", "lotm_seer_secondary",
+    "lotm_mystery_pryer_primary", "lotm_mystery_pryer_secondary",
+    "lotm_sleepless_primary", "lotm_sleepless_secondary",
+    "lotm_corpse_collector_primary", "lotm_corpse_collector_secondary",
+]
 PALETTE = [
     (86, 170, 225), (149, 77, 178), (115, 156, 174),
     (65, 160, 173), (177, 99, 182), (160, 169, 103),
@@ -47,6 +53,37 @@ def hashbyte(text: str) -> int:
 
 
 def pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
+    if name in ABILITIES:
+        pathway = next(key for key in ("mystery_pryer", "corpse_collector", "sleepless", "seer")
+                       if name.startswith("lotm_" + key + "_"))
+        colors = {
+            "seer": (73, 153, 224),
+            "mystery_pryer": (166, 91, 196),
+            "sleepless": (75, 94, 174),
+            "corpse_collector": (139, 159, 151),
+        }
+        base = colors[pathway]
+        bright = tuple(min(255, value + 75) for value in base)
+        ox, oy = x - 7.5, y - 7.5
+        distance = ox * ox + oy * oy
+        if 25 <= distance <= 49:
+            return rgba(bright if (x + y) % 3 == 0 else base)
+        if distance > 49:
+            return TRANSPARENT
+        if name.endswith("_primary"):
+            if abs(ox) <= 1.0 or abs(oy) <= 1.0 or abs(abs(ox) - abs(oy)) <= 1.0:
+                return rgba(bright)
+            if distance <= 5:
+                return rgba((236, 224, 184))
+        else:
+            if x in (7, 8) and y <= 8:
+                return rgba(bright)
+            if 5 <= y <= 10 and abs(ox) <= (y - 4) // 2 + 1:
+                return rgba(bright if y in (5, 10) else base)
+            if distance <= 4:
+                return rgba((236, 224, 184))
+        return TRANSPARENT
+
     key = name if name in ITEMS else name.removesuffix("_ore")
     base = PALETTE[ITEMS.index(key) % len(PALETTE)] if key in ITEMS else (136, 81, 180)
     light = tuple(min(255, v + 67) for v in base)
@@ -124,7 +161,7 @@ def png_bytes(name: str) -> bytes:
 
 
 def generate(output: Path) -> None:
-    for kind, names in (("item", ITEMS), ("block", BLOCKS)):
+    for kind, names in (("item", ITEMS), ("block", BLOCKS), ("ability", ABILITIES)):
         destination = output / "assets" / "realscale" / "textures" / kind
         destination.mkdir(parents=True, exist_ok=True)
         for name in names:
