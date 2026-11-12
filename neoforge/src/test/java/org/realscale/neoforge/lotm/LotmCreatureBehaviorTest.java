@@ -20,6 +20,20 @@ class LotmCreatureBehaviorTest {
         assertEquals(LotmCreatureBehavior.DIVE_HUNTER, LotmCreatureBehavior.forKind(LotmCreatureKind.DEATH_CROW));
     }
 
+
+    @Test
+    void nocturnalMetadataIsLimitedToTheIntendedFourSpecies() {
+        Set<LotmCreatureKind> nocturnal = EnumSet.noneOf(LotmCreatureKind.class);
+        for (LotmCreatureKind kind : LotmCreatureKind.values()) {
+            if (kind.isNocturnal()) nocturnal.add(kind);
+        }
+        assertEquals(EnumSet.of(
+                LotmCreatureKind.NIGHTMARE_EYE,
+                LotmCreatureKind.NIGHT_OWL,
+                LotmCreatureKind.SHROUDMAN,
+                LotmCreatureKind.DEATH_CROW), nocturnal);
+    }
+
     @Test
     void behaviorProfilesAreNotAccidentallyShared() {
         Set<LotmCreatureBehavior> profiles = EnumSet.noneOf(LotmCreatureBehavior.class);
