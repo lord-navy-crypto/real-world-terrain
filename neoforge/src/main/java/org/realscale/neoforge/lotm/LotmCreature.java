@@ -238,6 +238,11 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
         }
 
         @Override
+        public boolean requiresUpdateEveryTick() {
+            return true;
+        }
+
+        @Override
         public void tick() {
             creature.getNavigation().stop();
             creature.setDeltaMovement(0.0D, 0.0D, 0.0D);
