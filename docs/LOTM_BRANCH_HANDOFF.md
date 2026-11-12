@@ -30,7 +30,7 @@ Sequence 7 IDs and documentation are retained for save compatibility and future 
 1. Complete the ten active supernatural creatures first.
 2. Then expand creature materials, minerals, alchemy/potions, skills, and supernatural energy.
 3. Keep the current milestone RPG-focused. Do not create new ruins or custom structures.
-4. Later, use vanilla Minecraft structures and their loot tables as possible places for rare characteristics and materials.
+4. Use additive global loot modifiers on selected vanilla Minecraft structures for rare materials and characteristics; never create custom ruins or overwrite vanilla loot.
 5. Preserve RealScale terrain generation and existing worlds.
 
 ## Existing LOTM code map
@@ -51,6 +51,8 @@ Sequence 7 IDs and documentation are retained for save compatibility and future 
 - `scripts/generate_lotm_visuals.py`: deterministic, standard-library-only generation of item/block/ability textures plus ten creature texture/geometry/animation bundles.
 - `neoforge/src/main/java/org/realscale/neoforge/lotm/client`: shared GeckoLib creature model/renderer and alchemy model/renderer.
 - `neoforge/src/main/resources/data/realscale/neoforge/biome_modifier/lotm_*_spawns.json`: ten habitat-limited natural spawn modifiers.
+- `data/neoforge/loot_modifiers/global_loot_modifiers.json` plus `data/realscale/loot_modifiers/lotm_*_loot.json`: additive, table-scoped vanilla structure loot integration.
+- `data/realscale/loot_table/lotm/structure/*.json`: small supplementary loot tables containing registered LOTM materials and S9/S8 characteristics.
 
 ## Current implementation status (2026-11-12)
 
@@ -73,7 +75,8 @@ The current branch has moved beyond the original vanilla-variant pilot:
 - Ten `neoforge:add_spawns` biome modifiers use the intended vanilla/RealScale habitat lists and low spawn weights. The squid requires a water column.
 - The old custom relic-site biome modifier is explicitly disabled with `neoforge:none`. Keep the old block and feature registrations only for compatibility; do not place custom ruins or relic sites.
 - `CREATURE_ENTITIES` gates new natural spawning. Turning it off must not remove drops from creatures already in a world. `CREATURE_VARIANTS` defaults off; old tagged stand-ins remain readable.
-- Sequence 7 remains archived and is not included in entity registration or spawn modifiers.
+- Sequence 7 remains archived and is not included in entity registration, spawn modifiers or vanilla structure loot tables.
+- Four additive loot modifiers target vanilla dungeon, mineshaft, stronghold corridor and ancient-city chests. Their supplementary-roll chances are 4%, 5.5%, 7.5% and 10%; `replace:false` preserves all existing vanilla and other-mod loot.
 
 **Still requiring verification / polish:**
 
@@ -82,7 +85,7 @@ The current branch has moved beyond the original vanilla-variant pilot:
 3. Inspect the generated models/textures in-game; the current procedural block models are a functional first art pass, not the final visual polish.
 4. Add deeper species-specific navigation, animation timing, sounds and non-combat behaviors after runtime stability.
 5. Only after creature acceptance, proceed to expanded materials/minerals, alchemy recipes, pathway skills and supernatural energy.
-6. Vanilla structure loot integration remains a later phase; no custom structure or ruin generation is in scope.
+6. Verify the actual supplementary loot rates in a saved world and tune only after playtesting; no custom structure or ruin generation is in scope.
 
 ## Active creature roster
 
@@ -117,9 +120,9 @@ See `docs/superpowers/specs/2026-11-12-lotm-creature-expansion-design.md` and `d
 1. Define stable creature metadata and pure spawn rules.
 2. Register ten independent entity types, attributes, AI and server-side drops.
 3. Generate ten original GeckoLib models, textures and animations.
-4. Add habitat-specific biome spawns; remove custom relic-site placement.
-5. Expand materials and minerals; then alchemy/potion recipes; then skill trees and energy systems.
-6. Add vanilla structure loot-table integration only after the RPG core is stable.
+4. Add habitat-specific biome spawns; disable custom relic-site placement.
+5. Additive vanilla structure loot is now wired for four original chest tables; verify it in-game and keep Sequence 7 excluded.
+6. Expand materials and minerals; then alchemy/potion recipes; then skill trees and supernatural energy.
 
 ## Build and verification
 
