@@ -47,6 +47,36 @@ class LotmCreatureSpawnRulesTest {
         }
     }
 
+
+    @Test
+    void nocturnalWindowUsesTheOverworldNightBoundariesAndWrapsAbsoluteTime() {
+        assertFalse(LotmCreatureSpawnRules.isNocturnalActive(12_999L));
+        assertTrue(LotmCreatureSpawnRules.isNocturnalActive(13_000L));
+        assertTrue(LotmCreatureSpawnRules.isNocturnalActive(22_999L));
+        assertFalse(LotmCreatureSpawnRules.isNocturnalActive(23_000L));
+
+        assertFalse(LotmCreatureSpawnRules.isNocturnalActive(30_000L));
+        assertTrue(LotmCreatureSpawnRules.isNocturnalActive(37_000L));
+        assertFalse(LotmCreatureSpawnRules.isNocturnalActive(-18_000L));
+        assertTrue(LotmCreatureSpawnRules.isNocturnalActive(-11_000L));
+    }
+
+    @Test
+    void spawnTimeGateAppliesOnlyToNocturnalCreaturesAndPreservesHabitatRules() {
+        assertTrue(LotmCreatureSpawnRules.canSpawnAt(
+                LotmCreatureKind.NIGHT_OWL, "minecraft:forest", 14_000L));
+        assertFalse(LotmCreatureSpawnRules.canSpawnAt(
+                LotmCreatureKind.NIGHT_OWL, "minecraft:forest", 6_000L));
+        assertTrue(LotmCreatureSpawnRules.canSpawnAt(
+                LotmCreatureKind.HORNACIS_GOAT, "minecraft:meadow", 6_000L));
+        assertFalse(LotmCreatureSpawnRules.canSpawnAt(
+                LotmCreatureKind.NIGHT_OWL, "minecraft:nether_wastes", 14_000L));
+        assertFalse(LotmCreatureSpawnRules.canSpawnAt(
+                null, "minecraft:forest", 14_000L));
+        assertFalse(LotmCreatureSpawnRules.canSpawnAt(
+                LotmCreatureKind.NIGHT_OWL, "", 14_000L));
+    }
+
     @Test
     void invalidInputsFailClosed() {
         assertFalse(LotmCreatureSpawnRules.canSpawnInBiome(null, "minecraft:forest"));
