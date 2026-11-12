@@ -5,6 +5,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import org.realscale.neoforge.lotm.LotmAlchemyContent;
+import org.realscale.neoforge.lotm.LotmCreatureEntities;
+import org.realscale.neoforge.lotm.LotmCreatureKind;
 @EventBusSubscriber(modid="realscale",bus=EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
 public final class LotmClientEvents {
     private LotmClientEvents() {}
@@ -14,5 +16,8 @@ public final class LotmClientEvents {
 
     @SubscribeEvent public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(LotmAlchemyContent.ALCHEMY_BLOCK_ENTITY.get(), LotmAlchemyRenderer::new);
+        for (LotmCreatureKind kind : LotmCreatureKind.values()) {
+            event.registerEntityRenderer(LotmCreatureEntities.type(kind).get(), LotmCreatureRenderer::new);
+        }
     }
 }

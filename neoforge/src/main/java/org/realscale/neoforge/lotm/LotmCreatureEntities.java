@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -78,13 +79,14 @@ public final class LotmCreatureEntities {
         TYPES.forEach((kind, supplier) -> event.register(
                 supplier.get(),
                 kind.isAquatic() ? SpawnPlacementTypes.IN_WATER : SpawnPlacementTypes.ON_GROUND,
-                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                kind.isAquatic() ? Heightmap.Types.OCEAN_FLOOR : Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 (type, level, spawnReason, pos, random) -> {
                     if (!LotmConfig.ENABLED.get() || !LotmConfig.CREATURE_ENTITIES.get()) return false;
                     String biomeId = level.getBiome(pos).unwrapKey()
                             .map(key -> key.location().toString()).orElse("");
-                    return LotmCreatureSpawnRules.canSpawnInBiome(kind, biomeId)
-                            && Mob.checkMobSpawnRules(type, level, spawnReason, pos, random);
+                    if (!LotmCreatureSpawnRules.canSpawnInBiome(kind, biomeId)) return false;
+                    if (kind.isAquatic() && !level.getFluidState(pos).is(FluidTags.WATER)) return false;
+                    return Mob.checkMobSpawnRules(type, level, spawnReason, pos, random);
                 },
                 RegisterSpawnPlacementsEvent.Operation.REPLACE));
     }

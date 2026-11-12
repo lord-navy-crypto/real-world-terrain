@@ -79,6 +79,27 @@ class LotmCreatureAssetTests(unittest.TestCase):
                         self.assertTrue(animation_bones.issubset(bone_names),
                                         f"{animation_name} references an unknown bone")
 
+
+    def test_registered_creature_entity_ids_have_bilingual_names(self):
+        en = json.loads((ROOT / "neoforge/src/main/resources/assets/realscale/lang/en_us.json").read_text(encoding="utf-8"))
+        zh = json.loads((ROOT / "neoforge/src/main/resources/assets/realscale/lang/zh_cn.json").read_text(encoding="utf-8"))
+        for creature_id in CREATURE_IDS:
+            key = "entity.realscale.lotm_" + creature_id
+            self.assertIn(key, en)
+            self.assertIn(key, zh)
+
+    def test_client_renderer_resolves_each_species_asset_bundle(self):
+        model = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/client/LotmCreatureModel.java").read_text(encoding="utf-8")
+        client = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/client/LotmClientEvents.java").read_text(encoding="utf-8")
+        creature = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmCreature.java").read_text(encoding="utf-8")
+        self.assertIn("geo/lotm_", model)
+        self.assertIn("textures/entity/lotm_", model)
+        self.assertIn("animations/lotm_", model)
+        self.assertIn("registerEntityRenderer", client)
+        self.assertIn('String prefix = "animation." + kind.id() + "."', creature)
+        self.assertIn('triggerableAnim("attack"', creature)
+        self.assertIn('triggerableAnim("hurt"', creature)
+
     def test_creature_geometry_has_species_specific_identifiers(self):
         module = load_generator()
         with tempfile.TemporaryDirectory() as temp:

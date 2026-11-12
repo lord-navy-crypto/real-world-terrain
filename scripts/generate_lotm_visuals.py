@@ -7,6 +7,7 @@ The resource pack is generated under the Gradle build directory.
 from __future__ import annotations
 
 import hashlib
+import json
 import struct
 import sys
 import zlib
@@ -34,130 +35,240 @@ ABILITIES = [
     "lotm_sleepless_primary", "lotm_sleepless_secondary",
     "lotm_corpse_collector_primary", "lotm_corpse_collector_secondary",
 ]
-PALETTE = [
-    (86, 170, 225), (149, 77, 178), (115, 156, 174),
-    (65, 160, 173), (177, 99, 182), (160, 169, 103),
-    (69, 175, 105), (120, 170, 182), (110, 195, 185),
-    (70, 122, 212), (174, 83, 180), (51, 63, 150),
-    (92, 119, 131), (143, 166, 183), (202, 183, 119),
-]
-TRANSPARENT = (0, 0, 0, 0)
+
+def _cube(origin, size, uv=(0, 0)):
+    return {"origin": list(origin), "size": list(size), "uv": list(uv)}
 
 
-def rgba(rgb: tuple[int, int, int], alpha: int = 255) -> tuple[int, int, int, int]:
-    return (*rgb, alpha)
+def _bone(name, parent, pivot, origin=None, size=None, uv=(0, 0)):
+    result = {"name": name, "pivot": list(pivot)}
+    if parent is not None:
+        result["parent"] = parent
+    if origin is not None and size is not None:
+        result["cubes"] = [_cube(origin, size, uv)]
+    return result
 
 
-def hashbyte(text: str) -> int:
-    return hashlib.sha256(text.encode("utf-8")).digest()[0]
+# Ten original species: each has a distinct silhouette, texture palette and motion profile.
+CREATURES = {
+    "starlit_squid": {
+        "palette": ((37, 88, 114), (74, 171, 195), (15, 37, 55), (180, 237, 232)), "pattern": "glow",
+        "bones": [
+            _bone("root", None, (0, 0, 0)),
+            _bone("body", "root", (0, 8, 0), (-4, 3, -4), (8, 10, 8)),
+            _bone("head", "body", (0, 10, -3), (-3, 9, -6), (6, 5, 4), (16, 0)),
+            _bone("tentacle_left", "root", (-3, 4, 0), (-4, -4, -1), (2, 8, 2), (0, 16)),
+            _bone("tentacle_right", "root", (3, 4, 0), (2, -4, -1), (2, 8, 2), (8, 16)),
+            _bone("tentacle_back_left", "root", (-2, 4, 3), (-3, -5, 3), (2, 9, 2), (16, 16)),
+            _bone("tentacle_back_right", "root", (2, 4, 3), (1, -5, 3), (2, 9, 2), (24, 16)),
+        ],
+        "walk_bones": ["tentacle_left", "tentacle_right", "tentacle_back_left", "tentacle_back_right"],
+        "attack_bones": ["head", "tentacle_left", "tentacle_right"],
+    },
+    "nightmare_eye": {
+        "palette": ((74, 35, 92), (155, 64, 150), (25, 13, 39), (237, 154, 219)), "pattern": "eye",
+        "bones": [
+            _bone("root", None, (0, 0, 0)),
+            _bone("body", "root", (0, 8, 0), (-6, 2, -6), (12, 12, 12)),
+            _bone("head", "body", (0, 8, -5), (-4, 6, -8), (8, 7, 3), (16, 0)),
+            _bone("iris", "head", (0, 9, -8), (-3, 7, -9), (6, 6, 1), (32, 0)),
+            _bone("pupil", "iris", (0, 10, -9), (-1, 8, -10), (2, 4, 1), (40, 0)),
+            _bone("tendril_left", "root", (-4, 4, -2), (-5, -2, -3), (2, 7, 2), (0, 16)),
+            _bone("tendril_right", "root", (4, 4, 2), (3, -3, 1), (2, 8, 2), (8, 16)),
+        ],
+        "walk_bones": ["tendril_left", "tendril_right"],
+        "attack_bones": ["head", "pupil", "tendril_left", "tendril_right"],
+    },
+    "night_owl": {
+        "palette": ((84, 68, 51), (184, 151, 93), (35, 32, 30), (229, 205, 151)), "pattern": "feathers",
+        "bones": [
+            _bone("root", None, (0, 0, 0)),
+            _bone("body", "root", (0, 8, 0), (-3, 4, -3), (6, 8, 6)),
+            _bone("head", "body", (0, 12, -2), (-3, 10, -4), (6, 6, 5), (16, 0)),
+            _bone("beak", "head", (0, 12, -4), (-1, 11, -6), (2, 2, 3), (32, 0)),
+            _bone("wing_left", "body", (-3, 9, 0), (-7, 6, -2), (4, 8, 4), (0, 16)),
+            _bone("wing_right", "body", (3, 9, 0), (3, 6, -2), (4, 8, 4), (16, 16)),
+            _bone("tail", "body", (0, 5, 3), (-2, 2, 3), (4, 5, 2), (32, 16)),
+            _bone("leg_left", "body", (-2, 4, 0), (-2, 0, 0), (1, 4, 1), (40, 16)),
+            _bone("leg_right", "body", (2, 4, 0), (1, 0, 0), (1, 4, 1), (48, 16)),
+        ],
+        "walk_bones": ["wing_left", "wing_right", "leg_left", "leg_right"],
+        "attack_bones": ["head", "wing_left", "wing_right"],
+    },
+    "black_spotted_frog": {
+        "palette": ((40, 85, 49), (104, 151, 66), (17, 39, 27), (186, 220, 92)), "pattern": "spots",
+        "bones": [
+            _bone("root", None, (0, 0, 0)),
+            _bone("body", "root", (0, 5, 0), (-4, 2, -4), (8, 5, 8)),
+            _bone("head", "body", (0, 7, -3), (-4, 6, -6), (8, 5, 5), (16, 0)),
+            _bone("eye_left", "head", (-3, 10, -5), (-4, 9, -6), (2, 2, 2), (32, 0)),
+            _bone("eye_right", "head", (3, 10, -5), (2, 9, -6), (2, 2, 2), (40, 0)),
+            _bone("leg_front_left", "body", (-3, 4, -2), (-4, 0, -3), (2, 3, 3), (0, 16)),
+            _bone("leg_front_right", "body", (3, 4, -2), (2, 0, -3), (2, 3, 3), (8, 16)),
+            _bone("leg_back_left", "body", (-3, 3, 2), (-5, -1, 1), (3, 3, 4), (16, 16)),
+            _bone("leg_back_right", "body", (3, 3, 2), (2, -1, 1), (3, 3, 4), (24, 16)),
+        ],
+        "walk_bones": ["leg_front_left", "leg_front_right", "leg_back_left", "leg_back_right"],
+        "attack_bones": ["head", "leg_back_left", "leg_back_right"],
+    },
+    "shroudman": {
+        "palette": ((76, 78, 88), (157, 153, 143), (27, 28, 37), (202, 199, 180)), "pattern": "rags",
+        "bones": [
+            _bone("root", None, (0, 0, 0)),
+            _bone("body", "root", (0, 11, 0), (-4, 4, -3), (8, 12, 6)),
+            _bone("head", "body", (0, 16, -1), (-3, 14, -4), (6, 6, 6), (16, 0)),
+            _bone("hood", "head", (0, 18, 0), (-5, 17, -4), (10, 4, 8), (32, 0)),
+            _bone("arm_left", "body", (-4, 13, 0), (-7, 7, -2), (3, 8, 4), (0, 16)),
+            _bone("arm_right", "body", (4, 13, 0), (4, 7, -2), (3, 8, 4), (16, 16)),
+            _bone("robe_left", "body", (-2, 7, 0), (-4, 0, -3), (4, 7, 6), (32, 16)),
+            _bone("robe_right", "body", (2, 7, 0), (0, 0, -3), (4, 7, 6), (40, 16)),
+        ],
+        "walk_bones": ["arm_left", "arm_right", "robe_left", "robe_right"],
+        "attack_bones": ["arm_left", "arm_right", "head"],
+    },
+    "hornacis_goat": {
+        "palette": ((126, 115, 92), (190, 177, 148), (51, 46, 38), (222, 214, 185)), "pattern": "fur",
+        "bones": [
+            _bone("root", None, (0, 0, 0)),
+            _bone("body", "root", (0, 8, 0), (-5, 4, -3), (10, 7, 6)),
+            _bone("head", "body", (0, 12, -3), (-3, 10, -6), (6, 6, 5), (16, 0)),
+            _bone("horn_left", "head", (-2, 15, -3), (-3, 14, -4), (1, 5, 1), (32, 0)),
+            _bone("horn_right", "head", (2, 15, -3), (2, 14, -4), (1, 5, 1), (40, 0)),
+            _bone("leg_left", "body", (-3, 5, 0), (-4, -2, -2), (2, 7, 2), (0, 16)),
+            _bone("leg_right", "body", (3, 5, 0), (2, -2, -2), (2, 7, 2), (8, 16)),
+            _bone("tail", "body", (0, 8, 3), (-1, 6, 3), (2, 4, 2), (16, 16)),
+        ],
+        "walk_bones": ["leg_left", "leg_right"],
+        "attack_bones": ["head", "horn_left", "horn_right"],
+    },
+    "ironarm_beast": {
+        "palette": ((80, 92, 103), (173, 185, 194), (28, 37, 47), (215, 163, 86)), "pattern": "plates",
+        "bones": [
+            _bone("root", None, (0, 0, 0)),
+            _bone("body", "root", (0, 12, 0), (-6, 6, -4), (12, 12, 8)),
+            _bone("head", "body", (0, 18, -2), (-3, 17, -5), (6, 6, 6), (16, 0)),
+            _bone("plate", "body", (0, 14, -4), (-5, 11, -5), (10, 7, 1), (32, 0)),
+            _bone("arm_left", "body", (-6, 12, 0), (-8, 5, -3), (3, 9, 6), (0, 16)),
+            _bone("arm_right", "body", (6, 12, 0), (5, 5, -3), (3, 9, 6), (16, 16)),
+            _bone("leg_left", "root", (-3, 6, 0), (-4, -2, -3), (4, 8, 6), (32, 16)),
+            _bone("leg_right", "root", (3, 6, 0), (0, -2, -3), (4, 8, 6), (40, 16)),
+        ],
+        "walk_bones": ["leg_left", "leg_right", "arm_left", "arm_right"],
+        "attack_bones": ["arm_left", "arm_right", "plate"],
+    },
+    "four_eyed_turtle": {
+        "palette": ((62, 102, 71), (137, 160, 92), (25, 48, 38), (203, 188, 118)), "pattern": "shell",
+        "bones": [
+            _bone("root", None, (0, 0, 0)),
+            _bone("body", "root", (0, 5, 0), (-5, 1, -4), (10, 4, 8)),
+            _bone("shell", "body", (0, 7, 0), (-6, 4, -5), (12, 6, 10), (16, 0)),
+            _bone("head", "body", (0, 6, -4), (-2, 4, -8), (4, 4, 5), (32, 0)),
+            _bone("eye_front_left", "head", (-1, 7, -7), (-2, 6, -8), (1, 1, 1), (40, 0)),
+            _bone("eye_front_right", "head", (1, 7, -7), (1, 6, -8), (1, 1, 1), (44, 0)),
+            _bone("eye_back_left", "shell", (-3, 8, 2), (-4, 7, 3), (1, 1, 1), (48, 0)),
+            _bone("eye_back_right", "shell", (3, 8, 2), (3, 7, 3), (1, 1, 1), (52, 0)),
+            _bone("leg_left", "body", (-4, 3, -2), (-5, 0, -3), (3, 3, 3), (0, 16)),
+            _bone("leg_right", "body", (4, 3, 2), (2, 0, 1), (3, 3, 3), (8, 16)),
+        ],
+        "walk_bones": ["leg_left", "leg_right"],
+        "attack_bones": ["head", "shell"],
+    },
+    "crimson_howler": {
+        "palette": ((101, 35, 46), (173, 67, 67), (34, 16, 24), (225, 143, 95)), "pattern": "stripes",
+        "bones": [
+            _bone("root", None, (0, 0, 0)),
+            _bone("body", "root", (0, 8, 0), (-5, 4, -3), (10, 7, 6)),
+            _bone("head", "body", (0, 11, -3), (-3, 9, -6), (6, 6, 6), (16, 0)),
+            _bone("jaw", "head", (0, 9, -5), (-3, 7, -7), (6, 2, 4), (32, 0)),
+            _bone("ear_left", "head", (-2, 14, -2), (-3, 13, -3), (2, 3, 2), (40, 0)),
+            _bone("ear_right", "head", (2, 14, -2), (1, 13, -3), (2, 3, 2), (48, 0)),
+            _bone("leg_left", "body", (-3, 5, 0), (-4, -2, -2), (2, 7, 2), (0, 16)),
+            _bone("leg_right", "body", (3, 5, 0), (2, -2, -2), (2, 7, 2), (8, 16)),
+            _bone("tail", "body", (0, 7, 3), (-1, 5, 3), (2, 3, 7), (16, 16)),
+        ],
+        "walk_bones": ["leg_left", "leg_right"],
+        "attack_bones": ["head", "jaw", "tail"],
+    },
+    "death_crow": {
+        "palette": ((44, 46, 58), (115, 127, 149), (17, 19, 29), (190, 183, 211)), "pattern": "feathers",
+        "bones": [
+            _bone("root", None, (0, 0, 0)),
+            _bone("body", "root", (0, 8, 0), (-3, 4, -3), (6, 8, 6)),
+            _bone("head", "body", (0, 12, -2), (-2, 10, -4), (4, 5, 4), (16, 0)),
+            _bone("beak", "head", (0, 11, -4), (-1, 10, -6), (2, 2, 3), (32, 0)),
+            _bone("wing_left", "body", (-3, 9, 0), (-7, 6, -2), (4, 8, 4), (0, 16)),
+            _bone("wing_right", "body", (3, 9, 0), (3, 6, -2), (4, 8, 4), (16, 16)),
+            _bone("tail", "body", (0, 5, 3), (-2, 1, 3), (4, 5, 2), (32, 16)),
+            _bone("leg_left", "body", (-2, 4, 0), (-2, 0, 0), (1, 4, 1), (40, 16)),
+            _bone("leg_right", "body", (2, 4, 0), (1, 0, 0), (1, 4, 1), (48, 16)),
+        ],
+        "walk_bones": ["wing_left", "wing_right", "leg_left", "leg_right"],
+        "attack_bones": ["head", "beak", "wing_left", "wing_right"],
+    },
+}
 
 
-def pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
-    if name in ABILITIES:
-        pathway = next(key for key in ("mystery_pryer", "corpse_collector", "sleepless", "seer")
-                       if name.startswith("lotm_" + key + "_"))
-        colors = {
-            "seer": (73, 153, 224),
-            "mystery_pryer": (166, 91, 196),
-            "sleepless": (75, 94, 174),
-            "corpse_collector": (139, 159, 151),
-        }
-        base = colors[pathway]
-        bright = tuple(min(255, value + 75) for value in base)
-        ox, oy = x - 7.5, y - 7.5
-        distance = ox * ox + oy * oy
-        if 25 <= distance <= 49:
-            return rgba(bright if (x + y) % 3 == 0 else base)
-        if distance > 49:
-            return TRANSPARENT
-        if name.endswith("_primary"):
-            if abs(ox) <= 1.0 or abs(oy) <= 1.0 or abs(abs(ox) - abs(oy)) <= 1.0:
-                return rgba(bright)
-            if distance <= 5:
-                return rgba((236, 224, 184))
-        else:
-            if x in (7, 8) and y <= 8:
-                return rgba(bright)
-            if 5 <= y <= 10 and abs(ox) <= (y - 4) // 2 + 1:
-                return rgba(bright if y in (5, 10) else base)
-            if distance <= 4:
-                return rgba((236, 224, 184))
-        return TRANSPARENT
-
-    key = name if name in ITEMS else name.removesuffix("_ore")
-    base = PALETTE[ITEMS.index(key) % len(PALETTE)] if key in ITEMS else (136, 81, 180)
-    light = tuple(min(255, v + 67) for v in base)
-    noise = hashbyte(f"{name}/{x}/{y}")
-    ox, oy = x - 7.5, y - 7.5
-
-    if name.endswith("_ore"):
-        stone = (85 + noise % 17, 88 + noise % 19, 94 + noise % 19)
-        if abs(x - 5) + abs(y - 6) <= 4 or abs(x - 12) + abs(y - 12) <= 3:
-            return rgba(light if noise % 4 == 0 else base)
-        return rgba(stone)
-
-    if name in ("lotm_midnight_bloom", "lotm_face_rose", "lotm_soul_bellflower", "lotm_blood_rose"):
-        if y >= 7 and x in (7, 8):
-            return (61, 125, 75, 255)
-        if y in (10, 11) and x in (5, 6, 9, 10):
-            return (84, 153, 94, 255)
-        if abs(ox) + abs(y - 4) <= 4:
-            return rgba((230, 191, 242) if noise % 6 == 0 else (111, 67, 168))
-        return TRANSPARENT
-
-    if name.endswith("_potion") or name == "lotm_empty_vial":
-        neck = 6 <= x <= 9 and 2 <= y <= 6
-        bottle = 4 <= x <= 11 and 6 <= y <= 14
-        if not (neck or bottle):
-            return TRANSPARENT
-        if x in (4, 11) or y in (2, 14):
-            return (189, 217, 228, 255)
-        if name.endswith("_potion") and y >= 9:
-            return rgba(light if y == 9 or noise % 9 == 0 else base)
-        return (145, 199, 215, 75)
-
-    if name == "lotm_divination_pendulum":
-        if y <= 7 and x in (7, 8):
-            return (214, 190, 131, 255)
-        if 8 <= y <= 14 and abs(x - 7.5) <= (14 - y) // 2:
-            return rgba(light if y == 10 else base)
-        return TRANSPARENT
-
-    if name == "lotm_spirit_focus":
-        distance = ox * ox + oy * oy
-        if 17 <= distance <= 37:
-            return rgba(light if noise % 4 == 0 else base)
-        if (abs(ox) < 0.7 or abs(oy) < 0.7) and abs(ox) + abs(oy) < 6:
-            return rgba(light)
-        return TRANSPARENT
-
-    # Distinct original crystal / essence silhouettes.
-    seed = hashbyte(name)
-    shape = seed % 4
-    inside = (
-        abs(ox) + abs(oy) <= 7 if shape == 0 else
-        ox * ox + oy * oy <= 34 if shape == 1 else
-        abs(ox) < 5 and abs(oy) < 5 if shape == 2 else
-        abs(ox) < 4 and abs(oy) < 6
-    )
-    if not inside:
-        return TRANSPARENT
-    return rgba(light if noise % 7 == 0 or (x == 6 and y < 7) else base)
+def creature_pixel(creature_id: str, x: int, y: int) -> tuple[int, int, int, int]:
+    spec = CREATURES[creature_id]
+    base, accent, dark, glow = spec["palette"]
+    noise = hashbyte(f"{creature_id}/{x}/{y}")
+    tx, ty = x % 16, y % 16
+    color = dark if tx in (0, 15) or ty in (0, 15) else base
+    if tx in (1, 2) or ty in (1, 2):
+        color = accent
+    pattern = spec["pattern"]
+    if pattern == "glow" and (x * 3 + y * 5) % 29 < 3:
+        color = glow
+    elif pattern == "eye" and 12 <= ((x - 32) ** 2 + (y - 32) ** 2) ** 0.5 <= 24:
+        color = accent if noise % 3 else glow
+    elif pattern == "feathers" and (y + (x // 4) * 3) % 11 < 3:
+        color = accent
+    elif pattern == "spots" and (x * 7 + y * 11) % 37 < 4:
+        color = glow if noise % 2 else dark
+    elif pattern == "rags" and (x // 5) % 3 == 0:
+        color = dark if noise % 4 else accent
+    elif pattern == "fur" and (x * 3 + y * 5) % 23 < 5:
+        color = accent
+    elif pattern == "plates" and (tx in (3, 12) or ty in (3, 12)):
+        color = accent
+    elif pattern == "shell" and (tx in (0, 8) or ty in (0, 8)):
+        color = dark
+    elif pattern == "stripes" and (y + x // 3) % 9 < 3:
+        color = accent
+    if noise % 41 == 0:
+        color = glow
+    return rgba(color)
 
 
-def png_bytes(name: str) -> bytes:
+def _png_bytes(width: int, height: int, pixel_fn) -> bytes:
     def chunk(kind: bytes, data: bytes) -> bytes:
         return struct.pack(">I", len(data)) + kind + data + struct.pack(
             ">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
-
     raw = b"".join(
-        b"\x00" + bytes(channel for x in range(16)
-                          for channel in pixel(name, x, y))
-        for y in range(16))
-    ihdr = struct.pack(">IIBBBBB", 16, 16, 8, 6, 0, 0, 0)
+        b"\x00" + bytes(channel for x in range(width) for channel in pixel_fn(x, y))
+        for y in range(height))
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
     return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
             + chunk(b"IDAT", zlib.compress(raw, level=9))
             + chunk(b"IEND", b""))
+
+
+
+def _png_bytes(width: int, height: int, pixel_fn) -> bytes:
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(
+            ">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+    raw = b"".join(
+        b"\x00" + bytes(channel for x in range(width) for channel in pixel_fn(x, y))
+        for y in range(height))
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
+            + chunk(b"IDAT", zlib.compress(raw, level=9))
+            + chunk(b"IEND", b""))
+
+
+def png_bytes(name: str) -> bytes:
+    return _png_bytes(16, 16, lambda x, y: pixel(name, x, y))
 
 
 def generate(output: Path) -> None:
@@ -166,6 +277,7 @@ def generate(output: Path) -> None:
         destination.mkdir(parents=True, exist_ok=True)
         for name in names:
             (destination / f"{name}.png").write_bytes(png_bytes(name))
+    generate_creature_assets(output)
 
 
 if __name__ == "__main__":
