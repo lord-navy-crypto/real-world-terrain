@@ -59,8 +59,8 @@ Biome modifiers select which biomes receive spawn entries; they do not express t
 
 ## Design decisions left to the implementer
 
-- Use a dedicated nested `NocturnalRestGoal` with the MOVE flag. It should stop navigation while the normalized world time is outside the night window; higher-priority avoidance/attack goals retain precedence.
-- Keep the existing `NocturnalPlayerTargetGoal` behavior for hostile nocturnal creatures.
+- Use a dedicated nested `NocturnalRestGoal` with the MOVE flag. It stops navigation and horizontal/vertical drift while the normalized world time is outside the night window; it requests an every-tick update so flying creatures do not slowly drift between rest ticks. Higher-priority panic, avoidance, retaliation, and attack goals retain precedence.
+- Keep `NocturnalPlayerTargetGoal` for hostile nocturnal creatures, and require both `canUse()` and `canContinueToUse()` to remain inside the same night window so a target is not retained across sunrise.
 - Keep all spawn resource JSON unchanged in this slice.
 - If the JUnit environment does not load vanilla entity-type tag contents, move the tag-membership assertion to a loader-aware runtime test rather than weakening production classification or inventing a parallel undead list.
 
@@ -71,6 +71,6 @@ Biome modifiers select which biomes receive spawn entries; they do not express t
 - All nocturnal creature types pass the night time gate at 13000 and 22999 and fail it at 12999 and 23000; absolute day times wrap correctly.
 - Non-nocturnal creatures retain their current all-day spawn behavior.
 - Spawn checks still enforce configuration, biome membership, water columns for aquatic creatures, and vanilla ground placement for land creatures.
-- Day-rest behavior does not make passive nocturnal creatures hostile and does not suppress higher-priority avoidance/defense.
+- Day-rest behavior does not make passive nocturnal creatures hostile and does not suppress higher-priority avoidance/defense; hostile nocturnal target goals stop continuing when daylight begins.
 - The full JUnit suite, Python source/resource tests, Gradle 8.14.3 build, Gradle 9.8 compatibility lane, and dedicated-server boot all pass on the final branch head.
 - Sequence 7 remains archived and untouched.
