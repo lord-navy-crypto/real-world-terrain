@@ -1,0 +1,132 @@
+# LOTM Creature Expansion Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Replace the ten active LOTM vanilla-mob stand-ins with ten independent GeckoLib entities, biome-aware spawning, and kind-specific drops.
+
+**Architecture:** One shared creature implementation is configured by `LotmCreatureKind`; ten distinct EntityTypes use stable IDs and per-kind stats, habitats, behavior flags, and drops. A shared GeckoLib renderer resolves per-kind generated geometry, texture, and animation resources.
+
+**Tech Stack:** Java 21, Minecraft 1.21.1, NeoForge 21.1.249, GeckoLib 4, JUnit 5, Python 3 standard library for deterministic asset generation.
+
+**Spec:** `docs/superpowers/specs/2026-11-12-lotm-creature-expansion-design.md`
+
+## Global Constraints
+
+- Keep all work on `feature/lotm-sequence9-pilot-20261111`; do not modify `main`.
+- Keep the feature inside the existing `realscale` mod.
+- Preserve existing potion, characteristic, material, and player-save IDs.
+- Sequence 7 stays archived and cannot spawn.
+- No custom relic structures or new structure sets.
+- Do not change terrain density, climate, biome-source, or world-preset code.
+- GeckoLib is already required; do not add dependencies.
+- New creature spawns are disabled when LOTM or the creature-spawn config is disabled.
+- Legacy vanilla stand-ins default off.
+
+## Review Focus
+
+- A disabled LOTM config must prevent new creature natural spawns and creature drops.
+- Each entity type must have an attribute supplier; missing one can crash on spawn.
+- Invalid habitat IDs and null/negative spawn inputs must fail closed.
+- Client renderer registration must not load client-only classes on a dedicated server.
+- Existing archived Sequence 7 IDs and old creature drops must remain readable without re-enabling archived spawning.
+
+---
+
+### Task 1: Define the creature roster and pure spawn rules
+
+**Files:**
+- Create: `neoforge/src/main/java/org/realscale/neoforge/lotm/LotmCreatureKind.java`
+- Create: `neoforge/src/main/java/org/realscale/neoforge/lotm/LotmCreatureSpawnRules.java`
+- Test: `neoforge/src/test/java/org/realscale/neoforge/lotm/LotmCreatureSpawnRulesTest.java`
+
+**Interfaces:**
+- Produces `LotmCreatureKind.values()`, `id()`, `sequence()`, `dropId()`, `spawnCategory()`, `isHostile()`, `isAquatic()`, `isFlying()`, `width()`, `height()`, `maxHealth()`, `movementSpeed()`, `attackDamage()`, `armor()`, `spawnWeight()`, `minGroupSize()`, `maxGroupSize()`.
+- Produces `LotmCreatureSpawnRules.canSpawnInBiome(LotmCreatureKind kind, String biomeId)`.
+
+- [ ] Write tests asserting exactly ten active kinds, stable IDs, correct sequence group, and non-empty drop IDs.
+- [ ] Write tests asserting every intended habitat is accepted and clearly incompatible habitats are rejected.
+- [ ] Run `./gradlew test --tests org.realscale.neoforge.lotm.LotmCreatureSpawnRulesTest` and confirm it fails because the new API does not exist.
+- [ ] Implement the enum and pure habitat selector with immutable sets.
+- [ ] Run the focused test and then the full `./gradlew test` suite.
+- [ ] Commit as `feat(lotm): define independent creature roster and spawn rules`.
+
+### Task 2: Register ten independent entity types and server behavior
+
+**Files:**
+- Create: `neoforge/src/main/java/org/realscale/neoforge/lotm/LotmCreature.java`
+- Create: `neoforge/src/main/java/org/realscale/neoforge/lotm/LotmCreatureEntities.java`
+- Modify: `neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java`
+- Modify: `neoforge/src/main/java/org/realscale/neoforge/lotm/LotmConfig.java`
+- Modify: `neoforge/src/main/java/org/realscale/neoforge/lotm/LotmEvents.java`
+- Test: `neoforge/src/test/java/org/realscale/neoforge/lotm/LotmCreatureRegistryTest.java`
+
+**Interfaces:**
+- Consumes `LotmCreatureKind` and `LotmCreatureSpawnRules` from Task 1.
+- Produces ten registered EntityTypes, each constructed with exactly one `LotmCreatureKind`.
+- Produces server-authoritative kind-specific material drops.
+- Produces `creatureEntities` config defaulting true and changes legacy `creatureVariants` default to false.
+
+- [ ] Write registry metadata tests for ten distinct IDs, category, dimensions, and kind-to-drop mapping.
+- [ ] Run focused test and confirm missing registry metadata fails.
+- [ ] Implement a shared `PathfinderMob` entity with per-kind AI goals, attack response, and GeckoLib animation cache.
+- [ ] Register all ten EntityTypes and their default attributes.
+- [ ] Register ground/water spawn placements and gate them on LOTM + creature config.
+- [ ] Update drops to use the custom entity kind; preserve legacy drop mapping for already-tagged old entities.
+- [ ] Run focused and full JUnit suites.
+- [ ] Commit as `feat(lotm): register independent occult creatures`.
+
+### Task 3: Add GeckoLib renderers and deterministic original assets
+
+**Files:**
+- Create: `neoforge/src/main/java/org/realscale/neoforge/lotm/client/LotmCreatureModel.java`
+- Create: `neoforge/src/main/java/org/realscale/neoforge/lotm/client/LotmCreatureRenderer.java`
+- Modify: `neoforge/src/main/java/org/realscale/neoforge/lotm/client/LotmClientEvents.java`
+- Modify: `scripts/generate_lotm_visuals.py`
+- Test: `qa/test_lotm_creature_assets.py`
+
+**Interfaces:**
+- Consumes ten stable `LotmCreatureKind.id()` values.
+- Produces per-kind `geo/lotm_<id>.geo.json`, `animations/lotm_<id>.animation.json`, and `textures/entity/lotm_<id>.png`.
+- Renderer uses the same stable ID and never performs file or network access at runtime.
+
+- [ ] Write asset-generator tests that assert ten complete model/animation/texture outputs and valid JSON references.
+- [ ] Run the test first and confirm it fails because the new generated assets do not exist.
+- [ ] Extend the existing standard-library-only generator to create deterministic 64×64 original textures and species-specific geometry/animation JSON.
+- [ ] Add one dynamic GeckoLib model and renderer class and register the ten entity renderers on the client mod bus.
+- [ ] Run generator tests and all QA tests.
+- [ ] Commit as `feat(lotm): add original GeckoLib creature assets`.
+
+### Task 4: Add habitat spawns and remove custom relic-site placement
+
+**Files:**
+- Create: ten JSON files under `neoforge/src/main/resources/data/realscale/neoforge/biome_modifier/lotm_spawn_<id>.json`
+- Delete: `neoforge/src/main/resources/data/realscale/neoforge/biome_modifier/lotm_relic_site.json`
+- Modify: `neoforge/src/main/java/org/realscale/neoforge/lotm/LotmConfig.java`
+- Modify: `docs/lotm-rpg-alchemy-system.md`
+- Test: `qa/test_lotm_creature_spawns.py`
+
+**Interfaces:**
+- Spawn modifiers use `neoforge:add_spawns` and only intended biome IDs.
+- The existing relic-cache block and feature registration may remain for old-world compatibility, but no normal biome modifier places it.
+- Sequence 7 remains excluded from all new spawns.
+
+- [ ] Write tests for all ten biome modifier JSON files, expected categories, group sizes, and archived-variant exclusion.
+- [ ] Run tests first and confirm missing modifier files fail.
+- [ ] Add biome modifiers using each kind's spawn weight and group-size metadata.
+- [ ] Remove only the custom relic-site placement modifier; do not remove existing block/entity IDs or unrelated worldgen.
+- [ ] Update the RPG guide to explain that later special characteristics/materials are planned for vanilla structure loot, not custom ruins.
+- [ ] Run spawn tests, full QA tests, and the PR server smoke workflow.
+- [ ] Commit as `feat(lotm): spawn occult creatures in vanilla and RealScale biomes`.
+
+### Task 5: Publish the branch handoff and verify the complete milestone
+
+**Files:**
+- Create: `docs/LOTM_BRANCH_HANDOFF.md`
+- Modify: `docs/lotm-rpg-alchemy-system.md`
+- Modify: `docs/lotm-sequence9-pilot.md`
+
+- [ ] Document branch purpose, PR, runtime dependencies, architecture, source paths, asset generator, config flags, test commands, and explicit non-goals for future agents.
+- [ ] Run `./gradlew test`, `./gradlew build`, Python QA tests, and the PR server smoke workflow.
+- [ ] Inspect the PR diff to confirm no main-branch changes and no terrain-generation files changed.
+- [ ] Commit as `docs(lotm): add creature expansion handoff`.
+
