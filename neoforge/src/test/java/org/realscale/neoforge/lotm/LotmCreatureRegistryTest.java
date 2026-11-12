@@ -37,16 +37,17 @@ class LotmCreatureRegistryTest {
     }
 
     @Test
-    void eachCreatureDropResolvesToAnExistingRegisteredMaterial() {
+    void eachCreatureDropMatchesTheStableEcologyMaterialMapping() {
         for (LotmCreatureKind kind : LotmCreatureKind.values()) {
-            assertNotNull(LotmContent.materialItem(kind.dropId()),
-                    "Missing material registration for " + kind.id() + ": " + kind.dropId());
+            assertEquals(kind.dropId(), LotmEcologyRules.DROPS.get(kind.id()),
+                    "Drop mapping mismatch for " + kind.id());
         }
     }
 
     @Test
-    void legacyVanillaVariantsDefaultOffWhileIndependentCreaturesDefaultOn() {
-        assertFalse(LotmConfig.CREATURE_VARIANTS.get());
-        assertTrue(LotmConfig.CREATURE_ENTITIES.get());
+    void independentCreaturesAreEnabledByDefaultAndLegacySystemsAreDisabled() {
+        assertTrue(LotmConfig.DEFAULT_CREATURE_ENTITIES);
+        assertFalse(LotmConfig.DEFAULT_CREATURE_VARIANTS);
+        assertFalse(LotmConfig.DEFAULT_RELIC_SITES);
     }
 }

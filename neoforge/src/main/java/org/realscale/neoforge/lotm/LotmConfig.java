@@ -4,6 +4,9 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 
 /** Server-side gameplay tuning. Existing terrain and biome selectors are unchanged. */
 public final class LotmConfig {
+    public static final boolean DEFAULT_CREATURE_ENTITIES = true;
+    public static final boolean DEFAULT_CREATURE_VARIANTS = false;
+    public static final boolean DEFAULT_RELIC_SITES = false;
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue ENABLED;
     public static final ModConfigSpec.BooleanValue CREATURE_ENTITIES;
@@ -23,11 +26,11 @@ public final class LotmConfig {
         ENABLED = b.comment("Enable LOTM gameplay and low-sequence progression.")
                 .define("enabled", true);
         CREATURE_ENTITIES = b.comment("Enable the ten independent LOTM creature EntityTypes and their natural spawns.")
-                .define("creatureEntities", true);
+                .define("creatureEntities", DEFAULT_CREATURE_ENTITIES);
         CREATURE_VARIANTS = b.comment("Legacy vanilla-mob stand-ins; disabled by default when independent creatures are enabled.")
-                .define("creatureVariants", false);
+                .define("creatureVariants", DEFAULT_CREATURE_VARIANTS);
         RELIC_SITES = b.comment("Legacy custom relic-site placement. Disabled; use vanilla structure loot instead.")
-                .define("relicSites", false);
+                .define("relicSites", DEFAULT_RELIC_SITES);
         VARIANT_RARITY_PERCENT = b.comment("Legacy stand-in frequency percent relative to default (50 = half, 200 = double).")
                 .defineInRange("variantRatePercent", 100, 1, 300);
         RELIC_RARITY = b.comment("Legacy relic-site chance denominator; retained for old config compatibility.")
