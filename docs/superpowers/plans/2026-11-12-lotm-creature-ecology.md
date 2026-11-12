@@ -47,27 +47,21 @@
 
   Replace the unsupported `MobType` import and `LivingEntity#getMobType()` call with the prior three-class predicate (`Zombie`, `Skeleton`, `Phantom`). This is a narrow rollback of the uncompiled API attempt, not the final implementation.
 
-- [x] **Step 2: Add the failing tag-classification test**
+- [x] **Step 2: Add the null-guard test**
 
-  Add `LotmSkillsTest.usesVanillaUndeadEntityTypeTagForClassification`. Assert that zombie, skeleton, phantom, and wither entity types are classified as undead; assert that cow and creeper are not; assert that null is rejected.
+  Add `LotmSkillsTest.nullEntityTypeIsRejectedBeforeVanillaTagLookup`. The JUnit test covers null safety only; vanilla tag membership is checked by the existing source/resource QA and still needs a loader-aware runtime assertion.
 
-- [ ] **Step 3: Run the focused test and confirm RED**
+- [ ] **Step 3: Record the RED run**
 
-  Run from `neoforge/`:
-
-  ```bash
-  ./gradlew test --tests org.realscale.neoforge.lotm.LotmSkillsTest
-  ```
-
-  Expected: test compilation fails because `LotmSkills.isUndeadType(EntityType<?>)` has not yet been implemented. The main source set must compile.
+  A pre-implementation focused RED run was not captured. Do not claim a complete TDD red-green cycle for this classifier.
 
 - [x] **Step 4: Implement the tag-based classifier**
 
   Add `static boolean isUndeadType(EntityType<?> type)` to `LotmSkills`, returning false for null and otherwise checking `type.is(EntityTypeTags.UNDEAD)`. Make `isUndead(LivingEntity entity)` delegate to `isUndeadType(entity.getType())`.
 
-- [ ] **Step 5: Run the focused test and confirm GREEN**
+- [x] **Step 5: Verify the available JUnit guard and static tag contract**
 
-  Run the same command. Expected: all assertions pass. If vanilla tags are not loaded in the plain JUnit environment, retain the tag-based production implementation and move the membership assertion to a loader-aware test; do not substitute a hand-maintained entity list.
+  On final head `e510ef3c361e11b4a68b2790b56851265771705b`, `LotmSkillsTest.nullEntityTypeIsRejectedBeforeVanillaTagLookup()` passed. The Python QA test `test_corpse_collector_uses_the_vanilla_undead_entity_type_tag` also passed and checks the production call against `EntityTypeTags.UNDEAD`. Runtime membership for Wither, Skeleton, Zombie, and other tagged entities is not yet verified in a loaded server tag registry.
 
 - [x] **Step 6: Commit Task 1**
 
@@ -99,15 +93,9 @@
   - A non-nocturnal creature in its valid biome can still spawn at `6000`.
   - Null kind, blank biome, and unrelated biome fail closed.
 
-- [ ] **Step 2: Run the focused test and confirm RED**
+- [ ] **Step 2: Record the RED run**
 
-  Run:
-
-  ```bash
-  ./gradlew test --tests org.realscale.neoforge.lotm.LotmCreatureSpawnRulesTest
-  ```
-
-  Expected: compile or assertion failure because the new helper methods do not exist yet.
+  A pre-implementation focused RED run was not captured. The boundary tests were present before the production helper was wired, but this plan does not claim a verified RED run.
 
 - [x] **Step 3: Implement the pure time policy**
 
@@ -117,9 +105,9 @@
 
   In `LotmCreatureEntities.registerSpawnPlacements`, obtain world time through the pinned 1.21.1 `ServerLevelAccessor#getLevel().getDayTime()` API and call `canSpawnAt`. Preserve config checks, current biome check semantics, aquatic water-column validation, and `Mob.checkMobSpawnRules` for ground entities.
 
-- [ ] **Step 5: Run the focused test and confirm GREEN**
+- [x] **Step 5: Verify the focused tests in the full JUnit suite**
 
-  Run the same focused command. Expected: all boundary, wrap, habitat, and diurnal/nocturnal assertions pass.
+  On final head `e510ef3c361e11b4a68b2790b56851265771705b`, the boundary, wrap, habitat, and diurnal/nocturnal tests all passed in the 102-test JUnit run.
 
 - [x] **Step 6: Commit Task 2**
 
@@ -143,21 +131,15 @@
 
   Extend `LotmCreatureBehaviorTest` to assert that the existing nocturnal species (Nightmare Eye, Night Owl, Shroudman, Death Crow) are the only roster entries with nocturnal metadata; keep the existing unique signature-profile assertions.
 
-- [ ] **Step 2: Run the focused behavior test**
+- [ ] **Step 2: Record the pre-implementation focused run**
 
-  Run:
-
-  ```bash
-  ./gradlew test --tests org.realscale.neoforge.lotm.LotmCreatureBehaviorTest
-  ```
-
-  Expected: PASS for the existing roster and signature-profile contract before adding the goal.
+  The focused behavior test was not run before adding the goal. The resulting roster and signature-profile tests passed in the full JUnit suite.
 
 - [x] **Step 3: Add the daytime rest goal**
 
   Add a nested `NocturnalRestGoal` with the MOVE flag. It can start and continue while `!LotmCreatureSpawnRules.isNocturnalActive(creature.level().getDayTime())`; its tick stops navigation and zeroes drift, and it returns true from `requiresUpdateEveryTick()`. Register it at priority 4 only for nocturnal kinds. Update `NocturnalPlayerTargetGoal` so both `canUse()` and `canContinueToUse()` require the shared night window; this releases player targets at sunrise. Preserve the higher-priority attack, hurt-by-target, avoidance, and panic goals.
 
-- [ ] **Step 4: Run the full JUnit suite**
+- [x] **Step 4: Run the full JUnit suite**
 
   Run:
 
@@ -165,7 +147,7 @@
   ./gradlew test
   ```
 
-  Expected: all existing and new tests pass.
+  Verified on final head `e510ef3c361e11b4a68b2790b56851265771705b`: 102 JUnit tests passed under both Gradle 8.14.3 and Gradle 9.8.
 
 - [x] **Step 5: Commit Task 3**
 
@@ -181,7 +163,7 @@
 - Modify: `docs/superpowers/specs/2026-11-12-lotm-creature-ecology-design.md`
 - Modify: this plan's progress section / implementation ledger.
 
-- [ ] **Step 1: Run the complete Java and Python test suites**
+- [x] **Step 1: Run the complete Java and Python test suites**
 
   Run from `neoforge/`:
 
@@ -195,20 +177,25 @@
   python3 -m unittest discover -s qa -p "test_*.py"
   ```
 
-  Expected: both commands exit 0.
+  Verified on final head `e510ef3c361e11b4a68b2790b56851265771705b`: the source-integrity workflow completed successfully, with 102 JUnit tests passing, 301 Python tests passing across the workflow log, and both LOTM-specific resource suites passing (20 tests total).
 
-- [ ] **Step 2: Verify all CI lanes on the final branch head**
+- [x] **Step 2: Verify the LOTM-relevant CI lanes on the final branch head**
 
   Confirm fresh successful runs for:
   - Source integrity, tests, and NeoForge build.
   - Gradle 9.8 client task and NeoForge build compatibility.
   - NeoForge dedicated server and saved-block verification.
 
-  Expected: all three workflows complete successfully on the exact final HEAD SHA. A successful server boot alone does not make the full branch green.
+  Verified on exact final HEAD `e510ef3c361e11b4a68b2790b56851265771705b`:
+  - Source integrity, tests and NeoForge build: run `43245209159` — success.
+  - Gradle 9.8 client-task discovery, JUnit and full NeoForge build: run `43245208204` — success.
+  - NeoForge dedicated-server and saved-block verification: run `43245208237` — success.
 
-- [ ] **Step 3: Record evidence and known limits**
+  One separate, non-LOTM APES 16-biome gallery workflow (`43245208196`) failed after the worldgen process stalled at 51% spawn preparation and its local RCON socket closed. It is recorded as an unrelated repository-level failure; it does not invalidate the LOTM-focused test/build evidence, but the whole PR workflow set is not completely green.
 
-  Update the parent spec and progress ledger with exact commit SHA, test counts, workflow run IDs, and any deferred issues. Distinguish unit-tested, statically validated, runtime-verified, and player-playtested behavior.
+- [x] **Step 3: Record evidence and known limits**
+
+  Updated the parent spec and this ledger with exact commit SHA, test counts, workflow run IDs, and known limits. Unit tests and static resource checks are green; a dedicated server booted; actual nocturnal spawn counts/day-night AI transitions and runtime undead-tag membership have not yet been player- or GameTest-verified.
 
 - [ ] **Step 4: Commit documentation**
 
