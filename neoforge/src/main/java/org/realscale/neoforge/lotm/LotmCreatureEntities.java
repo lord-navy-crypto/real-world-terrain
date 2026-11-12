@@ -1,5 +1,6 @@
 package org.realscale.neoforge.lotm;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
@@ -47,7 +48,7 @@ public final class LotmCreatureEntities {
     }
 
     public static Set<LotmCreatureKind> registeredKinds() {
-        return LotmCreatureRegistryIds.activeKinds();
+        return Collections.unmodifiableSet(EnumSet.copyOf(TYPES.keySet()));
     }
 
     public static Supplier<EntityType<LotmCreature>> type(LotmCreatureKind kind) {
