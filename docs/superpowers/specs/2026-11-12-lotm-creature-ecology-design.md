@@ -74,3 +74,17 @@ Biome modifiers select which biomes receive spawn entries; they do not express t
 - Day-rest behavior does not make passive nocturnal creatures hostile and does not suppress higher-priority avoidance/defense; hostile nocturnal target goals stop continuing when daylight begins.
 - The full JUnit suite, Python source/resource tests, Gradle 8.14.3 build, Gradle 9.8 compatibility lane, and dedicated-server boot all pass on the final branch head.
 - Sequence 7 remains archived and untouched.
+
+## Verification record
+
+Exact verified feature head: `e510ef3c361e11b4a68b2790b56851265771705b`.
+
+- Source integrity / Gradle 8.14.3 workflow `43245209159`: success; 102 JUnit tests passed, and the LOTM resource suites passed 20 tests.
+- Gradle 9.8 workflow `43245208204`: success; JUnit discovery, tests, and full NeoForge build passed.
+- Dedicated-server workflow `43245208237`: success; NeoForge server boot and saved-block verification passed.
+- The source QA confirms Corpse Collector uses `EntityTypeTags.UNDEAD`; the Java unit test covers null rejection. Loaded-registry tag membership remains an integration-test item.
+- The time-window tests, habitat/time tests, and nocturnal roster test all passed in the 102-test JUnit run.
+- No targeted in-world test has yet measured actual nocturnal spawn frequency or confirmed sunrise transitions in a running world.
+- Separate non-LOTM APES 16-biome gallery workflow `43245208196` failed during its own worldgen run after remaining at 51% spawn preparation and losing its local RCON connection. This does not invalidate the LOTM-focused checks, but the entire repository workflow set was not green.
+
+Implementation status: code and unit/static checks are complete for the bounded time-of-day slice; actual in-world behavior and the undead tag's loaded-registry membership remain open acceptance items.
