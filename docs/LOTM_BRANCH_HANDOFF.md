@@ -43,11 +43,46 @@ Sequence 7 IDs and documentation are retained for save compatibility and future 
 - `LotmPlayerAbilityRegistry.java` / `LotmPlayerAbilitySync.java`: Player Abilities integration.
 - `LotmContent.java`: stable items, blocks, materials, potions, and characteristics.
 - `LotmAlchemyContent.java`, `LotmAlchemyBlockEntity.java`, `LotmAlchemyRecipe.java`: alchemy apparatus and recipes.
-- `LotmEcologyRules.java`: current active/archived creature roster, legacy biome selection and drop IDs.
-- `LotmEvents.java`: server-side join, drop, tick, clone hooks.
-- `LotmWorldgen.java` / `LotmRelicSiteFeature.java`: custom relic-site feature registration and placement support.
-- `scripts/generate_lotm_visuals.py`: deterministic, standard-library-only generation of LOTM item/block/ability textures.
-- `neoforge/src/main/java/org/realscale/neoforge/lotm/client`: GeckoLib alchemy model and renderer; follow this existing pattern.
+- `LotmEcologyRules.java`: active/archived legacy variant roster and stable material drop IDs.
+- `LotmCreatureKind.java` / `LotmCreatureSpawnRules.java`: ten active independent creature definitions and pure habitat checks.
+- `LotmCreatureEntities.java` / `LotmCreature.java` / `LotmCreatureBehavior.java`: ten registered EntityTypes, attributes, movement, AI and signature behavior profiles.
+- `LotmEvents.java`: server-side legacy compatibility, drops, player tick and clone hooks.
+- `LotmWorldgen.java` / `LotmRelicSiteFeature.java`: legacy relic-site feature remains registered for compatibility, but its biome modifier is disabled (`neoforge:none`) and it must not be re-enabled.
+- `scripts/generate_lotm_visuals.py`: deterministic, standard-library-only generation of item/block/ability textures plus ten creature texture/geometry/animation bundles.
+- `neoforge/src/main/java/org/realscale/neoforge/lotm/client`: shared GeckoLib creature model/renderer and alchemy model/renderer.
+- `neoforge/src/main/resources/data/realscale/neoforge/biome_modifier/lotm_*_spawns.json`: ten habitat-limited natural spawn modifiers.
+
+## Current implementation status (2026-11-12)
+
+The current branch has moved beyond the original vanilla-variant pilot:
+
+- Ten stable creature kinds are represented by ten independent `realscale:lotm_<id>` EntityTypes.
+- Per-kind dimensions, spawn categories, attributes, habitats, group sizes and material drop IDs are centralized in `LotmCreatureKind`.
+- Shared `LotmCreature` supplies land, water and flying navigation plus common AI goals. `LotmCreatureBehavior` assigns one signature behavior to each active creature:
+  - Starlit Squid: chance-based ink-cloak evasion.
+  - Nightmare Eye: disorienting gaze on hit.
+  - Night Owl: nocturnal escape speed.
+  - Black-Spotted Frog: spring/jump escape.
+  - Shroudman: slowing attack.
+  - Hornacis Goat: countercharge response.
+  - Ironarm Beast: armored heavy attacker.
+  - Four-Eyed Turtle: defensive resistance when weakened.
+  - Crimson Howler: nearby same-kind pack speed buff.
+  - Death Crow: aerial hunter with a slowing strike.
+- The shared GeckoLib renderer resolves species-specific resources by stable creature ID. The generator emits 64x64 original textures, geometry JSON and idle/walk/attack/hurt/death animation JSON for all ten kinds during Gradle `processResources`.
+- Ten `neoforge:add_spawns` biome modifiers use the intended vanilla/RealScale habitat lists and low spawn weights. The squid requires a water column.
+- The old custom relic-site biome modifier is explicitly disabled with `neoforge:none`. Keep the old block and feature registrations only for compatibility; do not place custom ruins or relic sites.
+- `CREATURE_ENTITIES` gates new natural spawning. Turning it off must not remove drops from creatures already in a world. `CREATURE_VARIANTS` defaults off; old tagged stand-ins remain readable.
+- Sequence 7 remains archived and is not included in entity registration or spawn modifiers.
+
+**Still requiring verification / polish:**
+
+1. Check the latest `Source integrity, tests and NeoForge build` and dedicated-server workflow against the current branch head before claiming the milestone passes.
+2. Confirm all ten entities actually spawn at reasonable rates in a saved test world; adjust weight and group size only from observed spawn density.
+3. Inspect the generated models/textures in-game; the current procedural block models are a functional first art pass, not the final visual polish.
+4. Add deeper species-specific navigation, animation timing, sounds and non-combat behaviors after runtime stability.
+5. Only after creature acceptance, proceed to expanded materials/minerals, alchemy recipes, pathway skills and supernatural energy.
+6. Vanilla structure loot integration remains a later phase; no custom structure or ruin generation is in scope.
 
 ## Active creature roster
 
