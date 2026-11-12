@@ -1,15 +1,3 @@
 {
-  "type": "neoforge:add_features",
-  "biomes": [
-    "minecraft:plains",
-    "minecraft:forest",
-    "minecraft:dark_forest",
-    "minecraft:taiga",
-    "minecraft:swamp",
-    "realscale:woodland_meadow",
-    "realscale:oak_to_dark_forest",
-    "realscale:seasonal_floodforest"
-  ],
-  "features": "realscale:lotm_relic_site",
-  "step": "surface_structures"
+  "type": "neoforge:none"
 }
