@@ -178,19 +178,35 @@ Before changing the existing 4%, 5.5%, 7.5%, and 10% triggers:
 
 ### First hardening pass
 
-The branch added `LotmCreatureRegistryIds`, isolated the pure registry-ID test from NeoForge's `DeferredRegister` lifecycle, added a registration guard, and updated Seer detection to recognize the independent `LotmCreature` entities. These changes are on the working branch; their complete current-head regression status remains pending.
+The branch added LotmCreatureRegistryIds, isolated the pure registry-ID test from NeoForge's DeferredRegister lifecycle, added a registration guard, and updated Seer detection to recognize the independent LotmCreature entities. The current-head source-integrity and build workflow passed, including the LOTM registry and creature tests.
 
 ### Current creature-ecology implementation
 
-The following are implemented on the working branch, but have not yet been verified by a fresh CI run on the current feature head:
+The following changes are present on the feature branch:
 
-- Corpse Collector now classifies undead using the pinned 1.21.1 `EntityTypeTags.UNDEAD` tag rather than a three-class list.
-- `LotmCreatureSpawnRules` now normalizes absolute world time with `floorMod(dayTime, 24000)` and defines the Overworld night interval as `[13000, 23000)`.
+- Corpse Collector classifies undead through the pinned 1.21.1 EntityTypeTags.UNDEAD tag, replacing the earlier Zombie/Skeleton/Phantom-only check.
+- LotmCreatureSpawnRules normalizes absolute world time with floorMod(dayTime, 24000) and defines the night interval as [13000, 23000).
 - The actual entity spawn-placement predicate applies the shared biome/time rule while preserving the existing water-column and vanilla ground-placement checks.
-- The four species already marked nocturnal receive a daytime rest goal. Higher-priority panic, avoidance, retaliation, and attack goals remain available; hostile nocturnal target selection stops continuing at sunrise.
-- Focused JUnit tests have been added for undead classification, time boundaries/wrapping, habitat/time interaction, and the nocturnal species roster.
+- All four species whose metadata marks them nocturnal receive a daytime rest goal. The Night Owl remains non-hostile; higher-priority panic, avoidance, retaliation, and attack goals remain available. Hostile nocturnal target selection stops continuing when daylight begins.
+- Unit tests cover the exact night boundaries, wrapped absolute time, habitat/time interaction, and the four-species nocturnal roster.
+- The Corpse Collector Java unit test currently checks the null guard only. A Python source/resource test confirms the production implementation uses EntityTypeTags.UNDEAD; actual tag membership still needs a loader-aware runtime assertion.
 
-**Verification is still pending:** the focused JUnit tests, full Gradle 8.14.3 build, Gradle 9.8 compatibility workflow, Python QA, dedicated-server boot, and in-world day/night behavior must all be checked on the exact current branch head. Do not treat code commits or the earlier Gradle 9.8 recovery run as a green build.
+### Current-head verification evidence
+
+All references below are for exact feature head e510ef3c361e11b4a68b2790b56851265771705b (2026-11-12):
+
+| Check | Workflow run | Result |
+|---|---:|---|
+| Source integrity, LOTM resource checks, 102 JUnit tests, full NeoForge build | 43245209159 | **Passed** |
+| Gradle 9.8 client-task discovery, JUnit suite, full build | 43245208204 | **Passed** |
+| NeoForge dedicated-server boot and saved-block verification | 43245208237 | **Passed** |
+| LOTM Python resource suites | Included in 43245209159 | **20 tests passed** |
+
+The source-integrity workflow log contains 102 passing JUnit tests and 301 passing Python test cases across its test steps. The two LOTM-specific Python suites contributed 20 passing tests. The Gradle 9.8 workflow independently ran JUnit and the full NeoForge build successfully. The dedicated-server workflow also booted successfully.
+
+**Known unrelated CI failure:** APES 16-biome gallery workflow 43245208196 failed while preparing its separate worldgen test: spawn preparation remained at 51%, then its local RCON socket closed. This is not a LOTM test, but means the complete repository workflow set on that head was not entirely green.
+
+**Still not runtime-verified:** actual nocturnal spawn frequency, dawn/sunrise AI transitions, and loaded-registry undead tag membership have not yet been checked in a targeted in-world/GameTest scenario. The successful dedicated-server boot proves integration/startup, not those specific gameplay outcomes.
 
 ## 9.1. Research and implementation documents
 
