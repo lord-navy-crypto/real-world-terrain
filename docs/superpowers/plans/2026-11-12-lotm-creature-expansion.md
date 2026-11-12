@@ -104,18 +104,24 @@
 - Modify: `neoforge/src/main/resources/data/realscale/neoforge/biome_modifier/lotm_relic_site.json` to disable it with `neoforge:none` while preserving its stable path
 - Modify: `neoforge/src/main/java/org/realscale/neoforge/lotm/LotmConfig.java`
 - Modify: `docs/lotm-rpg-alchemy-system.md`
-- Test: `qa/test_lotm_creature_assets.py` (also checks habitat spawn JSON and relic-site shutdown)
+- Create: `neoforge/src/main/resources/data/neoforge/loot_modifiers/global_loot_modifiers.json`
+- Create: four scoped modifiers under `neoforge/src/main/resources/data/realscale/loot_modifiers/`
+- Create: four supplementary chest tables under `neoforge/src/main/resources/data/realscale/loot_table/lotm/structure/`
+- Test: `qa/test_lotm_creature_assets.py` (also checks habitat spawns, relic-site shutdown and vanilla loot integration)
 
 **Interfaces:**
 - Spawn modifiers use `neoforge:add_spawns` and only intended biome IDs.
 - The existing relic-cache block and feature registration may remain for old-world compatibility, but no normal biome modifier places it.
-- Sequence 7 remains excluded from all new spawns.
+- Vanilla structure loot uses additive `neoforge:add_table` modifiers scoped by `neoforge:loot_table_id`; `replace:false` preserves existing loot.
+- Supplementary loot tables contain registered LOTM materials and Sequence 9/8 characteristics only; Sequence 7 remains excluded.
 
 - [ ] Write tests for all ten biome modifier JSON files, expected categories, group sizes, and archived-variant exclusion.
 - [ ] Run tests first and confirm missing modifier files fail.
 - [x] Add ten habitat biome modifiers using each kind's spawn weight and group-size metadata.
 - [x] Disable the custom relic-site biome modifier without removing existing block/entity IDs or unrelated worldgen.
-- [ ] Update the RPG guide to explain that later special characteristics/materials are planned for vanilla structure loot, not custom ruins.
+- [x] Add four additive, low-probability loot modifiers for vanilla dungeon, mineshaft, stronghold corridor and ancient-city chests.
+- [x] Add supplementary loot tables with registered LOTM materials and rare Sequence 9/8 characteristics; preserve vanilla loot and exclude Sequence 7.
+- [x] Update the RPG guide to explain that rare finds come from vanilla chest loot, not custom ruins.
 - [ ] Run spawn tests, full QA tests, and the PR server smoke workflow.
 - [ ] Commit as `feat(lotm): spawn occult creatures in vanilla and RealScale biomes`.
 
