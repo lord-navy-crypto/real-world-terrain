@@ -240,6 +240,31 @@ def creature_pixel(creature_id: str, x: int, y: int) -> tuple[int, int, int, int
     return rgba(color)
 
 
+def hashbyte(value: str) -> int:
+    """Stable one-byte hash; unlike hash(), this is reproducible across processes."""
+    return hashlib.sha256(value.encode("utf-8")).digest()[0]
+
+
+def rgba(rgb: tuple[int, int, int]) -> tuple[int, int, int, int]:
+    return (rgb[0], rgb[1], rgb[2], 255)
+
+
+def pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
+    """Small deterministic icon palette for the existing LOTM item/block assets."""
+    seed = hashbyte(name)
+    palettes = (
+        ((34, 44, 58), (77, 117, 142), (161, 204, 216), (216, 232, 224)),
+        ((52, 38, 58), (111, 68, 112), (184, 119, 177), (233, 191, 218)),
+        ((38, 54, 42), (77, 111, 69), (145, 172, 101), (216, 221, 163)),
+        ((62, 48, 34), (126, 92, 52), (190, 149, 82), (231, 205, 145)),
+    )
+    palette = palettes[seed % len(palettes)]
+    tile = (x // 4 + y // 4 + seed) % 4
+    border = x in (0, 15) or y in (0, 15)
+    diagonal = (x + y + seed) % 7 == 0
+    return rgba(palette[0] if border else palette[3] if diagonal else palette[tile])
+
+
 def _png_bytes(width: int, height: int, pixel_fn) -> bytes:
     def chunk(kind: bytes, data: bytes) -> bytes:
         return struct.pack(">I", len(data)) + kind + data + struct.pack(
@@ -253,18 +278,106 @@ def _png_bytes(width: int, height: int, pixel_fn) -> bytes:
             + chunk(b"IEND", b""))
 
 
+def _geometry_payload(creature_id: str, spec: dict) -> dict:
+    return {
+        "format_version": "1.12.0",
+        "minecraft:geometry": [{
+            "description": {
+                "identifier": f"geometry.realscale.lotm_{creature_id}",
+                "texture_width": 64,
+                "texture_height": 64,
+                "visible_bounds_width": 3.5,
+                "visible_bounds_height": 3.0,
+                "visible_bounds_offset": [0, 1.0, 0],
+            },
+            "bones": spec["bones"],
+        }],
+    }
 
-def _png_bytes(width: int, height: int, pixel_fn) -> bytes:
-    def chunk(kind: bytes, data: bytes) -> bytes:
-        return struct.pack(">I", len(data)) + kind + data + struct.pack(
-            ">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
-    raw = b"".join(
-        b"\x00" + bytes(channel for x in range(width) for channel in pixel_fn(x, y))
-        for y in range(height))
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
-            + chunk(b"IDAT", zlib.compress(raw, level=9))
-            + chunk(b"IEND", b""))
+
+def _animation_payload(creature_id: str, spec: dict) -> dict:
+    prefix = f"animation.{creature_id}."
+    walk_tracks = {}
+    for index, bone_name in enumerate(spec["walk_bones"]):
+        swing = 20 if index % 2 == 0 else -20
+        walk_tracks[bone_name] = {
+            "rotation": {
+                "0.0": [swing, 0, 0],
+                "0.4": [-swing, 0, 0],
+                "0.8": [swing, 0, 0],
+            }
+        }
+    attack_tracks = {}
+    for index, bone_name in enumerate(spec["attack_bones"]):
+        swing = -26 if index % 2 == 0 else 26
+        attack_tracks[bone_name] = {
+            "rotation": {
+                "0.0": [0, 0, 0],
+                "0.18": [swing, 0, 0],
+                "0.45": [0, 0, 0],
+            }
+        }
+    return {
+        "format_version": "1.8.0",
+        "animations": {
+            prefix + "idle": {
+                "loop": True,
+                "animation_length": 2.0,
+                "bones": {
+                    "body": {"rotation": {"0.0": [0, 0, 0], "1.0": [0, 2, 0], "2.0": [0, 0, 0]}},
+                    "head": {"rotation": {"0.0": [0, 0, 0], "1.0": [2, 0, 0], "2.0": [0, 0, 0]}},
+                },
+            },
+            prefix + "walk": {
+                "loop": True,
+                "animation_length": 0.8,
+                "bones": walk_tracks,
+            },
+            prefix + "attack": {
+                "loop": False,
+                "animation_length": 0.45,
+                "bones": attack_tracks,
+            },
+            prefix + "hurt": {
+                "loop": False,
+                "animation_length": 0.35,
+                "bones": {
+                    "body": {"rotation": {"0.0": [0, 0, 0], "0.12": [0, 0, 10], "0.35": [0, 0, 0]}}
+                },
+            },
+            prefix + "death": {
+                "loop": False,
+                "animation_length": 0.9,
+                "bones": {
+                    "root": {
+                        "rotation": {"0.0": [0, 0, 0], "0.9": [0, 0, 78]},
+                        "position": {"0.0": [0, 0, 0], "0.9": [0, -4, 0]},
+                    }
+                },
+            },
+        },
+    }
+
+
+def generate_creature_assets(output: Path) -> None:
+    assets = output / "assets" / "realscale"
+    texture_dir = assets / "textures" / "entity"
+    geometry_dir = assets / "geo"
+    animation_dir = assets / "animations"
+    for directory in (texture_dir, geometry_dir, animation_dir):
+        directory.mkdir(parents=True, exist_ok=True)
+
+    for creature_id, spec in CREATURES.items():
+        (texture_dir / f"lotm_{creature_id}.png").write_bytes(
+            _png_bytes(64, 64, lambda x, y, cid=creature_id: creature_pixel(cid, x, y)))
+        (geometry_dir / f"lotm_{creature_id}.geo.json").write_text(
+            json.dumps(_geometry_payload(creature_id, spec), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        (animation_dir / f"lotm_{creature_id}.animation.json").write_text(
+            json.dumps(_animation_payload(creature_id, spec), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
 
 
 def png_bytes(name: str) -> bytes:
