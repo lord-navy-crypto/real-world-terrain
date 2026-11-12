@@ -69,10 +69,11 @@
 - [ ] Write registry metadata tests for ten distinct IDs, category, dimensions, and kind-to-drop mapping.
 - [ ] Run focused test and confirm missing registry metadata fails.
 - [ ] Implement a shared `PathfinderMob` entity with per-kind AI goals, attack response, and GeckoLib animation cache.
-- [ ] Register all ten EntityTypes and their default attributes.
-- [ ] Register ground/water spawn placements and gate them on LOTM + creature config.
-- [ ] Update drops to use the custom entity kind; preserve legacy drop mapping for already-tagged old entities.
-- [ ] Run focused and full JUnit suites.
+- [x] Register all ten EntityTypes and their default attributes.
+- [x] Register ground/water spawn placements and gate them on LOTM + creature config.
+- [x] Update drops to use the custom entity kind; preserve legacy drop mapping for already-tagged old entities.
+- [x] Add distinct signature behavior profiles and server-side special effects for the ten active creatures.
+- [ ] Run focused and full JUnit suites against the latest branch head.
 - [ ] Commit as `feat(lotm): register independent occult creatures`.
 
 ### Task 3: Add GeckoLib renderers and deterministic original assets
@@ -89,21 +90,21 @@
 - Produces per-kind `geo/lotm_<id>.geo.json`, `animations/lotm_<id>.animation.json`, and `textures/entity/lotm_<id>.png`.
 - Renderer uses the same stable ID and never performs file or network access at runtime.
 
-- [ ] Write asset-generator tests that assert ten complete model/animation/texture outputs and valid JSON references.
-- [ ] Run the test first and confirm it fails because the new generated assets do not exist.
-- [ ] Extend the existing standard-library-only generator to create deterministic 64×64 original textures and species-specific geometry/animation JSON.
-- [ ] Add one dynamic GeckoLib model and renderer class and register the ten entity renderers on the client mod bus.
-- [ ] Run generator tests and all QA tests.
+- [x] Write asset-generator tests that assert ten complete model/animation/texture outputs and valid JSON references.
+- [x] Run the test first and confirm it fails because the new generated assets do not exist.
+- [x] Extend the existing standard-library-only generator to create deterministic 64×64 original textures and species-specific geometry/animation JSON.
+- [x] Add one dynamic GeckoLib model and renderer class and register the ten entity renderers on the client mod bus.
+- [ ] Run generator tests and all QA tests against the latest branch head.
 - [ ] Commit as `feat(lotm): add original GeckoLib creature assets`.
 
 ### Task 4: Add habitat spawns and remove custom relic-site placement
 
 **Files:**
-- Create: ten JSON files under `neoforge/src/main/resources/data/realscale/neoforge/biome_modifier/lotm_spawn_<id>.json`
-- Delete: `neoforge/src/main/resources/data/realscale/neoforge/biome_modifier/lotm_relic_site.json`
+- Create: ten JSON files under `neoforge/src/main/resources/data/realscale/neoforge/biome_modifier/lotm_<id>_spawns.json`
+- Modify: `neoforge/src/main/resources/data/realscale/neoforge/biome_modifier/lotm_relic_site.json` to disable it with `neoforge:none` while preserving its stable path
 - Modify: `neoforge/src/main/java/org/realscale/neoforge/lotm/LotmConfig.java`
 - Modify: `docs/lotm-rpg-alchemy-system.md`
-- Test: `qa/test_lotm_creature_spawns.py`
+- Test: `qa/test_lotm_creature_assets.py` (also checks habitat spawn JSON and relic-site shutdown)
 
 **Interfaces:**
 - Spawn modifiers use `neoforge:add_spawns` and only intended biome IDs.
@@ -112,8 +113,8 @@
 
 - [ ] Write tests for all ten biome modifier JSON files, expected categories, group sizes, and archived-variant exclusion.
 - [ ] Run tests first and confirm missing modifier files fail.
-- [ ] Add biome modifiers using each kind's spawn weight and group-size metadata.
-- [ ] Remove only the custom relic-site placement modifier; do not remove existing block/entity IDs or unrelated worldgen.
+- [x] Add ten habitat biome modifiers using each kind's spawn weight and group-size metadata.
+- [x] Disable the custom relic-site biome modifier without removing existing block/entity IDs or unrelated worldgen.
 - [ ] Update the RPG guide to explain that later special characteristics/materials are planned for vanilla structure loot, not custom ruins.
 - [ ] Run spawn tests, full QA tests, and the PR server smoke workflow.
 - [ ] Commit as `feat(lotm): spawn occult creatures in vanilla and RealScale biomes`.
@@ -126,7 +127,7 @@
 - Modify: `docs/lotm-sequence9-pilot.md`
 
 - [ ] Document branch purpose, PR, runtime dependencies, architecture, source paths, asset generator, config flags, test commands, and explicit non-goals for future agents.
-- [ ] Run `./gradlew test`, `./gradlew build`, Python QA tests, and the PR server smoke workflow.
+- [ ] Run `./gradlew test`, `./gradlew build`, Python QA tests, and the PR server smoke workflow against the latest branch head.
 - [ ] Inspect the PR diff to confirm no main-branch changes and no terrain-generation files changed.
 - [ ] Commit as `docs(lotm): add creature expansion handoff`.
 
