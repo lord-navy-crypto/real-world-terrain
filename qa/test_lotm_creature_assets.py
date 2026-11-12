@@ -149,5 +149,39 @@ class LotmCreatureAssetTests(unittest.TestCase):
         self.assertEqual({"type": "neoforge:none"}, json.loads(path.read_text(encoding="utf-8")))
 
 
+    def test_vanilla_structure_loot_is_additive_and_scoped(self):
+        data_root = ROOT / "neoforge/src/main/resources/data"
+        global_path = data_root / "neoforge/loot_modifiers/global_loot_modifiers.json"
+        global_data = json.loads(global_path.read_text(encoding="utf-8"))
+        self.assertFalse(global_data["replace"])
+        expected = {
+            "lotm_dungeon_loot": ("minecraft:chests/simple_dungeon", "realscale:lotm/structure/dungeon"),
+            "lotm_mineshaft_loot": ("minecraft:chests/abandoned_mineshaft", "realscale:lotm/structure/mineshaft"),
+            "lotm_stronghold_loot": ("minecraft:chests/stronghold_corridor", "realscale:lotm/structure/stronghold"),
+            "lotm_ancient_city_loot": ("minecraft:chests/ancient_city", "realscale:lotm/structure/ancient_city"),
+        }
+        self.assertEqual({f"realscale:{name}" for name in expected}, set(global_data["entries"]))
+        for name, (vanilla_table, custom_table) in expected.items():
+            modifier_path = data_root / "realscale/loot_modifiers" / f"{name}.json"
+            modifier = json.loads(modifier_path.read_text(encoding="utf-8"))
+            conditions = modifier["conditions"]
+            table_condition = next(c for c in conditions if c["condition"] == "neoforge:loot_table_id")
+            chance_condition = next(c for c in conditions if c["condition"] == "minecraft:random_chance")
+            self.assertEqual("neoforge:add_table", modifier["type"])
+            self.assertEqual(vanilla_table, table_condition["loot_table_id"])
+            self.assertEqual(custom_table, modifier["table"])
+            self.assertGreater(chance_condition["chance"], 0.0)
+            self.assertLess(chance_condition["chance"], 0.15)
+
+            table_path = data_root / "realscale/loot_table" / (custom_table.split(":", 1)[1] + ".json")
+            loot_table = json.loads(table_path.read_text(encoding="utf-8"))
+            self.assertEqual("minecraft:chest", loot_table["type"])
+            entries = [entry for pool in loot_table["pools"] for entry in pool["entries"]]
+            item_ids = {entry["name"] for entry in entries if entry.get("type") == "minecraft:item"}
+            self.assertTrue(item_ids)
+            self.assertTrue(all(item_id.startswith("realscale:lotm_") for item_id in item_ids))
+
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -28,6 +28,8 @@ jobs:
         run: python3 qa/verify_repository.py
       - name: Validate active LOTM Sequence 9/8 resources and archived Sequence 7 boundaries
         run: python3 -m unittest discover -s qa -p 'test_lotm_sequence9_8_resources.py' -v
+      - name: Validate independent LOTM creature assets, habitats and vanilla loot
+        run: python3 -m unittest discover -s qa -p 'test_lotm_creature_assets.py' -v
       - name: Validate custom biome registry resources (static)
         run: python3 scripts/check_custom_biomes.py
       - name: Validate Grand Ecology registrations and preserved dimensions
