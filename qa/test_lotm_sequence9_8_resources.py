@@ -54,8 +54,8 @@ class LotmDataGraphTests(unittest.TestCase):
         metadata = (ROOT / "neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text(encoding="utf-8")
         self.assertIn('modId="geckolib"', metadata)
         self.assertIn('versionRange="[4.9.3,)"', metadata)
-        self.assertRegex(metadata, r'modId="curios"\\s+type="required"')
-        self.assertRegex(metadata, r'modId="player_abilities"\\s+type="required"')
+        self.assertRegex(metadata, r'modId="curios"\s+type="required"')
+        self.assertRegex(metadata, r'modId="player_abilities"\s+type="required"')
         geo = load(ASSETS / "geo/lotm_alchemy_apparatus.geo.json")
         animations = load(ASSETS / "animations/lotm_alchemy_apparatus.animation.json")
         self.assertIn("minecraft:geometry", geo)
@@ -89,9 +89,9 @@ class LotmDataGraphTests(unittest.TestCase):
 
     def test_runtime_dependency_packaging_and_curios_required_slot(self):
         metadata = (ROOT / "neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text(encoding="utf-8")
-        self.assertRegex(metadata, r'modId="geckolib"\\s+type="required"')
-        self.assertRegex(metadata, r'modId="curios"\\s+type="required"')
-        self.assertRegex(metadata, r'modId="player_abilities"\\s+type="required"')
+        self.assertRegex(metadata, r'modId="geckolib"\s+type="required"')
+        self.assertRegex(metadata, r'modId="curios"\s+type="required"')
+        self.assertRegex(metadata, r'modId="player_abilities"\s+type="required"')
         build = (ROOT / "neoforge/build.gradle").read_text(encoding="utf-8")
         self.assertIn("maven.modrinth:vvuO3ImH:yohfFbgD", build)
         self.assertIn("curse.maven:player-abilities-1600309:8825458", build)
@@ -113,7 +113,7 @@ class LotmDataGraphTests(unittest.TestCase):
         self.assertIn("realscale:lotm_divination_pendulum", tag["values"])
         self.assertFalse((ROOT / "neoforge/src/main/resources/data/curios/tags/items/occult_focus.json").exists())
 
-    def test_sequence7_recipes_are_absent_but_legacy_icons_remain(self):    def test_sequence7_recipes_are_absent_but_legacy_icons_remain(self):
+    def test_sequence7_recipes_are_absent_but_legacy_icons_remain(self):
         for path in PATHWAYS:
             self.assertFalse((DATA / "recipe" / f"lotm_{path}_s7_potion.json").exists())
             self.assertFalse((DATA / "recipe" / f"lotm_{path}_s7_potion_characteristic.json").exists())
