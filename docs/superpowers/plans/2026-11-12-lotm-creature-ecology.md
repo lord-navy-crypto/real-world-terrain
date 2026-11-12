@@ -197,7 +197,7 @@
 
   Updated the parent spec and this ledger with exact commit SHA, test counts, workflow run IDs, and known limits. Unit tests and static resource checks are green; a dedicated server booted; actual nocturnal spawn counts/day-night AI transitions and runtime undead-tag membership have not yet been player- or GameTest-verified.
 
-- [ ] **Step 4: Commit documentation**
+- [x] **Step 4: Commit documentation**
 
   ```bash
   git add docs/superpowers/specs/2026-11-12-lotm-system-research-hardening.md docs/superpowers/specs/2026-11-12-lotm-creature-ecology-design.md docs/superpowers/plans/2026-11-12-lotm-creature-ecology.md
@@ -241,3 +241,11 @@ Each sub-project gets its own design/spec and implementation plan so every slice
 ### Next required action
 
 Run the focused JUnit tests, the complete `./gradlew test build`, Python QA, Gradle 9.8 compatibility, and dedicated-server verification against the exact current HEAD. Do not begin spawn-cost tuning until natural density has been measured in a saved world.
+
+## Implementation ledger
+
+- Code baseline recovery: `e7141d3dce6de9cf2ac406e5b0afd85a03ce47ac`.
+- Shared nocturnal spawn policy, entity spawn predicate, behavior goal, and tests were committed on the feature branch before the verified code snapshot `e510ef3c361e11b4a68b2790b56851265771705b`.
+- Verification record and design updates: `ab1d34a790c9d835811360950176bffcf22fb391` (parent research spec) and `93b1d201e95d156ae0ae1f3bc3b358c7c669aa1c3` (creature design spec).
+- TDD RED runs were not captured for Tasks 1–3; do not describe these changes as a complete red-green implementation cycle.
+- Runtime undead-tag membership and real-world spawn/day-night observations remain open. No PR merge or main-branch change was performed.
