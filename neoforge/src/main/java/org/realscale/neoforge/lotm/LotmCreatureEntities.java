@@ -43,12 +43,11 @@ public final class LotmCreatureEntities {
     private LotmCreatureEntities() {}
 
     public static ResourceLocation registryId(LotmCreatureKind kind) {
-        Objects.requireNonNull(kind, "kind");
-        return ResourceLocation.fromNamespaceAndPath("realscale", "lotm_" + kind.id());
+        return LotmCreatureRegistryIds.idFor(kind);
     }
 
     public static Set<LotmCreatureKind> registeredKinds() {
-        return EnumSet.copyOf(TYPES.keySet());
+        return LotmCreatureRegistryIds.activeKinds();
     }
 
     public static Supplier<EntityType<LotmCreature>> type(LotmCreatureKind kind) {
@@ -62,7 +61,12 @@ public final class LotmCreatureEntities {
     }
 
     public static void registerAttributes(EntityAttributeCreationEvent event) {
-        TYPES.forEach((kind, supplier) -> event.put(supplier.get(), attributes(kind)));
+        if (!TYPES.keySet().equals(EnumSet.allOf(LotmCreatureKind.class))) {
+            throw new IllegalStateException("The LOTM creature registry is missing an active creature type");
+        }
+        TYPES.forEach((kind, supplier) -> event.put(
+                Objects.requireNonNull(supplier.get(), "Missing LOTM EntityType for " + kind.id()),
+                attributes(kind)));
     }
 
     private static AttributeSupplier attributes(LotmCreatureKind kind) {
