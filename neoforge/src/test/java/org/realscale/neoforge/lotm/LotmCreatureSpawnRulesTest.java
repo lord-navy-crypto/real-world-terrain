@@ -42,7 +42,7 @@ class LotmCreatureSpawnRulesTest {
                 LotmCreatureKind.DEATH_CROW, "minecraft:jungle"));
 
         for (LotmCreatureKind kind : LotmCreatureKind.values()) {
-            assertFalse(LotmCreatureSpawnRules.canSpawnInBiome(kind, "minecraft:desert"),
+            assertFalse(LotmCreatureSpawnRules.canSpawnInBiome(kind, "minecraft:nether_wastes"),
                     kind.id() + " must not spawn in a desert by default");
         }
     }
