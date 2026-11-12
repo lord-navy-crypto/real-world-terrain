@@ -168,33 +168,35 @@ Before changing the existing 4%, 5.5%, 7.5%, and 10% triggers:
 - Multiplayer checks for server-authoritative abilities, synchronization, cooldowns, and spirituality.
 - Regression checks that RealScale terrain, climate, WGS84 latitude, world presets, Distant Horizons, and Chunky behavior remain unchanged.
 
-## 9. Current CI observation
+## 9. CI history and current verification status
 
-At the time of this audit, PR #155's latest observed runs for the branch head reported:
+### Historical failure and recovery
 
-- `NeoForge dedicated server and saved-block verification`: success.
-- `Source integrity, tests and NeoForge build`: failure at one test, `LotmCreatureRegistryTest.everyActiveCreatureHasOneStableRegisteredEntityIdAndSupplier`.
-- `RealScale Gradle 9.8 client task and NeoForge build compatibility`: the JUnit test-discovery step failed at the same test; the subsequent full build was skipped.
+- At the earlier branch head `07ff6ca`, both Source Integrity and Gradle 9.8 failed because the attempted Corpse Collector classifier referenced `MobType` / `LivingEntity#getMobType()`, which are not available in the pinned Minecraft 1.21.1 API.
+- The unsupported API call was reverted in commit `e7141d3`. The Gradle 9.8 workflow `43240859784` then passed client-task discovery, JUnit discovery, and the full NeoForge build on that recovery commit.
+- Source Integrity and dedicated-server workflows for that intermediate recovery head were cancelled as the branch advanced. The Gradle 9.8 success is a historical baseline check, not verification of the later feature work.
 
-Most static/resource checks in the source-integrity job passed, including the LOTM creature assets/habitats/loot validation. The next action is to inspect and fix the registry-test lifecycle issue, then rerun all three workflows. Do not claim the overall build is green until fresh runs pass.
+### First hardening pass
 
-## 9.1. First hardening pass (branch head 500272c)
+The branch added `LotmCreatureRegistryIds`, isolated the pure registry-ID test from NeoForge's `DeferredRegister` lifecycle, added a registration guard, and updated Seer detection to recognize the independent `LotmCreature` entities. These changes are on the working branch; their complete current-head regression status remains pending.
 
-Implemented on the working branch; CI is pending and these changes are not yet marked verified:
+### Current creature-ecology implementation
 
-- Added `LotmCreatureRegistryIds`, a pure metadata helper, so JUnit tests can validate stable IDs without initializing NeoForge's `DeferredRegister` class outside the mod lifecycle.
-- Updated the registry test to check the ten stable IDs independently of the loader lifecycle.
-- Added a registry-lifecycle guard in `registerAttributes` so missing creature suppliers fail during actual NeoForge startup/attribute registration.
-- Updated Seer primary detection to include the ten independent `LotmCreature` entities as well as legacy tagged entities.
-- Replaced the Corpse Collector's three-class undead check with Minecraft's `MobType.UNDEAD` classification.
+The following are implemented on the working branch, but have not yet been verified by a fresh CI run on the current feature head:
 
-Fresh workflows triggered for head `500272c9390e647901e38b4889275c25b360520d`:
+- Corpse Collector now classifies undead using the pinned 1.21.1 `EntityTypeTags.UNDEAD` tag rather than a three-class list.
+- `LotmCreatureSpawnRules` now normalizes absolute world time with `floorMod(dayTime, 24000)` and defines the Overworld night interval as `[13000, 23000)`.
+- The actual entity spawn-placement predicate applies the shared biome/time rule while preserving the existing water-column and vanilla ground-placement checks.
+- The four species already marked nocturnal receive a daytime rest goal. Higher-priority panic, avoidance, retaliation, and attack goals remain available; hostile nocturnal target selection stops continuing at sunrise.
+- Focused JUnit tests have been added for undead classification, time boundaries/wrapping, habitat/time interaction, and the nocturnal species roster.
 
-- Source integrity / tests / NeoForge build: pending.
-- Gradle 9.8 client task / NeoForge build compatibility: queued.
-- NeoForge dedicated server / saved-block verification: pending.
+**Verification is still pending:** the focused JUnit tests, full Gradle 8.14.3 build, Gradle 9.8 compatibility workflow, Python QA, dedicated-server boot, and in-world day/night behavior must all be checked on the exact current branch head. Do not treat code commits or the earlier Gradle 9.8 recovery run as a green build.
 
-Do not mark Phase 0 or the P0 fixes complete until the workflows finish successfully and the relevant runtime behavior is verified.
+## 9.1. Research and implementation documents
+
+- Parent roadmap and evidence hierarchy: `docs/superpowers/specs/2026-11-12-lotm-system-research-hardening.md`.
+- Creature ecology design: `docs/superpowers/specs/2026-11-12-lotm-creature-ecology-design.md`.
+- Step-by-step creature ecology implementation plan and progress ledger: `docs/superpowers/plans/2026-11-12-lotm-creature-ecology.md`.
 
 ## 10. Primary references
 
@@ -207,6 +209,9 @@ Do not mark Phase 0 or the P0 fixes complete until the workflows finish successf
 - NeoForge 1.21.1 — Getting Started and dedicated-server testing: https://docs.neoforged.net/docs/1.21.1/gettingstarted/
 - GeckoLib 4 — Animation Controller: https://github.com/bernie-g/geckolib/wiki/The-Animation-Controller-(Geckolib4)
 - GeckoLib 4 — Triggerable Animations: https://github.com/bernie-g/geckolib/wiki/Triggerable-Animations-(Geckolib4)
+- NeoForge 1.21.1 generated Javadocs — `EntityTypeTags.UNDEAD`: https://aldak.netlify.app/javadoc/1.21.1-21.1.x/net/minecraft/tags/entitytypetags
+- NeoForge 1.21.1 generated Javadocs — `Goal` and `Goal.Flag.MOVE`: https://aldak.netlify.app/javadoc/1.21.1-21.1.x/net/minecraft/world/entity/ai/goal/goal
+- Minecraft 1.21.1 mappings — `ServerLevelAccessor#getLevel()`: https://mappings.dev/1.21.1/net/minecraft/world/level/ServerLevelAccessor.html
 
 ### Scientific and ecological references
 
