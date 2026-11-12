@@ -88,7 +88,8 @@ public final class LotmCreatureEntities {
                     if (!LotmConfig.ENABLED.get() || !LotmConfig.CREATURE_ENTITIES.get()) return false;
                     String biomeId = level.getBiome(pos).unwrapKey()
                             .map(key -> key.location().toString()).orElse("");
-                    if (!LotmCreatureSpawnRules.canSpawnInBiome(kind, biomeId)) return false;
+                    if (!LotmCreatureSpawnRules.canSpawnAt(
+                            kind, biomeId, level.getLevel().getDayTime())) return false;
                     if (kind.isAquatic()) {
                         // IN_WATER placement already checks the spawn position; require a water column
                         // and avoid applying the land-mob solid-floor predicate to the squid.
