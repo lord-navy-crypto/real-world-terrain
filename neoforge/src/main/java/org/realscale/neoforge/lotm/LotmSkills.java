@@ -1,17 +1,16 @@
 package org.realscale.neoforge.lotm;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.Phantom;
-import net.minecraft.world.entity.monster.Skeleton;
-import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -176,8 +175,12 @@ public final class LotmSkills {
                 || state.is(LotmContent.BLOOD_ROSE.get()) || state.is(LotmContent.RELIC_CACHE.get());
     }
 
+    static boolean isUndeadType(EntityType<?> type) {
+        return type != null && type.is(EntityTypeTags.UNDEAD);
+    }
+
     private static boolean isUndead(LivingEntity entity) {
-        return entity instanceof Zombie || entity instanceof Skeleton || entity instanceof Phantom;
+        return entity != null && isUndeadType(entity.getType());
     }
 
 }
