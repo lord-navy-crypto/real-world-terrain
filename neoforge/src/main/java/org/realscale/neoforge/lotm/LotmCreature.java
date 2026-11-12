@@ -11,6 +11,7 @@ import net.minecraft.world.entity.ai.control.FlyingMoveControl;
 import net.minecraft.world.entity.ai.control.SmoothSwimmingMoveControl;
 import net.minecraft.world.entity.ai.goal.AvoidEntityGoal;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.PanicGoal;
@@ -33,6 +34,7 @@ import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
+import java.util.EnumSet;
 import java.util.Objects;
 
 /** Shared server-authoritative body for the ten distinct LOTM EntityTypes. */
@@ -77,6 +79,7 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
         if (kindGoalsRegistered || kind == null) return;
         kindGoalsRegistered = true;
         goalSelector.addGoal(0, new FloatGoal(this));
+        if (kind.isNocturnal()) goalSelector.addGoal(4, new NocturnalRestGoal(this));
 
         if (kind.isAquatic() || kind.isAmphibious()) {
             goalSelector.addGoal(1, new RandomSwimmingGoal(this, 0.9D, 40));
@@ -203,15 +206,63 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
         return animationCache;
     }
 
+    /**
+     * Keeps nocturnal creatures still during daylight without suppressing
+     * higher-priority panic, avoidance, retaliation, or attack goals.
+     */
+    private static final class NocturnalRestGoal extends Goal {
+        private final LotmCreature creature;
+
+        private NocturnalRestGoal(LotmCreature creature) {
+            this.creature = creature;
+            setFlags(EnumSet.of(Goal.Flag.MOVE));
+        }
+
+        private boolean shouldRest() {
+            return !LotmCreatureSpawnRules.isNocturnalActive(creature.level().getDayTime());
+        }
+
+        @Override
+        public boolean canUse() {
+            return shouldRest();
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return shouldRest();
+        }
+
+        @Override
+        public void start() {
+            creature.getNavigation().stop();
+        }
+
+        @Override
+        public void tick() {
+            creature.getNavigation().stop();
+            creature.setDeltaMovement(0.0D, 0.0D, 0.0D);
+        }
+    }
+
     private static final class NocturnalPlayerTargetGoal extends NearestAttackableTargetGoal<Player> {
         private final LotmCreature creature;
         private NocturnalPlayerTargetGoal(LotmCreature creature) {
             super(creature, Player.class, true);
             this.creature = creature;
         }
+
+        private boolean isNight() {
+            return LotmCreatureSpawnRules.isNocturnalActive(creature.level().getDayTime());
+        }
+
         @Override
         public boolean canUse() {
-            return !creature.level().isDay() && super.canUse();
+            return isNight() && super.canUse();
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return isNight() && super.canContinueToUse();
         }
     }
 }
