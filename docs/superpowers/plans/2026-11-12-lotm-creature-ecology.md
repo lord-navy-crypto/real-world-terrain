@@ -43,11 +43,11 @@
 - Consumes: Minecraft 1.21.1 `EntityTypeTags.UNDEAD` and `EntityType#is(TagKey)`.
 - Produces: package-visible `static boolean isUndeadType(EntityType<?> type)`; private `isUndead(LivingEntity)` delegates to it.
 
-- [ ] **Step 1: Restore the last known compiling classification as a temporary baseline**
+- [x] **Step 1: Restore the last known compiling classification as a temporary baseline**
 
   Replace the unsupported `MobType` import and `LivingEntity#getMobType()` call with the prior three-class predicate (`Zombie`, `Skeleton`, `Phantom`). This is a narrow rollback of the uncompiled API attempt, not the final implementation.
 
-- [ ] **Step 2: Add the failing tag-classification test**
+- [x] **Step 2: Add the failing tag-classification test**
 
   Add `LotmSkillsTest.usesVanillaUndeadEntityTypeTagForClassification`. Assert that zombie, skeleton, phantom, and wither entity types are classified as undead; assert that cow and creeper are not; assert that null is rejected.
 
@@ -61,7 +61,7 @@
 
   Expected: test compilation fails because `LotmSkills.isUndeadType(EntityType<?>)` has not yet been implemented. The main source set must compile.
 
-- [ ] **Step 4: Implement the tag-based classifier**
+- [x] **Step 4: Implement the tag-based classifier**
 
   Add `static boolean isUndeadType(EntityType<?> type)` to `LotmSkills`, returning false for null and otherwise checking `type.is(EntityTypeTags.UNDEAD)`. Make `isUndead(LivingEntity entity)` delegate to `isUndeadType(entity.getType())`.
 
@@ -69,7 +69,7 @@
 
   Run the same command. Expected: all assertions pass. If vanilla tags are not loaded in the plain JUnit environment, retain the tag-based production implementation and move the membership assertion to a loader-aware test; do not substitute a hand-maintained entity list.
 
-- [ ] **Step 6: Commit Task 1**
+- [x] **Step 6: Commit Task 1**
 
   ```bash
   git add neoforge/src/main/java/org/realscale/neoforge/lotm/LotmSkills.java neoforge/src/test/java/org/realscale/neoforge/lotm/LotmSkillsTest.java
@@ -87,7 +87,7 @@
 - Produces: `static boolean isNocturnalActive(long dayTime)` and `static boolean canSpawnAt(LotmCreatureKind kind, String biomeId, long dayTime)`.
 - Consumes: existing `canSpawnInBiome(LotmCreatureKind, String)` and `LotmCreatureKind.isNocturnal()`.
 
-- [ ] **Step 1: Add boundary tests before implementation**
+- [x] **Step 1: Add boundary tests before implementation**
 
   Add tests asserting:
   - `isNocturnalActive(12999)` is false.
@@ -109,11 +109,11 @@
 
   Expected: compile or assertion failure because the new helper methods do not exist yet.
 
-- [ ] **Step 3: Implement the pure time policy**
+- [x] **Step 3: Implement the pure time policy**
 
   In `LotmCreatureSpawnRules`, normalize absolute world time with `Math.floorMod(dayTime, 24000L)`. Define the night interval as `>= 13000L && < 23000L`. `canSpawnAt` must first require the existing biome predicate, then require the night interval only when `kind.isNocturnal()` is true.
 
-- [ ] **Step 4: Wire the actual spawn predicate**
+- [x] **Step 4: Wire the actual spawn predicate**
 
   In `LotmCreatureEntities.registerSpawnPlacements`, obtain world time through the pinned 1.21.1 `ServerLevelAccessor#getLevel().getDayTime()` API and call `canSpawnAt`. Preserve config checks, current biome check semantics, aquatic water-column validation, and `Mob.checkMobSpawnRules` for ground entities.
 
@@ -121,7 +121,7 @@
 
   Run the same focused command. Expected: all boundary, wrap, habitat, and diurnal/nocturnal assertions pass.
 
-- [ ] **Step 6: Commit Task 2**
+- [x] **Step 6: Commit Task 2**
 
   ```bash
   git add neoforge/src/main/java/org/realscale/neoforge/lotm/LotmCreatureSpawnRules.java neoforge/src/main/java/org/realscale/neoforge/lotm/LotmCreatureEntities.java neoforge/src/test/java/org/realscale/neoforge/lotm/LotmCreatureSpawnRulesTest.java
@@ -139,7 +139,7 @@
 - Consumes: `LotmCreatureSpawnRules.isNocturnalActive(long)`.
 - Produces: nested `NocturnalRestGoal` in `LotmCreature`; no new public API.
 
-- [ ] **Step 1: Add the behavior-policy test**
+- [x] **Step 1: Add the behavior-policy test**
 
   Extend `LotmCreatureBehaviorTest` to assert that the existing nocturnal species (Nightmare Eye, Night Owl, Shroudman, Death Crow) are the only roster entries with nocturnal metadata; keep the existing unique signature-profile assertions.
 
@@ -153,9 +153,9 @@
 
   Expected: PASS for the existing roster and signature-profile contract before adding the goal.
 
-- [ ] **Step 3: Add the daytime rest goal**
+- [x] **Step 3: Add the daytime rest goal**
 
-  Add a nested `NocturnalRestGoal` with the MOVE flag. It can start and continue while `!LotmCreatureSpawnRules.isNocturnalActive(creature.level().getDayTime())`; its tick stops navigation. Register it at priority 4 only for nocturnal kinds. Preserve the higher-priority attack, hurt-by-target, avoidance, and panic goals.
+  Add a nested `NocturnalRestGoal` with the MOVE flag. It can start and continue while `!LotmCreatureSpawnRules.isNocturnalActive(creature.level().getDayTime())`; its tick stops navigation and zeroes drift, and it returns true from `requiresUpdateEveryTick()`. Register it at priority 4 only for nocturnal kinds. Update `NocturnalPlayerTargetGoal` so both `canUse()` and `canContinueToUse()` require the shared night window; this releases player targets at sunrise. Preserve the higher-priority attack, hurt-by-target, avoidance, and panic goals.
 
 - [ ] **Step 4: Run the full JUnit suite**
 
@@ -167,7 +167,7 @@
 
   Expected: all existing and new tests pass.
 
-- [ ] **Step 5: Commit Task 3**
+- [x] **Step 5: Commit Task 3**
 
   ```bash
   git add neoforge/src/main/java/org/realscale/neoforge/lotm/LotmCreature.java neoforge/src/test/java/org/realscale/neoforge/lotm/LotmCreatureBehaviorTest.java
@@ -226,3 +226,31 @@
 5. Creature-specific models, textures, animations, and bilingual item/GUI polish.
 
 Each sub-project gets its own design/spec and implementation plan so every slice can be tested and reviewed independently.
+
+
+## Progress ledger — 2026-11-12
+
+**Working branch:** `feature/lotm-sequence9-pilot-20261111`  
+**Pull request:** #155 (open; do not merge without approval)
+
+### Implemented on the branch
+
+- Recovered the compile baseline by removing the unsupported `MobType#getMobType` attempt.
+- Replaced the temporary three-class Corpse Collector classifier with `EntityTypeTags.UNDEAD`; added a focused JUnit contract test.
+- Added a normalized 24,000-tick day clock and the shared night window `[13000, 23000)`.
+- Applied the same habitat/time rule in the actual entity spawn-placement predicate, preserving aquatic water-column and vanilla ground-placement checks.
+- Added a daytime rest goal for the four metadata-marked nocturnal creatures. The goal updates every tick, stops navigation and drift, and yields to higher-priority panic/avoidance/retaliation/attack goals.
+- Updated hostile nocturnal target selection to stop continuing at sunrise.
+- Added tests for time boundaries, absolute-time wrapping, diurnal/nocturnal behavior, and the four-species nocturnal roster.
+
+### Verification status
+
+- Tests were authored before their corresponding feature implementations, but the focused RED/GREEN commands have **not** yet been observed on the current branch head.
+- A Gradle 9.8 test-and-build workflow succeeded on the earlier recovery commit `e7141d3`; that was before the new tag/time/AI changes and is not evidence that the current code builds.
+- The source-integrity and dedicated-server runs for that earlier recovery head were cancelled when the branch advanced.
+- No fresh successful workflow results have been observed for the current creature-ecology implementation. Treat Java tests, full build, dedicated-server boot, and in-world behavior as **pending verification**.
+- The vanilla undead tag-membership test may require a loader-aware environment if the plain JUnit runtime does not load vanilla entity tags. If it fails for that reason, move only the membership assertion to runtime verification; keep the production tag-based classifier.
+
+### Next required action
+
+Run the focused JUnit tests, the complete `./gradlew test build`, Python QA, Gradle 9.8 compatibility, and dedicated-server verification against the exact current HEAD. Do not begin spawn-cost tuning until natural density has been measured in a saved world.
