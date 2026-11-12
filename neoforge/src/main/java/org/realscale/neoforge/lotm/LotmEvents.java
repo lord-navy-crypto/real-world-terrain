@@ -76,7 +76,8 @@ public final class LotmEvents {
         LivingEntity entity = event.getEntity();
         String id;
         if (entity instanceof LotmCreature creature) {
-            if (!LotmConfig.CREATURE_ENTITIES.get()) return;
+            // The spawn toggle only prevents new natural spawns; already-existing
+            // creatures keep their assigned drops when the toggle is changed.
             id = creature.kind().dropId();
         } else {
             // Keep old tagged stand-ins readable in existing worlds even though
