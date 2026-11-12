@@ -82,7 +82,13 @@ public final class LotmEvents {
     }
 
     public static void onTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !LotmConfig.ENABLED.get()) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        LotmPlayerAbilitySync.sanitizeUnauthorizedGrants(player);
+        LotmPlayerAbilitySync.showPendingTomeMessage(player);
+        if (!LotmConfig.ENABLED.get()) {
+            if (player.tickCount % 20 == 0) LotmPlayerAbilitySync.sync(player);
+            return;
+        }
         if (player.tickCount % 40 != 0) return;
         LotmPath path = LotmPath.of(player);
         if (path == null) return;

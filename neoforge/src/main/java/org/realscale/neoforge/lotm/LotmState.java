@@ -1,6 +1,7 @@
 package org.realscale.neoforge.lotm;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 /** Server-owned Sequence 9/8 spirituality and digestion, preserving legacy NBT keys. */
@@ -17,19 +18,21 @@ public final class LotmState {
         tag.putInt(SPIRIT_KEY, LotmBalance.MAX_SPIRIT);
         tag.putInt(PRACTICE_KEY, 0);
         tag.putInt(INSTABILITY_KEY, 0);
+        if (player instanceof ServerPlayer serverPlayer) LotmPlayerAbilitySync.sync(serverPlayer);
     }
 
     public static void advance(Player player, LotmPath path, int sequence, boolean direct) {
         if (sequence < 8 || sequence > 9) return; // Sequence 7+ is archived in this release.
         if (sequence == 9) {
             initialize(player, path);
-        } else {
-            var tag = player.getPersistentData();
-            tag.putInt(LotmPath.NBT_SEQUENCE, sequence);
-            tag.putInt(PRACTICE_KEY, 0);
-            tag.putInt(SPIRIT_KEY, direct ? 30 : LotmBalance.MAX_SPIRIT);
-            if (direct) tag.putInt(INSTABILITY_KEY, tag.getInt(INSTABILITY_KEY) + 1);
+            return;
         }
+        var tag = player.getPersistentData();
+        tag.putInt(LotmPath.NBT_SEQUENCE, sequence);
+        tag.putInt(PRACTICE_KEY, 0);
+        tag.putInt(SPIRIT_KEY, direct ? 30 : LotmBalance.MAX_SPIRIT);
+        if (direct) tag.putInt(INSTABILITY_KEY, tag.getInt(INSTABILITY_KEY) + 1);
+        if (player instanceof ServerPlayer serverPlayer) LotmPlayerAbilitySync.sync(serverPlayer);
     }
 
     public static int sequence(Player player) {
@@ -93,6 +96,6 @@ public final class LotmState {
         target.putInt(PRACTICE_KEY, practice(original));
         target.putInt(INSTABILITY_KEY, instability(original));
         LotmActing.copy(original, clone);
-        LotmSkills.copyCooldowns(original, clone);
+        if (clone instanceof ServerPlayer serverPlayer) LotmPlayerAbilitySync.sync(serverPlayer);
     }
 }

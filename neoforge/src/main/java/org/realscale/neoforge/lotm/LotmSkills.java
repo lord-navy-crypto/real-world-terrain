@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,44 +19,28 @@ import java.util.List;
 
 /** Server-side Sequence 9/8 active skills. The client only requests a slot number. */
 public final class LotmSkills {
-    private static final String COOLDOWN_PREFIX = "realscale_lotm_skill_ready_";
-
     private LotmSkills() {}
 
-    public static boolean activate(Player player, int slot) {
-        if (player.level().isClientSide()) return true;
+    /** Called only by a server-authoritative Player Abilities ActiveAbility. */
+    public static boolean executeFromAbility(ServerPlayer player, LotmPath expectedPath, int slot, int sequence) {
         if (!LotmConfig.ENABLED.get()) {
             player.displayClientMessage(Component.translatable("message.realscale.lotm.disabled"), true);
             return false;
         }
-        LotmPath path = LotmPath.of(player);
-        if (path == null) {
-            player.displayClientMessage(Component.translatable("message.realscale.lotm.no_path"), true);
-            return false;
-        }
-        int sequence = LotmState.sequence(player);
-        if (sequence < 8 || sequence > 9 || slot < 1 || slot > 2) {
-            player.displayClientMessage(Component.translatable("message.realscale.lotm.skills.archived"), true);
+        if (LotmPath.of(player) != expectedPath || LotmState.sequence(player) != sequence
+                || sequence < 8 || sequence > 9 || slot < 1 || slot > 2) {
+            player.displayClientMessage(Component.translatable("message.realscale.lotm.ability.wrong_sequence"), true);
             return false;
         }
 
-        long now = player.level().getGameTime();
-        String cooldownKey = COOLDOWN_PREFIX + slot;
-        if (player.getPersistentData().getLong(cooldownKey) > now) {
-            player.displayClientMessage(Component.translatable("message.realscale.lotm.skill.cooldown"), true);
-            return false;
-        }
-
-        int cost = LotmBalance.skillCost(path.id(), slot, sequence);
+        int cost = LotmBalance.skillCost(expectedPath.id(), slot, sequence);
         if (!LotmState.consume(player, cost)) {
             player.displayClientMessage(Component.translatable("message.realscale.lotm.low_spirit"), true);
             return false;
         }
 
-        int detected = slot == 1 ? activatePrimary(player, path, sequence)
-                : activateSecondary(player, path, sequence);
-        player.getPersistentData().putLong(cooldownKey,
-                now + LotmBalance.skillCooldownTicks(slot, sequence));
+        int detected = slot == 1 ? activatePrimary(player, expectedPath, sequence)
+                : activateSecondary(player, expectedPath, sequence);
         LotmActing.recordSkillUse(player, 2 + (9 - sequence));
         if (detected > 0) LotmActing.recordResearch(player, Math.min(4, detected));
 
@@ -66,15 +51,6 @@ public final class LotmSkills {
             player.displayClientMessage(Component.translatable("message.realscale.lotm.skill.none"), true);
         }
         return true;
-    }
-
-    public static boolean activateSeerDivination(Player player) {
-        if (player.level().isClientSide()) return true;
-        if (LotmPath.of(player) != LotmPath.SEER) {
-            player.displayClientMessage(Component.translatable("message.realscale.lotm.seer_only"), true);
-            return false;
-        }
-        return activate(player, 2);
     }
 
     private static int activatePrimary(Player player, LotmPath path, int sequence) {
@@ -203,12 +179,4 @@ public final class LotmSkills {
         return entity instanceof Zombie || entity instanceof Skeleton || entity instanceof Phantom;
     }
 
-    public static void copyCooldowns(Player original, Player clone) {
-        for (int slot = 1; slot <= 2; slot++) {
-            String key = COOLDOWN_PREFIX + slot;
-            if (original.getPersistentData().contains(key)) {
-                clone.getPersistentData().putLong(key, original.getPersistentData().getLong(key));
-            }
-        }
-    }
 }

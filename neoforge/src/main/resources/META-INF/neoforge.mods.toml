@@ -30,8 +30,15 @@ side="BOTH"
 # Optional Curios integration: focus and pendulum receive a dedicated slot.
 [[dependencies.realscale]]
 modId="curios"
-type="optional"
+type="required"
 versionRange="[9.5.1,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.realscale]]
+modId="player_abilities"
+type="required"
+versionRange="[1.0.9,)"
 ordering="AFTER"
 side="BOTH"
 
