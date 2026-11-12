@@ -31,8 +31,8 @@ MODS_TO_INSTALL = (
         "geckolib-neoforge-1.21.1-4.9.3.jar",
     ),
     (
-        "vvuO3ImH",
         "yohfFbgD",
+        "vvuO3ImH",
         "curios-neoforge-9.5.1+1.21.1.jar",
     ),
     (
