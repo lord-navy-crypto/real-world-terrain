@@ -2,6 +2,10 @@ package org.realscale.neoforge.lotm;
 
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.control.FlyingMoveControl;
 import net.minecraft.world.entity.ai.control.SmoothSwimmingMoveControl;
@@ -103,10 +107,76 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
     }
 
     @Override
+    public boolean hurt(DamageSource source, float amount) {
+        boolean accepted = super.hurt(source, amount);
+        if (!accepted || level().isClientSide() || !isAlive()) return accepted;
+
+        switch (LotmCreatureBehavior.forKind(kind)) {
+            case INK_CLOAK -> {
+                if (getRandom().nextFloat() < 0.35F) {
+                    addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 60, 0, true, false));
+                    setTarget(null);
+                    navigation.stop();
+                }
+            }
+            case NOCTURNAL_EVASION -> addEffect(
+                    new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 60, 1, true, false));
+            case SPRING_ESCAPE -> {
+                addEffect(new MobEffectInstance(MobEffects.JUMP, 60, 1, true, false));
+                addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 60, 0, true, false));
+            }
+            case HIGHLAND_COUNTERCHARGE -> {
+                if (source.getEntity() instanceof LivingEntity attacker) {
+                    setTarget(attacker);
+                    addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 50, 0, true, false));
+                }
+            }
+            case FOUR_EYED_GUARD -> {
+                if (getHealth() <= getMaxHealth() * 0.5F) {
+                    addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 80, 0, true, false));
+                }
+            }
+            case DISORIENTING_GAZE, MIST_GRIP, ARMORED_BRUTE, PACK_HOWL, DIVE_HUNTER -> {
+                // These profiles express their signature behavior when attacking.
+            }
+        }
+        return accepted;
+    }
+
+    @Override
     public boolean doHurtTarget(Entity target) {
         boolean hit = super.doHurtTarget(target);
-        if (hit) triggerAnim("creature_actions", "attack");
-        return hit;
+        if (!hit) return false;
+        triggerAnim("creature_actions", "attack");
+        if (level().isClientSide() || !(target instanceof LivingEntity victim)) return true;
+
+        switch (LotmCreatureBehavior.forKind(kind)) {
+            case DISORIENTING_GAZE -> {
+                victim.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 50, 0, true, false));
+                victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 35, 0, true, false));
+            }
+            case MIST_GRIP -> victim.addEffect(
+                    new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 90, 1, true, false));
+            case HIGHLAND_COUNTERCHARGE -> victim.addEffect(
+                    new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 25, 0, true, false));
+            case ARMORED_BRUTE -> victim.addEffect(
+                    new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 35, 0, true, false));
+            case PACK_HOWL -> {
+                victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 35, 0, true, false));
+                for (LotmCreature ally : level().getEntitiesOfClass(
+                        LotmCreature.class, getBoundingBox().inflate(12.0D),
+                        candidate -> candidate != this && candidate.isAlive() && candidate.kind() == kind)) {
+                    ally.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 100, 0, true, false));
+                }
+                addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 100, 0, true, false));
+            }
+            case DIVE_HUNTER -> victim.addEffect(
+                    new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 45, 0, true, false));
+            case INK_CLOAK, NOCTURNAL_EVASION, SPRING_ESCAPE, FOUR_EYED_GUARD -> {
+                // These creatures specialize in evasion or defense, not attack debuffs.
+            }
+        }
+        return true;
     }
 
     @Override
