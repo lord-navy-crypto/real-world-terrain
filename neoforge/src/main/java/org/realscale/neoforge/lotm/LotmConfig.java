@@ -6,6 +6,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 public final class LotmConfig {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue ENABLED;
+    public static final ModConfigSpec.BooleanValue CREATURE_ENTITIES;
     public static final ModConfigSpec.BooleanValue CREATURE_VARIANTS;
     public static final ModConfigSpec.BooleanValue RELIC_SITES;
     public static final ModConfigSpec.IntValue VARIANT_RARITY_PERCENT;
@@ -21,13 +22,15 @@ public final class LotmConfig {
         b.push("lotm");
         ENABLED = b.comment("Enable LOTM gameplay and low-sequence progression.")
                 .define("enabled", true);
-        CREATURE_VARIANTS = b.comment("Enable rare adapted vanilla creatures with occult drops.")
-                .define("creatureVariants", true);
-        RELIC_SITES = b.comment("Enable small ruined sites yielding genuine non-craftable characteristics.")
-                .define("relicSites", true);
-        VARIANT_RARITY_PERCENT = b.comment("Variant frequency percent relative to default (50 = half, 200 = double).")
+        CREATURE_ENTITIES = b.comment("Enable the ten independent LOTM creature EntityTypes and their natural spawns.")
+                .define("creatureEntities", true);
+        CREATURE_VARIANTS = b.comment("Legacy vanilla-mob stand-ins; disabled by default when independent creatures are enabled.")
+                .define("creatureVariants", false);
+        RELIC_SITES = b.comment("Legacy custom relic-site placement. Disabled; use vanilla structure loot instead.")
+                .define("relicSites", false);
+        VARIANT_RARITY_PERCENT = b.comment("Legacy stand-in frequency percent relative to default (50 = half, 200 = double).")
                 .defineInRange("variantRatePercent", 100, 1, 300);
-        RELIC_RARITY = b.comment("Secondary per-feature relic chance denominator; larger = rarer.")
+        RELIC_RARITY = b.comment("Legacy relic-site chance denominator; retained for old config compatibility.")
                 .defineInRange("relicRarity", 8, 1, 128);
         POTION_PRACTICE = b.comment("Digestion required before a prepared Sequence 8 potion.")
                 .defineInRange("preparedPractice", 70, 0, 100);

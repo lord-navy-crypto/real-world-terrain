@@ -72,9 +72,17 @@ public final class LotmEvents {
     }
 
     public static void onDrops(LivingDropsEvent event) {
-        if (!LotmConfig.ENABLED.get() || !LotmConfig.CREATURE_VARIANTS.get()) return;
+        if (!LotmConfig.ENABLED.get()) return;
         LivingEntity entity = event.getEntity();
-        String id = LotmEcologyRules.DROPS.get(entity.getPersistentData().getString(VARIANT));
+        String id;
+        if (entity instanceof LotmCreature creature) {
+            if (!LotmConfig.CREATURE_ENTITIES.get()) return;
+            id = creature.kind().dropId();
+        } else {
+            // Keep old tagged stand-ins readable in existing worlds even though
+            // new vanilla stand-ins are disabled by default.
+            id = LotmEcologyRules.DROPS.get(entity.getPersistentData().getString(VARIANT));
+        }
         if (id == null) return;
         Supplier<Item> material = LotmContent.materialItem(id);
         if (material != null) event.getDrops().add(new ItemEntity(entity.level(),
