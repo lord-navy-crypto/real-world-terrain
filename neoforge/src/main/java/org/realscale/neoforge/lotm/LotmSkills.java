@@ -9,9 +9,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.Phantom;
-import net.minecraft.world.entity.monster.Skeleton;
-import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.MobType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -62,7 +60,8 @@ public final class LotmSkills {
         switch (path) {
             case SEER -> {
                 for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area,
-                        entity -> entity != player && entity.getPersistentData().contains(LotmEvents.VARIANT))) {
+                        entity -> entity != player && (entity instanceof LotmCreature
+                                || entity.getPersistentData().contains(LotmEvents.VARIANT)))) {
                     target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 140, 0, true, false));
                     detected++;
                 }
@@ -176,7 +175,7 @@ public final class LotmSkills {
     }
 
     private static boolean isUndead(LivingEntity entity) {
-        return entity instanceof Zombie || entity instanceof Skeleton || entity instanceof Phantom;
+        return entity.getMobType() == MobType.UNDEAD;
     }
 
 }
