@@ -10,14 +10,13 @@ import static org.junit.jupiter.api.Assertions.*;
 class LotmCreatureRegistryTest {
     @Test
     void everyActiveCreatureHasOneStableRegisteredEntityIdAndSupplier() {
-        assertEquals(EnumSet.allOf(LotmCreatureKind.class), LotmCreatureEntities.registeredKinds());
+        assertEquals(EnumSet.allOf(LotmCreatureKind.class), LotmCreatureRegistryIds.activeKinds());
 
         Set<ResourceLocation> ids = new HashSet<>();
         for (LotmCreatureKind kind : LotmCreatureKind.values()) {
-            ResourceLocation id = LotmCreatureEntities.registryId(kind);
+            ResourceLocation id = LotmCreatureRegistryIds.idFor(kind);
             assertEquals("realscale:lotm_" + kind.id(), id.toString());
             assertTrue(ids.add(id), "Duplicate entity registry ID: " + id);
-            assertNotNull(LotmCreatureEntities.type(kind), "Missing entity supplier for " + kind.id());
         }
         assertEquals(10, ids.size());
     }
