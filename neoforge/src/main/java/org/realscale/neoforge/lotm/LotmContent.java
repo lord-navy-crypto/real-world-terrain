@@ -17,11 +17,11 @@ public final class LotmContent {
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems("realscale");
 
     public static final Supplier<Block> STAR_ORE = BLOCKS.register("lotm_star_crystal_ore",
-            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE).strength(3.5F)));
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE).strength(3.5F).requiresCorrectToolForDrops()));
     public static final Supplier<Block> CURSED_ORE = BLOCKS.register("lotm_cursed_crystal_ore",
-            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE).strength(3.5F)));
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE).strength(3.5F).requiresCorrectToolForDrops()));
     public static final Supplier<Block> GRAVE_ORE = BLOCKS.register("lotm_grave_crystal_ore",
-            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.STONE).strength(2.5F)));
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.STONE).strength(2.5F).requiresCorrectToolForDrops()));
     public static final Supplier<Block> MIDNIGHT_BLOOM = BLOCKS.register("lotm_midnight_bloom",
             () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.BLUE_ORCHID)
                     .noCollission().noOcclusion().strength(0.1F).sound(SoundType.GRASS)));
