@@ -168,6 +168,14 @@ class LotmMineralExpansionTests(unittest.TestCase):
                     self.assertEqual([" A ", "ALA", " A "], data["pattern"])
                 self.assertEqual(expected_ingredients[name], actual)
 
+    def test_new_ore_families_are_visible_to_occult_sensing(self):
+        skills = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmSkills.java").read_text(encoding="utf-8")
+        self.assertIn("private static boolean isOccultBlock(", skills)
+        body = skills.split("private static boolean isOccultBlock(", 1)[1].split("static boolean isUndeadType(", 1)[0]
+        for name in FAMILIES:
+            with self.subTest(ore=name):
+                self.assertIn("LotmContent." + name.upper() + "_ORE.get()", body)
+
     def test_existing_recipes_and_sealed_s7_are_preserved(self):
         existing = ["lotm_spirit_focus", "lotm_occult_catalyst", "lotm_spirit_ember"]
         for name in existing:
