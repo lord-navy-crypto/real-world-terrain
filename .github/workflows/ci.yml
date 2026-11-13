@@ -32,6 +32,8 @@ jobs:
         run: python3 -m unittest discover -s qa -p 'test_lotm_creature_assets.py' -v
       - name: Validate all new LOTM mineral families and alchemy crafting chains
         run: python3 -m unittest discover -s qa -p 'test_lotm_mineral_family_expansion.py' -v
+      - name: Validate LOTM occult botanical routes, research journal and anti-farming
+        run: python3 -m unittest discover -s qa -p 'test_lotm_rpg_systems_expansion.py' -v
       - name: Validate custom biome registry resources (static)
         run: python3 scripts/check_custom_biomes.py
       - name: Validate Grand Ecology registrations and preserved dimensions
