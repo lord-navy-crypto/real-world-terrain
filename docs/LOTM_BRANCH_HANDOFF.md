@@ -1,5 +1,20 @@
 # LOTM RPG Branch Handoff
 
+## 2026-11-14 cross-system update (newest handoff)
+
+Before continuing, read `docs/lotm-rpg-cross-system-expansion-2026-11-14.md`. This adds an actual development and validation record beyond the 2026-11-12 creature-only snapshot below.
+
+- Alchemy: bounded backtracking ingredient matching in `LotmIngredientMatching`, with dedicated JUnit tests. Broad item-tag overlap no longer relies on greedy slot order.
+- Acting: research now rewards one novel discovered entity/block ID per pathway and sequence; discoveries survive death and have a read-only `/lotm journal`. Progression's daily cap uses the Overworld server game-time cycle, not mutable daylight time.
+- Fieldwork: all six active ores are eligible. `LotmResourceProvenance` persists player-placed eligible resource coordinates per dimension. Breaking marked placed blocks yields no fieldwork reward; provenance tests added.
+- Pathways: Mystery Pryer secondary studies supernatural creatures; Corpse Collector secondary is a bounded self-protection/recovery ability. The other pathway roles remain unchanged.
+- Flora: four additional optional crafting-table recipes turn each existing occult flower into catalysts or Spirit Embers; no existing recipe removed.
+- Guide: `/lotm guide creatures|flora|minerals|alchemy|progression`; journal and guide text translated into English and Chinese.
+- CI: `qa/test_lotm_rpg_systems_expansion.py` added and wired into `.github/workflows/ci.yml`.
+
+**Important verification caveats:** Treat all new changes as implemented but unaccepted until Source Integrity / Gradle 9.8 / dedicated server checks on the latest exact PR head have passed. Even a successful build does not prove actual save-world ore/plant spawn rates, client GUI, visual assets, anti-farming persistence across world reload, multiplayer placement, or complete gameplay. The source-only material economy and high-level QA remain separate from end-to-end tests. No merge to `main` is authorized. Sequence 7 remains archived.
+
+
 > This file is the entry point for any AI or developer continuing the RealScale LOTM work. Read this before editing the branch.
 
 ## Branch and repository
