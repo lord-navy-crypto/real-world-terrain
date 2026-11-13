@@ -129,9 +129,19 @@ public final class LotmSkills {
                 }
             }
             case MYSTERY_PRYER -> {
-                detected = revealOccultBlocks(player, sequence == 8 ? 10 : 8, 6, 10);
-                player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, sequence == 8 ? 180 : 120, 0, true, false));
-                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, sequence == 8 ? 120 : 80, 0, true, false));
+                // The primary ability surveys occult geology. The secondary
+                // interprets living supernatural signatures rather than scanning the same blocks.
+                int radius = sequence == 8 ? 18 : 14;
+                AABB area = new AABB(player.blockPosition()).inflate(radius);
+                for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area,
+                        entity -> entity != player && (entity instanceof LotmCreature
+                                || entity.getPersistentData().contains(LotmEvents.VARIANT)))) {
+                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 120, 0, true, false));
+                    LotmActing.recordResearchDiscovery(player, entityClue(target), 2);
+                    detected++;
+                }
+                player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION,
+                        sequence == 8 ? 200 : 140, 0, true, false));
             }
             case SLEEPLESS -> {
                 int duration = !level.isDay() ? (sequence == 8 ? 360 : 280) : (sequence == 8 ? 220 : 160);
@@ -140,17 +150,14 @@ public final class LotmSkills {
                 detected = 1;
             }
             case CORPSE_COLLECTOR -> {
+                // The primary ability locates and weakens undead. This separate
+                // shroud skill grants a bounded defensive window without another scan.
                 player.setTicksFrozen(0);
-                int radius = sequence == 8 ? 22 : 18;
-                AABB area = new AABB(player.blockPosition()).inflate(radius);
-                for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area,
-                        LotmSkills::isUndead)) {
-                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 180, 0, true, false));
-                    LotmActing.recordResearchDiscovery(player, entityClue(target), 2);
-                    detected++;
-                }
-                player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, sequence == 8 ? 160 : 100, 0, true, false));
-                if (detected == 0) detected = 1; // The self-protection effect is still a successful activation.
+                player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE,
+                        sequence == 8 ? 160 : 100, 0, true, false));
+                player.addEffect(new MobEffectInstance(MobEffects.REGENERATION,
+                        sequence == 8 ? 120 : 80, 0, true, false));
+                detected = 1;
             }
         }
         return detected;
