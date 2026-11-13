@@ -210,5 +210,9 @@
   "block.realscale.lotm_echo_quartz_ore": "Echo Quartz Ore",
   "item.realscale.lotm_echo_quartz": "Echo Quartz",
   "block.realscale.lotm_abyssal_salt_ore": "Abyssal Salt Ore",
-  "item.realscale.lotm_abyssal_salt": "Abyssal Salt"
+  "item.realscale.lotm_abyssal_salt": "Abyssal Salt",
+  "message.realscale.lotm.journal.header": "Occult Journal: %s unique clues | Research this cycle: %s/%s",
+  "message.realscale.lotm.journal.entry": "Discovered: %s",
+  "message.realscale.lotm.journal.empty": "No clues studied yet. Scan new occult ores, plants or creatures with pathway abilities.",
+  "message.realscale.lotm.journal.more": "Earlier clues omitted from chat: %s"
 }
