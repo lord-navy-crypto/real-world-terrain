@@ -210,5 +210,9 @@
   "block.realscale.lotm_echo_quartz_ore": "回响石英矿",
   "item.realscale.lotm_echo_quartz": "回响石英",
   "block.realscale.lotm_abyssal_salt_ore": "深渊盐晶矿",
-  "item.realscale.lotm_abyssal_salt": "深渊盐晶"
+  "item.realscale.lotm_abyssal_salt": "深渊盐晶",
+  "message.realscale.lotm.journal.header": "神秘学调查手记：已研究%s种不同线索 | 本周期研究进度：%s/%s",
+  "message.realscale.lotm.journal.entry": "已发现：%s",
+  "message.realscale.lotm.journal.empty": "尚未记录非凡线索。使用途径能力探测不同的矿物、植物与生物。",
+  "message.realscale.lotm.journal.more": "因聊天窗口篇幅限制，省略前面%s条线索。"
 }
