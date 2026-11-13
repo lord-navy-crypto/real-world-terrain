@@ -1,6 +1,7 @@
 package org.realscale.neoforge.lotm;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -41,7 +42,6 @@ public final class LotmSkills {
         int detected = slot == 1 ? activatePrimary(player, expectedPath, sequence)
                 : activateSecondary(player, expectedPath, sequence);
         LotmActing.recordSkillUse(player, 2 + (9 - sequence));
-        if (detected > 0) LotmActing.recordResearch(player, Math.min(4, detected));
 
         if (detected > 0) {
             player.displayClientMessage(Component.translatable(
@@ -64,6 +64,7 @@ public final class LotmSkills {
                         entity -> entity != player && (entity instanceof LotmCreature
                                 || entity.getPersistentData().contains(LotmEvents.VARIANT)))) {
                     target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 140, 0, true, false));
+                    LotmActing.recordResearchDiscovery(player, entityClue(target), 2);
                     detected++;
                 }
                 if (sequence == 8) player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 180, 0, true, false));
@@ -77,6 +78,7 @@ public final class LotmSkills {
                         entity -> entity != player && entity instanceof Monster)) {
                     target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 120, 0, true, false));
                     if (sequence == 8) target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 0, true, false));
+                    LotmActing.recordResearchDiscovery(player, entityClue(target), 2);
                     detected++;
                 }
                 if (!level.isDay()) player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 240, 0, true, false));
@@ -87,6 +89,7 @@ public final class LotmSkills {
                         LotmSkills::isUndead)) {
                     target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 150, 0, true, false));
                     if (sequence == 8) target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 0, true, false));
+                    LotmActing.recordResearchDiscovery(player, entityClue(target), 2);
                     detected++;
                 }
                 player.setTicksFrozen(0);
@@ -121,6 +124,7 @@ public final class LotmSkills {
                             nearest.getZ() - origin.getZ(), nearest.getY() - origin.getY());
                     player.displayClientMessage(Component.translatable("message.realscale.lotm.omen",
                             Component.translatable("message.realscale.lotm.bearing." + direction)), true);
+                    LotmActing.recordResearchDiscovery(player, blockClue(level, nearest), 2);
                     detected = 1;
                 }
             }
@@ -142,6 +146,7 @@ public final class LotmSkills {
                 for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area,
                         LotmSkills::isUndead)) {
                     target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 180, 0, true, false));
+                    LotmActing.recordResearchDiscovery(player, entityClue(target), 2);
                     detected++;
                 }
                 player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, sequence == 8 ? 160 : 100, 0, true, false));
@@ -158,6 +163,7 @@ public final class LotmSkills {
         for (BlockPos pos : BlockPos.betweenClosed(
                 origin.offset(-radius, -vertical, -radius), origin.offset(radius, vertical, radius))) {
             if (!level.hasChunkAt(pos) || !isOccultBlock(level, pos)) continue;
+            LotmActing.recordResearchDiscovery(player, blockClue(level, pos), 2);
             detected++;
             if (detected <= particleLimit && level instanceof ServerLevel server) {
                 server.sendParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5, pos.getY() + 0.8,
@@ -165,6 +171,14 @@ public final class LotmSkills {
             }
         }
         return detected;
+    }
+
+    private static String entityClue(LivingEntity entity) {
+        return "entity:" + BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+    }
+
+    private static String blockClue(Level level, BlockPos pos) {
+        return "block:" + BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock());
     }
 
     private static boolean isOccultBlock(Level level, BlockPos pos) {
