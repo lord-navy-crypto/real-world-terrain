@@ -83,6 +83,31 @@ public final class LotmCommands {
                 }
                 return 1;
             }))
+            .then(Commands.literal("journal").executes(context -> {
+                ServerPlayer player = context.getSource().getPlayerOrException();
+                if (LotmPath.of(player) == null) {
+                    context.getSource().sendSuccess(() -> Component.translatable("message.realscale.lotm.no_path"), false);
+                    return 0;
+                }
+                java.util.List<String> discoveries = LotmActing.researchDiscoveries(player);
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        "message.realscale.lotm.journal.header", discoveries.size(),
+                        LotmActing.dailyUsed(player, "research"), LotmActing.dailyCap("research")), false);
+                int first = Math.max(0, discoveries.size() - 8);
+                for (int i = first; i < discoveries.size(); i++) {
+                    Component name = clueName(discoveries.get(i));
+                    context.getSource().sendSuccess(() -> Component.translatable(
+                            "message.realscale.lotm.journal.entry", name), false);
+                }
+                if (discoveries.isEmpty()) {
+                    context.getSource().sendSuccess(() -> Component.translatable(
+                            "message.realscale.lotm.journal.empty"), false);
+                } else if (first > 0) {
+                    context.getSource().sendSuccess(() -> Component.translatable(
+                            "message.realscale.lotm.journal.more", first), false);
+                }
+                return 1;
+            }))
             .then(Commands.literal("config").executes(context -> {
                 context.getSource().sendSuccess(() -> Component.translatable(
                         "message.realscale.lotm.config", LotmConfig.VARIANT_RARITY_PERCENT.get(),
@@ -95,4 +120,20 @@ public final class LotmCommands {
                 return 1;
             })));
     }
+    /** Translate registered creature and block IDs for the bilingual discovery log. */
+    private static Component clueName(String source) {
+        int separator = source.indexOf(':');
+        if (separator < 0) return Component.literal(source);
+        String kind = source.substring(0, separator);
+        String resource = source.substring(separator + 1);
+        int namespaced = resource.indexOf(':');
+        if (namespaced < 0) return Component.literal(source);
+        String namespace = resource.substring(0, namespaced);
+        String id = resource.substring(namespaced + 1);
+        if ("entity".equals(kind) || "block".equals(kind)) {
+            return Component.translatable(kind + "." + namespace + "." + id);
+        }
+        return Component.literal(source);
+    }
+
 }
