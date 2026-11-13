@@ -15,4 +15,12 @@ class LotmActingTest {
                 + LotmActing.dailyCap("fieldwork"));
         assertEquals(0, LotmActing.dailyCap("unknown"));
     }
+    @Test
+    void serverActivityCyclesIgnoreSleepAndDaylightTimeManipulation() {
+        assertEquals(0L, LotmActing.activityDay(0L));
+        assertEquals(0L, LotmActing.activityDay(23_999L));
+        assertEquals(1L, LotmActing.activityDay(24_000L));
+        assertEquals(2L, LotmActing.activityDay(48_123L));
+    }
+
 }
