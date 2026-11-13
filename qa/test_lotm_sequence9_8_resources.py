@@ -140,6 +140,73 @@ class LotmDataGraphTests(unittest.TestCase):
         self.assertEqual("realscale:lotm_relic_site",
             load(DATA / "worldgen/placed_feature/lotm_relic_site.json")["feature"])
 
+
+    def test_active_ore_blocks_require_pickaxes(self):
+        tag = load(ROOT / "neoforge/src/main/resources/data/minecraft/tags/block/mineable/pickaxe.json")
+        self.assertFalse(tag.get("replace", True))
+        self.assertEqual({
+            "realscale:lotm_star_crystal_ore",
+            "realscale:lotm_cursed_crystal_ore",
+            "realscale:lotm_grave_crystal_ore",
+        }, set(tag["values"]))
+
+        source = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmContent.java").read_text(encoding="utf-8")
+        for block_id in ("lotm_star_crystal_ore", "lotm_cursed_crystal_ore", "lotm_grave_crystal_ore"):
+            registration = source.split(f'BLOCKS.register("{block_id}"', 1)[1].split(")));", 1)[0]
+            with self.subTest(block=block_id):
+                self.assertIn("requiresCorrectToolForDrops()", registration)
+
+    def test_active_ore_loot_has_silk_touch_fortune_and_explosion_rules(self):
+        ores = {
+            "star_crystal_ore": "star_crystal",
+            "cursed_crystal_ore": "cursed_crystal",
+            "grave_crystal_ore": "grave_crystal",
+        }
+        for ore, crystal in ores.items():
+            loot = load(DATA / "loot_table/blocks" / f"lotm_{ore}.json")
+            self.assertEqual("minecraft:block", loot["type"])
+            alternatives = loot["pools"][0]["entries"][0]
+            self.assertEqual("minecraft:alternatives", alternatives["type"])
+            silk_touch, normal = alternatives["children"]
+            self.assertEqual("realscale:lotm_" + ore, silk_touch["name"])
+            silk_condition = silk_touch["conditions"][0]
+            self.assertEqual("minecraft:match_tool", silk_condition["condition"])
+            enchantments = silk_condition["predicate"]["predicates"]["minecraft:enchantments"]
+            self.assertTrue(any(
+                entry["enchantments"] == "minecraft:silk_touch" and entry["levels"]["min"] >= 1
+                for entry in enchantments
+            ))
+
+            self.assertEqual("realscale:lotm_" + crystal, normal["name"])
+            functions = normal["functions"]
+            fortune = next(fn for fn in functions if fn["function"] == "minecraft:apply_bonus")
+            self.assertEqual("minecraft:fortune", fortune["enchantment"])
+            self.assertEqual("minecraft:ore_drops", fortune["formula"])
+            self.assertIn("minecraft:explosion_decay", {fn["function"] for fn in functions})
+
+    def test_active_ore_worldgen_profiles_remain_biome_scoped_and_unchanged(self):
+        expected = {
+            "star_crystal_ore": (5, 3, -48, 24),
+            "cursed_crystal_ore": (5, 2, -48, 48),
+            "grave_crystal_ore": (5, 2, -48, 40),
+        }
+        for ore, (size, count, min_y, max_y) in expected.items():
+            configured = load(DATA / "worldgen/configured_feature" / f"lotm_{ore}.json")
+            placed = load(DATA / "worldgen/placed_feature" / f"lotm_{ore}.json")
+            modifier = load(DATA / "neoforge/biome_modifier" / f"lotm_{ore}.json")
+            self.assertEqual("minecraft:ore", configured["type"])
+            self.assertEqual(size, configured["config"]["size"])
+            targets = {target["target"]["tag"] for target in configured["config"]["targets"]}
+            self.assertEqual({"minecraft:stone_ore_replaceables", "minecraft:deepslate_ore_replaceables"}, targets)
+            count_modifier = next(entry for entry in placed["placement"] if entry["type"] == "minecraft:count")
+            self.assertEqual(count, count_modifier["count"])
+            height = next(entry for entry in placed["placement"] if entry["type"] == "minecraft:height_range")["height"]
+            self.assertEqual(min_y, height["min_inclusive"]["absolute"])
+            self.assertEqual(max_y, height["max_inclusive"]["absolute"])
+            self.assertEqual("neoforge:add_features", modifier["type"])
+            self.assertEqual("realscale:lotm_" + ore, modifier["features"])
+            self.assertEqual("underground_ores", modifier["step"])
+
     def test_sequence7_only_spirit_quartz_worldgen_is_disabled(self):
         modifier = load(DATA / "neoforge/biome_modifier/lotm_spirit_quartz_ore.json")
         self.assertEqual("neoforge:none", modifier["type"])
