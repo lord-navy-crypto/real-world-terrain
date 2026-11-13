@@ -170,7 +170,9 @@ public final class LotmSkills {
     private static boolean isOccultBlock(Level level, BlockPos pos) {
         var state = level.getBlockState(pos);
         return state.is(LotmContent.STAR_ORE.get()) || state.is(LotmContent.CURSED_ORE.get())
-                || state.is(LotmContent.GRAVE_ORE.get()) || state.is(LotmContent.MIDNIGHT_BLOOM.get())
+                || state.is(LotmContent.GRAVE_ORE.get()) || state.is(LotmContent.LUNAR_MICA_ORE.get())
+                || state.is(LotmContent.ECHO_QUARTZ_ORE.get()) || state.is(LotmContent.ABYSSAL_SALT_ORE.get())
+                || state.is(LotmContent.MIDNIGHT_BLOOM.get())
                 || state.is(LotmContent.FACE_ROSE.get()) || state.is(LotmContent.SOUL_BELLFLOWER.get())
                 || state.is(LotmContent.BLOOD_ROSE.get()) || state.is(LotmContent.RELIC_CACHE.get());
     }
