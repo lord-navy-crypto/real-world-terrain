@@ -152,7 +152,7 @@ class LotmDataGraphTests(unittest.TestCase):
 
         source = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmContent.java").read_text(encoding="utf-8")
         for block_id in ("lotm_star_crystal_ore", "lotm_cursed_crystal_ore", "lotm_grave_crystal_ore"):
-            registration = source.split(f'BLOCKS.register("{block_id}"', 1)[1].split(")));", 1)[0]
+            registration = source.split(f'BLOCKS.register("{block_id}"', 1)[1].split("\n    public static final", 1)[0]
             with self.subTest(block=block_id):
                 self.assertIn("requiresCorrectToolForDrops()", registration)
 
