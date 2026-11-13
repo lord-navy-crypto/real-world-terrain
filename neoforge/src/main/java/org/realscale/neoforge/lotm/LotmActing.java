@@ -72,16 +72,33 @@ public final class LotmActing {
         return List.copyOf(ids);
     }
 
+    /** Track placement in world data so trading or relogging does not reset provenance. */
+    public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel level)
+                || !(event.getEntity() instanceof Player)
+                || !isFieldworkBlock(event.getPlacedBlock().getBlock())) return;
+        LotmResourceProvenance.get(level).markPlaced(event.getPos());
+    }
+
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         Player player = event.getPlayer();
-        if (player.level().isClientSide() || !isActive(player)) return;
-        Block block = event.getState().getBlock();
-        if (block == LotmContent.STAR_ORE.get() || block == LotmContent.CURSED_ORE.get()
-                || block == LotmContent.GRAVE_ORE.get() || block == LotmContent.MIDNIGHT_BLOOM.get()
-                || block == LotmContent.FACE_ROSE.get() || block == LotmContent.SOUL_BELLFLOWER.get()
-                || block == LotmContent.BLOOD_ROSE.get() || block == LotmContent.RELIC_CACHE.get()) {
-            award(player, "fieldwork", 2);
-        }
+        if (!(player.level() instanceof ServerLevel level)
+                || event.isCanceled() || !isFieldworkBlock(event.getState().getBlock())) return;
+        // Always clear the mark on breaking, even for a non-Beyonder or a creative player.
+        if (LotmResourceProvenance.get(level).consumePlacement(event.getPos())) return;
+        if (!player.isCreative() && isActive(player)) award(player, "fieldwork", 2);
+    }
+
+    static boolean isFieldworkBlock(Block block) {
+        return block == LotmContent.STAR_ORE.get() || block == LotmContent.CURSED_ORE.get()
+                || block == LotmContent.GRAVE_ORE.get() || block == LotmContent.LUNAR_MICA_ORE.get()
+                || block == LotmContent.ECHO_QUARTZ_ORE.get()
+                || block == LotmContent.ABYSSAL_SALT_ORE.get()
+                || block == LotmContent.MIDNIGHT_BLOOM.get()
+                || block == LotmContent.FACE_ROSE.get()
+                || block == LotmContent.SOUL_BELLFLOWER.get()
+                || block == LotmContent.BLOOD_ROSE.get()
+                || block == LotmContent.RELIC_CACHE.get();
     }
 
     public static int dailyUsed(Player player, String category) {
