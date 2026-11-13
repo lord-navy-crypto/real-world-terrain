@@ -251,8 +251,36 @@ def rgba(rgb: tuple[int, int, int]) -> tuple[int, int, int, int]:
     return (rgb[0], rgb[1], rgb[2], 255)
 
 
+MINERAL_TEXTURE_PALETTES = {
+    "lotm_lunar_mica": ((50, 65, 85), (148, 172, 213), (228, 229, 250)),
+    "lotm_lunar_mica_ore": ((75, 83, 95), (125, 164, 203), (225, 238, 255)),
+    "lotm_echo_quartz": ((41, 66, 73), (86, 179, 172), (205, 248, 232)),
+    "lotm_echo_quartz_ore": ((75, 86, 86), (82, 152, 145), (223, 252, 237)),
+    "lotm_abyssal_salt": ((38, 63, 91), (84, 151, 211), (214, 238, 253)),
+    "lotm_abyssal_salt_ore": ((67, 75, 88), (74, 128, 189), (240, 245, 254)),
+}
+
+
+def mineral_pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
+    """Original, repeatable ore-vein texture and faceted crystal icon palettes."""
+    base, vein, sparkle = MINERAL_TEXTURE_PALETTES[name]
+    noise = hashbyte(f"{name}:{x // 2}:{y // 2}")
+    if name.endswith("_ore"):
+        line = (3 * x + 2 * y + noise // 13) % 11
+        color = sparkle if line == 0 and noise % 5 == 0 else vein if line < 3 else base
+        return rgba(color)
+    # Faceted drop silhouette: leave air around the material icon.
+    dx, dy = abs(x - 7.5), abs(y - 7.5)
+    if dx + dy > 9.0:
+        return (0, 0, 0, 0)
+    color = sparkle if (x + 2 * y + noise // 17) % 7 < 2 else vein if dx + dy < 6 else base
+    return rgba(color)
+
+
 def pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
     """Small deterministic icon palette for the existing LOTM item/block assets."""
+    if name in MINERAL_TEXTURE_PALETTES:
+        return mineral_pixel(name, x, y)
     seed = hashbyte(name)
     palettes = (
         ((34, 44, 58), (77, 117, 142), (161, 204, 216), (216, 232, 224)),
