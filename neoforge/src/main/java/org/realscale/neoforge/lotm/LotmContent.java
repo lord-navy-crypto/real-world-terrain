@@ -22,6 +22,15 @@ public final class LotmContent {
             () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE).strength(3.5F).requiresCorrectToolForDrops()));
     public static final Supplier<Block> GRAVE_ORE = BLOCKS.register("lotm_grave_crystal_ore",
             () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.STONE).strength(2.5F).requiresCorrectToolForDrops()));
+    public static final Supplier<Block> LUNAR_MICA_ORE = BLOCKS.register("lotm_lunar_mica_ore",
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE)
+                    .strength(3.0F).requiresCorrectToolForDrops()));
+    public static final Supplier<Block> ECHO_QUARTZ_ORE = BLOCKS.register("lotm_echo_quartz_ore",
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE)
+                    .strength(3.0F).requiresCorrectToolForDrops()));
+    public static final Supplier<Block> ABYSSAL_SALT_ORE = BLOCKS.register("lotm_abyssal_salt_ore",
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE)
+                    .strength(3.0F).requiresCorrectToolForDrops()));
     public static final Supplier<Block> MIDNIGHT_BLOOM = BLOCKS.register("lotm_midnight_bloom",
             () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.BLUE_ORCHID)
                     .noCollission().noOcclusion().strength(0.1F).sound(SoundType.GRASS)));
@@ -48,6 +57,9 @@ public final class LotmContent {
     public static final Supplier<? extends Item> STAR_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_star_crystal_ore", STAR_ORE);
     public static final Supplier<? extends Item> CURSED_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_cursed_crystal_ore", CURSED_ORE);
     public static final Supplier<? extends Item> GRAVE_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_grave_crystal_ore", GRAVE_ORE);
+    public static final Supplier<? extends Item> LUNAR_MICA_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_lunar_mica_ore", LUNAR_MICA_ORE);
+    public static final Supplier<? extends Item> ECHO_QUARTZ_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_echo_quartz_ore", ECHO_QUARTZ_ORE);
+    public static final Supplier<? extends Item> ABYSSAL_SALT_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_abyssal_salt_ore", ABYSSAL_SALT_ORE);
     public static final Supplier<? extends Item> BLOOM_ITEM = ITEMS.registerSimpleBlockItem("lotm_midnight_bloom", MIDNIGHT_BLOOM);
     public static final Supplier<? extends Item> FACE_ROSE_ITEM = ITEMS.registerSimpleBlockItem("lotm_face_rose", FACE_ROSE);
     public static final Supplier<? extends Item> SOUL_BELLFLOWER_ITEM = ITEMS.registerSimpleBlockItem("lotm_soul_bellflower", SOUL_BELLFLOWER);
@@ -59,6 +71,9 @@ public final class LotmContent {
     public static final Supplier<Item> STAR_CRYSTAL = ITEMS.registerSimpleItem("lotm_star_crystal", new Item.Properties());
     public static final Supplier<Item> CURSED_CRYSTAL = ITEMS.registerSimpleItem("lotm_cursed_crystal", new Item.Properties());
     public static final Supplier<Item> GRAVE_CRYSTAL = ITEMS.registerSimpleItem("lotm_grave_crystal", new Item.Properties());
+    public static final Supplier<Item> LUNAR_MICA = ITEMS.registerSimpleItem("lotm_lunar_mica", new Item.Properties());
+    public static final Supplier<Item> ECHO_QUARTZ = ITEMS.registerSimpleItem("lotm_echo_quartz", new Item.Properties());
+    public static final Supplier<Item> ABYSSAL_SALT = ITEMS.registerSimpleItem("lotm_abyssal_salt", new Item.Properties());
     public static final Supplier<Item> LAVAS_SQUID_ESSENCE = ITEMS.registerSimpleItem("lotm_lavas_squid_essence", new Item.Properties());
     public static final Supplier<Item> NIGHTMARE_EYE_SHARD = ITEMS.registerSimpleItem("lotm_nightmare_eye_shard", new Item.Properties());
     public static final Supplier<Item> NIGHT_OWL_TOKEN = ITEMS.registerSimpleItem("lotm_night_owl_token", new Item.Properties());
@@ -112,6 +127,9 @@ public final class LotmContent {
         MATERIALS.put("night_owl_token", NIGHT_OWL_TOKEN);
         MATERIALS.put("black_spotted_frog_token", BLACK_SPOTTED_FROG_TOKEN);
         MATERIALS.put("shroudman_crystal", SHROUDMAN_CRYSTAL);
+        MATERIALS.put("lunar_mica", LUNAR_MICA);
+        MATERIALS.put("echo_quartz", ECHO_QUARTZ);
+        MATERIALS.put("abyssal_salt", ABYSSAL_SALT);
         for (String material : new String[] {
             "hornacis_goat_horn", "ironarm_spine", "four_eyed_turtle_heart",
             "crimson_howler_voice", "death_crow_eye", "mist_treant_root",

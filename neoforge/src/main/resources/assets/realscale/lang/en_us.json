@@ -204,5 +204,11 @@
   "entity.realscale.lotm_ironarm_beast": "Iron-Arm Beast",
   "entity.realscale.lotm_four_eyed_turtle": "Four-Eyed Turtle",
   "entity.realscale.lotm_crimson_howler": "Crimson Howler",
-  "entity.realscale.lotm_death_crow": "Death Crow"
+  "entity.realscale.lotm_death_crow": "Death Crow",
+  "block.realscale.lotm_lunar_mica_ore": "Lunar Mica Ore",
+  "item.realscale.lotm_lunar_mica": "Lunar Mica",
+  "block.realscale.lotm_echo_quartz_ore": "Echo Quartz Ore",
+  "item.realscale.lotm_echo_quartz": "Echo Quartz",
+  "block.realscale.lotm_abyssal_salt_ore": "Abyssal Salt Ore",
+  "item.realscale.lotm_abyssal_salt": "Abyssal Salt"
 }

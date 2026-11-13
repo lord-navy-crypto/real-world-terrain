@@ -204,5 +204,11 @@
   "entity.realscale.lotm_ironarm_beast": "铁臂兽",
   "entity.realscale.lotm_four_eyed_turtle": "四眼绿龟",
   "entity.realscale.lotm_crimson_howler": "红月咆哮者",
-  "entity.realscale.lotm_death_crow": "告死乌鸦"
+  "entity.realscale.lotm_death_crow": "告死乌鸦",
+  "block.realscale.lotm_lunar_mica_ore": "月辉云母矿",
+  "item.realscale.lotm_lunar_mica": "月辉云母",
+  "block.realscale.lotm_echo_quartz_ore": "回响石英矿",
+  "item.realscale.lotm_echo_quartz": "回响石英",
+  "block.realscale.lotm_abyssal_salt_ore": "深渊盐晶矿",
+  "item.realscale.lotm_abyssal_salt": "深渊盐晶"
 }

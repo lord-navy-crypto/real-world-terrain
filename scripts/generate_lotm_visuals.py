@@ -15,6 +15,7 @@ from pathlib import Path
 
 ITEMS = [
     "lotm_star_crystal", "lotm_cursed_crystal", "lotm_grave_crystal",
+    "lotm_lunar_mica", "lotm_echo_quartz", "lotm_abyssal_salt",
     "lotm_lavas_squid_essence", "lotm_nightmare_eye_shard",
     "lotm_night_owl_token", "lotm_black_spotted_frog_token",
     "lotm_empty_vial", "lotm_spirit_focus", "lotm_seer_potion",
@@ -25,7 +26,8 @@ ITEMS = [
 ]
 BLOCKS = [
     "lotm_star_crystal_ore", "lotm_cursed_crystal_ore",
-    "lotm_grave_crystal_ore", "lotm_midnight_bloom",
+    "lotm_grave_crystal_ore", "lotm_lunar_mica_ore",
+    "lotm_echo_quartz_ore", "lotm_abyssal_salt_ore", "lotm_midnight_bloom",
     "lotm_face_rose", "lotm_soul_bellflower", "lotm_blood_rose",
     "lotm_spirit_quartz_ore", "lotm_relic_cache", "lotm_alchemy_apparatus",
 ]
