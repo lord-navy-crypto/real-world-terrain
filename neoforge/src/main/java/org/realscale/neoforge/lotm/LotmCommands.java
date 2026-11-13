@@ -115,10 +115,18 @@ public final class LotmCommands {
                         LotmConfig.CHARACTERISTIC_PRACTICE.get()), false);
                 return 1;
             }))
-            .then(Commands.literal("guide").executes(context -> {
-                context.getSource().sendSuccess(() -> Component.translatable("message.realscale.lotm.guide"), false);
-                return 1;
-            })));
+            .then(Commands.literal("guide")
+                    .executes(context -> showGuide(context.getSource(), ""))
+                    .then(Commands.literal("creatures")
+                            .executes(context -> showGuide(context.getSource(), "creatures")))
+                    .then(Commands.literal("flora")
+                            .executes(context -> showGuide(context.getSource(), "flora")))
+                    .then(Commands.literal("minerals")
+                            .executes(context -> showGuide(context.getSource(), "minerals")))
+                    .then(Commands.literal("alchemy")
+                            .executes(context -> showGuide(context.getSource(), "alchemy")))
+                    .then(Commands.literal("progression")
+                            .executes(context -> showGuide(context.getSource(), "progression")))));
     }
     /** Translate registered creature and block IDs for the bilingual discovery log. */
     private static Component clueName(String source) {
@@ -134,6 +142,12 @@ public final class LotmCommands {
             return Component.translatable(kind + "." + namespace + "." + id);
         }
         return Component.literal(source);
+    }
+
+    private static int showGuide(net.minecraft.commands.CommandSourceStack source, String section) {
+        String key = "message.realscale.lotm.guide" + (section.isEmpty() ? "" : "." + section);
+        source.sendSuccess(() -> Component.translatable(key), false);
+        return 1;
     }
 
 }
