@@ -47,25 +47,22 @@ public final class LotmAlchemyRecipe implements Recipe<CraftingInput> {
     @Override
     public boolean matches(CraftingInput input, Level level) {
         if (input.size() != 4) return false;
-        boolean[] matched = new boolean[ingredients.size()];
-        int occupied = 0;
+        java.util.List<ItemStack> occupied = new java.util.ArrayList<>(4);
         for (int slot = 0; slot < input.size(); slot++) {
             ItemStack stack = input.getItem(slot);
-            if (stack.isEmpty()) continue;
-            occupied++;
-            boolean found = false;
-            for (int index = 0; index < ingredients.size(); index++) {
-                if (!matched[index] && ingredients.get(index).test(stack)) {
-                    matched[index] = true;
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) return false;
+            if (!stack.isEmpty()) occupied.add(stack);
         }
-        if (occupied != ingredients.size()) return false;
-        for (boolean ingredientMatched : matched) if (!ingredientMatched) return false;
-        return true;
+        if (occupied.size() != ingredients.size()) return false;
+
+        // A broad tag can overlap a specific item. Greedy slot assignment would
+        // reject an otherwise valid shapeless recipe depending on slot order.
+        boolean[][] compatible = new boolean[occupied.size()][ingredients.size()];
+        for (int slot = 0; slot < occupied.size(); slot++) {
+            for (int index = 0; index < ingredients.size(); index++) {
+                compatible[slot][index] = ingredients.get(index).test(occupied.get(slot));
+            }
+        }
+        return LotmIngredientMatching.canMatch(compatible);
     }
 
     @Override
