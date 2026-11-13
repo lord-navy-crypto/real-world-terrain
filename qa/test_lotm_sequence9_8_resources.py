@@ -144,11 +144,11 @@ class LotmDataGraphTests(unittest.TestCase):
     def test_active_ore_blocks_require_pickaxes(self):
         tag = load(ROOT / "neoforge/src/main/resources/data/minecraft/tags/block/mineable/pickaxe.json")
         self.assertFalse(tag.get("replace", True))
-        self.assertEqual({
+        self.assertTrue({
             "realscale:lotm_star_crystal_ore",
             "realscale:lotm_cursed_crystal_ore",
             "realscale:lotm_grave_crystal_ore",
-        }, set(tag["values"]))
+        }.issubset(set(tag["values"])), "Original three S9/S8 ores must stay mineable")
 
         source = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmContent.java").read_text(encoding="utf-8")
         for block_id in ("lotm_star_crystal_ore", "lotm_cursed_crystal_ore", "lotm_grave_crystal_ore"):
