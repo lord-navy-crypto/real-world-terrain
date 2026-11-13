@@ -4,6 +4,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
@@ -13,6 +16,7 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 public final class LotmActing {
     private static final String DAY_KEY = "realscale_lotm_acting_day";
     private static final String PREFIX = "realscale_lotm_acting_daily_";
+    private static final String RESEARCH_PREFIX = "realscale_lotm_research_seen_";
     private LotmActing() {}
 
     public static void onPlayerTick(ServerPlayer player) {
@@ -36,7 +40,37 @@ public final class LotmActing {
     }
 
     public static void recordSkillUse(Player player, int points) { award(player, "skill", points); }
+    /** One research reward per distinct discovered type, pathway and sequence. */
+    public static int recordResearchDiscovery(Player player, String sourceId, int points) {
+        if (!isActive(player) || sourceId == null || sourceId.isBlank()) return 0;
+        CompoundTag tag = player.getPersistentData();
+        String key = researchKey(player);
+        ListTag seen = tag.getList(key, Tag.TAG_STRING);
+        StringTag id = StringTag.valueOf(sourceId);
+        if (seen.contains(id)) return 0;
+        int reward = award(player, "research", points);
+        // A clue discovered while the daily cap is full remains available for later study.
+        if (reward > 0) {
+            seen.add(id);
+            tag.put(key, seen);
+        }
+        return reward;
+    }
+
+    /** Existing API for other scripted research events; scans use unique discoveries. */
     public static void recordResearch(Player player, int points) { award(player, "research", points); }
+
+    private static String researchKey(Player player) {
+        return RESEARCH_PREFIX + LotmPath.of(player).id() + "_" + LotmState.sequence(player);
+    }
+
+    public static List<String> researchDiscoveries(Player player) {
+        if (!isActive(player)) return List.of();
+        ListTag seen = player.getPersistentData().getList(researchKey(player), Tag.TAG_STRING);
+        List<String> ids = new ArrayList<>(seen.size());
+        for (int i = 0; i < seen.size(); i++) ids.add(seen.getString(i));
+        return List.copyOf(ids);
+    }
 
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         Player player = event.getPlayer();
@@ -66,9 +100,17 @@ public final class LotmActing {
         };
     }
 
+    static long activityDay(long gameTime) {
+        return Math.floorDiv(gameTime, 24000L);
+    }
+
     private static void resetDailyIfNeeded(Player player) {
         CompoundTag tag = player.getPersistentData();
-        long day = player.level().getDayTime() / 24000L;
+        // Server game time cannot be accelerated by sleeping or /time set.
+        // Use the Overworld clock across every dimension.
+        long gameTime = player instanceof ServerPlayer server && server.getServer() != null
+                ? server.getServer().overworld().getGameTime() : player.level().getGameTime();
+        long day = activityDay(gameTime);
         if (!tag.contains(DAY_KEY) || tag.getLong(DAY_KEY) != day) {
             tag.putLong(DAY_KEY, day);
             tag.putInt(PREFIX + "exploration", 0);
@@ -110,8 +152,11 @@ public final class LotmActing {
         }
         for (LotmPath path : LotmPath.values()) {
             for (int sequence : new int[] {9, 8}) {
-                String key = "realscale_lotm_seen_" + path.id() + "_" + sequence;
-                if (source.contains(key)) target.put(key, source.get(key).copy());
+                String suffix = path.id() + "_" + sequence;
+                for (String key : new String[] {"realscale_lotm_seen_" + suffix,
+                        RESEARCH_PREFIX + suffix}) {
+                    if (source.contains(key)) target.put(key, source.get(key).copy());
+                }
             }
         }
     }
