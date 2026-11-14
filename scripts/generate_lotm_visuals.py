@@ -328,6 +328,19 @@ def _geometry_payload(creature_id: str, spec: dict) -> dict:
 
 def _animation_payload(creature_id: str, spec: dict) -> dict:
     prefix = f"animation.{creature_id}."
+    # Each species uses its own signature bones and a motion axis suited to its silhouette.
+    special_poses = {
+        "glow": (0, 0, 28),
+        "eye": (0, 22, 0),
+        "feathers": (0, 0, 36),
+        "spots": (30, 0, 0),
+        "rags": (0, 0, 32),
+        "fur": (0, 0, 28),
+        "plates": (0, 0, 22),
+        "shell": (0, 0, 18),
+        "stripes": (0, 0, 30),
+    }
+    special_pose = special_poses.get(spec["pattern"], (0, 0, 24))
     walk_tracks = {}
     for index, bone_name in enumerate(spec["walk_bones"]):
         swing = 20 if index % 2 == 0 else -20
@@ -346,6 +359,19 @@ def _animation_payload(creature_id: str, spec: dict) -> dict:
                 "0.0": [0, 0, 0],
                 "0.18": [swing, 0, 0],
                 "0.45": [0, 0, 0],
+            }
+        }
+    special_tracks = {}
+    for index, bone_name in enumerate(spec["attack_bones"]):
+        direction = 1 if index % 2 == 0 else -1
+        peak = [component * direction for component in special_pose]
+        settle = [round(component * direction * -0.35, 2) for component in special_pose]
+        special_tracks[bone_name] = {
+            "rotation": {
+                "0.0": [0, 0, 0],
+                "0.16": peak,
+                "0.38": settle,
+                "0.62": [0, 0, 0],
             }
         }
     return {
@@ -368,6 +394,11 @@ def _animation_payload(creature_id: str, spec: dict) -> dict:
                 "loop": False,
                 "animation_length": 0.45,
                 "bones": attack_tracks,
+            },
+            prefix + "special": {
+                "loop": False,
+                "animation_length": 0.62,
+                "bones": special_tracks,
             },
             prefix + "hurt": {
                 "loop": False,
