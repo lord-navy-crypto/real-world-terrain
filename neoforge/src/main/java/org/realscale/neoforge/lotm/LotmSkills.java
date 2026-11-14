@@ -7,6 +7,8 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
@@ -46,6 +48,10 @@ public final class LotmSkills {
         int detected = slot == 1 ? activatePrimary(player, expectedPath, sequence, mastery)
                 : activateSecondary(player, expectedPath, sequence, mastery);
         LotmActing.recordSkillUse(player, 2 + (9 - sequence), slot);
+        if (LotmPreferences.soundEnabled(player)) {
+            player.level().playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE,
+                    SoundSource.PLAYERS, 0.28F, sequence == 8 ? 0.92F : 1.08F);
+        }
 
         if (LotmPreferences.skillFeedbackEnabled(player)) {
             if (detected > 0) {
@@ -132,7 +138,8 @@ public final class LotmSkills {
                     player.displayClientMessage(Component.translatable("message.realscale.lotm.omen",
                             Component.translatable("message.realscale.lotm.bearing." + direction)), true);
                     // The omen creates a short directional shimmer, not a GPS marker.
-                    if (level instanceof ServerLevel server) {
+                    if (level instanceof ServerLevel server && LotmAppearance.enabled(player)
+                            && LotmConfig.APPEARANCE_EFFECTS.get()) {
                         double dx = nearest.getX() + 0.5D - player.getX();
                         double dy = nearest.getY() + 0.5D - player.getEyeY();
                         double dz = nearest.getZ() + 0.5D - player.getZ();
@@ -196,7 +203,8 @@ public final class LotmSkills {
             if (!level.hasChunkAt(pos) || !isOccultBlock(level, pos)) continue;
             LotmActing.recordResearchDiscovery(player, blockClue(level, pos), 2);
             detected++;
-            if (detected <= particleLimit && level instanceof ServerLevel server) {
+            if (detected <= particleLimit && level instanceof ServerLevel server
+                    && LotmAppearance.enabled(player) && LotmConfig.APPEARANCE_EFFECTS.get()) {
                 server.sendParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5, pos.getY() + 0.8,
                         pos.getZ() + 0.5, 6, 0.18, 0.25, 0.18, 0.02);
             }
