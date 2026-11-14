@@ -49,7 +49,7 @@
   "item.realscale.lotm_divination_pendulum": "占卜灵摆",
   "entity.realscale.lotm.shroudman": "布套人",
   "message.realscale.lotm.status": "途径：%s | 序列%s | 灵性：%s/%s | 消化：%s/100",
-  "message.realscale.lotm.guide": "LOTM RPG：当前开放四条途径的序列9和序列8。指南分栏：/lotm guide creatures、flora、minerals、alchemy、progression。使用 /lotm panel 打开可操作的超凡面板，使用 /lotm hud 开启快捷栏状态显示，使用 /lotm appearance 切换途径气场，使用 /lotm journal 查阅调查手记。序列7仍然封存。",
+  "message.realscale.lotm.guide": "LOTM RPG：当前开放四条途径的序列9和序列8。指南分栏：/lotm guide creatures、flora、minerals、alchemy、progression。使用 /lotm panel 打开超凡面板，使用 /lotm diagnose 进行只读注册、配方和角色数据自检，使用 /lotm hud 开启快捷栏状态显示，使用 /lotm appearance 切换途径气场，使用 /lotm journal 查阅调查手记。序列7仍然封存。",
   "message.realscale.lotm.seer_only": "只有占卜家的灵性能驱动灵摆。",
   "message.realscale.lotm.low_spirit": "灵性不足，可以随时间缓慢恢复。",
   "message.realscale.lotm.sense_spirit": "灵视发现 %s 处线索 | 剩余灵性：%s/100",
