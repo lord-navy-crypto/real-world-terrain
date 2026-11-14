@@ -22,6 +22,7 @@ ITEMS = [
     "lotm_mystery_pryer_potion", "lotm_sleepless_potion",
     "lotm_corpse_collector_potion", "lotm_shroudman_crystal",
     "lotm_divination_pendulum",
+    "lotm_stability_sigil",
     "lotm_hornacis_goat_horn", "lotm_ironarm_spine", "lotm_four_eyed_turtle_heart", "lotm_crimson_howler_voice", "lotm_death_crow_eye", "lotm_mist_treant_root", "lotm_evil_pattern_panther_essence", "lotm_stag_beast_antler", "lotm_grey_grandmother_eye", "lotm_dream_crow_heart", "lotm_nightmare_shadow_core", "lotm_spectral_cat_paw", "lotm_spirit_quartz", "lotm_occult_catalyst", "lotm_seer_s9_characteristic", "lotm_seer_s8_characteristic", "lotm_seer_s8_potion", "lotm_seer_s7_characteristic", "lotm_seer_s7_potion", "lotm_mystery_pryer_s9_characteristic", "lotm_mystery_pryer_s8_characteristic", "lotm_mystery_pryer_s8_potion", "lotm_mystery_pryer_s7_characteristic", "lotm_mystery_pryer_s7_potion", "lotm_sleepless_s9_characteristic", "lotm_sleepless_s8_characteristic", "lotm_sleepless_s8_potion", "lotm_sleepless_s7_characteristic", "lotm_sleepless_s7_potion", "lotm_corpse_collector_s9_characteristic", "lotm_corpse_collector_s8_characteristic", "lotm_corpse_collector_s8_potion", "lotm_corpse_collector_s7_characteristic", "lotm_corpse_collector_s7_potion", "lotm_spirit_ember",
 ]
 BLOCKS = [
