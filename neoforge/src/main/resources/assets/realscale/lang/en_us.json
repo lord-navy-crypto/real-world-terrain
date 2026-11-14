@@ -307,5 +307,6 @@
   "gui.realscale.lotm_panel.manual_hint": "Craft skill manuals in the Occult Alchemical Apparatus.",
   "gui.realscale.lotm_panel.setting.hud_refresh": "HUD refresh: %s ticks",
   "gui.realscale.lotm_panel.setting.aura_interval": "Aura interval: %s ticks",
-  "gui.realscale.lotm_panel.setting.manual_alchemy": "Manual alchemy: %s ticks"
+  "gui.realscale.lotm_panel.setting.manual_alchemy": "Manual alchemy: %s ticks",
+  "message.realscale.lotm.skills.mastery": "Skill %s manual mastery: %s/%s."
 }
