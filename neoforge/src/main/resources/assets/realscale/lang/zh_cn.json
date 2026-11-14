@@ -440,5 +440,12 @@
   "gui.realscale.lotm_panel.settings.hud_refresh": "状态栏：%s刻",
   "gui.realscale.lotm_panel.settings.aura_interval": "气场：%s刻",
   "gui.realscale.lotm_panel.settings.manual_alchemy": "手册炼制：%s刻",
-  "gui.realscale.lotm_panel.skill_tree.unavailable": "当前序列没有可用的主动技能"
+  "gui.realscale.lotm_panel.skill_tree.unavailable": "当前序列没有可用的主动技能",
+  "gui.realscale.lotm_panel.journal.filter.all": "全部",
+  "gui.realscale.lotm_panel.journal.filter.entity": "生物",
+  "gui.realscale.lotm_panel.journal.filter.block": "方块",
+  "gui.realscale.lotm_panel.journal.filter.item": "物品",
+  "gui.realscale.lotm_panel.journal.filter.biome": "群系",
+  "gui.realscale.lotm_panel.journal.filter.other": "其他",
+  "gui.realscale.lotm_panel.journal.filtered_count": "筛选结果：%s / %s"
 }
