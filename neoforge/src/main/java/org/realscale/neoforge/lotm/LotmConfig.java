@@ -20,6 +20,15 @@ public final class LotmConfig {
     public static final ModConfigSpec.IntValue ALCHEMY_SEQUENCE9_TICKS;
     public static final ModConfigSpec.IntValue ALCHEMY_SEQUENCE8_TICKS;
     public static final ModConfigSpec.IntValue DIGESTION_REWARD_PERCENT;
+    public static final ModConfigSpec.BooleanValue SKILLS_ENABLED;
+    public static final ModConfigSpec.BooleanValue SKILL_BOOKS_ENABLED;
+    public static final ModConfigSpec.BooleanValue APPEARANCE_EFFECTS;
+    public static final ModConfigSpec.IntValue SKILL_MASTERY_CAP;
+    public static final ModConfigSpec.IntValue SKILL_COST_PERCENT;
+    public static final ModConfigSpec.IntValue ALCHEMY_SKILL_MANUAL_TICKS;
+    public static final ModConfigSpec.IntValue HUD_REFRESH_TICKS;
+    public static final ModConfigSpec.IntValue APPEARANCE_INTERVAL_TICKS;
+    public static final ModConfigSpec.IntValue MATERIAL_DROP_CHANCE_PERCENT;
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
         b.push("lotm");
@@ -47,6 +56,24 @@ public final class LotmConfig {
                 .defineInRange("alchemySequence8Ticks", 240, 20, 4800);
         DIGESTION_REWARD_PERCENT = b.comment("Scale NPC-free acting rewards (100 = default).")
                 .defineInRange("digestionRewardPercent", 100, 0, 300);
+        SKILLS_ENABLED = b.comment("Enable the eight server-authoritative low-sequence pathway abilities.")
+                .define("skillsEnabled", true);
+        SKILL_BOOKS_ENABLED = b.comment("Allow crafted pathway study manuals to increase skill mastery.")
+                .define("skillBooksEnabled", true);
+        APPEARANCE_EFFECTS = b.comment("Allow optional pathway-colored supernatural aura particles.")
+                .define("appearanceEffects", true);
+        SKILL_MASTERY_CAP = b.comment("Maximum manual mastery rank per skill (Sequence 9 is always capped at 1).")
+                .defineInRange("skillMasteryCap", 2, 1, 2);
+        SKILL_COST_PERCENT = b.comment("Scale active skill spirituality costs (100 = default).")
+                .defineInRange("skillCostPercent", 100, 25, 200);
+        ALCHEMY_SKILL_MANUAL_TICKS = b.comment("Alchemy processing time for pathway skill manuals.")
+                .defineInRange("alchemySkillManualTicks", 160, 20, 2400);
+        HUD_REFRESH_TICKS = b.comment("Action-bar HUD refresh interval in server ticks.")
+                .defineInRange("hudRefreshTicks", 40, 20, 200);
+        APPEARANCE_INTERVAL_TICKS = b.comment("Pathway aura particle interval in server ticks.")
+                .defineInRange("appearanceIntervalTicks", 20, 10, 200);
+        MATERIAL_DROP_CHANCE_PERCENT = b.comment("Chance for active LOTM creatures to drop their signature material.")
+                .defineInRange("materialDropChancePercent", 100, 0, 100);
         b.pop();
         SPEC = b.build();
     }
