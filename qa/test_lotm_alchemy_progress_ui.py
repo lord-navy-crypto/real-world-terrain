@@ -20,7 +20,9 @@ class LotmAlchemyProgressUiTests(unittest.TestCase):
         screen = (CLIENT / "LotmStatusScreen.java").read_text(encoding="utf-8")
         self.assertIn("renderRecipeItemTooltip(graphics, mouseX, mouseY)", screen)
         self.assertIn("recipe.getIngredients()", screen)
-        self.assertIn("graphics.renderTooltip(font, choices[0], mouseX, mouseY)", screen)
+        self.assertIn("choices[choice].getHoverName()", screen)
+        self.assertIn("ingredient_options", screen)
+        self.assertIn("Math.min(choices.length, 8)", screen)
         self.assertIn("graphics.renderTooltip(font, result, mouseX, mouseY)", screen)
         self.assertIn("LotmContent.SPIRIT_EMBER.get()", screen)
 
