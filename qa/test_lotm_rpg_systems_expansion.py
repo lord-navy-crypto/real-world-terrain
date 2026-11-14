@@ -249,6 +249,19 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockPlace)", mod)
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockBreak)", mod)
 
+    def test_dedicated_server_smoke_summons_all_active_creature_types(self):
+        smoke = (ROOT / "qa/neoforge/rcon_usgs_center_smoke.py").read_text(encoding="utf-8")
+        kinds = (JAVA / "lotm/LotmCreatureKind.java").read_text(encoding="utf-8")
+        self.assertIn("def verify_lotm_creature_registry(rcon: Rcon)", smoke)
+        self.assertIn("data get entity @e[type={entity_type},sort=nearest,limit=1] Health", smoke)
+        self.assertIn("verify_lotm_creature_registry(rcon)", smoke)
+        for creature_id in ("starlit_squid", "nightmare_eye", "night_owl",
+                            "black_spotted_frog", "shroudman", "hornacis_goat",
+                            "ironarm_beast", "four_eyed_turtle", "crimson_howler",
+                            "death_crow"):
+            self.assertIn('"' + creature_id + '"', smoke)
+            self.assertIn('"' + creature_id + '"', kinds)
+
     def test_actionbar_hud_is_opt_in_server_authoritative_and_bilingual(self):
         hud = (JAVA / "lotm/LotmHud.java").read_text(encoding="utf-8")
         events = (JAVA / "lotm/LotmEvents.java").read_text(encoding="utf-8")
