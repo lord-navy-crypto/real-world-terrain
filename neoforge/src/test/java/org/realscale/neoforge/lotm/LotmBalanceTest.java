@@ -56,12 +56,18 @@ class LotmBalanceTest {
         assertEquals("up", LotmBalance.bearing(0, 1, 8));
         assertEquals("down", LotmBalance.bearing(0, 2, -8));
         assertEquals("near", LotmBalance.bearing(0, 0, 0));
+        assertEquals("west", LotmBalance.bearing(Integer.MIN_VALUE, 0, 0));
+        assertEquals("up", LotmBalance.bearing(0, 0, Integer.MAX_VALUE));
+        assertEquals("down", LotmBalance.bearing(0, 0, Integer.MIN_VALUE));
     }
     @Test void spiritFocusImprovesOnlyConfiguredRecoveryIntervals() {
         assertEquals(2, LotmBalance.spiritRecovery(2, false));
         assertEquals(3, LotmBalance.spiritRecovery(2, true));
         assertEquals(0, LotmBalance.spiritRecovery(-5, false));
         assertEquals(1, LotmBalance.spiritRecovery(-5, true));
+        assertEquals(Integer.MAX_VALUE, LotmBalance.spiritRecovery(Integer.MAX_VALUE, true));
+        assertEquals(Integer.MAX_VALUE, LotmBalance.spiritRecovery(Integer.MAX_VALUE, false));
+        assertEquals(1, LotmBalance.spiritRecovery(Integer.MIN_VALUE, true));
     }
 
     @Test void divinationPendulumOnlyDiscountsSeerSecondarySkill() {
