@@ -41,11 +41,35 @@ class LotmSkillManualAndPanelTests(unittest.TestCase):
                 self.assertTrue(en.get("item.realscale." + item_id))
                 self.assertTrue(zh.get("item.realscale." + item_id))
                 self.assertIn(item_id, generator.ITEMS)
+                for sequence in (9, 8):
+                    self.assertTrue(en.get(f"lotm.realscale.skill_manuals.{path}.{sequence}.{slot}"))
+                    self.assertTrue(zh.get(f"lotm.realscale.skill_manuals.{path}.{sequence}.{slot}"))
                 png = generator.png_bytes(item_id)
                 self.assertTrue(png.startswith(bytes((137, 80, 78, 71, 13, 10, 26, 10))))
                 self.assertNotIn(png, seen)
                 seen.add(png)
         self.assertEqual(8, len(seen))
+
+    def test_all_six_active_minerals_and_eight_ability_icons_have_distinct_original_art(self):
+        generator = load_generator()
+        minerals = ("star_crystal", "cursed_crystal", "grave_crystal",
+                    "lunar_mica", "echo_quartz", "abyssal_salt")
+        for mineral in minerals:
+            self.assertIn("lotm_" + mineral, generator.MINERAL_TEXTURE_PALETTES)
+            self.assertIn("lotm_" + mineral + "_ore", generator.MINERAL_TEXTURE_PALETTES)
+        material_ids = (
+            "lotm_lavas_squid_essence", "lotm_nightmare_eye_shard",
+            "lotm_night_owl_token", "lotm_black_spotted_frog_token",
+            "lotm_shroudman_crystal", "lotm_hornacis_goat_horn",
+            "lotm_ironarm_spine", "lotm_four_eyed_turtle_heart",
+            "lotm_crimson_howler_voice", "lotm_death_crow_eye",
+            "lotm_spirit_ember", "lotm_occult_catalyst",
+        )
+        for name in material_ids:
+            blob = generator.png_bytes(name)
+            self.assertTrue(blob.startswith(bytes((137, 80, 78, 71, 13, 10, 26, 10))))
+        ability_icons = [generator.png_bytes(name) for name in generator.ABILITIES]
+        self.assertEqual(8, len(set(ability_icons)))
 
     def test_sixteen_manual_recipes_use_the_correct_rank_materials_and_distinct_binders(self):
         for path, ranks in PATHWAYS.items():
@@ -113,6 +137,7 @@ class LotmSkillManualAndPanelTests(unittest.TestCase):
         self.assertIn("LotmAppearance.toggle(serverPlayer)", menu)
         self.assertIn("handleInventoryButtonClick", screen)
         self.assertIn("skillMasteryCap()", menu)
+        self.assertIn("lotm.realscale.skill_manuals.", screen)
 
     def test_appearance_is_opt_in_path_specific_and_configurable(self):
         appearance = (JAVA / "LotmAppearance.java").read_text(encoding="utf-8")
