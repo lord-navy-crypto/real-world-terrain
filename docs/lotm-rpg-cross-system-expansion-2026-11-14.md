@@ -85,6 +85,11 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - The sigil is not consumed when the player has no instability. Creative players retain their item.
 - Instability recovery is reversible and does not alter the legacy NBT key.
 
+### 14. Runtime overhead and canceled-placement hardening
+- Unauthorized Player Abilities grants are still rejected synchronously by `AbilityGrantedEvent`, and full audits still run on login/progression sync. The defensive fallback scan is now throttled to once per 20 player ticks rather than allocating/copying grant maps every tick.
+- Canceled `EntityPlaceEvent` events are ignored before writing resource provenance, preventing phantom anti-farming marks when another event handler cancels placement.
+- A focused JUnit test covers the audit cadence across ordinary, negative and large tick values; static QA protects event wiring and canceled-placement ordering.
+
 ### 13. Promotion recipe matrix and progression threshold regression coverage
 - Static QA now enumerates the exact active recipe filenames: 4 pathways × 2 ranks × 2 crafting routes = 16 recipes.
 - Each normal alchemy recipe is checked for four distinct registered inputs; each complete-characteristic alternative is checked for three distinct registered inputs. All outputs and characteristics must have item models and bilingual display names.
