@@ -158,11 +158,11 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         skillFeedbackToggle = addRenderableWidget(Button.builder(Component.empty(),
                 button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
                         LotmStatusMenu.BUTTON_TOGGLE_SKILL_FEEDBACK))
-                .bounds(leftPos + 10, topPos + 258, 144, 16).build());
+                .bounds(leftPos + 10, topPos + 258, 96, 16).build());
         journalNotificationsToggle = addRenderableWidget(Button.builder(Component.empty(),
                 button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
                         LotmStatusMenu.BUTTON_TOGGLE_JOURNAL_NOTIFICATIONS))
-                .bounds(leftPos + 166, topPos + 258, 144, 16).build());
+                .bounds(leftPos + 112, topPos + 258, 96, 16).build());
         particlesToggle = addRenderableWidget(Button.builder(Component.empty(),
                 button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
                         LotmStatusMenu.BUTTON_TOGGLE_PARTICLES))
