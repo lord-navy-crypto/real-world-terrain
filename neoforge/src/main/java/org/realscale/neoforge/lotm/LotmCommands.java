@@ -24,6 +24,16 @@ public final class LotmCommands {
                         LotmBalance.MAX_SPIRIT, LotmState.digestion(player)), false);
                 context.getSource().sendSuccess(() -> Component.translatable(
                         "message.realscale.lotm.instability", LotmState.instability(player)), false);
+                Component accessory = LotmCurios.hasSpiritFocus(player)
+                        ? Component.translatable("item.realscale.lotm_spirit_focus")
+                        : LotmCurios.hasDivinationPendulum(player)
+                                ? Component.translatable("item.realscale.lotm_divination_pendulum")
+                                : Component.translatable("message.realscale.lotm.status.no_accessory");
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        "message.realscale.lotm.status.accessory", accessory), false);
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        "message.realscale.lotm.status.surcharge",
+                        LotmBalance.instabilitySurcharge(LotmState.instability(player))), false);
                 return 1;
             }))
             .then(Commands.literal("materials").executes(context -> {
