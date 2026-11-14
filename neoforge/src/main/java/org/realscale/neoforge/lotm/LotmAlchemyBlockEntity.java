@@ -51,7 +51,8 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
         private MachineInventory() { super(6); }
         @Override public boolean isItemValid(int slot, ItemStack stack) {
             if (slot == FUEL_SLOT) return stack.is(LotmContent.SPIRIT_EMBER.get());
-            if (slot == OUTPUT_SLOT) return internalOutputWrite && stack.getItem() instanceof LotmPotionItem;
+            if (slot == OUTPUT_SLOT) return internalOutputWrite
+                    && (stack.getItem() instanceof LotmPotionItem || stack.getItem() instanceof LotmSkillBookItem);
             return slot >= 0 && slot < GRID_SIZE;
         }
         void setOutput(ItemStack stack) {
@@ -133,14 +134,28 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
         if (match.isEmpty()) { machine.resetProgress(); machine.setMachineStatus(STATUS_NO_RECIPE); return; }
         RecipeHolder<LotmAlchemyRecipe> holder = match.get();
         ItemStack result = holder.value().assemble(input, server.registryAccess());
-        if (result.isEmpty() || !(result.getItem() instanceof LotmPotionItem potion)
-                || potion.sequence() < 8 || potion.sequence() > 9) {
+        int configuredTicks;
+        if (result.isEmpty()) {
             machine.resetProgress();
             machine.setMachineStatus(STATUS_UNAVAILABLE);
             return;
         }
-        int configuredTicks = LotmBalance.alchemyTicks(potion.sequence(),
-                LotmConfig.ALCHEMY_SEQUENCE9_TICKS.get(), LotmConfig.ALCHEMY_SEQUENCE8_TICKS.get());
+        if (result.getItem() instanceof LotmPotionItem potion) {
+            if (potion.sequence() < 8 || potion.sequence() > 9) {
+                machine.resetProgress();
+                machine.setMachineStatus(STATUS_UNAVAILABLE);
+                return;
+            }
+            configuredTicks = LotmBalance.alchemyTicks(potion.sequence(),
+                    LotmConfig.ALCHEMY_SEQUENCE9_TICKS.get(), LotmConfig.ALCHEMY_SEQUENCE8_TICKS.get());
+        } else if (result.getItem() instanceof LotmSkillBookItem
+                && LotmConfig.SKILLS_ENABLED.get() && LotmConfig.SKILL_BOOKS_ENABLED.get()) {
+            configuredTicks = LotmConfig.ALCHEMY_SKILL_MANUAL_TICKS.get();
+        } else {
+            machine.resetProgress();
+            machine.setMachineStatus(STATUS_UNAVAILABLE);
+            return;
+        }
         if (configuredTicks <= 0) {
             machine.resetProgress();
             machine.setMachineStatus(STATUS_UNAVAILABLE);
