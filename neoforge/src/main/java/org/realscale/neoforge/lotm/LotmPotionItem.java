@@ -85,16 +85,11 @@ public final class LotmPotionItem extends Item {
         if (!(entity instanceof Player player) || level.isClientSide()) return stack;
         if (!LotmConfig.ENABLED.get()) return stack;
 
-        LotmPath current = LotmPath.of(player);
-        String result = LotmProgression.validate(current == null ? null : current.id(),
-                LotmState.sequence(player), pathway.id(), sequence, LotmState.practice(player),
-                characteristic, LotmConfig.POTION_PRACTICE.get(), LotmConfig.CHARACTERISTIC_PRACTICE.get());
-        if (!result.equals("ready")) {
+        String result = LotmState.advance(player, pathway, sequence, characteristic);
+        if (!"ready".equals(result)) {
             player.displayClientMessage(Component.translatable("message.realscale.lotm.advance." + result), true);
             return stack;
         }
-
-        LotmState.advance(player, pathway, sequence, characteristic);
         if (!player.getAbilities().instabuild) stack.shrink(1);
         player.displayClientMessage(Component.translatable("message.realscale.lotm.advanced_rank",
                 Component.translatable("lotm.realscale.rank." + pathway.id() + "." + sequence),
