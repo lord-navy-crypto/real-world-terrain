@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_echo_quartz"
+    },
+    {
+      "item": "realscale:lotm_lunar_mica"
+    },
+    {
+      "item": "realscale:lotm_spirit_ember"
+    },
+    {
+      "item": "minecraft:paper"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_stability_sigil",
+    "count": 1
+  }
+}
