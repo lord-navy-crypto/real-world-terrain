@@ -420,7 +420,7 @@
   "gui.realscale.lotm_panel.skill_tree.disabled": "服务器已禁用主动能力",
   "gui.realscale.lotm_panel.skill_tree.archived": "当前序列暂未开放",
   "gui.realscale.lotm_panel.journal.daily_progress": "每日扮演进度",
-  "gui.realscale.lotm_panel.journal.recent": "近期线索 · %s",
+  "gui.realscale.lotm_panel.journal.recent": "最近64条 · 共%s条",
   "gui.realscale.lotm_panel.journal.entry": "线索：%s",
   "gui.realscale.lotm_panel.journal.empty": "尚无研究记录。使用途径能力调查新的超凡矿物、植物或生物。",
   "gui.realscale.lotm_panel.journal.page": "第 %s / %s 页",
