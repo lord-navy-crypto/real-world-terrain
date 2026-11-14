@@ -32,6 +32,11 @@ public final class LotmBalance {
 
     /** Server-validated costs for the two configurable pathway skill keys. */
     public static int skillCost(String pathway, int slot, int sequence) {
+        return skillCost(pathway, slot, sequence, false);
+    }
+
+    /** The Pendulum specializes Seer divination; it never discounts other pathways. */
+    public static int skillCost(String pathway, int slot, int sequence, boolean hasPendulum) {
         if (sequence < 8 || sequence > 9) return MAX_SPIRIT;
         int base = switch (slot) {
             case 1 -> focusCost(pathway);
@@ -45,7 +50,20 @@ public final class LotmBalance {
             default -> MAX_SPIRIT;
         };
         if (base >= MAX_SPIRIT) return MAX_SPIRIT;
-        return base + (9 - sequence) * (slot == 1 ? 5 : 4);
+        int rankCost = base + (9 - sequence) * (slot == 1 ? 5 : 4);
+        int discount = hasPendulum && "seer".equals(pathway) && slot == 2 ? 4 : 0;
+        return Math.max(1, rankCost - discount);
+    }
+
+    /** A worn Spirit Focus adds one point to each normal recovery interval. */
+    public static int spiritRecovery(int configuredAmount, boolean hasSpiritFocus) {
+        return Math.max(0, configuredAmount) + (hasSpiritFocus ? 1 : 0);
+    }
+
+    /** The Pendulum modestly extends the Seer's coarse local omen survey. */
+    public static int divinationRadius(int sequence, boolean hasPendulum) {
+        if (sequence < 8 || sequence > 9) return 0;
+        return (sequence == 8 ? 12 : 10) + (hasPendulum ? 2 : 0);
     }
 
     public static int skillCooldownTicks(int slot, int sequence) {
