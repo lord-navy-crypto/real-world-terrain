@@ -112,6 +112,7 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn("JOURNAL_NEWEST_FIRST", screen)
         self.assertIn("journalTimestamp", screen)
         self.assertIn("journalTimeLabel", screen)
+        self.assertIn("journal.empty_search", screen)
         self.assertIn("journal.status.short.", screen)
         self.assertIn("journal.category.", screen)
 
@@ -121,7 +122,7 @@ class LotmConsoleRefinementTests(unittest.TestCase):
             "skill.tooltip.state.disabled", "skill.tooltip.state.low_spirit",
             "skill.tooltip.cost", "skill.tooltip.cooldown", "skill.tooltip.mastery",
             "journal.search", "journal.search_hint", "journal.sort.newest", "journal.sort.oldest",
-            "journal.timestamp", "journal.status.discovered", "journal.status.verified",
+            "journal.timestamp", "journal.empty_search", "journal.status.discovered", "journal.status.verified",
             "journal.status.incomplete", "journal.category.potion", "journal.category.material",
             "journal.category.alchemy", "journal.category.skill", "journal.category.pathway",
             "settings.page.personal", "settings.page.interface", "settings.scale",
