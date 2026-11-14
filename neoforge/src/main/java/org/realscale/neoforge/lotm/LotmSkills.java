@@ -108,7 +108,8 @@ public final class LotmSkills {
                 BlockPos origin = player.blockPosition();
                 BlockPos nearest = null;
                 double nearestDistance = Double.MAX_VALUE;
-                int radius = sequence == 8 ? 12 : 10;
+                int radius = LotmBalance.divinationRadius(sequence,
+                        LotmCurios.hasDivinationPendulum(player));
                 for (BlockPos pos : BlockPos.betweenClosed(
                         origin.offset(-radius, -6, -radius), origin.offset(radius, 6, radius))) {
                     if (!level.hasChunkAt(pos) || !isOccultBlock(level, pos)) continue;
