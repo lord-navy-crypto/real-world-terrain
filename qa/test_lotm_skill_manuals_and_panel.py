@@ -137,7 +137,10 @@ class LotmSkillManualAndPanelTests(unittest.TestCase):
         self.assertIn("LotmAppearance.toggle(serverPlayer)", menu)
         self.assertIn("handleInventoryButtonClick", screen)
         self.assertIn("skillMasteryCap()", menu)
+        self.assertIn("hasDivinationPendulum()", menu)
+        self.assertIn("menu.hasDivinationPendulum()", screen)
         self.assertIn("lotm.realscale.skill_manuals.", screen)
+        self.assertIn("gui.realscale.lotm_panel.skill.", screen)
 
     def test_appearance_is_opt_in_path_specific_and_configurable(self):
         appearance = (JAVA / "LotmAppearance.java").read_text(encoding="utf-8")
@@ -162,6 +165,41 @@ class LotmSkillManualAndPanelTests(unittest.TestCase):
                     "message.realscale.lotm.config.presentation",
                     "message.realscale.lotm.config.materials"):
             self.assertIn(key, commands)
+
+    def test_skill_tab_has_pathway_specific_names_and_effects_in_both_locales(self):
+        en = json.loads((ASSETS / "lang/en_us.json").read_text(encoding="utf-8"))
+        zh = json.loads((ASSETS / "lang/zh_cn.json").read_text(encoding="utf-8"))
+        for path in PATHWAYS:
+            for slot in (1, 2):
+                base = f"gui.realscale.lotm_panel.skill.{path}.{slot}"
+                self.assertTrue(en.get(base + ".name"), "missing English skill name " + base)
+                self.assertTrue(en.get(base + ".description"), "missing English skill description " + base)
+                self.assertTrue(zh.get(base + ".name"), "missing Chinese skill name " + base)
+                self.assertTrue(zh.get(base + ".description"), "missing Chinese skill description " + base)
+
+    def test_in_game_diagnostic_is_read_only_and_checks_live_registries_and_recipe_manager(self):
+        diagnostic = (JAVA / "LotmRpgDiagnostics.java").read_text(encoding="utf-8")
+        commands = (JAVA / "LotmCommands.java").read_text(encoding="utf-8")
+        self.assertIn('Commands.literal("diagnose")', commands)
+        self.assertIn("LotmRpgDiagnostics.run(player)", commands)
+        self.assertIn("BuiltInRegistries.BLOCK.getKey", diagnostic)
+        self.assertIn("BuiltInRegistries.ITEM.getKey", diagnostic)
+        self.assertIn("getAllRecipesFor(LotmAlchemyContent.ALCHEMY_RECIPE_TYPE.get())", diagnostic)
+        self.assertIn("instanceof LotmSkillBookItem", diagnostic)
+        self.assertIn("CREATURE_MATERIALS", diagnostic)
+        self.assertIn("LotmContent.skillBook(path, slot)", diagnostic)
+        self.assertNotIn("putInt(", diagnostic)
+        self.assertNotIn("shrink(", diagnostic)
+
+    def test_diagnostic_messages_are_localized(self):
+        en = json.loads((ASSETS / "lang/en_us.json").read_text(encoding="utf-8"))
+        zh = json.loads((ASSETS / "lang/zh_cn.json").read_text(encoding="utf-8"))
+        for suffix in ("header", "ores", "minerals", "flora", "creature_materials",
+                       "skill_manuals", "alchemy", "manual_recipes", "config", "player",
+                       "section", "summary", "scope", "no_path", "player_detail"):
+            key = "message.realscale.lotm.diagnose." + suffix
+            self.assertTrue(en.get(key), "missing English diagnostic key " + key)
+            self.assertTrue(zh.get(key), "missing Chinese diagnostic key " + key)
 
     def test_both_locales_cover_manual_tooltips_panel_and_config(self):
         en = json.loads((ASSETS / "lang/en_us.json").read_text(encoding="utf-8"))
