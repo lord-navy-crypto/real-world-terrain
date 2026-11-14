@@ -204,7 +204,8 @@ public final class LotmSkills {
             LotmActing.recordResearchDiscovery(player, blockClue(level, pos), 2);
             detected++;
             if (detected <= particleLimit && level instanceof ServerLevel server
-                    && LotmAppearance.enabled(player) && LotmConfig.APPEARANCE_EFFECTS.get()) {
+                    && LotmAppearance.enabled(player) && LotmConfig.APPEARANCE_EFFECTS.get()
+                    && LotmPreferences.particlesEnabled(player)) {
                 server.sendParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5, pos.getY() + 0.8,
                         pos.getZ() + 0.5, 6, 0.18, 0.25, 0.18, 0.02);
             }
