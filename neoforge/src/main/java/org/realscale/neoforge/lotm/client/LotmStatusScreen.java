@@ -231,7 +231,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.mastery", mastery,
                         sequence == 9 ? 1 : menu.skillMasteryCap()), 14, y + 25, 0xFFD7CDE4, false);
                 graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.skill_cost", cost,
-                        LotmBalance.skillCooldownTicks(slot, sequence)), 14, y + 36, 0xFFB8ADC9, false);
+                        LotmBalance.skillCooldownTicks(slot, sequence)), 14, y + 36,
+                        menu.spirit() < cost ? 0xFFEAA0A0 : 0xFFB8ADC9, false);
             }
         } else if (selectedTab == 2) {
             int nextSequence = menu.sequence() - 1;

@@ -129,6 +129,22 @@ public final class LotmSkills {
                             nearest.getZ() - origin.getZ(), nearest.getY() - origin.getY());
                     player.displayClientMessage(Component.translatable("message.realscale.lotm.omen",
                             Component.translatable("message.realscale.lotm.bearing." + direction)), true);
+                    // The omen creates a short directional shimmer, not a GPS marker.
+                    if (level instanceof ServerLevel server) {
+                        double dx = nearest.getX() + 0.5D - player.getX();
+                        double dy = nearest.getY() + 0.5D - player.getEyeY();
+                        double dz = nearest.getZ() + 0.5D - player.getZ();
+                        double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                        if (distance > 0.001D) {
+                            for (int step = 1; step <= 6; step++) {
+                                double scale = Math.min(distance, step * 0.65D) / distance;
+                                server.sendParticles(ParticleTypes.END_ROD,
+                                        player.getX() + dx * scale, player.getEyeY() + dy * scale,
+                                        player.getZ() + dz * scale, 1,
+                                        0.02D, 0.02D, 0.02D, 0.0D);
+                            }
+                        }
+                    }
                     LotmActing.recordResearchDiscovery(player, blockClue(level, nearest), 2);
                     detected = 1;
                 }

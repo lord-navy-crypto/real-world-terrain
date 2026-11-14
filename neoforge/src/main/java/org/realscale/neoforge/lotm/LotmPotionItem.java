@@ -2,6 +2,10 @@ package org.realscale.neoforge.lotm;
 
 import java.util.List;
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
@@ -101,6 +105,14 @@ public final class LotmPotionItem extends Item {
         player.displayClientMessage(Component.translatable("message.realscale.lotm.advanced_rank",
                 Component.translatable("lotm.realscale.rank." + pathway.id() + "." + sequence),
                 sequence), false);
+        // An actual in-world advancement cue, played only after the server accepted the potion.
+        if (level instanceof ServerLevel server) {
+            server.sendParticles(characteristic ? ParticleTypes.SOUL : ParticleTypes.ENCHANT,
+                    player.getX(), player.getY() + 1.0D, player.getZ(),
+                    22, 0.45D, 0.7D, 0.45D, 0.03D);
+            server.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP,
+                    SoundSource.PLAYERS, 0.65F, characteristic ? 0.85F : 1.15F);
+        }
         if (characteristic) {
             player.displayClientMessage(Component.translatable("message.realscale.lotm.direct_unease"), false);
         }
