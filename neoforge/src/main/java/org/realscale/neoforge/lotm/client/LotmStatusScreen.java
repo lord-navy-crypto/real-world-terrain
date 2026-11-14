@@ -133,8 +133,9 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.hud_refresh", menu.hudRefreshTicks()), 135, 68, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.aura_interval", menu.appearanceIntervalTicks()), 135, 83, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.manual_alchemy", menu.manualAlchemyTicks()), 135, 98, 0xFFD7CDE4, false);
-            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.hud", onOff(menu.hudEnabled())), 135, 113, 0xFFB8ADC9, false);
-            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.aura", onOff(menu.appearanceEnabled())), 135, 128, 0xFFB8ADC9, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.mastery_cap", menu.skillMasteryCap()), 135, 113, 0xFFD7CDE4, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.hud", onOff(menu.hudEnabled())), 135, 128, 0xFFB8ADC9, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.aura", onOff(menu.appearanceEnabled())), 135, 143, 0xFFB8ADC9, false);
         }
     }
 
