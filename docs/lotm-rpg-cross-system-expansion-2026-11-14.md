@@ -85,6 +85,12 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - The sigil is not consumed when the player has no instability. Creative players retain their item.
 - Instability recovery is reversible and does not alter the legacy NBT key.
 
+### 16. Progression and daily acting arithmetic hardening
+- Spirituality regeneration and digestion accumulation now add using `long` intermediates before clamping to their 0–100 limits.
+- Daily acting counters normalize malformed negative/over-cap values before displaying or awarding progress.
+- Scaled acting rewards use `long` multiplication and are capped by the category's remaining allowance, preventing integer overflow from corrupt or future scripted inputs.
+- JUnit and static QA cover integer extremes and malformed counter values.
+
 ### 15. Alchemy result stack invariants
 - Output acceptance now validates result count against the item's maximum stack size even when the output slot is empty.
 - Occupied slots require matching item/components and enough remaining capacity; count addition uses `long` arithmetic to avoid integer overflow from malformed recipe data.
