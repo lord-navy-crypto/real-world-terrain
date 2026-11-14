@@ -249,6 +249,16 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockPlace)", mod)
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockBreak)", mod)
 
+    def test_creatures_have_noncombat_schooling_and_pack_regrouping(self):
+        behavior = (JAVA / "lotm/LotmCreatureBehavior.java").read_text(encoding="utf-8")
+        creature = (JAVA / "lotm/LotmCreature.java").read_text(encoding="utf-8")
+        self.assertIn("followsSameKind(kind)", creature)
+        self.assertIn("new FollowSameKindGoal(this", creature)
+        self.assertIn("candidate.kind() == creature.kind()", creature)
+        self.assertIn("creature.getTarget() != null", creature)
+        self.assertIn("LotmCreatureKind.STARLIT_SQUID", behavior)
+        self.assertIn("LotmCreatureKind.CRIMSON_HOWLER", behavior)
+
     def test_unknown_material_drop_ids_fail_closed(self):
         content = (JAVA / "lotm/LotmContent.java").read_text(encoding="utf-8")
         events = (JAVA / "lotm/LotmEvents.java").read_text(encoding="utf-8")
