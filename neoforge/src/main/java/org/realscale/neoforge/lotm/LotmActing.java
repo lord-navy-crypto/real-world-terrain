@@ -237,26 +237,32 @@ public final class LotmActing {
         LotmPath path = LotmPath.of(player);
         if (path == null) return List.of();
         List<String> entries = new ArrayList<>();
-        ListTag journal = player.getPersistentData().getList(eventJournalKey(path), Tag.TAG_STRING);
-        for (int index = 0; index < journal.size(); index++) {
-            String value = journal.getString(index);
-            if (parseJournalEvent(value) != null) entries.add(value);
-        }
         ListTag legacy = loadResearchJournal(player, path);
+        ListTag journal = player.getPersistentData().getList(eventJournalKey(path), Tag.TAG_STRING);
+
+        // Legacy clues are older than timestamped events. Put them first so the
+        // network's latest-128 window cannot accidentally hide current experiments.
         for (int index = 0; index < legacy.size(); index++) {
             String source = legacy.getString(index);
             String category = researchCategory(source);
             String bounded = source.replace("|", "/");
             if (bounded.length() > 190) bounded = bounded.substring(0, 190);
             boolean exists = false;
-            for (String value : entries) {
-                String[] parts = parseJournalEvent(value);
+            for (int eventIndex = 0; eventIndex < journal.size(); eventIndex++) {
+                String[] parts = parseJournalEvent(journal.getString(eventIndex));
                 if (parts != null && category.equals(parts[2]) && bounded.equals(parts[4])) {
                     exists = true;
                     break;
                 }
             }
             if (!exists) entries.add("event|0|" + category + "|discovered|" + bounded);
+        }
+
+        // Structured events are appended chronologically; status updates are
+        // reinserted at the end, so recent verified work wins the bounded snapshot.
+        for (int index = 0; index < journal.size(); index++) {
+            String value = journal.getString(index);
+            if (parseJournalEvent(value) != null) entries.add(value);
         }
         return List.copyOf(entries);
     }
