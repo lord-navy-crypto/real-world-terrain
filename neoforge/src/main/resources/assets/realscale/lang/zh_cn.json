@@ -557,5 +557,11 @@
   "gui.realscale.lotm_panel.journal.empty_search": "没有记录符合当前搜索条件。请更换关键词或清空搜索。",
   "gui.realscale.lotm_panel.dashboard.next_requirements": "下一阶段序列8条件 · 魔药消化度 %s / 直接特性消化度 %s",
   "gui.realscale.lotm_panel.setting.particles": "技能与晋升粒子效果：%s",
-  "gui.realscale.lotm_panel.setting.particles_toggle": "粒子效果：%s"
+  "gui.realscale.lotm_panel.setting.particles_toggle": "粒子效果：%s",
+  "gui.realscale.lotm_panel.materials.required_header": "下一序列所需材料",
+  "gui.realscale.lotm_panel.materials.inventory_header": "当前携带材料",
+  "gui.realscale.lotm_panel.materials.inventory_empty": "背包中暂无已注册的超凡材料。",
+  "gui.realscale.lotm_panel.materials.page": "第 %s / %s 页",
+  "gui.realscale.lotm_panel.materials.previous": "上一页材料",
+  "gui.realscale.lotm_panel.materials.next": "下一页材料"
 }
