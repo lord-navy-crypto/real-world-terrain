@@ -227,6 +227,7 @@ class LotmSkillManualAndPanelTests(unittest.TestCase):
             "gui.realscale.lotm_panel.toggle_appearance",
             "gui.realscale.lotm_panel.setting.hud",
             "gui.realscale.lotm_panel.setting.aura",
+            "gui.realscale.lotm_panel.setting.mastery_cap",
         )
         for key in keys:
             self.assertTrue(en.get(key), "missing English key " + key)
