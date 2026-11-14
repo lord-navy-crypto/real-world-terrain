@@ -83,8 +83,9 @@ public final class LotmPotionItem extends Item {
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
         if (!(entity instanceof Player player) || level.isClientSide()) return stack;
-        if (!LotmConfig.ENABLED.get()) return stack;
 
+        // Recheck inside the authoritative state transition: the server config
+        // may have changed while the player was completing the drink animation.
         String result = LotmState.advance(player, pathway, sequence, characteristic);
         if (!"ready".equals(result)) {
             player.displayClientMessage(Component.translatable("message.realscale.lotm.advance." + result), true);
