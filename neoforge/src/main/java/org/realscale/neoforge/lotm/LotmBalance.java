@@ -12,12 +12,17 @@ public final class LotmBalance {
         return Math.max(0, Math.min(maximum, value));
     }
 
+    private static int boundedAdd(int current, int amount, int maximum) {
+        long total = (long) Math.max(0, current) + Math.max(0, amount);
+        return (int) Math.min(Math.max(0, maximum), total);
+    }
+
     public static int regenerate(int current, int amount) {
-        return clamp(current + Math.max(amount, 0), MAX_SPIRIT);
+        return boundedAdd(current, amount, MAX_SPIRIT);
     }
 
     public static int practice(int current, int amount) {
-        return clamp(current + Math.max(amount, 0), MAX_PRACTICE);
+        return boundedAdd(current, amount, MAX_PRACTICE);
     }
 
     /** Normalize old or malformed persistent values before they reach gameplay. */
