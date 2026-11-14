@@ -49,7 +49,7 @@
   "item.realscale.lotm_divination_pendulum": "Divination Pendulum",
   "entity.realscale.lotm.shroudman": "Shroudman",
   "message.realscale.lotm.status": "Path: %s | Sequence %s | Spirituality: %s/%s | Digestion: %s/100",
-  "message.realscale.lotm.guide": "LOTM RPG: Four pathways, Sequence 9 and 8. Guide topics: /lotm guide creatures, flora, minerals, alchemy, progression. Use /lotm hud for an optional action-bar status display and /lotm journal to review discoveries. Sequence 7 remains archived.",
+  "message.realscale.lotm.guide": "LOTM RPG: Four pathways, Sequence 9 and 8. Guide topics: /lotm guide creatures, flora, minerals, alchemy, progression. Use /lotm panel for the interactive status console, /lotm hud for the action-bar display, /lotm appearance to toggle your pathway aura, and /lotm journal to review discoveries. Sequence 7 remains archived.",
   "message.realscale.lotm.seer_only": "The pendulum responds only to a Seer's spirituality.",
   "message.realscale.lotm.low_spirit": "Not enough spirituality. It recovers slowly over time.",
   "message.realscale.lotm.sense_spirit": "Spiritual sight: %s signs | Spirituality: %s/100",
@@ -225,8 +225,8 @@
   "message.realscale.lotm.guide.creatures": "Creatures: Ten active supernatural species each have a habitat and unique material drop. The five S9 species include Starlit Squid, Nightmare Eye, Night Owl, Black-Spotted Frog and Shroudman. The five S8 species include Hornacis Goat, Ironarm Beast, Four-Eyed Turtle, Crimson Howler and Death Crow. Use pathway senses and keep your research journal.",
   "message.realscale.lotm.guide.flora": "Flora: Midnight Bloom, Face Rose, Soul-Calling Bellflower and Graveyard Blood Rose are rare biome-linked plants. Their harvests are used in S9/S8 potion recipes. Collect new species in the wild; placing and breaking harvested flowers does not award fieldwork.",
   "message.realscale.lotm.guide.minerals": "Minerals: Six active ores are Stellar Crystal, Cursed Crystal, Grave Crystal, Lunar Mica, Echo Quartz and Abyssal Salt. Seek their distinct habitats underground. Pickaxes, Silk Touch and Fortune follow ore rules. Spirit Quartz belongs to the archived S7 tier and does not naturally generate.",
-  "message.realscale.lotm.guide.alchemy": "Alchemy: Put the required ingredients in the four input slots of an Occult Alchemical Apparatus. Supply Spirit Ember in the fuel slot and leave output space. Prepared S9 potions take 120 ticks, S8 potions take 240 by default. Complete characteristics can substitute primary ingredients in eligible recipes.",
-  "message.realscale.lotm.guide.progression": "Progression: Start in S9 with a pathway potion, digest it through exploration, skills, unique research and natural-resource fieldwork, then prepare the same pathway's S8 potion. Daily category caps are 12 + 8 + 9 + 6 = 35. Use /lotm acting, /lotm skills, /lotm materials and /lotm journal.",
+  "message.realscale.lotm.guide.alchemy": "Alchemy: Put the required ingredients in the four input slots of an Occult Alchemical Apparatus. Supply Spirit Ember in the fuel slot and leave output space. Prepared S9 potions take 120 ticks, S8 potions take 240 by default. Pathway skill manuals use a book, Occult Catalyst, a pathway material and a binder; craft them here and read them to improve mastery.",
+  "message.realscale.lotm.guide.progression": "Progression: Start in S9 with a pathway potion, digest it through exploration, skills, unique research and natural-resource fieldwork, then prepare the same pathway's S8 potion. Daily category caps are 12 + 8 + 9 + 6 = 35. Use /lotm panel, /lotm acting, /lotm skills, /lotm materials and /lotm journal. Read matching skill manuals to improve mastery without bypassing pathway authorization.",
   "tooltip.realscale.lotm.spirit_focus.effect": "While equipped: regenerate +1 spirituality every 40 server ticks.",
   "tooltip.realscale.lotm.divination_pendulum.effect": "While equipped by a Seer: secondary skill costs 4 less spirituality and omen range increases by 2 blocks.",
   "tooltip.realscale.lotm.curio_exclusive_slot": "Uses the single Occult Focus slot; cannot be stacked with the other focus.",
@@ -301,5 +301,11 @@
   "gui.realscale.lotm_panel.setting.skill_cost": "Skill cost scale: %s%%",
   "gui.realscale.lotm_panel.setting.drop_rate": "Creature material drops: %s%%",
   "gui.realscale.lotm_panel.setting.hud": "Your HUD preference: %s",
-  "gui.realscale.lotm_panel.setting.aura": "Your aura preference: %s"
+  "gui.realscale.lotm_panel.setting.aura": "Your aura preference: %s",
+  "gui.realscale.lotm_panel.tab.materials": "Materials",
+  "gui.realscale.lotm_panel.materials_header": "Next advancement materials",
+  "gui.realscale.lotm_panel.manual_hint": "Craft skill manuals in the Occult Alchemical Apparatus.",
+  "gui.realscale.lotm_panel.setting.hud_refresh": "HUD refresh: %s ticks",
+  "gui.realscale.lotm_panel.setting.aura_interval": "Aura interval: %s ticks",
+  "gui.realscale.lotm_panel.setting.manual_alchemy": "Manual alchemy: %s ticks"
 }
