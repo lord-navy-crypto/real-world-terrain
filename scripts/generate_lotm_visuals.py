@@ -625,7 +625,7 @@ def generate(output: Path) -> None:
     for creature_id in CREATURES:
         model = {"parent": "minecraft:item/template_spawn_egg"}
         (egg_models / f"lotm_{creature_id}_spawn_egg.json").write_text(
-            json.dumps(model, indent=2) + "\\n", encoding="utf-8"
+            json.dumps(model, indent=2) + "\n", encoding="utf-8"
         )
     generate_creature_assets(output)
 
