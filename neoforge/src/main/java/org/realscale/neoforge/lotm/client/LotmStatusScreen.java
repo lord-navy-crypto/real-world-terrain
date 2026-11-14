@@ -825,9 +825,14 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             }
             if (entries.isEmpty()) {
                 int emptyY = 108;
-                Component emptyMessage = menu.researchEntries() > 0 && journalFilter != 0
-                        ? Component.translatable("gui.realscale.lotm_panel.journal.empty_filter")
-                        : Component.translatable("gui.realscale.lotm_panel.journal.empty");
+                boolean hasSearch = journalSearch != null && !journalSearch.getValue().isBlank();
+                Component emptyMessage = menu.researchEntries() == 0
+                        ? Component.translatable("gui.realscale.lotm_panel.journal.empty")
+                        : journalFilter != 0
+                                ? Component.translatable("gui.realscale.lotm_panel.journal.empty_filter")
+                                : hasSearch
+                                        ? Component.translatable("gui.realscale.lotm_panel.journal.empty_search")
+                                        : Component.translatable("gui.realscale.lotm_panel.journal.empty");
                 for (var line : font.split(emptyMessage, 128)) {
                     graphics.drawString(font, line, 166, emptyY, 0xFFB8ADC9, false);
                     emptyY += 13;
@@ -985,7 +990,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         if ("skill".equals(category)) {
             String[] parts = id.split(":");
             if (parts.length >= 3) {
-                int slot = "manual".equals(parts[1]) ? parsePositive(parts[2]) : parsePositive(parts[2]);
+                int slot = parsePositive(parts[2]);
                 if (slot >= 1 && slot <= 2) return Component.translatable(
                         "gui.realscale.lotm_panel.skill." + parts[0] + "." + slot + ".name");
             }
