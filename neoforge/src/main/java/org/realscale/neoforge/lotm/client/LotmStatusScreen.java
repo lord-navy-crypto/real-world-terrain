@@ -22,15 +22,17 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     @Override protected void init() {
         super.init();
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.overview"),
-                button -> selectedTab = 0).bounds(leftPos + 8, topPos + 24, 46, 18).build());
+                button -> selectedTab = 0).bounds(leftPos + 8, topPos + 24, 38, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.skills"),
-                button -> selectedTab = 1).bounds(leftPos + 57, topPos + 24, 46, 18).build());
+                button -> selectedTab = 1).bounds(leftPos + 49, topPos + 24, 38, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.materials"),
-                button -> selectedTab = 2).bounds(leftPos + 106, topPos + 24, 46, 18).build());
+                button -> selectedTab = 2).bounds(leftPos + 90, topPos + 24, 38, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.alchemy"),
-                button -> selectedTab = 3).bounds(leftPos + 155, topPos + 24, 46, 18).build());
+                button -> selectedTab = 3).bounds(leftPos + 131, topPos + 24, 38, 18).build());
+        addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.journal"),
+                button -> selectedTab = 4).bounds(leftPos + 172, topPos + 24, 38, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.settings"),
-                button -> selectedTab = 4).bounds(leftPos + 204, topPos + 24, 44, 18).build());
+                button -> selectedTab = 5).bounds(leftPos + 213, topPos + 24, 35, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.toggle_hud"),
                 button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
                         LotmStatusMenu.BUTTON_TOGGLE_HUD))
@@ -55,6 +57,12 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         } else if (selectedTab == 1) {
             bar(graphics, x + 14, y + 91, 224, 5, menu.skillMastery(1), menu.skillMasteryCap(), 0xFFB28AD8);
             bar(graphics, x + 14, y + 145, 224, 5, menu.skillMastery(2), menu.skillMasteryCap(), 0xFF79B7C7);
+        } else if (selectedTab == 4) {
+            final int[] caps = {12, 8, 9, 6};
+            for (int index = 0; index < caps.length; index++) {
+                bar(graphics, x + 14, y + 93 + index * 19, 224, 4,
+                        menu.dailyActing(index), caps[index], 0xFF79B7C7);
+            }
         }
     }
 
@@ -69,7 +77,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     @Override protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.title"), 9, 7, 0xFFF0E8FF, false);
         boolean hasPath = menu.pathIndex() > 0 && menu.pathIndex() <= LotmPath.values().length;
-        if (!hasPath && selectedTab != 3 && selectedTab != 4) {
+        if (!hasPath && selectedTab != 3 && selectedTab != 4 && selectedTab != 5) {
             graphics.drawString(font, Component.translatable("message.realscale.lotm.no_path"), 14, 59, 0xFFE0D6E8, false);
             int hintY = 78;
             for (var line : font.split(Component.translatable("gui.realscale.lotm_panel.start_hint"), 222)) {
@@ -138,6 +146,18 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                     y += 12;
                 }
                 y += 5;
+            }
+        } else if (selectedTab == 4) {
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal_header"), 14, 51, 0xFFEDE4F6, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal_research",
+                    menu.researchEntries()), 14, 66, 0xFFD7CDE4, false);
+            final String[] categories = {"exploration", "skill", "research", "fieldwork"};
+            final int[] caps = {12, 8, 9, 6};
+            for (int index = 0; index < categories.length; index++) {
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.journal_" + categories[index],
+                        menu.dailyActing(index), caps[index]),
+                        14, 82 + 19 * index, 0xFFB8ADC9, false);
             }
         } else {
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.settings_header"), 14, 51, 0xFFEDE4F6, false);

@@ -10,7 +10,7 @@ import net.minecraft.world.item.ItemStack;
 
 /** Read-only synchronized player panel with two server-authoritative preference buttons. */
 public final class LotmStatusMenu extends AbstractContainerMenu {
-    public static final int DATA_COUNT = 21;
+    public static final int DATA_COUNT = 26;
     public static final int BUTTON_TOGGLE_HUD = 0;
     public static final int BUTTON_TOGGLE_APPEARANCE = 1;
     private final ContainerData data;
@@ -52,6 +52,11 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
                     case 18 -> LotmConfig.APPEARANCE_INTERVAL_TICKS.get();
                     case 19 -> LotmCurios.hasDivinationPendulum(player) ? 1 : 0;
                     case 20 -> LotmCurios.hasSpiritFocus(player) ? 1 : 0;
+                    case 21 -> LotmActing.researchDiscoveries(player).size();
+                    case 22 -> LotmActing.dailyUsed(player, "exploration");
+                    case 23 -> LotmActing.dailyUsed(player, "skill");
+                    case 24 -> LotmActing.dailyUsed(player, "research");
+                    case 25 -> LotmActing.dailyUsed(player, "fieldwork");
                     default -> 0;
                 };
             }
@@ -80,6 +85,8 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
     public int appearanceIntervalTicks() { return data.get(18); }
     public boolean hasDivinationPendulum() { return data.get(19) != 0; }
     public boolean hasSpiritFocus() { return data.get(20) != 0; }
+    public int researchEntries() { return data.get(21); }
+    public int dailyActing(int index) { return index >= 0 && index < 4 ? data.get(22 + index) : 0; }
 
     @Override
     public boolean clickMenuButton(Player player, int id) {
