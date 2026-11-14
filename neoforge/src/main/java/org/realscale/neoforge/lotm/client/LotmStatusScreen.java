@@ -899,6 +899,9 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                         "gui.realscale.lotm_panel.settings.server_timing",
                         menu.hudRefreshTicks(), menu.appearanceIntervalTicks(), menu.manualAlchemyTicks()),
                         166, 182, 0xFFB8ADC9, false);
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.settings.readonly_note"),
+                        166, 198, 0xFFB8ADC9, false);
             } else {
                 graphics.drawString(font, Component.translatable(
                         "gui.realscale.lotm_panel.settings.interface_header"),
