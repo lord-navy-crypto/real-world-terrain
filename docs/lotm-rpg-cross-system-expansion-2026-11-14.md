@@ -116,7 +116,7 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 
 ### 14. Runtime overhead and canceled-placement hardening
 - Unauthorized Player Abilities grants are still rejected synchronously by `AbilityGrantedEvent`, and full audits still run on login/progression sync. The defensive fallback scan is now throttled to once per 20 player ticks rather than allocating/copying grant maps every tick.
-- Canceled `EntityPlaceEvent` events are ignored before writing resource provenance, preventing phantom anti-farming marks when another event handler cancels placement. Explosion cleanup uses the non-cancellable `Detonate` phase after the cancellable `Start` phase has accepted the explosion.
+- Resource placement and player-break listeners now run at `EventPriority.LOWEST` with `receiveCanceled=true`, then explicitly inspect cancellation before mutating provenance or awarding fieldwork. This lets the ledger observe cancellations made by higher-priority handlers rather than relying on the event bus default, which skips canceled events. Explosion cleanup uses non-cancellable `Detonate` after cancellable `Start` has accepted the explosion.
 - A focused JUnit test covers the audit cadence across ordinary, negative and large tick values; static QA protects event wiring and canceled-placement ordering.
 
 ### 15. Alchemy result stack invariants
