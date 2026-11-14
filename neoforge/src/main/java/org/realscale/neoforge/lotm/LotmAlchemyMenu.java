@@ -1,5 +1,7 @@
 package org.realscale.neoforge.lotm;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
@@ -47,6 +49,18 @@ public final class LotmAlchemyMenu extends AbstractContainerMenu {
         else if (index<6) { if (!moveItemStackTo(source,6,42,false)) return empty; }
         else if (source.is(LotmContent.SPIRIT_EMBER.get())) { if (!moveItemStackTo(source,4,5,false)) return empty; }
         else if (!moveItemStackTo(source,0,4,false)) return empty;
+        if (index == 5 && player instanceof ServerPlayer serverPlayer && LotmPath.of(serverPlayer) != null) {
+            String itemId = BuiltInRegistries.ITEM.getKey(copy.getItem()).toString();
+            LotmActing.recordJournalEvent(serverPlayer, "alchemy", "verified", itemId);
+            if (copy.getItem() instanceof LotmPotionItem potion) {
+                LotmActing.recordJournalEvent(serverPlayer, "potion", "discovered",
+                        potion.pathway().id() + ":" + potion.sequence()
+                                + (potion.isCharacteristic() ? ":characteristic" : ":prepared"));
+            } else if (copy.getItem() instanceof LotmSkillBookItem manual) {
+                LotmActing.recordJournalEvent(serverPlayer, "skill", "discovered",
+                        manual.pathway().id() + ":manual:" + manual.slot());
+            }
+        }
         if (source.isEmpty()) slot.set(ItemStack.EMPTY); else slot.setChanged();
         slot.onTake(player,source); return copy;
     }
