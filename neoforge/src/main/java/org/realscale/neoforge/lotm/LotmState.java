@@ -11,7 +11,7 @@ public final class LotmState {
     public static final String INSTABILITY_KEY = "realscale_lotm_characteristic_instability";
     private LotmState() {}
 
-    public static void initialize(Player player, LotmPath path) {
+    private static void initialize(Player player, LotmPath path) {
         CompoundTag tag = player.getPersistentData();
         tag.putString(LotmPath.NBT_PATH, path.id());
         tag.putInt(LotmPath.NBT_SEQUENCE, 9);
@@ -21,20 +21,33 @@ public final class LotmState {
         if (player instanceof ServerPlayer serverPlayer) LotmPlayerAbilitySync.sync(serverPlayer);
     }
 
-    public static void advance(Player player, LotmPath path, int sequence, boolean direct) {
-        if (sequence < 8 || sequence > 9) return; // Sequence 7+ is archived in this release.
+    /**
+     * The only state-changing progression entry point. Revalidates the complete
+     * transition here so future callers cannot bypass pathway, rank or digestion gates.
+     * Returns the same stable reason codes used by the potion feedback messages.
+     */
+    public static String advance(Player player, LotmPath path, int sequence, boolean direct) {
+        if (!LotmConfig.ENABLED.get()) return "disabled";
+        if (path == null) return "path";
+        LotmPath current = LotmPath.of(player);
+        String validation = LotmProgression.validate(current == null ? null : current.id(),
+                sequence(player), path.id(), sequence, practice(player), direct,
+                LotmConfig.POTION_PRACTICE.get(), LotmConfig.CHARACTERISTIC_PRACTICE.get());
+        if (!"ready".equals(validation)) return validation;
+
         if (sequence == 9) {
             initialize(player, path);
             if (direct) player.getPersistentData().putInt(INSTABILITY_KEY, 1);
-            return;
+        } else {
+            var tag = player.getPersistentData();
+            tag.putInt(LotmPath.NBT_SEQUENCE, sequence);
+            tag.putInt(PRACTICE_KEY, 0);
+            tag.putInt(SPIRIT_KEY, direct ? 30 : LotmBalance.MAX_SPIRIT);
+            if (direct) tag.putInt(INSTABILITY_KEY,
+                    LotmBalance.addInstability(tag.getInt(INSTABILITY_KEY), 1));
+            if (player instanceof ServerPlayer serverPlayer) LotmPlayerAbilitySync.sync(serverPlayer);
         }
-        var tag = player.getPersistentData();
-        tag.putInt(LotmPath.NBT_SEQUENCE, sequence);
-        tag.putInt(PRACTICE_KEY, 0);
-        tag.putInt(SPIRIT_KEY, direct ? 30 : LotmBalance.MAX_SPIRIT);
-        if (direct) tag.putInt(INSTABILITY_KEY,
-                LotmBalance.addInstability(tag.getInt(INSTABILITY_KEY), 1));
-        if (player instanceof ServerPlayer serverPlayer) LotmPlayerAbilitySync.sync(serverPlayer);
+        return "ready";
     }
 
     public static int sequence(Player player) {
