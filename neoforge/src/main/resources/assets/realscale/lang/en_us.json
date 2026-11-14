@@ -222,5 +222,10 @@
   "message.realscale.lotm.guide.progression": "Progression: Start in S9 with a pathway potion, digest it through exploration, skills, unique research and natural-resource fieldwork, then prepare the same pathway's S8 potion. Daily category caps are 12 + 8 + 9 + 6 = 35. Use /lotm acting, /lotm skills, /lotm materials and /lotm journal.",
   "tooltip.realscale.lotm.spirit_focus.effect": "While equipped: regenerate +1 spirituality every 40 server ticks.",
   "tooltip.realscale.lotm.divination_pendulum.effect": "While equipped by a Seer: secondary skill costs 4 less spirituality and omen range increases by 2 blocks.",
-  "tooltip.realscale.lotm.curio_exclusive_slot": "Uses the single Occult Focus slot; cannot be stacked with the other focus."
+  "tooltip.realscale.lotm.curio_exclusive_slot": "Uses the single Occult Focus slot; cannot be stacked with the other focus.",
+  "item.realscale.lotm_stability_sigil": "Stability Sigil",
+  "tooltip.realscale.lotm.stability_sigil.effect": "Use to reduce direct-characteristic instability by 1.",
+  "tooltip.realscale.lotm.stability_sigil.limit": "Only works for a Beyonder with accumulated instability.",
+  "message.realscale.lotm.stability_sigil.no_instability": "There is no characteristic instability to settle.",
+  "message.realscale.lotm.stability_sigil.restored": "The sigil settles one trace of instability. Remaining instability: %s."
 }
