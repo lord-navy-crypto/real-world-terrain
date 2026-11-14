@@ -137,6 +137,13 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - This binds the data-driven natural-spawn tables to the canonical `LotmCreatureKind` metadata, so changes cannot silently make JSON and Java disagree.
 - This is a resource-contract test, not a measurement of actual spawn frequency; multi-seed world acceptance remains required.
 
+
+### 18. Original active ore worldgen regression contract
+- The existing Sequence 9 ore QA now checks the full, exact habitat lists for Star Crystal, Cursed Crystal and Grave Crystal ores, in addition to vein size, attempts/chunk, vertical bounds and stone/deepslate replaceable targets.
+- It also verifies the complete ordered placement chain (count → in-square → uniform height → biome), rejects duplicate biome entries and locks the underground_ores generation step.
+- The separate Sequence 7 assertion continues to require Spirit Quartz's biome modifier to remain neoforge:none.
+- These tests protect the established distribution contract; attempts/chunk do not equal guaranteed veins, and no real-world frequency claim is made.
+
 **Validation caveat:** these are code and resource changes, not yet confirmed by an in-game client or multiplayer server. Current-head workflow runs must be checked; a static QA pass cannot prove Curios equipment events, item consumption, tooltip rendering or save/reload behavior.
 
 ## Next development batches (do not claim complete until validated)
