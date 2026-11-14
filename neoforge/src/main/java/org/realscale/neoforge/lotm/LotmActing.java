@@ -54,6 +54,9 @@ public final class LotmActing {
         if (reward > 0) {
             seen.add(id);
             tag.put(key, seen);
+            if (player instanceof ServerPlayer serverPlayer) {
+                LotmPanelNetwork.syncResearchLog(serverPlayer);
+            }
         }
         return reward;
     }
