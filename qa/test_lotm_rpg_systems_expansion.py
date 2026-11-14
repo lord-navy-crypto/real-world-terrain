@@ -175,6 +175,17 @@ class LotmRpgExpansionTests(unittest.TestCase):
             self.assertIn("/lotm journal", lang["message.realscale.lotm.guide"])
 
 
+    def test_pathway_ability_precheck_uses_the_same_curios_and_instability_cost(self):
+        ability = (JAVA / "lotm/LotmPathwayAbility.java").read_text(encoding="utf-8")
+        skills = (JAVA / "lotm/LotmSkills.java").read_text(encoding="utf-8")
+        expected = "LotmBalance.skillCost(pathway.id(), slot, sequence,"
+        self.assertIn(expected, ability)
+        self.assertIn("LotmCurios.hasDivinationPendulum(player)", ability)
+        self.assertIn("LotmState.instability(player)", ability)
+        self.assertIn("LotmBalance.skillCost(expectedPath.id(), slot, sequence,", skills)
+        self.assertIn("LotmCurios.hasDivinationPendulum(player)", skills)
+        self.assertIn("LotmState.instability(player)", skills)
+
     def test_instability_is_bounded_and_status_explains_advancement_requirements(self):
         balance = (JAVA / "lotm/LotmBalance.java").read_text(encoding="utf-8")
         state = (JAVA / "lotm/LotmState.java").read_text(encoding="utf-8")
