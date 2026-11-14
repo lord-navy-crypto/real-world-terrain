@@ -3,7 +3,6 @@ package org.realscale.neoforge.lotm;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.SimpleMenuProvider;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 /** Read-only player controls work on multiplayer servers without cheats. */
