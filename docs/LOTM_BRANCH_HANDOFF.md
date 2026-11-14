@@ -110,16 +110,17 @@ The current branch has moved beyond the original vanilla-variant pilot:
 - Sequence 7 remains archived and is not included in entity registration, spawn modifiers or vanilla structure loot tables.
 - Four additive loot modifiers target vanilla dungeon, mineshaft, stronghold corridor and ancient-city chests. Their supplementary-roll chances are 4%, 5.5%, 7.5% and 10%; `replace:false` preserves all existing vanilla and other-mod loot.
 
-**Still requiring verification / polish:**
+**Implemented on the feature branch; still requiring verification / polish:**
 
-1. Check the latest `Source integrity, tests and NeoForge build` and dedicated-server workflow against the current branch head before claiming the milestone passes.
-2. Confirm all ten entities actually spawn at reasonable rates in a saved test world; adjust weight and group size only from observed spawn density.
-3. Inspect the generated models/textures in-game; the current procedural block models are a functional first art pass, not the final visual polish.
-4. Inspect the new species-specific `special` animations in a real client; squid schooling and Howler regrouping are implemented, while Night Owl roosting, additional ambient behaviors and original sounds remain open.
-5. Test the opt-in `/lotm hud` action-bar status display in a real client, including coexistence with other action-bar notifications and persistence after respawn.
-6. The dedicated-server RCON smoke now summons all ten active entity IDs and reads their health attributes; verify this against the latest workflow result.
-7. Only after creature acceptance, proceed to further materials/minerals, alchemy recipes, pathway skills and supernatural energy refinements.
-8. Verify the actual supplementary loot rates in a saved world and tune only after playtesting; no custom structure or ruin generation is in scope.
+1. Check the latest `Source integrity, tests and NeoForge build`, Gradle 9.8 and dedicated-server workflows against the exact current head before claiming the milestone passes.
+2. Test `/lotm panel` in a real client: four tabs, synchronized values, button actions, no-path state, localization, scaling and menu close/reopen behavior.
+3. Test all sixteen skill-manual recipes in the alchemy apparatus, including the separate binder, fuel pause, output blocking, save/load and item extraction.
+4. Test reading manuals at S9 and S8, wrong-path rejection, configured mastery cap, respawn persistence, effective skill cost and the actual skill range/duration changes.
+5. Inspect generated item/mineral/block/ability icons and all ten creature textures in-game. The generator is deterministic and build-integrated, but visual quality still needs client review.
+6. Test per-player pathway aura and eye motes in multiplayer, verify the global appearance switch, HUD interval and coexistence with other action-bar notifications. This is a particle-based cosmetic appearance layer, not a replacement player skin/model.
+7. Confirm all ten entities actually spawn at reasonable rates in a saved test world; inspect the species-specific `special` animations, squid schooling and Howler regrouping. Night Owl roosting and original ambient sounds remain open.
+8. The dedicated-server RCON smoke now summons all ten active entity IDs and reads their health attributes; verify this against the latest workflow result.
+9. Verify the configurable material drop chance and all sixteen manual recipes in a saved world. No custom structure or ruin generation is in scope.
 
 ## Active creature roster
 
@@ -156,7 +157,7 @@ See `docs/superpowers/specs/2026-11-12-lotm-creature-expansion-design.md` and `d
 3. Generate ten original GeckoLib models, textures and animations.
 4. Add habitat-specific biome spawns; disable custom relic-site placement.
 5. Additive vanilla structure loot is now wired for four original chest tables; verify it in-game and keep Sequence 7 excluded.
-6. Expand materials and minerals; then alchemy/potion recipes; then skill trees and supernatural energy.
+6. Skill manuals, mastery scaling, four-tab status panel, pathway aura and expanded material icon generation are implemented on this branch; validate them before further skill-tree and supernatural-energy expansion.
 
 ## Build and verification
 
