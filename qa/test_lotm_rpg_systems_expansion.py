@@ -96,6 +96,33 @@ class LotmRpgExpansionTests(unittest.TestCase):
                 self.assertTrue(lang["tooltip.realscale.lotm." + key])
 
 
+    def test_direct_characteristic_instability_is_reversible_and_balanced(self):
+        state = (JAVA / "lotm/LotmState.java").read_text(encoding="utf-8")
+        balance = (JAVA / "lotm/LotmBalance.java").read_text(encoding="utf-8")
+        skills = (JAVA / "lotm/LotmSkills.java").read_text(encoding="utf-8")
+        sigil = (JAVA / "lotm/LotmStabilitySigilItem.java").read_text(encoding="utf-8")
+        content = (JAVA / "lotm/LotmContent.java").read_text(encoding="utf-8")
+        recipe = json.loads((DATA / "lotm_stability_sigil.json").read_text(encoding="utf-8"))
+        model = json.loads((ROOT / "neoforge/src/main/resources/assets/realscale/models/item/lotm_stability_sigil.json").read_text(encoding="utf-8"))
+        generator = (ROOT / "scripts/generate_lotm_visuals.py").read_text(encoding="utf-8")
+        self.assertIn("if (direct) player.getPersistentData().putInt(INSTABILITY_KEY, 1)", state)
+        self.assertIn("reduceInstability(Player player, int amount)", state)
+        self.assertIn("instabilitySurcharge(int instability)", balance)
+        self.assertIn("LotmState.instability(player)", skills)
+        self.assertIn("LotmState.reduceInstability(player, 1)", sigil)
+        self.assertIn("STABILITY_SIGIL", content)
+        self.assertEqual("minecraft:crafting_shapeless", recipe["type"])
+        self.assertEqual("realscale:lotm_stability_sigil", recipe["result"]["id"])
+        self.assertEqual(1, recipe["result"]["count"])
+        self.assertEqual("realscale:item/lotm_stability_sigil", model["textures"]["layer0"])
+        self.assertIn('"lotm_stability_sigil"', generator)
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            self.assertTrue(lang["item.realscale.lotm_stability_sigil"])
+            self.assertTrue(lang["tooltip.realscale.lotm.stability_sigil.effect"])
+            self.assertTrue(lang["message.realscale.lotm.stability_sigil.restored"])
+
+
     def test_bilingual_discovery_and_field_guide_content_is_complete(self):
         for locale in ("en_us", "zh_cn"):
             lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
