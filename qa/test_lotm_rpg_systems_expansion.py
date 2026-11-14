@@ -317,12 +317,16 @@ class LotmRpgExpansionTests(unittest.TestCase):
     def test_progression_transition_revalidates_before_mutating_player_state(self):
         state = (JAVA / "lotm/LotmState.java").read_text(encoding="utf-8")
         potion = (JAVA / "lotm/LotmPotionItem.java").read_text(encoding="utf-8")
-        start = state.index("public static String advance")
+        preflight_start = state.index("public static String validateAdvance")
+        start = state.index("public static String advance", preflight_start)
         end = state.index("public static int sequence", start)
+        preflight = state[preflight_start:start]
         transition = state[start:end]
-        self.assertIn("LotmProgression.validate", transition)
-        self.assertLess(transition.index("LotmProgression.validate"),
+        self.assertIn("LotmProgression.validate", preflight)
+        self.assertIn("String validation = validateAdvance(player, path, sequence, direct);", transition)
+        self.assertLess(transition.index("validateAdvance(player, path, sequence, direct)"),
                         transition.index("tag.putInt(LotmPath.NBT_SEQUENCE, sequence)"))
+        self.assertIn("LotmState.validateAdvance(player, pathway, sequence, characteristic)", potion)
         self.assertIn("LotmState.advance(player, pathway, sequence, characteristic)", potion)
         self.assertNotIn("LotmProgression.validate", potion)
         for locale in ("en_us", "zh_cn"):
