@@ -30,8 +30,8 @@ public final class LotmAppearance {
 
     public static void tick(ServerPlayer player) {
         LotmPath path = LotmPath.of(player);
-        if (!shouldEmit(player.tickCount, enabled(player), LotmConfig.ENABLED.get()
-                && LotmConfig.APPEARANCE_EFFECTS.get(), path != null,
+        if (!shouldEmit(player.tickCount, enabled(player) && LotmPreferences.particlesEnabled(player),
+                LotmConfig.ENABLED.get() && LotmConfig.APPEARANCE_EFFECTS.get(), path != null,
                 LotmConfig.APPEARANCE_INTERVAL_TICKS.get())) return;
         if (!(player.level() instanceof ServerLevel level)) return;
         int sequence = LotmState.sequence(player);
