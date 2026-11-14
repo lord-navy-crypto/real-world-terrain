@@ -72,4 +72,14 @@ class LotmBalanceTest {
         assertEquals(0, LotmBalance.divinationRadius(7, true));
     }
 
+    @Test void directCharacteristicInstabilityAddsACappedReversibleSkillSurcharge() {
+        assertEquals(0, LotmBalance.instabilitySurcharge(-1));
+        assertEquals(0, LotmBalance.instabilitySurcharge(0));
+        assertEquals(2, LotmBalance.instabilitySurcharge(1));
+        assertEquals(4, LotmBalance.instabilitySurcharge(2));
+        assertEquals(8, LotmBalance.instabilitySurcharge(20));
+        assertEquals(20, LotmBalance.skillCost("seer", 1, 9, false, 3));
+        assertEquals(18, LotmBalance.skillCost("seer", 2, 9, true, 1));
+    }
+
 }
