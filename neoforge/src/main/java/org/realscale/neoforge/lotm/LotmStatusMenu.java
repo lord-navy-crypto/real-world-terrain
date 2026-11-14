@@ -10,7 +10,7 @@ import net.minecraft.world.item.ItemStack;
 
 /** Read-only synchronized player panel with two server-authoritative preference buttons. */
 public final class LotmStatusMenu extends AbstractContainerMenu {
-    public static final int DATA_COUNT = 19;
+    public static final int DATA_COUNT = 21;
     public static final int BUTTON_TOGGLE_HUD = 0;
     public static final int BUTTON_TOGGLE_APPEARANCE = 1;
     private final ContainerData data;
@@ -50,6 +50,8 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
                     case 16 -> LotmConfig.ALCHEMY_SKILL_MANUAL_TICKS.get();
                     case 17 -> LotmConfig.SKILL_MASTERY_CAP.get();
                     case 18 -> LotmConfig.APPEARANCE_INTERVAL_TICKS.get();
+                    case 19 -> LotmCurios.hasDivinationPendulum(player) ? 1 : 0;
+                    case 20 -> LotmCurios.hasSpiritFocus(player) ? 1 : 0;
                     default -> 0;
                 };
             }
@@ -76,6 +78,8 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
     public int manualAlchemyTicks() { return data.get(16); }
     public int skillMasteryCap() { return data.get(17); }
     public int appearanceIntervalTicks() { return data.get(18); }
+    public boolean hasDivinationPendulum() { return data.get(19) != 0; }
+    public boolean hasSpiritFocus() { return data.get(20) != 0; }
 
     @Override
     public boolean clickMenuButton(Player player, int id) {
