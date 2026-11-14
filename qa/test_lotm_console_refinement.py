@@ -88,14 +88,11 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn("toggleParticles(Player player)", preferences)
         self.assertIn("toggleSound(Player player)", preferences)
         self.assertIn("toggleSkillFeedback(Player player)", preferences)
-        self.assertIn("particlesEnabled(Player player)", preferences)
-        self.assertIn("toggleParticles(Player player)", preferences)
         self.assertIn("LotmPreferences.particlesEnabled(player)", appearance)
         self.assertIn("LotmPreferences.copy(original, clone)", state)
         self.assertIn("BUTTON_TOGGLE_JOURNAL_NOTIFICATIONS", menu)
         self.assertIn("BUTTON_TOGGLE_PARTICLES", menu)
         self.assertIn("case 32 -> LotmPreferences.particlesEnabled(player) ? 1 : 0", menu)
-        self.assertIn("BUTTON_TOGGLE_PARTICLES", menu)
         self.assertIn("LotmPreferences.soundEnabled(player)", potion)
         self.assertIn("LotmConfig.APPEARANCE_EFFECTS.get() && LotmPreferences.particlesEnabled(player)", potion)
         self.assertIn("LotmPreferences.skillFeedbackEnabled(player)", skills)
@@ -147,13 +144,13 @@ class LotmConsoleRefinementTests(unittest.TestCase):
             "settings.page.personal", "settings.page.interface", "settings.scale",
             "settings.opacity", "settings.layout", "settings.timestamps", "settings.sort",
             "settings.skill_details", "setting.sound_toggle", "setting.skill_feedback_toggle",
-            "setting.journal_notifications_toggle", "setting.particles_toggle", "setting.particles_toggle",
+            "setting.journal_notifications_toggle", "setting.particles_toggle",
         )
         for locale in ("en_us", "zh_cn"):
             messages = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
             for suffix in required:
                 self.assertTrue(messages["gui.realscale.lotm_panel." + suffix]
-                                if suffix.startswith(("dashboard.", "skill.", "journal.", "settings.", "setting."))
+                                if suffix.startswith(("dashboard.", "materials.", "skill.", "journal.", "settings.", "setting."))
                                 else messages.get(suffix))
 
 
