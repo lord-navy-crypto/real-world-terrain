@@ -190,9 +190,10 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
 
     private boolean canAcceptOutput(ItemStack result) {
         ItemStack output = inventory.getStackInSlot(OUTPUT_SLOT);
-        return output.isEmpty() || (ItemStack.isSameItemSameComponents(output, result)
-                && output.getCount() + result.getCount()
-                <= Math.min(output.getMaxStackSize(), result.getMaxStackSize()));
+        return LotmBalance.canFitAlchemyOutput(output.isEmpty(),
+                !output.isEmpty() && ItemStack.isSameItemSameComponents(output, result),
+                output.getCount(), output.getMaxStackSize(),
+                result.getCount(), result.getMaxStackSize());
     }
     private void resetProgress() {
         if (progress == 0 && maxProgress == 0 && activeRecipe == null) {
