@@ -48,6 +48,7 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn('case "verified" -> 3', acting)
         self.assertIn("recordJournalEvent(Player player, String category, String status, String sourceId)", acting)
         self.assertIn("journalEntries(Player player)", acting)
+        self.assertLess(acting.index('entries.add("event|0|'), acting.index("entries.add(value)", acting.index("journalEntries(Player player)")))
         self.assertIn("statusRank(status) <= existingRank", acting)
         self.assertIn("existingRank = Math.max(existingRank, statusRank(old[3]))", acting)
         self.assertIn("LotmActing.journalEntries(player)", network)
