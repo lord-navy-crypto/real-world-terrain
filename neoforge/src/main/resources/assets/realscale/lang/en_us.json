@@ -308,5 +308,21 @@
   "gui.realscale.lotm_panel.setting.hud_refresh": "HUD refresh: %s ticks",
   "gui.realscale.lotm_panel.setting.aura_interval": "Aura interval: %s ticks",
   "gui.realscale.lotm_panel.setting.manual_alchemy": "Manual alchemy: %s ticks",
-  "message.realscale.lotm.skills.mastery": "Skill %s manual mastery: %s/%s."
+  "message.realscale.lotm.skills.mastery": "Skill %s manual mastery: %s/%s.",
+  "lotm.realscale.skill_manuals.seer.8.1": "Manual I: Hornacis Goat Horn + Spirit Ember + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.seer.8.2": "Manual II: Face Rose + Stability Sigil + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.seer.9.1": "Manual I: Starlit Squid Essence + Spirit Ember + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.seer.9.2": "Manual II: Star Crystal + Stability Sigil + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.mystery_pryer.8.1": "Manual I: Iron-Arm Beast Spine + Spirit Ember + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.mystery_pryer.8.2": "Manual II: Four-Eyed Turtle Heart + Stability Sigil + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.mystery_pryer.9.1": "Manual I: Nightmare Eye Shard + Spirit Ember + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.mystery_pryer.9.2": "Manual II: Cursed Crystal + Stability Sigil + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.sleepless.8.1": "Manual I: Crimson Howler Voice + Spirit Ember + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.sleepless.8.2": "Manual II: Soul Bellflower + Stability Sigil + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.sleepless.9.1": "Manual I: Night Owl Token + Spirit Ember + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.sleepless.9.2": "Manual II: Midnight Bloom + Stability Sigil + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.corpse_collector.8.1": "Manual I: Death Crow Eye + Spirit Ember + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.corpse_collector.8.2": "Manual II: Graveyard Blood Rose + Stability Sigil + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.corpse_collector.9.1": "Manual I: Black-Spotted Frog Token + Spirit Ember + Occult Catalyst + Book.",
+  "lotm.realscale.skill_manuals.corpse_collector.9.2": "Manual II: Shroudman Crystal + Stability Sigil + Occult Catalyst + Book."
 }
