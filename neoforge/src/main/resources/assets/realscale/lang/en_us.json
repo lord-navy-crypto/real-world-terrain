@@ -420,7 +420,7 @@
   "gui.realscale.lotm_panel.skill_tree.disabled": "Active abilities disabled by server",
   "gui.realscale.lotm_panel.skill_tree.archived": "Current sequence is not active",
   "gui.realscale.lotm_panel.journal.daily_progress": "Daily Acting Progress",
-  "gui.realscale.lotm_panel.journal.recent": "Recent · %s",
+  "gui.realscale.lotm_panel.journal.recent": "Latest 64 · %s total",
   "gui.realscale.lotm_panel.journal.entry": "Clue: %s",
   "gui.realscale.lotm_panel.journal.empty": "No research entries yet. Use pathway abilities to investigate new occult minerals, plants or creatures.",
   "gui.realscale.lotm_panel.journal.page": "Page %s / %s",
