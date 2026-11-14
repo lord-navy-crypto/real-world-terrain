@@ -340,5 +340,6 @@
   "gui.realscale.lotm_panel.skill.corpse_collector.1.name": "亡灵感知",
   "gui.realscale.lotm_panel.skill.corpse_collector.1.description": "显现并削弱附近的亡灵。",
   "gui.realscale.lotm_panel.skill.corpse_collector.2.name": "灵性帷幕",
-  "gui.realscale.lotm_panel.skill.corpse_collector.2.description": "获得短暂的防护与恢复效果。"
+  "gui.realscale.lotm_panel.skill.corpse_collector.2.description": "获得短暂的防护与恢复效果。",
+  "gui.realscale.lotm_panel.accessory": "当前佩戴的灵性饰品：%s"
 }
