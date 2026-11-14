@@ -49,8 +49,12 @@ public final class LotmPotionItem extends Item {
         if (characteristic) {
             tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.characteristic"));
             tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.direct_risk"));
-            tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.characteristic_requirement",
-                    LotmConfig.CHARACTERISTIC_PRACTICE.get()));
+            if (sequence == 8) {
+                tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.characteristic_requirement",
+                        LotmConfig.CHARACTERISTIC_PRACTICE.get()));
+            } else {
+                tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.first_characteristic"));
+            }
         } else if (sequence == 9) {
             tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.first_potion"));
         } else {
