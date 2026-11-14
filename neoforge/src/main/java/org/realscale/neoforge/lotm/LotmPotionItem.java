@@ -114,7 +114,8 @@ public final class LotmPotionItem extends Item {
                 sequence), false);
         // An actual in-world advancement cue, played only after the server accepted the potion.
         if (level instanceof ServerLevel server) {
-            if (LotmAppearance.enabled(player) && LotmConfig.APPEARANCE_EFFECTS.get()) {
+            if (LotmAppearance.enabled(player) && LotmConfig.APPEARANCE_EFFECTS.get()
+                    && LotmPreferences.particlesEnabled(player)) {
                 server.sendParticles(characteristic ? ParticleTypes.SOUL : ParticleTypes.ENCHANT,
                         player.getX(), player.getY() + 1.0D, player.getZ(),
                         22, 0.45D, 0.7D, 0.45D, 0.03D);
