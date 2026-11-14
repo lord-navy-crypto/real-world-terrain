@@ -69,6 +69,30 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - `qa/test_lotm_rpg_systems_expansion.py` checks recipe and source/resource integration, wired into the PR CI workflow.
 - JUnit covers ingredient assignment, placement mark consumption and stable server-game-time cycle boundaries.
 
+## Follow-on player progression, equipment and feedback pass
+
+### 7. Functional Curios specialization
+- The existing `occult_focus` Curios slot is size 1 and accepts either Spirit Focus or Divination Pendulum.
+- Spirit Focus adds +1 spirituality to the configured recovery amount on each 40-server-tick recovery interval.
+- Divination Pendulum, only for Seer, reduces secondary-skill cost by 4 and increases local omen radius by 2 blocks.
+- Both items have bilingual effect tooltips; `/lotm status` reports the equipped specialization.
+- This is a mutually exclusive choice, not two stackable buffs.
+
+### 8. Direct-characteristic instability loop
+- Directly taking a Sequence 9 characteristic now correctly initializes instability to 1; direct Sequence 8 characteristic advancement increments the existing value.
+- Each instability point adds +2 spirituality to skill activation cost, capped at +8.
+- A crafted Stability Sigil uses Echo Quartz, Lunar Mica, Spirit Ember and paper; consuming it reduces instability by one, only for active Sequence 9/8 players.
+- The sigil is not consumed when the player has no instability. Creative players retain their item.
+- Instability recovery is reversible and does not alter the legacy NBT key.
+
+### 9. Progression feedback
+- Advancement items now explain pathway, rank, prepared-vs-characteristic route and configured digestion thresholds in their tooltips.
+- The first Sequence 9 characteristic is explicitly described as a path-establishing case with no prior digestion requirement; Sequence 8 characteristic still displays the configured threshold.
+- `/lotm status` includes active Curios specialization and the current skill-cost surcharge.
+- English and Chinese localizations and static QA contracts cover the new feedback.
+
+**Validation caveat:** these are code and resource changes, not yet confirmed by an in-game client or multiplayer server. Current-head workflow runs must be checked; a static QA pass cannot prove Curios equipment events, item consumption, tooltip rendering or save/reload behavior.
+
 ## Next development batches (do not claim complete until validated)
 
 ### A. In-game and multiplayer acceptance
@@ -89,10 +113,10 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 5. Plan an explicit clean-up or chunk-attachment strategy for provenance marks when resources are destroyed without a player break.
 
 ### C. Spirituality, instability and risk/reward
-1. Profile spirituality regeneration and actual combat/exploration cost for each pathway.
-2. Introduce configuration and a measured consequence for direct-characteristic instability only after design review; never silently change saved NBT semantics.
+1. Profile spirituality regeneration and actual skill/exploration cost for each pathway, including the new mutually exclusive Curios bonuses.
+2. Playtest the instability surcharge and Stability Sigil economy; tune only from measured usage, preserving the existing NBT key and no-free-consumption rule.
 3. Consider optional rituals, field studies and visual cues using existing Minecraft assets; never require extra dimensions or NPC quests for the basic loop.
-4. Build readable progression feedback and consistent bilingual tooltips/recipe hints.
+4. Continue the HUD/status experience beyond commands and item tooltips, with server-authoritative synchronization and accessibility-safe placement.
 
 ### D. Release gate
 - All current-head source/resource QA, JUnit, NeoForge 8.14.3 and Gradle 9.8 builds, dedicated server boot and saved-block verification.
