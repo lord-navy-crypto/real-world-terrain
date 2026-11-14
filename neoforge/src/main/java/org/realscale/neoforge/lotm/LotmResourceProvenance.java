@@ -49,6 +49,16 @@ public final class LotmResourceProvenance extends SavedData {
         return false;
     }
 
+    /** Remove stale provenance for every position actually affected by an explosion. */
+    public int consumePlacements(Iterable<BlockPos> positions) {
+        int removed = 0;
+        for (BlockPos pos : positions) {
+            if (placed.remove(pos.asLong())) removed++;
+        }
+        if (removed > 0) setDirty();
+        return removed;
+    }
+
     int trackedPositions() {
         return placed.size();
     }
