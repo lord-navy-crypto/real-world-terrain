@@ -16,6 +16,23 @@ class LotmActingTest {
         assertEquals(0, LotmActing.dailyCap("unknown"));
     }
     @Test
+    void dailyCountersClampMalformedPersistentValuesToTheirCategoryCap() {
+        assertEquals(0, LotmActing.clampDailyUsed(-1, 12));
+        assertEquals(0, LotmActing.clampDailyUsed(Integer.MIN_VALUE, 12));
+        assertEquals(12, LotmActing.clampDailyUsed(100, 12));
+        assertEquals(8, LotmActing.clampDailyUsed(Integer.MAX_VALUE, 8));
+    }
+
+    @Test
+    void scaledActingRewardsUseLongArithmeticAndRespectRemainingCapacity() {
+        assertEquals(12, LotmActing.scaledReward(Integer.MAX_VALUE, 300, 12));
+        assertEquals(1, LotmActing.scaledReward(2, 50, 3));
+        assertEquals(0, LotmActing.scaledReward(1, 50, 3));
+        assertEquals(0, LotmActing.scaledReward(Integer.MAX_VALUE, 300, 0));
+        assertEquals(0, LotmActing.scaledReward(-1, 300, 12));
+    }
+
+    @Test
     void serverActivityCyclesIgnoreSleepAndDaylightTimeManipulation() {
         assertEquals(0L, LotmActing.activityDay(0L));
         assertEquals(0L, LotmActing.activityDay(23_999L));
