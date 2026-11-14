@@ -115,9 +115,11 @@ The current branch has moved beyond the original vanilla-variant pilot:
 1. Check the latest `Source integrity, tests and NeoForge build` and dedicated-server workflow against the current branch head before claiming the milestone passes.
 2. Confirm all ten entities actually spawn at reasonable rates in a saved test world; adjust weight and group size only from observed spawn density.
 3. Inspect the generated models/textures in-game; the current procedural block models are a functional first art pass, not the final visual polish.
-4. Add deeper species-specific navigation, animation timing, sounds and non-combat behaviors after runtime stability.
-5. Only after creature acceptance, proceed to expanded materials/minerals, alchemy recipes, pathway skills and supernatural energy.
-6. Verify the actual supplementary loot rates in a saved world and tune only after playtesting; no custom structure or ruin generation is in scope.
+4. Inspect the new species-specific `special` animations in a real client; squid schooling and Howler regrouping are implemented, while Night Owl roosting, additional ambient behaviors and original sounds remain open.
+5. Test the opt-in `/lotm hud` action-bar status display in a real client, including coexistence with other action-bar notifications and persistence after respawn.
+6. The dedicated-server RCON smoke now summons all ten active entity IDs and reads their health attributes; verify this against the latest workflow result.
+7. Only after creature acceptance, proceed to further materials/minerals, alchemy recipes, pathway skills and supernatural energy refinements.
+8. Verify the actual supplementary loot rates in a saved world and tune only after playtesting; no custom structure or ruin generation is in scope.
 
 ## Active creature roster
 
