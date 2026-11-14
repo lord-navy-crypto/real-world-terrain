@@ -75,7 +75,7 @@ public final class LotmActing {
 
     /** Track placement in world data so trading or relogging does not reset provenance. */
     public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
-        if (!(event.getLevel() instanceof ServerLevel level)
+        if (event.isCanceled() || !(event.getLevel() instanceof ServerLevel level)
                 || !(event.getEntity() instanceof Player)
                 || !isFieldworkBlock(event.getPlacedBlock().getBlock())) return;
         LotmResourceProvenance.get(level).markPlaced(event.getPos());
