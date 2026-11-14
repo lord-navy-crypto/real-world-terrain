@@ -146,7 +146,9 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
             machine.setMachineStatus(STATUS_UNAVAILABLE);
             return;
         }
-        if (machine.inventory.getStackInSlot(FUEL_SLOT).isEmpty()) {
+        // Revalidate loaded NBT as well as normal slot insertion; old/corrupt saves
+        // must never let an arbitrary item be consumed as alchemy fuel.
+        if (!machine.inventory.getStackInSlot(FUEL_SLOT).is(LotmContent.SPIRIT_EMBER.get())) {
             machine.setBrewingState(false);
             machine.setMachineStatus(STATUS_WAITING_FUEL);
             return;
