@@ -123,6 +123,19 @@ class LotmRpgExpansionTests(unittest.TestCase):
             self.assertTrue(lang["message.realscale.lotm.stability_sigil.restored"])
 
 
+    def test_potion_tooltips_explain_pathway_and_both_advancement_requirements(self):
+        potion = (JAVA / "lotm/LotmPotionItem.java").read_text(encoding="utf-8")
+        self.assertIn("appendHoverText", potion)
+        self.assertIn("POTION_PRACTICE.get()", potion)
+        self.assertIn("CHARACTERISTIC_PRACTICE.get()", potion)
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            for key in ("path", "rank", "characteristic", "direct_risk",
+                        "characteristic_requirement", "first_potion", "prepared",
+                        "prepared_requirement"):
+                self.assertTrue(lang["tooltip.realscale.lotm.potion." + key])
+
+
     def test_bilingual_discovery_and_field_guide_content_is_complete(self):
         for locale in ("en_us", "zh_cn"):
             lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
