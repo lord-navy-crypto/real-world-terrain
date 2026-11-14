@@ -88,11 +88,11 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         hudToggle = addRenderableWidget(Button.builder(Component.empty(),
                 button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
                         LotmStatusMenu.BUTTON_TOGGLE_HUD))
-                .bounds(leftPos + 10, topPos + 238, 144, 18).build());
+                .bounds(leftPos + 10, topPos + 238, 96, 18).build());
         auraToggle = addRenderableWidget(Button.builder(Component.empty(),
                 button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
                         LotmStatusMenu.BUTTON_TOGGLE_APPEARANCE))
-                .bounds(leftPos + 166, topPos + 238, 144, 18).build());
+                .bounds(leftPos + 112, topPos + 238, 96, 18).build());
 
         openBestiary = addRenderableWidget(Button.builder(
                 Component.translatable("gui.realscale.lotm_panel.bestiary.open"),
@@ -667,14 +667,17 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             for (int slot = 1; slot <= 2; slot++) {
                 int cost = menu.skillCost(slot);
                 boolean unlocked = menu.skillsEnabled() && (menu.sequence() == 9 || menu.sequence() == 8);
+                Component skillState = !menu.skillsEnabled()
+                        ? Component.translatable("gui.realscale.lotm_panel.skill.tooltip.state.disabled")
+                        : !unlocked
+                                ? Component.translatable("gui.realscale.lotm_panel.skill.tooltip.state.locked")
+                                : menu.spirit() >= cost
+                                        ? Component.translatable("gui.realscale.lotm_panel.skill.tooltip.state.sequence" + menu.sequence())
+                                        : Component.translatable("gui.realscale.lotm_panel.skill.tooltip.state.low_spirit");
                 Component skill = Component.translatable(
                         "gui.realscale.lotm_panel.dashboard.skill",
                         Component.translatable("gui.realscale.lotm_panel.skill." + path.id() + "." + slot + ".name"),
-                        unlocked ? (menu.spirit() >= cost
-                                ? Component.translatable("gui.realscale.lotm_panel.skill.tooltip.state.sequence" + menu.sequence())
-                                : Component.translatable("gui.realscale.lotm_panel.skill.tooltip.state.low_spirit"))
-                                : Component.translatable("gui.realscale.lotm_panel.skill.tooltip.state.locked"),
-                        cost);
+                        skillState, cost);
                 graphics.drawString(font, skill, 14, 208 + (slot - 1) * 13, 0xFFD7CDE4, false);
             }
         } else if (selectedTab == 1 && path != null) {
@@ -848,7 +851,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             graphics.drawString(font, Component.translatable(
                     "gui.realscale.lotm_panel.journal.page", journalPage + 1, pages),
                     133, 250, 0xFFB8ADC9, false);
-        }        } else if (selectedTab == 5) {
+        } else if (selectedTab == 5) {
             if (settingsPage == 0) {
                 graphics.drawString(font, Component.translatable(
                         "gui.realscale.lotm_panel.settings.personal_header"),
@@ -922,7 +925,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                         "gui.realscale.lotm_panel.settings.skill_details_description"),
                         166, 176, 0xFFD7CDE4, false);
             }
-        }        } else if (selectedTab == 6) {
+        } else if (selectedTab == 6) {
             LotmCreatureKind kind = LotmCreatureKind.values()[creatureIndex];
             graphics.drawString(font, Component.translatable(
                     "gui.realscale.lotm_panel.bestiary.header", creatureIndex + 1,
