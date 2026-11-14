@@ -32,6 +32,7 @@ public final class RealScaleMod {
         NeoForge.EVENT_BUS.addListener(LotmPlayerAbilitySync::onAbilityGranted);
         NeoForge.EVENT_BUS.addListener(LotmActing::onBlockPlace);
         NeoForge.EVENT_BUS.addListener(LotmActing::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(LotmActing::onExplosionDetonate);
         NeoForge.EVENT_BUS.addListener(LotmCommands::register);
         RealScaleVehicles.register(bus);
         bus.addListener(RealScaleStructurePacks::register);
