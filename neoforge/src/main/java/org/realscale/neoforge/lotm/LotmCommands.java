@@ -99,11 +99,17 @@ public final class LotmCommands {
                 }
                 for (int slot = 1; slot <= 2; slot++) {
                     final int activeSlot = slot;
-                    int cost = LotmBalance.skillCost(path.id(), slot, sequence,
+                    int mastery = LotmState.skillMastery(player, path, slot);
+                    int baseCost = LotmBalance.skillCost(path.id(), slot, sequence,
                             LotmCurios.hasDivinationPendulum(player), LotmState.instability(player));
+                    int cost = LotmBalance.skillCostWithMastery(baseCost, mastery,
+                            LotmConfig.SKILL_COST_PERCENT.get());
                     int cooldown = LotmBalance.skillCooldownTicks(slot, sequence);
+                    int masteryCap = sequence == 9 ? 1 : LotmConfig.SKILL_MASTERY_CAP.get();
                     context.getSource().sendSuccess(() -> Component.translatable(
                             "message.realscale.lotm.skills.cost", activeSlot, cost, cooldown), false);
+                    context.getSource().sendSuccess(() -> Component.translatable(
+                            "message.realscale.lotm.skills.mastery", activeSlot, mastery, masteryCap), false);
                 }
                 if (sequence < 8) {
                     context.getSource().sendSuccess(() -> Component.translatable(
