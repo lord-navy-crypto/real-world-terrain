@@ -563,5 +563,6 @@
   "gui.realscale.lotm_panel.materials.inventory_empty": "背包中暂无已注册的超凡材料。",
   "gui.realscale.lotm_panel.materials.page": "第 %s / %s 页",
   "gui.realscale.lotm_panel.materials.previous": "上一页材料",
-  "gui.realscale.lotm_panel.materials.next": "下一页材料"
+  "gui.realscale.lotm_panel.materials.next": "下一页材料",
+  "gui.realscale.lotm_panel.materials.count": "携带数量：%s"
 }
