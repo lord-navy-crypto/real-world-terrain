@@ -162,7 +162,7 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - `/lotm hud` toggles an opt-in action-bar status line showing pathway, sequence, spirituality, digestion and instability.
 - The server renders the line every 40 ticks from authoritative player state; no client-side NBT assumption or custom packet is used.
 - The preference persists through death/respawn, and both locales plus the field guide describe the command.
-- The HUD is opt-in to avoid taking over other mods' action-bar notifications; client usability still needs manual testing.
+- The HUD is opt-in to preserve default behavior. While enabled, its periodic refresh can replace other action-bar notifications; disable it if another mod uses that area. Client usability still needs manual testing.
 
 ## Next development batches (do not claim complete until validated)
 
