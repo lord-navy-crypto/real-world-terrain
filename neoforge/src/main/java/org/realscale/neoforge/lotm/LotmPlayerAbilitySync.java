@@ -50,7 +50,21 @@ public final class LotmPlayerAbilitySync {
         }
     }
 
-    /** Run every player tick so a tome cannot raise an already-granted skill's level. */
+    /**
+     * The grant event rejects unauthorized changes immediately. This bounded audit
+     * is a defensive fallback for integrations that mutate grant maps without firing it.
+     */
+    public static boolean shouldAuditUnauthorizedGrants(int tickCount) {
+        return Math.floorMod(tickCount, 20) == 0;
+    }
+
+    public static void periodicSanitizeUnauthorizedGrants(ServerPlayer player) {
+        if (shouldAuditUnauthorizedGrants(player.tickCount)) {
+            sanitizeUnauthorizedGrants(player);
+        }
+    }
+
+    /** Full audit used on login and progression changes, plus the periodic fallback. */
     public static void sanitizeUnauthorizedGrants(ServerPlayer player) {
         Map<ResourceLocation, Map<Ability, Integer>> grants = AbilityAPI.getGrantsBySource(player);
         for (Map.Entry<ResourceLocation, Map<Ability, Integer>> sourceEntry :
