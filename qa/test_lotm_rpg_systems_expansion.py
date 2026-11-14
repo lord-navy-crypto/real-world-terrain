@@ -55,6 +55,16 @@ class LotmRpgExpansionTests(unittest.TestCase):
                     "LUNAR_MICA_ORE", "ECHO_QUARTZ_ORE", "ABYSSAL_SALT_ORE"):
             self.assertIn("LotmContent." + ore + ".get()", acting)
 
+    def test_explosions_prune_placed_resource_provenance(self):
+        acting = (JAVA / "lotm/LotmActing.java").read_text(encoding="utf-8")
+        provenance = (JAVA / "lotm/LotmResourceProvenance.java").read_text(encoding="utf-8")
+        mod = (JAVA / "RealScaleMod.java").read_text(encoding="utf-8")
+        self.assertIn("ExplosionEvent.Detonate", acting)
+        self.assertIn("getAffectedBlocks()", acting)
+        self.assertIn("consumePlacements", acting)
+        self.assertIn("public int consumePlacements(Iterable<BlockPos> positions)", provenance)
+        self.assertIn("LotmActing::onExplosionDetonate", mod)
+
     def test_research_has_novel_clues_per_pathway_and_sequence_and_uses_server_game_clock(self):
         acting = (JAVA / "lotm/LotmActing.java").read_text(encoding="utf-8")
         skills = (JAVA / "lotm/LotmSkills.java").read_text(encoding="utf-8")
