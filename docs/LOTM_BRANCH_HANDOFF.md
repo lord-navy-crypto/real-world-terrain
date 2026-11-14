@@ -110,12 +110,14 @@ The current branch has moved beyond the original vanilla-variant pilot:
 - Sequence 7 remains archived and is not included in entity registration, spawn modifiers or vanilla structure loot tables.
 - Four additive loot modifiers target vanilla dungeon, mineshaft, stronghold corridor and ancient-city chests. Their supplementary-roll chances are 4%, 5.5%, 7.5% and 10%; `replace:false` preserves all existing vanilla and other-mod loot.
 
+**New runtime acceptance command:** `/lotm diagnose` (read-only). It checks registered ores/minerals/flora/creature materials/manuals, the alchemy apparatus and menus, the sixteen loaded skill-manual recipes, server config bounds, and the current player's Sequence 8/9 mastery/cost values. It never changes player data or consumes items. Source: `neoforge/src/main/java/org/realscale/neoforge/lotm/LotmRpgDiagnostics.java`.
+
 **Implemented on the feature branch; still requiring verification / polish:**
 
 1. Check the latest `Source integrity, tests and NeoForge build`, Gradle 9.8 and dedicated-server workflows against the exact current head before claiming the milestone passes.
-2. Test `/lotm panel` in a real client: four tabs, synchronized values, button actions, no-path state, localization, scaling and menu close/reopen behavior.
+2. Run `/lotm diagnose` in a loaded world and retain its full report; investigate any failed section. Then test `/lotm panel` in a real client: four tabs, synchronized values, button actions, no-path state, localization, scaling and menu close/reopen behavior.
 3. Test all sixteen skill-manual recipes in the alchemy apparatus, including the separate binder, fuel pause, output blocking, save/load and item extraction.
-4. Test reading manuals at S9 and S8, wrong-path rejection, configured mastery cap, respawn persistence, effective skill cost and the actual skill range/duration changes.
+4. Test reading manuals at S9 and S8, wrong-path rejection, configured mastery cap, respawn persistence, effective skill cost (including Divination Pendulum) and the actual skill range/duration changes.
 5. Inspect generated item/mineral/block/ability icons and all ten creature textures in-game. The generator is deterministic and build-integrated, but visual quality still needs client review.
 6. Test per-player pathway aura and eye motes in multiplayer, verify the global appearance switch, HUD interval and coexistence with other action-bar notifications. This is a particle-based cosmetic appearance layer, not a replacement player skin/model.
 7. Confirm all ten entities actually spawn at reasonable rates in a saved test world; inspect the species-specific `special` animations, squid schooling and Howler regrouping. Night Owl roosting and original ambient sounds remain open.
