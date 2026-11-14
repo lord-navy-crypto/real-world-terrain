@@ -227,7 +227,7 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("AbilityAPI.revoke(player, event.getSource(), event.getAbility())", sync)
         self.assertIn("sync(ServerPlayer player)", sync)
 
-    def test_canceled_resource_events_do_not_mutate_provenance(self):
+    def test_resource_provenance_respects_cancellable_placement_and_explosion_lifecycle(self):
         acting = (JAVA / "lotm/LotmActing.java").read_text(encoding="utf-8")
         start = acting.index("public static void onBlockPlace")
         end = acting.index("public static void onBlockBreak", start)
@@ -238,9 +238,10 @@ class LotmRpgExpansionTests(unittest.TestCase):
         explosion_start = acting.index("public static void onExplosionDetonate")
         explosion_end = acting.index("static boolean isFieldworkBlock", explosion_start)
         explosion_handler = acting[explosion_start:explosion_end]
-        self.assertIn("event.isCanceled()", explosion_handler)
+        self.assertIn("ExplosionEvent.Start is the cancellable phase", explosion_handler)
         self.assertIn("consumePlacements(event.getAffectedBlocks())", explosion_handler)
-        self.assertLess(explosion_handler.index("event.isCanceled()"), explosion_handler.index("consumePlacements("))
+        self.assertNotIn("event.isCanceled()", explosion_handler,
+                         "Detonate is not cancellable; Start cancellation prevents it from firing.")
 
     def test_pathway_ability_precheck_uses_the_same_curios_and_instability_cost(self):
         ability = (JAVA / "lotm/LotmPathwayAbility.java").read_text(encoding="utf-8")
