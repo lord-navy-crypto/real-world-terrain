@@ -87,7 +87,9 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             return;
         }
         LotmPath path = hasPath ? LotmPath.values()[menu.pathIndex() - 1] : null;
-        Component pathName = Component.translatable("lotm.realscale.path." + path.id());
+        Component pathName = path == null
+                ? Component.translatable("message.realscale.lotm.no_path")
+                : Component.translatable("lotm.realscale.path." + path.id());
         if (selectedTab == 0) {
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.path", pathName), 14, 52, 0xFFEDE4F6, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.sequence", menu.sequence()), 14, 69, 0xFFD7CDE4, false);
