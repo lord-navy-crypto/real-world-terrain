@@ -96,6 +96,14 @@ public final class LotmCommands {
                     context.getSource().sendSuccess(() -> Component.translatable(
                             "message.realscale.lotm.skills." + path.id() + "." + activeRank), false);
                 }
+                for (int slot = 1; slot <= 2; slot++) {
+                    final int activeSlot = slot;
+                    int cost = LotmBalance.skillCost(path.id(), slot, sequence,
+                            LotmCurios.hasDivinationPendulum(player), LotmState.instability(player));
+                    int cooldown = LotmBalance.skillCooldownTicks(slot, sequence);
+                    context.getSource().sendSuccess(() -> Component.translatable(
+                            "message.realscale.lotm.skills.cost", activeSlot, cost, cooldown), false);
+                }
                 if (sequence < 8) {
                     context.getSource().sendSuccess(() -> Component.translatable(
                             "message.realscale.lotm.skills.archived"), false);
