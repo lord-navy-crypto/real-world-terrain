@@ -299,7 +299,7 @@
   "gui.realscale.lotm_panel.setting.appearance": "气场效果：%s",
   "gui.realscale.lotm_panel.setting.creatures": "独立超凡生物：%s",
   "gui.realscale.lotm_panel.setting.skill_cost": "技能消耗倍率：%s%%",
-  "gui.realscale.lotm_panel.setting.drop_rate": "生物材料掉落率：%s%%",
+  "gui.realscale.lotm_panel.setting.drop_rate": "材料掉率 S9: %s%% / S8: %s%%",
   "gui.realscale.lotm_panel.setting.hud": "你的状态栏偏好：%s",
   "gui.realscale.lotm_panel.setting.aura": "你的气场偏好：%s",
   "gui.realscale.lotm_panel.tab.materials": "材料",
