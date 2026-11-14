@@ -102,6 +102,16 @@ public final class LotmContent {
     private static final Map<String, Supplier<Item>> MATERIALS = new LinkedHashMap<>();
     private static final Map<String, Supplier<? extends Item>> CHARACTERISTICS = new LinkedHashMap<>();
     private static final Map<String, Supplier<? extends Item>> PROMOTIONS = new LinkedHashMap<>();
+    private static final Map<String, Supplier<? extends Item>> SKILL_BOOKS = new LinkedHashMap<>();
+
+    private static String skillBookKey(LotmPath path, int slot) {
+        return path.id() + ":" + slot;
+    }
+
+    /** A study manual improves a pathway skill but never grants the external ability itself. */
+    public static Supplier<? extends Item> skillBook(LotmPath path, int slot) {
+        return path == null || slot < 1 || slot > 2 ? null : SKILL_BOOKS.get(skillBookKey(path, slot));
+    }
 
     private static void material(String suffix) {
         MATERIALS.put(suffix, ITEMS.registerSimpleItem("lotm_" + suffix, new Item.Properties()));
@@ -141,6 +151,13 @@ public final class LotmContent {
         // Keep S7 registry IDs so older pilot worlds/items do not become unknown IDs.
         // S7 recipes, drops and advancement are disabled until that tier is reopened.
         for (LotmPath path : LotmPath.values()) {
+            for (int slot = 1; slot <= 2; slot++) {
+                final int skillSlot = slot;
+                String manualId = "lotm_" + path.id() + "_skill_manual_" + slot;
+                SKILL_BOOKS.put(skillBookKey(path, slot), ITEMS.registerItem(manualId,
+                        properties -> new LotmSkillBookItem(path, skillSlot, properties),
+                        new Item.Properties().stacksTo(1)));
+            }
             for (int rank = 9; rank >= 7; rank--) {
                 final int sequence = rank;
                 String characteristicId = "lotm_" + path.id() + "_s" + sequence + "_characteristic";
