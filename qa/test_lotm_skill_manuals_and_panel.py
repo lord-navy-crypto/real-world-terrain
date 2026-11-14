@@ -187,6 +187,12 @@ class LotmSkillManualAndPanelTests(unittest.TestCase):
         self.assertIn("getAllRecipesFor(LotmAlchemyContent.ALCHEMY_RECIPE_TYPE.get())", diagnostic)
         self.assertIn("instanceof LotmSkillBookItem", diagnostic)
         self.assertIn("CREATURE_MATERIALS", diagnostic)
+        self.assertIn("LotmContent.SPIRIT_QUARTZ_ORE", diagnostic)
+        self.assertIn("LotmContent.SPIRIT_QUARTZ_ORE_ITEM", diagnostic)
+        self.assertIn("BuiltInRegistries.ENTITY_TYPE.getKey", diagnostic)
+        self.assertIn("LotmCreatureEntities.type(kind)", diagnostic)
+        self.assertIn("LotmPlayerAbilityRegistry.all()", diagnostic)
+        self.assertIn("LotmContent.RELIC_CACHE", diagnostic)
         self.assertIn("LotmContent.skillBook(path, slot)", diagnostic)
         self.assertNotIn("putInt(", diagnostic)
         self.assertNotIn("shrink(", diagnostic)
@@ -194,8 +200,9 @@ class LotmSkillManualAndPanelTests(unittest.TestCase):
     def test_diagnostic_messages_are_localized(self):
         en = json.loads((ASSETS / "lang/en_us.json").read_text(encoding="utf-8"))
         zh = json.loads((ASSETS / "lang/zh_cn.json").read_text(encoding="utf-8"))
-        for suffix in ("header", "ores", "minerals", "flora", "creature_materials",
-                       "skill_manuals", "alchemy", "manual_recipes", "config", "player",
+        for suffix in ("header", "ores", "minerals", "flora", "creatures", "abilities",
+                       "relic_cache", "creature_materials", "skill_manuals", "alchemy",
+                       "manual_recipes", "config", "player",
                        "section", "summary", "scope", "no_path", "player_detail"):
             key = "message.realscale.lotm.diagnose." + suffix
             self.assertTrue(en.get(key), "missing English diagnostic key " + key)

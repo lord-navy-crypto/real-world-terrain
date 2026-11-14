@@ -296,6 +296,12 @@ def _manual_pixel(name: str, x: int, y: int, palette) -> tuple[int, int, int, in
     if x == 3:
         return rgba(mid)
     if 4 <= x <= 12 and 2 <= y <= 13:
+        # Encode the eight pathway/sequence manuals with a distinct three-bit
+        # page mark so each 16x16 manual icon has its own readable identity.
+        manual_index = ITEMS.index(name) - ITEMS.index("lotm_seer_skill_manual_1")
+        if y == 12 and x in (5, 7, 9):
+            bit = (x - 5) // 2
+            return rgba(bright if (manual_index & (1 << bit)) else mid)
         rune_seed = hashbyte(name)
         dx, dy = abs(x - 8), abs(y - 7)
         if (dx == 0 and dy <= 3) or (dy == 0 and dx <= 3) or (dx == dy and dx <= 2):

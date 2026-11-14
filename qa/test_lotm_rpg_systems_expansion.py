@@ -285,7 +285,7 @@ class LotmRpgExpansionTests(unittest.TestCase):
         creature = (JAVA / "lotm/LotmCreature.java").read_text(encoding="utf-8")
         self.assertIn("followsSameKind(kind)", creature)
         self.assertIn("new FollowSameKindGoal(this", creature)
-        self.assertIn("candidate.kind() == creature.kind()", creature)
+        self.assertIn("other.kind() == creature.kind()", creature)
         self.assertIn("creature.getTarget() != null", creature)
         self.assertIn("LotmCreatureKind.STARLIT_SQUID", behavior)
         self.assertIn("LotmCreatureKind.CRIMSON_HOWLER", behavior)
