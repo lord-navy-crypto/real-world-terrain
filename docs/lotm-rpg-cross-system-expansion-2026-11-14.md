@@ -44,7 +44,7 @@ Branch: `feature/lotm-sequence9-pilot-20261111` / PR #155 (Draft)
 - `LotmActing` now uses the Overworld's monotonic game time for 24,000-tick reward cycles; sleeping or changing daylight time cannot instantaneously reset a cap.
 - All six active ores count; creative mode does not award fieldwork.
 
-Explosions now explicitly consume placement marks for all affected positions in one SavedData mutation, preventing stale records from surviving ordinary blast removal. Remaining limitations: previously placed blocks from old saves cannot be retrospectively distinguished; piston moves and third-party automation that bypass both player-break and explosion events may still need a future cleanup hook. In-world testing must verify save/reload, multiplayer, chunk boundaries and event cancellation interactions.
+Uncanceled explosions now explicitly consume placement marks for all affected positions in one SavedData mutation, preventing stale records from surviving ordinary blast removal; canceled explosions preserve the ledger. Remaining limitations: previously placed blocks from old saves cannot be retrospectively distinguished; piston moves and third-party automation that bypass both player-break and explosion events may still need a future cleanup hook. In-world testing must verify save/reload, multiplayer, chunk boundaries and event cancellation interactions.
 
 ### 4. New flora to material economy
 Four optional shapeless crafts were added. None removes or changes existing recipes:
