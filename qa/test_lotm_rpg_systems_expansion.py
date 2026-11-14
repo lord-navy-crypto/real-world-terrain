@@ -247,6 +247,18 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockPlace)", mod)
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockBreak)", mod)
 
+    def test_progression_transition_revalidates_before_mutating_player_state(self):
+        state = (JAVA / "lotm/LotmState.java").read_text(encoding="utf-8")
+        potion = (JAVA / "lotm/LotmPotionItem.java").read_text(encoding="utf-8")
+        start = state.index("public static String advance")
+        end = state.index("public static int sequence", start)
+        transition = state[start:end]
+        self.assertIn("LotmProgression.validate", transition)
+        self.assertLess(transition.index("LotmProgression.validate"),
+                        transition.index("tag.putInt(LotmPath.NBT_SEQUENCE, sequence)"))
+        self.assertIn("LotmState.advance(player, pathway, sequence, characteristic)", potion)
+        self.assertNotIn("LotmProgression.validate", potion)
+
     def test_periodic_ability_sync_reconciles_grants_after_live_config_changes(self):
         sync = (JAVA / "lotm/LotmPlayerAbilitySync.java").read_text(encoding="utf-8")
         events = (JAVA / "lotm/LotmEvents.java").read_text(encoding="utf-8")
