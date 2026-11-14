@@ -374,6 +374,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         journalPage = Math.min(journalPage, journalPageCount() - 1);
+        materialPage = Math.min(materialPage, materialPageCount() - 1);
         boolean settings = selectedTab == 5;
         boolean personalSettings = settings && settingsPage == 0;
         boolean interfaceSettings = settings && settingsPage == 1;
@@ -481,11 +482,34 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         graphics.pose().scale((float) scale, (float) scale, 1.0F);
         super.render(graphics, (int) panelMouseX(mouseX), (int) panelMouseY(mouseY), partialTick);
         renderTooltip(graphics, (int) panelMouseX(mouseX), (int) panelMouseY(mouseY));
+        renderCarriedMaterialTooltip(graphics, (int) panelMouseX(mouseX), (int) panelMouseY(mouseY));
         renderRecipeItemTooltip(graphics, (int) panelMouseX(mouseX), (int) panelMouseY(mouseY));
         renderJournalEntryTooltip(graphics, (int) panelMouseX(mouseX), (int) panelMouseY(mouseY));
         renderBestiaryTooltip(graphics, (int) panelMouseX(mouseX), (int) panelMouseY(mouseY));
         renderSkillTooltip(graphics, (int) panelMouseX(mouseX), (int) panelMouseY(mouseY));
         graphics.pose().popPose();
+    }
+
+    /** Hovering a carried material icon reveals its exact stack count. */
+    private void renderCarriedMaterialTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (selectedTab != 2 || mouseX < leftPos + 166 || mouseX >= leftPos + 182) return;
+        List<CarriedMaterial> carried = carriedMaterialStacks();
+        int first = materialPage * 6;
+        int last = Math.min(carried.size(), first + 6);
+        int rowY = topPos + 88;
+        for (int index = first; index < last; index++) {
+            if (mouseY >= rowY - 3 && mouseY < rowY + 13) {
+                CarriedMaterial material = carried.get(index);
+                ItemStack stack = new ItemStack(material.item());
+                List<Component> lines = new ArrayList<>();
+                lines.add(stack.getHoverName());
+                lines.add(Component.translatable(
+                        "gui.realscale.lotm_panel.materials.count", material.count()));
+                graphics.renderTooltip(font, lines, Optional.empty(), mouseX, mouseY);
+                return;
+            }
+            rowY += 21;
+        }
     }
 
     /** Full clue, verification state and in-game timestamp are available on hover. */
