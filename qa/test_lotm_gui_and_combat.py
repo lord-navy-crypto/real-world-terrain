@@ -35,7 +35,7 @@ class LotmGuiAndCombatTests(unittest.TestCase):
         self.assertIn("LotmDropBalance.effectiveChance(", screen)
         self.assertIn("openBestiary.visible = selectedTab == 2", screen)
         menu = (BASE / "lotm/LotmStatusMenu.java").read_text()
-        self.assertIn("public static final int DATA_COUNT = 26", menu)
+        self.assertIn("public static final int DATA_COUNT = 32", menu)
         self.assertIn('LotmActing.dailyUsed(player, "fieldwork")', menu)
 
     def test_creative_inventory_lists_playable_resources_not_archived_rank(self):
