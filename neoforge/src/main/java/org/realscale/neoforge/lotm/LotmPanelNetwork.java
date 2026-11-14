@@ -5,6 +5,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.neoforged.neoforge.network.PacketDistributor;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -26,6 +28,11 @@ public final class LotmPanelNetwork {
         return clientResearchEntries;
     }
 
+    /** Clear session-scoped client cache when leaving a server or singleplayer world. */
+    public static void clearClientResearchLog() {
+        clientResearchEntries = List.of();
+    }
+
     /** Open the panel from either the keybind payload or the /lotm panel command. */
     public static void openPanel(ServerPlayer player) {
         if (player == null || !player.isAlive() || !LotmConfig.ENABLED.get()) return;
@@ -40,7 +47,9 @@ public final class LotmPanelNetwork {
         if (player == null || !(player.containerMenu instanceof LotmStatusMenu)) return;
         List<String> all = LotmActing.researchDiscoveries(player);
         int first = Math.max(0, all.size() - 64);
-        PacketDistributor.sendToPlayer(player, new ResearchLogPayload(all.subList(first, all.size())));
+        List<String> latestFirst = new ArrayList<>(all.subList(first, all.size()));
+        Collections.reverse(latestFirst);
+        PacketDistributor.sendToPlayer(player, new ResearchLogPayload(latestFirst));
     }
 
     public record OpenPanelPayload() implements CustomPacketPayload {
@@ -77,7 +86,7 @@ public final class LotmPanelNetwork {
                 ResourceLocation.fromNamespaceAndPath("realscale", "lotm_research_log"));
         public static final StreamCodec<RegistryFriendlyByteBuf, ResearchLogPayload> STREAM_CODEC =
                 StreamCodec.composite(
-                        ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list(64)),
+                        ByteBufCodecs.stringUtf8(256).apply(ByteBufCodecs.list(64)),
                         ResearchLogPayload::entries,
                         ResearchLogPayload::new);
 
