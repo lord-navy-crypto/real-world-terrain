@@ -25,6 +25,8 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn("dashboard.materials", screen)
         self.assertIn("carriedMaterialStacks()", screen)
         self.assertIn("materialPageCount()", screen)
+        self.assertIn("renderCarriedMaterialTooltip(graphics", screen)
+        self.assertIn("materials.count", screen)
         self.assertIn("menu.skillCost(slot)", screen)
 
     def test_skill_tree_uses_authoritative_cost_formula_and_explains_unlock_states(self):
@@ -135,7 +137,7 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         required = (
             "dashboard.next_requirements", "dashboard.materials", "materials.required_header",
             "materials.inventory_header", "materials.inventory_empty", "materials.page",
-            "materials.previous", "materials.next",
+            "materials.previous", "materials.next", "materials.count",
             "skill.tooltip.state.disabled", "skill.tooltip.state.low_spirit",
             "skill.tooltip.cost", "skill.tooltip.cooldown", "skill.tooltip.mastery",
             "journal.search", "journal.search_hint", "journal.sort.newest", "journal.sort.oldest",
