@@ -37,6 +37,12 @@ public final class LotmBalance {
 
     /** The Pendulum specializes Seer divination; it never discounts other pathways. */
     public static int skillCost(String pathway, int slot, int sequence, boolean hasPendulum) {
+        return skillCost(pathway, slot, sequence, hasPendulum, 0);
+    }
+
+    /** Direct-characteristic instability raises the cost of exerting pathway abilities. */
+    public static int skillCost(String pathway, int slot, int sequence,
+            boolean hasPendulum, int instability) {
         if (sequence < 8 || sequence > 9) return MAX_SPIRIT;
         int base = switch (slot) {
             case 1 -> focusCost(pathway);
@@ -52,7 +58,12 @@ public final class LotmBalance {
         if (base >= MAX_SPIRIT) return MAX_SPIRIT;
         int rankCost = base + (9 - sequence) * (slot == 1 ? 5 : 4);
         int discount = hasPendulum && "seer".equals(pathway) && slot == 2 ? 4 : 0;
-        return Math.max(1, rankCost - discount);
+        return Math.max(1, rankCost - discount + instabilitySurcharge(instability));
+    }
+
+    /** One direct characteristic leaves a mild trace; the surcharge is capped and reversible. */
+    public static int instabilitySurcharge(int instability) {
+        return Math.min(8, Math.max(0, instability) * 2);
     }
 
     /** A worn Spirit Focus adds one point to each normal recovery interval. */
