@@ -340,5 +340,6 @@
   "gui.realscale.lotm_panel.skill.corpse_collector.1.name": "Undead Sense",
   "gui.realscale.lotm_panel.skill.corpse_collector.1.description": "Reveal and weaken nearby undead.",
   "gui.realscale.lotm_panel.skill.corpse_collector.2.name": "Shroud Ward",
-  "gui.realscale.lotm_panel.skill.corpse_collector.2.description": "Gain a brief defensive and recovery ward."
+  "gui.realscale.lotm_panel.skill.corpse_collector.2.description": "Gain a brief defensive and recovery ward.",
+  "gui.realscale.lotm_panel.accessory": "Equipped focus: %s"
 }
