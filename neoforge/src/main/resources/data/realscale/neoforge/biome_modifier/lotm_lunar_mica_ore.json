@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:taiga",
+    "minecraft:snowy_taiga",
+    "minecraft:old_growth_pine_taiga",
+    "realscale:subalpine_woodland"
+  ],
+  "features": "realscale:lotm_lunar_mica_ore",
+  "step": "underground_ores"
+}

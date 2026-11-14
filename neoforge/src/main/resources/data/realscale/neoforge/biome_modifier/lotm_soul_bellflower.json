@@ -1,0 +1,12 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:taiga",
+    "minecraft:old_growth_spruce_taiga",
+    "minecraft:dark_forest",
+    "realscale:birch_conifer_transition",
+    "realscale:subalpine_woodland"
+  ],
+  "features": "realscale:lotm_soul_bellflower",
+  "step": "vegetal_decoration"
+}

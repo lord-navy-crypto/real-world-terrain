@@ -1,0 +1,131 @@
+name: LOTM focused validation and test JAR
+
+on:
+  push:
+    branches:
+      - feature/lotm-sequence9-pilot-20261111
+    paths:
+      - "neoforge/src/main/java/org/realscale/neoforge/lotm/**"
+      - "neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java"
+      - "neoforge/src/test/java/org/realscale/neoforge/lotm/**"
+      - "neoforge/src/main/resources/assets/realscale/**"
+      - "neoforge/src/main/resources/data/realscale/**"
+      - "neoforge/src/main/resources/data/curios/**"
+      - "neoforge/src/main/resources/META-INF/neoforge.mods.toml"
+      - "scripts/generate_lotm_visuals.py"
+      - "qa/test_lotm_*.py"
+      - "docs/lotm*.md"
+      - "docs/LOTM*.md"
+      - "neoforge/build.gradle"
+      - "neoforge/gradle.properties"
+      - ".github/workflows/lotm-focused.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: lotm-focused-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lotm-build-test:
+    name: LOTM resources, logic tests and NeoForge test JAR
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Check out LOTM branch
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Gradle 8.14.3
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      - name: Run LOTM-specific resource and integration contract tests
+        run: python3 -m unittest discover -s qa -p "test_lotm_*.py" -v
+
+      - name: Compile the integrated NeoForge mod and execute all JUnit tests
+        working-directory: neoforge
+        run: gradle --no-daemon --stacktrace clean build
+
+      - name: Verify the packaged JAR contains LOTM logic and generated visuals
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          jars = sorted(Path("neoforge/build/libs").glob("*.jar"))
+          assert len(jars) == 1, f"Expected exactly one mod JAR, found: {jars}"
+          jar_path = jars[0]
+          creatures = (
+              "starlit_squid", "nightmare_eye", "night_owl",
+              "black_spotted_frog", "shroudman", "hornacis_goat",
+              "ironarm_beast", "four_eyed_turtle", "crimson_howler",
+              "death_crow",
+          )
+          required = {
+              "META-INF/neoforge.mods.toml",
+              "org/realscale/neoforge/lotm/LotmContent.class",
+              "org/realscale/neoforge/lotm/LotmProgression.class",
+              "org/realscale/neoforge/lotm/LotmAlchemyBlockEntity.class",
+              "org/realscale/neoforge/lotm/LotmPlayerAbilityRegistry.class",
+              "org/realscale/neoforge/lotm/LotmRpgDiagnostics.class",
+              "assets/realscale/models/item/lotm_seer_skill_manual_1.json",
+              "assets/realscale/animations/lotm_alchemy_apparatus.animation.json",
+              "assets/realscale/geo/lotm_alchemy_apparatus.geo.json",
+              "data/realscale/recipe/lotm_seer_skill_manual_1_s9.json",
+              "data/realscale/neoforge/biome_modifier/lotm_starlit_squid_spawns.json",
+              "data/curios/tags/item/occult_focus.json",
+          }
+          with ZipFile(jar_path) as archive:
+              names = set(archive.namelist())
+              missing = sorted(required - names)
+              assert not missing, f"Missing LOTM JAR entries: {missing}"
+              metadata = archive.read("META-INF/neoforge.mods.toml").decode("utf-8")
+              for dependency in ('modId="geckolib"', 'modId="curios"',
+                                 'modId="player_abilities"',
+                                 'modId="yet_another_config_lib_v3"'):
+                  assert dependency in metadata, f"Missing dependency metadata: {dependency}"
+              for creature in creatures:
+                  for path in (
+                      f"assets/realscale/textures/entity/lotm_{creature}.png",
+                      f"assets/realscale/geo/lotm_{creature}.geo.json",
+                      f"assets/realscale/animations/lotm_{creature}.animation.json",
+                  ):
+                      assert path in names, f"Missing generated creature asset: {path}"
+              for path in (
+                  "assets/realscale/textures/item/lotm_seer_skill_manual_1.png",
+                  "assets/realscale/textures/block/lotm_star_crystal_ore.png",
+                  "assets/realscale/textures/ability/lotm_seer_primary.png",
+              ):
+                  assert path in names, f"Missing generated LOTM texture: {path}"
+          import hashlib
+          digest = hashlib.sha256(jar_path.read_bytes()).hexdigest()
+          print(f"LOTM_TEST_JAR={jar_path}")
+          print(f"LOTM_TEST_JAR_SIZE={jar_path.stat().st_size}")
+          print(f"LOTM_TEST_JAR_SHA256={digest}")
+          print("LOTM_PACKAGED_RESOURCES_AND_DEPENDENCY_METADATA_OK")
+          PY
+
+      - name: Upload LOTM test JAR and installation requirements
+        uses: actions/upload-artifact@v4
+        with:
+          name: LOTM-Sequence9-8-test-build
+          path: |
+            neoforge/build/libs/*.jar
+            neoforge/build/reports/tests/test/**
+            docs/lotm-dependencies.md
+          if-no-files-found: error
+          retention-days: 14

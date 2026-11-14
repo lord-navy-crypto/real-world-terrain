@@ -1,0 +1,21 @@
+{
+  "type": "realscale:lotm_alchemy",
+  "ingredients": [
+    {
+      "item": "minecraft:book"
+    },
+    {
+      "item": "realscale:lotm_occult_catalyst"
+    },
+    {
+      "item": "realscale:lotm_cursed_crystal"
+    },
+    {
+      "item": "realscale:lotm_stability_sigil"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_mystery_pryer_skill_manual_2",
+    "count": 1
+  }
+}

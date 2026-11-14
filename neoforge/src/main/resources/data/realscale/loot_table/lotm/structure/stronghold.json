@@ -1,0 +1,65 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_divination_pendulum",
+          "weight": 24
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_spirit_focus",
+          "weight": 20
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_occult_catalyst",
+          "weight": 18
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_cursed_crystal",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_spirit_ember",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_seer_s9_characteristic",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_mystery_pryer_s9_characteristic",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_sleepless_s9_characteristic",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_corpse_collector_s9_characteristic",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_seer_s8_characteristic",
+          "weight": 1
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_mystery_pryer_s8_characteristic",
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

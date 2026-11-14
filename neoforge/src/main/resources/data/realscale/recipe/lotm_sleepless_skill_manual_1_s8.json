@@ -1,0 +1,21 @@
+{
+  "type": "realscale:lotm_alchemy",
+  "ingredients": [
+    {
+      "item": "minecraft:book"
+    },
+    {
+      "item": "realscale:lotm_occult_catalyst"
+    },
+    {
+      "item": "realscale:lotm_crimson_howler_voice"
+    },
+    {
+      "item": "realscale:lotm_spirit_ember"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_sleepless_skill_manual_1",
+    "count": 1
+  }
+}

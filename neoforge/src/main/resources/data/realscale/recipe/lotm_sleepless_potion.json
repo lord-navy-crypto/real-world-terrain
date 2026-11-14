@@ -1,0 +1,21 @@
+{
+  "type": "realscale:lotm_alchemy",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_empty_vial"
+    },
+    {
+      "item": "realscale:lotm_night_owl_token"
+    },
+    {
+      "item": "realscale:lotm_midnight_bloom"
+    },
+    {
+      "item": "realscale:lotm_occult_catalyst"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_sleepless_potion",
+    "count": 1
+  }
+}

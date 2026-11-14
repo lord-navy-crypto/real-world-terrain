@@ -1,0 +1,19 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": [
+    "minecraft:swamp",
+    "minecraft:mangrove_swamp",
+    "realscale:marshy_woodland",
+    "realscale:seasonal_floodforest",
+    "realscale:reed_marsh_edge",
+    "realscale:mountain_wetland"
+  ],
+  "spawners": [
+    {
+      "type": "realscale:lotm_black_spotted_frog",
+      "weight": 4,
+      "minCount": 1,
+      "maxCount": 3
+    }
+  ]
+}

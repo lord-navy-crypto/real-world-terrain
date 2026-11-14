@@ -1,0 +1,18 @@
+{
+  "type": "realscale:lotm_alchemy",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_empty_vial"
+    },
+    {
+      "item": "realscale:lotm_occult_catalyst"
+    },
+    {
+      "item": "realscale:lotm_seer_s8_characteristic"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_seer_s8_potion",
+    "count": 1
+  }
+}

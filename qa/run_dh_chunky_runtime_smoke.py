@@ -12,6 +12,7 @@ import sys
 import threading
 import time
 import urllib.request
+import zipfile
 from pathlib import Path
 
 ROOT = Path.cwd()
@@ -22,6 +23,18 @@ MODS = RUN / "mods"
 # Immutable Modrinth version IDs. The API metadata supplies the official file
 # URL and SHA-512; no third-party binaries are committed to this repository.
 MODS_TO_INSTALL = (
+    # Required runtime mod for animated LOTM apparatus; verify the official
+    # Modrinth file and SHA-512 just like the other external smoke-test mods.
+    (
+        "Grwn5rUB",
+        "8BmcQJ2H",
+        "geckolib-neoforge-1.21.1-4.9.3.jar",
+    ),
+    (
+        "yohfFbgD",
+        "vvuO3ImH",
+        "curios-neoforge-9.5.1+1.21.1.jar",
+    ),
     (
         "9w34y8ai",
         "uCdwusMi",
@@ -38,6 +51,36 @@ HOOK_MARKER = "REALSCALE_DH_CHUNKY_GUARD_HOOK_ENTERED"
 BOUND_MARKER = "REALSCALE_DH_CHUNKY_GUARD_BOUND"
 CRASH_MARKER = "IllegalStateException: Chunky is not loaded."
 
+
+def install_player_abilities_from_gradle() -> None:
+    dependency_dir = ROOT / "build" / "lotm-smoke-mods"
+    if not list(dependency_dir.glob("*.jar")):
+        subprocess.run(
+            ["gradle", "--no-daemon", "copyLotmSmokeMods"],
+            cwd=ROOT,
+            check=True,
+            timeout=600,
+        )
+    candidates = []
+    for jar in dependency_dir.glob("*.jar"):
+        try:
+            with zipfile.ZipFile(jar) as archive:
+                metadata = archive.read("META-INF/neoforge.mods.toml").decode("utf-8", errors="replace")
+        except (OSError, KeyError, zipfile.BadZipFile):
+            continue
+        if re.search(r'modId\s*=\s*"player_abilities"', metadata) and re.search(
+            r'version\s*=\s*"1\.0\.9"', metadata
+        ):
+            candidates.append(jar)
+    if len(candidates) != 1:
+        raise RuntimeError(
+            "Expected one CurseMaven-resolved Player Abilities 1.0.9 jar; "
+            f"found {len(candidates)} in {dependency_dir}"
+        )
+    source = candidates[0]
+    destination = MODS / source.name
+    shutil.copy2(source, destination)
+    print(f"VERIFIED_MOD: Player Abilities 1.0.9 ({source.name})", flush=True)
 
 def download_and_verify_mods() -> None:
     MODS.mkdir(parents=True, exist_ok=True)
@@ -91,8 +134,10 @@ def download_and_verify_mods() -> None:
             flush=True,
         )
 
+    install_player_abilities_from_gradle()
+
     # NeoForge ModDev versions have used both the run root and run/server as
-    # server game directories. Mirror only the two verified test jars so the
+    # server game directories. Mirror every verified external test jar so the
     # same smoke test works with either run-directory convention.
     nested_mods = RUN / "server" / "mods"
     nested_mods.mkdir(parents=True, exist_ok=True)

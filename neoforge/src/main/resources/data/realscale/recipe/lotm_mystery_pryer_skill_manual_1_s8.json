@@ -1,0 +1,21 @@
+{
+  "type": "realscale:lotm_alchemy",
+  "ingredients": [
+    {
+      "item": "minecraft:book"
+    },
+    {
+      "item": "realscale:lotm_occult_catalyst"
+    },
+    {
+      "item": "realscale:lotm_ironarm_spine"
+    },
+    {
+      "item": "realscale:lotm_spirit_ember"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_mystery_pryer_skill_manual_1",
+    "count": 1
+  }
+}

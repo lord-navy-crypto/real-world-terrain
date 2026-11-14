@@ -1,0 +1,21 @@
+{
+  "type": "realscale:lotm_alchemy",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_empty_vial"
+    },
+    {
+      "item": "realscale:lotm_occult_catalyst"
+    },
+    {
+      "item": "realscale:lotm_ironarm_spine"
+    },
+    {
+      "item": "realscale:lotm_four_eyed_turtle_heart"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_mystery_pryer_s8_potion",
+    "count": 1
+  }
+}

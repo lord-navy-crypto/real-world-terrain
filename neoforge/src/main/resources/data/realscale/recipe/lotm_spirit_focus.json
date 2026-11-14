@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " A ",
+    "ASA",
+    " A "
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "S": {
+      "item": "realscale:lotm_grave_crystal"
+    }
+  },
+  "result": {
+    "id": "realscale:lotm_spirit_focus",
+    "count": 1
+  }
+}
