@@ -131,7 +131,10 @@
   "message.realscale.lotm.advance.digestion": "请先通过探索和能力运用消化当前序列魔药。",
   "message.realscale.lotm.advance.disabled": "当前服务器配置已关闭诡秘之主成长系统。",
   "message.realscale.lotm.max_rank": "当前已开放的最高序列为序列8，序列7暂时封存。",
-  "message.realscale.lotm.config": "非凡生物频率：%s%%；遗迹稀有度分母：%s；序列8魔药消化要求：%s；直接使用序列8特性要求：%s。",
+  "message.realscale.lotm.config": "诡秘之主系统：%s；独立超凡生物：%s；旧版原版生物变种：%s；旧版遗迹生成：%s。",
+  "message.realscale.lotm.config.progression": "成长参数：魔药消化要求%s%%；直接使用特性要求%s%%；每40刻恢复灵性%s；行动消化倍率%s%%。",
+  "message.realscale.lotm.config.alchemy": "炼金耗时：序列9为%s刻；序列8为%s刻。",
+  "message.realscale.lotm.config.ecology": "旧版生态参数：生物变种频率%s%%；遗迹生成稀有度分母1/%s。"
   "lotm.realscale.materials.seer.8": "下一阶序列8：霍纳奇斯灰山羊角晶、人脸玫瑰＋秘法瓶＋神秘学催化符；也可以从原版结构宝箱找到同途径同序列的非凡特性直接使用。",
   "lotm.realscale.materials.seer.7": "序列7暂时封存，本版本不开放该阶段的晋升材料。",
   "lotm.realscale.materials.mystery_pryer.8": "下一阶序列8：铁臂兽脊骨、四眼绿龟灵核＋秘法瓶＋神秘学催化符；也可以从原版结构宝箱找到同途径同序列的非凡特性直接使用。",
