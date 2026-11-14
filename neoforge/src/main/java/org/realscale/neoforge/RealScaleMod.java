@@ -20,6 +20,7 @@ public final class RealScaleMod {
         LotmContent.register(bus);
         LotmCreativeTab.register(bus);
         LotmCreatureEntities.register(bus);
+        LotmSpawnEggs.register(bus);
         LotmAlchemyContent.register(bus);
         bus.addListener(LotmPlayerAbilityRegistry::register);
         bus.addListener(LotmCreatureEntities::registerAttributes);

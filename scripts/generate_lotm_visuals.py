@@ -619,6 +619,14 @@ def generate(output: Path) -> None:
         destination.mkdir(parents=True, exist_ok=True)
         for name in names:
             (destination / f"{name}.png").write_bytes(png_bytes(name))
+    # Reuse Minecraft's color-tinted egg template; no downloaded art required.
+    egg_models = output / "assets" / "realscale" / "models" / "item"
+    egg_models.mkdir(parents=True, exist_ok=True)
+    for creature_id in CREATURES:
+        model = {"parent": "minecraft:item/template_spawn_egg"}
+        (egg_models / f"lotm_{creature_id}_spawn_egg.json").write_text(
+            json.dumps(model, indent=2) + "\\n", encoding="utf-8"
+        )
     generate_creature_assets(output)
 
 

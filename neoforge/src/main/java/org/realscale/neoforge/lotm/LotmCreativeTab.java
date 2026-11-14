@@ -71,6 +71,9 @@ public final class LotmCreativeTab {
                 output.accept(LotmContent.skillBook(path, slot).get());
             }
         }
+        for (LotmCreatureKind kind : LotmCreatureKind.values()) {
+            output.accept(LotmSpawnEggs.egg(kind).get());
+        }
         // Archived S7 IDs stay registered for saves but are not displayed.
     }
 }
