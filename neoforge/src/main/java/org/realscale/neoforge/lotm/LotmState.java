@@ -120,6 +120,7 @@ public final class LotmState {
     }
 
     public static void copy(Player original, Player clone) {
+        LotmHud.copy(original, clone);
         CompoundTag source = original.getPersistentData();
         if (!source.contains(LotmPath.NBT_PATH)) return;
         CompoundTag target = clone.getPersistentData();
