@@ -175,6 +175,14 @@ class LotmRpgExpansionTests(unittest.TestCase):
             self.assertIn("/lotm journal", lang["message.realscale.lotm.guide"])
 
 
+    def test_alchemy_output_capacity_rejects_overstacked_recipe_results(self):
+        balance = (JAVA / "lotm/LotmBalance.java").read_text(encoding="utf-8")
+        machine = (JAVA / "lotm/LotmAlchemyBlockEntity.java").read_text(encoding="utf-8")
+        self.assertIn("canFitAlchemyOutput(boolean outputEmpty, boolean sameItemAndComponents", balance)
+        self.assertIn("long combined = (long) outputCount + resultCount", balance)
+        self.assertIn("LotmBalance.canFitAlchemyOutput(output.isEmpty()", machine)
+        self.assertIn("result.getCount(), result.getMaxStackSize()", machine)
+
     def test_alchemy_tick_revalidates_loaded_fuel_item_identity(self):
         machine = (JAVA / "lotm/LotmAlchemyBlockEntity.java").read_text(encoding="utf-8")
         self.assertIn("isItemValid(int slot, ItemStack stack)", machine)
