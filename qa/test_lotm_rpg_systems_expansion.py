@@ -238,14 +238,10 @@ class LotmRpgExpansionTests(unittest.TestCase):
         explosion_start = acting.index("public static void onExplosionDetonate")
         explosion_end = acting.index("static boolean isFieldworkBlock", explosion_start)
         explosion_handler = acting[explosion_start:explosion_end]
-        self.assertIn("ExplosionEvent.Start is the cancellable phase", explosion_handler)
+        self.assertIn("ExplosionEvent.Start is the cancellable phase", acting[:explosion_start])
         self.assertIn("consumePlacements(event.getAffectedBlocks())", explosion_handler)
         self.assertNotIn("event.isCanceled()", explosion_handler,
                          "Detonate is not cancellable; Start cancellation prevents it from firing.")
-        mod = (JAVA / "RealScaleMod.java").read_text(encoding="utf-8")
-        self.assertIn("import net.neoforged.bus.api.EventPriority;", mod)
-        self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockPlace)", mod)
-        self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockBreak)", mod)
         mod = (JAVA / "RealScaleMod.java").read_text(encoding="utf-8")
         self.assertIn("import net.neoforged.bus.api.EventPriority;", mod)
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockPlace)", mod)
