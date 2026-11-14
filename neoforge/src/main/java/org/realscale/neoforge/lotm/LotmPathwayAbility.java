@@ -60,7 +60,7 @@ public final class LotmPathwayAbility extends ActiveAbility {
 
     @Override
     public Component getUseFailureMessage(ServerPlayer player, int level) {
-        if (!LotmConfig.ENABLED.get()) {
+        if (!LotmConfig.ENABLED.get() || !LotmConfig.SKILLS_ENABLED.get()) {
             return Component.translatable("message.realscale.lotm.disabled");
         }
         if (LotmPath.of(player) != pathway) {
@@ -70,8 +70,10 @@ public final class LotmPathwayAbility extends ActiveAbility {
         if (sequence < 0 || LotmState.sequence(player) != sequence) {
             return Component.translatable("message.realscale.lotm.ability.wrong_sequence");
         }
-        int cost = LotmBalance.skillCost(pathway.id(), slot, sequence,
+        int baseCost = LotmBalance.skillCost(pathway.id(), slot, sequence,
                 LotmCurios.hasDivinationPendulum(player), LotmState.instability(player));
+        int cost = LotmBalance.skillCostWithMastery(baseCost,
+                LotmState.skillMastery(player, pathway, slot), LotmConfig.SKILL_COST_PERCENT.get());
         if (LotmState.spirit(player) < cost) {
             return Component.translatable("message.realscale.lotm.low_spirit");
         }
