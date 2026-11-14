@@ -439,5 +439,6 @@
   "gui.realscale.lotm_panel.settings.drop_rate": "材料掉率：%s%% / %s%%",
   "gui.realscale.lotm_panel.settings.hud_refresh": "状态栏：%s刻",
   "gui.realscale.lotm_panel.settings.aura_interval": "气场：%s刻",
-  "gui.realscale.lotm_panel.settings.manual_alchemy": "手册炼制：%s刻"
+  "gui.realscale.lotm_panel.settings.manual_alchemy": "手册炼制：%s刻",
+  "gui.realscale.lotm_panel.skill_tree.unavailable": "当前序列没有可用的主动技能"
 }
