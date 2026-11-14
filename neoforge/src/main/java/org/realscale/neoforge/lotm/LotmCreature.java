@@ -87,15 +87,15 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
         if (kind.isNocturnal()) goalSelector.addGoal(4, new NocturnalRestGoal(this));
         if (LotmCreatureBehavior.followsSameKind(kind)) {
             goalSelector.addGoal(4, new FollowSameKindGoal(this,
-                    kind == LotmCreatureKind.CRIMSON_HOWLER ? 1.05D : 0.90D));
+                    kind == LotmCreatureKind.CRIMSON_HOWLER ? 1.20D : 1.05D));
         }
 
         if (kind.isAquatic() || kind.isAmphibious()) {
-            goalSelector.addGoal(1, new RandomSwimmingGoal(this, 0.9D, 40));
+            goalSelector.addGoal(1, new RandomSwimmingGoal(this, 1.10D, 40));
         }
         if (kind.isHostile() || kind.retaliates()) {
             goalSelector.addGoal(2, new MeleeAttackGoal(
-                    this, kind.movementSpeed() * (kind.isHostile() ? 1.10D : 0.90D), true));
+                    this, kind.isHostile() ? 1.22D : 1.05D, true));
             targetSelector.addGoal(1, new HurtByTargetGoal(this));
             if (kind.isHostile()) {
                 targetSelector.addGoal(2, kind.isNocturnal()
@@ -110,9 +110,9 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
         }
 
         if (kind.isFlying()) {
-            goalSelector.addGoal(5, new RandomStrollGoal(this, 1.0D));
+            goalSelector.addGoal(5, new RandomStrollGoal(this, 1.12D));
         } else if (!kind.isAquatic()) {
-            goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, kind.movementSpeed()));
+            goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 1.00D));
         }
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
         goalSelector.addGoal(7, new RandomLookAroundGoal(this));

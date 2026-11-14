@@ -11,21 +11,21 @@ import net.minecraft.world.entity.MobCategory;
  */
 public enum LotmCreatureKind {
     STARLIT_SQUID("starlit_squid", 9, MobCategory.WATER_CREATURE,
-            0.95F, 0.75F, 18.0D, 0.24D, 0.0D, 1.0D,
+            0.95F, 0.75F, 18.0D, 0.28D, 0.0D, 1.0D,
             false, true, false, false, false, false, 4, 1, 2,
             "lavas_squid_essence",
             Set.of("minecraft:deep_ocean", "minecraft:deep_cold_ocean",
                     "minecraft:deep_lukewarm_ocean", "minecraft:deep_frozen_ocean")),
 
     NIGHTMARE_EYE("nightmare_eye", 9, MobCategory.MONSTER,
-            1.20F, 0.95F, 24.0D, 0.28D, 4.5D, 1.0D,
+            1.20F, 0.95F, 24.0D, 0.34D, 6.0D, 1.0D,
             true, false, false, false, true, false, 3, 1, 2,
             "nightmare_eye_shard",
             Set.of("minecraft:dark_forest", "realscale:oak_to_dark_forest",
                     "realscale:pine_oak_mosaic")),
 
     NIGHT_OWL("night_owl", 9, MobCategory.CREATURE,
-            0.75F, 1.15F, 13.0D, 0.27D, 0.0D, 0.0D,
+            0.75F, 1.15F, 13.0D, 0.32D, 0.0D, 0.0D,
             false, false, false, true, true, false, 3, 1, 2,
             "night_owl_token",
             Set.of("minecraft:forest", "minecraft:dark_forest", "minecraft:birch_forest",
@@ -35,7 +35,7 @@ public enum LotmCreatureKind {
                     "realscale:woodland_meadow")),
 
     BLACK_SPOTTED_FROG("black_spotted_frog", 9, MobCategory.CREATURE,
-            0.78F, 0.58F, 12.0D, 0.25D, 0.0D, 0.0D,
+            0.78F, 0.58F, 12.0D, 0.30D, 0.0D, 0.0D,
             false, false, true, false, false, false, 4, 1, 3,
             "black_spotted_frog_token",
             Set.of("minecraft:swamp", "minecraft:mangrove_swamp",
@@ -43,7 +43,7 @@ public enum LotmCreatureKind {
                     "realscale:reed_marsh_edge", "realscale:mountain_wetland")),
 
     SHROUDMAN("shroudman", 9, MobCategory.MONSTER,
-            0.72F, 1.95F, 26.0D, 0.21D, 5.0D, 2.0D,
+            0.72F, 1.95F, 26.0D, 0.29D, 6.5D, 2.0D,
             true, false, false, false, true, false, 2, 1, 2,
             "shroudman_crystal",
             Set.of("minecraft:swamp", "minecraft:mangrove_swamp",
@@ -51,7 +51,7 @@ public enum LotmCreatureKind {
                     "realscale:reed_marsh_edge")),
 
     HORNACIS_GOAT("hornacis_goat", 8, MobCategory.CREATURE,
-            1.05F, 1.40F, 26.0D, 0.32D, 3.5D, 3.0D,
+            1.05F, 1.40F, 26.0D, 0.36D, 5.0D, 3.0D,
             false, false, false, false, false, true, 3, 1, 3,
             "hornacis_goat_horn",
             Set.of("minecraft:stony_peaks", "minecraft:jagged_peaks",
@@ -60,13 +60,13 @@ public enum LotmCreatureKind {
                     "realscale:subalpine_woodland")),
 
     IRONARM_BEAST("ironarm_beast", 8, MobCategory.MONSTER,
-            1.45F, 1.55F, 36.0D, 0.20D, 6.0D, 6.0D,
+            1.45F, 1.55F, 36.0D, 0.29D, 8.5D, 6.0D,
             true, false, false, false, false, false, 2, 1, 2,
             "ironarm_spine",
             Set.of("minecraft:desert", "minecraft:badlands", "minecraft:wooded_badlands")),
 
     FOUR_EYED_TURTLE("four_eyed_turtle", 8, MobCategory.CREATURE,
-            1.30F, 0.82F, 28.0D, 0.18D, 0.0D, 4.0D,
+            1.30F, 0.82F, 28.0D, 0.23D, 0.0D, 4.0D,
             false, false, true, false, false, false, 3, 1, 2,
             "four_eyed_turtle_heart",
             Set.of("minecraft:beach", "minecraft:snowy_beach", "minecraft:stony_shore",
@@ -74,7 +74,7 @@ public enum LotmCreatureKind {
                     "realscale:coastal_heath")),
 
     CRIMSON_HOWLER("crimson_howler", 8, MobCategory.MONSTER,
-            1.25F, 1.15F, 30.0D, 0.33D, 5.0D, 2.0D,
+            1.25F, 1.15F, 30.0D, 0.38D, 7.0D, 2.0D,
             true, false, false, false, false, false, 3, 1, 3,
             "crimson_howler_voice",
             Set.of("minecraft:forest", "minecraft:dark_forest", "minecraft:birch_forest",
@@ -83,7 +83,7 @@ public enum LotmCreatureKind {
                     "realscale:pine_oak_mosaic", "realscale:woodland_meadow")),
 
     DEATH_CROW("death_crow", 8, MobCategory.MONSTER,
-            0.82F, 0.95F, 18.0D, 0.30D, 3.5D, 0.0D,
+            0.82F, 0.95F, 18.0D, 0.36D, 5.5D, 0.0D,
             true, false, false, true, true, false, 2, 1, 3,
             "death_crow_eye",
             Set.of("minecraft:jungle", "minecraft:sparse_jungle", "minecraft:bamboo_jungle",

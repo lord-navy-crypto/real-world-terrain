@@ -73,7 +73,7 @@ public final class LotmConfig {
         APPEARANCE_INTERVAL_TICKS = b.comment("Pathway aura particle interval in server ticks.")
                 .defineInRange("appearanceIntervalTicks", 20, 10, 200);
         MATERIAL_DROP_CHANCE_PERCENT = b.comment("Chance for active LOTM creatures to drop their signature material.")
-                .defineInRange("materialDropChancePercent", 100, 0, 100);
+                .defineInRange("materialDropChancePercent", 40, 0, 100);
         b.pop();
         SPEC = b.build();
     }
