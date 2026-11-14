@@ -218,10 +218,15 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             for (int slot = 1; slot <= 2; slot++) {
                 int cardX = x + (slot == 1 ? 12 : 164);
                 graphics.fill(cardX, y + 66, cardX + 144, y + 196, 0xFF282438);
-                graphics.fill(cardX + 19, y + 128, cardX + 22, y + 158, 0xFF665A7A);
-                graphics.fill(cardX + 14, y + 119, cardX + 27, y + 132, 0xFF86C9B3);
-                int laterNode = menu.sequence() == 8 ? 0xFF86C9B3 : 0xFF625A70;
-                graphics.fill(cardX + 14, y + 151, cardX + 27, y + 164, laterNode);
+                boolean treeActive = menu.skillsEnabled()
+                        && (menu.sequence() == 9 || menu.sequence() == 8);
+                int firstNode = treeActive ? 0xFF86C9B3 : 0xFF625A70;
+                int secondNode = treeActive && menu.sequence() == 8
+                        ? 0xFF86C9B3 : treeActive ? 0xFFB28AD8 : 0xFF625A70;
+                graphics.fill(cardX + 19, y + 128, cardX + 22, y + 158,
+                        treeActive ? 0xFF665A7A : 0xFF494454);
+                graphics.fill(cardX + 14, y + 119, cardX + 27, y + 132, firstNode);
+                graphics.fill(cardX + 14, y + 151, cardX + 27, y + 164, secondNode);
                 int masteryCap = menu.sequence() == 9 ? 1 : menu.skillMasteryCap();
                 bar(graphics, cardX + 12, y + 188, 120, 4,
                         menu.skillMastery(slot), masteryCap, slot == 1 ? 0xFFB28AD8 : 0xFF79B7C7);
