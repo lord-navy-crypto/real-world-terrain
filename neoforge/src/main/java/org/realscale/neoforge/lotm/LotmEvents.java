@@ -94,6 +94,7 @@ public final class LotmEvents {
     public static void onTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         LotmPlayerAbilitySync.periodicSync(player);
+        LotmHud.tick(player);
         LotmPlayerAbilitySync.showPendingTomeMessage(player);
         if (!LotmConfig.ENABLED.get()) {
             return;
