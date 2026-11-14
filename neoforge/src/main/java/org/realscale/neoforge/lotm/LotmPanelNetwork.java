@@ -45,7 +45,7 @@ public final class LotmPanelNetwork {
     /** Send only the latest bounded set of clues; discovery ownership stays on the server. */
     public static void syncResearchLog(ServerPlayer player) {
         if (player == null || !(player.containerMenu instanceof LotmStatusMenu)) return;
-        List<String> all = LotmActing.researchDiscoveries(player);
+        List<String> all = LotmActing.journalEntries(player);
         int first = Math.max(0, all.size() - 64);
         List<String> latestFirst = new ArrayList<>(all.subList(first, all.size()));
         Collections.reverse(latestFirst);
