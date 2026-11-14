@@ -72,6 +72,16 @@ class LotmBalanceTest {
         assertEquals(0, LotmBalance.divinationRadius(7, true));
     }
 
+    @Test void instabilityIsBoundedAndSaturatingEvenForExtremeSavedValues() {
+        assertEquals(0, LotmBalance.clampInstability(-99));
+        assertEquals(100, LotmBalance.clampInstability(101));
+        assertEquals(2, LotmBalance.addInstability(1, 1));
+        assertEquals(100, LotmBalance.addInstability(99, Integer.MAX_VALUE));
+        assertEquals(100, LotmBalance.addInstability(Integer.MAX_VALUE, 1));
+        assertEquals(8, LotmBalance.instabilitySurcharge(Integer.MAX_VALUE));
+        assertEquals(22, LotmBalance.skillCost(\"seer\", 1, 9, false, Integer.MAX_VALUE));
+    }
+
     @Test void directCharacteristicInstabilityAddsACappedReversibleSkillSurcharge() {
         assertEquals(0, LotmBalance.instabilitySurcharge(-1));
         assertEquals(0, LotmBalance.instabilitySurcharge(0));
