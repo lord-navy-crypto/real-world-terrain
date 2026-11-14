@@ -364,5 +364,12 @@
   "itemGroup.realscale.lotm": "诡秘之主 | 超凡工坊",
   "key.categories.realscale.lotm": "诡秘 RPG",
   "key.realscale.lotm.panel": "打开超凡角色面板",
-  "gui.realscale.lotm_panel.open": "超凡面板"
+  "gui.realscale.lotm_panel.open": "超凡面板",
+  "gui.realscale.lotm_panel.tab.alchemy": "炼金",
+  "gui.realscale.lotm_panel.alchemy_header": "神秘学炼金",
+  "gui.realscale.lotm_panel.alchemy_line1": "四种材料放入炼药装置的输入槽。",
+  "gui.realscale.lotm_panel.alchemy_line2": "燃料：灵性火种（单独燃料槽）。",
+  "gui.realscale.lotm_panel.alchemy_line3": "序列9：120刻；序列8：240刻。",
+  "gui.realscale.lotm_panel.alchemy_line4": "创造模式的 LOTM 分类含全部测试材料。",
+  "gui.realscale.lotm_panel.alchemy_line5": "燃料不足或输出受阻时炼制暂停。"
 }
