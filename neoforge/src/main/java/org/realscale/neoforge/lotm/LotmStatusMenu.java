@@ -10,9 +10,12 @@ import net.minecraft.world.item.ItemStack;
 
 /** Read-only synchronized player panel with two server-authoritative preference buttons. */
 public final class LotmStatusMenu extends AbstractContainerMenu {
-    public static final int DATA_COUNT = 26;
+    public static final int DATA_COUNT = 32;
     public static final int BUTTON_TOGGLE_HUD = 0;
     public static final int BUTTON_TOGGLE_APPEARANCE = 1;
+    public static final int BUTTON_TOGGLE_SOUND = 2;
+    public static final int BUTTON_TOGGLE_SKILL_FEEDBACK = 3;
+    public static final int BUTTON_TOGGLE_JOURNAL_NOTIFICATIONS = 4;
     private final ContainerData data;
 
     public LotmStatusMenu(int id, Inventory inventory) {
@@ -52,11 +55,17 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
                     case 18 -> LotmConfig.APPEARANCE_INTERVAL_TICKS.get();
                     case 19 -> LotmCurios.hasDivinationPendulum(player) ? 1 : 0;
                     case 20 -> LotmCurios.hasSpiritFocus(player) ? 1 : 0;
-                    case 21 -> LotmActing.researchDiscoveries(player).size();
+                    case 21 -> LotmActing.journalEntries(player).size();
                     case 22 -> LotmActing.dailyUsed(player, "exploration");
                     case 23 -> LotmActing.dailyUsed(player, "skill");
                     case 24 -> LotmActing.dailyUsed(player, "research");
                     case 25 -> LotmActing.dailyUsed(player, "fieldwork");
+                    case 26 -> LotmPreferences.soundEnabled(player) ? 1 : 0;
+                    case 27 -> LotmPreferences.skillFeedbackEnabled(player) ? 1 : 0;
+                    case 28 -> LotmPreferences.journalNotificationsEnabled(player) ? 1 : 0;
+                    case 29 -> LotmContent.countMaterials(player);
+                    case 30 -> LotmConfig.POTION_PRACTICE.get();
+                    case 31 -> LotmConfig.CHARACTERISTIC_PRACTICE.get();
                     default -> 0;
                 };
             }
@@ -87,6 +96,12 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
     public boolean hasSpiritFocus() { return data.get(20) != 0; }
     public int researchEntries() { return data.get(21); }
     public int dailyActing(int index) { return index >= 0 && index < 4 ? data.get(22 + index) : 0; }
+    public boolean soundEnabled() { return data.get(26) != 0; }
+    public boolean skillFeedbackEnabled() { return data.get(27) != 0; }
+    public boolean journalNotificationsEnabled() { return data.get(28) != 0; }
+    public int materialCount() { return data.get(29); }
+    public int preparedPotionRequirement() { return data.get(30); }
+    public int characteristicRequirement() { return data.get(31); }
 
     @Override
     public boolean clickMenuButton(Player player, int id) {
@@ -97,6 +112,18 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
         }
         if (id == BUTTON_TOGGLE_APPEARANCE) {
             LotmAppearance.toggle(serverPlayer);
+            return true;
+        }
+        if (id == BUTTON_TOGGLE_SOUND) {
+            LotmPreferences.toggleSound(serverPlayer);
+            return true;
+        }
+        if (id == BUTTON_TOGGLE_SKILL_FEEDBACK) {
+            LotmPreferences.toggleSkillFeedback(serverPlayer);
+            return true;
+        }
+        if (id == BUTTON_TOGGLE_JOURNAL_NOTIFICATIONS) {
+            LotmPreferences.toggleJournalNotifications(serverPlayer);
             return true;
         }
         return false;
