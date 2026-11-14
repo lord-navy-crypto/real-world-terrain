@@ -74,8 +74,15 @@ class LotmDataGraphTests(unittest.TestCase):
                 for ingredient in recipe["ingredients"]:
                     item_id = ingredient["item"]
                     self.assertTrue(item_id.startswith("realscale:"), item_id)
-                    self.assertIn(item_id.split(":", 1)[1], content_source,
-                                  f"Unregistered alchemy ingredient: {item_id}")
+                    bare_id = item_id.split(":", 1)[1]
+                    if bare_id.endswith("_characteristic"):
+                        self.assertIn('String characteristicId = "lotm_" + path.id() + "_s" + sequence + "_characteristic"', content_source)
+                    elif bare_id == "lotm_occult_catalyst":
+                        self.assertIn('"occult_catalyst"', content_source)
+                        self.assertIn('ITEMS.registerSimpleItem("lotm_" + suffix', content_source)
+                    else:
+                        self.assertIn(bare_id, content_source,
+                                      f"Unregistered alchemy ingredient: {item_id}")
                 output_id = recipe["result"]["id"].split(":", 1)[1]
                 self.assertTrue((ASSETS / "models/item" / f"{output_id}.json").is_file(), output_id)
                 for lang in (en, zh):
