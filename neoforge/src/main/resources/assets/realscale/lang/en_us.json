@@ -227,5 +227,13 @@
   "tooltip.realscale.lotm.stability_sigil.effect": "Use to reduce direct-characteristic instability by 1.",
   "tooltip.realscale.lotm.stability_sigil.limit": "Only works for a Beyonder with accumulated instability.",
   "message.realscale.lotm.stability_sigil.no_instability": "There is no characteristic instability to settle.",
-  "message.realscale.lotm.stability_sigil.restored": "The sigil settles one trace of instability. Remaining instability: %s."
+  "message.realscale.lotm.stability_sigil.restored": "The sigil settles one trace of instability. Remaining instability: %s.",
+  "tooltip.realscale.lotm.potion.path": "Pathway: %s",
+  "tooltip.realscale.lotm.potion.rank": "Rank: Sequence %s",
+  "tooltip.realscale.lotm.potion.characteristic": "Unprepared characteristic",
+  "tooltip.realscale.lotm.potion.direct_risk": "Direct use adds instability; a Stability Sigil can settle one trace.",
+  "tooltip.realscale.lotm.potion.characteristic_requirement": "Requires digestion: %s/100",
+  "tooltip.realscale.lotm.potion.first_potion": "Use to establish this pathway at Sequence 9.",
+  "tooltip.realscale.lotm.potion.prepared": "Prepared potion: safer, standard advancement.",
+  "tooltip.realscale.lotm.potion.prepared_requirement": "Requires the same pathway and digestion: %s/100."
 }
