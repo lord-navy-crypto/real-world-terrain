@@ -177,12 +177,13 @@ public final class LotmCommands {
                         LotmConfig.VARIANT_RARITY_PERCENT.get(), LotmConfig.RELIC_RARITY.get()), false);
                 context.getSource().sendSuccess(() -> Component.translatable(
                         "message.realscale.lotm.config.skills",
-                        LotmConfig.SKILLS_ENABLED.get(), LotmConfig.SKILL_BOOKS_ENABLED.get(),
+                        Component.translatable(LotmConfig.SKILLS_ENABLED.get() ? "options.on" : "options.off"),
+                        Component.translatable(LotmConfig.SKILL_BOOKS_ENABLED.get() ? "options.on" : "options.off"),
                         LotmConfig.SKILL_MASTERY_CAP.get(), LotmConfig.SKILL_COST_PERCENT.get()), false);
                 context.getSource().sendSuccess(() -> Component.translatable(
                         "message.realscale.lotm.config.presentation",
-                        LotmConfig.APPEARANCE_EFFECTS.get(), LotmConfig.APPEARANCE_INTERVAL_TICKS.get(),
-                        LotmConfig.HUD_REFRESH_TICKS.get()), false);
+                        Component.translatable(LotmConfig.APPEARANCE_EFFECTS.get() ? "options.on" : "options.off"),
+                        LotmConfig.APPEARANCE_INTERVAL_TICKS.get(), LotmConfig.HUD_REFRESH_TICKS.get()), false);
                 context.getSource().sendSuccess(() -> Component.translatable(
                         "message.realscale.lotm.config.materials",
                         LotmConfig.MATERIAL_DROP_CHANCE_PERCENT.get(), LotmConfig.ALCHEMY_SKILL_MANUAL_TICKS.get()), false);
