@@ -325,7 +325,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 int base = LotmBalance.skillCost(path.id(), slot, sequence,
                         menu.hasDivinationPendulum(), menu.instability());
                 int cost = LotmBalance.skillCostWithMastery(base, mastery, menu.skillCostPercent());
-                graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.skill_cost",
+                graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.skill_tree.cost",
                         cost, LotmBalance.skillCooldownTicks(slot, sequence)),
                         cardX, 174, menu.spirit() < cost ? 0xFFEAA0A0 : 0xFFB8ADC9, false);
                 graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.mastery",
@@ -405,7 +405,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             final int[] caps = {12, 8, 9, 6};
             for (int index = 0; index < categories.length; index++) {
                 graphics.drawString(font, Component.translatable(
-                        "gui.realscale.lotm_panel.journal_" + categories[index],
+                        "gui.realscale.lotm_panel.journal." + categories[index],
                         menu.dailyActing(index), caps[index]), 22, 92 + index * 24,
                         0xFFD7CDE4, false);
             }
@@ -461,17 +461,17 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                     "gui.realscale.lotm_panel.setting.skill_cost", menu.skillCostPercent()),
                     166, 115, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable(
-                    "gui.realscale.lotm_panel.setting.drop_rate", menu.materialDropPercent(),
+                    "gui.realscale.lotm_panel.settings.drop_rate", menu.materialDropPercent(),
                     LotmDropBalance.effectiveChance(menu.materialDropPercent(), 8)),
                     166, 132, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable(
-                    "gui.realscale.lotm_panel.setting.hud_refresh", menu.hudRefreshTicks()),
+                    "gui.realscale.lotm_panel.settings.hud_refresh", menu.hudRefreshTicks()),
                     166, 149, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable(
-                    "gui.realscale.lotm_panel.setting.aura_interval", menu.appearanceIntervalTicks()),
+                    "gui.realscale.lotm_panel.settings.aura_interval", menu.appearanceIntervalTicks()),
                     166, 166, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable(
-                    "gui.realscale.lotm_panel.setting.manual_alchemy", menu.manualAlchemyTicks()),
+                    "gui.realscale.lotm_panel.settings.manual_alchemy", menu.manualAlchemyTicks()),
                     166, 183, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable(
                     "gui.realscale.lotm_panel.settings.readonly_note"),
