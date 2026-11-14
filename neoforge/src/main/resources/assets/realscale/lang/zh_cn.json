@@ -476,5 +476,6 @@
   "gui.realscale.lotm_panel.bestiary.tooltip.activity.anytime": "活动规律：昼夜均可活动",
   "gui.realscale.lotm_panel.bestiary.tooltip.group_size": "自然生成群体规模：%s–%s",
   "gui.realscale.lotm_panel.alchemy.ingredient_options": "可用材料选项（%s种）",
-  "gui.realscale.lotm_panel.alchemy.ingredient_more": "另有%s种"
+  "gui.realscale.lotm_panel.alchemy.ingredient_more": "另有%s种",
+  "gui.realscale.lotm_panel.journal.empty_filter": "当前筛选类别下还没有发现记录。"
 }
