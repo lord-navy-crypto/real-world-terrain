@@ -2,7 +2,6 @@ package org.realscale.neoforge.lotm;
 
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import top.theillusivec4.curios.api.CuriosApi;
 
 /**
@@ -23,7 +22,9 @@ public final class LotmCurios {
 
     private static boolean hasEquipped(LivingEntity entity, Item item) {
         return CuriosApi.getCuriosInventory(entity).map(inventory -> {
-            IItemHandlerModifiable equipped = inventory.getEquippedCurios();
+            var focusSlot = inventory.getCurios().get("occult_focus");
+            if (focusSlot == null) return false;
+            var equipped = focusSlot.getStacks();
             for (int slot = 0; slot < equipped.getSlots(); slot++) {
                 if (equipped.getStackInSlot(slot).is(item)) return true;
             }
