@@ -146,6 +146,24 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 
 **Validation caveat:** these are code and resource changes, not yet confirmed by an in-game client or multiplayer server. Current-head workflow runs must be checked; a static QA pass cannot prove Curios equipment events, item consumption, tooltip rendering or save/reload behavior.
 
+### 19. Species signature animations and event-driven actions
+- The deterministic GeckoLib generator now emits a sixth `special` animation for every active creature, driven by that species' signature bones and a pattern-specific motion axis.
+- The shared action controller exposes the trigger, and server-side behavior events invoke it for ink escape, evasion, spring escape, countercharge, defensive guarding, signature attacks and Death Crow dives.
+- The creature asset QA now requires the special animation for all ten species and verifies the runtime trigger/controller contract.
+- Automated asset validation does not replace visual review of timing, clipping, orientation or blend transitions in a real client.
+
+### 20. Non-combat schooling and pack cohesion
+- Starlit Squid and Crimson Howler now use a same-kind follow goal when they have no immediate target, providing passive schooling and pack regrouping.
+- The goal searches only loaded nearby entities, filters by stable creature kind, throttles scans and path refreshes, and stops when the follower acquires a target or closes distance.
+- Pure behavior tests restrict this behavior to the two intended species; QA protects the actual goal wiring.
+- Natural grouping density and navigation quality still require saved-world observation.
+
+### 21. Optional server-authoritative action-bar HUD
+- `/lotm hud` toggles an opt-in action-bar status line showing pathway, sequence, spirituality, digestion and instability.
+- The server renders the line every 40 ticks from authoritative player state; no client-side NBT assumption or custom packet is used.
+- The preference persists through death/respawn, and both locales plus the field guide describe the command.
+- The HUD is opt-in to avoid taking over other mods' action-bar notifications; client usability still needs manual testing.
+
 ## Next development batches (do not claim complete until validated)
 
 ### A. In-game and multiplayer acceptance
@@ -162,14 +180,14 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 1. Sample creature spawn density over fixed durations and seeds before modifying weights.
 2. Verify plant placement/survival and only then consider botanical harvesting tiers and non-destructive propagation.
 3. Define rarity, use and drop-rate curves with expected exploration time (avoid excessive RNG).
-4. Add unique non-combat behaviors, state-driven animations and original sounds for the ten existing species.
+4. Continue species-specific non-combat states (for example, Night Owl roosting) and original sounds; special animations and squid/howler social cohesion are implemented but still need client/world validation.
 5. Validate the new explosion cleanup in a save-world test; investigate a chunk-local cleanup strategy only for remaining piston/third-party automation paths.
 
 ### C. Spirituality, instability and risk/reward
 1. Profile spirituality regeneration and actual skill/exploration cost for each pathway, including the new mutually exclusive Curios bonuses.
 2. Playtest the instability surcharge and Stability Sigil economy; tune only from measured usage, preserving the existing NBT key and no-free-consumption rule.
 3. Consider optional rituals, field studies and visual cues using existing Minecraft assets; never require extra dimensions or NPC quests for the basic loop.
-4. Continue the HUD/status experience beyond commands and item tooltips, with server-authoritative synchronization and accessibility-safe placement.
+4. Evaluate the opt-in action-bar HUD in a real client; only extend it into a full overlay if it improves accessibility without disrupting other action-bar notifications.
 
 ### D. Release gate
 - All current-head source/resource QA, JUnit, NeoForge 8.14.3 and Gradle 9.8 builds, dedicated server boot and saved-block verification.
