@@ -26,6 +26,9 @@ public final class LotmAlchemyContent {
     public static final Supplier<MenuType<LotmAlchemyMenu>> ALCHEMY_MENU =
             MENUS.register("lotm_alchemy", () -> new MenuType<>(LotmAlchemyMenu::new,
                     net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
+    public static final Supplier<MenuType<LotmStatusMenu>> STATUS_MENU =
+            MENUS.register("lotm_status", () -> new MenuType<>(LotmStatusMenu::new,
+                    net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS));
 
     public static final Supplier<RecipeType<LotmAlchemyRecipe>> ALCHEMY_RECIPE_TYPE =
             RECIPE_TYPES.register("lotm_alchemy", () -> RecipeType.simple(
