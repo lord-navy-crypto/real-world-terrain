@@ -49,7 +49,7 @@
   "item.realscale.lotm_divination_pendulum": "Divination Pendulum",
   "entity.realscale.lotm.shroudman": "Shroudman",
   "message.realscale.lotm.status": "Path: %s | Sequence %s | Spirituality: %s/%s | Digestion: %s/100",
-  "message.realscale.lotm.guide": "LOTM RPG: Four pathways, Sequence 9 and 8. Guide topics: /lotm guide creatures, flora, minerals, alchemy, progression. Use /lotm panel for the interactive status console, /lotm hud for the action-bar display, /lotm appearance to toggle your pathway aura, and /lotm journal to review discoveries. Sequence 7 remains archived.",
+  "message.realscale.lotm.guide": "LOTM RPG: Four pathways, Sequence 9 and 8. Guide topics: /lotm guide creatures, flora, minerals, alchemy, progression. Use /lotm panel for the interactive status console, /lotm diagnose for read-only registry/recipe/player checks, /lotm hud for the action-bar display, /lotm appearance to toggle your pathway aura, and /lotm journal to review discoveries. Sequence 7 remains archived.",
   "message.realscale.lotm.seer_only": "The pendulum responds only to a Seer's spirituality.",
   "message.realscale.lotm.low_spirit": "Not enough spirituality. It recovers slowly over time.",
   "message.realscale.lotm.sense_spirit": "Spiritual sight: %s signs | Spirituality: %s/100",
