@@ -44,7 +44,7 @@ Branch: `feature/lotm-sequence9-pilot-20261111` / PR #155 (Draft)
 - `LotmActing` now uses the Overworld's monotonic game time for 24,000-tick reward cycles; sleeping or changing daylight time cannot instantaneously reset a cap.
 - All six active ores count; creative mode does not award fieldwork.
 
-Known limitations: previously placed blocks from old saves cannot be retrospectively distinguished; blocks destroyed by external automation or explosions can leave stale provenance entries until cleaned up. In-world testing must verify save/reload, multiplayer, chunk boundaries and event cancellation interactions.
+Explosions now explicitly consume placement marks for all affected positions in one SavedData mutation, preventing stale records from surviving ordinary blast removal. Remaining limitations: previously placed blocks from old saves cannot be retrospectively distinguished; piston moves and third-party automation that bypass both player-break and explosion events may still need a future cleanup hook. In-world testing must verify save/reload, multiplayer, chunk boundaries and event cancellation interactions.
 
 ### 4. New flora to material economy
 Four optional shapeless crafts were added. None removes or changes existing recipes:
@@ -116,7 +116,7 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 2. Verify plant placement/survival and only then consider botanical harvesting tiers and non-destructive propagation.
 3. Define rarity, use and drop-rate curves with expected exploration time (avoid excessive RNG).
 4. Add unique non-combat behaviors, state-driven animations and original sounds for the ten existing species.
-5. Plan an explicit clean-up or chunk-attachment strategy for provenance marks when resources are destroyed without a player break.
+5. Validate the new explosion cleanup in a save-world test; investigate a chunk-local cleanup strategy only for remaining piston/third-party automation paths.
 
 ### C. Spirituality, instability and risk/reward
 1. Profile spirituality regeneration and actual skill/exploration cost for each pathway, including the new mutually exclusive Curios bonuses.
