@@ -18,6 +18,9 @@ public final class LotmActing {
     private static final String DAY_KEY = "realscale_lotm_acting_day";
     private static final String PREFIX = "realscale_lotm_acting_daily_";
     private static final String RESEARCH_PREFIX = "realscale_lotm_research_seen_";
+    private static final String JOURNAL_PREFIX = "realscale_lotm_research_journal_";
+    private static final int MAX_RESEARCH_JOURNAL_ENTRIES = 128;
+    private static final int MAX_RESEARCH_SOURCE_LENGTH = 256;
     private LotmActing() {}
 
     public static void onPlayerTick(ServerPlayer player) {
@@ -41,22 +44,44 @@ public final class LotmActing {
     }
 
     public static void recordSkillUse(Player player, int points) { award(player, "skill", points); }
-    /** One research reward per distinct discovered type, pathway and sequence. */
+    /**
+     * Record a clue independently of digestion rewards. A full daily cap must never
+     * erase a discovery from the journal; reward eligibility is tracked per sequence.
+     */
     public static int recordResearchDiscovery(Player player, String sourceId, int points) {
-        if (!isActive(player) || sourceId == null || sourceId.isBlank()) return 0;
+        LotmPath path = LotmPath.of(player);
+        if (!isActive(player) || path == null || sourceId == null || sourceId.isBlank()) return 0;
+
+        String boundedId = sourceId.length() > MAX_RESEARCH_SOURCE_LENGTH
+                ? sourceId.substring(0, MAX_RESEARCH_SOURCE_LENGTH) : sourceId;
+        StringTag id = StringTag.valueOf(boundedId);
         CompoundTag tag = player.getPersistentData();
-        String key = researchKey(player);
-        ListTag seen = tag.getList(key, Tag.TAG_STRING);
-        StringTag id = StringTag.valueOf(sourceId);
-        if (seen.contains(id)) return 0;
-        int reward = award(player, "research", points);
-        // A clue discovered while the daily cap is full remains available for later study.
-        if (reward > 0) {
-            seen.add(id);
-            tag.put(key, seen);
-            if (player instanceof ServerPlayer serverPlayer) {
-                LotmPanelNetwork.syncResearchLog(serverPlayer);
+
+        // Keep the research journal pathway-wide so Sequence 9 discoveries remain
+        // visible after advancement. The journal is bounded for long-running saves.
+        String journalKey = researchJournalKey(path);
+        ListTag journal = loadResearchJournal(player, path);
+        boolean newlyRecorded = !journal.contains(id);
+        if (newlyRecorded) {
+            if (journal.size() >= MAX_RESEARCH_JOURNAL_ENTRIES) journal.remove(0);
+            journal.add(id);
+            tag.put(journalKey, journal);
+        }
+
+        // Digestion rewards remain unique per pathway + sequence. A clue recorded
+        // at the daily cap is still kept in the journal without granting extra XP.
+        ListTag rewarded = tag.getList(researchKey(player), Tag.TAG_STRING);
+        int reward = 0;
+        if (!rewarded.contains(id)) {
+            reward = award(player, "research", points);
+            if (reward > 0) {
+                rewarded.add(id);
+                tag.put(researchKey(player), rewarded);
             }
+        }
+
+        if (newlyRecorded && player instanceof ServerPlayer serverPlayer) {
+            LotmPanelNetwork.syncResearchLog(serverPlayer);
         }
         return reward;
     }
@@ -65,14 +90,49 @@ public final class LotmActing {
     public static void recordResearch(Player player, int points) { award(player, "research", points); }
 
     private static String researchKey(Player player) {
-        return RESEARCH_PREFIX + LotmPath.of(player).id() + "_" + LotmState.sequence(player);
+        LotmPath path = LotmPath.of(player);
+        return path == null ? RESEARCH_PREFIX + "none"
+                : RESEARCH_PREFIX + path.id() + "_" + LotmState.sequence(player);
     }
 
+    private static String researchJournalKey(LotmPath path) {
+        return JOURNAL_PREFIX + path.id();
+    }
+
+    /**
+     * Merge discoveries from older per-sequence saves into the pathway-wide journal.
+     * This migration is idempotent and preserves existing players' research history.
+     */
+    private static ListTag loadResearchJournal(Player player, LotmPath path) {
+        CompoundTag tag = player.getPersistentData();
+        String journalKey = researchJournalKey(path);
+        ListTag journal = tag.getList(journalKey, Tag.TAG_STRING);
+        boolean changed = false;
+        for (int sequence : new int[] {9, 8}) {
+            ListTag legacy = tag.getList(RESEARCH_PREFIX + path.id() + "_" + sequence, Tag.TAG_STRING);
+            for (int index = 0; index < legacy.size(); index++) {
+                String source = legacy.getString(index);
+                if (source.isBlank()) continue;
+                String bounded = source.length() > MAX_RESEARCH_SOURCE_LENGTH
+                        ? source.substring(0, MAX_RESEARCH_SOURCE_LENGTH) : source;
+                StringTag id = StringTag.valueOf(bounded);
+                if (journal.contains(id)) continue;
+                if (journal.size() >= MAX_RESEARCH_JOURNAL_ENTRIES) journal.remove(0);
+                journal.add(id);
+                changed = true;
+            }
+        }
+        if (changed) tag.put(journalKey, journal);
+        return journal;
+    }
+
+    /** Pathway-wide journal history survives sequence changes and death/respawn. */
     public static List<String> researchDiscoveries(Player player) {
-        if (!isActive(player)) return List.of();
-        ListTag seen = player.getPersistentData().getList(researchKey(player), Tag.TAG_STRING);
-        List<String> ids = new ArrayList<>(seen.size());
-        for (int i = 0; i < seen.size(); i++) ids.add(seen.getString(i));
+        LotmPath path = LotmPath.of(player);
+        if (path == null) return List.of();
+        ListTag journal = loadResearchJournal(player, path);
+        List<String> ids = new ArrayList<>(journal.size());
+        for (int i = 0; i < journal.size(); i++) ids.add(journal.getString(i));
         return List.copyOf(ids);
     }
 
@@ -199,6 +259,8 @@ public final class LotmActing {
             if (source.contains(key)) target.put(key, source.get(key).copy());
         }
         for (LotmPath path : LotmPath.values()) {
+            String journalKey = researchJournalKey(path);
+            if (source.contains(journalKey)) target.put(journalKey, source.get(journalKey).copy());
             for (int sequence : new int[] {9, 8}) {
                 String suffix = path.id() + "_" + sequence;
                 for (String key : new String[] {"realscale_lotm_seen_" + suffix,
