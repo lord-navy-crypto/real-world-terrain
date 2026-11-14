@@ -49,7 +49,7 @@
   "item.realscale.lotm_divination_pendulum": "占卜灵摆",
   "entity.realscale.lotm.shroudman": "布套人",
   "message.realscale.lotm.status": "途径：%s | 序列%s | 灵性：%s/%s | 消化：%s/100",
-  "message.realscale.lotm.guide": "LOTM RPG：当前开放四条途径的序列9和序列8。指南分栏：/lotm guide creatures、flora、minerals、alchemy、progression。使用 /lotm hud 开启可选的快捷栏状态显示，使用 /lotm journal 查阅调查手记。序列7仍然封存。",
+  "message.realscale.lotm.guide": "LOTM RPG：当前开放四条途径的序列9和序列8。指南分栏：/lotm guide creatures、flora、minerals、alchemy、progression。使用 /lotm panel 打开可操作的超凡面板，使用 /lotm hud 开启快捷栏状态显示，使用 /lotm appearance 切换途径气场，使用 /lotm journal 查阅调查手记。序列7仍然封存。",
   "message.realscale.lotm.seer_only": "只有占卜家的灵性能驱动灵摆。",
   "message.realscale.lotm.low_spirit": "灵性不足，可以随时间缓慢恢复。",
   "message.realscale.lotm.sense_spirit": "灵视发现 %s 处线索 | 剩余灵性：%s/100",
@@ -225,7 +225,7 @@
   "message.realscale.lotm.guide.creatures": "超凡生物：开放十种独立生物，每一种都有独特群系和材料掉落。序列9包括星光鱿鱼、噩梦邪眼、夜枭、黑斑青蛙和布套人；序列8包括霍纳奇斯灰山羊、铁臂兽、四眼绿龟、红月咆哮者与告死乌鸦。使用途径感知能力，逐步记录研究对象。",
   "message.realscale.lotm.guide.flora": "超凡植物：午夜美人花、人脸玫瑰、摄魂风铃花和墓园血玫瑰在特定群系低频生成，是序列9/8魔药配方材料。建议在野外采集不同种类；玩家自行放置再挖掉的花不会提供野外研究消化。",
   "message.realscale.lotm.guide.minerals": "超凡矿物：六种开放矿石分别为星晶、受诅晶、冥灵晶、月辉云母、回响石英和深渊盐晶，各有地下群系分布。采集遵循镐类工具、精准采集与时运规则。灵界晶矿属于封存的序列7，不会自然生成。",
-  "message.realscale.lotm.guide.alchemy": "炼金：在神秘学炼药装置的四个输入格放入配方材料，将灵性火种放入燃料槽，并留出输出空间。序列9默认炼制120刻，序列8默认240刻。完整非凡特性可以在对应替代配方中取代主要材料。",
+  "message.realscale.lotm.guide.alchemy": "炼金：在神秘学炼药装置的四个输入格放入配方材料，将灵性火种放入燃料槽，并留出输出空间。序列9默认炼制120刻，序列8默认240刻。途径技能手册使用书本、神秘学催化符、对应途径材料和封装材料，在此装置中炼制后阅读即可提升能力熟练度。",
   "message.realscale.lotm.guide.progression": "成长：使用序列9魔药开启途径，通过探索新群系、技能运用、首次研究线索及野外资源采集积累消化进度，再炼制同途径序列8魔药晋升。各类别周期上限为12、8、9、6，总计35。可用 /lotm acting、skills、materials、journal 查看状态。",
   "tooltip.realscale.lotm.spirit_focus.effect": "装备时：每40个服务器刻额外恢复1点灵性。",
   "tooltip.realscale.lotm.divination_pendulum.effect": "占卜家装备时：辅助技能消耗减少4点灵性，预兆探查范围增加2格。",
@@ -301,5 +301,11 @@
   "gui.realscale.lotm_panel.setting.skill_cost": "技能消耗倍率：%s%%",
   "gui.realscale.lotm_panel.setting.drop_rate": "生物材料掉落率：%s%%",
   "gui.realscale.lotm_panel.setting.hud": "你的状态栏偏好：%s",
-  "gui.realscale.lotm_panel.setting.aura": "你的气场偏好：%s"
+  "gui.realscale.lotm_panel.setting.aura": "你的气场偏好：%s",
+  "gui.realscale.lotm_panel.tab.materials": "材料",
+  "gui.realscale.lotm_panel.materials_header": "下一阶段晋升材料",
+  "gui.realscale.lotm_panel.manual_hint": "技能手册可在神秘学炼药装置中炼制。",
+  "gui.realscale.lotm_panel.setting.hud_refresh": "状态栏刷新间隔：%s刻",
+  "gui.realscale.lotm_panel.setting.aura_interval": "气场粒子间隔：%s刻",
+  "gui.realscale.lotm_panel.setting.manual_alchemy": "技能手册炼制时间：%s刻"
 }
