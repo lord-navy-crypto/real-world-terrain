@@ -38,8 +38,10 @@ public final class LotmAlchemyMenu extends AbstractContainerMenu {
     public int getMaxProgress() { return data.get(1); }
     public int getMachineStatus() { return data.get(2); }
     @Override public ItemStack quickMoveStack(Player player, int index) {
-        ItemStack empty=ItemStack.EMPTY; Slot slot=slots.get(index);
-        if (slot==null || !slot.hasItem()) return empty;
+        ItemStack empty=ItemStack.EMPTY;
+        if (index < 0 || index >= slots.size()) return empty;
+        Slot slot=slots.get(index);
+        if (!slot.hasItem()) return empty;
         ItemStack source=slot.getItem(), copy=source.copy();
         if (index==5) { if (!moveItemStackTo(source,6,42,true)) return empty; }
         else if (index<6) { if (!moveItemStackTo(source,6,42,false)) return empty; }
