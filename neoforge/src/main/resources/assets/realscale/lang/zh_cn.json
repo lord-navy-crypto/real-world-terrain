@@ -227,5 +227,13 @@
   "tooltip.realscale.lotm.stability_sigil.effect": "使用后，直接服用非凡特性造成的失衡程度降低1级。",
   "tooltip.realscale.lotm.stability_sigil.limit": "仅对已有累计失衡的非凡者生效。",
   "message.realscale.lotm.stability_sigil.no_instability": "你目前没有需要平复的特性失衡。",
-  "message.realscale.lotm.stability_sigil.restored": "符印平复了一层特性失衡。剩余失衡：%s。"
+  "message.realscale.lotm.stability_sigil.restored": "符印平复了一层特性失衡。剩余失衡：%s。",
+  "tooltip.realscale.lotm.potion.path": "途径：%s",
+  "tooltip.realscale.lotm.potion.rank": "序列：%s",
+  "tooltip.realscale.lotm.potion.characteristic": "未经调制的非凡特性",
+  "tooltip.realscale.lotm.potion.direct_risk": "直接服用会增加特性失衡；稳定符印可以平复一层失衡。",
+  "tooltip.realscale.lotm.potion.characteristic_requirement": "所需消化进度：%s/100",
+  "tooltip.realscale.lotm.potion.first_potion": "使用后建立该途径，晋升至序列9。",
+  "tooltip.realscale.lotm.potion.prepared": "已调制魔药：标准晋升路线。",
+  "tooltip.realscale.lotm.potion.prepared_requirement": "需要相同途径及消化进度：%s/100。"
 }
