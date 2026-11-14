@@ -563,5 +563,6 @@
   "gui.realscale.lotm_panel.materials.inventory_empty": "No registered occult materials carried.",
   "gui.realscale.lotm_panel.materials.page": "Page %s / %s",
   "gui.realscale.lotm_panel.materials.previous": "Prev. materials",
-  "gui.realscale.lotm_panel.materials.next": "Next materials"
+  "gui.realscale.lotm_panel.materials.next": "Next materials",
+  "gui.realscale.lotm_panel.materials.count": "Carried: %s"
 }
