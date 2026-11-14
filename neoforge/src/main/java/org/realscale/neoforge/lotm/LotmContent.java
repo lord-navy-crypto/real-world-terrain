@@ -85,6 +85,8 @@ public final class LotmContent {
     public static final Supplier<Item> SPIRIT_EMBER = ITEMS.registerSimpleItem("lotm_spirit_ember", new Item.Properties());
     public static final Supplier<? extends Item> SPIRIT_FOCUS = ITEMS.registerItem("lotm_spirit_focus",
             LotmFocusItem::new, new Item.Properties().stacksTo(1));
+    public static final Supplier<? extends Item> STABILITY_SIGIL = ITEMS.registerItem(
+            "lotm_stability_sigil", LotmStabilitySigilItem::new, new Item.Properties().stacksTo(16));
 
     public static final Supplier<? extends Item> SEER_POTION = ITEMS.registerItem("lotm_seer_potion",
             p -> new LotmPotionItem(LotmPath.SEER, p), new Item.Properties().stacksTo(1));
