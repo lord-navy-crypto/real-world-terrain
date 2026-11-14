@@ -22,11 +22,13 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     @Override protected void init() {
         super.init();
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.overview"),
-                button -> selectedTab = 0).bounds(leftPos + 8, topPos + 24, 76, 18).build());
+                button -> selectedTab = 0).bounds(leftPos + 8, topPos + 24, 56, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.skills"),
-                button -> selectedTab = 1).bounds(leftPos + 90, topPos + 24, 76, 18).build());
+                button -> selectedTab = 1).bounds(leftPos + 68, topPos + 24, 56, 18).build());
+        addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.materials"),
+                button -> selectedTab = 2).bounds(leftPos + 128, topPos + 24, 56, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.settings"),
-                button -> selectedTab = 2).bounds(leftPos + 172, topPos + 24, 76, 18).build());
+                button -> selectedTab = 3).bounds(leftPos + 188, topPos + 24, 60, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.toggle_hud"),
                 button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
                         LotmStatusMenu.BUTTON_TOGGLE_HUD))
@@ -49,8 +51,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             bar(graphics, x + 14, y + 93, 224, 7, menu.spirit(), 100, 0xFF69B9D0);
             bar(graphics, x + 14, y + 127, 224, 7, menu.digestion(), 100, 0xFFB28AD8);
         } else if (selectedTab == 1) {
-            bar(graphics, x + 14, y + 91, 224, 6, menu.skillMastery(1), 2, 0xFFB28AD8);
-            bar(graphics, x + 14, y + 133, 224, 6, menu.skillMastery(2), 2, 0xFF79B7C7);
+            bar(graphics, x + 14, y + 91, 224, 6, menu.skillMastery(1), menu.skillMasteryCap(), 0xFFB28AD8);
+            bar(graphics, x + 14, y + 133, 224, 6, menu.skillMastery(2), menu.skillMasteryCap(), 0xFF79B7C7);
         }
     }
 
@@ -77,7 +79,6 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.spirit", menu.spirit(), 100), 14, 83, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.digestion", menu.digestion(), 100), 14, 117, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.instability", menu.instability()), 14, 143, 0xFFE0B8C8, false);
-            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.hud", onOff(menu.hudEnabled())), 14, 153, 0xFFB8ADC9, false);
         } else if (selectedTab == 1) {
             int sequence = menu.sequence();
             for (int slot = 1; slot <= 2; slot++) {
@@ -91,6 +92,19 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.skill_cost", cost,
                         LotmBalance.skillCooldownTicks(slot, sequence)), 14, y + 25, 0xFFB8ADC9, false);
             }
+        } else if (selectedTab == 2) {
+            int nextSequence = menu.sequence() - 1;
+            Component materials = nextSequence >= 8
+                    ? Component.translatable("lotm.realscale.materials." + path.id() + "." + nextSequence)
+                    : Component.translatable("message.realscale.lotm.max_rank");
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.materials_header"), 14, 51, 0xFFEDE4F6, false);
+            int lineY = 70;
+            for (var line : font.split(materials, 224)) {
+                if (lineY > 145) break;
+                graphics.drawString(font, line, 14, lineY, 0xFFD7CDE4, false);
+                lineY += 13;
+            }
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.manual_hint"), 14, 151, 0xFFB8ADC9, false);
         } else {
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.settings_header"), 14, 51, 0xFFEDE4F6, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.skills", onOff(menu.skillsEnabled())), 14, 68, 0xFFD7CDE4, false);
@@ -99,8 +113,11 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.creatures", onOff(menu.creaturesEnabled())), 14, 113, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.skill_cost", menu.skillCostPercent()), 14, 128, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.drop_rate", menu.materialDropPercent()), 14, 143, 0xFFD7CDE4, false);
-            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.hud", onOff(menu.hudEnabled())), 14, 153, 0xFFB8ADC9, false);
-            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.aura", onOff(menu.appearanceEnabled())), 135, 153, 0xFFB8ADC9, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.hud_refresh", menu.hudRefreshTicks()), 135, 68, 0xFFD7CDE4, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.aura_interval", menu.appearanceIntervalTicks()), 135, 83, 0xFFD7CDE4, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.manual_alchemy", menu.manualAlchemyTicks()), 135, 98, 0xFFD7CDE4, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.hud", onOff(menu.hudEnabled())), 135, 113, 0xFFB8ADC9, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.aura", onOff(menu.appearanceEnabled())), 135, 128, 0xFFB8ADC9, false);
         }
     }
 
