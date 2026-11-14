@@ -235,5 +235,8 @@
   "tooltip.realscale.lotm.potion.characteristic_requirement": "Requires digestion: %s/100",
   "tooltip.realscale.lotm.potion.first_potion": "Use to establish this pathway at Sequence 9.",
   "tooltip.realscale.lotm.potion.prepared": "Prepared potion: safer, standard advancement.",
-  "tooltip.realscale.lotm.potion.prepared_requirement": "Requires the same pathway and digestion: %s/100."
+  "tooltip.realscale.lotm.potion.prepared_requirement": "Requires the same pathway and digestion: %s/100.",
+  "message.realscale.lotm.status.no_accessory": "None",
+  "message.realscale.lotm.status.accessory": "Active Occult Focus slot: %s",
+  "message.realscale.lotm.status.surcharge": "Current instability skill-cost surcharge: +%s spirituality."
 }
