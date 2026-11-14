@@ -308,5 +308,21 @@
   "gui.realscale.lotm_panel.setting.hud_refresh": "状态栏刷新间隔：%s刻",
   "gui.realscale.lotm_panel.setting.aura_interval": "气场粒子间隔：%s刻",
   "gui.realscale.lotm_panel.setting.manual_alchemy": "技能手册炼制时间：%s刻",
-  "message.realscale.lotm.skills.mastery": "能力%s的手册熟练度：%s/%s。"
+  "message.realscale.lotm.skills.mastery": "能力%s的手册熟练度：%s/%s。",
+  "lotm.realscale.skill_manuals.seer.8.1": "手册I：霍纳奇斯灰山羊角晶＋灵性火种＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.seer.8.2": "手册II：人脸玫瑰＋稳定符印＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.seer.9.1": "手册I：星光鱿鱼精华＋灵性火种＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.seer.9.2": "手册II：星水晶＋稳定符印＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.mystery_pryer.8.1": "手册I：铁臂兽脊骨＋灵性火种＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.mystery_pryer.8.2": "手册II：四眼绿龟灵核＋稳定符印＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.mystery_pryer.9.1": "手册I：噩梦邪眼碎片＋灵性火种＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.mystery_pryer.9.2": "手册II：受诅水晶＋稳定符印＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.sleepless.8.1": "手册I：红月咆哮者声核＋灵性火种＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.sleepless.8.2": "手册II：摄魂风铃花＋稳定符印＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.sleepless.9.1": "手册I：六足猫头鹰信物＋灵性火种＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.sleepless.9.2": "手册II：午夜美人花＋稳定符印＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.corpse_collector.8.1": "手册I：告死乌鸦之眼＋灵性火种＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.corpse_collector.8.2": "手册II：墓园血玫瑰＋稳定符印＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.corpse_collector.9.1": "手册I：黑斑青蛙信物＋灵性火种＋神秘学催化符＋书本。",
+  "lotm.realscale.skill_manuals.corpse_collector.9.2": "手册II：布套人结晶＋稳定符印＋神秘学催化符＋书本。"
 }
