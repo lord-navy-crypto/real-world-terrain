@@ -257,6 +257,12 @@ def rgba(rgb: tuple[int, int, int]) -> tuple[int, int, int, int]:
 
 
 MINERAL_TEXTURE_PALETTES = {
+    "lotm_star_crystal": ((46, 55, 89), (101, 133, 213), (223, 232, 255)),
+    "lotm_star_crystal_ore": ((66, 71, 96), (93, 112, 178), (207, 222, 255)),
+    "lotm_cursed_crystal": ((67, 38, 74), (151, 72, 139), (245, 191, 228)),
+    "lotm_cursed_crystal_ore": ((77, 61, 79), (132, 70, 122), (225, 170, 215)),
+    "lotm_grave_crystal": ((49, 66, 61), (103, 146, 113), (205, 232, 198)),
+    "lotm_grave_crystal_ore": ((67, 78, 72), (92, 132, 101), (197, 225, 183)),
     "lotm_lunar_mica": ((50, 65, 85), (148, 172, 213), (228, 229, 250)),
     "lotm_lunar_mica_ore": ((75, 83, 95), (125, 164, 203), (225, 238, 255)),
     "lotm_echo_quartz": ((41, 66, 73), (86, 179, 172), (205, 248, 232)),
@@ -329,8 +335,68 @@ def _flora_pixel(name: str, x: int, y: int, palette) -> tuple[int, int, int, int
     return (0, 0, 0, 0)
 
 
+def _heart_pixel(name: str, x: int, y: int, palette) -> tuple[int, int, int, int]:
+    dark, mid, bright, paper = palette
+    shape = ((y <= 5 and (x in (4, 5, 10, 11) or (y <= 3 and x in (3, 12))))
+             or (6 <= y <= 12 and abs(x - 7.5) <= (13 - y) * 0.72))
+    if not shape:
+        return (0, 0, 0, 0)
+    if x in (4, 11) or y == 12:
+        return rgba(dark)
+    return rgba(bright if (x + y + hashbyte(name)) % 5 == 0 else mid)
+
+
+def _horn_pixel(name: str, x: int, y: int, palette) -> tuple[int, int, int, int]:
+    dark, mid, bright, paper = palette
+    center = 13 - y // 2
+    thickness = max(1, 3 - y // 6)
+    if y < 2 or y > 14 or abs(x - center) > thickness:
+        return (0, 0, 0, 0)
+    return rgba(bright if x == center and y < 7 else mid if (x + y) % 3 else dark)
+
+
+def _token_pixel(name: str, x: int, y: int, palette) -> tuple[int, int, int, int]:
+    dark, mid, bright, paper = palette
+    dx, dy = x - 7.5, y - 7.5
+    distance = dx * dx + dy * dy
+    if distance > 43:
+        return (0, 0, 0, 0)
+    if distance > 31 or (abs(dx) < 1 and abs(dy) < 4):
+        return rgba(dark)
+    return rgba(bright if (x + y + hashbyte(name)) % 6 == 0 else mid)
+
+
+def _artifact_pixel(name: str, x: int, y: int, palette) -> tuple[int, int, int, int]:
+    dark, mid, bright, paper = palette
+    dx, dy = abs(x - 7.5), abs(y - 7.5)
+    if name.endswith("_pendulum"):
+        if (dx <= 1 and 1 <= y <= 8) or (dy <= 2 and 5 <= x <= 10 and y >= 9):
+            return rgba(bright if y in (1, 13) else mid)
+        return (0, 0, 0, 0)
+    if name.endswith("_sigil"):
+        if 3.5 <= dx + dy <= 6.5 or (dx <= 1 and dy <= 1):
+            return rgba(bright if (x + y) % 3 == 0 else mid)
+        return (0, 0, 0, 0)
+    if dx <= 4 and dy <= 4 and (dx == 0 or dy == 0 or dx == dy):
+        return rgba(bright if (x + y) % 3 == 0 else mid)
+    return (0, 0, 0, 0)
+
+
+def _ability_pixel(name: str, x: int, y: int, palette) -> tuple[int, int, int, int]:
+    dark, mid, bright, paper = palette
+    seed = hashbyte(name)
+    dx, dy = abs(x - 7.5), abs(y - 7.5)
+    if dx + dy > 8:
+        return (0, 0, 0, 0)
+    if dx == dy or dx == 0 or dy == 0:
+        return rgba(bright)
+    if (x * 3 + y * 5 + seed) % 7 < 2:
+        return rgba(mid)
+    return rgba(dark)
+
+
 def pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
-    """Deterministic original pixel art with silhouettes for manuals, potions and flora."""
+    """Deterministic original pixel art with item silhouettes and distinct mineral veins."""
     if name in MINERAL_TEXTURE_PALETTES:
         return mineral_pixel(name, x, y)
     seed = hashbyte(name)
@@ -347,6 +413,16 @@ def pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
         return _potion_pixel(name, x, y, palette)
     if any(part in name for part in ("bloom", "rose", "bellflower")):
         return _flora_pixel(name, x, y, palette)
+    if "ability" in name or name.endswith("_primary") or name.endswith("_secondary"):
+        return _ability_pixel(name, x, y, palette)
+    if "heart" in name:
+        return _heart_pixel(name, x, y, palette)
+    if "horn" in name or "antler" in name:
+        return _horn_pixel(name, x, y, palette)
+    if "token" in name:
+        return _token_pixel(name, x, y, palette)
+    if any(part in name for part in ("focus", "pendulum", "sigil", "catalyst")):
+        return _artifact_pixel(name, x, y, palette)
     if "eye" in name:
         dark, mid, bright, paper = palette
         dx, dy = abs(x - 7.5), abs(y - 7.5)
@@ -355,6 +431,26 @@ def pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
         if dx <= 1 and dy <= 1:
             return rgba(dark)
         return rgba(bright if dy <= 1 else mid)
+    if "spine" in name or "root" in name:
+        if abs(x - 7.5) <= 1 or (y % 4 == 0 and 4 <= x <= 11):
+            return rgba(palette[2] if y % 4 == 0 else palette[1])
+        return (0, 0, 0, 0)
+    if "essence" in name or "shard" in name or "crystal" in name or "quartz" in name or "ember" in name:
+        dx, dy = abs(x - 7.5), abs(y - 7.5)
+        if dx + dy > 8:
+            return (0, 0, 0, 0)
+        return rgba(palette[2] if (x + y + seed) % 5 == 0 else palette[1] if dx + dy < 5 else palette[0])
+    if "apparatus" in name:
+        if 2 <= y <= 5 and 3 <= x <= 12:
+            return rgba(palette[2] if y == 2 else palette[1])
+        if 6 <= y <= 13 and (x in (3, 12) or y in (6, 13)):
+            return rgba(palette[0])
+        if 7 <= y <= 12 and 4 <= x <= 11:
+            return rgba(palette[1] if (x + y) % 4 else palette[2])
+        return (0, 0, 0, 0)
+    if "cache" in name:
+        seam = y in (3, 7, 11) or (x + 4) % 8 == 0
+        return rgba(palette[0] if seam else palette[1] if (x + y) % 5 else palette[2])
     tile = (x // 4 + y // 4 + seed) % 4
     border = x in (0, 15) or y in (0, 15)
     diagonal = (x + y + seed) % 7 == 0
