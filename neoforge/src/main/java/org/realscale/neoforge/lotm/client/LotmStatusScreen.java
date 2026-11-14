@@ -30,6 +30,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     private int selectedTab;
     private int creatureIndex;
     private int journalPage;
+    private int journalFilter;
+    private Button journalFilterButton;
     private Button hudToggle;
     private Button auraToggle;
     private Button openBestiary;
@@ -110,6 +112,10 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 Component.translatable("gui.realscale.lotm_panel.journal.next"),
                 button -> journalPage = Math.min(journalPageCount() - 1, journalPage + 1))
                 .bounds(leftPos + 208, topPos + 204, 100, 18).build());
+
+        journalFilterButton = addRenderableWidget(Button.builder(Component.empty(),
+                button -> { journalFilter = (journalFilter + 1) % 6; journalPage = 0; })
+                .bounds(leftPos + 204, topPos + 52, 104, 18).build());
     }
 
     private void refreshRecipes() {
@@ -126,8 +132,32 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         recipeIndex = alchemyRecipes.isEmpty() ? 0 : recipeIndex % alchemyRecipes.size();
     }
 
+    private List<String> filteredJournalEntries() {
+        List<String> all = LotmPanelNetwork.clientResearchEntries();
+        if (journalFilter == 0) return all;
+        String selectedKind = switch (journalFilter) {
+            case 1 -> "entity";
+            case 2 -> "block";
+            case 3 -> "item";
+            case 4 -> "biome";
+            default -> "other";
+        };
+        return all.stream().filter(source -> selectedKind.equals(researchKind(source))).toList();
+    }
+
+    private String journalFilterKey() {
+        return switch (journalFilter) {
+            case 1 -> "entity";
+            case 2 -> "block";
+            case 3 -> "item";
+            case 4 -> "biome";
+            case 5 -> "other";
+            default -> "all";
+        };
+    }
+
     private int journalPageCount() {
-        int entries = LotmPanelNetwork.clientResearchEntries().size();
+        int entries = filteredJournalEntries().size();
         return Math.max(1, (entries + JOURNAL_PAGE_SIZE - 1) / JOURNAL_PAGE_SIZE);
     }
 
@@ -153,6 +183,11 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         if (previousJournalPage != null) previousJournalPage.visible = selectedTab == 4 && journalPage > 0;
         if (nextJournalPage != null) nextJournalPage.visible = selectedTab == 4
                 && journalPage + 1 < journalPageCount();
+        if (journalFilterButton != null) {
+            journalFilterButton.visible = selectedTab == 4;
+            journalFilterButton.setMessage(Component.translatable(
+                    "gui.realscale.lotm_panel.journal.filter." + journalFilterKey()));
+        }
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
         renderRecipeItemTooltip(graphics, mouseX, mouseY);
@@ -166,7 +201,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         if (relativeY < 0) return;
         int row = relativeY / 14;
         if (row >= JOURNAL_PAGE_SIZE || relativeY % 14 >= 12) return;
-        List<String> entries = LotmPanelNetwork.clientResearchEntries();
+        List<String> entries = filteredJournalEntries();
         int index = journalPage * JOURNAL_PAGE_SIZE + row;
         if (index < 0 || index >= entries.size()) return;
         graphics.renderTooltip(font, researchName(entries.get(index)), mouseX, mouseY);
@@ -420,14 +455,14 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 }
             }
         } else if (selectedTab == 4) {
-            List<String> entries = LotmPanelNetwork.clientResearchEntries();
+            List<String> entries = filteredJournalEntries();
             int pages = journalPageCount();
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal_header"),
                     14, 52, 0xFFEDE4F6, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal.daily_progress"),
                     22, 79, 0xFFE5CB9F, false);
-            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal.recent",
-                    menu.researchEntries()), 166, 79, 0xFFE5CB9F, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal.filtered_count",
+                    entries.size(), menu.researchEntries()), 166, 79, 0xFFE5CB9F, false);
             final String[] categories = {"exploration", "skill", "research", "fieldwork"};
             for (int index = 0; index < categories.length; index++) {
                 graphics.drawString(font, Component.translatable(
@@ -538,6 +573,16 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         }
     }
 
+    private static String researchKind(String source) {
+        int separator = source.indexOf(':');
+        if (separator <= 0) return "other";
+        String kind = source.substring(0, separator);
+        return switch (kind) {
+            case "entity", "block", "item", "biome" -> kind;
+            default -> "other";
+        };
+    }
+
     private static Component researchName(String source) {
         int first = source.indexOf(':');
         int second = first < 0 ? -1 : source.indexOf(':', first + 1);
@@ -545,7 +590,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             return Component.literal(source);
         }
         String kind = source.substring(0, first);
-        if (!"entity".equals(kind) && !"block".equals(kind)) return Component.literal(source);
+        if (!"entity".equals(kind) && !"block".equals(kind)
+                && !"item".equals(kind) && !"biome".equals(kind)) return Component.literal(source);
         String namespace = source.substring(first + 1, second);
         String id = source.substring(second + 1);
         return Component.translatable(kind + "." + namespace + "." + id);
