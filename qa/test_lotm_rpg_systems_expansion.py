@@ -140,6 +140,21 @@ class LotmRpgExpansionTests(unittest.TestCase):
                 self.assertTrue(lang["tooltip.realscale.lotm.potion." + key])
 
 
+    def test_sequence8_pathway_passives_are_distinct_and_documented(self):
+        events = (JAVA / "lotm/LotmEvents.java").read_text(encoding="utf-8")
+        self.assertIn("path == LotmPath.SEER && sequence == 8", events)
+        self.assertIn("MobEffects.SLOW_FALLING", events)
+        self.assertIn("path == LotmPath.MYSTERY_PRYER && sequence == 8", events)
+        self.assertIn("LightLayer.BLOCK", events)
+        self.assertIn("MobEffects.NIGHT_VISION", events)
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            seer = lang["message.realscale.lotm.skills.seer.8"].lower()
+            pryer = lang["message.realscale.lotm.skills.mystery_pryer.8"].lower()
+            self.assertTrue("fall" in seer or "下坠" in seer)
+            self.assertTrue("night vision" in pryer or "夜视" in pryer)
+
+
     def test_bilingual_discovery_and_field_guide_content_is_complete(self):
         for locale in ("en_us", "zh_cn"):
             lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
