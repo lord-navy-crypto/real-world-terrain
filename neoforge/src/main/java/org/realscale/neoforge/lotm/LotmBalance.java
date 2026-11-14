@@ -104,7 +104,7 @@ public final class LotmBalance {
     public static int skillCostWithMastery(int baseCost, int mastery, int costPercent) {
         int discount = Math.min(2, clampSkillMastery(mastery));
         int discounted = Math.max(1, Math.max(1, baseCost) - discount);
-        int percent = Math.max(25, Math.min(200, costPercent));
+        int percent = costPercent <= 0 ? 100 : Math.max(25, Math.min(200, costPercent));
         return Math.max(1, (discounted * percent + 99) / 100);
     }
 

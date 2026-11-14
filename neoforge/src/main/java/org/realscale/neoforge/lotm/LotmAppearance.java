@@ -23,7 +23,7 @@ public final class LotmAppearance {
 
     public static boolean shouldEmit(int tickCount, boolean preferenceEnabled,
             boolean featureEnabled, boolean hasPath, int intervalTicks) {
-        int interval = Math.max(1, intervalTicks);
+        int interval = Math.max(10, intervalTicks);
         return preferenceEnabled && featureEnabled && hasPath
                 && Math.floorMod(tickCount, interval) == 0;
     }
