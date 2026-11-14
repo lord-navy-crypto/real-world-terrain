@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.ExplosionEvent;
 
 /** NPC-free acting loop: unique biome exploration, skill use, research and fieldwork. */
 public final class LotmActing {
@@ -87,6 +88,12 @@ public final class LotmActing {
         // Always clear the mark on breaking, even for a non-Beyonder or a creative player.
         if (LotmResourceProvenance.get(level).consumePlacement(event.getPos())) return;
         if (!player.isCreative() && isActive(player)) award(player, "fieldwork", 2);
+    }
+
+    /** Explosions bypass player block-break events; clear their placement marks explicitly. */
+    public static void onExplosionDetonate(ExplosionEvent.Detonate event) {
+        if (!(event.getLevel() instanceof ServerLevel level) || event.getAffectedBlocks().isEmpty()) return;
+        LotmResourceProvenance.get(level).consumePlacements(event.getAffectedBlocks());
     }
 
     static boolean isFieldworkBlock(Block block) {
