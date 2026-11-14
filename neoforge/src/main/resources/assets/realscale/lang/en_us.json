@@ -439,5 +439,6 @@
   "gui.realscale.lotm_panel.settings.drop_rate": "Drops: %s%% / %s%%",
   "gui.realscale.lotm_panel.settings.hud_refresh": "HUD: %s t",
   "gui.realscale.lotm_panel.settings.aura_interval": "Aura: %s t",
-  "gui.realscale.lotm_panel.settings.manual_alchemy": "Manual: %s t"
+  "gui.realscale.lotm_panel.settings.manual_alchemy": "Manual: %s t",
+  "gui.realscale.lotm_panel.skill_tree.unavailable": "No active skills at this sequence"
 }
