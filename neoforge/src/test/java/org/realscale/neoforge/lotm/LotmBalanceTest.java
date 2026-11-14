@@ -88,7 +88,7 @@ class LotmBalanceTest {
         assertEquals(100, LotmBalance.addInstability(99, Integer.MAX_VALUE));
         assertEquals(100, LotmBalance.addInstability(Integer.MAX_VALUE, 1));
         assertEquals(8, LotmBalance.instabilitySurcharge(Integer.MAX_VALUE));
-        assertEquals(22, LotmBalance.skillCost(\"seer\", 1, 9, false, Integer.MAX_VALUE));
+        assertEquals(22, LotmBalance.skillCost("seer", 1, 9, false, Integer.MAX_VALUE));
     }
 
     @Test void directCharacteristicInstabilityAddsACappedReversibleSkillSurcharge() {
