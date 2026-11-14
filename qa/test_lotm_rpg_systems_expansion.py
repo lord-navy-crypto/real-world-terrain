@@ -419,7 +419,7 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn('!"item".equals(kind) && !"biome".equals(kind)', screen)
         self.assertIn("activeSequence && menu.skillsEnabled()", screen)
         self.assertIn("boolean sequence9Unlocked = menu.skillsEnabled()", screen)
-        self.assertIn("sequence8Unlocked && menu.sequence() == 8", screen)
+        self.assertIn("int secondNode = sequence8Unlocked ?", screen)
         self.assertEqual(2, screen.count("LotmActing.dailyCap(categories[index])"))
         for locale in ("en_us", "zh_cn"):
             lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
