@@ -175,6 +175,13 @@ class LotmRpgExpansionTests(unittest.TestCase):
             self.assertIn("/lotm journal", lang["message.realscale.lotm.guide"])
 
 
+    def test_alchemy_tick_revalidates_loaded_fuel_item_identity(self):
+        machine = (JAVA / "lotm/LotmAlchemyBlockEntity.java").read_text(encoding="utf-8")
+        self.assertIn("isItemValid(int slot, ItemStack stack)", machine)
+        self.assertIn("stack.is(LotmContent.SPIRIT_EMBER.get())", machine)
+        self.assertIn("!machine.inventory.getStackInSlot(FUEL_SLOT).is(LotmContent.SPIRIT_EMBER.get())", machine)
+        self.assertIn("extractItem(FUEL_SLOT, 1, false)", machine)
+
     def test_alchemy_machine_status_is_server_synced_and_localized(self):
         machine = (JAVA / "lotm/LotmAlchemyBlockEntity.java").read_text(encoding="utf-8")
         menu = (JAVA / "lotm/LotmAlchemyMenu.java").read_text(encoding="utf-8")
