@@ -73,6 +73,7 @@ class LotmConsoleRefinementTests(unittest.TestCase):
 
     def test_player_feedback_preferences_are_persistent_and_respawn_safe(self):
         preferences = (LOTM / "LotmPreferences.java").read_text(encoding="utf-8")
+        appearance = (LOTM / "LotmAppearance.java").read_text(encoding="utf-8")
         state = (LOTM / "LotmState.java").read_text(encoding="utf-8")
         menu = (LOTM / "LotmStatusMenu.java").read_text(encoding="utf-8")
         potion = (LOTM / "LotmPotionItem.java").read_text(encoding="utf-8")
@@ -84,6 +85,7 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn("toggleSkillFeedback(Player player)", preferences)
         self.assertIn("particlesEnabled(Player player)", preferences)
         self.assertIn("toggleParticles(Player player)", preferences)
+        self.assertIn("LotmPreferences.particlesEnabled(player)", appearance)
         self.assertIn("LotmPreferences.copy(original, clone)", state)
         self.assertIn("BUTTON_TOGGLE_JOURNAL_NOTIFICATIONS", menu)
         self.assertIn("BUTTON_TOGGLE_PARTICLES", menu)
