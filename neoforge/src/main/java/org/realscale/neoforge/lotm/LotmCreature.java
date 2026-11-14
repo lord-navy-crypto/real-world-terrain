@@ -85,6 +85,10 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
         kindGoalsRegistered = true;
         goalSelector.addGoal(0, new FloatGoal(this));
         if (kind.isNocturnal()) goalSelector.addGoal(4, new NocturnalRestGoal(this));
+        if (LotmCreatureBehavior.followsSameKind(kind)) {
+            goalSelector.addGoal(4, new FollowSameKindGoal(this,
+                    kind == LotmCreatureKind.CRIMSON_HOWLER ? 1.05D : 0.90D));
+        }
 
         if (kind.isAquatic() || kind.isAmphibious()) {
             goalSelector.addGoal(1, new RandomSwimmingGoal(this, 0.9D, 40));
@@ -315,6 +319,69 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
         public void tick() {
             creature.getNavigation().stop();
             creature.setDeltaMovement(0.0D, 0.0D, 0.0D);
+        }
+    }
+
+    /**
+     * Low-cost non-combat cohesion: squid school together and Howlers regroup
+     * when they have no immediate target. Only loaded, same-kind entities qualify.
+     */
+    private static final class FollowSameKindGoal extends Goal {
+        private final LotmCreature creature;
+        private final double speed;
+        private LotmCreature leader;
+        private int nextSearchTick;
+        private int nextPathTick;
+
+        private FollowSameKindGoal(LotmCreature creature, double speed) {
+            this.creature = creature;
+            this.speed = speed;
+            setFlags(EnumSet.of(Goal.Flag.MOVE));
+        }
+
+        @Override
+        public boolean canUse() {
+            if (creature.getTarget() != null || creature.tickCount < nextSearchTick) return false;
+            nextSearchTick = creature.tickCount + 20;
+            leader = null;
+            double nearest = 14.0D * 14.0D;
+            for (LotmCreature candidate : creature.level().getEntitiesOfClass(
+                    LotmCreature.class, creature.getBoundingBox().inflate(14.0D),
+                    other -> other != creature && other.isAlive() && other.kind() == creature.kind())) {
+                double distance = creature.distanceToSqr(
+                        candidate.getX(), candidate.getY(), candidate.getZ());
+                if (distance > 9.0D && distance < nearest) {
+                    nearest = distance;
+                    leader = candidate;
+                }
+            }
+            return leader != null;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            if (leader == null || !leader.isAlive() || creature.getTarget() != null) return false;
+            double distance = creature.distanceToSqr(leader.getX(), leader.getY(), leader.getZ());
+            return distance > 9.0D && distance <= 256.0D;
+        }
+
+        @Override
+        public void start() {
+            nextPathTick = 0;
+        }
+
+        @Override
+        public void stop() {
+            creature.getNavigation().stop();
+            leader = null;
+        }
+
+        @Override
+        public void tick() {
+            if (leader != null && creature.tickCount >= nextPathTick) {
+                nextPathTick = creature.tickCount + 10;
+                creature.getNavigation().moveTo(leader, speed);
+            }
         }
     }
 
