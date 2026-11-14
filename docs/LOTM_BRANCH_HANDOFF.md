@@ -7,7 +7,7 @@ Before continuing, read `docs/lotm-rpg-cross-system-expansion-2026-11-14.md`. Th
 - Alchemy: bounded backtracking ingredient matching in `LotmIngredientMatching`, with dedicated JUnit tests. Broad item-tag overlap no longer relies on greedy slot order.
 - Acting: research now rewards one novel discovered entity/block ID per pathway and sequence; discoveries survive death and have a read-only `/lotm journal`. Progression's daily cap uses the Overworld server game-time cycle, not mutable daylight time.
 - Fieldwork: all six active ores are eligible. `LotmResourceProvenance` persists player-placed eligible resource coordinates per dimension. Breaking marked placed blocks yields no fieldwork reward; provenance tests added.
-  Uncanceled explosion detonation bulk-removes provenance marks for affected positions; canceled explosions leave the ledger intact. Piston/third-party automation handling remains a runtime follow-up.
+  Accepted explosions bulk-remove provenance marks in `ExplosionEvent.Detonate`; cancellation belongs to `ExplosionEvent.Start` (which prevents detonation), since `Detonate` is non-cancellable. Piston/third-party automation handling remains a runtime follow-up.
 - Pathways: Mystery Pryer secondary studies supernatural creatures; Corpse Collector secondary is a bounded self-protection/recovery ability. The other pathway roles remain unchanged.
 - Flora: four additional optional crafting-table recipes turn each existing occult flower into catalysts or Spirit Embers; no existing recipe removed.
 - Guide: `/lotm guide creatures|flora|minerals|alchemy|progression`; journal and guide text translated into English and Chinese.
