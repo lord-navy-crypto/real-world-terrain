@@ -41,7 +41,7 @@
   "message.realscale.lotm.no_path": "No pathway chosen. Craft a Sequence 9 potion.",
   "message.realscale.lotm.hud.enabled": "LOTM status HUD preference enabled. It appears while LOTM is enabled and you have a pathway; its 2-second action-bar refresh can replace other action-bar notices. Use /lotm hud to turn it off.",
   "message.realscale.lotm.hud.disabled": "LOTM status HUD disabled.",
-  "message.realscale.lotm.hud.line": "%s | Sequence %s | Spirit %s/%s | Digestion %s/%s | Instability %s",
+  "message.realscale.lotm.hud.line": "%s | S%s | SP %s/%s | DIG %s/%s | INST %s",
   "message.realscale.lotm.already_path": "You already possess a Sequence 9 pathway.",
   "message.realscale.lotm.advanced": "Sequence 9 unlocked: %s",
   "message.realscale.lotm.sense": "Spiritual sense detects %s nearby signals.",
