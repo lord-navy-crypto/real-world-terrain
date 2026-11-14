@@ -18,6 +18,7 @@ import net.minecraft.resources.ResourceLocation;
 public final class RealScaleMod {
     public RealScaleMod(IEventBus bus, ModContainer container) {
         LotmContent.register(bus);
+        LotmCreativeTab.register(bus);
         LotmCreatureEntities.register(bus);
         LotmAlchemyContent.register(bus);
         bus.addListener(LotmPlayerAbilityRegistry::register);

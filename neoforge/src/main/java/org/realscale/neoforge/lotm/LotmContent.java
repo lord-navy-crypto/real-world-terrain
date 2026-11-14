@@ -126,6 +126,20 @@ public final class LotmContent {
         return suffix == null ? null : MATERIALS.get(suffix);
     }
 
+    /** Active potions are also listed in the LOTM creative inventory category. */
+    public static Supplier<? extends Item> potion(LotmPath path, int sequence) {
+        if (path == null) return null;
+        if (sequence == 9) {
+            return switch (path) {
+                case SEER -> SEER_POTION;
+                case MYSTERY_PRYER -> PRYER_POTION;
+                case SLEEPLESS -> SLEEPLESS_POTION;
+                case CORPSE_COLLECTOR -> CORPSE_POTION;
+            };
+        }
+        return PROMOTIONS.get(key(path, sequence));
+    }
+
     public static Supplier<? extends Item> characteristic(LotmPath path, int sequence) {
         Supplier<? extends Item> found = CHARACTERISTICS.get(key(path, sequence));
         if (found == null) throw new IllegalArgumentException("Unregistered LOTM characteristic");
