@@ -44,6 +44,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     private Button soundToggle;
     private Button skillFeedbackToggle;
     private Button journalNotificationsToggle;
+    private Button particlesToggle;
     private Button panelScaleButton;
     private Button panelOpacityButton;
     private Button compactLayoutButton;
@@ -161,6 +162,10 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
                         LotmStatusMenu.BUTTON_TOGGLE_JOURNAL_NOTIFICATIONS))
                 .bounds(leftPos + 166, topPos + 258, 144, 16).build());
+        particlesToggle = addRenderableWidget(Button.builder(Component.empty(),
+                button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
+                        LotmStatusMenu.BUTTON_TOGGLE_PARTICLES))
+                .bounds(leftPos + 214, topPos + 258, 96, 16).build());
 
         panelScaleButton = addRenderableWidget(Button.builder(Component.empty(), button -> {
             int current = LotmClientConfig.PANEL_SCALE_PERCENT.get();
@@ -349,6 +354,11 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             journalNotificationsToggle.visible = personalSettings;
             journalNotificationsToggle.setMessage(Component.translatable("gui.realscale.lotm_panel.setting.journal_notifications_toggle",
                     onOff(menu.journalNotificationsEnabled())));
+        }
+        if (particlesToggle != null) {
+            particlesToggle.visible = personalSettings;
+            particlesToggle.setMessage(Component.translatable(
+                    "gui.realscale.lotm_panel.setting.particles_toggle", onOff(menu.particlesEnabled())));
         }
         if (settingsPageButton != null) {
             settingsPageButton.visible = settings;
@@ -553,7 +563,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         graphics.fill(x, y, x + imageWidth, y + imageHeight, panelColor(0xFF10111A));
         graphics.fill(x + 3, y + 3, x + imageWidth - 3, y + 21, panelColor(0xFF29243A));
         graphics.fill(x + 6, y + 46, x + imageWidth - 6, y + 228, panelColor(0xFF1D1C2B));
-        graphics.fill(x + 6, y + 232, x + imageWidth - 6, y + 270, panelColor(0xFF171722));
+        graphics.fill(x + 6, y + 232, x + imageWidth - 6, y + 274, panelColor(0xFF171722));
 
         if (selectedTab == 0) {
             bar(graphics, x + 14, y + 99, 292, 6, menu.spirit(), 100, 0xFF69B9D0);
@@ -652,11 +662,9 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                     14, 160, 0xFFB8ADC9, false);
             if (menu.sequence() == 9) {
                 graphics.drawString(font, Component.translatable(
-                        "gui.realscale.lotm_panel.dashboard.next_prepared",
-                        menu.preparedPotionRequirement()), 14, 177, 0xFFE5CB9F, false);
-                graphics.drawString(font, Component.translatable(
-                        "gui.realscale.lotm_panel.dashboard.next_characteristic",
-                        menu.characteristicRequirement()), 166, 177, 0xFFE5CB9F, false);
+                        "gui.realscale.lotm_panel.dashboard.next_requirements",
+                        menu.preparedPotionRequirement(), menu.characteristicRequirement()),
+                        14, 177, 0xFFE5CB9F, false);
             } else {
                 graphics.drawString(font, Component.translatable(
                         "gui.realscale.lotm_panel.dashboard.archived"), 14, 177, 0xFFB8ADC9, false);
@@ -678,7 +686,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                         "gui.realscale.lotm_panel.dashboard.skill",
                         Component.translatable("gui.realscale.lotm_panel.skill." + path.id() + "." + slot + ".name"),
                         skillState, cost);
-                graphics.drawString(font, skill, 14, 208 + (slot - 1) * 13, 0xFFD7CDE4, false);
+                graphics.drawString(font, font.plainSubstrByWidth(skill.getString(), 292),
+                        14, 208 + (slot - 1) * 13, 0xFFD7CDE4, false);
             }
         } else if (selectedTab == 1 && path != null) {
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.skill_tree.header"),
@@ -877,6 +886,9 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                         "gui.realscale.lotm_panel.setting.journal_notifications",
                         onOff(menu.journalNotificationsEnabled())),
                         22, 154, 0xFFD7CDE4, false);
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.setting.particles", onOff(menu.particlesEnabled())),
+                        22, 168, 0xFFD7CDE4, false);
 
                 graphics.drawString(font, Component.translatable(
                         "gui.realscale.lotm_panel.settings.server_header"),
