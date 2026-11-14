@@ -130,6 +130,13 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - Scaled acting rewards use `long` multiplication and are capped by the category's remaining allowance, preventing integer overflow from corrupt or future scripted inputs.
 - JUnit and static QA cover integer extremes and malformed counter values.
 
+
+### 17. Creature spawn-data contract
+- `LotmCreatureRegistryTest` now loads all ten `neoforge:add_spawns` biome-modifier JSON resources from the test classpath.
+- For every active creature, the test checks exact entity ID, unique habitat entries, registry/JSON habitat equality, spawn weight and minimum/maximum group size.
+- This binds the data-driven natural-spawn tables to the canonical `LotmCreatureKind` metadata, so changes cannot silently make JSON and Java disagree.
+- This is a resource-contract test, not a measurement of actual spawn frequency; multi-seed world acceptance remains required.
+
 **Validation caveat:** these are code and resource changes, not yet confirmed by an in-game client or multiplayer server. Current-head workflow runs must be checked; a static QA pass cannot prove Curios equipment events, item consumption, tooltip rendering or save/reload behavior.
 
 ## Next development batches (do not claim complete until validated)
