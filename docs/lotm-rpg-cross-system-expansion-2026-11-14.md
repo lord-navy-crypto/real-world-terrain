@@ -85,6 +85,11 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - The sigil is not consumed when the player has no instability. Creative players retain their item.
 - Instability recovery is reversible and does not alter the legacy NBT key.
 
+### 13. Promotion recipe matrix and progression threshold regression coverage
+- Static QA now enumerates the exact active recipe filenames: 4 pathways × 2 ranks × 2 crafting routes = 16 recipes.
+- Each normal alchemy recipe is checked for four distinct registered inputs; each complete-characteristic alternative is checked for three distinct registered inputs. All outputs and characteristics must have item models and bilingual display names.
+- Progression JUnit now exercises the exact one-below and exact-at-threshold cases for both prepared Sequence 8 potions and direct Sequence 8 characteristics.
+
 ### 12. Alchemy feedback and player-facing skill telemetry
 - The alchemy block entity now publishes a third synchronized menu datum for machine state: waiting for recipe, brewing, missing fuel, blocked output, server-disabled, or unavailable recipe.
 - The screen displays the localized reason rather than leaving players to infer why processing has paused. Processing and ingredient state remain server-authoritative.
