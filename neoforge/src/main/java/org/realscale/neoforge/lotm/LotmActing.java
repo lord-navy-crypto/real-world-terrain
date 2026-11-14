@@ -90,9 +90,12 @@ public final class LotmActing {
         if (!player.isCreative() && isActive(player)) award(player, "fieldwork", 2);
     }
 
-    /** Explosions bypass player block-break events; clear their placement marks explicitly. */
+    /**
+     * ExplosionEvent.Start is the cancellable phase. Detonate is non-cancellable
+     * and only supplies the accepted explosion's affected positions.
+     */
     public static void onExplosionDetonate(ExplosionEvent.Detonate event) {
-        if (event.isCanceled() || !(event.getLevel() instanceof ServerLevel level)
+        if (!(event.getLevel() instanceof ServerLevel level)
                 || event.getAffectedBlocks().isEmpty()) return;
         LotmResourceProvenance.get(level).consumePlacements(event.getAffectedBlocks());
     }
