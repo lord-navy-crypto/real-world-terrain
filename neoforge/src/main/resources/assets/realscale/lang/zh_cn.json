@@ -41,7 +41,7 @@
   "message.realscale.lotm.no_path": "尚未选择途径，请合成序列9魔药。",
   "message.realscale.lotm.hud.enabled": "已开启诡秘状态栏偏好设置；系统启用且已选择途径时显示。它每2秒刷新，可能覆盖其他快捷栏提示；再次输入 /lotm hud 可关闭。",
   "message.realscale.lotm.hud.disabled": "已关闭诡秘状态栏。",
-  "message.realscale.lotm.hud.line": "%s | 序列%s | 灵性%s/%s | 消化%s/%s | 失控%s",
+  "message.realscale.lotm.hud.line": "%s | 序%s | 灵性%s/%s | 消化%s/%s | 失控%s",
   "message.realscale.lotm.already_path": "你已经拥有一条序列9途径。",
   "message.realscale.lotm.advanced": "已解锁序列9：%s",
   "message.realscale.lotm.sense": "灵性感知发现 %s 个附近的线索。",
