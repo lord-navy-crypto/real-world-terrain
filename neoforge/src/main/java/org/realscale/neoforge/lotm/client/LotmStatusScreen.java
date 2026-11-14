@@ -7,6 +7,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import org.realscale.neoforge.lotm.LotmBalance;
 import org.realscale.neoforge.lotm.LotmPath;
+import org.realscale.neoforge.lotm.LotmDropBalance;
 import org.realscale.neoforge.lotm.LotmStatusMenu;
 
 /** Compact occult status console with Overview, Skills, Materials and Settings tabs. */
@@ -168,7 +169,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.appearance", onOff(menu.appearanceEffectsEnabled())), 14, 98, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.creatures", onOff(menu.creaturesEnabled())), 14, 113, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.skill_cost", menu.skillCostPercent()), 14, 128, 0xFFD7CDE4, false);
-            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.drop_rate", menu.materialDropPercent()), 14, 143, 0xFFD7CDE4, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.drop_rate",
+                    menu.materialDropPercent(), LotmDropBalance.effectiveChance(menu.materialDropPercent(), 8)), 14, 143, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.hud_refresh", menu.hudRefreshTicks()), 135, 68, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.aura_interval", menu.appearanceIntervalTicks()), 135, 83, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.manual_alchemy", menu.manualAlchemyTicks()), 135, 98, 0xFFD7CDE4, false);
