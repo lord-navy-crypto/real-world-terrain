@@ -27,6 +27,13 @@ public enum LotmCreatureBehavior {
                 && horizontalDistanceSqr >= 0.0D && horizontalDistanceSqr <= 100.0D;
     }
 
+    /** Passive school/pack cohesion for species that naturally travel together. */
+    public static boolean followsSameKind(LotmCreatureKind kind) {
+        Objects.requireNonNull(kind, "kind");
+        return kind == LotmCreatureKind.STARLIT_SQUID
+                || kind == LotmCreatureKind.CRIMSON_HOWLER;
+    }
+
     public static LotmCreatureBehavior forKind(LotmCreatureKind kind) {
         Objects.requireNonNull(kind, "kind");
         return switch (kind) {
