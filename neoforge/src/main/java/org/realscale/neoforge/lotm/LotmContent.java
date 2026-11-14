@@ -111,10 +111,9 @@ public final class LotmContent {
         return pathway.id() + ":" + sequence;
     }
 
+    /** Unknown or archived drop IDs fail closed instead of crashing the server drop event. */
     public static Supplier<Item> materialItem(String suffix) {
-        Supplier<Item> found = MATERIALS.get(suffix);
-        if (found == null) throw new IllegalArgumentException("Unknown LOTM material: " + suffix);
-        return found;
+        return suffix == null ? null : MATERIALS.get(suffix);
     }
 
     public static Supplier<? extends Item> characteristic(LotmPath path, int sequence) {
