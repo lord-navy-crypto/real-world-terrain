@@ -341,5 +341,20 @@
   "gui.realscale.lotm_panel.skill.corpse_collector.1.description": "Reveal and weaken nearby undead.",
   "gui.realscale.lotm_panel.skill.corpse_collector.2.name": "Shroud Ward",
   "gui.realscale.lotm_panel.skill.corpse_collector.2.description": "Gain a brief defensive and recovery ward.",
-  "gui.realscale.lotm_panel.accessory": "Equipped focus: %s"
+  "gui.realscale.lotm_panel.accessory": "Equipped focus: %s",
+  "message.realscale.lotm.diagnose.header": "LOTM runtime diagnostics (read-only):",
+  "message.realscale.lotm.diagnose.ores": "Ore blocks and block items",
+  "message.realscale.lotm.diagnose.minerals": "Six mineral materials",
+  "message.realscale.lotm.diagnose.flora": "Four occult plants and their items",
+  "message.realscale.lotm.diagnose.creature_materials": "Ten creature signature materials",
+  "message.realscale.lotm.diagnose.skill_manuals": "Eight pathway skill manuals",
+  "message.realscale.lotm.diagnose.alchemy": "Alchemy apparatus and registry entries",
+  "message.realscale.lotm.diagnose.manual_recipes": "Sixteen skill-manual alchemy recipes",
+  "message.realscale.lotm.diagnose.config": "Server configuration bounds",
+  "message.realscale.lotm.diagnose.player": "Current player progression and skill values",
+  "message.realscale.lotm.diagnose.section": "%s: %s/%s checks passed",
+  "message.realscale.lotm.diagnose.summary": "Diagnostics complete: %s/%s checks passed; failures: %s.",
+  "message.realscale.lotm.diagnose.scope": "Natural spawn rates, world generation, textures and multiplayer behavior still require in-game testing.",
+  "message.realscale.lotm.diagnose.no_path": "No pathway is selected; player-progression checks were skipped.",
+  "message.realscale.lotm.diagnose.player_detail": "Pathway: %s | Sequence: %s | Skill I mastery: %s/%s | Skill II mastery: %s/%s | Effective costs: %s/%s"
 }
