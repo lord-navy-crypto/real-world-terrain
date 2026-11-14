@@ -247,6 +247,17 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockPlace)", mod)
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockBreak)", mod)
 
+    def test_periodic_ability_sync_reconciles_grants_after_live_config_changes(self):
+        sync = (JAVA / "lotm/LotmPlayerAbilitySync.java").read_text(encoding="utf-8")
+        events = (JAVA / "lotm/LotmEvents.java").read_text(encoding="utf-8")
+        start = sync.index("public static void periodicSync")
+        end = sync.index("public static void sanitizeUnauthorizedGrants", start)
+        periodic = sync[start:end]
+        self.assertIn("shouldAuditUnauthorizedGrants(player.tickCount)", periodic)
+        self.assertIn("sync(player)", periodic)
+        self.assertIn("LotmPlayerAbilitySync.periodicSync(player)", events)
+        self.assertNotIn("if (player.tickCount % 20 == 0) LotmPlayerAbilitySync.sync(player)", events)
+
     def test_pathway_ability_precheck_uses_the_same_curios_and_instability_cost(self):
         ability = (JAVA / "lotm/LotmPathwayAbility.java").read_text(encoding="utf-8")
         skills = (JAVA / "lotm/LotmSkills.java").read_text(encoding="utf-8")
