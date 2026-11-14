@@ -406,6 +406,9 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("LotmPanelNetwork.syncResearchLog(serverPlayer)", acting)
         self.assertIn("settings.server_header", screen)
         self.assertIn("settings.readonly_note", screen)
+        self.assertIn("renderJournalEntryTooltip(graphics, mouseX, mouseY)", screen)
+        self.assertIn("activeSequence && menu.skillsEnabled()", screen)
+        self.assertEqual(2, screen.count("LotmActing.dailyCap(categories[index])"))
         for locale in ("en_us", "zh_cn"):
             lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
             for key in ("skill_tree.header", "journal.entry", "journal.empty",
