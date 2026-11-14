@@ -35,6 +35,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     private int journalPage;
     private int journalFilter;
     private int settingsPage;
+    private double activeMouseScale = 1.0D;
     private Button journalFilterButton;
     private Button journalSortButton;
     private Button settingsPageButton;
@@ -176,8 +177,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         }).bounds(leftPos + 14, topPos + 92, 90, 18).build());
         panelOpacityButton = addRenderableWidget(Button.builder(Component.empty(), button -> {
             int current = LotmClientConfig.PANEL_OPACITY_PERCENT.get();
-            int next = current >= 100 ? 45 : current >= 90 ? 100 : current >= 75 ? 90
-                    : current >= 60 ? 75 : 60;
+            int next = current >= 100 ? 35 : current >= 90 ? 100 : current >= 80 ? 90
+                    : current >= 65 ? 80 : current >= 50 ? 65 : 50;
             LotmClientConfig.PANEL_OPACITY_PERCENT.set(next);
             LotmClientConfig.save();
         }).bounds(leftPos + 112, topPos + 92, 90, 18).build());
@@ -298,30 +299,40 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     }
 
     private double panelMouseX(double mouseX) {
-        double scale = LotmClientConfig.PANEL_SCALE_PERCENT.get() / 100.0D;
-        return width / 2.0D + (mouseX - width / 2.0D) / scale;
+        return panelMouseX(mouseX, LotmClientConfig.PANEL_SCALE_PERCENT.get() / 100.0D);
     }
 
     private double panelMouseY(double mouseY) {
-        double scale = LotmClientConfig.PANEL_SCALE_PERCENT.get() / 100.0D;
+        return panelMouseY(mouseY, LotmClientConfig.PANEL_SCALE_PERCENT.get() / 100.0D);
+    }
+
+    private double panelMouseX(double mouseX, double scale) {
+        return width / 2.0D + (mouseX - width / 2.0D) / scale;
+    }
+
+    private double panelMouseY(double mouseY, double scale) {
         return height / 2.0D + (mouseY - height / 2.0D) / scale;
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        return super.mouseClicked(panelMouseX(mouseX), panelMouseY(mouseY), button);
+        activeMouseScale = LotmClientConfig.PANEL_SCALE_PERCENT.get() / 100.0D;
+        return super.mouseClicked(panelMouseX(mouseX, activeMouseScale),
+                panelMouseY(mouseY, activeMouseScale), button);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        return super.mouseReleased(panelMouseX(mouseX), panelMouseY(mouseY), button);
+        // Keep the click-time transform if a scale button changed the panel during this press.
+        return super.mouseReleased(panelMouseX(mouseX, activeMouseScale),
+                panelMouseY(mouseY, activeMouseScale), button);
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        double scale = LotmClientConfig.PANEL_SCALE_PERCENT.get() / 100.0D;
-        return super.mouseDragged(panelMouseX(mouseX), panelMouseY(mouseY), button,
-                dragX / scale, dragY / scale);
+        return super.mouseDragged(panelMouseX(mouseX, activeMouseScale),
+                panelMouseY(mouseY, activeMouseScale), button,
+                dragX / activeMouseScale, dragY / activeMouseScale);
     }
 
     @Override
