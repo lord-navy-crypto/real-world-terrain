@@ -1,5 +1,7 @@
 package org.realscale.neoforge.lotm;
 
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.damagesource.DamageSource;
@@ -26,6 +28,7 @@ import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
 import net.minecraft.world.entity.ai.navigation.WaterBoundPathNavigation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
@@ -42,6 +45,8 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
     private final LotmCreatureKind kind;
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
     private boolean kindGoalsRegistered;
+    private int nextDiveTick;
+    private int lastDiveTick = -1000;
 
     public LotmCreature(EntityType<? extends PathfinderMob> type, Level level, LotmCreatureKind kind) {
         super(type, level);
@@ -110,6 +115,23 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
     }
 
     @Override
+    public void tick() {
+        super.tick();
+        if (level().isClientSide() || kind != LotmCreatureKind.DEATH_CROW) return;
+        LivingEntity target = getTarget();
+        if (target == null || !target.isAlive()) return;
+        double verticalDifference = getY() - target.getY();
+        double horizontalDistanceSqr = distanceToSqr(target.getX(), getY(), target.getZ());
+        if (!LotmCreatureBehavior.shouldDive(tickCount, nextDiveTick,
+                verticalDifference, horizontalDistanceSqr)) return;
+        Vec3 toward = target.position().subtract(position());
+        Vec3 dive = new Vec3(toward.x, Math.min(-0.5D, toward.y), toward.z).normalize();
+        push(dive.x * 0.18D, -0.22D, dive.z * 0.18D);
+        lastDiveTick = tickCount;
+        nextDiveTick = tickCount + 45;
+    }
+
+    @Override
     public boolean hurt(DamageSource source, float amount) {
         boolean accepted = super.hurt(source, amount);
         if (!accepted || level().isClientSide() || !isAlive()) return accepted;
@@ -120,17 +142,40 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
                     addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 60, 0, true, false));
                     setTarget(null);
                     navigation.stop();
+                    if (level() instanceof ServerLevel server) {
+                        server.sendParticles(ParticleTypes.SQUID_INK,
+                                getX(), getY() + getBbHeight() * 0.5D, getZ(),
+                                18, 0.35D, 0.25D, 0.35D, 0.02D);
+                    }
                 }
             }
-            case NOCTURNAL_EVASION -> addEffect(
-                    new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 60, 1, true, false));
+            case NOCTURNAL_EVASION -> {
+                if (source.getEntity() instanceof LivingEntity attacker) {
+                    Vec3 away = position().subtract(attacker.position());
+                    if (away.lengthSqr() < 1.0E-6D) away = getLookAngle().reverse();
+                    away = away.normalize();
+                    push(away.x * 0.34D, 0.18D, away.z * 0.34D);
+                }
+                addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 60, 1, true, false));
+            }
             case SPRING_ESCAPE -> {
+                if (source.getEntity() instanceof LivingEntity attacker) {
+                    Vec3 away = position().subtract(attacker.position());
+                    if (away.lengthSqr() < 1.0E-6D) away = getLookAngle().reverse();
+                    away = away.normalize();
+                    push(away.x * 0.30D, 0.42D, away.z * 0.30D);
+                }
                 addEffect(new MobEffectInstance(MobEffects.JUMP, 60, 1, true, false));
                 addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 60, 0, true, false));
             }
             case HIGHLAND_COUNTERCHARGE -> {
                 if (source.getEntity() instanceof LivingEntity attacker) {
                     setTarget(attacker);
+                    Vec3 toward = attacker.position().subtract(position());
+                    if (toward.lengthSqr() > 1.0E-6D) {
+                        toward = toward.normalize();
+                        push(toward.x * 0.20D, 0.06D, toward.z * 0.20D);
+                    }
                     addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 50, 0, true, false));
                 }
             }
@@ -173,8 +218,14 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
                 }
                 addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 100, 0, true, false));
             }
-            case DIVE_HUNTER -> victim.addEffect(
-                    new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 45, 0, true, false));
+            case DIVE_HUNTER -> {
+                victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 45, 0, true, false));
+                if (lastDiveTick >= 0 && tickCount - lastDiveTick <= 12) {
+                    victim.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 60, 0, true, false));
+                    victim.push(0.0D, 0.18D, 0.0D);
+                    lastDiveTick = -1000;
+                }
+            }
             case INK_CLOAK, NOCTURNAL_EVASION, SPRING_ESCAPE, FOUR_EYED_GUARD -> {
                 // These creatures specialize in evasion or defense, not attack debuffs.
             }
