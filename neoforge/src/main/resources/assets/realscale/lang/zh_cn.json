@@ -553,5 +553,6 @@
   "gui.realscale.lotm_panel.setting.journal_notifications": "研究通知：%s",
   "gui.realscale.lotm_panel.setting.sound_toggle": "音效：%s",
   "gui.realscale.lotm_panel.setting.skill_feedback_toggle": "技能提示：%s",
-  "gui.realscale.lotm_panel.setting.journal_notifications_toggle": "日志提醒：%s"
+  "gui.realscale.lotm_panel.setting.journal_notifications_toggle": "日志提醒：%s",
+  "gui.realscale.lotm_panel.journal.empty_search": "没有记录符合当前搜索条件。请更换关键词或清空搜索。"
 }
