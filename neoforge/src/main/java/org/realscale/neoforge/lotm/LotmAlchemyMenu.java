@@ -14,11 +14,11 @@ public final class LotmAlchemyMenu extends AbstractContainerMenu {
     private final ContainerLevelAccess access;
     private final ContainerData data;
     public LotmAlchemyMenu(int id, Inventory inv) {
-        this(id, inv, new ItemStackHandler(6), ContainerLevelAccess.NULL, new SimpleContainerData(2));
+        this(id, inv, new ItemStackHandler(6), ContainerLevelAccess.NULL, new SimpleContainerData(3));
     }
     public LotmAlchemyMenu(int id, Inventory inv, IItemHandler handler, ContainerLevelAccess access, ContainerData data) {
         super(LotmAlchemyContent.ALCHEMY_MENU.get(), id);
-        checkContainerDataCount(data, 2); this.access = access; this.data = data;
+        checkContainerDataCount(data, 3); this.access = access; this.data = data;
         addSlot(new SlotItemHandler(handler,0,35,35));
         addSlot(new SlotItemHandler(handler,1,53,35));
         addSlot(new SlotItemHandler(handler,2,35,53));
@@ -36,6 +36,7 @@ public final class LotmAlchemyMenu extends AbstractContainerMenu {
     }
     public int getProgress() { return data.get(0); }
     public int getMaxProgress() { return data.get(1); }
+    public int getMachineStatus() { return data.get(2); }
     @Override public ItemStack quickMoveStack(Player player, int index) {
         ItemStack empty=ItemStack.EMPTY; Slot slot=slots.get(index);
         if (slot==null || !slot.hasItem()) return empty;
