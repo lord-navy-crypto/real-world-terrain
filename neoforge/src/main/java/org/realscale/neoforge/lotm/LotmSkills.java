@@ -34,7 +34,7 @@ public final class LotmSkills {
         }
 
         int cost = LotmBalance.skillCost(expectedPath.id(), slot, sequence,
-                LotmCurios.hasDivinationPendulum(player));
+                LotmCurios.hasDivinationPendulum(player), LotmState.instability(player));
         if (!LotmState.consume(player, cost)) {
             player.displayClientMessage(Component.translatable("message.realscale.lotm.low_spirit"), true);
             return false;
