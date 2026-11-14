@@ -127,6 +127,7 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
         Vec3 toward = target.position().subtract(position());
         Vec3 dive = new Vec3(toward.x, Math.min(-0.5D, toward.y), toward.z).normalize();
         push(dive.x * 0.18D, -0.22D, dive.z * 0.18D);
+        triggerAnim("creature_actions", "special");
         lastDiveTick = tickCount;
         nextDiveTick = tickCount + 45;
     }
@@ -140,6 +141,7 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
             case INK_CLOAK -> {
                 if (getRandom().nextFloat() < 0.35F) {
                     addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 60, 0, true, false));
+                    triggerAnim("creature_actions", "special");
                     setTarget(null);
                     navigation.stop();
                     if (level() instanceof ServerLevel server) {
@@ -155,6 +157,7 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
                     if (away.lengthSqr() < 1.0E-6D) away = getLookAngle().reverse();
                     away = away.normalize();
                     push(away.x * 0.34D, 0.18D, away.z * 0.34D);
+                    triggerAnim("creature_actions", "special");
                 }
                 addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 60, 1, true, false));
             }
@@ -164,6 +167,7 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
                     if (away.lengthSqr() < 1.0E-6D) away = getLookAngle().reverse();
                     away = away.normalize();
                     push(away.x * 0.30D, 0.42D, away.z * 0.30D);
+                    triggerAnim("creature_actions", "special");
                 }
                 addEffect(new MobEffectInstance(MobEffects.JUMP, 60, 1, true, false));
                 addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 60, 0, true, false));
@@ -175,6 +179,7 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
                     if (toward.lengthSqr() > 1.0E-6D) {
                         toward = toward.normalize();
                         push(toward.x * 0.20D, 0.06D, toward.z * 0.20D);
+                        triggerAnim("creature_actions", "special");
                     }
                     addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 50, 0, true, false));
                 }
@@ -182,6 +187,7 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
             case FOUR_EYED_GUARD -> {
                 if (getHealth() <= getMaxHealth() * 0.5F) {
                     addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 80, 0, true, false));
+                    triggerAnim("creature_actions", "special");
                 }
             }
             case DISORIENTING_GAZE, MIST_GRIP, ARMORED_BRUTE, PACK_HOWL, DIVE_HUNTER -> {
@@ -197,6 +203,17 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
         if (!hit) return false;
         triggerAnim("creature_actions", "attack");
         if (level().isClientSide() || !(target instanceof LivingEntity victim)) return true;
+
+        switch (LotmCreatureBehavior.forKind(kind)) {
+            case DISORIENTING_GAZE, MIST_GRIP, HIGHLAND_COUNTERCHARGE, ARMORED_BRUTE, PACK_HOWL ->
+                    triggerAnim("creature_actions", "special");
+            case DIVE_HUNTER -> {
+                if (lastDiveTick >= 0 && tickCount - lastDiveTick <= 12) {
+                    triggerAnim("creature_actions", "special");
+                }
+            }
+            default -> { }
+        }
 
         switch (LotmCreatureBehavior.forKind(kind)) {
             case DISORIENTING_GAZE -> {
@@ -249,6 +266,7 @@ public final class LotmCreature extends PathfinderMob implements GeoEntity {
         }));
         controllers.add(new AnimationController<>(this, "creature_actions", 0, state -> PlayState.STOP)
                 .triggerableAnim("attack", RawAnimation.begin().thenPlay(prefix + "attack"))
+                .triggerableAnim("special", RawAnimation.begin().thenPlay(prefix + "special"))
                 .triggerableAnim("hurt", RawAnimation.begin().thenPlay(prefix + "hurt")));
     }
 
