@@ -160,9 +160,36 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 
 ### 21. Optional server-authoritative action-bar HUD
 - `/lotm hud` toggles an opt-in action-bar status line showing pathway, sequence, spirituality, digestion and instability.
-- The server renders the line every 40 ticks from authoritative player state; no client-side NBT assumption or custom packet is used.
+- The server renders the line at the configurable HUD interval (40 ticks by default) from authoritative player state; no client-side NBT assumption or custom packet is used.
 - The preference persists through death/respawn, and both locales plus the field guide describe the command.
 - The HUD is opt-in to preserve default behavior. While enabled, its periodic refresh can replace other action-bar notifications; disable it if another mod uses that area. Client usability still needs manual testing.
+
+### 22. Pathway skill manuals and mastery
+- Eight original manual items cover the two active skills on each of the four pathways. Sixteen sequence-specific alchemy recipes use a book, Occult Catalyst, the matching S9/S8 pathway material and a slot-specific binder.
+- The Occult Alchemical Apparatus accepts these manuals as valid outputs and uses its own configurable processing time; fuel validation, output capacity and server-side recipe matching remain authoritative.
+- Reading a manual checks the player's pathway, active sequence and server toggles. Sequence 9 mastery is capped at I; Sequence 8 can reach the configured I/II cap.
+- Mastery modestly improves active skill ranges/durations and reduces spirituality cost by at most two points before the configured cost multiplier. It never grants Player Abilities permissions or bypasses pathway authorization.
+- Mastery values are clamped and copied through respawn. Existing external ability grants continue to be reconciled only from the pathway source.
+
+### 23. Interactive supernatural status console
+- `/lotm panel` opens a synchronized four-tab menu: Overview, Skills, Materials and Settings.
+- The server supplies pathway, sequence, spirituality, digestion, instability, mastery, current preferences and read-only server settings through `ContainerData`.
+- The panel's two action buttons call server-side menu actions to toggle the personal action-bar HUD and pathway appearance preference. No client-supplied NBT or skill grant is trusted.
+- The Materials tab shows next-sequence potion ingredients and the current-sequence manual ingredients for both skill slots.
+- The Settings tab reports server rules; actual server-wide tuning remains in the server TOML config and is not silently changed by a client UI.
+
+### 24. Pathway appearance and presentation controls
+- `/lotm appearance` and the panel toggle enable an optional per-player aura.
+- Each pathway has a distinct particle family, with subtle forward-facing eye motes; Sequence 8 and manual mastery add a small visual accent.
+- The effect is cosmetic only: it does not change hitboxes, armor, damage, player skin files or combat targeting. It can be disabled per player or globally in server config.
+- HUD refresh and aura intervals are configurable, with bounded values to avoid excessive per-tick visual work.
+
+### 25. Materials, iconography and gameplay settings
+- The deterministic resource generator now gives all six active mineral families distinct ore-vein/drop palettes and adds readable silhouettes for manuals, potions, flowers, eyes, hearts, horns, artifacts and ability icons.
+- The eight manual item models reference generated item textures; Gradle's `generateLotmVisuals` task packages the PNG resources during `processResources`.
+- Server config now includes independent switches for active skills, manuals and appearance, mastery cap, skill-cost scaling, manual alchemy time, HUD/aura intervals and creature material drop chance.
+- `/lotm config` reports the expanded configuration in both locales. The panel exposes the same important values without granting clients permission to edit server rules.
+- New QA covers all eight manuals, sixteen recipes, item models/locales, generated icons, panel registration, server-authoritative toggles, mastery bounds and appearance cadence.
 
 ## Next development batches (do not claim complete until validated)
 
@@ -172,8 +199,8 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 3. Spawn-check all 10 creatures across night/day and dimensions; inspect animations, navigation, avoid/alert/defense behavior, drops and despawns.
 4. Load existing S9/S8 worlds, place/break resources, reload the server, test a second player mining player-placed blocks.
 5. Validate all 16 potion recipe variants in the actual GUI (8 normal + 8 characteristic) including fuel pause, output blocking, save/load and block-break inventory drops.
-6. Inspect translated field guide, skill activation and journal persistence in real client.
-7. Test the complete S9 to S8 playthrough on each pathway with normal settings.
+6. Inspect the new four-tab status console, manual crafting/reading, skill mastery changes, translated field guide and journal persistence in a real client.
+7. Test the complete S9 to S8 playthrough on each pathway, including both skill manuals and their actual effect changes, with normal settings.
 8. Keep Sequence 7 archived and compare main's terrain/worldgen behavior for regressions.
 
 ### B. Resource balance and ecology
@@ -187,11 +214,11 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 1. Profile spirituality regeneration and actual skill/exploration cost for each pathway, including the new mutually exclusive Curios bonuses.
 2. Playtest the instability surcharge and Stability Sigil economy; tune only from measured usage, preserving the existing NBT key and no-free-consumption rule.
 3. Consider optional rituals, field studies and visual cues using existing Minecraft assets; never require extra dimensions or NPC quests for the basic loop.
-4. Evaluate the opt-in action-bar HUD in a real client; only extend it into a full overlay if it improves accessibility without disrupting other action-bar notifications.
+4. Evaluate the opt-in action-bar HUD, status console and pathway eye/aura particles in a real client; verify accessibility, notification coexistence and per-player toggles.
 
 ### D. Release gate
 - All current-head source/resource QA, JUnit, NeoForge 8.14.3 and Gradle 9.8 builds, dedicated server boot and saved-block verification.
-- At least one tested client session for alchemy, skills, all ten creatures, all six ores and four flowers.
+- At least one tested client session for alchemy, the new status console, skill manuals/mastery, appearance effects, all ten creatures, all six ores and four flowers.
 - No unreviewed worldgen changes, no missing textures, no S7 progression leak.
 - PR remains Draft until manual gameplay tests are explicitly completed and the user requests merging.
 
