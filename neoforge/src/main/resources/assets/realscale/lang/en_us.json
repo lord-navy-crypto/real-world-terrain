@@ -476,5 +476,6 @@
   "gui.realscale.lotm_panel.bestiary.tooltip.activity.anytime": "Activity: active throughout the day/night cycle",
   "gui.realscale.lotm_panel.bestiary.tooltip.group_size": "Natural group size: %s–%s",
   "gui.realscale.lotm_panel.alchemy.ingredient_options": "Accepted ingredient options (%s)",
-  "gui.realscale.lotm_panel.alchemy.ingredient_more": "and %s more"
+  "gui.realscale.lotm_panel.alchemy.ingredient_more": "and %s more",
+  "gui.realscale.lotm_panel.journal.empty_filter": "No discoveries match this filter yet."
 }
