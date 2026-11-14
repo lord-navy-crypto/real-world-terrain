@@ -81,6 +81,10 @@ public final class LotmPotionItem extends Item {
         if (!level.isClientSide()) {
             String validation = LotmState.validateAdvance(player, pathway, sequence, characteristic);
             if (!"ready".equals(validation)) {
+                if ("digestion".equals(validation)) {
+                    LotmActing.recordJournalEvent(player, "potion", "incomplete",
+                            pathway.id() + ":" + sequence + (characteristic ? ":characteristic" : ":prepared"));
+                }
                 player.displayClientMessage(Component.translatable(
                         "message.realscale.lotm.advance." + validation), true);
                 return InteractionResultHolder.fail(stack);
@@ -102,6 +106,9 @@ public final class LotmPotionItem extends Item {
             return stack;
         }
         if (!player.getAbilities().instabuild) stack.shrink(1);
+        LotmActing.recordJournalEvent(player, "potion", "verified",
+                pathway.id() + ":" + sequence + (characteristic ? ":characteristic" : ":prepared"));
+        LotmActing.recordJournalEvent(player, "pathway", "verified", pathway.id() + ":" + sequence);
         player.displayClientMessage(Component.translatable("message.realscale.lotm.advanced_rank",
                 Component.translatable("lotm.realscale.rank." + pathway.id() + "." + sequence),
                 sequence), false);
@@ -110,8 +117,10 @@ public final class LotmPotionItem extends Item {
             server.sendParticles(characteristic ? ParticleTypes.SOUL : ParticleTypes.ENCHANT,
                     player.getX(), player.getY() + 1.0D, player.getZ(),
                     22, 0.45D, 0.7D, 0.45D, 0.03D);
-            server.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP,
-                    SoundSource.PLAYERS, 0.65F, characteristic ? 0.85F : 1.15F);
+            if (LotmPreferences.soundEnabled(player)) {
+                server.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP,
+                        SoundSource.PLAYERS, 0.65F, characteristic ? 0.85F : 1.15F);
+            }
         }
         if (characteristic) {
             player.displayClientMessage(Component.translatable("message.realscale.lotm.direct_unease"), false);
