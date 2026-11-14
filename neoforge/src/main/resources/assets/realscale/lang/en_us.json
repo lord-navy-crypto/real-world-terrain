@@ -241,5 +241,12 @@
   "message.realscale.lotm.status.surcharge": "Current instability skill-cost surcharge: +%s spirituality.",
   "tooltip.realscale.lotm.potion.first_characteristic": "Can establish this pathway at Sequence 9 without prior digestion.",
   "message.realscale.lotm.status.digestion_guide": "Next: Sequence 8 — prepared potion requires %s/100 digestion; direct characteristic use requires %s/100.",
-  "message.realscale.lotm.status.archived": "Sequence 7 progression is intentionally archived in this release."
+  "message.realscale.lotm.status.archived": "Sequence 7 progression is intentionally archived in this release.",
+  "gui.realscale.lotm_alchemy.status.0": "Status: waiting for recipe",
+  "gui.realscale.lotm_alchemy.status.1": "Status: brewing",
+  "gui.realscale.lotm_alchemy.status.2": "Status: needs Spirit Ember",
+  "gui.realscale.lotm_alchemy.status.3": "Status: output full",
+  "gui.realscale.lotm_alchemy.status.4": "Status: disabled by server",
+  "gui.realscale.lotm_alchemy.status.5": "Status: recipe unavailable",
+  "message.realscale.lotm.skills.cost": "Skill %s: %s spirituality | cooldown %s ticks"
 }
