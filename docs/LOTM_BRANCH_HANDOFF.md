@@ -23,6 +23,7 @@ Before continuing, read `docs/lotm-rpg-cross-system-expansion-2026-11-14.md`. Th
 - Promotion matrix QA: the resource graph now requires exactly 16 active S9/S8 alchemy recipe files, validates distinct registered ingredients, result models and bilingual names; progression JUnit checks exact configured threshold edges for both routes.
 - Runtime efficiency: unauthorized ability grants remain blocked immediately by the grant event, while the defensive full-grant audit runs once per 20 player ticks and on login/progression sync. Canceled occult-resource placement events no longer create provenance records.
 - Alchemy output safety: the server rejects result stacks larger than their max stack size and uses long arithmetic for occupied-output capacity; JUnit covers full, mismatched and overflow cases.
+- State arithmetic: spirituality and digestion additions use bounded long arithmetic; daily acting counters normalize corrupt values and scaled rewards cannot overflow or exceed remaining daily caps.
 - Sequence 8 passives: Seer now receives brief server-side slow falling after a meaningful fall; Mystery Pryer receives night vision in dark areas; Sleepless retains its night advantage and Corpse Collector retains freezing resistance. English/Chinese skill descriptions and QA checks were updated.
 - New files: `LotmCurios.java`, `LotmStabilitySigilItem.java`, `lotm_stability_sigil.json` and its model/texture generation entry. JUnit and `qa/test_lotm_rpg_systems_expansion.py` cover balance, recipe, localizations and source integration.
 
