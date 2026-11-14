@@ -97,14 +97,21 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             Component materials = nextSequence >= 8
                     ? Component.translatable("lotm.realscale.materials." + path.id() + "." + nextSequence)
                     : Component.translatable("message.realscale.lotm.max_rank");
+            Component manualOne = Component.translatable(
+                    "lotm.realscale.skill_manuals." + path.id() + "." + menu.sequence() + ".1");
+            Component manualTwo = Component.translatable(
+                    "lotm.realscale.skill_manuals." + path.id() + "." + menu.sequence() + ".2");
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.materials_header"), 14, 51, 0xFFEDE4F6, false);
-            int lineY = 70;
-            for (var line : font.split(materials, 224)) {
-                if (lineY > 145) break;
-                graphics.drawString(font, line, 14, lineY, 0xFFD7CDE4, false);
-                lineY += 13;
+            int lineY = 67;
+            for (Component section : new Component[] {materials, manualOne, manualTwo}) {
+                for (var line : font.split(section, 224)) {
+                    if (lineY > 151) break;
+                    graphics.drawString(font, line, 14, lineY, 0xFFD7CDE4, false);
+                    lineY += 13;
+                }
+                lineY += 3;
+                if (lineY > 151) break;
             }
-            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.manual_hint"), 14, 151, 0xFFB8ADC9, false);
         } else {
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.settings_header"), 14, 51, 0xFFEDE4F6, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.skills", onOff(menu.skillsEnabled())), 14, 68, 0xFFD7CDE4, false);
