@@ -105,7 +105,8 @@ public final class LotmEvents {
         if (sequence < 8 || sequence > 9) return;
         LotmActing.onPlayerTick(player);
         // Regenerate discreetly; night-rested Sleepless users regain spirituality faster.
-        int recovery = LotmConfig.SPIRIT_RECOVERY.get();
+        int recovery = LotmBalance.spiritRecovery(LotmConfig.SPIRIT_RECOVERY.get(),
+                LotmCurios.hasSpiritFocus(player));
         if (path == LotmPath.SLEEPLESS && !player.level().isDay()) recovery += 1;
         LotmState.regenerate(player, recovery);
         if (player.tickCount % 80 != 0) return;
