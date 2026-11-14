@@ -246,6 +246,10 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("import net.neoforged.bus.api.EventPriority;", mod)
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockPlace)", mod)
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockBreak)", mod)
+        mod = (JAVA / "RealScaleMod.java").read_text(encoding="utf-8")
+        self.assertIn("import net.neoforged.bus.api.EventPriority;", mod)
+        self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockPlace)", mod)
+        self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockBreak)", mod)
 
     def test_pathway_ability_precheck_uses_the_same_curios_and_instability_cost(self):
         ability = (JAVA / "lotm/LotmPathwayAbility.java").read_text(encoding="utf-8")
