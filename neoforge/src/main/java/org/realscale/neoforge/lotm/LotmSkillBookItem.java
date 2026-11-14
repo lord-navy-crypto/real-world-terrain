@@ -40,6 +40,7 @@ public final class LotmSkillBookItem extends Item {
         }
         if (!player.getAbilities().instabuild) stack.shrink(1);
         int mastery = LotmState.skillMastery(player, pathway, slot);
+        LotmActing.recordJournalEvent(player, "skill", "verified", pathway.id() + ":manual:" + slot);
         player.displayClientMessage(Component.translatable(
                 "message.realscale.lotm.skill_manual.learned",
                 Component.translatable("lotm.realscale.path." + pathway.id()), slot, mastery), true);
