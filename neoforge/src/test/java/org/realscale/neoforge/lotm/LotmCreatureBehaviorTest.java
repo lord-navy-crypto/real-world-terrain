@@ -22,6 +22,18 @@ class LotmCreatureBehaviorTest {
 
 
     @Test
+    void schoolingAndPackCohesionAreLimitedToTheirIntendedSpecies() {
+        assertTrue(LotmCreatureBehavior.followsSameKind(LotmCreatureKind.STARLIT_SQUID));
+        assertTrue(LotmCreatureBehavior.followsSameKind(LotmCreatureKind.CRIMSON_HOWLER));
+        for (LotmCreatureKind kind : LotmCreatureKind.values()) {
+            if (kind != LotmCreatureKind.STARLIT_SQUID
+                    && kind != LotmCreatureKind.CRIMSON_HOWLER) {
+                assertFalse(LotmCreatureBehavior.followsSameKind(kind), kind.id());
+            }
+        }
+    }
+
+    @Test
     void deathCrowDiveRequiresHeightRangeAndCooldown() {
         assertTrue(LotmCreatureBehavior.shouldDive(100, 100, 2.0D, 100.0D));
         assertTrue(LotmCreatureBehavior.shouldDive(100, 99, 8.0D, 16.0D));
