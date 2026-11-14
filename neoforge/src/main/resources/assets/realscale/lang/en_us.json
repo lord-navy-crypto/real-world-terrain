@@ -238,5 +238,6 @@
   "tooltip.realscale.lotm.potion.prepared_requirement": "Requires the same pathway and digestion: %s/100.",
   "message.realscale.lotm.status.no_accessory": "None",
   "message.realscale.lotm.status.accessory": "Active Occult Focus slot: %s",
-  "message.realscale.lotm.status.surcharge": "Current instability skill-cost surcharge: +%s spirituality."
+  "message.realscale.lotm.status.surcharge": "Current instability skill-cost surcharge: +%s spirituality.",
+  "tooltip.realscale.lotm.potion.first_characteristic": "Can establish this pathway at Sequence 9 without prior digestion."
 }
