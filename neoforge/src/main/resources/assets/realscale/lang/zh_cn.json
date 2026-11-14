@@ -238,5 +238,6 @@
   "tooltip.realscale.lotm.potion.prepared_requirement": "需要相同途径及消化进度：%s/100。",
   "message.realscale.lotm.status.no_accessory": "未装备",
   "message.realscale.lotm.status.accessory": "当前神秘聚焦槽：%s",
-  "message.realscale.lotm.status.surcharge": "当前特性失衡带来的技能灵性额外消耗：+%s。"
+  "message.realscale.lotm.status.surcharge": "当前特性失衡带来的技能灵性额外消耗：+%s。",
+  "tooltip.realscale.lotm.potion.first_characteristic": "可在没有先前消化进度的情况下建立该途径并晋升至序列9。"
 }
