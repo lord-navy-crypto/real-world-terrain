@@ -46,7 +46,7 @@ public final class LotmPanelNetwork {
     public static void syncResearchLog(ServerPlayer player) {
         if (player == null || !(player.containerMenu instanceof LotmStatusMenu)) return;
         List<String> all = LotmActing.journalEntries(player);
-        int first = Math.max(0, all.size() - 64);
+        int first = Math.max(0, all.size() - 128);
         List<String> latestFirst = new ArrayList<>(all.subList(first, all.size()));
         Collections.reverse(latestFirst);
         PacketDistributor.sendToPlayer(player, new ResearchLogPayload(latestFirst));
@@ -86,14 +86,14 @@ public final class LotmPanelNetwork {
                 ResourceLocation.fromNamespaceAndPath("realscale", "lotm_research_log"));
         public static final StreamCodec<RegistryFriendlyByteBuf, ResearchLogPayload> STREAM_CODEC =
                 StreamCodec.composite(
-                        ByteBufCodecs.stringUtf8(256).apply(ByteBufCodecs.list(64)),
+                        ByteBufCodecs.stringUtf8(256).apply(ByteBufCodecs.list(128)),
                         ResearchLogPayload::entries,
                         ResearchLogPayload::new);
 
         public ResearchLogPayload {
             entries = entries == null ? List.of() : entries.stream()
                     .filter(entry -> entry != null && !entry.isBlank())
-                    .limit(64)
+                    .limit(128)
                     .map(entry -> entry.length() > 256 ? entry.substring(0, 256) : entry)
                     .toList();
         }
