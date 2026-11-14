@@ -108,6 +108,19 @@ public final class LotmBalance {
         };
     }
 
+    /**
+     * Output safety for the alchemy machine. Invalid or overstacked recipe results
+     * are rejected even when the output slot is empty; long arithmetic prevents overflow.
+     */
+    public static boolean canFitAlchemyOutput(boolean outputEmpty, boolean sameItemAndComponents,
+            int outputCount, int outputMax, int resultCount, int resultMax) {
+        if (resultCount <= 0 || resultMax <= 0 || resultCount > resultMax) return false;
+        if (outputEmpty) return true;
+        if (!sameItemAndComponents || outputCount <= 0 || outputMax <= 0) return false;
+        long combined = (long) outputCount + resultCount;
+        return combined <= Math.min(outputMax, resultMax);
+    }
+
     /** Omen orientation is deliberately coarse: no omniscience at Sequence 9. */
     public static String bearing(int dx, int dz, int dy) {
         if (Math.abs(dy) > 5 && Math.abs(dy) > Math.max(Math.abs(dx), Math.abs(dz))) {
