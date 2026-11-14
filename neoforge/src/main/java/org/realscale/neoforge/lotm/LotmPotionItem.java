@@ -72,9 +72,15 @@ public final class LotmPotionItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        if (!LotmConfig.ENABLED.get()) {
-            player.displayClientMessage(Component.translatable("message.realscale.lotm.disabled"), true);
-            return InteractionResultHolder.fail(stack);
+        // Reject invalid rank/path/digestion before the drink animation starts.
+        // The final finishUsingItem() still checks the authoritative transition.
+        if (!level.isClientSide()) {
+            String validation = LotmState.validateAdvance(player, pathway, sequence, characteristic);
+            if (!"ready".equals(validation)) {
+                player.displayClientMessage(Component.translatable(
+                        "message.realscale.lotm.advance." + validation), true);
+                return InteractionResultHolder.fail(stack);
+            }
         }
         player.startUsingItem(hand);
         return InteractionResultHolder.consume(stack);

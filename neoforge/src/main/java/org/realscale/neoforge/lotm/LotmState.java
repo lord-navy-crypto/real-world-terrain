@@ -30,13 +30,18 @@ public final class LotmState {
      * transition here so future callers cannot bypass pathway, rank or digestion gates.
      * Returns the same stable reason codes used by the potion feedback messages.
      */
-    public static String advance(Player player, LotmPath path, int sequence, boolean direct) {
+    /** Read-only preflight shared by item interactions and the final server transition. */
+    public static String validateAdvance(Player player, LotmPath path, int sequence, boolean direct) {
         if (!LotmConfig.ENABLED.get()) return "disabled";
         if (path == null) return "path";
         LotmPath current = LotmPath.of(player);
-        String validation = LotmProgression.validate(current == null ? null : current.id(),
+        return LotmProgression.validate(current == null ? null : current.id(),
                 sequence(player), path.id(), sequence, practice(player), direct,
                 LotmConfig.POTION_PRACTICE.get(), LotmConfig.CHARACTERISTIC_PRACTICE.get());
+    }
+
+    public static String advance(Player player, LotmPath path, int sequence, boolean direct) {
+        String validation = validateAdvance(player, path, sequence, direct);
         if (!"ready".equals(validation)) return validation;
 
         if (sequence == 9) {
