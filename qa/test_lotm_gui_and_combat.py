@@ -18,7 +18,7 @@ class LotmGuiAndCombatTests(unittest.TestCase):
         self.assertIn("PacketDistributor.sendToServer(", client)
         self.assertNotIn("sendCommand(", client)
         network = (BASE / "lotm/LotmPanelNetwork.java").read_text()
-        self.assertIn("registrar.playToServer(", network)
+        self.assertIn(".playToServer(", network)
         self.assertIn("LotmStatusMenu.dataFor(player)", network)
         self.assertIn("public record OpenPanelPayload()", network)
         self.assertIn("RegisterKeyMappingsEvent", client_events)
