@@ -39,7 +39,7 @@ def verify_lotm_creature_registry(rcon: Rcon) -> None:
         x = -48 + (index % 5) * 24
         z = -48 + (index // 5) * 48
         entity_type = f"realscale:lotm_{creature_id}"
-        summon = rcon.send(f"summon {entity_type} {x} 200 {z}")
+        summon = rcon.send(f"summon {entity_type} {x} 300 {z}")
         if "Summoned" not in summon:
             raise RuntimeError(f"Could not summon {entity_type}: {summon}")
         health = rcon.send(
