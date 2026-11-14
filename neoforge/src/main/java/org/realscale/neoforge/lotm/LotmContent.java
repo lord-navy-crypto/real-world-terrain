@@ -128,6 +128,11 @@ public final class LotmContent {
         return suffix == null ? null : MATERIALS.get(suffix);
     }
 
+    /** Immutable view for client-side inventory presentation; item ownership remains server-synchronized. */
+    public static Map<String, Supplier<Item>> registeredMaterials() {
+        return java.util.Collections.unmodifiableMap(MATERIALS);
+    }
+
     /** Count registered LOTM materials in the player's complete inventory, including offhand and armor. */
     public static int countMaterials(Player player) {
         if (player == null) return 0;
