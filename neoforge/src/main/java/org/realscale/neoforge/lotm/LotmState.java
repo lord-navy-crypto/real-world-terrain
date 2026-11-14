@@ -9,6 +9,9 @@ public final class LotmState {
     public static final String SPIRIT_KEY = "realscale_lotm_spirituality";
     public static final String PRACTICE_KEY = "realscale_lotm_practice";
     public static final String INSTABILITY_KEY = "realscale_lotm_characteristic_instability";
+    private static String skillMasteryKey(LotmPath path, int slot) {
+        return "realscale_lotm_skill_mastery_" + path.id() + "_" + slot;
+    }
     private LotmState() {}
 
     private static void initialize(Player player, LotmPath path) {
@@ -18,6 +21,7 @@ public final class LotmState {
         tag.putInt(SPIRIT_KEY, LotmBalance.MAX_SPIRIT);
         tag.putInt(PRACTICE_KEY, 0);
         tag.putInt(INSTABILITY_KEY, 0);
+        for (int slot = 1; slot <= 2; slot++) tag.putInt(skillMasteryKey(path, slot), 0);
         if (player instanceof ServerPlayer serverPlayer) LotmPlayerAbilitySync.sync(serverPlayer);
     }
 
@@ -99,6 +103,31 @@ public final class LotmState {
         recordPractice(player, amount);
     }
 
+    public static int skillMastery(Player player, LotmPath path, int slot) {
+        if (path == null || slot < 1 || slot > 2 || LotmPath.of(player) != path) return 0;
+        String key = skillMasteryKey(path, slot);
+        int stored = player.getPersistentData().getInt(key);
+        int bounded = LotmBalance.clampSkillMastery(stored);
+        if (player.getPersistentData().contains(key) && stored != bounded) {
+            player.getPersistentData().putInt(key, bounded);
+        }
+        return bounded;
+    }
+
+    /** Read a pathway manual; this improves an already-authorized skill, never grants an ability. */
+    public static String learnSkillManual(Player player, LotmPath path, int slot) {
+        if (!LotmConfig.ENABLED.get() || !LotmConfig.SKILLS_ENABLED.get()
+                || !LotmConfig.SKILL_BOOKS_ENABLED.get()) return "disabled";
+        if (path == null || slot < 1 || slot > 2 || LotmPath.of(player) != path) return "path";
+        int sequence = sequence(player);
+        if (sequence != 9 && sequence != 8) return "sequence";
+        int cap = sequence == 9 ? 1 : LotmConfig.SKILL_MASTERY_CAP.get();
+        int current = skillMastery(player, path, slot);
+        if (current >= cap) return "mastered";
+        player.getPersistentData().putInt(skillMasteryKey(path, slot), current + 1);
+        return "learned";
+    }
+
     public static boolean consume(Player player, int amount) {
         if (LotmPath.of(player) == null || amount < 0) return false;
         int current = spirit(player);
@@ -121,6 +150,7 @@ public final class LotmState {
 
     public static void copy(Player original, Player clone) {
         LotmHud.copy(original, clone);
+        LotmAppearance.copy(original, clone);
         CompoundTag source = original.getPersistentData();
         if (!source.contains(LotmPath.NBT_PATH)) return;
         CompoundTag target = clone.getPersistentData();
@@ -129,6 +159,12 @@ public final class LotmState {
         target.putInt(SPIRIT_KEY, spirit(original));
         target.putInt(PRACTICE_KEY, practice(original));
         target.putInt(INSTABILITY_KEY, instability(original));
+        LotmPath path = LotmPath.of(original);
+        if (path != null) {
+            for (int slot = 1; slot <= 2; slot++) {
+                target.putInt(skillMasteryKey(path, slot), skillMastery(original, path, slot));
+            }
+        }
         LotmActing.copy(original, clone);
         if (clone instanceof ServerPlayer serverPlayer) LotmPlayerAbilitySync.sync(serverPlayer);
     }
