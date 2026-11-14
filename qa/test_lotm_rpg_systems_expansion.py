@@ -165,5 +165,22 @@ class LotmRpgExpansionTests(unittest.TestCase):
             self.assertIn("/lotm journal", lang["message.realscale.lotm.guide"])
 
 
+    def test_instability_is_bounded_and_status_explains_advancement_requirements(self):
+        balance = (JAVA / "lotm/LotmBalance.java").read_text(encoding="utf-8")
+        state = (JAVA / "lotm/LotmState.java").read_text(encoding="utf-8")
+        commands = (JAVA / "lotm/LotmCommands.java").read_text(encoding="utf-8")
+        self.assertIn("MAX_INSTABILITY = 100", balance)
+        self.assertIn("addInstability(int current, int amount)", balance)
+        self.assertIn("clampInstability(instability) * 2", balance)
+        self.assertIn("LotmBalance.addInstability(tag.getInt(INSTABILITY_KEY), 1)", state)
+        self.assertIn("LotmBalance.clampInstability(stored)", state)
+        self.assertIn("status.digestion_guide", commands)
+        self.assertIn("status.archived", commands)
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            self.assertTrue(lang["message.realscale.lotm.status.digestion_guide"])
+            self.assertTrue(lang["message.realscale.lotm.status.archived"])
+
+
 if __name__ == "__main__":
     unittest.main()
