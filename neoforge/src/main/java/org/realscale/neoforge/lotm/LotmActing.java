@@ -92,7 +92,8 @@ public final class LotmActing {
 
     /** Explosions bypass player block-break events; clear their placement marks explicitly. */
     public static void onExplosionDetonate(ExplosionEvent.Detonate event) {
-        if (!(event.getLevel() instanceof ServerLevel level) || event.getAffectedBlocks().isEmpty()) return;
+        if (event.isCanceled() || !(event.getLevel() instanceof ServerLevel level)
+                || event.getAffectedBlocks().isEmpty()) return;
         LotmResourceProvenance.get(level).consumePlacements(event.getAffectedBlocks());
     }
 
