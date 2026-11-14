@@ -85,7 +85,8 @@ public final class LotmEvents {
             // new vanilla stand-ins are disabled by default.
             id = LotmEcologyRules.DROPS.get(entity.getPersistentData().getString(VARIANT));
         }
-        if (id == null) return;
+        if (id == null || entity.getRandom().nextInt(100)
+                >= LotmConfig.MATERIAL_DROP_CHANCE_PERCENT.get()) return;
         Supplier<Item> material = LotmContent.materialItem(id);
         if (material != null) event.getDrops().add(new ItemEntity(entity.level(),
                 entity.getX(), entity.getY(), entity.getZ(), new ItemStack(material.get())));
@@ -95,6 +96,7 @@ public final class LotmEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         LotmPlayerAbilitySync.periodicSync(player);
         LotmHud.tick(player);
+        LotmAppearance.tick(player);
         LotmPlayerAbilitySync.showPendingTomeMessage(player);
         if (!LotmConfig.ENABLED.get()) {
             return;
