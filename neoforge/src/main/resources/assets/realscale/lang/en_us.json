@@ -129,6 +129,7 @@
   "message.realscale.lotm.advance.sequence": "Advance only one sequence at a time.",
   "message.realscale.lotm.advance.path": "Your existing pathway cannot take this characteristic.",
   "message.realscale.lotm.advance.digestion": "Digest your current potion through practice before advancing.",
+  "message.realscale.lotm.advance.disabled": "LOTM progression is disabled in the server configuration.",
   "message.realscale.lotm.max_rank": "Sequence 8 is the current cap. Sequence 7 is archived.",
   "message.realscale.lotm.config": "Variant frequency: %s%%; relic rarity denominator: %s; Sequence 8 potion digestion: %s; direct Sequence 8 characteristic digestion: %s.",
   "lotm.realscale.materials.seer.8": "Next S8: Hornacis Gray Goat Horn + Face Rose + Arcane Vial + Occult Catalyst; alternatively find and use its matching characteristic from ruins.",
