@@ -24,7 +24,7 @@ class LotmGuiAndCombatTests(unittest.TestCase):
         self.assertIn("RegisterKeyMappingsEvent", client_events)
         for index in range(6):
             self.assertIn(f"selectedTab = {index}", screen)
-        self.assertIn("alchemy_line", screen)
+        self.assertIn("gui.realscale.lotm_panel.alchemy.page", screen)
         self.assertIn("getAllRecipesFor(", screen)
         self.assertIn("recipe.getIngredients()", screen)
         self.assertIn("graphics.renderItem(", screen)
