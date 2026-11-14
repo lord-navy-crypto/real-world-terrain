@@ -45,13 +45,15 @@ public final class LotmSkills {
 
         int detected = slot == 1 ? activatePrimary(player, expectedPath, sequence, mastery)
                 : activateSecondary(player, expectedPath, sequence, mastery);
-        LotmActing.recordSkillUse(player, 2 + (9 - sequence));
+        LotmActing.recordSkillUse(player, 2 + (9 - sequence), slot);
 
-        if (detected > 0) {
-            player.displayClientMessage(Component.translatable(
-                    "message.realscale.lotm.skill.result", detected, LotmState.spirit(player)), true);
-        } else {
-            player.displayClientMessage(Component.translatable("message.realscale.lotm.skill.none"), true);
+        if (LotmPreferences.skillFeedbackEnabled(player)) {
+            if (detected > 0) {
+                player.displayClientMessage(Component.translatable(
+                        "message.realscale.lotm.skill.result", detected, LotmState.spirit(player)), true);
+            } else {
+                player.displayClientMessage(Component.translatable("message.realscale.lotm.skill.none"), true);
+            }
         }
         return true;
     }
