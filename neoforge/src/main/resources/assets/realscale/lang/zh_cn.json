@@ -239,5 +239,7 @@
   "message.realscale.lotm.status.no_accessory": "未装备",
   "message.realscale.lotm.status.accessory": "当前神秘聚焦槽：%s",
   "message.realscale.lotm.status.surcharge": "当前特性失衡带来的技能灵性额外消耗：+%s。",
-  "tooltip.realscale.lotm.potion.first_characteristic": "可在没有先前消化进度的情况下建立该途径并晋升至序列9。"
+  "tooltip.realscale.lotm.potion.first_characteristic": "可在没有先前消化进度的情况下建立该途径并晋升至序列9。",
+  "message.realscale.lotm.status.digestion_guide": "下一步：晋升序列8——调制魔药需要消化值%s/100；直接使用特性需要消化值%s/100。",
+  "message.realscale.lotm.status.archived": "本版本有意封存序列7晋升内容。"
 }
