@@ -36,7 +36,13 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
     private static final RawAnimation BREWING_ANIMATION =
             RawAnimation.begin().thenLoop("animation.realscale.lotm_alchemy_apparatus.brew");
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
-    private int progress, maxProgress;
+    public static final int STATUS_NO_RECIPE = 0;
+    public static final int STATUS_BREWING = 1;
+    public static final int STATUS_WAITING_FUEL = 2;
+    public static final int STATUS_OUTPUT_BLOCKED = 3;
+    public static final int STATUS_DISABLED = 4;
+    public static final int STATUS_UNAVAILABLE = 5;
+    private int progress, maxProgress, machineStatus = STATUS_NO_RECIPE;
     private ResourceLocation activeRecipe;
 
     /** Output can only be written internally; automation and players cannot insert into it. */
@@ -61,18 +67,23 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
 
     private final MachineInventory inventory = new MachineInventory();
     private final ContainerData data = new ContainerData() {
-        @Override public int get(int index) { return index == 0 ? progress : maxProgress; }
+        @Override public int get(int index) {
+            return switch (index) { case 0 -> progress; case 1 -> maxProgress; case 2 -> machineStatus; default -> 0; };
+        }
         @Override public void set(int index, int value) {
             if (index == 0) progress = value;
             else if (index == 1) maxProgress = value;
+            else if (index == 2) machineStatus = value;
         }
-        @Override public int getCount() { return 2; }
+        @Override public int getCount() { return 3; }
     };
 
     public LotmAlchemyBlockEntity(BlockPos pos, BlockState state) {
         super(LotmAlchemyContent.ALCHEMY_BLOCK_ENTITY.get(), pos, state);
     }
     public ItemStackHandler getItemHandler() { return inventory; }
+    public int getMachineStatus() { return machineStatus; }
+    private void setMachineStatus(int status) { machineStatus = status; }
 
     public boolean isBrewing() {
         BlockState state = getBlockState();
@@ -111,6 +122,7 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
         if (!(level instanceof ServerLevel server)) return;
         if (!LotmConfig.ENABLED.get()) {
             machine.setBrewingState(false);
+            machine.setMachineStatus(STATUS_DISABLED);
             return;
         }
         CraftingInput input = CraftingInput.of(2, 2, List.of(
@@ -118,20 +130,30 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
                 machine.inventory.getStackInSlot(2), machine.inventory.getStackInSlot(3)));
         Optional<RecipeHolder<LotmAlchemyRecipe>> match =
                 server.getRecipeManager().getRecipeFor(LotmAlchemyContent.ALCHEMY_RECIPE_TYPE.get(), input, server);
-        if (match.isEmpty()) { machine.resetProgress(); return; }
+        if (match.isEmpty()) { machine.resetProgress(); machine.setMachineStatus(STATUS_NO_RECIPE); return; }
         RecipeHolder<LotmAlchemyRecipe> holder = match.get();
         ItemStack result = holder.value().assemble(input, server.registryAccess());
         if (result.isEmpty() || !(result.getItem() instanceof LotmPotionItem potion)
                 || potion.sequence() < 8 || potion.sequence() > 9) {
             machine.resetProgress();
+            machine.setMachineStatus(STATUS_UNAVAILABLE);
             return;
         }
         int configuredTicks = LotmBalance.alchemyTicks(potion.sequence(),
                 LotmConfig.ALCHEMY_SEQUENCE9_TICKS.get(), LotmConfig.ALCHEMY_SEQUENCE8_TICKS.get());
-        if (configuredTicks <= 0) { machine.resetProgress(); return; }
-        if (machine.inventory.getStackInSlot(FUEL_SLOT).isEmpty()
-                || !machine.canAcceptOutput(result)) {
+        if (configuredTicks <= 0) {
+            machine.resetProgress();
+            machine.setMachineStatus(STATUS_UNAVAILABLE);
+            return;
+        }
+        if (machine.inventory.getStackInSlot(FUEL_SLOT).isEmpty()) {
             machine.setBrewingState(false);
+            machine.setMachineStatus(STATUS_WAITING_FUEL);
+            return;
+        }
+        if (!machine.canAcceptOutput(result)) {
+            machine.setBrewingState(false);
+            machine.setMachineStatus(STATUS_OUTPUT_BLOCKED);
             return;
         }
         if (!holder.id().equals(machine.activeRecipe) || machine.maxProgress <= 0) {
@@ -141,6 +163,7 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
         }
         machine.progress++;
         machine.setBrewingState(true);
+        machine.setMachineStatus(STATUS_BREWING);
         machine.setChanged();
         if (machine.progress < machine.maxProgress) return;
         for (int slot = 0; slot < GRID_SIZE; slot++) {
@@ -159,6 +182,7 @@ public final class LotmAlchemyBlockEntity extends BlockEntity implements MenuPro
         machine.maxProgress = 0;
         machine.activeRecipe = null;
         machine.setBrewingState(false);
+        machine.setMachineStatus(STATUS_NO_RECIPE);
         machine.setChanged();
     }
 
