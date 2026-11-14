@@ -415,7 +415,7 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("filteredJournalEntries()", screen)
         self.assertIn("journalFilter = (journalFilter + 1) % 6", screen)
         self.assertIn("researchKind(source)", screen)
-        self.assertIn('"item".equals(kind) && !"biome".equals(kind)', screen)
+        self.assertIn('!"item".equals(kind) && !"biome".equals(kind)', screen)
         self.assertIn("activeSequence && menu.skillsEnabled()", screen)
         self.assertIn("boolean treeActive = menu.skillsEnabled()", screen)
         self.assertIn("treeActive && menu.sequence() == 8", screen)
