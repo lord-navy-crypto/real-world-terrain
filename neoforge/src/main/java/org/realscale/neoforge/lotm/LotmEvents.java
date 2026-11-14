@@ -25,6 +25,7 @@ import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -98,11 +99,17 @@ public final class LotmEvents {
             if (player.tickCount % 20 == 0) LotmPlayerAbilitySync.sync(player);
             return;
         }
-        if (player.tickCount % 40 != 0) return;
         LotmPath path = LotmPath.of(player);
         if (path == null) return;
         int sequence = LotmState.sequence(player);
         if (sequence < 8 || sequence > 9) return;
+
+        // Sequence 8 passives are deliberately distinct and remain server-authoritative.
+        if (path == LotmPath.SEER && sequence == 8
+                && player.tickCount % 10 == 0 && player.fallDistance >= 2.0F) {
+            player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 60, 0, true, false));
+        }
+        if (player.tickCount % 40 != 0) return;
         LotmActing.onPlayerTick(player);
         // Regenerate discreetly; night-rested Sleepless users regain spirituality faster.
         int recovery = LotmBalance.spiritRecovery(LotmConfig.SPIRIT_RECOVERY.get(),
@@ -110,11 +117,9 @@ public final class LotmEvents {
         if (path == LotmPath.SLEEPLESS && !player.level().isDay()) recovery += 1;
         LotmState.regenerate(player, recovery);
         if (player.tickCount % 80 != 0) return;
-        if (path == LotmPath.SEER && sequence == 8) {
-            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 120, 0, true, false));
-        }
-        if (path == LotmPath.MYSTERY_PRYER && sequence == 8) {
-            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 120, 0, true, false));
+        if (path == LotmPath.MYSTERY_PRYER && sequence == 8
+                && player.level().getBrightness(LightLayer.BLOCK, player.blockPosition()) <= 5) {
+            player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 160, 0, true, false));
         }
         if (path == LotmPath.SLEEPLESS && !player.level().isDay()) {
             player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 260, 0, true, false));
