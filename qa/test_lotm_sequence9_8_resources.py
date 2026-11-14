@@ -31,6 +31,21 @@ def load(path: Path):
 
 class LotmDataGraphTests(unittest.TestCase):
     def test_all_sequence9_and8_promotions_have_normal_and_characteristic_recipes(self):
+        expected_names = set()
+        for path in PATHWAYS:
+            expected_names.update({
+                f\"lotm_{path}_potion.json\",
+                f\"lotm_{path}_s8_potion.json\",
+                f\"lotm_{path}_s9_potion_characteristic.json\",
+                f\"lotm_{path}_s8_potion_characteristic.json\",
+            })
+        actual_names = {p.name for p in (DATA / \"recipe\").glob(\"lotm_*potion*.json\")
+                        if \"_s7_\" not in p.name}
+        self.assertEqual(expected_names, actual_names,
+                         \"The active promotion matrix must contain exactly 16 recipes (4 paths × 2 ranks × 2 routes).\")
+        content_source = (ROOT / \"neoforge/src/main/java/org/realscale/neoforge/lotm/LotmContent.java\").read_text(encoding=\"utf-8\")
+        for locale in (\"en_us\", \"zh_cn\"):
+            lang = load(ASSETS / \"lang\" / f\"{locale}.json\")
         for (path, seq), (a, b) in MATERIALS.items():
             normal_name = f"lotm_{path}_potion.json" if seq == 9 else f"lotm_{path}_s8_potion.json"
             normal = load(DATA / "recipe" / normal_name)
@@ -40,6 +55,9 @@ class LotmDataGraphTests(unittest.TestCase):
             self.assertIn("realscale:lotm_" + b, normal_items)
             self.assertIn("realscale:lotm_empty_vial", normal_items)
             self.assertIn("realscale:lotm_occult_catalyst", normal_items)
+            self.assertEqual(4, len(normal[\"ingredients\"]))
+            self.assertEqual(1, normal[\"result\"][\"count\"])
+            self.assertEqual(4, len(normal_items))
             expected = f"realscale:lotm_{path}_potion" if seq == 9 else f"realscale:lotm_{path}_s8_potion"
             self.assertEqual(expected, normal["result"]["id"])
             alternate = load(DATA / "recipe" / f"lotm_{path}_s{seq}_potion_characteristic.json")
@@ -48,7 +66,24 @@ class LotmDataGraphTests(unittest.TestCase):
             self.assertIn("realscale:lotm_empty_vial", alternate_items)
             self.assertIn("realscale:lotm_occult_catalyst", alternate_items)
             self.assertIn(f"realscale:lotm_{path}_s{seq}_characteristic", alternate_items)
-            self.assertEqual(expected, alternate["result"]["id"])
+            self.assertEqual(expected, alternate[\"result\"][\"id\"])
+            self.assertEqual(3, len(alternate[\"ingredients\"]))
+            self.assertEqual(1, alternate[\"result\"][\"count\"])
+            self.assertEqual(3, len(alternate_items))
+            for recipe in (normal, alternate):
+                for ingredient in recipe[\"ingredients\"]:
+                    item_id = ingredient[\"item\"]
+                    self.assertTrue(item_id.startswith(\"realscale:\"), item_id)
+                    self.assertIn(item_id.split(\":\", 1)[1], content_source,
+                                  f\"Unregistered alchemy ingredient: {item_id}\")
+                output_id = recipe[\"result\"][\"id\"].split(\":\", 1)[1]
+                self.assertTrue((ASSETS / \"models/item\" / f\"{output_id}.json\").is_file(), output_id)
+                for lang in (en, zh):
+                    self.assertTrue(lang.get(\"item.realscale.\" + output_id), output_id)
+            characteristic_id = f\"lotm_{path}_s{seq}_characteristic\"
+            self.assertTrue((ASSETS / \"models/item\" / f\"{characteristic_id}.json\").is_file())
+            for lang in (en, zh):
+                self.assertTrue(lang.get(\"item.realscale.\" + characteristic_id))
 
     def test_geckolib_animation_and_player_abilities_contracts_are_wired(self):
         metadata = (ROOT / "neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text(encoding="utf-8")
