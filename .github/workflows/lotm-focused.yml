@@ -105,6 +105,7 @@ jobs:
                       f"assets/realscale/textures/entity/lotm_{creature}.png",
                       f"assets/realscale/geo/lotm_{creature}.geo.json",
                       f"assets/realscale/animations/lotm_{creature}.animation.json",
+                      f"assets/realscale/models/item/lotm_{creature}_spawn_egg.json",
                   ):
                       assert path in names, f"Missing generated creature asset: {path}"
               for path in (

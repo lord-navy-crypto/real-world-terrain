@@ -46,6 +46,32 @@ class LotmGuiAndCombatTests(unittest.TestCase):
         self.assertIn('.defineInRange("materialDropChancePercent", 40, 0, 100)', config)
         self.assertIn("entity.getRandom().nextInt(100)", drops)
 
+    def test_ten_creature_eggs_are_in_the_creative_tab_and_have_models(self):
+        import importlib.util
+        import tempfile
+        egg_registry = (BASE / "lotm/LotmSpawnEggs.java").read_text()
+        creative = (BASE / "lotm/LotmCreativeTab.java").read_text()
+        mod = (BASE / "RealScaleMod.java").read_text()
+        self.assertIn("DeferredSpawnEggItem(", egg_registry)
+        self.assertIn("LotmSpawnEggs.register(bus)", mod)
+        self.assertIn("LotmSpawnEggs.egg(kind).get()", creative)
+        generator_path = ROOT / "scripts/generate_lotm_visuals.py"
+        spec = importlib.util.spec_from_file_location("lotm_gen_test", generator_path)
+        generator = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(generator)
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            generator.generate(output)
+            for kind in generator.CREATURES:
+                model_path = (output / "assets/realscale/models/item"
+                              / f"lotm_{kind}_spawn_egg.json")
+                self.assertTrue(model_path.is_file(), kind)
+                model = json.loads(model_path.read_text(encoding="utf-8"))
+                self.assertEqual("minecraft:item/template_spawn_egg", model["parent"])
+                for locale in ("en_us", "zh_cn"):
+                    lang = json.loads((LANG / (locale + ".json")).read_text())
+                    self.assertTrue(lang.get(f"item.realscale.lotm_{kind}_spawn_egg"), (locale, kind))
+
     def test_bilingual_gui_labels(self):
         for locale in ("en_us", "zh_cn"):
             lang = json.loads((LANG / (locale + ".json")).read_text())

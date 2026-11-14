@@ -378,5 +378,15 @@
   "gui.realscale.lotm_panel.journal_exploration": "今日探索：%s/%s",
   "gui.realscale.lotm_panel.journal_skill": "今日能力扮演：%s/%s",
   "gui.realscale.lotm_panel.journal_fieldwork": "今日野外采集：%s/%s",
-  "gui.realscale.lotm_panel.journal_discoveries": "独立发现：%s 种"
+  "gui.realscale.lotm_panel.journal_discoveries": "独立发现：%s 种",
+  "item.realscale.lotm_starlit_squid_spawn_egg": "星辉鱿鱼刷怪蛋",
+  "item.realscale.lotm_nightmare_eye_spawn_egg": "噩梦邪眼刷怪蛋",
+  "item.realscale.lotm_night_owl_spawn_egg": "夜枭刷怪蛋",
+  "item.realscale.lotm_black_spotted_frog_spawn_egg": "黑斑青蛙刷怪蛋",
+  "item.realscale.lotm_shroudman_spawn_egg": "布套人刷怪蛋",
+  "item.realscale.lotm_hornacis_goat_spawn_egg": "霍纳奇斯灰山羊刷怪蛋",
+  "item.realscale.lotm_ironarm_beast_spawn_egg": "铁臂兽刷怪蛋",
+  "item.realscale.lotm_four_eyed_turtle_spawn_egg": "四眼绿龟刷怪蛋",
+  "item.realscale.lotm_crimson_howler_spawn_egg": "红月咆哮者刷怪蛋",
+  "item.realscale.lotm_death_crow_spawn_egg": "告死乌鸦刷怪蛋"
 }
