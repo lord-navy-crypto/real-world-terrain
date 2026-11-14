@@ -32,7 +32,8 @@ public final class LotmState {
         tag.putInt(LotmPath.NBT_SEQUENCE, sequence);
         tag.putInt(PRACTICE_KEY, 0);
         tag.putInt(SPIRIT_KEY, direct ? 30 : LotmBalance.MAX_SPIRIT);
-        if (direct) tag.putInt(INSTABILITY_KEY, tag.getInt(INSTABILITY_KEY) + 1);
+        if (direct) tag.putInt(INSTABILITY_KEY,
+                LotmBalance.addInstability(tag.getInt(INSTABILITY_KEY), 1));
         if (player instanceof ServerPlayer serverPlayer) LotmPlayerAbilitySync.sync(serverPlayer);
     }
 
@@ -42,7 +43,13 @@ public final class LotmState {
     }
 
     public static int instability(Player player) {
-        return player.getPersistentData().getInt(INSTABILITY_KEY);
+        CompoundTag tag = player.getPersistentData();
+        int stored = tag.getInt(INSTABILITY_KEY);
+        int bounded = LotmBalance.clampInstability(stored);
+        if (tag.contains(INSTABILITY_KEY) && stored != bounded) {
+            tag.putInt(INSTABILITY_KEY, bounded);
+        }
+        return bounded;
     }
 
     /** Reduce accumulated direct-characteristic instability without going below zero. */
