@@ -324,5 +324,21 @@
   "lotm.realscale.skill_manuals.corpse_collector.8.1": "Manual I: Death Crow Eye + Spirit Ember + Occult Catalyst + Book.",
   "lotm.realscale.skill_manuals.corpse_collector.8.2": "Manual II: Graveyard Blood Rose + Stability Sigil + Occult Catalyst + Book.",
   "lotm.realscale.skill_manuals.corpse_collector.9.1": "Manual I: Black-Spotted Frog Token + Spirit Ember + Occult Catalyst + Book.",
-  "lotm.realscale.skill_manuals.corpse_collector.9.2": "Manual II: Shroudman Crystal + Stability Sigil + Occult Catalyst + Book."
+  "lotm.realscale.skill_manuals.corpse_collector.9.2": "Manual II: Shroudman Crystal + Stability Sigil + Occult Catalyst + Book.",
+  "gui.realscale.lotm_panel.skill.seer.1.name": "Spirit Vision",
+  "gui.realscale.lotm_panel.skill.seer.1.description": "Reveal nearby supernatural beings.",
+  "gui.realscale.lotm_panel.skill.seer.2.name": "Dream Omen",
+  "gui.realscale.lotm_panel.skill.seer.2.description": "Sense the direction of nearby occult traces.",
+  "gui.realscale.lotm_panel.skill.mystery_pryer.1.name": "Occult Survey",
+  "gui.realscale.lotm_panel.skill.mystery_pryer.1.description": "Locate nearby supernatural minerals and flora.",
+  "gui.realscale.lotm_panel.skill.mystery_pryer.2.name": "Signature Reading",
+  "gui.realscale.lotm_panel.skill.mystery_pryer.2.description": "Reveal the aura of nearby occult creatures.",
+  "gui.realscale.lotm_panel.skill.sleepless.1.name": "Night Watch",
+  "gui.realscale.lotm_panel.skill.sleepless.1.description": "Track nearby hostile creatures and threats.",
+  "gui.realscale.lotm_panel.skill.sleepless.2.name": "Nocturnal Focus",
+  "gui.realscale.lotm_panel.skill.sleepless.2.description": "Improve sight and movement in darkness.",
+  "gui.realscale.lotm_panel.skill.corpse_collector.1.name": "Undead Sense",
+  "gui.realscale.lotm_panel.skill.corpse_collector.1.description": "Reveal and weaken nearby undead.",
+  "gui.realscale.lotm_panel.skill.corpse_collector.2.name": "Shroud Ward",
+  "gui.realscale.lotm_panel.skill.corpse_collector.2.description": "Gain a brief defensive and recovery ward."
 }
