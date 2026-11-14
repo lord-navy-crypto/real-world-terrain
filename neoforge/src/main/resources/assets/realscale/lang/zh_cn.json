@@ -324,5 +324,21 @@
   "lotm.realscale.skill_manuals.corpse_collector.8.1": "手册I：告死乌鸦之眼＋灵性火种＋神秘学催化符＋书本。",
   "lotm.realscale.skill_manuals.corpse_collector.8.2": "手册II：墓园血玫瑰＋稳定符印＋神秘学催化符＋书本。",
   "lotm.realscale.skill_manuals.corpse_collector.9.1": "手册I：黑斑青蛙信物＋灵性火种＋神秘学催化符＋书本。",
-  "lotm.realscale.skill_manuals.corpse_collector.9.2": "手册II：布套人结晶＋稳定符印＋神秘学催化符＋书本。"
+  "lotm.realscale.skill_manuals.corpse_collector.9.2": "手册II：布套人结晶＋稳定符印＋神秘学催化符＋书本。",
+  "gui.realscale.lotm_panel.skill.seer.1.name": "灵视",
+  "gui.realscale.lotm_panel.skill.seer.1.description": "显现附近的超凡生物。",
+  "gui.realscale.lotm_panel.skill.seer.2.name": "梦境预兆",
+  "gui.realscale.lotm_panel.skill.seer.2.description": "感知附近神秘痕迹的大致方位。",
+  "gui.realscale.lotm_panel.skill.mystery_pryer.1.name": "神秘学勘察",
+  "gui.realscale.lotm_panel.skill.mystery_pryer.1.description": "寻找附近的超凡矿物与植物。",
+  "gui.realscale.lotm_panel.skill.mystery_pryer.2.name": "灵性辨识",
+  "gui.realscale.lotm_panel.skill.mystery_pryer.2.description": "显现附近超凡生物的灵性特征。",
+  "gui.realscale.lotm_panel.skill.sleepless.1.name": "夜巡",
+  "gui.realscale.lotm_panel.skill.sleepless.1.description": "追踪附近的敌对生物与威胁。",
+  "gui.realscale.lotm_panel.skill.sleepless.2.name": "夜行专注",
+  "gui.realscale.lotm_panel.skill.sleepless.2.description": "在黑暗中提升视野与行动能力。",
+  "gui.realscale.lotm_panel.skill.corpse_collector.1.name": "亡灵感知",
+  "gui.realscale.lotm_panel.skill.corpse_collector.1.description": "显现并削弱附近的亡灵。",
+  "gui.realscale.lotm_panel.skill.corpse_collector.2.name": "灵性帷幕",
+  "gui.realscale.lotm_panel.skill.corpse_collector.2.description": "获得短暂的防护与恢复效果。"
 }
