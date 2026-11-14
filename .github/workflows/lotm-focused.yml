@@ -3,7 +3,7 @@ name: LOTM focused validation and test JAR
 on:
   push:
     branches:
-      - feature/lotm-sequence9-pilot-20261111
+      - lotm-focused-test-20261114
     paths:
       - "neoforge/src/main/java/org/realscale/neoforge/lotm/**"
       - "neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java"

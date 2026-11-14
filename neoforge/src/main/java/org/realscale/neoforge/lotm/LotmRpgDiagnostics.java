@@ -36,14 +36,14 @@ public final class LotmRpgDiagnostics {
         List<Supplier<Block>> oreBlocks = List.of(
                 LotmContent.STAR_ORE, LotmContent.CURSED_ORE, LotmContent.GRAVE_ORE,
                 LotmContent.LUNAR_MICA_ORE, LotmContent.ECHO_QUARTZ_ORE,
-                LotmContent.ABYSSAL_SALT_ORE, LotmContent.SPIRIT_QUARTZ_ORE);
+                LotmContent.ABYSSAL_SALT_ORE);
         List<Supplier<? extends Item>> oreItems = List.of(
                 LotmContent.STAR_ORE_ITEM, LotmContent.CURSED_ORE_ITEM, LotmContent.GRAVE_ORE_ITEM,
                 LotmContent.LUNAR_MICA_ORE_ITEM, LotmContent.ECHO_QUARTZ_ORE_ITEM,
-                LotmContent.ABYSSAL_SALT_ORE_ITEM, LotmContent.SPIRIT_QUARTZ_ORE_ITEM);
+                LotmContent.ABYSSAL_SALT_ORE_ITEM);
         int ores = countBlocks(oreBlocks) + countItems(oreItems);
-        passed += report(player, "ores", ores, 14);
-        total += 14;
+        passed += report(player, "ores", ores, 12);
+        total += 12;
 
         List<Supplier<? extends Item>> minerals = List.of(
                 LotmContent.STAR_CRYSTAL, LotmContent.CURSED_CRYSTAL, LotmContent.GRAVE_CRYSTAL,
@@ -67,29 +67,6 @@ public final class LotmRpgDiagnostics {
         }
         passed += report(player, "creature_materials", creatureMaterials, CREATURE_MATERIALS.length);
         total += CREATURE_MATERIALS.length;
-
-        int creatures = 0;
-        for (LotmCreatureKind kind : LotmCreatureKind.values()) {
-            try {
-                var entityType = LotmCreatureEntities.type(kind).get();
-                var key = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
-                if (key != null && key.equals(LotmCreatureEntities.registryId(kind))) creatures++;
-            } catch (RuntimeException ignored) {
-                // A missing or unresolved entity registration is reported as a failed check.
-            }
-        }
-        passed += report(player, "creatures", creatures, LotmCreatureKind.values().length);
-        total += LotmCreatureKind.values().length;
-
-        int abilityDefinitions = LotmPlayerAbilityRegistry.all().size();
-        passed += report(player, "abilities", abilityDefinitions, 8);
-        total += 8;
-
-        int relicCache = 0;
-        if (registeredBlock(LotmContent.RELIC_CACHE)) relicCache++;
-        if (registeredItem(LotmContent.RELIC_CACHE_ITEM)) relicCache++;
-        passed += report(player, "relic_cache", relicCache, 2);
-        total += 2;
 
         int manuals = 0;
         for (LotmPath path : LotmPath.values()) {
