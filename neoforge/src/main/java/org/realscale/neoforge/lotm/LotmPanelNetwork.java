@@ -14,8 +14,8 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
- * One-way, zero-argument GUI request. No pathways, resources or cooldowns can be
- * modified by the client; all gameplay values are read on the server.
+ * The client can only request the panel with an empty payload. Progression and
+ * discovery data remain server-owned; the client receives a bounded read-only journal snapshot.
  */
 public final class LotmPanelNetwork {
     private static volatile List<String> clientResearchEntries = List.of();
