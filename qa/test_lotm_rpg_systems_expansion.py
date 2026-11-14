@@ -256,6 +256,9 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("displayClientMessage(line, true)", hud)
         self.assertIn("LotmHud.tick(player)", events)
         self.assertIn("LotmHud.toggle(player)", commands)
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            self.assertIn("/lotm hud", lang["message.realscale.lotm.guide"])
         self.assertIn("LotmHud.copy(original, clone)", (JAVA / "lotm/LotmState.java").read_text(encoding="utf-8"))
         for locale in ("en_us", "zh_cn"):
             lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
