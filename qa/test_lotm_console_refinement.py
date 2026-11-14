@@ -48,10 +48,13 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn('case "verified" -> 3', acting)
         self.assertIn("recordJournalEvent(Player player, String category, String status, String sourceId)", acting)
         self.assertIn("journalEntries(Player player)", acting)
-        self.assertIn("statusRank(status) <= statusRank(old[3])", acting)
+        self.assertIn("statusRank(status) <= existingRank", acting)
+        self.assertIn("existingRank = Math.max(existingRank, statusRank(old[3]))", acting)
         self.assertIn("LotmActing.journalEntries(player)", network)
         self.assertIn("event|" , acting)
         self.assertIn("LotmPanelNetwork.syncResearchLog(serverPlayer)", acting)
+        self.assertIn("all.size() - 128", network)
+        self.assertIn("ByteBufCodecs.list(128)", network)
 
     def test_journal_records_actual_potion_alchemy_material_and_skill_events(self):
         potion = (LOTM / "LotmPotionItem.java").read_text(encoding="utf-8")
@@ -80,7 +83,10 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn("LotmPreferences.copy(original, clone)", state)
         self.assertIn("BUTTON_TOGGLE_JOURNAL_NOTIFICATIONS", menu)
         self.assertIn("LotmPreferences.soundEnabled(player)", potion)
+        self.assertIn("LotmAppearance.enabled(player) && LotmConfig.APPEARANCE_EFFECTS.get()", potion)
         self.assertIn("LotmPreferences.skillFeedbackEnabled(player)", skills)
+        self.assertIn("SoundEvents.ENCHANTMENT_TABLE_USE", skills)
+        self.assertIn("LotmAppearance.enabled(player) && LotmConfig.APPEARANCE_EFFECTS.get()", skills)
 
     def test_client_panel_preferences_are_registered_and_applied(self):
         config = (LOTM / "client/LotmClientConfig.java").read_text(encoding="utf-8")
