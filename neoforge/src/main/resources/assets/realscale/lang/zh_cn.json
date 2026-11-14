@@ -219,5 +219,8 @@
   "message.realscale.lotm.guide.flora": "超凡植物：午夜美人花、人脸玫瑰、摄魂风铃花和墓园血玫瑰在特定群系低频生成，是序列9/8魔药配方材料。建议在野外采集不同种类；玩家自行放置再挖掉的花不会提供野外研究消化。",
   "message.realscale.lotm.guide.minerals": "超凡矿物：六种开放矿石分别为星晶、受诅晶、冥灵晶、月辉云母、回响石英和深渊盐晶，各有地下群系分布。采集遵循镐类工具、精准采集与时运规则。灵界晶矿属于封存的序列7，不会自然生成。",
   "message.realscale.lotm.guide.alchemy": "炼金：在神秘学炼药装置的四个输入格放入配方材料，将灵性火种放入燃料槽，并留出输出空间。序列9默认炼制120刻，序列8默认240刻。完整非凡特性可以在对应替代配方中取代主要材料。",
-  "message.realscale.lotm.guide.progression": "成长：使用序列9魔药开启途径，通过探索新群系、技能运用、首次研究线索及野外资源采集积累消化进度，再炼制同途径序列8魔药晋升。各类别周期上限为12、8、9、6，总计35。可用 /lotm acting、skills、materials、journal 查看状态。"
+  "message.realscale.lotm.guide.progression": "成长：使用序列9魔药开启途径，通过探索新群系、技能运用、首次研究线索及野外资源采集积累消化进度，再炼制同途径序列8魔药晋升。各类别周期上限为12、8、9、6，总计35。可用 /lotm acting、skills、materials、journal 查看状态。",
+  "tooltip.realscale.lotm.spirit_focus.effect": "装备时：每40个服务器刻额外恢复1点灵性。",
+  "tooltip.realscale.lotm.divination_pendulum.effect": "占卜家装备时：辅助技能消耗减少4点灵性，预兆探查范围增加2格。",
+  "tooltip.realscale.lotm.curio_exclusive_slot": "占用唯一的神秘聚焦槽，不能与另一件聚焦饰品同时装备。"
 }
