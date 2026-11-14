@@ -59,10 +59,10 @@ Four optional shapeless crafts were added. None removes or changes existing reci
 Ingredients additionally require mundane Minecraft materials and sometimes other occult minerals. Flower gathering remains meaningful for potion progression, so these alternate paths represent a tradeoff rather than free output.
 
 ### 5. Distinct pathway roles
-- Mystery Pryer primary stays a geology/botanical scan; secondary now highlights supernatural creatures and studies first sightings, with short night vision.
-- Corpse Collector primary still detects/weakens undead; secondary now provides a bounded protective and restorative window, instead of repeating the detection pulse.
-- Seer and Sleepless paths keep their existing main/secondary identity.
-
+- Mystery Pryer primary surveys occult geology/botany; secondary highlights supernatural creatures and studies first sightings.
+- Corpse Collector primary detects/weakens undead; secondary grants a bounded protective and restorative window.
+- Sequence 8 passives are now distinct: Seer automatically slows descent after a meaningful fall; Mystery Pryer gains night vision in dark places; Sleepless keeps its night vision/mobility advantage; Corpse Collector resists freezing.
+- These passives are server-authoritative and described in both localizations.
 ### 6. Documentation, localization and quality checks
 - New `/lotm journal` shows recent discovered creature/block names and research progress.
 - `/lotm guide creatures|flora|minerals|alchemy|progression` provides bilingual guidance.
