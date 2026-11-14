@@ -96,6 +96,18 @@ public final class LotmBalance {
         return (sequence == 8 ? 12 : 10) + (hasPendulum ? 2 : 0);
     }
 
+    /** Skill manuals improve cost efficiency without bypassing sequence or pathway checks. */
+    public static int clampSkillMastery(int mastery) {
+        return clamp(mastery, 2);
+    }
+
+    public static int skillCostWithMastery(int baseCost, int mastery, int costPercent) {
+        int discount = Math.min(2, clampSkillMastery(mastery));
+        int discounted = Math.max(1, Math.max(1, baseCost) - discount);
+        int percent = Math.max(25, Math.min(200, costPercent));
+        return Math.max(1, (discounted * percent + 99) / 100);
+    }
+
     public static int skillCooldownTicks(int slot, int sequence) {
         if (sequence < 8 || sequence > 9) return Integer.MAX_VALUE;
         return switch (slot) {
