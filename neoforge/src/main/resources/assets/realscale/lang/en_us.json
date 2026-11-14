@@ -409,5 +409,6 @@
   "gui.realscale.lotm_panel.alchemy.inputs": "Inputs (2x2)",
   "gui.realscale.lotm_panel.alchemy.fuel": "Fuel",
   "gui.realscale.lotm_panel.alchemy.result": "Result",
-  "gui.realscale.lotm_panel.alchemy.fuel_note": "Use a placed alchemy apparatus to brew."
+  "gui.realscale.lotm_panel.alchemy.fuel_note": "Use a placed alchemy apparatus to brew.",
+  "gui.realscale.lotm_alchemy.progress": "%s%% · %ss"
 }

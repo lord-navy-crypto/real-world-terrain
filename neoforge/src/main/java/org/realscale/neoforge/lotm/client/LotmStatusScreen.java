@@ -117,6 +117,36 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         if (nextRecipe != null) nextRecipe.visible = selectedTab == 3 && alchemyRecipes.size() > 1;
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
+        renderRecipeItemTooltip(graphics, mouseX, mouseY);
+    }
+
+    /** Tooltips identify the actual ingredients and output in the recipe browser. */
+    private void renderRecipeItemTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (selectedTab != 3 || alchemyRecipes.isEmpty()
+                || minecraft == null || minecraft.level == null) return;
+        LotmAlchemyRecipe recipe = alchemyRecipes.get(recipeIndex).value();
+        int ingredientIndex = 0;
+        for (Ingredient ingredient : recipe.getIngredients()) {
+            if (ingredientIndex >= 4) break;
+            int x = leftPos + 22 + (ingredientIndex % 2) * 23;
+            int y = topPos + 86 + (ingredientIndex / 2) * 23;
+            if (mouseX >= x && mouseX < x + 16 && mouseY >= y && mouseY < y + 16) {
+                ItemStack[] choices = ingredient.getItems();
+                if (choices.length > 0) graphics.renderTooltip(font, choices[0], mouseX, mouseY);
+                return;
+            }
+            ingredientIndex++;
+        }
+        int fuelX = leftPos + 120, fuelY = topPos + 100;
+        if (mouseX >= fuelX && mouseX < fuelX + 16 && mouseY >= fuelY && mouseY < fuelY + 16) {
+            graphics.renderTooltip(font, new ItemStack(LotmContent.SPIRIT_EMBER.get()), mouseX, mouseY);
+            return;
+        }
+        int outputX = leftPos + 195, outputY = topPos + 100;
+        if (mouseX >= outputX && mouseX < outputX + 16 && mouseY >= outputY && mouseY < outputY + 16) {
+            ItemStack result = recipe.getResultItem(minecraft.level.registryAccess());
+            if (!result.isEmpty()) graphics.renderTooltip(font, result, mouseX, mouseY);
+        }
     }
 
     @Override protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {

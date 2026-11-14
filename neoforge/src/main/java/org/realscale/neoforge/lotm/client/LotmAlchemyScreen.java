@@ -23,9 +23,23 @@ public final class LotmAlchemyScreen extends AbstractContainerScreen<LotmAlchemy
         g.drawString(font,Component.translatable("gui.realscale.lotm_alchemy.grid"),8,23,0xFFCBBBDD,false);
         g.drawString(font,Component.translatable("gui.realscale.lotm_alchemy.fuel"),88,23,0xFFCBBBDD,false);
         g.drawString(font,Component.translatable("gui.realscale.lotm_alchemy.output"),139,23,0xFFCBBBDD,false);
-        if(menu.getMaxProgress()>0) g.drawString(font,Component.translatable("gui.realscale.lotm_alchemy.processing"),88,66,0xFFD8C8EA,false);
+        int max = menu.getMaxProgress();
+        if (max > 0) {
+            int progress = Math.max(0, Math.min(max, menu.getProgress()));
+            int percent = (int) Math.min(100L, 100L * progress / max);
+            int remainingSeconds = (max - progress + 19) / 20;
+            g.drawString(font, Component.translatable(
+                    "gui.realscale.lotm_alchemy.progress", percent, remainingSeconds),
+                    88, 66, 0xFFD8C8EA, false);
+        }
         Component status = Component.translatable("gui.realscale.lotm_alchemy.status." + menu.getMachineStatus());
-        g.drawString(font, font.plainSubstrByWidth(status.getString(), 82), 8, 84, 0xFFD8C8EA, false);
+        int statusColor = switch (menu.getMachineStatus()) {
+            case 1 -> 0xFF93D9BB;
+            case 2, 3 -> 0xFFFFCC80;
+            case 4, 5 -> 0xFFED9BA4;
+            default -> 0xFFD8C8EA;
+        };
+        g.drawString(font, font.plainSubstrByWidth(status.getString(), 160), 8, 84, statusColor, false);
         g.drawString(font,Component.translatable("container.inventory"),8,101,0xFFE9DDF6,false);
     }
 }
