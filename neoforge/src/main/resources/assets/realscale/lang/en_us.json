@@ -299,7 +299,7 @@
   "gui.realscale.lotm_panel.setting.appearance": "Aura effects: %s",
   "gui.realscale.lotm_panel.setting.creatures": "Independent creatures: %s",
   "gui.realscale.lotm_panel.setting.skill_cost": "Skill cost scale: %s%%",
-  "gui.realscale.lotm_panel.setting.drop_rate": "Creature material drops: %s%%",
+  "gui.realscale.lotm_panel.setting.drop_rate": "Material drops S9: %s%% / S8: %s%%",
   "gui.realscale.lotm_panel.setting.hud": "Your HUD preference: %s",
   "gui.realscale.lotm_panel.setting.aura": "Your aura preference: %s",
   "gui.realscale.lotm_panel.tab.materials": "Items",
