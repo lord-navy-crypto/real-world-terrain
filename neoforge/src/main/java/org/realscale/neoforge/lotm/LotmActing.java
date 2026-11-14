@@ -20,6 +20,8 @@ public final class LotmActing {
     private static final String RESEARCH_PREFIX = "realscale_lotm_research_seen_";
     private static final String JOURNAL_PREFIX = "realscale_lotm_research_journal_";
     private static final String JOURNAL_MIGRATED_PREFIX = "realscale_lotm_research_journal_migrated_";
+    private static final String EVENT_JOURNAL_PREFIX = "realscale_lotm_event_journal_";
+    private static final int MAX_EVENT_JOURNAL_ENTRIES = 128;
     private static final int MAX_RESEARCH_JOURNAL_ENTRIES = 128;
     private static final int MAX_RESEARCH_SOURCE_LENGTH = 256;
     private LotmActing() {}
@@ -45,6 +47,15 @@ public final class LotmActing {
     }
 
     public static void recordSkillUse(Player player, int points) { award(player, "skill", points); }
+
+    public static void recordSkillUse(Player player, int points, int slot) {
+        award(player, "skill", points);
+        LotmPath path = LotmPath.of(player);
+        if (path != null && slot >= 1 && slot <= 2) {
+            recordJournalEvent(player, "skill", "verified",
+                    path.id() + ":" + LotmState.sequence(player) + ":" + slot);
+        }
+    }
     /**
      * Record a clue independently of digestion rewards. A full daily cap must never
      * erase a discovery from the journal; reward eligibility is tracked per sequence.
@@ -81,8 +92,8 @@ public final class LotmActing {
             }
         }
 
-        if (newlyRecorded && player instanceof ServerPlayer serverPlayer) {
-            LotmPanelNetwork.syncResearchLog(serverPlayer);
+        if (newlyRecorded) {
+            recordJournalEvent(player, researchCategory(boundedId), "discovered", boundedId);
         }
         return reward;
     }
@@ -140,6 +151,109 @@ public final class LotmActing {
         return journal;
     }
 
+    private static String eventJournalKey(LotmPath path) {
+        return EVENT_JOURNAL_PREFIX + path.id();
+    }
+
+    private static String researchCategory(String source) {
+        int separator = source.indexOf(':');
+        if (separator <= 0) return "other";
+        String kind = source.substring(0, separator);
+        return switch (kind) {
+            case "entity", "block", "item", "biome" -> kind;
+            default -> "other";
+        };
+    }
+
+    private static String[] parseJournalEvent(String value) {
+        if (value == null) return null;
+        String[] parts = value.split("\\|", 5);
+        return parts.length == 5 && "event".equals(parts[0]) ? parts : null;
+    }
+
+    private static int statusRank(String status) {
+        return switch (status) {
+            case "discovered" -> 1;
+            case "incomplete" -> 2;
+            case "verified" -> 3;
+            default -> 0;
+        };
+    }
+
+    private static long journalGameTime(Player player) {
+        return player instanceof ServerPlayer server && server.getServer() != null
+                ? server.getServer().overworld().getGameTime() : player.level().getGameTime();
+    }
+
+    /**
+     * Upsert one typed journal entry. A verified result can advance an earlier
+     * discovery/incomplete record, but a later duplicate cannot downgrade it.
+     */
+    public static void recordJournalEvent(Player player, String category, String status, String sourceId) {
+        LotmPath path = LotmPath.of(player);
+        if (!isActive(player) || path == null || sourceId == null || sourceId.isBlank()) return;
+        if (!List.of("entity", "block", "item", "biome", "material", "potion",
+                "alchemy", "skill", "pathway", "other").contains(category)
+                || statusRank(status) == 0) return;
+
+        String id = sourceId.replace("|", "/");
+        if (id.length() > 190) id = id.substring(0, 190);
+        CompoundTag tag = player.getPersistentData();
+        String key = eventJournalKey(path);
+        ListTag journal = tag.getList(key, Tag.TAG_STRING);
+        boolean changed = false;
+        for (int index = journal.size() - 1; index >= 0; index--) {
+            String[] old = parseJournalEvent(journal.getString(index));
+            if (old == null || !category.equals(old[2]) || !id.equals(old[4])) continue;
+            if (statusRank(status) <= statusRank(old[3])) return;
+            journal.remove(index);
+            changed = true;
+        }
+
+        long time = Math.max(0L, journalGameTime(player));
+        journal.add(StringTag.valueOf("event|" + time + "|" + category + "|" + status + "|" + id));
+        while (journal.size() > MAX_EVENT_JOURNAL_ENTRIES) journal.remove(0);
+        tag.put(key, journal);
+
+        if (player instanceof ServerPlayer serverPlayer) {
+            if (changed && LotmPreferences.journalNotificationsEnabled(player)
+                    && List.of("material", "potion", "alchemy", "skill", "pathway").contains(category)) {
+                serverPlayer.displayClientMessage(Component.translatable(
+                        "message.realscale.lotm.journal.updated",
+                        Component.translatable("message.realscale.lotm.journal.category." + category),
+                        Component.translatable("message.realscale.lotm.journal.status." + status)), true);
+            }
+            LotmPanelNetwork.syncResearchLog(serverPlayer);
+        }
+    }
+
+    /** Typed journal snapshot plus migrated legacy clues; each item carries game time, category and status. */
+    public static List<String> journalEntries(Player player) {
+        LotmPath path = LotmPath.of(player);
+        if (path == null) return List.of();
+        List<String> entries = new ArrayList<>();
+        ListTag journal = player.getPersistentData().getList(eventJournalKey(path), Tag.TAG_STRING);
+        for (int index = 0; index < journal.size(); index++) {
+            String value = journal.getString(index);
+            if (parseJournalEvent(value) != null) entries.add(value);
+        }
+        ListTag legacy = loadResearchJournal(player, path);
+        for (int index = 0; index < legacy.size(); index++) {
+            String source = legacy.getString(index);
+            String category = researchCategory(source);
+            boolean exists = false;
+            for (String value : entries) {
+                String[] parts = parseJournalEvent(value);
+                if (parts != null && category.equals(parts[2]) && source.equals(parts[4])) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) entries.add("event|0|" + category + "|discovered|" + source.replace("|", "/"));
+        }
+        return List.copyOf(entries);
+    }
+
     /** Pathway-wide journal history survives sequence changes and death/respawn. */
     public static List<String> researchDiscoveries(Player player) {
         LotmPath path = LotmPath.of(player);
@@ -164,7 +278,12 @@ public final class LotmActing {
                 || event.isCanceled() || !isFieldworkBlock(event.getState().getBlock())) return;
         // Always clear the mark on breaking, even for a non-Beyonder or a creative player.
         if (LotmResourceProvenance.get(level).consumePlacement(event.getPos())) return;
-        if (!player.isCreative() && isActive(player)) award(player, "fieldwork", 2);
+        if (!player.isCreative() && isActive(player)) {
+            award(player, "fieldwork", 2);
+            String blockId = net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                    .getKey(event.getState().getBlock()).toString();
+            recordJournalEvent(player, "material", "verified", blockId);
+        }
     }
 
     /**
@@ -275,6 +394,8 @@ public final class LotmActing {
         for (LotmPath path : LotmPath.values()) {
             String journalKey = researchJournalKey(path);
             String migrationKey = researchMigrationKey(path);
+            String eventJournalKey = eventJournalKey(path);
+            if (source.contains(eventJournalKey)) target.put(eventJournalKey, source.get(eventJournalKey).copy());
             if (source.contains(journalKey)) target.put(journalKey, source.get(journalKey).copy());
             if (source.contains(migrationKey)) target.put(migrationKey, source.get(migrationKey).copy());
             for (int sequence : new int[] {9, 8}) {
