@@ -86,7 +86,8 @@ public final class LotmBalance {
 
     /** A worn Spirit Focus adds one point to each normal recovery interval. */
     public static int spiritRecovery(int configuredAmount, boolean hasSpiritFocus) {
-        return Math.max(0, configuredAmount) + (hasSpiritFocus ? 1 : 0);
+        long recovery = (long) Math.max(0, configuredAmount) + (hasSpiritFocus ? 1 : 0);
+        return (int) Math.min(Integer.MAX_VALUE, recovery);
     }
 
     /** The Pendulum modestly extends the Seer's coarse local omen survey. */
@@ -128,10 +129,14 @@ public final class LotmBalance {
 
     /** Omen orientation is deliberately coarse: no omniscience at Sequence 9. */
     public static String bearing(int dx, int dz, int dy) {
-        if (Math.abs(dy) > 5 && Math.abs(dy) > Math.max(Math.abs(dx), Math.abs(dz))) {
+        // Cast before abs: Math.abs(Integer.MIN_VALUE) would remain negative.
+        long horizontalX = Math.abs((long) dx);
+        long horizontalZ = Math.abs((long) dz);
+        long vertical = Math.abs((long) dy);
+        if (vertical > 5 && vertical > Math.max(horizontalX, horizontalZ)) {
             return dy > 0 ? "up" : "down";
         }
-        if (Math.abs(dx) > Math.abs(dz)) return dx > 0 ? "east" : "west";
+        if (horizontalX > horizontalZ) return dx > 0 ? "east" : "west";
         if (dz != 0) return dz > 0 ? "south" : "north";
         return "near";
     }
