@@ -4,6 +4,8 @@ package org.realscale.neoforge.lotm;
 public final class LotmBalance {
     public static final int MAX_SPIRIT = 100;
     public static final int MAX_PRACTICE = 100;
+    /** Persistent sanity ceiling; gameplay surcharge saturates much earlier. */
+    public static final int MAX_INSTABILITY = 100;
     private LotmBalance() {}
 
     public static int clamp(int value, int maximum) {
@@ -16,6 +18,17 @@ public final class LotmBalance {
 
     public static int practice(int current, int amount) {
         return clamp(current + Math.max(amount, 0), MAX_PRACTICE);
+    }
+
+    /** Normalize old or malformed persistent values before they reach gameplay. */
+    public static int clampInstability(int value) {
+        return clamp(value, MAX_INSTABILITY);
+    }
+
+    /** Saturating addition avoids integer overflow in long-lived or edited saves. */
+    public static int addInstability(int current, int amount) {
+        long total = (long) clampInstability(current) + Math.max(0, amount);
+        return (int) Math.min(MAX_INSTABILITY, total);
     }
 
     public static int focusCost(String pathway) {
@@ -63,7 +76,7 @@ public final class LotmBalance {
 
     /** One direct characteristic leaves a mild trace; the surcharge is capped and reversible. */
     public static int instabilitySurcharge(int instability) {
-        return Math.min(8, Math.max(0, instability) * 2);
+        return Math.min(8, clampInstability(instability) * 2);
     }
 
     /** A worn Spirit Focus adds one point to each normal recovery interval. */
