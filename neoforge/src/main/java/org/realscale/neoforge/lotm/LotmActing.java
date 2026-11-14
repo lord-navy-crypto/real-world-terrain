@@ -4,6 +4,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import java.util.ArrayList;
 import java.util.List;
@@ -241,15 +242,17 @@ public final class LotmActing {
         for (int index = 0; index < legacy.size(); index++) {
             String source = legacy.getString(index);
             String category = researchCategory(source);
+            String bounded = source.replace("|", "/");
+            if (bounded.length() > 190) bounded = bounded.substring(0, 190);
             boolean exists = false;
             for (String value : entries) {
                 String[] parts = parseJournalEvent(value);
-                if (parts != null && category.equals(parts[2]) && source.equals(parts[4])) {
+                if (parts != null && category.equals(parts[2]) && bounded.equals(parts[4])) {
                     exists = true;
                     break;
                 }
             }
-            if (!exists) entries.add("event|0|" + category + "|discovered|" + source.replace("|", "/"));
+            if (!exists) entries.add("event|0|" + category + "|discovered|" + bounded);
         }
         return List.copyOf(entries);
     }
