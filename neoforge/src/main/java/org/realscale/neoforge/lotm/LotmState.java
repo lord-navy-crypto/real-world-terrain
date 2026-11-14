@@ -47,7 +47,8 @@ public final class LotmState {
 
     /** Reduce accumulated direct-characteristic instability without going below zero. */
     public static int reduceInstability(Player player, int amount) {
-        if (LotmPath.of(player) == null || amount <= 0) return 0;
+        int sequence = sequence(player);
+        if (LotmPath.of(player) == null || (sequence != 8 && sequence != 9) || amount <= 0) return 0;
         int current = instability(player);
         int reduced = Math.min(current, amount);
         if (reduced > 0) {
