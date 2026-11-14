@@ -23,7 +23,7 @@ public final class LotmSkills {
 
     /** Called only by a server-authoritative Player Abilities ActiveAbility. */
     public static boolean executeFromAbility(ServerPlayer player, LotmPath expectedPath, int slot, int sequence) {
-        if (!LotmConfig.ENABLED.get()) {
+        if (!LotmConfig.ENABLED.get() || !LotmConfig.SKILLS_ENABLED.get()) {
             player.displayClientMessage(Component.translatable("message.realscale.lotm.disabled"), true);
             return false;
         }
@@ -33,15 +33,18 @@ public final class LotmSkills {
             return false;
         }
 
-        int cost = LotmBalance.skillCost(expectedPath.id(), slot, sequence,
+        int mastery = LotmState.skillMastery(player, expectedPath, slot);
+        int baseCost = LotmBalance.skillCost(expectedPath.id(), slot, sequence,
                 LotmCurios.hasDivinationPendulum(player), LotmState.instability(player));
+        int cost = LotmBalance.skillCostWithMastery(baseCost, mastery,
+                LotmConfig.SKILL_COST_PERCENT.get());
         if (!LotmState.consume(player, cost)) {
             player.displayClientMessage(Component.translatable("message.realscale.lotm.low_spirit"), true);
             return false;
         }
 
-        int detected = slot == 1 ? activatePrimary(player, expectedPath, sequence)
-                : activateSecondary(player, expectedPath, sequence);
+        int detected = slot == 1 ? activatePrimary(player, expectedPath, sequence, mastery)
+                : activateSecondary(player, expectedPath, sequence, mastery);
         LotmActing.recordSkillUse(player, 2 + (9 - sequence));
 
         if (detected > 0) {
@@ -53,9 +56,9 @@ public final class LotmSkills {
         return true;
     }
 
-    private static int activatePrimary(Player player, LotmPath path, int sequence) {
+    private static int activatePrimary(Player player, LotmPath path, int sequence, int mastery) {
         Level level = player.level();
-        int range = sequence == 8 ? 18 : 14;
+        int range = (sequence == 8 ? 18 : 14) + mastery * 2;
         AABB area = new AABB(player.blockPosition()).inflate(range);
         int detected = 0;
 
@@ -64,21 +67,21 @@ public final class LotmSkills {
                 for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area,
                         entity -> entity != player && (entity instanceof LotmCreature
                                 || entity.getPersistentData().contains(LotmEvents.VARIANT)))) {
-                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 140, 0, true, false));
+                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 140 + mastery * 20, 0, true, false));
                     LotmActing.recordResearchDiscovery(player, entityClue(target), 2);
                     detected++;
                 }
-                if (sequence == 8) player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 180, 0, true, false));
+                if (sequence == 8) player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 180 + mastery * 20, 0, true, false));
             }
             case MYSTERY_PRYER -> {
-                detected = revealOccultBlocks(player, sequence == 8 ? 9 : 7, 5, 8);
+                detected = revealOccultBlocks(player, (sequence == 8 ? 9 : 7) + mastery, 5, 8);
                 if (sequence == 8) player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 100, 0, true, false));
             }
             case SLEEPLESS -> {
                 for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area,
                         entity -> entity != player && entity instanceof Monster)) {
-                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 120, 0, true, false));
-                    if (sequence == 8) target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 0, true, false));
+                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 120 + mastery * 20, 0, true, false));
+                    if (sequence == 8) target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100 + mastery * 20, 0, true, false));
                     LotmActing.recordResearchDiscovery(player, entityClue(target), 2);
                     detected++;
                 }
@@ -88,8 +91,8 @@ public final class LotmSkills {
             case CORPSE_COLLECTOR -> {
                 for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area,
                         LotmSkills::isUndead)) {
-                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 150, 0, true, false));
-                    if (sequence == 8) target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 0, true, false));
+                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 150 + mastery * 20, 0, true, false));
+                    if (sequence == 8) target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120 + mastery * 20, 0, true, false));
                     LotmActing.recordResearchDiscovery(player, entityClue(target), 2);
                     detected++;
                 }
@@ -100,7 +103,7 @@ public final class LotmSkills {
         return detected;
     }
 
-    private static int activateSecondary(Player player, LotmPath path, int sequence) {
+    private static int activateSecondary(Player player, LotmPath path, int sequence, int mastery) {
         Level level = player.level();
         int detected = 0;
         switch (path) {
@@ -109,7 +112,7 @@ public final class LotmSkills {
                 BlockPos nearest = null;
                 double nearestDistance = Double.MAX_VALUE;
                 int radius = LotmBalance.divinationRadius(sequence,
-                        LotmCurios.hasDivinationPendulum(player));
+                        LotmCurios.hasDivinationPendulum(player)) + mastery * 2;
                 for (BlockPos pos : BlockPos.betweenClosed(
                         origin.offset(-radius, -6, -radius), origin.offset(radius, 6, radius))) {
                     if (!level.hasChunkAt(pos) || !isOccultBlock(level, pos)) continue;
@@ -133,20 +136,21 @@ public final class LotmSkills {
             case MYSTERY_PRYER -> {
                 // The primary ability surveys occult geology. The secondary
                 // interprets living supernatural signatures rather than scanning the same blocks.
-                int radius = sequence == 8 ? 18 : 14;
+                int radius = (sequence == 8 ? 18 : 14) + mastery * 2;
                 AABB area = new AABB(player.blockPosition()).inflate(radius);
                 for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, area,
                         entity -> entity != player && (entity instanceof LotmCreature
                                 || entity.getPersistentData().contains(LotmEvents.VARIANT)))) {
-                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 120, 0, true, false));
+                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 120 + mastery * 20, 0, true, false));
                     LotmActing.recordResearchDiscovery(player, entityClue(target), 2);
                     detected++;
                 }
                 player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION,
-                        sequence == 8 ? 200 : 140, 0, true, false));
+                        (sequence == 8 ? 200 : 140) + mastery * 20, 0, true, false));
             }
             case SLEEPLESS -> {
-                int duration = !level.isDay() ? (sequence == 8 ? 360 : 280) : (sequence == 8 ? 220 : 160);
+                int duration = (!level.isDay() ? (sequence == 8 ? 360 : 280) : (sequence == 8 ? 220 : 160))
+                        + mastery * 20;
                 player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, duration, 0, true, false));
                 player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, sequence == 8 ? 180 : 120, 0, true, false));
                 detected = 1;
@@ -156,9 +160,9 @@ public final class LotmSkills {
                 // shroud skill grants a bounded defensive window without another scan.
                 player.setTicksFrozen(0);
                 player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE,
-                        sequence == 8 ? 160 : 100, 0, true, false));
+                        (sequence == 8 ? 160 : 100) + mastery * 20, 0, true, false));
                 player.addEffect(new MobEffectInstance(MobEffects.REGENERATION,
-                        sequence == 8 ? 120 : 80, 0, true, false));
+                        (sequence == 8 ? 120 : 80) + mastery * 20, 0, true, false));
                 detected = 1;
             }
         }
