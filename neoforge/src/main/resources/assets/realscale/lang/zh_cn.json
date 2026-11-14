@@ -307,5 +307,6 @@
   "gui.realscale.lotm_panel.manual_hint": "技能手册可在神秘学炼药装置中炼制。",
   "gui.realscale.lotm_panel.setting.hud_refresh": "状态栏刷新间隔：%s刻",
   "gui.realscale.lotm_panel.setting.aura_interval": "气场粒子间隔：%s刻",
-  "gui.realscale.lotm_panel.setting.manual_alchemy": "技能手册炼制时间：%s刻"
+  "gui.realscale.lotm_panel.setting.manual_alchemy": "技能手册炼制时间：%s刻",
+  "message.realscale.lotm.skills.mastery": "能力%s的手册熟练度：%s/%s。"
 }
