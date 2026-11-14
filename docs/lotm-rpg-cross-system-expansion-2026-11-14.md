@@ -85,26 +85,22 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - The sigil is not consumed when the player has no instability. Creative players retain their item.
 - Instability recovery is reversible and does not alter the legacy NBT key.
 
-### 16. Progression and daily acting arithmetic hardening
-- Spirituality regeneration and digestion accumulation now add using `long` intermediates before clamping to their 0–100 limits.
-- Daily acting counters normalize malformed negative/over-cap values before displaying or awarding progress.
-- Scaled acting rewards use `long` multiplication and are capped by the category's remaining allowance, preventing integer overflow from corrupt or future scripted inputs.
-- JUnit and static QA cover integer extremes and malformed counter values.
+### 9. Progression feedback
+- Advancement items now explain pathway, rank, prepared-vs-characteristic route and configured digestion thresholds in their tooltips.
+- The first Sequence 9 characteristic is explicitly described as a path-establishing case with no prior digestion requirement; Sequence 8 characteristic still displays the configured threshold.
+- `/lotm status` includes active Curios specialization and the current skill-cost surcharge.
+- English and Chinese localizations and static QA contracts cover the new feedback.
 
-### 15. Alchemy result stack invariants
-- Output acceptance now validates result count against the item's maximum stack size even when the output slot is empty.
-- Occupied slots require matching item/components and enough remaining capacity; count addition uses `long` arithmetic to avoid integer overflow from malformed recipe data.
-- JUnit covers empty/occupied slots, component mismatches, zero/negative values, maximum stack boundaries and overflow cases.
+### 10. Defensive state bounds and clearer advancement status
+- Instability NBT is normalized into a bounded 0–100 range whenever read; direct-characteristic increments use saturating addition rather than potentially overflowing integer arithmetic.
+- The skill-cost surcharge remains exactly +2 per instability point up to +8, including extreme or malformed legacy values.
+- `/lotm status` now reports the configured Sequence 8 digestion thresholds for prepared potion vs. direct characteristic routes; at Sequence 8 it explicitly reminds players that Sequence 7 remains archived.
+- JUnit and static QA cover negative, over-limit and `Integer.MAX_VALUE` values as well as both localized status messages.
 
-### 14. Runtime overhead and canceled-placement hardening
-- Unauthorized Player Abilities grants are still rejected synchronously by `AbilityGrantedEvent`, and full audits still run on login/progression sync. The defensive fallback scan is now throttled to once per 20 player ticks rather than allocating/copying grant maps every tick.
-- Canceled `EntityPlaceEvent` events are ignored before writing resource provenance, preventing phantom anti-farming marks when another event handler cancels placement.
-- A focused JUnit test covers the audit cadence across ordinary, negative and large tick values; static QA protects event wiring and canceled-placement ordering.
-
-### 13. Promotion recipe matrix and progression threshold regression coverage
-- Static QA now enumerates the exact active recipe filenames: 4 pathways × 2 ranks × 2 crafting routes = 16 recipes.
-- Each normal alchemy recipe is checked for four distinct registered inputs; each complete-characteristic alternative is checked for three distinct registered inputs. All outputs and characteristics must have item models and bilingual display names.
-- Progression JUnit now exercises the exact one-below and exact-at-threshold cases for both prepared Sequence 8 potions and direct Sequence 8 characteristics.
+### 11. Ability preview and activation cost parity
+- `LotmPathwayAbility.getUseFailureMessage` now calculates the same effective skill cost as `LotmSkills.executeFromAbility`, including the Seer-only Divination Pendulum discount and instability surcharge.
+- This removes a mismatch where an ability could appear usable in the Player Abilities interface but then fail its authoritative server activation due to the omitted costs.
+- Static QA checks both call sites for the same inputs; the pure balance tests already cover the combined discount/surcharge arithmetic.
 
 ### 12. Alchemy feedback and player-facing skill telemetry
 - Fuel safety: the server now rechecks the exact Spirit Ember item ID at processing time, not just slot non-emptiness. This also protects old or malformed saved inventories that may bypass normal slot insertion validation.
@@ -113,22 +109,26 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - `/lotm skills` now prints the effective spirituality cost for both slots after current instability and Curios modifiers, plus exact cooldown ticks for the active sequence.
 - English/Chinese labels and static QA cover all six machine statuses and the live skill readout.
 
-### 11. Ability preview and activation cost parity
-- `LotmPathwayAbility.getUseFailureMessage` now calculates the same effective skill cost as `LotmSkills.executeFromAbility`, including the Seer-only Divination Pendulum discount and instability surcharge.
-- This removes a mismatch where an ability could appear usable in the Player Abilities interface but then fail its authoritative server activation due to the omitted costs.
-- Static QA checks both call sites for the same inputs; the pure balance tests already cover the combined discount/surcharge arithmetic.
+### 13. Promotion recipe matrix and progression threshold regression coverage
+- Static QA now enumerates the exact active recipe filenames: 4 pathways × 2 ranks × 2 crafting routes = 16 recipes.
+- Each normal alchemy recipe is checked for four distinct registered inputs; each complete-characteristic alternative is checked for three distinct registered inputs. All outputs and characteristics must have item models and bilingual display names.
+- Progression JUnit now exercises the exact one-below and exact-at-threshold cases for both prepared Sequence 8 potions and direct Sequence 8 characteristics.
 
-### 10. Defensive state bounds and clearer advancement status
-- Instability NBT is normalized into a bounded 0–100 range whenever read; direct-characteristic increments use saturating addition rather than potentially overflowing integer arithmetic.
-- The skill-cost surcharge remains exactly +2 per instability point up to +8, including extreme or malformed legacy values.
-- `/lotm status` now reports the configured Sequence 8 digestion thresholds for prepared potion vs. direct characteristic routes; at Sequence 8 it explicitly reminds players that Sequence 7 remains archived.
-- JUnit and static QA cover negative, over-limit and `Integer.MAX_VALUE` values as well as both localized status messages.
+### 14. Runtime overhead and canceled-placement hardening
+- Unauthorized Player Abilities grants are still rejected synchronously by `AbilityGrantedEvent`, and full audits still run on login/progression sync. The defensive fallback scan is now throttled to once per 20 player ticks rather than allocating/copying grant maps every tick.
+- Canceled `EntityPlaceEvent` events are ignored before writing resource provenance, preventing phantom anti-farming marks when another event handler cancels placement.
+- A focused JUnit test covers the audit cadence across ordinary, negative and large tick values; static QA protects event wiring and canceled-placement ordering.
 
-### 9. Progression feedback
-- Advancement items now explain pathway, rank, prepared-vs-characteristic route and configured digestion thresholds in their tooltips.
-- The first Sequence 9 characteristic is explicitly described as a path-establishing case with no prior digestion requirement; Sequence 8 characteristic still displays the configured threshold.
-- `/lotm status` includes active Curios specialization and the current skill-cost surcharge.
-- English and Chinese localizations and static QA contracts cover the new feedback.
+### 15. Alchemy result stack invariants
+- Output acceptance now validates result count against the item's maximum stack size even when the output slot is empty.
+- Occupied slots require matching item/components and enough remaining capacity; count addition uses `long` arithmetic to avoid integer overflow from malformed recipe data.
+- JUnit covers empty/occupied slots, component mismatches, zero/negative values, maximum stack boundaries and overflow cases.
+
+### 16. Progression and daily acting arithmetic hardening
+- Spirituality regeneration and digestion accumulation now add using `long` intermediates before clamping to their 0–100 limits.
+- Daily acting counters normalize malformed negative/over-cap values before displaying or awarding progress.
+- Scaled acting rewards use `long` multiplication and are capped by the category's remaining allowance, preventing integer overflow from corrupt or future scripted inputs.
+- JUnit and static QA cover integer extremes and malformed counter values.
 
 **Validation caveat:** these are code and resource changes, not yet confirmed by an in-game client or multiplayer server. Current-head workflow runs must be checked; a static QA pass cannot prove Curios equipment events, item consumption, tooltip rendering or save/reload behavior.
 
