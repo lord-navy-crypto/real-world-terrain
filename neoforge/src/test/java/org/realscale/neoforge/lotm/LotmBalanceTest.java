@@ -11,6 +11,15 @@ class LotmBalanceTest {
         assertEquals(0, LotmBalance.regenerate(-5, 0));
     }
 
+    @Test void spiritualityAndPracticeAdditionRemainBoundedAtIntegerLimits() {
+        assertEquals(100, LotmBalance.regenerate(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        assertEquals(100, LotmBalance.regenerate(99, Integer.MAX_VALUE));
+        assertEquals(0, LotmBalance.regenerate(Integer.MIN_VALUE, Integer.MIN_VALUE));
+        assertEquals(100, LotmBalance.practice(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        assertEquals(100, LotmBalance.practice(99, Integer.MAX_VALUE));
+        assertEquals(0, LotmBalance.practice(Integer.MIN_VALUE, Integer.MIN_VALUE));
+    }
+
     @Test void practiceIsBoundedAndDoesNotGrantHigherSequences() {
         assertEquals(100, LotmBalance.practice(97, 12));
         assertEquals(0, LotmBalance.practice(0, -10));
