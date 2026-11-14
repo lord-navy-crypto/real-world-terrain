@@ -2,6 +2,7 @@
 from __future__ import annotations
 import importlib.util
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -46,6 +47,10 @@ class LotmDataGraphTests(unittest.TestCase):
         content_source = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmContent.java").read_text(encoding="utf-8")
         en = load(ASSETS / "lang/en_us.json")
         zh = load(ASSETS / "lang/zh_cn.json")
+        dynamic_block = content_source.split("for (String material : new String[] {", 1)[1].split("}) material(material);", 1)[0]
+        dynamic_materials = set(re.findall(r'"([a-z0-9_]+)"', dynamic_block))
+        self.assertIn('ITEMS.registerSimpleItem("lotm_" + suffix', content_source)
+        self.assertIn("}) material(material);", content_source)
         for (path, seq), (a, b) in MATERIALS.items():
             normal_name = f"lotm_{path}_potion.json" if seq == 9 else f"lotm_{path}_s8_potion.json"
             normal = load(DATA / "recipe" / normal_name)
@@ -80,6 +85,8 @@ class LotmDataGraphTests(unittest.TestCase):
                     elif bare_id == "lotm_occult_catalyst":
                         self.assertIn('"occult_catalyst"', content_source)
                         self.assertIn('ITEMS.registerSimpleItem("lotm_" + suffix', content_source)
+                    elif bare_id.startswith("lotm_") and bare_id[5:] in dynamic_materials:
+                        self.assertIn(bare_id[5:], dynamic_materials)
                     else:
                         self.assertIn(bare_id, content_source,
                                       f"Unregistered alchemy ingredient: {item_id}")
