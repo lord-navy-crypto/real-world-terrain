@@ -191,6 +191,20 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - `/lotm config` reports the expanded configuration in both locales. The panel exposes the same important values without granting clients permission to edit server rules.
 - New QA covers all eight manuals, sixteen recipes, item models/locales, generated icons, panel registration, server-authoritative toggles, mastery bounds and appearance cadence.
 
+### 26. Read-only in-game runtime diagnostics
+- Added `/lotm diagnose`, implemented in `LotmRpgDiagnostics.java`.
+- The command checks live block/item registry entries for all six active ores, their block items and mineral drops; all four occult plants; ten creature signature materials; and all eight pathway manuals.
+- It checks the apparatus block, block entity, alchemy/status menus, custom recipe type/serializer, and counts the sixteen manual recipes actually loaded by the server recipe manager.
+- It checks configured bounds and, when the player has a pathway, validates active sequence, both mastery values, effective skill costs and spirituality bounds.
+- The command is read-only: it does not edit player NBT, grant items, consume resources or change blocks.
+- It reports explicit section counts and a final pass/fail total. It cannot certify world-generation density, texture appearance, natural spawns or multiplayer visuals; those remain manual playtest items.
+
+### 27. Status console skill clarity and accessory-aware costs
+- The Skills tab now shows pathway-specific skill names and concise effect descriptions for both slots across all four pathways.
+- The displayed effective cost now includes the player's actual Divination Pendulum state, instability surcharge, mastery discount and configured cost scaling.
+- The Overview tab shows the equipped Spirit Focus or Divination Pendulum, synchronized from the server rather than inferred by the client.
+- English and Chinese locale keys cover all eight skill names/descriptions and the accessory display.
+
 ## Next development batches (do not claim complete until validated)
 
 ### A. In-game and multiplayer acceptance
@@ -199,7 +213,7 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 3. Spawn-check all 10 creatures across night/day and dimensions; inspect animations, navigation, avoid/alert/defense behavior, drops and despawns.
 4. Load existing S9/S8 worlds, place/break resources, reload the server, test a second player mining player-placed blocks.
 5. Validate all 16 potion recipe variants in the actual GUI (8 normal + 8 characteristic) including fuel pause, output blocking, save/load and block-break inventory drops.
-6. Inspect the new four-tab status console, manual crafting/reading, skill mastery changes, translated field guide and journal persistence in a real client.
+6. Run `/lotm diagnose` in a loaded world and record its report; then inspect the four-tab status console, all sixteen manual recipes, skill mastery changes, accessory-aware costs, translated guide and journal persistence in a real client.
 7. Test the complete S9 to S8 playthrough on each pathway, including both skill manuals and their actual effect changes, with normal settings.
 8. Keep Sequence 7 archived and compare main's terrain/worldgen behavior for regressions.
 
@@ -218,7 +232,7 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 
 ### D. Release gate
 - All current-head source/resource QA, JUnit, NeoForge 8.14.3 and Gradle 9.8 builds, dedicated server boot and saved-block verification.
-- At least one tested client session for alchemy, the new status console, skill manuals/mastery, appearance effects, all ten creatures, all six ores and four flowers.
+- At least one tested client session for `/lotm diagnose`, alchemy, the new status console, skill manuals/mastery, appearance effects, all ten creatures, all six ores and four flowers.
 - No unreviewed worldgen changes, no missing textures, no S7 progression leak.
 - PR remains Draft until manual gameplay tests are explicitly completed and the user requests merging.
 
