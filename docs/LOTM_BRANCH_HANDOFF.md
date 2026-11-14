@@ -12,6 +12,7 @@ Before continuing, read `docs/lotm-rpg-cross-system-expansion-2026-11-14.md`. Th
 - Flora: four additional optional crafting-table recipes turn each existing occult flower into catalysts or Spirit Embers; no existing recipe removed.
 - Guide: `/lotm guide creatures|flora|minerals|alchemy|progression`; journal and guide text translated into English and Chinese.
 - CI: `qa/test_lotm_rpg_systems_expansion.py` added and wired into `.github/workflows/ci.yml`.
+- Creature spawn contract: `LotmCreatureRegistryTest` now parses all ten biome-modifier resources and asserts exact parity with `LotmCreatureKind` habitats, weights and group sizes; this protects data-driven spawn configuration from metadata drift but does not replace in-world spawn-rate testing.
 
 - Equipment: `LotmCurios` activates the existing size-1 occult_focus slot. Spirit Focus adds +1 spirituality per configured 40-tick recovery interval; Divination Pendulum gives Seer-only secondary-skill -4 cost and +2-block omen radius. The items are mutually exclusive and have bilingual tooltips.
 - Instability: direct Sequence 9 characteristic use now correctly starts at instability 1; direct Sequence 8 characteristic use increments it. `LotmBalance` adds +2 skill cost per instability, capped at +8. A crafted `lotm_stability_sigil` (Echo Quartz + Lunar Mica + Spirit Ember + paper) removes one point; it is not consumed when no instability exists.
