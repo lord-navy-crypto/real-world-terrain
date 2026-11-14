@@ -6,6 +6,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import org.realscale.neoforge.lotm.LotmBalance;
+import org.realscale.neoforge.lotm.LotmCreatureKind;
 import org.realscale.neoforge.lotm.LotmPath;
 import org.realscale.neoforge.lotm.LotmDropBalance;
 import org.realscale.neoforge.lotm.LotmStatusMenu;
@@ -13,6 +14,13 @@ import org.realscale.neoforge.lotm.LotmStatusMenu;
 /** Compact occult status console with Overview, Skills, Materials and Settings tabs. */
 public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMenu> {
     private int selectedTab;
+    private int creatureIndex;
+    private Button hudToggle;
+    private Button auraToggle;
+    private Button openBestiary;
+    private Button previousCreature;
+    private Button nextCreature;
+    private Button backToMaterials;
 
     public LotmStatusScreen(LotmStatusMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -34,14 +42,43 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 button -> selectedTab = 4).bounds(leftPos + 172, topPos + 24, 38, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.settings"),
                 button -> selectedTab = 5).bounds(leftPos + 213, topPos + 24, 35, 18).build());
-        addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.toggle_hud"),
+        hudToggle = addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.toggle_hud"),
                 button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
                         LotmStatusMenu.BUTTON_TOGGLE_HUD))
                 .bounds(leftPos + 10, topPos + 166, 112, 18).build());
-        addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.toggle_appearance"),
+        auraToggle = addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.toggle_appearance"),
                 button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
                         LotmStatusMenu.BUTTON_TOGGLE_APPEARANCE))
                 .bounds(leftPos + 132, topPos + 166, 114, 18).build());
+
+        openBestiary = addRenderableWidget(Button.builder(
+                Component.translatable("gui.realscale.lotm_panel.bestiary.open"),
+                button -> { selectedTab = 6; creatureIndex = 0; })
+                .bounds(leftPos + 70, topPos + 166, 116, 18).build());
+        previousCreature = addRenderableWidget(Button.builder(
+                Component.translatable("gui.realscale.lotm_panel.bestiary.previous"),
+                button -> creatureIndex = Math.floorMod(creatureIndex - 1, LotmCreatureKind.values().length))
+                .bounds(leftPos + 10, topPos + 166, 65, 18).build());
+        nextCreature = addRenderableWidget(Button.builder(
+                Component.translatable("gui.realscale.lotm_panel.bestiary.next"),
+                button -> creatureIndex = (creatureIndex + 1) % LotmCreatureKind.values().length)
+                .bounds(leftPos + 80, topPos + 166, 65, 18).build());
+        backToMaterials = addRenderableWidget(Button.builder(
+                Component.translatable("gui.realscale.lotm_panel.bestiary.back"),
+                button -> selectedTab = 2)
+                .bounds(leftPos + 150, topPos + 166, 96, 18).build());
+    }
+
+    @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Material navigation and player preferences only appear in their own pages.
+        if (hudToggle != null) hudToggle.visible = selectedTab == 5;
+        if (auraToggle != null) auraToggle.visible = selectedTab == 5;
+        if (openBestiary != null) openBestiary.visible = selectedTab == 2;
+        if (previousCreature != null) previousCreature.visible = selectedTab == 6;
+        if (nextCreature != null) nextCreature.visible = selectedTab == 6;
+        if (backToMaterials != null) backToMaterials.visible = selectedTab == 6;
+        super.render(graphics, mouseX, mouseY, partialTick);
+        renderTooltip(graphics, mouseX, mouseY);
     }
 
     @Override protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
@@ -78,7 +115,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     @Override protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.title"), 9, 7, 0xFFF0E8FF, false);
         boolean hasPath = menu.pathIndex() > 0 && menu.pathIndex() <= LotmPath.values().length;
-        if (!hasPath && selectedTab != 3 && selectedTab != 4 && selectedTab != 5) {
+        if (!hasPath && selectedTab != 3 && selectedTab != 4 && selectedTab != 5 && selectedTab != 6) {
             graphics.drawString(font, Component.translatable("message.realscale.lotm.no_path"), 14, 59, 0xFFE0D6E8, false);
             int hintY = 78;
             for (var line : font.split(Component.translatable("gui.realscale.lotm_panel.start_hint"), 222)) {
@@ -161,6 +198,34 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                         "gui.realscale.lotm_panel.journal_" + categories[index],
                         menu.dailyActing(index), caps[index]),
                         14, 82 + 19 * index, 0xFFB8ADC9, false);
+            }
+        } else if (selectedTab == 6) {
+            LotmCreatureKind kind = LotmCreatureKind.values()[creatureIndex];
+            graphics.drawString(font, Component.translatable(
+                    "gui.realscale.lotm_panel.bestiary.header", creatureIndex + 1,
+                    LotmCreatureKind.values().length), 14, 51, 0xFFEDE4F6, false);
+            graphics.drawString(font, Component.translatable(
+                    "entity.realscale.lotm_" + kind.id()), 14, 67, 0xFFE0D6E8, false);
+            graphics.drawString(font, Component.translatable(
+                    "gui.realscale.lotm_panel.bestiary.sequence", kind.sequence()), 14, 81, 0xFFB8ADC9, false);
+            graphics.drawString(font, Component.translatable(
+                    "gui.realscale.lotm_panel.bestiary.disposition", Component.translatable(
+                            kind.isHostile() ? "gui.realscale.lotm_panel.bestiary.hostile"
+                                    : "gui.realscale.lotm_panel.bestiary.passive")), 14, 94, 0xFFB8ADC9, false);
+            graphics.drawString(font, Component.translatable(
+                    "gui.realscale.lotm_panel.bestiary.health", kind.maxHealth()), 14, 107, 0xFFD7CDE4, false);
+            graphics.drawString(font, Component.translatable(
+                    "gui.realscale.lotm_panel.bestiary.attack", kind.attackDamage()), 14, 120, 0xFFD7CDE4, false);
+            graphics.drawString(font, Component.translatable(
+                    "gui.realscale.lotm_panel.bestiary.armor", kind.armor()), 14, 133, 0xFFD7CDE4, false);
+            Component drop = Component.translatable("gui.realscale.lotm_panel.bestiary.drop",
+                    Component.translatable("item.realscale.lotm_" + kind.dropId()),
+                    LotmDropBalance.effectiveChance(menu.materialDropPercent(), kind.sequence()));
+            int y = 146;
+            for (var line : font.split(drop, 222)) {
+                if (y > 158) break;
+                graphics.drawString(font, line, 14, y, 0xFFE5CB9F, false);
+                y += 12;
             }
         } else {
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.settings_header"), 14, 51, 0xFFEDE4F6, false);

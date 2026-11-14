@@ -26,6 +26,10 @@ class LotmGuiAndCombatTests(unittest.TestCase):
             self.assertIn(f"selectedTab = {index}", screen)
         self.assertIn("alchemy_line", screen)
         self.assertIn("journal_header", screen)
+        self.assertIn("selectedTab = 6", screen)
+        self.assertIn("LotmCreatureKind.values()[creatureIndex]", screen)
+        self.assertIn("LotmDropBalance.effectiveChance(", screen)
+        self.assertIn("openBestiary.visible = selectedTab == 2", screen)
         menu = (BASE / "lotm/LotmStatusMenu.java").read_text()
         self.assertIn("public static final int DATA_COUNT = 26", menu)
         self.assertIn('LotmActing.dailyUsed(player, "fieldwork")', menu)
@@ -89,5 +93,8 @@ class LotmGuiAndCombatTests(unittest.TestCase):
                 "gui.realscale.lotm_panel.tab.journal",
                 "gui.realscale.lotm_panel.journal_discoveries",
                 "gui.realscale.lotm_panel.journal_fieldwork",
+                "gui.realscale.lotm_panel.bestiary.header",
+                "gui.realscale.lotm_panel.bestiary.drop",
+                "gui.realscale.lotm_panel.bestiary.previous",
             ):
                 self.assertTrue(lang.get(key), (locale, key))

@@ -388,5 +388,18 @@
   "item.realscale.lotm_ironarm_beast_spawn_egg": "Spawn Iron-Arm Beast",
   "item.realscale.lotm_four_eyed_turtle_spawn_egg": "Spawn Four-Eyed Turtle",
   "item.realscale.lotm_crimson_howler_spawn_egg": "Spawn Crimson Howler",
-  "item.realscale.lotm_death_crow_spawn_egg": "Spawn Death Crow"
+  "item.realscale.lotm_death_crow_spawn_egg": "Spawn Death Crow",
+  "gui.realscale.lotm_panel.bestiary.open": "Creature Field Guide",
+  "gui.realscale.lotm_panel.bestiary.previous": "Previous",
+  "gui.realscale.lotm_panel.bestiary.next": "Next",
+  "gui.realscale.lotm_panel.bestiary.back": "Back to Items",
+  "gui.realscale.lotm_panel.bestiary.header": "Occult Creatures %s/%s",
+  "gui.realscale.lotm_panel.bestiary.sequence": "Sequence: %s",
+  "gui.realscale.lotm_panel.bestiary.disposition": "Disposition: %s",
+  "gui.realscale.lotm_panel.bestiary.hostile": "Hostile",
+  "gui.realscale.lotm_panel.bestiary.passive": "Passive / reactive",
+  "gui.realscale.lotm_panel.bestiary.health": "Health: %s",
+  "gui.realscale.lotm_panel.bestiary.attack": "Attack: %s",
+  "gui.realscale.lotm_panel.bestiary.armor": "Armor: %s",
+  "gui.realscale.lotm_panel.bestiary.drop": "Signature: %s (%s%% chance)"
 }

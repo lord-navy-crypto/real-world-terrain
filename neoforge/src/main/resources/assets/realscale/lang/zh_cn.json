@@ -388,5 +388,18 @@
   "item.realscale.lotm_ironarm_beast_spawn_egg": "铁臂兽刷怪蛋",
   "item.realscale.lotm_four_eyed_turtle_spawn_egg": "四眼绿龟刷怪蛋",
   "item.realscale.lotm_crimson_howler_spawn_egg": "红月咆哮者刷怪蛋",
-  "item.realscale.lotm_death_crow_spawn_egg": "告死乌鸦刷怪蛋"
+  "item.realscale.lotm_death_crow_spawn_egg": "告死乌鸦刷怪蛋",
+  "gui.realscale.lotm_panel.bestiary.open": "超凡生物图鉴",
+  "gui.realscale.lotm_panel.bestiary.previous": "上一种",
+  "gui.realscale.lotm_panel.bestiary.next": "下一种",
+  "gui.realscale.lotm_panel.bestiary.back": "返回材料",
+  "gui.realscale.lotm_panel.bestiary.header": "超凡生物图鉴 %s/%s",
+  "gui.realscale.lotm_panel.bestiary.sequence": "序列：%s",
+  "gui.realscale.lotm_panel.bestiary.disposition": "行为：%s",
+  "gui.realscale.lotm_panel.bestiary.hostile": "敌对",
+  "gui.realscale.lotm_panel.bestiary.passive": "被动／反击",
+  "gui.realscale.lotm_panel.bestiary.health": "生命值：%s",
+  "gui.realscale.lotm_panel.bestiary.attack": "攻击力：%s",
+  "gui.realscale.lotm_panel.bestiary.armor": "护甲：%s",
+  "gui.realscale.lotm_panel.bestiary.drop": "关键材料：%s（掉落率 %s%%）"
 }
