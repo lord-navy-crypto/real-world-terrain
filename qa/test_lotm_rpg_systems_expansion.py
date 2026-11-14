@@ -249,6 +249,21 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockPlace)", mod)
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockBreak)", mod)
 
+    def test_lotm_config_command_reports_all_gameplay_controls_bilingually(self):
+        commands = (JAVA / "lotm/LotmCommands.java").read_text(encoding="utf-8")
+        start = commands.index('Commands.literal("config")')
+        end = commands.index('Commands.literal("guide")', start)
+        config = commands[start:end]
+        for setting in ("ENABLED", "CREATURE_ENTITIES", "CREATURE_VARIANTS", "RELIC_SITES",
+                        "POTION_PRACTICE", "CHARACTERISTIC_PRACTICE", "SPIRIT_RECOVERY",
+                        "DIGESTION_REWARD_PERCENT", "ALCHEMY_SEQUENCE9_TICKS",
+                        "ALCHEMY_SEQUENCE8_TICKS", "VARIANT_RARITY_PERCENT", "RELIC_RARITY"):
+            self.assertIn("LotmConfig." + setting + ".get()", config)
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            for suffix in ("", ".progression", ".alchemy", ".ecology"):
+                self.assertTrue(lang["message.realscale.lotm.config" + suffix])
+
     def test_progression_transition_revalidates_before_mutating_player_state(self):
         state = (JAVA / "lotm/LotmState.java").read_text(encoding="utf-8")
         potion = (JAVA / "lotm/LotmPotionItem.java").read_text(encoding="utf-8")
