@@ -85,6 +85,12 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - The sigil is not consumed when the player has no instability. Creative players retain their item.
 - Instability recovery is reversible and does not alter the legacy NBT key.
 
+### 12. Alchemy feedback and player-facing skill telemetry
+- The alchemy block entity now publishes a third synchronized menu datum for machine state: waiting for recipe, brewing, missing fuel, blocked output, server-disabled, or unavailable recipe.
+- The screen displays the localized reason rather than leaving players to infer why processing has paused. Processing and ingredient state remain server-authoritative.
+- `/lotm skills` now prints the effective spirituality cost for both slots after current instability and Curios modifiers, plus exact cooldown ticks for the active sequence.
+- English/Chinese labels and static QA cover all six machine statuses and the live skill readout.
+
 ### 11. Ability preview and activation cost parity
 - `LotmPathwayAbility.getUseFailureMessage` now calculates the same effective skill cost as `LotmSkills.executeFromAbility`, including the Seer-only Divination Pendulum discount and instability surcharge.
 - This removes a mismatch where an ability could appear usable in the Player Abilities interface but then fail its authoritative server activation due to the omitted costs.
