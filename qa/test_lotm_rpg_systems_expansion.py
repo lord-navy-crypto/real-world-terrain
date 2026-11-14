@@ -209,6 +209,25 @@ class LotmRpgExpansionTests(unittest.TestCase):
             lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
             self.assertTrue(lang["message.realscale.lotm.skills.cost"])
 
+    def test_unauthorized_ability_audit_is_bounded_but_grant_event_remains_immediate(self):
+        sync = (JAVA / "lotm/LotmPlayerAbilitySync.java").read_text(encoding="utf-8")
+        events = (JAVA / "lotm/LotmEvents.java").read_text(encoding="utf-8")
+        self.assertIn("Math.floorMod(tickCount, 20) == 0", sync)
+        self.assertIn("periodicSanitizeUnauthorizedGrants(player)", events)
+        self.assertIn("sanitizeUnauthorizedGrants(player);", sync)
+        self.assertIn("public static void onAbilityGranted(AbilityGrantedEvent event)", sync)
+        self.assertIn("AbilityAPI.revoke(player, event.getSource(), event.getAbility())", sync)
+        self.assertIn("sync(ServerPlayer player)", sync)
+
+    def test_canceled_resource_placement_does_not_pollute_provenance(self):
+        acting = (JAVA / "lotm/LotmActing.java").read_text(encoding="utf-8")
+        start = acting.index("public static void onBlockPlace")
+        end = acting.index("public static void onBlockBreak", start)
+        place_handler = acting[start:end]
+        self.assertIn("event.isCanceled()", place_handler)
+        self.assertIn("markPlaced(event.getPos())", place_handler)
+        self.assertLess(place_handler.index("event.isCanceled()"), place_handler.index("markPlaced(event.getPos())"))
+
     def test_pathway_ability_precheck_uses_the_same_curios_and_instability_cost(self):
         ability = (JAVA / "lotm/LotmPathwayAbility.java").read_text(encoding="utf-8")
         skills = (JAVA / "lotm/LotmSkills.java").read_text(encoding="utf-8")
