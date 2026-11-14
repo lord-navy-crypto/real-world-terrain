@@ -289,7 +289,7 @@
   "gui.realscale.lotm_panel.spirit": "灵性：%s/%s",
   "gui.realscale.lotm_panel.digestion": "魔药消化：%s/%s",
   "gui.realscale.lotm_panel.instability": "特性失衡：%s",
-  "gui.realscale.lotm_panel.start_hint": "请先在神秘学炼药装置中调制序列9魔药。",
+  "gui.realscale.lotm_panel.start_hint": "在创造物品栏的 LOTM 分类取得序列9魔药，或自行炼制后服用。",
   "gui.realscale.lotm_panel.skill": "能力槽位 %s",
   "gui.realscale.lotm_panel.mastery": "手册熟练度：%s/%s",
   "gui.realscale.lotm_panel.skill_cost": "实际消耗：%s | 冷却：%s刻",
@@ -360,5 +360,9 @@
   "message.realscale.lotm.diagnose.scope": "自然刷新概率、世界生成、材质外观和多人行为仍需进入游戏实测。",
   "message.realscale.lotm.diagnose.no_path": "当前角色尚未选择途径，已跳过角色进度专项检查。",
   "message.realscale.lotm.diagnose.player_detail": "当前途径：%s | 序列：%s | 能力I熟练度：%s/%s | 能力II熟练度：%s/%s | 实际消耗：%s/%s",
-  "gui.realscale.lotm_panel.setting.mastery_cap": "熟练度上限：%s"
+  "gui.realscale.lotm_panel.setting.mastery_cap": "熟练度上限：%s",
+  "itemGroup.realscale.lotm": "诡秘之主 | 超凡工坊",
+  "key.categories.realscale.lotm": "诡秘 RPG",
+  "key.realscale.lotm.panel": "打开超凡角色面板",
+  "gui.realscale.lotm_panel.open": "超凡面板"
 }

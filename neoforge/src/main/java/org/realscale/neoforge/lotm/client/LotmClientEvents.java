@@ -4,6 +4,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import org.realscale.neoforge.lotm.LotmAlchemyContent;
 import org.realscale.neoforge.lotm.LotmCreatureEntities;
 import org.realscale.neoforge.lotm.LotmCreatureKind;
@@ -15,6 +16,10 @@ public final class LotmClientEvents {
     @SubscribeEvent public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(LotmAlchemyContent.ALCHEMY_MENU.get(),LotmAlchemyScreen::new);
         event.register(LotmAlchemyContent.STATUS_MENU.get(), LotmStatusScreen::new);
+    }
+
+    @SubscribeEvent public static void registerKeys(RegisterKeyMappingsEvent event) {
+        event.register(LotmClientKeys.OPEN_PANEL);
     }
 
     @SubscribeEvent public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {

@@ -289,7 +289,7 @@
   "gui.realscale.lotm_panel.spirit": "Spirituality: %s/%s",
   "gui.realscale.lotm_panel.digestion": "Digestion: %s/%s",
   "gui.realscale.lotm_panel.instability": "Instability: %s",
-  "gui.realscale.lotm_panel.start_hint": "Begin by preparing a Sequence 9 potion in the alchemy apparatus.",
+  "gui.realscale.lotm_panel.start_hint": "Use the LOTM creative tab or craft a Sequence 9 potion, then drink it.",
   "gui.realscale.lotm_panel.skill": "Skill slot %s",
   "gui.realscale.lotm_panel.mastery": "Manual mastery: %s/%s",
   "gui.realscale.lotm_panel.skill_cost": "Effective cost: %s | cooldown: %s ticks",
@@ -360,5 +360,9 @@
   "message.realscale.lotm.diagnose.scope": "Natural spawn rates, world generation, textures and multiplayer behavior still require in-game testing.",
   "message.realscale.lotm.diagnose.no_path": "No pathway is selected; player-progression checks were skipped.",
   "message.realscale.lotm.diagnose.player_detail": "Pathway: %s | Sequence: %s | Skill I mastery: %s/%s | Skill II mastery: %s/%s | Effective costs: %s/%s",
-  "gui.realscale.lotm_panel.setting.mastery_cap": "Mastery cap: %s"
+  "gui.realscale.lotm_panel.setting.mastery_cap": "Mastery cap: %s",
+  "itemGroup.realscale.lotm": "LOTM | Occult Workshop",
+  "key.categories.realscale.lotm": "LOTM RPG",
+  "key.realscale.lotm.panel": "Open Occult Character Panel",
+  "gui.realscale.lotm_panel.open": "Occult Panel"
 }
