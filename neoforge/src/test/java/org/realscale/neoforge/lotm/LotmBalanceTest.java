@@ -48,4 +48,28 @@ class LotmBalanceTest {
         assertEquals("down", LotmBalance.bearing(0, 2, -8));
         assertEquals("near", LotmBalance.bearing(0, 0, 0));
     }
+    @Test void spiritFocusImprovesOnlyConfiguredRecoveryIntervals() {
+        assertEquals(2, LotmBalance.spiritRecovery(2, false));
+        assertEquals(3, LotmBalance.spiritRecovery(2, true));
+        assertEquals(0, LotmBalance.spiritRecovery(-5, false));
+        assertEquals(1, LotmBalance.spiritRecovery(-5, true));
+    }
+
+    @Test void divinationPendulumOnlyDiscountsSeerSecondarySkill() {
+        assertEquals(18, LotmBalance.skillCost("seer", 2, 9, false));
+        assertEquals(14, LotmBalance.skillCost("seer", 2, 9, true));
+        assertEquals(22, LotmBalance.skillCost("seer", 2, 8, false));
+        assertEquals(18, LotmBalance.skillCost("seer", 2, 8, true));
+        assertEquals(16, LotmBalance.skillCost("mystery_pryer", 2, 9, true));
+        assertEquals(14, LotmBalance.skillCost("seer", 1, 9, true));
+    }
+
+    @Test void divinationPendulumAddsOnlyAModestLocalOmenRadius() {
+        assertEquals(10, LotmBalance.divinationRadius(9, false));
+        assertEquals(12, LotmBalance.divinationRadius(9, true));
+        assertEquals(12, LotmBalance.divinationRadius(8, false));
+        assertEquals(14, LotmBalance.divinationRadius(8, true));
+        assertEquals(0, LotmBalance.divinationRadius(7, true));
+    }
+
 }
