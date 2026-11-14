@@ -57,6 +57,15 @@ class LotmProgressionTest {
         assertEquals(8, LotmProgression.nextSequence(7));
     }
 
+    @Test void unknownOrMissingPathIdsFailClosed() {
+        assertEquals("path", LotmProgression.validate(null, -1, "unknown",
+                9, 0, false, 70, 90));
+        assertEquals("path", LotmProgression.validate("unknown", 9, "seer",
+                8, 100, false, 70, 90));
+        assertEquals("path", LotmProgression.validate("seer", 9, null,
+                8, 100, false, 70, 90));
+    }
+
     @Test void cannotChangePathWithForeignCharacteristic() {
         assertEquals("path", LotmProgression.validate("sleepless", 9, "seer",
                 8, 100, true, 70, 90));
