@@ -85,6 +85,12 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - The sigil is not consumed when the player has no instability. Creative players retain their item.
 - Instability recovery is reversible and does not alter the legacy NBT key.
 
+### 10. Defensive state bounds and clearer advancement status
+- Instability NBT is normalized into a bounded 0–100 range whenever read; direct-characteristic increments use saturating addition rather than potentially overflowing integer arithmetic.
+- The skill-cost surcharge remains exactly +2 per instability point up to +8, including extreme or malformed legacy values.
+- `/lotm status` now reports the configured Sequence 8 digestion thresholds for prepared potion vs. direct characteristic routes; at Sequence 8 it explicitly reminds players that Sequence 7 remains archived.
+- JUnit and static QA cover negative, over-limit and `Integer.MAX_VALUE` values as well as both localized status messages.
+
 ### 9. Progression feedback
 - Advancement items now explain pathway, rank, prepared-vs-characteristic route and configured digestion thresholds in their tooltips.
 - The first Sequence 9 characteristic is explicitly described as a path-establishing case with no prior digestion requirement; Sequence 8 characteristic still displays the configured threshold.
