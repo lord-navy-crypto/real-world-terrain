@@ -428,5 +428,30 @@ class LotmRpgExpansionTests(unittest.TestCase):
                 self.assertTrue(lang["gui.realscale.lotm_panel." + key])
 
 
+    def test_bestiary_tooltips_explain_all_creature_behaviors_habitats_and_recipe_tag_alternatives(self):
+        screen = (JAVA / "lotm/client/LotmStatusScreen.java").read_text(encoding="utf-8")
+        kinds = (
+            "starlit_squid", "nightmare_eye", "night_owl", "black_spotted_frog",
+            "shroudman", "hornacis_goat", "ironarm_beast", "four_eyed_turtle",
+            "crimson_howler", "death_crow",
+        )
+        self.assertIn("renderBestiaryTooltip(graphics, mouseX, mouseY)", screen)
+        self.assertIn("Optional.empty(), mouseX, mouseY", screen)
+        self.assertIn("Math.min(choices.length, 8)", screen)
+        self.assertIn("ingredient_more", screen)
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            for kind in kinds:
+                self.assertTrue(lang["gui.realscale.lotm_panel.bestiary.tooltip.behavior." + kind])
+                self.assertTrue(lang["gui.realscale.lotm_panel.bestiary.tooltip.habitat." + kind])
+            for kind in ("aquatic", "amphibious", "flying", "terrestrial"):
+                self.assertTrue(lang["gui.realscale.lotm_panel.bestiary.tooltip.movement." + kind])
+            for kind in ("nocturnal", "anytime"):
+                self.assertTrue(lang["gui.realscale.lotm_panel.bestiary.tooltip.activity." + kind])
+            self.assertTrue(lang["gui.realscale.lotm_panel.bestiary.tooltip.group_size"])
+            self.assertTrue(lang["gui.realscale.lotm_panel.alchemy.ingredient_options"])
+            self.assertTrue(lang["gui.realscale.lotm_panel.alchemy.ingredient_more"])
+
+
 if __name__ == "__main__":
     unittest.main()
