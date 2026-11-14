@@ -44,8 +44,8 @@ class LotmDataGraphTests(unittest.TestCase):
         self.assertEqual(expected_names, actual_names,
                          "The active promotion matrix must contain exactly 16 recipes (4 paths × 2 ranks × 2 routes).")
         content_source = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/lotm/LotmContent.java").read_text(encoding="utf-8")
-        for locale in ("en_us", "zh_cn"):
-            lang = load(ASSETS / "lang" / f"{locale}.json")
+        en = load(ASSETS / "lang/en_us.json")
+        zh = load(ASSETS / "lang/zh_cn.json")
         for (path, seq), (a, b) in MATERIALS.items():
             normal_name = f"lotm_{path}_potion.json" if seq == 9 else f"lotm_{path}_s8_potion.json"
             normal = load(DATA / "recipe" / normal_name)
