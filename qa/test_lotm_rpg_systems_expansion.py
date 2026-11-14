@@ -249,6 +249,21 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockPlace)", mod)
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockBreak)", mod)
 
+    def test_actionbar_hud_is_opt_in_server_authoritative_and_bilingual(self):
+        hud = (JAVA / "lotm/LotmHud.java").read_text(encoding="utf-8")
+        events = (JAVA / "lotm/LotmEvents.java").read_text(encoding="utf-8")
+        commands = (JAVA / "lotm/LotmCommands.java").read_text(encoding="utf-8")
+        self.assertIn("displayClientMessage(line, true)", hud)
+        self.assertIn("LotmHud.tick(player)", events)
+        self.assertIn("LotmHud.toggle(player)", commands)
+        self.assertIn("LotmHud.copy(original, clone)", (JAVA / "lotm/LotmState.java").read_text(encoding="utf-8"))
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            for key in ("message.realscale.lotm.hud.enabled",
+                        "message.realscale.lotm.hud.disabled",
+                        "message.realscale.lotm.hud.line"):
+                self.assertTrue(lang[key])
+
     def test_creatures_have_noncombat_schooling_and_pack_regrouping(self):
         behavior = (JAVA / "lotm/LotmCreatureBehavior.java").read_text(encoding="utf-8")
         creature = (JAVA / "lotm/LotmCreature.java").read_text(encoding="utf-8")
