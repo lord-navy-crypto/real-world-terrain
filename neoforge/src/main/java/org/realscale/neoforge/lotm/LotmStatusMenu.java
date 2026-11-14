@@ -87,6 +87,17 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
     public boolean appearanceEffectsEnabled() { return data.get(11) != 0; }
     public boolean creaturesEnabled() { return data.get(12) != 0; }
     public int skillCostPercent() { return data.get(13); }
+    /** Same pathway, Curios, instability, mastery and config formula used by the ability validator. */
+    public int skillCost(int slot) {
+        if (pathIndex() <= 0 || pathIndex() > LotmPath.values().length
+                || (sequence() != 9 && sequence() != 8) || slot < 1 || slot > 2) {
+            return LotmBalance.MAX_SPIRIT;
+        }
+        LotmPath path = LotmPath.values()[pathIndex() - 1];
+        int base = LotmBalance.skillCost(path.id(), slot, sequence(),
+                hasDivinationPendulum(), instability());
+        return LotmBalance.skillCostWithMastery(base, skillMastery(slot), skillCostPercent());
+    }
     public int materialDropPercent() { return data.get(14); }
     public int hudRefreshTicks() { return data.get(15); }
     public int manualAlchemyTicks() { return data.get(16); }
