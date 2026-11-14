@@ -19,6 +19,7 @@ public final class LotmActing {
     private static final String PREFIX = "realscale_lotm_acting_daily_";
     private static final String RESEARCH_PREFIX = "realscale_lotm_research_seen_";
     private static final String JOURNAL_PREFIX = "realscale_lotm_research_journal_";
+    private static final String JOURNAL_MIGRATED_PREFIX = "realscale_lotm_research_journal_migrated_";
     private static final int MAX_RESEARCH_JOURNAL_ENTRIES = 128;
     private static final int MAX_RESEARCH_SOURCE_LENGTH = 256;
     private LotmActing() {}
@@ -99,9 +100,13 @@ public final class LotmActing {
         return JOURNAL_PREFIX + path.id();
     }
 
+    private static String researchMigrationKey(LotmPath path) {
+        return JOURNAL_MIGRATED_PREFIX + path.id();
+    }
+
     /**
      * Merge discoveries from older per-sequence saves into the pathway-wide journal.
-     * This migration is idempotent and preserves existing players' research history.
+     * The migration marker avoids rescanning old lists on every menu data tick.
      */
     private static ListTag loadResearchJournal(Player player, LotmPath path) {
         CompoundTag tag = player.getPersistentData();
@@ -112,19 +117,24 @@ public final class LotmActing {
             journal.remove(0);
             changed = true;
         }
-        for (int sequence : new int[] {9, 8}) {
-            ListTag legacy = tag.getList(RESEARCH_PREFIX + path.id() + "_" + sequence, Tag.TAG_STRING);
-            for (int index = 0; index < legacy.size(); index++) {
-                String source = legacy.getString(index);
-                if (source.isBlank()) continue;
-                String bounded = source.length() > MAX_RESEARCH_SOURCE_LENGTH
-                        ? source.substring(0, MAX_RESEARCH_SOURCE_LENGTH) : source;
-                StringTag id = StringTag.valueOf(bounded);
-                if (journal.contains(id)) continue;
-                while (journal.size() >= MAX_RESEARCH_JOURNAL_ENTRIES) journal.remove(0);
-                journal.add(id);
-                changed = true;
+        String migrationKey = researchMigrationKey(path);
+        if (!tag.getBoolean(migrationKey)) {
+            for (int sequence : new int[] {9, 8}) {
+                ListTag legacy = tag.getList(RESEARCH_PREFIX + path.id() + "_" + sequence, Tag.TAG_STRING);
+                for (int index = 0; index < legacy.size(); index++) {
+                    String source = legacy.getString(index);
+                    if (source.isBlank()) continue;
+                    String bounded = source.length() > MAX_RESEARCH_SOURCE_LENGTH
+                            ? source.substring(0, MAX_RESEARCH_SOURCE_LENGTH) : source;
+                    StringTag id = StringTag.valueOf(bounded);
+                    if (journal.contains(id)) continue;
+                    while (journal.size() >= MAX_RESEARCH_JOURNAL_ENTRIES) journal.remove(0);
+                    journal.add(id);
+                    changed = true;
+                }
             }
+            tag.putBoolean(migrationKey, true);
+            changed = true;
         }
         if (changed) tag.put(journalKey, journal);
         return journal;
@@ -264,7 +274,9 @@ public final class LotmActing {
         }
         for (LotmPath path : LotmPath.values()) {
             String journalKey = researchJournalKey(path);
+            String migrationKey = researchMigrationKey(path);
             if (source.contains(journalKey)) target.put(journalKey, source.get(journalKey).copy());
+            if (source.contains(migrationKey)) target.put(migrationKey, source.get(migrationKey).copy());
             for (int sequence : new int[] {9, 8}) {
                 String suffix = path.id() + "_" + sequence;
                 for (String key : new String[] {"realscale_lotm_seen_" + suffix,
