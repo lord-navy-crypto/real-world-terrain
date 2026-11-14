@@ -201,7 +201,7 @@ public final class LotmActing {
         CompoundTag tag = player.getPersistentData();
         String key = eventJournalKey(path);
         ListTag journal = tag.getList(key, Tag.TAG_STRING);
-        boolean changed = false;
+        boolean changed = true;
         for (int index = journal.size() - 1; index >= 0; index--) {
             String[] old = parseJournalEvent(journal.getString(index));
             if (old == null || !category.equals(old[2]) || !id.equals(old[4])) continue;
