@@ -63,7 +63,7 @@ public final class LotmActing {
         ListTag journal = loadResearchJournal(player, path);
         boolean newlyRecorded = !journal.contains(id);
         if (newlyRecorded) {
-            if (journal.size() >= MAX_RESEARCH_JOURNAL_ENTRIES) journal.remove(0);
+            while (journal.size() >= MAX_RESEARCH_JOURNAL_ENTRIES) journal.remove(0);
             journal.add(id);
             tag.put(journalKey, journal);
         }
@@ -108,6 +108,10 @@ public final class LotmActing {
         String journalKey = researchJournalKey(path);
         ListTag journal = tag.getList(journalKey, Tag.TAG_STRING);
         boolean changed = false;
+        while (journal.size() > MAX_RESEARCH_JOURNAL_ENTRIES) {
+            journal.remove(0);
+            changed = true;
+        }
         for (int sequence : new int[] {9, 8}) {
             ListTag legacy = tag.getList(RESEARCH_PREFIX + path.id() + "_" + sequence, Tag.TAG_STRING);
             for (int index = 0; index < legacy.size(); index++) {
@@ -117,7 +121,7 @@ public final class LotmActing {
                         ? source.substring(0, MAX_RESEARCH_SOURCE_LENGTH) : source;
                 StringTag id = StringTag.valueOf(bounded);
                 if (journal.contains(id)) continue;
-                if (journal.size() >= MAX_RESEARCH_JOURNAL_ENTRIES) journal.remove(0);
+                while (journal.size() >= MAX_RESEARCH_JOURNAL_ENTRIES) journal.remove(0);
                 journal.add(id);
                 changed = true;
             }
