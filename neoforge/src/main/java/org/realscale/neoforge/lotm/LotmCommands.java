@@ -144,9 +144,7 @@ public final class LotmCommands {
             }))
             .then(Commands.literal("panel").executes(context -> {
                 ServerPlayer player = context.getSource().getPlayerOrException();
-                player.openMenu(new SimpleMenuProvider((id, inventory, openingPlayer) ->
-                        new LotmStatusMenu(id, inventory, LotmStatusMenu.dataFor(player)),
-                        Component.translatable("gui.realscale.lotm_panel.title")));
+                LotmPanelNetwork.openPanel(player);
                 return 1;
             }))
             .then(Commands.literal("diagnose").executes(context -> {
