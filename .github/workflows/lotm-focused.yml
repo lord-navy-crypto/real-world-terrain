@@ -58,7 +58,9 @@ jobs:
 
       - name: Compile the integrated NeoForge mod and execute all JUnit tests
         working-directory: neoforge
-        run: gradle --no-daemon --stacktrace clean build --tests 'org.realscale.neoforge.lotm.*'
+        run: |
+          gradle --no-daemon --stacktrace clean build -x test
+          gradle --no-daemon --stacktrace test --tests 'org.realscale.neoforge.lotm.*'
 
       - name: Verify the packaged JAR contains LOTM logic and generated visuals
         run: |
