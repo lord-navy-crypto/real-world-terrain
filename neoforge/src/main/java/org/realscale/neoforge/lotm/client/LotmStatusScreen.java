@@ -32,6 +32,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     private static final int JOURNAL_DEFAULT_PAGE_SIZE = 7;
     private int selectedTab;
     private int creatureIndex;
+    private int materialPage;
     private int journalPage;
     private int journalFilter;
     private int settingsPage;
@@ -52,6 +53,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     private Button journalTimestampButton;
     private Button journalSortSettingButton;
     private Button skillDetailsButton;
+    private Button previousMaterialPage;
+    private Button nextMaterialPage;
     private Button openBestiary;
     private Button previousCreature;
     private Button nextCreature;
@@ -95,6 +98,15 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
                         LotmStatusMenu.BUTTON_TOGGLE_APPEARANCE))
                 .bounds(leftPos + 112, topPos + 238, 96, 18).build());
+
+        previousMaterialPage = addRenderableWidget(Button.builder(
+                Component.translatable("gui.realscale.lotm_panel.materials.previous"),
+                button -> materialPage = Math.max(0, materialPage - 1))
+                .bounds(leftPos + 10, topPos + 238, 76, 18).build());
+        nextMaterialPage = addRenderableWidget(Button.builder(
+                Component.translatable("gui.realscale.lotm_panel.materials.next"),
+                button -> materialPage = Math.min(materialPageCount() - 1, materialPage + 1))
+                .bounds(leftPos + 234, topPos + 238, 76, 18).build());
 
         openBestiary = addRenderableWidget(Button.builder(
                 Component.translatable("gui.realscale.lotm_panel.bestiary.open"),
@@ -200,6 +212,30 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             LotmClientConfig.SHOW_SKILL_DETAILS.set(!LotmClientConfig.SHOW_SKILL_DETAILS.get());
             LotmClientConfig.save();
         }).bounds(leftPos + 210, topPos + 122, 98, 18).build());
+    }
+
+    private record CarriedMaterial(net.minecraft.world.item.Item item, int count) {}
+
+    private List<CarriedMaterial> carriedMaterialStacks() {
+        if (minecraft == null || minecraft.player == null) return List.of();
+        Inventory inventory = minecraft.player.getInventory();
+        List<CarriedMaterial> found = new ArrayList<>();
+        for (var supplier : LotmContent.registeredMaterials().values()) {
+            net.minecraft.world.item.Item item = supplier.get();
+            int count = 0;
+            for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+                ItemStack stack = inventory.getItem(slot);
+                if (stack.is(item)) count += stack.getCount();
+            }
+            if (count > 0) found.add(new CarriedMaterial(item, count));
+        }
+        found.sort(Comparator.comparing(entry ->
+                new ItemStack(entry.item()).getHoverName().getString()));
+        return List.copyOf(found);
+    }
+
+    private int materialPageCount() {
+        return Math.max(1, (carriedMaterialStacks().size() + 5) / 6);
     }
 
     private void refreshRecipes() {
@@ -410,6 +446,12 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                     "gui.realscale.lotm_panel.settings.skill_details",
                     onOff(LotmClientConfig.SHOW_SKILL_DETAILS.get())));
         }
+        if (previousMaterialPage != null) {
+            previousMaterialPage.visible = selectedTab == 2 && materialPage > 0;
+        }
+        if (nextMaterialPage != null) {
+            nextMaterialPage.visible = selectedTab == 2 && materialPage + 1 < materialPageCount();
+        }
         if (openBestiary != null) openBestiary.visible = selectedTab == 2;
         if (previousCreature != null) previousCreature.visible = selectedTab == 6;
         if (nextCreature != null) nextCreature.visible = selectedTab == 6;
@@ -599,7 +641,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                         menu.skillMastery(slot), masteryCap, slot == 1 ? 0xFFB28AD8 : 0xFF79B7C7);
             }
         } else if (selectedTab == 2) {
-            graphics.fill(x + 12, y + 66, x + 308, y + 226, panelColor(0xFF282438));
+            graphics.fill(x + 12, y + 66, x + 152, y + 226, panelColor(0xFF282438));
+            graphics.fill(x + 160, y + 66, x + 308, y + 226, panelColor(0xFF282438));
         } else if (selectedTab == 3 && !alchemyRecipes.isEmpty()) {
             for (int index = 0; index < 4; index++) {
                 int itemX = x + 30 + (index % 2) * 25;
@@ -776,15 +819,44 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                         menu.preparedPotionRequirement(), menu.characteristicRequirement()),
                         14, 82, 0xFFB8ADC9, false);
             }
-            int lineY = 99;
+            graphics.drawString(font, Component.translatable(
+                    "gui.realscale.lotm_panel.materials.required_header"),
+                    14, 99, 0xFFE5CB9F, false);
+            graphics.drawString(font, Component.translatable(
+                    "gui.realscale.lotm_panel.materials.inventory_header"),
+                    166, 68, 0xFFE5CB9F, false);
+            int lineY = 114;
             for (Component section : new Component[] {materials, manualOne, manualTwo}) {
-                for (var line : font.split(section, 286)) {
-                    if (lineY > 190) break;
+                for (var line : font.split(section, 132)) {
+                    if (lineY > 218) break;
                     graphics.drawString(font, line, 14, lineY, 0xFFD7CDE4, false);
-                    lineY += 13;
+                    lineY += 12;
                 }
-                lineY += 4;
-                if (lineY > 190) break;
+                lineY += 3;
+                if (lineY > 218) break;
+            }
+            List<CarriedMaterial> carried = carriedMaterialStacks();
+            int firstMaterial = materialPage * 6;
+            int lastMaterial = Math.min(carried.size(), firstMaterial + 6);
+            if (carried.isEmpty()) {
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.materials.inventory_empty"),
+                        166, 91, 0xFFB8ADC9, false);
+            } else {
+                int rowY = 88;
+                for (int index = firstMaterial; index < lastMaterial; index++) {
+                    CarriedMaterial material = carried.get(index);
+                    graphics.renderItem(new ItemStack(material.item()), 166, rowY - 3);
+                    String label = new ItemStack(material.item()).getHoverName().getString()
+                            + " ×" + material.count();
+                    graphics.drawString(font, font.plainSubstrByWidth(label, 120),
+                            186, rowY, 0xFFD7CDE4, false);
+                    rowY += 21;
+                }
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.materials.page",
+                        materialPage + 1, materialPageCount()),
+                        215, 218, 0xFFB8ADC9, false);
             }
         } else if (selectedTab == 3) {
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.alchemy_header"),
