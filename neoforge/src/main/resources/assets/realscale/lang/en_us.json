@@ -440,5 +440,12 @@
   "gui.realscale.lotm_panel.settings.hud_refresh": "HUD: %s t",
   "gui.realscale.lotm_panel.settings.aura_interval": "Aura: %s t",
   "gui.realscale.lotm_panel.settings.manual_alchemy": "Manual: %s t",
-  "gui.realscale.lotm_panel.skill_tree.unavailable": "No active skills at this sequence"
+  "gui.realscale.lotm_panel.skill_tree.unavailable": "No active skills at this sequence",
+  "gui.realscale.lotm_panel.journal.filter.all": "All",
+  "gui.realscale.lotm_panel.journal.filter.entity": "Entities",
+  "gui.realscale.lotm_panel.journal.filter.block": "Blocks",
+  "gui.realscale.lotm_panel.journal.filter.item": "Items",
+  "gui.realscale.lotm_panel.journal.filter.biome": "Biomes",
+  "gui.realscale.lotm_panel.journal.filter.other": "Other",
+  "gui.realscale.lotm_panel.journal.filtered_count": "Showing %s / %s"
 }
