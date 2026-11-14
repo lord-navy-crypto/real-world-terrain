@@ -8,14 +8,15 @@ import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.item.ItemStack;
 
-/** Read-only synchronized player panel with two server-authoritative preference buttons. */
+/** Read-only synchronized player panel with server-authoritative preference buttons. */
 public final class LotmStatusMenu extends AbstractContainerMenu {
-    public static final int DATA_COUNT = 32;
+    public static final int DATA_COUNT = 33;
     public static final int BUTTON_TOGGLE_HUD = 0;
     public static final int BUTTON_TOGGLE_APPEARANCE = 1;
     public static final int BUTTON_TOGGLE_SOUND = 2;
     public static final int BUTTON_TOGGLE_SKILL_FEEDBACK = 3;
     public static final int BUTTON_TOGGLE_JOURNAL_NOTIFICATIONS = 4;
+    public static final int BUTTON_TOGGLE_PARTICLES = 5;
     private final ContainerData data;
 
     public LotmStatusMenu(int id, Inventory inventory) {
@@ -66,6 +67,7 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
                     case 29 -> LotmContent.countMaterials(player);
                     case 30 -> LotmConfig.POTION_PRACTICE.get();
                     case 31 -> LotmConfig.CHARACTERISTIC_PRACTICE.get();
+                    case 32 -> LotmPreferences.particlesEnabled(player) ? 1 : 0;
                     default -> 0;
                 };
             }
@@ -113,6 +115,7 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
     public int materialCount() { return data.get(29); }
     public int preparedPotionRequirement() { return data.get(30); }
     public int characteristicRequirement() { return data.get(31); }
+    public boolean particlesEnabled() { return data.get(32) != 0; }
 
     @Override
     public boolean clickMenuButton(Player player, int id) {
@@ -135,6 +138,10 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
         }
         if (id == BUTTON_TOGGLE_JOURNAL_NOTIFICATIONS) {
             LotmPreferences.toggleJournalNotifications(serverPlayer);
+            return true;
+        }
+        if (id == BUTTON_TOGGLE_PARTICLES) {
+            LotmPreferences.toggleParticles(serverPlayer);
             return true;
         }
         return false;
