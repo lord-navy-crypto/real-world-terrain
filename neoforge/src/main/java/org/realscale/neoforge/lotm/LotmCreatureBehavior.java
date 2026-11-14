@@ -15,6 +15,18 @@ public enum LotmCreatureBehavior {
     PACK_HOWL,
     DIVE_HUNTER;
 
+    /**
+     * Death Crow dives only from a meaningful height, within a short horizontal
+     * strike window, and after its per-entity recovery interval.
+     */
+    public static boolean shouldDive(int tickCount, int nextDiveTick,
+            double verticalDifference, double horizontalDistanceSqr) {
+        return tickCount >= nextDiveTick
+                && Double.isFinite(verticalDifference) && verticalDifference >= 2.0D
+                && Double.isFinite(horizontalDistanceSqr)
+                && horizontalDistanceSqr >= 0.0D && horizontalDistanceSqr <= 100.0D;
+    }
+
     public static LotmCreatureBehavior forKind(LotmCreatureKind kind) {
         Objects.requireNonNull(kind, "kind");
         return switch (kind) {
