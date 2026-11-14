@@ -5,6 +5,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import org.realscale.neoforge.lotm.*;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
@@ -30,8 +31,9 @@ public final class RealScaleMod {
         NeoForge.EVENT_BUS.addListener(LotmEvents::onClone);
         NeoForge.EVENT_BUS.addListener(LotmPlayerAbilitySync::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(LotmPlayerAbilitySync::onAbilityGranted);
-        NeoForge.EVENT_BUS.addListener(LotmActing::onBlockPlace);
-        NeoForge.EVENT_BUS.addListener(LotmActing::onBlockBreak);
+        // Run last and receive canceled events so provenance/rewards reflect the final event state.
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, true, LotmActing::onBlockPlace);
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, true, LotmActing::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(LotmActing::onExplosionDetonate);
         NeoForge.EVENT_BUS.addListener(LotmCommands::register);
         RealScaleVehicles.register(bus);
