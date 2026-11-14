@@ -76,17 +76,20 @@ public final class LotmEvents {
         if (!LotmConfig.ENABLED.get()) return;
         LivingEntity entity = event.getEntity();
         String id;
+        int sequence = 9;
         if (entity instanceof LotmCreature creature) {
             // The spawn toggle only prevents new natural spawns; already-existing
             // creatures keep their assigned drops when the toggle is changed.
             id = creature.kind().dropId();
+            sequence = creature.kind().sequence();
         } else {
             // Keep old tagged stand-ins readable in existing worlds even though
             // new vanilla stand-ins are disabled by default.
             id = LotmEcologyRules.DROPS.get(entity.getPersistentData().getString(VARIANT));
         }
-        if (id == null || entity.getRandom().nextInt(100)
-                >= LotmConfig.MATERIAL_DROP_CHANCE_PERCENT.get()) return;
+        if (id == null || !LotmDropBalance.roll(
+                LotmConfig.MATERIAL_DROP_CHANCE_PERCENT.get(), sequence,
+                entity.getRandom().nextInt(100))) return;
         Supplier<Item> material = LotmContent.materialItem(id);
         if (material != null) event.getDrops().add(new ItemEntity(entity.level(),
                 entity.getX(), entity.getY(), entity.getZ(), new ItemStack(material.get())));
