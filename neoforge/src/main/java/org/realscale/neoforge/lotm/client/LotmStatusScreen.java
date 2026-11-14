@@ -1,6 +1,15 @@
 package org.realscale.neoforge.lotm.client;
 
 import net.minecraft.client.gui.GuiGraphics;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.Ingredient;
+import org.realscale.neoforge.lotm.LotmAlchemyContent;
+import org.realscale.neoforge.lotm.LotmAlchemyRecipe;
+import org.realscale.neoforge.lotm.LotmContent;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -21,6 +30,10 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     private Button previousCreature;
     private Button nextCreature;
     private Button backToMaterials;
+    private Button previousRecipe;
+    private Button nextRecipe;
+    private List<RecipeHolder<LotmAlchemyRecipe>> alchemyRecipes = List.of();
+    private int recipeIndex;
 
     public LotmStatusScreen(LotmStatusMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -30,6 +43,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
 
     @Override protected void init() {
         super.init();
+        refreshRecipes();
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.overview"),
                 button -> selectedTab = 0).bounds(leftPos + 8, topPos + 24, 38, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.skills"),
@@ -67,6 +81,28 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 Component.translatable("gui.realscale.lotm_panel.bestiary.back"),
                 button -> selectedTab = 2)
                 .bounds(leftPos + 150, topPos + 166, 96, 18).build());
+        previousRecipe = addRenderableWidget(Button.builder(
+                Component.translatable("gui.realscale.lotm_panel.alchemy.previous"),
+                button -> recipeIndex = Math.floorMod(recipeIndex - 1, alchemyRecipes.size()))
+                .bounds(leftPos + 12, topPos + 166, 88, 18).build());
+        nextRecipe = addRenderableWidget(Button.builder(
+                Component.translatable("gui.realscale.lotm_panel.alchemy.next"),
+                button -> recipeIndex = (recipeIndex + 1) % alchemyRecipes.size())
+                .bounds(leftPos + 156, topPos + 166, 88, 18).build());
+    }
+
+    private void refreshRecipes() {
+        if (minecraft == null || minecraft.level == null) {
+            alchemyRecipes = List.of();
+            recipeIndex = 0;
+            return;
+        }
+        List<RecipeHolder<LotmAlchemyRecipe>> synced = new ArrayList<>(
+                minecraft.level.getRecipeManager().getAllRecipesFor(
+                        LotmAlchemyContent.ALCHEMY_RECIPE_TYPE.get()));
+        synced.sort(Comparator.comparing(holder -> holder.id().toString()));
+        alchemyRecipes = List.copyOf(synced);
+        recipeIndex = alchemyRecipes.isEmpty() ? 0 : recipeIndex % alchemyRecipes.size();
     }
 
     @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
@@ -77,6 +113,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         if (previousCreature != null) previousCreature.visible = selectedTab == 6;
         if (nextCreature != null) nextCreature.visible = selectedTab == 6;
         if (backToMaterials != null) backToMaterials.visible = selectedTab == 6;
+        if (previousRecipe != null) previousRecipe.visible = selectedTab == 3 && alchemyRecipes.size() > 1;
+        if (nextRecipe != null) nextRecipe.visible = selectedTab == 3 && alchemyRecipes.size() > 1;
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
     }
@@ -95,6 +133,14 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         } else if (selectedTab == 1) {
             bar(graphics, x + 14, y + 91, 224, 5, menu.skillMastery(1), menu.skillMasteryCap(), 0xFFB28AD8);
             bar(graphics, x + 14, y + 145, 224, 5, menu.skillMastery(2), menu.skillMasteryCap(), 0xFF79B7C7);
+        } else if (selectedTab == 3 && !alchemyRecipes.isEmpty()) {
+            for (int index = 0; index < 4; index++) {
+                int itemX = x + 22 + (index % 2) * 23;
+                int itemY = y + 86 + (index / 2) * 23;
+                graphics.fill(itemX - 2, itemY - 2, itemX + 18, itemY + 18, 0xFF403650);
+            }
+            graphics.fill(x + 118, y + 98, x + 140, y + 120, 0xFF403650);
+            graphics.fill(x + 193, y + 98, x + 215, y + 120, 0xFF403650);
         } else if (selectedTab == 4) {
             final int[] caps = {12, 8, 9, 6};
             for (int index = 0; index < caps.length; index++) {
@@ -179,13 +225,42 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             }
         } else if (selectedTab == 3) {
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.alchemy_header"), 14, 51, 0xFFEDE4F6, false);
-            int y = 68;
-            for (int n = 1; n <= 5; n++) {
-                for (var line : font.split(Component.translatable("gui.realscale.lotm_panel.alchemy_line" + n), 222)) {
-                    graphics.drawString(font, line, 14, y, 0xFFD7CDE4, false);
-                    y += 12;
+            if (alchemyRecipes.isEmpty() || this.minecraft.level == null) {
+                graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.alchemy.no_recipes"),
+                        14, 78, 0xFFB8ADC9, false);
+            } else {
+                RecipeHolder<LotmAlchemyRecipe> holder = alchemyRecipes.get(recipeIndex);
+                LotmAlchemyRecipe recipe = holder.value();
+                ItemStack result = recipe.getResultItem(this.minecraft.level.registryAccess());
+                graphics.drawString(font,
+                        Component.translatable("gui.realscale.lotm_panel.alchemy.page",
+                                recipeIndex + 1, alchemyRecipes.size()), 14, 66, 0xFFB8ADC9, false);
+                graphics.drawString(font,
+                        Component.translatable("gui.realscale.lotm_panel.alchemy.inputs"),
+                        14, 77, 0xFFD7CDE4, false);
+                int index = 0;
+                for (Ingredient ingredient : recipe.getIngredients()) {
+                    ItemStack[] choices = ingredient.getItems();
+                    if (choices.length > 0 && index < 4) {
+                        graphics.renderItem(choices[0], 22 + (index % 2) * 23, 86 + (index / 2) * 23);
+                    }
+                    index++;
                 }
-                y += 5;
+                graphics.drawString(font,
+                        Component.translatable("gui.realscale.lotm_panel.alchemy.fuel"),
+                        115, 77, 0xFFD7CDE4, false);
+                graphics.renderItem(new ItemStack(LotmContent.SPIRIT_EMBER.get()), 120, 100);
+                graphics.drawString(font,
+                        Component.translatable("gui.realscale.lotm_panel.alchemy.result"),
+                        185, 77, 0xFFD7CDE4, false);
+                graphics.renderItem(result, 195, 100);
+                graphics.drawString(font, font.plainSubstrByWidth(result.getHoverName().getString(), 222),
+                        14, 132, 0xFFE6DCF3, false);
+                for (var line : font.split(
+                        Component.translatable("gui.realscale.lotm_panel.alchemy.fuel_note"), 222)) {
+                    graphics.drawString(font, line, 14, 147, 0xFFB8ADC9, false);
+                    break;
+                }
             }
         } else if (selectedTab == 4) {
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal_header"), 14, 51, 0xFFEDE4F6, false);

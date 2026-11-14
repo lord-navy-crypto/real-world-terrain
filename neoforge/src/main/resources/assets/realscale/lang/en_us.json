@@ -401,5 +401,13 @@
   "gui.realscale.lotm_panel.bestiary.health": "Health: %s",
   "gui.realscale.lotm_panel.bestiary.attack": "Attack: %s",
   "gui.realscale.lotm_panel.bestiary.armor": "Armor: %s",
-  "gui.realscale.lotm_panel.bestiary.drop": "Signature: %s (%s%% chance)"
+  "gui.realscale.lotm_panel.bestiary.drop": "Signature: %s (%s%% chance)",
+  "gui.realscale.lotm_panel.alchemy.previous": "Previous recipe",
+  "gui.realscale.lotm_panel.alchemy.next": "Next recipe",
+  "gui.realscale.lotm_panel.alchemy.no_recipes": "No alchemy recipes synced from this world.",
+  "gui.realscale.lotm_panel.alchemy.page": "Recipe %s / %s",
+  "gui.realscale.lotm_panel.alchemy.inputs": "Inputs (2x2)",
+  "gui.realscale.lotm_panel.alchemy.fuel": "Fuel",
+  "gui.realscale.lotm_panel.alchemy.result": "Result",
+  "gui.realscale.lotm_panel.alchemy.fuel_note": "Use a placed alchemy apparatus to brew."
 }

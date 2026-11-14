@@ -401,5 +401,13 @@
   "gui.realscale.lotm_panel.bestiary.health": "生命值：%s",
   "gui.realscale.lotm_panel.bestiary.attack": "攻击力：%s",
   "gui.realscale.lotm_panel.bestiary.armor": "护甲：%s",
-  "gui.realscale.lotm_panel.bestiary.drop": "关键材料：%s（掉落率 %s%%）"
+  "gui.realscale.lotm_panel.bestiary.drop": "关键材料：%s（掉落率 %s%%）",
+  "gui.realscale.lotm_panel.alchemy.previous": "上一配方",
+  "gui.realscale.lotm_panel.alchemy.next": "下一配方",
+  "gui.realscale.lotm_panel.alchemy.no_recipes": "此世界尚未同步炼金配方。",
+  "gui.realscale.lotm_panel.alchemy.page": "配方 %s / %s",
+  "gui.realscale.lotm_panel.alchemy.inputs": "材料（2×2）",
+  "gui.realscale.lotm_panel.alchemy.fuel": "燃料",
+  "gui.realscale.lotm_panel.alchemy.result": "产物",
+  "gui.realscale.lotm_panel.alchemy.fuel_note": "在已放置的炼金装置中完成炼制。"
 }

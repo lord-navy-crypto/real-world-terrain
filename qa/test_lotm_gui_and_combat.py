@@ -25,6 +25,10 @@ class LotmGuiAndCombatTests(unittest.TestCase):
         for index in range(6):
             self.assertIn(f"selectedTab = {index}", screen)
         self.assertIn("alchemy_line", screen)
+        self.assertIn("getAllRecipesFor(", screen)
+        self.assertIn("recipe.getIngredients()", screen)
+        self.assertIn("graphics.renderItem(", screen)
+        self.assertIn("previousRecipe.visible = selectedTab == 3", screen)
         self.assertIn("journal_header", screen)
         self.assertIn("selectedTab = 6", screen)
         self.assertIn("LotmCreatureKind.values()[creatureIndex]", screen)
@@ -96,5 +100,8 @@ class LotmGuiAndCombatTests(unittest.TestCase):
                 "gui.realscale.lotm_panel.bestiary.header",
                 "gui.realscale.lotm_panel.bestiary.drop",
                 "gui.realscale.lotm_panel.bestiary.previous",
+                "gui.realscale.lotm_panel.alchemy.previous",
+                "gui.realscale.lotm_panel.alchemy.next",
+                "gui.realscale.lotm_panel.alchemy.no_recipes",
             ):
                 self.assertTrue(lang.get(key), (locale, key))
