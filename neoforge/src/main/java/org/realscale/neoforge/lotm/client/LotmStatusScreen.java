@@ -3,6 +3,7 @@ package org.realscale.neoforge.lotm.client;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -192,6 +193,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         renderTooltip(graphics, mouseX, mouseY);
         renderRecipeItemTooltip(graphics, mouseX, mouseY);
         renderJournalEntryTooltip(graphics, mouseX, mouseY);
+        renderBestiaryTooltip(graphics, mouseX, mouseY);
     }
 
     /** Full localized clue name is available on hover even when the row is shortened. */
@@ -207,6 +209,25 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         graphics.renderTooltip(font, researchName(entries.get(index)), mouseX, mouseY);
     }
 
+    /** The field guide reveals ecology and signature behavior without crowding its compact card. */
+    private void renderBestiaryTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (selectedTab != 6 || mouseX < leftPos + 12 || mouseX >= leftPos + 308
+                || mouseY < topPos + 66 || mouseY >= topPos + 196) return;
+        LotmCreatureKind kind = LotmCreatureKind.values()[creatureIndex];
+        String movement = kind.isAquatic() ? "aquatic"
+                : kind.isAmphibious() ? "amphibious"
+                : kind.isFlying() ? "flying" : "terrestrial";
+        String activity = kind.isNocturnal() ? "nocturnal" : "anytime";
+        List<Component> lines = List.of(
+                Component.translatable("gui.realscale.lotm_panel.bestiary.tooltip.behavior." + kind.id()),
+                Component.translatable("gui.realscale.lotm_panel.bestiary.tooltip.habitat." + kind.id()),
+                Component.translatable("gui.realscale.lotm_panel.bestiary.tooltip.movement." + movement),
+                Component.translatable("gui.realscale.lotm_panel.bestiary.tooltip.activity." + activity),
+                Component.translatable("gui.realscale.lotm_panel.bestiary.tooltip.group_size",
+                        kind.minGroupSize(), kind.maxGroupSize()));
+        graphics.renderTooltip(font, lines, Optional.empty(), mouseX, mouseY);
+    }
+
     /** Tooltips identify the actual ingredients and output in the recipe browser. */
     private void renderRecipeItemTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
         if (selectedTab != 3 || alchemyRecipes.isEmpty()
@@ -219,7 +240,21 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             int y = topPos + 93 + (ingredientIndex / 2) * 25;
             if (mouseX >= x && mouseX < x + 16 && mouseY >= y && mouseY < y + 16) {
                 ItemStack[] choices = ingredient.getItems();
-                if (choices.length > 0) graphics.renderTooltip(font, choices[0], mouseX, mouseY);
+                if (choices.length > 0) {
+                    List<Component> lines = new ArrayList<>();
+                    lines.add(Component.translatable(
+                            "gui.realscale.lotm_panel.alchemy.ingredient_options", choices.length));
+                    int shown = Math.min(choices.length, 8);
+                    for (int choice = 0; choice < shown; choice++) {
+                        lines.add(choices[choice].getHoverName());
+                    }
+                    if (choices.length > shown) {
+                        lines.add(Component.translatable(
+                                "gui.realscale.lotm_panel.alchemy.ingredient_more",
+                                choices.length - shown));
+                    }
+                    graphics.renderTooltip(font, lines, Optional.empty(), mouseX, mouseY);
+                }
                 return;
             }
             ingredientIndex++;
