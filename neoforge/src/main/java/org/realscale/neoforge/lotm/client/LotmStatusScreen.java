@@ -79,12 +79,20 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.spirit", menu.spirit(), 100), 14, 83, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.digestion", menu.digestion(), 100), 14, 117, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.instability", menu.instability()), 14, 143, 0xFFE0B8C8, false);
+            Component accessory = menu.hasSpiritFocus()
+                    ? Component.translatable("item.realscale.lotm_spirit_focus")
+                    : menu.hasDivinationPendulum()
+                            ? Component.translatable("item.realscale.lotm_divination_pendulum")
+                            : Component.translatable("message.realscale.lotm.status.no_accessory");
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.accessory", accessory),
+                    14, 153, 0xFFB8ADC9, false);
         } else if (selectedTab == 1) {
             int sequence = menu.sequence();
             for (int slot = 1; slot <= 2; slot++) {
                 int y = slot == 1 ? 51 : 105;
                 int mastery = menu.skillMastery(slot);
-                int base = LotmBalance.skillCost(path.id(), slot, sequence, false, menu.instability());
+                int base = LotmBalance.skillCost(path.id(), slot, sequence,
+                        menu.hasDivinationPendulum(), menu.instability());
                 int cost = LotmBalance.skillCostWithMastery(base, mastery, menu.skillCostPercent());
                 String skillKey = "gui.realscale.lotm_panel.skill." + path.id() + "." + slot;
                 graphics.drawString(font, Component.translatable(skillKey + ".name"), 14, y, 0xFFEDE4F6, false);
