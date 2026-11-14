@@ -13,6 +13,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
+import org.realscale.neoforge.lotm.LotmActing;
 import org.realscale.neoforge.lotm.LotmAlchemyContent;
 import org.realscale.neoforge.lotm.LotmAlchemyRecipe;
 import org.realscale.neoforge.lotm.LotmBalance;
@@ -155,6 +156,20 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
         renderRecipeItemTooltip(graphics, mouseX, mouseY);
+        renderJournalEntryTooltip(graphics, mouseX, mouseY);
+    }
+
+    /** Full localized clue name is available on hover even when the row is shortened. */
+    private void renderJournalEntryTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (selectedTab != 4 || mouseX < leftPos + 166 || mouseX >= leftPos + 300) return;
+        int relativeY = mouseY - (topPos + 96);
+        if (relativeY < 0) return;
+        int row = relativeY / 14;
+        if (row >= JOURNAL_PAGE_SIZE || relativeY % 14 >= 12) return;
+        List<String> entries = LotmPanelNetwork.clientResearchEntries();
+        int index = journalPage * JOURNAL_PAGE_SIZE + row;
+        if (index < 0 || index >= entries.size()) return;
+        graphics.renderTooltip(font, researchName(entries.get(index)), mouseX, mouseY);
     }
 
     /** Tooltips identify the actual ingredients and output in the recipe browser. */
@@ -224,10 +239,10 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         } else if (selectedTab == 4) {
             graphics.fill(x + 12, y + 66, x + 152, y + 196, 0xFF282438);
             graphics.fill(x + 160, y + 66, x + 308, y + 196, 0xFF282438);
-            final int[] caps = {12, 8, 9, 6};
-            for (int index = 0; index < caps.length; index++) {
+            final String[] categories = {"exploration", "skill", "research", "fieldwork"};
+            for (int index = 0; index < categories.length; index++) {
                 bar(graphics, x + 22, y + 101 + index * 24, 120, 4,
-                        menu.dailyActing(index), caps[index], 0xFF79B7C7);
+                        menu.dailyActing(index), LotmActing.dailyCap(categories[index]), 0xFF79B7C7);
             }
         } else if (selectedTab == 5) {
             graphics.fill(x + 12, y + 66, x + 152, y + 196, 0xFF282438);
@@ -322,14 +337,21 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 graphics.drawString(font, sequence9, cardX + 34, 128, 0xFF9ED8C0, false);
                 graphics.drawString(font, sequence8, cardX + 34, 155,
                         sequence == 8 ? 0xFF9ED8C0 : 0xFFB8ADC9, false);
-                int base = LotmBalance.skillCost(path.id(), slot, sequence,
-                        menu.hasDivinationPendulum(), menu.instability());
-                int cost = LotmBalance.skillCostWithMastery(base, mastery, menu.skillCostPercent());
-                graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.skill_tree.cost",
-                        cost, LotmBalance.skillCooldownTicks(slot, sequence)),
-                        cardX, 174, menu.spirit() < cost ? 0xFFEAA0A0 : 0xFFB8ADC9, false);
-                graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.mastery",
-                        mastery, masteryCap), cardX, 184, 0xFFD7CDE4, false);
+                if (activeSequence && menu.skillsEnabled()) {
+                    int base = LotmBalance.skillCost(path.id(), slot, sequence,
+                            menu.hasDivinationPendulum(), menu.instability());
+                    int cost = LotmBalance.skillCostWithMastery(base, mastery, menu.skillCostPercent());
+                    graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.skill_tree.cost",
+                            cost, LotmBalance.skillCooldownTicks(slot, sequence)),
+                            cardX, 174, menu.spirit() < cost ? 0xFFEAA0A0 : 0xFFB8ADC9, false);
+                    graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.mastery",
+                            mastery, masteryCap), cardX, 184, 0xFFD7CDE4, false);
+                } else {
+                    Component unavailable = !menu.skillsEnabled()
+                            ? Component.translatable("gui.realscale.lotm_panel.skill_tree.disabled")
+                            : Component.translatable("gui.realscale.lotm_panel.skill_tree.unavailable");
+                    graphics.drawString(font, unavailable, cardX, 174, 0xFFB8ADC9, false);
+                }
             }
         } else if (selectedTab == 2) {
             int nextSequence = menu.sequence() - 1;
@@ -402,12 +424,11 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal.recent",
                     menu.researchEntries()), 166, 79, 0xFFE5CB9F, false);
             final String[] categories = {"exploration", "skill", "research", "fieldwork"};
-            final int[] caps = {12, 8, 9, 6};
             for (int index = 0; index < categories.length; index++) {
                 graphics.drawString(font, Component.translatable(
                         "gui.realscale.lotm_panel.journal." + categories[index],
-                        menu.dailyActing(index), caps[index]), 22, 92 + index * 24,
-                        0xFFD7CDE4, false);
+                        menu.dailyActing(index), LotmActing.dailyCap(categories[index])),
+                        22, 92 + index * 24, 0xFFD7CDE4, false);
             }
             if (entries.isEmpty()) {
                 int emptyY = 96;
