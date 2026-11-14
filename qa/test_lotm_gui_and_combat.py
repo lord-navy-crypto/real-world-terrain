@@ -15,7 +15,12 @@ class LotmGuiAndCombatTests(unittest.TestCase):
         screen = (BASE / "lotm/client/LotmStatusScreen.java").read_text()
         self.assertIn("GLFW.GLFW_KEY_O", client)
         self.assertIn("InventoryScreen", client)
-        self.assertIn('sendCommand("lotm panel")', client)
+        self.assertIn("PacketDistributor.sendToServer(", client)
+        self.assertNotIn("sendCommand(", client)
+        network = (BASE / "lotm/LotmPanelNetwork.java").read_text()
+        self.assertIn("registrar.playToServer(", network)
+        self.assertIn("LotmStatusMenu.dataFor(player)", network)
+        self.assertIn("public record OpenPanelPayload()", network)
         self.assertIn("RegisterKeyMappingsEvent", client_events)
         for index in range(6):
             self.assertIn(f"selectedTab = {index}", screen)

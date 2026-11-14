@@ -12,6 +12,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.lwjgl.glfw.GLFW;
+import net.neoforged.neoforge.network.PacketDistributor;
+import org.realscale.neoforge.lotm.LotmPanelNetwork;
 
 /** O key or a survival inventory button opens the existing synchronized LOTM panel. */
 @EventBusSubscriber(modid = "realscale", value = Dist.CLIENT)
@@ -22,11 +24,11 @@ public final class LotmClientKeys {
 
     private LotmClientKeys() {}
 
-    /** Internal menu transport. Players do not need to type commands or enable cheats. */
+    /** Proper NeoForge play payload; no Brigadier command routing or operator privilege. */
     private static void openPanel() {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.getConnection() == null) return;
-        minecraft.getConnection().sendCommand("lotm panel");
+        PacketDistributor.sendToServer(LotmPanelNetwork.OpenPanelPayload.INSTANCE);
     }
 
     @SubscribeEvent
