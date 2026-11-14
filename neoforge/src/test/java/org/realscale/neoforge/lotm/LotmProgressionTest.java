@@ -40,6 +40,17 @@ class LotmProgressionTest {
                 9, 0, true, 70, 90));
     }
 
+    @Test void preparedPotionAndDirectCharacteristicUseExactConfiguredThresholdEdges() {
+        assertEquals(\"digestion\", LotmProgression.validate(\"seer\", 9, \"seer\", 8,
+                69, false, 70, 90));
+        assertEquals(\"ready\", LotmProgression.validate(\"seer\", 9, \"seer\", 8,
+                70, false, 70, 90));
+        assertEquals(\"digestion\", LotmProgression.validate(\"seer\", 9, \"seer\", 8,
+                89, true, 70, 90));
+        assertEquals(\"ready\", LotmProgression.validate(\"seer\", 9, \"seer\", 8,
+                90, true, 70, 90));
+    }
+
     @Test void sequenceCapNeverFallsBelowEight() {
         assertEquals(8, LotmProgression.nextSequence(9));
         assertEquals(8, LotmProgression.nextSequence(8));
