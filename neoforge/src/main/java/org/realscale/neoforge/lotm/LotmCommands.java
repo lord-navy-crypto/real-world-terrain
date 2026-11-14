@@ -137,9 +137,21 @@ public final class LotmCommands {
             }))
             .then(Commands.literal("config").executes(context -> {
                 context.getSource().sendSuccess(() -> Component.translatable(
-                        "message.realscale.lotm.config", LotmConfig.VARIANT_RARITY_PERCENT.get(),
-                        LotmConfig.RELIC_RARITY.get(), LotmConfig.POTION_PRACTICE.get(),
-                        LotmConfig.CHARACTERISTIC_PRACTICE.get()), false);
+                        "message.realscale.lotm.config",
+                        Component.translatable(LotmConfig.ENABLED.get() ? "options.on" : "options.off"),
+                        Component.translatable(LotmConfig.CREATURE_ENTITIES.get() ? "options.on" : "options.off"),
+                        Component.translatable(LotmConfig.CREATURE_VARIANTS.get() ? "options.on" : "options.off"),
+                        Component.translatable(LotmConfig.RELIC_SITES.get() ? "options.on" : "options.off")), false);
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        "message.realscale.lotm.config.progression",
+                        LotmConfig.POTION_PRACTICE.get(), LotmConfig.CHARACTERISTIC_PRACTICE.get(),
+                        LotmConfig.SPIRIT_RECOVERY.get(), LotmConfig.DIGESTION_REWARD_PERCENT.get()), false);
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        "message.realscale.lotm.config.alchemy",
+                        LotmConfig.ALCHEMY_SEQUENCE9_TICKS.get(), LotmConfig.ALCHEMY_SEQUENCE8_TICKS.get()), false);
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        "message.realscale.lotm.config.ecology",
+                        LotmConfig.VARIANT_RARITY_PERCENT.get(), LotmConfig.RELIC_RARITY.get()), false);
                 return 1;
             }))
             .then(Commands.literal("guide")
