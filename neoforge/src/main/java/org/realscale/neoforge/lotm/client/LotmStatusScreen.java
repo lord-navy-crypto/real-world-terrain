@@ -77,6 +77,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.spirit", menu.spirit(), 100), 14, 83, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.digestion", menu.digestion(), 100), 14, 117, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.instability", menu.instability()), 14, 143, 0xFFE0B8C8, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.hud", onOff(menu.hudEnabled())), 14, 153, 0xFFB8ADC9, false);
         } else if (selectedTab == 1) {
             int sequence = menu.sequence();
             for (int slot = 1; slot <= 2; slot++) {
@@ -86,7 +87,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 int cost = LotmBalance.skillCostWithMastery(base, mastery, menu.skillCostPercent());
                 graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.skill", slot), 14, y, 0xFFEDE4F6, false);
                 graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.mastery", mastery,
-                        sequence == 9 ? 1 : 2), 14, y + 14, 0xFFD7CDE4, false);
+                        sequence == 9 ? 1 : menu.skillMasteryCap()), 14, y + 14, 0xFFD7CDE4, false);
                 graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.skill_cost", cost,
                         LotmBalance.skillCooldownTicks(slot, sequence)), 14, y + 25, 0xFFB8ADC9, false);
             }
@@ -98,6 +99,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.creatures", onOff(menu.creaturesEnabled())), 14, 113, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.skill_cost", menu.skillCostPercent()), 14, 128, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.drop_rate", menu.materialDropPercent()), 14, 143, 0xFFD7CDE4, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.hud", onOff(menu.hudEnabled())), 14, 153, 0xFFB8ADC9, false);
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.setting.aura", onOff(menu.appearanceEnabled())), 135, 153, 0xFFB8ADC9, false);
         }
     }
 
