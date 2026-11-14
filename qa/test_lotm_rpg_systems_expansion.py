@@ -249,6 +249,15 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockPlace)", mod)
         self.assertIn("addListener(EventPriority.LOWEST, true, LotmActing::onBlockBreak)", mod)
 
+    def test_unknown_material_drop_ids_fail_closed(self):
+        content = (JAVA / "lotm/LotmContent.java").read_text(encoding="utf-8")
+        events = (JAVA / "lotm/LotmEvents.java").read_text(encoding="utf-8")
+        start = content.index("public static Supplier<Item> materialItem")
+        end = content.index("public static Supplier<? extends Item> characteristic", start)
+        lookup = content[start:end]
+        self.assertIn("return suffix == null ? null : MATERIALS.get(suffix)", lookup)
+        self.assertIn("if (material != null)", events)
+
     def test_lotm_config_command_reports_all_gameplay_controls_bilingually(self):
         commands = (JAVA / "lotm/LotmCommands.java").read_text(encoding="utf-8")
         start = commands.index('Commands.literal("config")')
