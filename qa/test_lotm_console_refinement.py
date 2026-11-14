@@ -14,14 +14,13 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         menu = (LOTM / "LotmStatusMenu.java").read_text(encoding="utf-8")
         content = (LOTM / "LotmContent.java").read_text(encoding="utf-8")
         screen = (LOTM / "client/LotmStatusScreen.java").read_text(encoding="utf-8")
-        self.assertIn("DATA_COUNT = 32", menu)
+        self.assertIn("DATA_COUNT = 33", menu)
         self.assertIn("LotmContent.countMaterials(player)", menu)
         self.assertIn("public static int countMaterials(Player player)", content)
         self.assertIn("inventory.getContainerSize()", content)
         self.assertIn("preparedPotionRequirement()", menu)
         self.assertIn("characteristicRequirement()", menu)
-        self.assertIn("dashboard.next_prepared", screen)
-        self.assertIn("dashboard.next_characteristic", screen)
+        self.assertIn("dashboard.next_requirements", screen)
         self.assertIn("dashboard.materials", screen)
         self.assertIn("menu.skillCost(slot)", screen)
 
@@ -81,11 +80,16 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn("journalNotificationsEnabled(Player player)", preferences)
         self.assertIn("toggleSound(Player player)", preferences)
         self.assertIn("toggleSkillFeedback(Player player)", preferences)
+        self.assertIn("particlesEnabled(Player player)", preferences)
+        self.assertIn("toggleParticles(Player player)", preferences)
         self.assertIn("LotmPreferences.copy(original, clone)", state)
         self.assertIn("BUTTON_TOGGLE_JOURNAL_NOTIFICATIONS", menu)
+        self.assertIn("BUTTON_TOGGLE_PARTICLES", menu)
         self.assertIn("LotmPreferences.soundEnabled(player)", potion)
         self.assertIn("LotmAppearance.enabled(player) && LotmConfig.APPEARANCE_EFFECTS.get()", potion)
         self.assertIn("LotmPreferences.skillFeedbackEnabled(player)", skills)
+        self.assertIn("LotmPreferences.particlesEnabled(player)", skills)
+        self.assertIn("LotmPreferences.particlesEnabled(player)", potion)
         self.assertIn("SoundEvents.ENCHANTMENT_TABLE_USE", skills)
         self.assertIn("LotmAppearance.enabled(player) && LotmConfig.APPEARANCE_EFFECTS.get()", skills)
 
@@ -120,7 +124,7 @@ class LotmConsoleRefinementTests(unittest.TestCase):
 
     def test_both_locales_cover_new_console_states_and_controls(self):
         required = (
-            "dashboard.next_prepared", "dashboard.next_characteristic", "dashboard.materials",
+            "dashboard.next_requirements", "dashboard.materials",
             "skill.tooltip.state.disabled", "skill.tooltip.state.low_spirit",
             "skill.tooltip.cost", "skill.tooltip.cooldown", "skill.tooltip.mastery",
             "journal.search", "journal.search_hint", "journal.sort.newest", "journal.sort.oldest",
@@ -130,7 +134,7 @@ class LotmConsoleRefinementTests(unittest.TestCase):
             "settings.page.personal", "settings.page.interface", "settings.scale",
             "settings.opacity", "settings.layout", "settings.timestamps", "settings.sort",
             "settings.skill_details", "setting.sound_toggle", "setting.skill_feedback_toggle",
-            "setting.journal_notifications_toggle",
+            "setting.journal_notifications_toggle", "setting.particles_toggle",
         )
         for locale in ("en_us", "zh_cn"):
             messages = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
