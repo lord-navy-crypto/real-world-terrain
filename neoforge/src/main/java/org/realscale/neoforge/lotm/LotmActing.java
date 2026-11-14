@@ -109,9 +109,25 @@ public final class LotmActing {
     }
 
     public static int dailyUsed(Player player, String category) {
-        if (!isActive(player) || dailyCap(category) == 0) return 0;
+        int cap = dailyCap(category);
+        if (!isActive(player) || cap == 0) return 0;
         resetDailyIfNeeded(player);
-        return Math.max(0, player.getPersistentData().getInt(PREFIX + category));
+        CompoundTag tag = player.getPersistentData();
+        String key = PREFIX + category;
+        int stored = tag.getInt(key);
+        int used = clampDailyUsed(stored, cap);
+        if (stored != used) tag.putInt(key, used);
+        return used;
+    }
+
+    static int clampDailyUsed(int stored, int cap) {
+        return Math.min(Math.max(0, stored), Math.max(0, cap));
+    }
+
+    static int scaledReward(int points, int percent, int remaining) {
+        if (points <= 0 || percent <= 0 || remaining <= 0) return 0;
+        long scaled = (long) points * percent / 100L;
+        return (int) Math.min(scaled, (long) remaining);
     }
 
     public static int dailyCap(String category) {
@@ -151,9 +167,10 @@ public final class LotmActing {
         resetDailyIfNeeded(player);
         CompoundTag tag = player.getPersistentData();
         String key = PREFIX + category;
-        int used = tag.getInt(key);
-        int scaled = Math.max(0, points * LotmConfig.DIGESTION_REWARD_PERCENT.get() / 100);
-        int reward = Math.min(scaled, Math.max(0, cap - used));
+        int stored = tag.getInt(key);
+        int used = clampDailyUsed(stored, cap);
+        if (stored != used) tag.putInt(key, used);
+        int reward = scaledReward(points, LotmConfig.DIGESTION_REWARD_PERCENT.get(), cap - used);
         if (reward > 0) {
             tag.putInt(key, used + reward);
             LotmState.recordPractice(player, reward);
