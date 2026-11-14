@@ -30,7 +30,8 @@ public final class LotmPlayerAbilitySync {
         Map<Ability, Integer> expected = new LinkedHashMap<>();
         LotmPath path = LotmPath.of(player);
         int sequence = LotmState.sequence(player);
-        if (LotmConfig.ENABLED.get() && path != null && (sequence == 9 || sequence == 8)) {
+        if (LotmConfig.ENABLED.get() && LotmConfig.SKILLS_ENABLED.get()
+                && path != null && (sequence == 9 || sequence == 8)) {
             int level = sequence == 9 ? 1 : 2;
             expected.put(LotmPlayerAbilityRegistry.primary(path), level);
             expected.put(LotmPlayerAbilityRegistry.secondary(path), level);
