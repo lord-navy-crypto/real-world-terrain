@@ -44,7 +44,7 @@ Branch: `feature/lotm-sequence9-pilot-20261111` / PR #155 (Draft)
 - `LotmActing` now uses the Overworld's monotonic game time for 24,000-tick reward cycles; sleeping or changing daylight time cannot instantaneously reset a cap.
 - All six active ores count; creative mode does not award fieldwork.
 
-Uncanceled explosions now explicitly consume placement marks for all affected positions in one SavedData mutation, preventing stale records from surviving ordinary blast removal; canceled explosions preserve the ledger. Remaining limitations: previously placed blocks from old saves cannot be retrospectively distinguished; piston moves and third-party automation that bypass both player-break and explosion events may still need a future cleanup hook. In-world testing must verify save/reload, multiplayer, chunk boundaries and event cancellation interactions.
+Accepted explosions now explicitly consume placement marks for all affected positions in one SavedData mutation, preventing stale records from surviving ordinary blast removal. NeoForge exposes cancellation at `ExplosionEvent.Start`; `ExplosionEvent.Detonate` itself is non-cancellable and is only used here to read the accepted explosion's affected positions. Remaining limitations: previously placed blocks from old saves cannot be retrospectively distinguished; piston moves and third-party automation that bypass both player-break and explosion events may still need a future cleanup hook. In-world testing must verify save/reload, multiplayer, chunk boundaries and event cancellation interactions.
 
 ### 4. New flora to material economy
 Four optional shapeless crafts were added. None removes or changes existing recipes:
@@ -116,7 +116,7 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 
 ### 14. Runtime overhead and canceled-placement hardening
 - Unauthorized Player Abilities grants are still rejected synchronously by `AbilityGrantedEvent`, and full audits still run on login/progression sync. The defensive fallback scan is now throttled to once per 20 player ticks rather than allocating/copying grant maps every tick.
-- Canceled `EntityPlaceEvent` events are ignored before writing resource provenance, preventing phantom anti-farming marks when another event handler cancels placement.
+- Canceled `EntityPlaceEvent` events are ignored before writing resource provenance, preventing phantom anti-farming marks when another event handler cancels placement. Explosion cleanup uses the non-cancellable `Detonate` phase after the cancellable `Start` phase has accepted the explosion.
 - A focused JUnit test covers the audit cadence across ordinary, negative and large tick values; static QA protects event wiring and canceled-placement ordering.
 
 ### 15. Alchemy result stack invariants
