@@ -11,7 +11,7 @@ import net.minecraft.nbt.CompoundTag;
  */
 public final class LotmHud {
     private static final String ENABLED_KEY = "realscale_lotm_hud_enabled";
-    private static final int REFRESH_INTERVAL_TICKS = 40;
+    private static final int DEFAULT_REFRESH_INTERVAL_TICKS = 40;
 
     private LotmHud() {}
 
@@ -27,13 +27,19 @@ public final class LotmHud {
 
     public static boolean shouldRender(int tickCount, boolean hudEnabled,
             boolean lotmEnabled, boolean hasPath) {
-        return hudEnabled && lotmEnabled && hasPath
-                && Math.floorMod(tickCount, REFRESH_INTERVAL_TICKS) == 0;
+        return shouldRender(tickCount, hudEnabled, lotmEnabled, hasPath, DEFAULT_REFRESH_INTERVAL_TICKS);
+    }
+
+    public static boolean shouldRender(int tickCount, boolean hudEnabled,
+            boolean lotmEnabled, boolean hasPath, int refreshInterval) {
+        int interval = Math.max(1, refreshInterval);
+        return hudEnabled && lotmEnabled && hasPath && Math.floorMod(tickCount, interval) == 0;
     }
 
     public static void tick(ServerPlayer player) {
         LotmPath path = LotmPath.of(player);
-        if (!shouldRender(player.tickCount, enabled(player), LotmConfig.ENABLED.get(), path != null)) return;
+        if (!shouldRender(player.tickCount, enabled(player), LotmConfig.ENABLED.get(),
+                path != null, LotmConfig.HUD_REFRESH_TICKS.get())) return;
         int sequence = LotmState.sequence(player);
         if (sequence < 8 || sequence > 9) return;
         Component line = Component.translatable("message.realscale.lotm.hud.line",
