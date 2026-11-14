@@ -356,5 +356,6 @@
   "message.realscale.lotm.diagnose.summary": "Diagnostics complete: %s/%s checks passed; failures: %s.",
   "message.realscale.lotm.diagnose.scope": "Natural spawn rates, world generation, textures and multiplayer behavior still require in-game testing.",
   "message.realscale.lotm.diagnose.no_path": "No pathway is selected; player-progression checks were skipped.",
-  "message.realscale.lotm.diagnose.player_detail": "Pathway: %s | Sequence: %s | Skill I mastery: %s/%s | Skill II mastery: %s/%s | Effective costs: %s/%s"
+  "message.realscale.lotm.diagnose.player_detail": "Pathway: %s | Sequence: %s | Skill I mastery: %s/%s | Skill II mastery: %s/%s | Effective costs: %s/%s",
+  "gui.realscale.lotm_panel.setting.mastery_cap": "Mastery cap: %s"
 }
