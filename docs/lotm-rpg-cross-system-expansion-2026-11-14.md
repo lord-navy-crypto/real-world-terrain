@@ -85,6 +85,11 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - The sigil is not consumed when the player has no instability. Creative players retain their item.
 - Instability recovery is reversible and does not alter the legacy NBT key.
 
+### 11. Ability preview and activation cost parity
+- `LotmPathwayAbility.getUseFailureMessage` now calculates the same effective skill cost as `LotmSkills.executeFromAbility`, including the Seer-only Divination Pendulum discount and instability surcharge.
+- This removes a mismatch where an ability could appear usable in the Player Abilities interface but then fail its authoritative server activation due to the omitted costs.
+- Static QA checks both call sites for the same inputs; the pure balance tests already cover the combined discount/surcharge arithmetic.
+
 ### 10. Defensive state bounds and clearer advancement status
 - Instability NBT is normalized into a bounded 0–100 range whenever read; direct-characteristic increments use saturating addition rather than potentially overflowing integer arithmetic.
 - The skill-cost surcharge remains exactly +2 per instability point up to +8, including extreme or malformed legacy values.
