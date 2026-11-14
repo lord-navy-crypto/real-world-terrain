@@ -381,5 +381,29 @@ class LotmRpgExpansionTests(unittest.TestCase):
             self.assertTrue(lang["message.realscale.lotm.status.archived"])
 
 
+
+    def test_occult_panel_has_branching_skill_tree_live_journal_and_read_only_settings(self):
+        screen = (JAVA / "lotm/client/LotmStatusScreen.java").read_text(encoding="utf-8")
+        network = (JAVA / "lotm/LotmPanelNetwork.java").read_text(encoding="utf-8")
+        acting = (JAVA / "lotm/LotmActing.java").read_text(encoding="utf-8")
+        self.assertIn("skill_tree.node.s9", screen)
+        self.assertIn("skill_tree.node.locked", screen)
+        self.assertIn("JOURNAL_PAGE_SIZE = 7", screen)
+        self.assertIn("LotmPanelNetwork.clientResearchEntries()", screen)
+        self.assertIn("journalPageCount()", screen)
+        self.assertIn("ResearchLogPayload", network)
+        self.assertIn("PacketDistributor.sendToPlayer", network)
+        self.assertIn("playToClient(ResearchLogPayload.TYPE", network)
+        self.assertIn("LotmPanelNetwork.syncResearchLog(serverPlayer)", acting)
+        self.assertIn("settings.server_header", screen)
+        self.assertIn("settings.readonly_note", screen)
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            for key in ("skill_tree.header", "journal.entry", "journal.empty",
+                        "journal.page", "settings.personal_header",
+                        "settings.server_header", "settings.readonly_note"):
+                self.assertTrue(lang["gui.realscale.lotm_panel." + key])
+
+
 if __name__ == "__main__":
     unittest.main()
