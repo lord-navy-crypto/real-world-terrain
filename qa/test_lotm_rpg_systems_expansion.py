@@ -395,6 +395,8 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("PacketDistributor.sendToPlayer", network)
         self.assertIn("playToClient(ResearchLogPayload.TYPE", network)
         self.assertIn("MAX_RESEARCH_JOURNAL_ENTRIES = 128", acting)
+        self.assertIn("while (journal.size() > MAX_RESEARCH_JOURNAL_ENTRIES)", acting)
+        self.assertIn("while (journal.size() >= MAX_RESEARCH_JOURNAL_ENTRIES)", acting)
         self.assertIn("researchJournalKey(path)", acting)
         self.assertIn("loadResearchJournal(player, path)", acting)
         self.assertIn("Collections.reverse(latestFirst)", network)
