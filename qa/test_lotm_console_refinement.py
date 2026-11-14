@@ -17,11 +17,14 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn("DATA_COUNT = 33", menu)
         self.assertIn("LotmContent.countMaterials(player)", menu)
         self.assertIn("public static int countMaterials(Player player)", content)
+        self.assertIn("registeredMaterials()", content)
         self.assertIn("inventory.getContainerSize()", content)
         self.assertIn("preparedPotionRequirement()", menu)
         self.assertIn("characteristicRequirement()", menu)
         self.assertIn("dashboard.next_requirements", screen)
         self.assertIn("dashboard.materials", screen)
+        self.assertIn("carriedMaterialStacks()", screen)
+        self.assertIn("materialPageCount()", screen)
         self.assertIn("menu.skillCost(slot)", screen)
 
     def test_skill_tree_uses_authoritative_cost_formula_and_explains_unlock_states(self):
@@ -130,7 +133,9 @@ class LotmConsoleRefinementTests(unittest.TestCase):
 
     def test_both_locales_cover_new_console_states_and_controls(self):
         required = (
-            "dashboard.next_requirements", "dashboard.materials",
+            "dashboard.next_requirements", "dashboard.materials", "materials.required_header",
+            "materials.inventory_header", "materials.inventory_empty", "materials.page",
+            "materials.previous", "materials.next",
             "skill.tooltip.state.disabled", "skill.tooltip.state.low_spirit",
             "skill.tooltip.cost", "skill.tooltip.cooldown", "skill.tooltip.mastery",
             "journal.search", "journal.search_hint", "journal.sort.newest", "journal.sort.oldest",
