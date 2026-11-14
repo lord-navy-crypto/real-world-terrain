@@ -175,6 +175,33 @@ class LotmRpgExpansionTests(unittest.TestCase):
             self.assertIn("/lotm journal", lang["message.realscale.lotm.guide"])
 
 
+    def test_alchemy_machine_status_is_server_synced_and_localized(self):
+        machine = (JAVA / "lotm/LotmAlchemyBlockEntity.java").read_text(encoding="utf-8")
+        menu = (JAVA / "lotm/LotmAlchemyMenu.java").read_text(encoding="utf-8")
+        screen = (JAVA / "lotm/client/LotmAlchemyScreen.java").read_text(encoding="utf-8")
+        for status in ("STATUS_NO_RECIPE", "STATUS_BREWING", "STATUS_WAITING_FUEL",
+                       "STATUS_OUTPUT_BLOCKED", "STATUS_DISABLED", "STATUS_UNAVAILABLE"):
+            self.assertIn(status, machine)
+        self.assertIn("@Override public int getCount() { return 3; }", machine)
+        self.assertIn("new SimpleContainerData(3)", menu)
+        self.assertIn("checkContainerDataCount(data, 3)", menu)
+        self.assertIn("getMachineStatus()", menu)
+        self.assertIn("gui.realscale.lotm_alchemy.status.", screen)
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            for index in range(6):
+                self.assertTrue(lang["gui.realscale.lotm_alchemy.status." + str(index)])
+
+    def test_skills_command_shows_live_effective_cost_and_cooldown(self):
+        commands = (JAVA / "lotm/LotmCommands.java").read_text(encoding="utf-8")
+        self.assertIn('"message.realscale.lotm.skills.cost"', commands)
+        self.assertIn("LotmBalance.skillCooldownTicks(slot, sequence)", commands)
+        self.assertIn("LotmCurios.hasDivinationPendulum(player)", commands)
+        self.assertIn("LotmState.instability(player)", commands)
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            self.assertTrue(lang["message.realscale.lotm.skills.cost"])
+
     def test_pathway_ability_precheck_uses_the_same_curios_and_instability_cost(self):
         ability = (JAVA / "lotm/LotmPathwayAbility.java").read_text(encoding="utf-8")
         skills = (JAVA / "lotm/LotmSkills.java").read_text(encoding="utf-8")
