@@ -149,7 +149,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             }
         } else if (selectedTab == 4) {
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal_header"), 14, 51, 0xFFEDE4F6, false);
-            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal_research",
+            graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal_discoveries",
                     menu.researchEntries()), 14, 66, 0xFFD7CDE4, false);
             final String[] categories = {"exploration", "skill", "research", "fieldwork"};
             final int[] caps = {12, 8, 9, 6};

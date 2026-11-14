@@ -371,5 +371,12 @@
   "gui.realscale.lotm_panel.alchemy_line2": "燃料：灵性火种（单独燃料槽）。",
   "gui.realscale.lotm_panel.alchemy_line3": "序列9：120刻；序列8：240刻。",
   "gui.realscale.lotm_panel.alchemy_line4": "创造模式的 LOTM 分类含全部测试材料。",
-  "gui.realscale.lotm_panel.alchemy_line5": "燃料不足或输出受阻时炼制暂停。"
+  "gui.realscale.lotm_panel.alchemy_line5": "燃料不足或输出受阻时炼制暂停。",
+  "gui.realscale.lotm_panel.tab.journal": "日志",
+  "gui.realscale.lotm_panel.journal_header": "扮演与研究日志",
+  "gui.realscale.lotm_panel.journal_research": "今日研究：%s/%s",
+  "gui.realscale.lotm_panel.journal_exploration": "今日探索：%s/%s",
+  "gui.realscale.lotm_panel.journal_skill": "今日能力扮演：%s/%s",
+  "gui.realscale.lotm_panel.journal_fieldwork": "今日野外采集：%s/%s",
+  "gui.realscale.lotm_panel.journal_discoveries": "独立发现：%s 种"
 }

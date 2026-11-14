@@ -17,9 +17,13 @@ class LotmGuiAndCombatTests(unittest.TestCase):
         self.assertIn("InventoryScreen", client)
         self.assertIn('sendCommand("lotm panel")', client)
         self.assertIn("RegisterKeyMappingsEvent", client_events)
-        for index in range(5):
+        for index in range(6):
             self.assertIn(f"selectedTab = {index}", screen)
         self.assertIn("alchemy_line", screen)
+        self.assertIn("journal_header", screen)
+        menu = (BASE / "lotm/LotmStatusMenu.java").read_text()
+        self.assertIn("public static final int DATA_COUNT = 26", menu)
+        self.assertIn('LotmActing.dailyUsed(player, "fieldwork")', menu)
 
     def test_creative_inventory_lists_playable_resources_not_archived_rank(self):
         creative = (BASE / "lotm/LotmCreativeTab.java").read_text()
@@ -51,5 +55,8 @@ class LotmGuiAndCombatTests(unittest.TestCase):
                 "gui.realscale.lotm_panel.tab.alchemy",
                 "gui.realscale.lotm_panel.alchemy_line1",
                 "gui.realscale.lotm_panel.alchemy_line5",
+                "gui.realscale.lotm_panel.tab.journal",
+                "gui.realscale.lotm_panel.journal_discoveries",
+                "gui.realscale.lotm_panel.journal_fieldwork",
             ):
                 self.assertTrue(lang.get(key), (locale, key))
