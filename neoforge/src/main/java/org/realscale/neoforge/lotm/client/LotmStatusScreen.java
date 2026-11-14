@@ -507,8 +507,10 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             }
             if (entries.isEmpty()) {
                 int emptyY = 96;
-                for (var line : font.split(
-                        Component.translatable("gui.realscale.lotm_panel.journal.empty"), 128)) {
+                Component emptyMessage = menu.researchEntries() > 0 && journalFilter != 0
+                        ? Component.translatable("gui.realscale.lotm_panel.journal.empty_filter")
+                        : Component.translatable("gui.realscale.lotm_panel.journal.empty");
+                for (var line : font.split(emptyMessage, 128)) {
                     graphics.drawString(font, line, 166, emptyY, 0xFFB8ADC9, false);
                     emptyY += 13;
                 }
