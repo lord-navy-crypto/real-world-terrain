@@ -107,7 +107,8 @@ public final class LotmState {
         if (path == null || slot < 1 || slot > 2 || LotmPath.of(player) != path) return 0;
         String key = skillMasteryKey(path, slot);
         int stored = player.getPersistentData().getInt(key);
-        int bounded = LotmBalance.clampSkillMastery(stored);
+        int sequenceCap = sequence(player) == 9 ? 1 : LotmConfig.SKILL_MASTERY_CAP.get();
+        int bounded = Math.min(sequenceCap, LotmBalance.clampSkillMastery(stored));
         if (player.getPersistentData().contains(key) && stored != bounded) {
             player.getPersistentData().putInt(key, bounded);
         }
