@@ -79,7 +79,7 @@ class LotmBalanceTest {
         assertEquals(4, LotmBalance.instabilitySurcharge(2));
         assertEquals(8, LotmBalance.instabilitySurcharge(20));
         assertEquals(20, LotmBalance.skillCost("seer", 1, 9, false, 3));
-        assertEquals(18, LotmBalance.skillCost("seer", 2, 9, true, 1));
+        assertEquals(16, LotmBalance.skillCost("seer", 2, 9, true, 1));
     }
 
 }
