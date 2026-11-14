@@ -258,6 +258,9 @@ class LotmRpgExpansionTests(unittest.TestCase):
                         transition.index("tag.putInt(LotmPath.NBT_SEQUENCE, sequence)"))
         self.assertIn("LotmState.advance(player, pathway, sequence, characteristic)", potion)
         self.assertNotIn("LotmProgression.validate", potion)
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            self.assertTrue(lang["message.realscale.lotm.advance.disabled"])
 
     def test_periodic_ability_sync_reconciles_grants_after_live_config_changes(self):
         sync = (JAVA / "lotm/LotmPlayerAbilitySync.java").read_text(encoding="utf-8")
