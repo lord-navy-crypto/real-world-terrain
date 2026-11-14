@@ -7,13 +7,22 @@ public final class LotmProgression {
             String targetPath, int targetSequence, int practice,
             boolean characteristic, int potionThreshold, int characteristicThreshold) {
         if (targetSequence < 8 || targetSequence > 9) return "outside_scope";
+        if (!isSupportedPath(targetPath)) return "path";
         if (currentPath == null || currentPath.isEmpty())
             return targetSequence == 9 ? "ready" : "sequence";
+        if (!isSupportedPath(currentPath)) return "path";
         if (!currentPath.equals(targetPath)) return "path";
         if (currentSequence <= 8 || currentSequence > 9) return "outside_scope";
         if (targetSequence != currentSequence - 1) return "sequence";
         int required = characteristic ? characteristicThreshold : potionThreshold;
         return practice >= required ? "ready" : "digestion";
     }
+    private static boolean isSupportedPath(String id) {
+        for (LotmPath path : LotmPath.values()) {
+            if (path.id().equals(id)) return true;
+        }
+        return false;
+    }
+
     public static int nextSequence(int current) { return Math.max(8, current - 1); }
 }
