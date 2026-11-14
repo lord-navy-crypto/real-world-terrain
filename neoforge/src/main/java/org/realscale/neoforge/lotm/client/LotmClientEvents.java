@@ -7,11 +7,14 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import org.realscale.neoforge.lotm.LotmAlchemyContent;
 import org.realscale.neoforge.lotm.LotmCreatureEntities;
 import org.realscale.neoforge.lotm.LotmCreatureKind;
+import org.realscale.neoforge.lotm.LotmStatusMenu;
+import org.realscale.neoforge.lotm.client.LotmStatusScreen;
 @EventBusSubscriber(modid="realscale",bus=EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
 public final class LotmClientEvents {
     private LotmClientEvents() {}
     @SubscribeEvent public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(LotmAlchemyContent.ALCHEMY_MENU.get(),LotmAlchemyScreen::new);
+        event.register(LotmAlchemyContent.STATUS_MENU.get(), LotmStatusScreen::new);
     }
 
     @SubscribeEvent public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
