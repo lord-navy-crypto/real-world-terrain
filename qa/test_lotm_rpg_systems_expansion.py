@@ -71,6 +71,31 @@ class LotmRpgExpansionTests(unittest.TestCase):
         for section in GUIDE_SECTIONS:
             self.assertIn('Commands.literal("' + section + '")', commands)
 
+    def test_curios_focus_items_have_exclusive_real_gameplay_effects_and_bilingual_tooltips(self):
+        curios = (JAVA / "lotm/LotmCurios.java").read_text(encoding="utf-8")
+        balance = (JAVA / "lotm/LotmBalance.java").read_text(encoding="utf-8")
+        events = (JAVA / "lotm/LotmEvents.java").read_text(encoding="utf-8")
+        skills = (JAVA / "lotm/LotmSkills.java").read_text(encoding="utf-8")
+        focus = (JAVA / "lotm/LotmFocusItem.java").read_text(encoding="utf-8")
+        pendulum = (JAVA / "lotm/LotmDivinationItem.java").read_text(encoding="utf-8")
+        slot = json.loads((ROOT / "neoforge/src/main/resources/data/realscale/curios/slots/occult_focus.json").read_text(encoding="utf-8"))
+        item_tag = json.loads((ROOT / "neoforge/src/main/resources/data/curios/tags/item/occult_focus.json").read_text(encoding="utf-8"))
+        self.assertEqual(1, slot["size"])
+        self.assertEqual({"realscale:lotm_spirit_focus", "realscale:lotm_divination_pendulum"}, set(item_tag["values"]))
+        self.assertIn("CuriosApi.getCuriosInventory", curios)
+        self.assertIn("getEquippedCurios()", curios)
+        self.assertIn("LotmCurios.hasSpiritFocus(player)", events)
+        self.assertIn("LotmCurios.hasDivinationPendulum(player)", skills)
+        self.assertIn("spiritRecovery(int configuredAmount, boolean hasSpiritFocus)", balance)
+        self.assertIn("divinationRadius(int sequence, boolean hasPendulum)", balance)
+        self.assertIn("appendHoverText", focus)
+        self.assertIn("appendHoverText", pendulum)
+        for locale in ("en_us", "zh_cn"):
+            lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
+            for key in ("spirit_focus.effect", "divination_pendulum.effect", "curio_exclusive_slot"):
+                self.assertTrue(lang["tooltip.realscale.lotm." + key])
+
+
     def test_bilingual_discovery_and_field_guide_content_is_complete(self):
         for locale in ("en_us", "zh_cn"):
             lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
