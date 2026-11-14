@@ -557,5 +557,11 @@
   "gui.realscale.lotm_panel.journal.empty_search": "No entries match this search. Try another term or clear the search.",
   "gui.realscale.lotm_panel.dashboard.next_requirements": "Next Sequence 8 requirements · potion %s / characteristic %s",
   "gui.realscale.lotm_panel.setting.particles": "Skill and advancement particles: %s",
-  "gui.realscale.lotm_panel.setting.particles_toggle": "Particles: %s"
+  "gui.realscale.lotm_panel.setting.particles_toggle": "Particles: %s",
+  "gui.realscale.lotm_panel.materials.required_header": "Next-sequence ingredients",
+  "gui.realscale.lotm_panel.materials.inventory_header": "Carried materials",
+  "gui.realscale.lotm_panel.materials.inventory_empty": "No registered occult materials carried.",
+  "gui.realscale.lotm_panel.materials.page": "Page %s / %s",
+  "gui.realscale.lotm_panel.materials.previous": "Prev. materials",
+  "gui.realscale.lotm_panel.materials.next": "Next materials"
 }
