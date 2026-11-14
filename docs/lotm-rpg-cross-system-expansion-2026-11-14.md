@@ -91,6 +91,7 @@ Ingredients additionally require mundane Minecraft materials and sometimes other
 - Progression JUnit now exercises the exact one-below and exact-at-threshold cases for both prepared Sequence 8 potions and direct Sequence 8 characteristics.
 
 ### 12. Alchemy feedback and player-facing skill telemetry
+- Fuel safety: the server now rechecks the exact Spirit Ember item ID at processing time, not just slot non-emptiness. This also protects old or malformed saved inventories that may bypass normal slot insertion validation.
 - The alchemy block entity now publishes a third synchronized menu datum for machine state: waiting for recipe, brewing, missing fuel, blocked output, server-disabled, or unavailable recipe.
 - The screen displays the localized reason rather than leaving players to infer why processing has paused. Processing and ingredient state remain server-authoritative.
 - `/lotm skills` now prints the effective spirituality cost for both slots after current instability and Curios modifiers, plus exact cooldown ticks for the active sequence.
