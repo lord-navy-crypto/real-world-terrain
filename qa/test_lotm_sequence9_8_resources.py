@@ -228,26 +228,68 @@ class LotmDataGraphTests(unittest.TestCase):
 
     def test_active_ore_worldgen_profiles_remain_biome_scoped_and_unchanged(self):
         expected = {
-            "star_crystal_ore": (5, 3, -48, 24),
-            "cursed_crystal_ore": (5, 2, -48, 48),
-            "grave_crystal_ore": (5, 2, -48, 40),
+            "star_crystal_ore": {
+                "size": 5, "count": 3, "min_y": -48, "max_y": 24,
+                "biomes": [
+                    "minecraft:deep_ocean", "minecraft:deep_cold_ocean",
+                    "minecraft:deep_lukewarm_ocean", "realscale:gravel_shore_fringe",
+                    "realscale:coastal_heath",
+                ],
+            },
+            "cursed_crystal_ore": {
+                "size": 5, "count": 2, "min_y": -48, "max_y": 48,
+                "biomes": [
+                    "minecraft:dark_forest", "minecraft:old_growth_pine_taiga",
+                    "realscale:oak_to_dark_forest", "realscale:pine_oak_mosaic",
+                ],
+            },
+            "grave_crystal_ore": {
+                "size": 5, "count": 2, "min_y": -48, "max_y": 40,
+                "biomes": [
+                    "minecraft:swamp", "minecraft:mangrove_swamp",
+                    "realscale:marshy_woodland", "realscale:seasonal_floodforest",
+                ],
+            },
         }
-        for ore, (size, count, min_y, max_y) in expected.items():
-            configured = load(DATA / "worldgen/configured_feature" / f"lotm_{ore}.json")
-            placed = load(DATA / "worldgen/placed_feature" / f"lotm_{ore}.json")
-            modifier = load(DATA / "neoforge/biome_modifier" / f"lotm_{ore}.json")
-            self.assertEqual("minecraft:ore", configured["type"])
-            self.assertEqual(size, configured["config"]["size"])
-            targets = {target["target"]["tag"] for target in configured["config"]["targets"]}
-            self.assertEqual({"minecraft:stone_ore_replaceables", "minecraft:deepslate_ore_replaceables"}, targets)
-            count_modifier = next(entry for entry in placed["placement"] if entry["type"] == "minecraft:count")
-            self.assertEqual(count, count_modifier["count"])
-            height = next(entry for entry in placed["placement"] if entry["type"] == "minecraft:height_range")["height"]
-            self.assertEqual(min_y, height["min_inclusive"]["absolute"])
-            self.assertEqual(max_y, height["max_inclusive"]["absolute"])
-            self.assertEqual("neoforge:add_features", modifier["type"])
-            self.assertEqual("realscale:lotm_" + ore, modifier["features"])
-            self.assertEqual("underground_ores", modifier["step"])
+        for ore, profile in expected.items():
+            with self.subTest(ore=ore):
+                configured = load(DATA / "worldgen/configured_feature" / f"lotm_{ore}.json")
+                placed = load(DATA / "worldgen/placed_feature" / f"lotm_{ore}.json")
+                modifier = load(DATA / "neoforge/biome_modifier" / f"lotm_{ore}.json")
+
+                self.assertEqual("minecraft:ore", configured["type"])
+                self.assertEqual(profile["size"], configured["config"]["size"])
+                self.assertEqual(0, configured["config"]["discard_chance_on_air_exposure"])
+                targets = configured["config"]["targets"]
+                self.assertEqual(2, len(targets), "Each active ore targets stone and deepslate exactly once")
+                target_map = {
+                    target["target"]["tag"]: target["state"]["Name"]
+                    for target in targets
+                }
+                self.assertEqual({
+                    "minecraft:stone_ore_replaceables": "realscale:lotm_" + ore,
+                    "minecraft:deepslate_ore_replaceables": "realscale:lotm_" + ore,
+                }, target_map)
+
+                self.assertEqual("realscale:lotm_" + ore, placed["feature"])
+                placements = placed["placement"]
+                self.assertEqual([
+                    "minecraft:count", "minecraft:in_square",
+                    "minecraft:height_range", "minecraft:biome",
+                ], [entry["type"] for entry in placements],
+                    "Ore placement modifiers must remain complete, unique and ordered")
+                self.assertEqual(profile["count"], placements[0]["count"])
+                height = placements[2]["height"]
+                self.assertEqual("minecraft:uniform", height["type"])
+                self.assertEqual(profile["min_y"], height["min_inclusive"]["absolute"])
+                self.assertEqual(profile["max_y"], height["max_inclusive"]["absolute"])
+
+                self.assertEqual("neoforge:add_features", modifier["type"])
+                self.assertEqual(profile["biomes"], modifier["biomes"])
+                self.assertEqual(len(modifier["biomes"]), len(set(modifier["biomes"])),
+                    "Biome modifier must not contain duplicate habitat entries")
+                self.assertEqual("realscale:lotm_" + ore, modifier["features"])
+                self.assertEqual("underground_ores", modifier["step"])
 
     def test_sequence7_only_spirit_quartz_worldgen_is_disabled(self):
         modifier = load(DATA / "neoforge/biome_modifier/lotm_spirit_quartz_ore.json")
