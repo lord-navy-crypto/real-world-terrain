@@ -135,6 +135,13 @@ public final class LotmCommands {
                 }
                 return 1;
             }))
+            .then(Commands.literal("hud").executes(context -> {
+                ServerPlayer player = context.getSource().getPlayerOrException();
+                boolean enabled = LotmHud.toggle(player);
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        enabled ? "message.realscale.lotm.hud.enabled" : "message.realscale.lotm.hud.disabled"), false);
+                return 1;
+            }))
             .then(Commands.literal("config").executes(context -> {
                 context.getSource().sendSuccess(() -> Component.translatable(
                         "message.realscale.lotm.config",
