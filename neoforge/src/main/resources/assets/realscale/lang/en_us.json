@@ -554,5 +554,8 @@
   "gui.realscale.lotm_panel.setting.sound_toggle": "Sound: %s",
   "gui.realscale.lotm_panel.setting.skill_feedback_toggle": "Skill prompts: %s",
   "gui.realscale.lotm_panel.setting.journal_notifications_toggle": "Log alerts: %s",
-  "gui.realscale.lotm_panel.journal.empty_search": "No entries match this search. Try another term or clear the search."
+  "gui.realscale.lotm_panel.journal.empty_search": "No entries match this search. Try another term or clear the search.",
+  "gui.realscale.lotm_panel.dashboard.next_requirements": "Next Sequence 8 requirements · potion %s / characteristic %s",
+  "gui.realscale.lotm_panel.setting.particles": "Skill and advancement particles: %s",
+  "gui.realscale.lotm_panel.setting.particles_toggle": "Particles: %s"
 }
