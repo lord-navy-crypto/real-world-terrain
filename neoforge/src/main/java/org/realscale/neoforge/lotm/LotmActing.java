@@ -202,13 +202,17 @@ public final class LotmActing {
         CompoundTag tag = player.getPersistentData();
         String key = eventJournalKey(path);
         ListTag journal = tag.getList(key, Tag.TAG_STRING);
-        boolean changed = true;
+        int existingRank = 0;
+        for (int index = 0; index < journal.size(); index++) {
+            String[] old = parseJournalEvent(journal.getString(index));
+            if (old != null && category.equals(old[2]) && id.equals(old[4])) {
+                existingRank = Math.max(existingRank, statusRank(old[3]));
+            }
+        }
+        if (statusRank(status) <= existingRank) return;
         for (int index = journal.size() - 1; index >= 0; index--) {
             String[] old = parseJournalEvent(journal.getString(index));
-            if (old == null || !category.equals(old[2]) || !id.equals(old[4])) continue;
-            if (statusRank(status) <= statusRank(old[3])) return;
-            journal.remove(index);
-            changed = true;
+            if (old != null && category.equals(old[2]) && id.equals(old[4])) journal.remove(index);
         }
 
         long time = Math.max(0L, journalGameTime(player));
@@ -217,7 +221,7 @@ public final class LotmActing {
         tag.put(key, journal);
 
         if (player instanceof ServerPlayer serverPlayer) {
-            if (changed && LotmPreferences.journalNotificationsEnabled(player)
+            if (LotmPreferences.journalNotificationsEnabled(player)
                     && List.of("material", "potion", "alchemy", "skill", "pathway").contains(category)) {
                 serverPlayer.displayClientMessage(Component.translatable(
                         "message.realscale.lotm.journal.updated",
