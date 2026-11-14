@@ -46,7 +46,20 @@ public final class LotmAppearance {
             case CORPSE_COLLECTOR -> ParticleTypes.SOUL_FIRE_FLAME;
         };
         level.sendParticles(particle, player.getX(), player.getY() + 1.0D,
-                player.getZ(), count, 0.22D, 0.38D, 0.22D, 0.005D);
+                player.getZ(), count + (sequence == 8 ? 1 : 0), 0.22D, 0.38D, 0.22D, 0.005D);
+
+        // Two tiny forward-facing motes suggest the pathway's altered eyes without
+        // replacing player skins, changing hitboxes or applying a combat glow effect.
+        var look = player.getLookAngle().normalize();
+        var right = new net.minecraft.world.phys.Vec3(-look.z, 0.0D, look.x);
+        if (right.lengthSqr() < 1.0E-6D) right = new net.minecraft.world.phys.Vec3(1.0D, 0.0D, 0.0D);
+        else right = right.normalize();
+        var eyeCenter = player.position().add(0.0D, player.getEyeHeight() - 0.12D, 0.0D)
+                .add(look.scale(0.08D));
+        for (int side : new int[] {-1, 1}) {
+            var eye = eyeCenter.add(right.scale(side * 0.075D));
+            level.sendParticles(particle, eye.x, eye.y, eye.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        }
     }
 
     public static void copy(Player original, Player clone) {
