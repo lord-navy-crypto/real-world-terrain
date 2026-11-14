@@ -123,11 +123,11 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         previousJournalPage = addRenderableWidget(Button.builder(
                 Component.translatable("gui.realscale.lotm_panel.journal.previous"),
                 button -> journalPage = Math.max(0, journalPage - 1))
-                .bounds(leftPos + 12, topPos + 204, 100, 18).build());
+                .bounds(leftPos + 12, topPos + 238, 100, 18).build());
         nextJournalPage = addRenderableWidget(Button.builder(
                 Component.translatable("gui.realscale.lotm_panel.journal.next"),
                 button -> journalPage = Math.min(journalPageCount() - 1, journalPage + 1))
-                .bounds(leftPos + 208, topPos + 204, 100, 18).build());
+                .bounds(leftPos + 208, topPos + 238, 100, 18).build());
 
         journalSearch = addRenderableWidget(new EditBox(font, leftPos + 12, topPos + 52,
                 180, 18, Component.translatable("gui.realscale.lotm_panel.journal.search")));
