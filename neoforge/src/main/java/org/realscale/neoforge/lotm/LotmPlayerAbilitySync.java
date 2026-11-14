@@ -51,16 +51,17 @@ public final class LotmPlayerAbilitySync {
     }
 
     /**
-     * The grant event rejects unauthorized changes immediately. This bounded audit
-     * is a defensive fallback for integrations that mutate grant maps without firing it.
+     * Reconcile the authoritative pathway grants every second. Besides removing
+     * unauthorized grants, this restores the correct abilities after a live config
+     * toggle or an integration that changed grant maps without firing an event.
      */
     public static boolean shouldAuditUnauthorizedGrants(int tickCount) {
         return Math.floorMod(tickCount, 20) == 0;
     }
 
-    public static void periodicSanitizeUnauthorizedGrants(ServerPlayer player) {
+    public static void periodicSync(ServerPlayer player) {
         if (shouldAuditUnauthorizedGrants(player.tickCount)) {
-            sanitizeUnauthorizedGrants(player);
+            sync(player);
         }
     }
 
