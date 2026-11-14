@@ -25,6 +25,7 @@ public final class LotmState {
         if (sequence < 8 || sequence > 9) return; // Sequence 7+ is archived in this release.
         if (sequence == 9) {
             initialize(player, path);
+            if (direct) player.getPersistentData().putInt(INSTABILITY_KEY, 1);
             return;
         }
         var tag = player.getPersistentData();
@@ -42,6 +43,17 @@ public final class LotmState {
 
     public static int instability(Player player) {
         return player.getPersistentData().getInt(INSTABILITY_KEY);
+    }
+
+    /** Reduce accumulated direct-characteristic instability without going below zero. */
+    public static int reduceInstability(Player player, int amount) {
+        if (LotmPath.of(player) == null || amount <= 0) return 0;
+        int current = instability(player);
+        int reduced = Math.min(current, amount);
+        if (reduced > 0) {
+            player.getPersistentData().putInt(INSTABILITY_KEY, current - reduced);
+        }
+        return reduced;
     }
 
     public static int spirit(Player player) {
