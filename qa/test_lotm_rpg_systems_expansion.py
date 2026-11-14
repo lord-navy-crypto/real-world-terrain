@@ -247,6 +247,15 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("LotmCurios.hasDivinationPendulum(player)", skills)
         self.assertIn("LotmState.instability(player)", skills)
 
+    def test_spirit_practice_and_daily_acting_arithmetic_are_overflow_safe(self):
+        balance = (JAVA / "lotm/LotmBalance.java").read_text(encoding="utf-8")
+        acting = (JAVA / "lotm/LotmActing.java").read_text(encoding="utf-8")
+        self.assertIn("private static int boundedAdd(int current, int amount, int maximum)", balance)
+        self.assertIn("long total = (long) Math.max(0, current) + Math.max(0, amount)", balance)
+        self.assertIn("clampDailyUsed(stored, cap)", acting)
+        self.assertIn("long scaled = (long) points * percent / 100L", acting)
+        self.assertIn("scaledReward(points, LotmConfig.DIGESTION_REWARD_PERCENT.get(), cap - used)", acting)
+
     def test_instability_is_bounded_and_status_explains_advancement_requirements(self):
         balance = (JAVA / "lotm/LotmBalance.java").read_text(encoding="utf-8")
         state = (JAVA / "lotm/LotmState.java").read_text(encoding="utf-8")
