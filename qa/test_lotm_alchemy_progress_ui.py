@@ -18,7 +18,7 @@ class LotmAlchemyProgressUiTests(unittest.TestCase):
 
     def test_recipe_browser_uses_real_item_tooltips(self):
         screen = (CLIENT / "LotmStatusScreen.java").read_text(encoding="utf-8")
-        self.assertIn("renderRecipeItemTooltip(graphics, mouseX, mouseY)", screen)
+        self.assertIn("renderRecipeItemTooltip(graphics, (int) panelMouseX(mouseX), (int) panelMouseY(mouseY))", screen)
         self.assertIn("recipe.getIngredients()", screen)
         self.assertIn("choices[choice].getHoverName()", screen)
         self.assertIn("ingredient_options", screen)
