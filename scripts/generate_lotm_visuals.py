@@ -24,6 +24,10 @@ ITEMS = [
     "lotm_divination_pendulum",
     "lotm_stability_sigil",
     "lotm_hornacis_goat_horn", "lotm_ironarm_spine", "lotm_four_eyed_turtle_heart", "lotm_crimson_howler_voice", "lotm_death_crow_eye", "lotm_mist_treant_root", "lotm_evil_pattern_panther_essence", "lotm_stag_beast_antler", "lotm_grey_grandmother_eye", "lotm_dream_crow_heart", "lotm_nightmare_shadow_core", "lotm_spectral_cat_paw", "lotm_spirit_quartz", "lotm_occult_catalyst", "lotm_seer_s9_characteristic", "lotm_seer_s8_characteristic", "lotm_seer_s8_potion", "lotm_seer_s7_characteristic", "lotm_seer_s7_potion", "lotm_mystery_pryer_s9_characteristic", "lotm_mystery_pryer_s8_characteristic", "lotm_mystery_pryer_s8_potion", "lotm_mystery_pryer_s7_characteristic", "lotm_mystery_pryer_s7_potion", "lotm_sleepless_s9_characteristic", "lotm_sleepless_s8_characteristic", "lotm_sleepless_s8_potion", "lotm_sleepless_s7_characteristic", "lotm_sleepless_s7_potion", "lotm_corpse_collector_s9_characteristic", "lotm_corpse_collector_s8_characteristic", "lotm_corpse_collector_s8_potion", "lotm_corpse_collector_s7_characteristic", "lotm_corpse_collector_s7_potion", "lotm_spirit_ember",
+    "lotm_seer_skill_manual_1", "lotm_seer_skill_manual_2",
+    "lotm_mystery_pryer_skill_manual_1", "lotm_mystery_pryer_skill_manual_2",
+    "lotm_sleepless_skill_manual_1", "lotm_sleepless_skill_manual_2",
+    "lotm_corpse_collector_skill_manual_1", "lotm_corpse_collector_skill_manual_2",
 ]
 BLOCKS = [
     "lotm_star_crystal_ore", "lotm_cursed_crystal_ore",
@@ -278,8 +282,55 @@ def mineral_pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
     return rgba(color)
 
 
+def _manual_pixel(name: str, x: int, y: int, palette) -> tuple[int, int, int, int]:
+    """A readable miniature book silhouette with a pathway-specific rune."""
+    dark, mid, bright, paper = palette
+    if x <= 2 or x >= 14 or y <= 1 or y >= 14:
+        return rgba(dark)
+    if x == 3:
+        return rgba(mid)
+    if 4 <= x <= 12 and 2 <= y <= 13:
+        rune_seed = hashbyte(name)
+        dx, dy = abs(x - 8), abs(y - 7)
+        if (dx == 0 and dy <= 3) or (dy == 0 and dx <= 3) or (dx == dy and dx <= 2):
+            return rgba(bright)
+        if (x + y + rune_seed) % 9 == 0:
+            return rgba(mid)
+        return rgba(paper if (x + y) % 5 else bright)
+    return (0, 0, 0, 0)
+
+
+def _potion_pixel(name: str, x: int, y: int, palette) -> tuple[int, int, int, int]:
+    """Small glass flask with a colored fill, neck, shoulders and stopper."""
+    dark, mid, bright, paper = palette
+    if y <= 1 and 6 <= x <= 9:
+        return rgba(bright)
+    if not ((6 <= x <= 9 and 2 <= y <= 3)
+            or (4 <= x <= 11 and 4 <= y <= 13 and abs(x - 7.5) + max(0, 4 - y) <= 8)):
+        return (0, 0, 0, 0)
+    if x in (4, 11) or y == 13 or (y == 4 and x in (5, 10)):
+        return rgba(dark)
+    fill = mid if y >= 8 else paper
+    if (x + y + hashbyte(name)) % 7 == 0:
+        fill = bright
+    return rgba(fill)
+
+
+def _flora_pixel(name: str, x: int, y: int, palette) -> tuple[int, int, int, int]:
+    """Petal, stem and leaf silhouette for botanical drops and block textures."""
+    dark, mid, bright, paper = palette
+    dx, dy = abs(x - 7.5), abs(y - 6.0)
+    if dx <= 2 and dy <= 2 and (dx + dy <= 4):
+        return rgba(bright if (x + y) % 4 == 0 else paper)
+    if x == 7 and y >= 8:
+        return rgba(mid)
+    if (y in (9, 10) and x in (4, 5, 9, 10)) or (y == 11 and x in (3, 11)):
+        return rgba(dark if y == 11 else mid)
+    return (0, 0, 0, 0)
+
+
 def pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
-    """Small deterministic icon palette for the existing LOTM item/block assets."""
+    """Deterministic original pixel art with silhouettes for manuals, potions and flora."""
     if name in MINERAL_TEXTURE_PALETTES:
         return mineral_pixel(name, x, y)
     seed = hashbyte(name)
@@ -290,6 +341,20 @@ def pixel(name: str, x: int, y: int) -> tuple[int, int, int, int]:
         ((62, 48, 34), (126, 92, 52), (190, 149, 82), (231, 205, 145)),
     )
     palette = palettes[seed % len(palettes)]
+    if "skill_manual" in name:
+        return _manual_pixel(name, x, y, palette)
+    if name.endswith("_potion") or name.endswith("_vial"):
+        return _potion_pixel(name, x, y, palette)
+    if any(part in name for part in ("bloom", "rose", "bellflower")):
+        return _flora_pixel(name, x, y, palette)
+    if "eye" in name:
+        dark, mid, bright, paper = palette
+        dx, dy = abs(x - 7.5), abs(y - 7.5)
+        if dx / 6.0 + dy / 3.5 > 1.0:
+            return (0, 0, 0, 0)
+        if dx <= 1 and dy <= 1:
+            return rgba(dark)
+        return rgba(bright if dy <= 1 else mid)
     tile = (x // 4 + y // 4 + seed) % 4
     border = x in (0, 15) or y in (0, 15)
     diagonal = (x + y + seed) % 7 == 0
