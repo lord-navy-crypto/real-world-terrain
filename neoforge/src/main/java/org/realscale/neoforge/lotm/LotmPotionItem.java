@@ -1,5 +1,6 @@
 package org.realscale.neoforge.lotm;
 
+import java.util.List;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -8,6 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.UseAnim;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
 /** A prepared potion or unprepared characteristic; consumption is server-authoritative. */
@@ -36,6 +38,26 @@ public final class LotmPotionItem extends Item {
     @Override
     public UseAnim getUseAnimation(ItemStack stack) {
         return UseAnim.DRINK;
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+            List<Component> tooltip, TooltipFlag flag) {
+        tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.path",
+                Component.translatable("lotm.realscale.path." + pathway.id())));
+        tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.rank", sequence));
+        if (characteristic) {
+            tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.characteristic"));
+            tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.direct_risk"));
+            tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.characteristic_requirement",
+                    LotmConfig.CHARACTERISTIC_PRACTICE.get()));
+        } else if (sequence == 9) {
+            tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.first_potion"));
+        } else {
+            tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.prepared"));
+            tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.prepared_requirement",
+                    LotmConfig.POTION_PRACTICE.get()));
+        }
     }
 
     @Override
