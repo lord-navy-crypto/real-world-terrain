@@ -8,6 +8,7 @@ public final class LotmPreferences {
     private static final String SOUND_KEY = "realscale_lotm_sound_feedback";
     private static final String SKILL_FEEDBACK_KEY = "realscale_lotm_skill_feedback";
     private static final String JOURNAL_NOTIFICATIONS_KEY = "realscale_lotm_journal_notifications";
+    private static final String PARTICLES_KEY = "realscale_lotm_particles";
 
     private LotmPreferences() {}
 
@@ -34,6 +35,10 @@ public final class LotmPreferences {
         return enabled(player, JOURNAL_NOTIFICATIONS_KEY);
     }
 
+    public static boolean particlesEnabled(Player player) {
+        return enabled(player, PARTICLES_KEY);
+    }
+
     public static boolean toggleSound(Player player) {
         return toggle(player, SOUND_KEY);
     }
@@ -46,10 +51,14 @@ public final class LotmPreferences {
         return toggle(player, JOURNAL_NOTIFICATIONS_KEY);
     }
 
+    public static boolean toggleParticles(Player player) {
+        return toggle(player, PARTICLES_KEY);
+    }
+
     public static void copy(Player original, Player clone) {
         CompoundTag source = original.getPersistentData();
         CompoundTag target = clone.getPersistentData();
-        for (String key : new String[] {SOUND_KEY, SKILL_FEEDBACK_KEY, JOURNAL_NOTIFICATIONS_KEY}) {
+        for (String key : new String[] {SOUND_KEY, SKILL_FEEDBACK_KEY, JOURNAL_NOTIFICATIONS_KEY, PARTICLES_KEY}) {
             if (source.contains(key)) target.putBoolean(key, source.getBoolean(key));
         }
     }
