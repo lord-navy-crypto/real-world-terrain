@@ -1,6 +1,8 @@
 package org.realscale.neoforge.lotm;
 
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
@@ -124,6 +126,24 @@ public final class LotmContent {
     /** Unknown or archived drop IDs fail closed instead of crashing the server drop event. */
     public static Supplier<Item> materialItem(String suffix) {
         return suffix == null ? null : MATERIALS.get(suffix);
+    }
+
+    /** Count registered LOTM materials in the player's complete inventory, including offhand and armor. */
+    public static int countMaterials(Player player) {
+        if (player == null) return 0;
+        int total = 0;
+        var inventory = player.getInventory();
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (stack.isEmpty()) continue;
+            for (Supplier<Item> material : MATERIALS.values()) {
+                if (stack.is(material.get())) {
+                    total += stack.getCount();
+                    break;
+                }
+            }
+        }
+        return total;
     }
 
     /** Active potions are also listed in the LOTM creative inventory category. */
