@@ -34,6 +34,15 @@ public final class LotmCommands {
                 context.getSource().sendSuccess(() -> Component.translatable(
                         "message.realscale.lotm.status.surcharge",
                         LotmBalance.instabilitySurcharge(LotmState.instability(player))), false);
+                if (LotmState.sequence(player) == 9) {
+                    context.getSource().sendSuccess(() -> Component.translatable(
+                            "message.realscale.lotm.status.digestion_guide",
+                            LotmConfig.POTION_PRACTICE.get(),
+                            LotmConfig.CHARACTERISTIC_PRACTICE.get()), false);
+                } else {
+                    context.getSource().sendSuccess(() -> Component.translatable(
+                            "message.realscale.lotm.status.archived"), false);
+                }
                 return 1;
             }))
             .then(Commands.literal("materials").executes(context -> {
