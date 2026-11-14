@@ -356,5 +356,6 @@
   "message.realscale.lotm.diagnose.summary": "自检完成：%s/%s 项通过，失败：%s。",
   "message.realscale.lotm.diagnose.scope": "自然刷新概率、世界生成、材质外观和多人行为仍需进入游戏实测。",
   "message.realscale.lotm.diagnose.no_path": "当前角色尚未选择途径，已跳过角色进度专项检查。",
-  "message.realscale.lotm.diagnose.player_detail": "当前途径：%s | 序列：%s | 能力I熟练度：%s/%s | 能力II熟练度：%s/%s | 实际消耗：%s/%s"
+  "message.realscale.lotm.diagnose.player_detail": "当前途径：%s | 序列：%s | 能力I熟练度：%s/%s | 能力II熟练度：%s/%s | 实际消耗：%s/%s",
+  "gui.realscale.lotm_panel.setting.mastery_cap": "熟练度上限：%s"
 }
