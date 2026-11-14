@@ -408,6 +408,8 @@ class LotmRpgExpansionTests(unittest.TestCase):
         self.assertIn("settings.readonly_note", screen)
         self.assertIn("renderJournalEntryTooltip(graphics, mouseX, mouseY)", screen)
         self.assertIn("activeSequence && menu.skillsEnabled()", screen)
+        self.assertIn("boolean treeActive = menu.skillsEnabled()", screen)
+        self.assertIn("treeActive && menu.sequence() == 8", screen)
         self.assertEqual(2, screen.count("LotmActing.dailyCap(categories[index])"))
         for locale in ("en_us", "zh_cn"):
             lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
