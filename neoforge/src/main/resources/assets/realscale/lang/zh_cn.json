@@ -222,5 +222,10 @@
   "message.realscale.lotm.guide.progression": "成长：使用序列9魔药开启途径，通过探索新群系、技能运用、首次研究线索及野外资源采集积累消化进度，再炼制同途径序列8魔药晋升。各类别周期上限为12、8、9、6，总计35。可用 /lotm acting、skills、materials、journal 查看状态。",
   "tooltip.realscale.lotm.spirit_focus.effect": "装备时：每40个服务器刻额外恢复1点灵性。",
   "tooltip.realscale.lotm.divination_pendulum.effect": "占卜家装备时：辅助技能消耗减少4点灵性，预兆探查范围增加2格。",
-  "tooltip.realscale.lotm.curio_exclusive_slot": "占用唯一的神秘聚焦槽，不能与另一件聚焦饰品同时装备。"
+  "tooltip.realscale.lotm.curio_exclusive_slot": "占用唯一的神秘聚焦槽，不能与另一件聚焦饰品同时装备。",
+  "item.realscale.lotm_stability_sigil": "稳定符印",
+  "tooltip.realscale.lotm.stability_sigil.effect": "使用后，直接服用非凡特性造成的失衡程度降低1级。",
+  "tooltip.realscale.lotm.stability_sigil.limit": "仅对已有累计失衡的非凡者生效。",
+  "message.realscale.lotm.stability_sigil.no_instability": "你目前没有需要平复的特性失衡。",
+  "message.realscale.lotm.stability_sigil.restored": "符印平复了一层特性失衡。剩余失衡：%s。"
 }
