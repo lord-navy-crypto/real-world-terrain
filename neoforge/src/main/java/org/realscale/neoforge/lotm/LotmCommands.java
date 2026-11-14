@@ -3,6 +3,7 @@ package org.realscale.neoforge.lotm;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.SimpleMenuProvider;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 /** Read-only player controls work on multiplayer servers without cheats. */
@@ -135,6 +136,21 @@ public final class LotmCommands {
                 }
                 return 1;
             }))
+            .then(Commands.literal("panel").executes(context -> {
+                ServerPlayer player = context.getSource().getPlayerOrException();
+                player.openMenu(new SimpleMenuProvider((id, inventory, openingPlayer) ->
+                        new LotmStatusMenu(id, inventory, LotmStatusMenu.dataFor(player)),
+                        Component.translatable("gui.realscale.lotm_panel.title")));
+                return 1;
+            }))
+            .then(Commands.literal("appearance").executes(context -> {
+                ServerPlayer player = context.getSource().getPlayerOrException();
+                boolean enabled = LotmAppearance.toggle(player);
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        enabled ? "message.realscale.lotm.appearance.enabled"
+                                : "message.realscale.lotm.appearance.disabled"), false);
+                return 1;
+            }))
             .then(Commands.literal("hud").executes(context -> {
                 ServerPlayer player = context.getSource().getPlayerOrException();
                 boolean enabled = LotmHud.toggle(player);
@@ -159,6 +175,17 @@ public final class LotmCommands {
                 context.getSource().sendSuccess(() -> Component.translatable(
                         "message.realscale.lotm.config.ecology",
                         LotmConfig.VARIANT_RARITY_PERCENT.get(), LotmConfig.RELIC_RARITY.get()), false);
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        "message.realscale.lotm.config.skills",
+                        LotmConfig.SKILLS_ENABLED.get(), LotmConfig.SKILL_BOOKS_ENABLED.get(),
+                        LotmConfig.SKILL_MASTERY_CAP.get(), LotmConfig.SKILL_COST_PERCENT.get()), false);
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        "message.realscale.lotm.config.presentation",
+                        LotmConfig.APPEARANCE_EFFECTS.get(), LotmConfig.APPEARANCE_INTERVAL_TICKS.get(),
+                        LotmConfig.HUD_REFRESH_TICKS.get()), false);
+                context.getSource().sendSuccess(() -> Component.translatable(
+                        "message.realscale.lotm.config.materials",
+                        LotmConfig.MATERIAL_DROP_CHANCE_PERCENT.get(), LotmConfig.ALCHEMY_SKILL_MANUAL_TICKS.get()), false);
                 return 1;
             }))
             .then(Commands.literal("guide")
