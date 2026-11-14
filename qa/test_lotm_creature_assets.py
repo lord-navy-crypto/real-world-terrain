@@ -72,7 +72,7 @@ class LotmCreatureAssetTests(unittest.TestCase):
                     self.assertEqual(len(bone_names), len(bones), "bone names must be unique")
 
                     animations = json.loads(animation_path.read_text(encoding="utf-8"))["animations"]
-                    for action in ("idle", "walk", "attack", "hurt", "death"):
+                    for action in ("idle", "walk", "attack", "special", "hurt", "death"):
                         animation_name = f"animation.{creature_id}.{action}"
                         self.assertIn(animation_name, animations)
                         animation_bones = set(animations[animation_name].get("bones", {}))
@@ -98,6 +98,8 @@ class LotmCreatureAssetTests(unittest.TestCase):
         self.assertIn("registerEntityRenderer", client)
         self.assertIn('String prefix = "animation." + kind.id() + "."', creature)
         self.assertIn('triggerableAnim("attack"', creature)
+        self.assertIn('triggerableAnim("special"', creature)
+        self.assertIn('triggerAnim("creature_actions", "special")', creature)
         self.assertIn('triggerableAnim("hurt"', creature)
 
     def test_creature_geometry_has_species_specific_identifiers(self):
