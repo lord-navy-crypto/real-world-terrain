@@ -9,7 +9,7 @@ import org.realscale.neoforge.lotm.LotmBalance;
 import org.realscale.neoforge.lotm.LotmPath;
 import org.realscale.neoforge.lotm.LotmStatusMenu;
 
-/** Compact occult status console with Overview, Skills and Settings tabs. */
+/** Compact occult status console with Overview, Skills, Materials and Settings tabs. */
 public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMenu> {
     private int selectedTab;
 
@@ -51,8 +51,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             bar(graphics, x + 14, y + 93, 224, 7, menu.spirit(), 100, 0xFF69B9D0);
             bar(graphics, x + 14, y + 127, 224, 7, menu.digestion(), 100, 0xFFB28AD8);
         } else if (selectedTab == 1) {
-            bar(graphics, x + 14, y + 91, 224, 6, menu.skillMastery(1), menu.skillMasteryCap(), 0xFFB28AD8);
-            bar(graphics, x + 14, y + 133, 224, 6, menu.skillMastery(2), menu.skillMasteryCap(), 0xFF79B7C7);
+            bar(graphics, x + 14, y + 91, 224, 5, menu.skillMastery(1), menu.skillMasteryCap(), 0xFFB28AD8);
+            bar(graphics, x + 14, y + 145, 224, 5, menu.skillMastery(2), menu.skillMasteryCap(), 0xFF79B7C7);
         }
     }
 
@@ -82,15 +82,17 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         } else if (selectedTab == 1) {
             int sequence = menu.sequence();
             for (int slot = 1; slot <= 2; slot++) {
-                int y = slot == 1 ? 53 : 95;
+                int y = slot == 1 ? 51 : 105;
                 int mastery = menu.skillMastery(slot);
                 int base = LotmBalance.skillCost(path.id(), slot, sequence, false, menu.instability());
                 int cost = LotmBalance.skillCostWithMastery(base, mastery, menu.skillCostPercent());
-                graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.skill", slot), 14, y, 0xFFEDE4F6, false);
+                String skillKey = "gui.realscale.lotm_panel.skill." + path.id() + "." + slot;
+                graphics.drawString(font, Component.translatable(skillKey + ".name"), 14, y, 0xFFEDE4F6, false);
+                graphics.drawString(font, Component.translatable(skillKey + ".description"), 14, y + 12, 0xFFB8ADC9, false);
                 graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.mastery", mastery,
-                        sequence == 9 ? 1 : menu.skillMasteryCap()), 14, y + 14, 0xFFD7CDE4, false);
+                        sequence == 9 ? 1 : menu.skillMasteryCap()), 14, y + 25, 0xFFD7CDE4, false);
                 graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.skill_cost", cost,
-                        LotmBalance.skillCooldownTicks(slot, sequence)), 14, y + 25, 0xFFB8ADC9, false);
+                        LotmBalance.skillCooldownTicks(slot, sequence)), 14, y + 36, 0xFFB8ADC9, false);
             }
         } else if (selectedTab == 2) {
             int nextSequence = menu.sequence() - 1;
