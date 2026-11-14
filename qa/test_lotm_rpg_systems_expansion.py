@@ -135,7 +135,7 @@ class LotmRpgExpansionTests(unittest.TestCase):
             lang = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
             for key in ("path", "rank", "characteristic", "direct_risk",
                         "characteristic_requirement", "first_potion", "prepared",
-                        "prepared_requirement"):
+                        "prepared_requirement", "first_characteristic"):
                 self.assertTrue(lang["tooltip.realscale.lotm.potion." + key])
 
 
