@@ -149,6 +149,10 @@ public final class LotmCommands {
                         Component.translatable("gui.realscale.lotm_panel.title")));
                 return 1;
             }))
+            .then(Commands.literal("diagnose").executes(context -> {
+                ServerPlayer player = context.getSource().getPlayerOrException();
+                return LotmRpgDiagnostics.run(player);
+            }))
             .then(Commands.literal("appearance").executes(context -> {
                 ServerPlayer player = context.getSource().getPlayerOrException();
                 boolean enabled = LotmAppearance.toggle(player);
