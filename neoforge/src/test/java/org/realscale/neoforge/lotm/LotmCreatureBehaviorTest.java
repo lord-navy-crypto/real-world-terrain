@@ -22,6 +22,17 @@ class LotmCreatureBehaviorTest {
 
 
     @Test
+    void deathCrowDiveRequiresHeightRangeAndCooldown() {
+        assertTrue(LotmCreatureBehavior.shouldDive(100, 100, 2.0D, 100.0D));
+        assertTrue(LotmCreatureBehavior.shouldDive(100, 99, 8.0D, 16.0D));
+        assertFalse(LotmCreatureBehavior.shouldDive(99, 100, 8.0D, 16.0D));
+        assertFalse(LotmCreatureBehavior.shouldDive(100, 100, 1.99D, 16.0D));
+        assertFalse(LotmCreatureBehavior.shouldDive(100, 100, 8.0D, 100.01D));
+        assertFalse(LotmCreatureBehavior.shouldDive(100, 100, Double.NaN, 16.0D));
+        assertFalse(LotmCreatureBehavior.shouldDive(100, 100, 8.0D, Double.POSITIVE_INFINITY));
+    }
+
+    @Test
     void nocturnalMetadataIsLimitedToTheIntendedFourSpecies() {
         Set<LotmCreatureKind> nocturnal = EnumSet.noneOf(LotmCreatureKind.class);
         for (LotmCreatureKind kind : LotmCreatureKind.values()) {
