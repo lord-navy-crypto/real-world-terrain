@@ -101,6 +101,8 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn("JOURNAL_NEWEST_FIRST", config)
         self.assertIn("ModConfig.Type.CLIENT", mod)
         self.assertIn("panelMouseX(mouseX)", screen)
+        self.assertIn("activeMouseScale = LotmClientConfig.PANEL_SCALE_PERCENT.get() / 100.0D", screen)
+        self.assertIn("current >= 100 ? 35", screen)
         self.assertIn("panelColor(0xFF10111A)", screen)
         self.assertIn("journalPageSize()", screen)
 
