@@ -46,6 +46,11 @@ public final class LotmBalance {
         return 8;
     }
 
+    /** Deep Dark exposure only unsettles active low-sequence Beyonders already under strain. */
+    public static int deepDarkSanityLoss(int sequence, int instability) {
+        return (sequence == 8 || clampInstability(instability) > 0) ? 1 : 0;
+    }
+
     /** A failed potion attempt is bounded and non-lethal in the gameplay layer. */
     public static int potionBacklashSanityLoss(boolean wrongPathway, int instability) {
         int base = wrongPathway ? 24 : 12;
