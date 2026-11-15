@@ -126,7 +126,7 @@ public final class LotmBoonState {
             return "rebound";
         }
 
-        if (taint(player) >= LotmBoonBalance.UPGRADE_TAINT_LIMIT
+        if (taint(player) > LotmBoonBalance.UPGRADE_TAINT_LIMIT
                 || LotmState.sanity(player) < LotmBoonBalance.UPGRADE_MIN_SANITY) {
             if (!hasItems(player, LotmContent.ECHO_QUARTZ.get(), 1)
                     || !hasItems(player, LotmContent.LUNAR_MICA.get(), 1)) return "need_stabilize";
