@@ -158,6 +158,7 @@ public final class LotmState {
         LotmHud.copy(original, clone);
         LotmAppearance.copy(original, clone);
         LotmPreferences.copy(original, clone);
+        LotmSkillCooldowns.copy(original, clone);
         CompoundTag source = original.getPersistentData();
         if (!source.contains(LotmPath.NBT_PATH)) return;
         CompoundTag target = clone.getPersistentData();
