@@ -30,6 +30,12 @@ public final class LotmAlchemyMenu extends AbstractContainerMenu {
         });
         addSlot(new SlotItemHandler(handler,5,148,44) {
             @Override public boolean mayPlace(ItemStack stack) { return false; }
+            @Override public void onTake(Player player, ItemStack taken) {
+                // Normal mouse pickup does not invoke quickMoveStack. The output
+                // event must cover both click and shift-click without trusting client data.
+                recordCraftedOutput(player, taken);
+                super.onTake(player, taken);
+            }
         });
         for (int row=0; row<3; row++) for (int col=0; col<9; col++)
             addSlot(new Slot(inv,col+row*9+9,8+col*18,112+row*18));
@@ -49,21 +55,28 @@ public final class LotmAlchemyMenu extends AbstractContainerMenu {
         else if (index<6) { if (!moveItemStackTo(source,6,42,false)) return empty; }
         else if (source.is(LotmContent.SPIRIT_EMBER.get())) { if (!moveItemStackTo(source,4,5,false)) return empty; }
         else if (!moveItemStackTo(source,0,4,false)) return empty;
-        if (index == 5 && player instanceof ServerPlayer serverPlayer && LotmPath.of(serverPlayer) != null) {
-            String itemId = BuiltInRegistries.ITEM.getKey(copy.getItem()).toString();
-            LotmActing.recordJournalEvent(serverPlayer, "alchemy", "verified", itemId);
-            if (copy.getItem() instanceof LotmPotionItem potion) {
-                LotmActing.recordJournalEvent(serverPlayer, "potion", "discovered",
-                        potion.pathway().id() + ":" + potion.sequence()
-                                + (potion.isCharacteristic() ? ":characteristic" : ":prepared"));
-            } else if (copy.getItem() instanceof LotmSkillBookItem manual) {
-                LotmActing.recordJournalEvent(serverPlayer, "skill", "discovered",
-                        manual.pathway().id() + ":manual:" + manual.slot());
-            }
-        }
+        // A shift-click can leave 'source' empty by the time Slot.onTake
+        // runs, so use the original output snapshot only after a successful move.
+        if (index == 5) recordCraftedOutput(player, copy);
         if (source.isEmpty()) slot.set(ItemStack.EMPTY); else slot.setChanged();
         slot.onTake(player,source); return copy;
     }
+    /** Only a server-authorized removal from the apparatus output counts as an experiment. */
+    private static void recordCraftedOutput(Player player, ItemStack taken) {
+        if (!(player instanceof ServerPlayer serverPlayer) || taken.isEmpty()
+                || LotmPath.of(serverPlayer) == null) return;
+        String itemId = BuiltInRegistries.ITEM.getKey(taken.getItem()).toString();
+        LotmActing.recordJournalEvent(serverPlayer, "alchemy", "verified", itemId);
+        if (taken.getItem() instanceof LotmPotionItem potion) {
+            LotmActing.recordJournalEvent(serverPlayer, "potion", "discovered",
+                    potion.pathway().id() + ":" + potion.sequence()
+                            + (potion.isCharacteristic() ? ":characteristic" : ":prepared"));
+        } else if (taken.getItem() instanceof LotmSkillBookItem manual) {
+            LotmActing.recordJournalEvent(serverPlayer, "skill", "discovered",
+                    manual.pathway().id() + ":manual:" + manual.slot());
+        }
+    }
+
     @Override public boolean stillValid(Player player) {
         return AbstractContainerMenu.stillValid(access,player,LotmContent.ALCHEMY_APPARATUS.get());
     }
