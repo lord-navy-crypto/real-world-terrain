@@ -24,6 +24,7 @@ public final class LotmActing {
     private static final String JOURNAL_PREFIX = "realscale_lotm_research_journal_";
     private static final String JOURNAL_MIGRATED_PREFIX = "realscale_lotm_research_journal_migrated_";
     private static final String EVENT_JOURNAL_PREFIX = "realscale_lotm_event_journal_";
+    private static final String BIOME_DISCOVERY_PREFIX = "realscale_lotm_journal_biomes_";
     private static final int MAX_EVENT_JOURNAL_ENTRIES = 128;
     private static final int MAX_RESEARCH_JOURNAL_ENTRIES = 128;
     private static final int MAX_RESEARCH_SOURCE_LENGTH = 256;
@@ -44,12 +45,21 @@ public final class LotmActing {
         StringTag id = StringTag.valueOf(biome);
         if (!seen.contains(id)) {
             int reward = award(player, "exploration", 4);
-            // Do not permanently mark a biome while the daily cap is full.
+            // Do not permanently mark a biome for rewards while the daily cap is full.
             if (reward > 0) {
                 seen.add(id);
                 tag.put(key, seen);
-                recordJournalEvent(player, "biome", "discovered", "biome:" + biome);
             }
+        }
+        // Discoveries are independent of capped digestion rewards. A visit that
+        // happens at the cap must still appear in the research journal.
+        String discoveryKey = BIOME_DISCOVERY_PREFIX + path.id();
+        ListTag discovered = tag.getList(discoveryKey, Tag.TAG_STRING);
+        if (!discovered.contains(id)) {
+            while (discovered.size() >= MAX_RESEARCH_JOURNAL_ENTRIES) discovered.remove(0);
+            discovered.add(id);
+            tag.put(discoveryKey, discovered);
+            recordJournalEvent(player, "biome", "discovered", "biome:" + biome);
         }
     }
 
@@ -432,6 +442,8 @@ public final class LotmActing {
             String journalKey = researchJournalKey(path);
             String migrationKey = researchMigrationKey(path);
             String eventJournalKey = eventJournalKey(path);
+            String biomeDiscoveryKey = BIOME_DISCOVERY_PREFIX + path.id();
+            if (source.contains(biomeDiscoveryKey)) target.put(biomeDiscoveryKey, source.get(biomeDiscoveryKey).copy());
             if (source.contains(eventJournalKey)) target.put(eventJournalKey, source.get(eventJournalKey).copy());
             if (source.contains(journalKey)) target.put(journalKey, source.get(journalKey).copy());
             if (source.contains(migrationKey)) target.put(migrationKey, source.get(migrationKey).copy());
