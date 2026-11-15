@@ -99,7 +99,7 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
         }
         LotmPath path = LotmPath.values()[pathIndex() - 1];
         int base = LotmBalance.skillCost(path.id(), slot, sequence(),
-                hasDivinationPendulum(), instability());
+                hasDivinationPendulum(), instability(), sanity());
         return LotmBalance.skillCostWithMastery(base, skillMastery(slot), skillCostPercent());
     }
     public int materialDropPercent() { return data.get(14); }
