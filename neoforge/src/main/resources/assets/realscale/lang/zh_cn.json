@@ -617,5 +617,6 @@
   "message.realscale.lotm.boon.insight.cooldown": "灵性聚焦器仍在恢复。",
   "message.realscale.lotm.boon.insight.none": "附近没有回应这次洞察的超凡痕迹。",
   "message.realscale.lotm.boon.insight.discovered": "发现并记录了一种新的超凡痕迹。",
-  "message.realscale.lotm.boon.insight.trace": "附近存在已经记录过的超凡痕迹。"
+  "message.realscale.lotm.boon.insight.trace": "附近存在已经记录过的超凡痕迹。",
+  "message.realscale.lotm.boon.insight.disabled": "服务器设置中已关闭外神恩赐系统。"
 }
