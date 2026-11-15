@@ -106,6 +106,10 @@ public final class LotmEvents {
         }
         LotmPath path = LotmPath.of(player);
         if (path == null) return;
+        // Rest restores mental resilience slowly; it never erases characteristic residue.
+        if (player.isSleeping() && player.tickCount % 40 == 0) {
+            LotmState.adjustSanity(player, 2);
+        }
         int sequence = LotmState.sequence(player);
         if (sequence < 8 || sequence > 9) return;
 
