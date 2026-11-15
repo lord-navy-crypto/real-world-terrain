@@ -617,5 +617,6 @@
   "message.realscale.lotm.boon.insight.cooldown": "The Spirit Focus is still settling.",
   "message.realscale.lotm.boon.insight.none": "No nearby supernatural trace answered your focus.",
   "message.realscale.lotm.boon.insight.discovered": "A new supernatural trace has been identified and recorded.",
-  "message.realscale.lotm.boon.insight.trace": "A known supernatural trace is nearby."
+  "message.realscale.lotm.boon.insight.trace": "A known supernatural trace is nearby.",
+  "message.realscale.lotm.boon.insight.disabled": "The outer-deity boon system is disabled in server settings."
 }
