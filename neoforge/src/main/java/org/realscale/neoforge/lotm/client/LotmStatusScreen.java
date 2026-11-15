@@ -20,6 +20,8 @@ import org.realscale.neoforge.lotm.LotmActing;
 import org.realscale.neoforge.lotm.LotmAlchemyContent;
 import org.realscale.neoforge.lotm.LotmAlchemyRecipe;
 import org.realscale.neoforge.lotm.LotmBalance;
+import org.realscale.neoforge.lotm.LotmBoonBalance;
+import org.realscale.neoforge.lotm.LotmBoonState;
 import org.realscale.neoforge.lotm.LotmContent;
 import org.realscale.neoforge.lotm.LotmCreatureKind;
 import org.realscale.neoforge.lotm.LotmDropBalance;
@@ -89,18 +91,20 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         super.init();
         refreshRecipes();
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.overview"),
-                button -> selectedTab = 0).bounds(leftPos + 8, topPos + 24, 48, 18).build());
+                button -> selectedTab = 0).bounds(leftPos + 7, topPos + 24, 42, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.skills"),
-                button -> selectedTab = 1).bounds(leftPos + 59, topPos + 24, 48, 18).build());
+                button -> selectedTab = 1).bounds(leftPos + 51, topPos + 24, 42, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.materials"),
-                button -> selectedTab = 2).bounds(leftPos + 110, topPos + 24, 48, 18).build());
+                button -> selectedTab = 2).bounds(leftPos + 95, topPos + 24, 42, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.alchemy"),
-                button -> selectedTab = 3).bounds(leftPos + 161, topPos + 24, 48, 18).build());
+                button -> selectedTab = 3).bounds(leftPos + 139, topPos + 24, 42, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.journal"),
                 button -> { selectedTab = 4; journalPage = 0; })
-                .bounds(leftPos + 212, topPos + 24, 48, 18).build());
+                .bounds(leftPos + 183, topPos + 24, 42, 18).build());
+        addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.boon"),
+                button -> selectedTab = 6).bounds(leftPos + 227, topPos + 24, 42, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.realscale.lotm_panel.tab.settings"),
-                button -> selectedTab = 5).bounds(leftPos + 263, topPos + 24, 49, 18).build());
+                button -> selectedTab = 5).bounds(leftPos + 271, topPos + 24, 42, 18).build());
 
         hudToggle = addRenderableWidget(Button.builder(Component.empty(),
                 button -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,
@@ -122,7 +126,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
 
         openBestiary = addRenderableWidget(Button.builder(
                 Component.translatable("gui.realscale.lotm_panel.bestiary.open"),
-                button -> { selectedTab = 6; creatureIndex = 0; })
+                button -> { selectedTab = 7; creatureIndex = 0; })
                 .bounds(leftPos + 92, topPos + 238, 136, 18).build());
         previousCreature = addRenderableWidget(Button.builder(
                 Component.translatable("gui.realscale.lotm_panel.bestiary.previous"),
@@ -510,9 +514,9 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             nextMaterialPage.visible = selectedTab == 2 && materialPage + 1 < materialPageCount();
         }
         if (openBestiary != null) openBestiary.visible = selectedTab == 2;
-        if (previousCreature != null) previousCreature.visible = selectedTab == 6;
-        if (nextCreature != null) nextCreature.visible = selectedTab == 6;
-        if (backToMaterials != null) backToMaterials.visible = selectedTab == 6;
+        if (previousCreature != null) previousCreature.visible = selectedTab == 7;
+        if (nextCreature != null) nextCreature.visible = selectedTab == 7;
+        if (backToMaterials != null) backToMaterials.visible = selectedTab == 7;
         if (previousRecipe != null) previousRecipe.visible = selectedTab == 3 && alchemyRecipes.size() > 1;
         if (nextRecipe != null) nextRecipe.visible = selectedTab == 3 && alchemyRecipes.size() > 1;
         if (previousJournalPage != null) previousJournalPage.visible = selectedTab == 4 && journalPage > 0;
@@ -602,7 +606,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
 
     /** The field guide reveals ecology and signature behavior without crowding its compact card. */
     private void renderBestiaryTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (selectedTab != 6 || mouseX < leftPos + 12 || mouseX >= leftPos + 308
+        if (selectedTab != 7 || mouseX < leftPos + 12 || mouseX >= leftPos + 308
                 || mouseY < topPos + 66 || mouseY >= topPos + 196) return;
         LotmCreatureKind kind = LotmCreatureKind.values()[creatureIndex];
         String movement = kind.isAquatic() ? "aquatic"
@@ -761,6 +765,10 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             graphics.fill(x + 12, y + 66, x + 152, y + 226, panelColor(0xFF282438));
             graphics.fill(x + 160, y + 66, x + 308, y + 226, panelColor(0xFF282438));
         } else if (selectedTab == 6) {
+            graphics.fill(x + 12, y + 66, x + 308, y + 226, panelColor(0xFF282438));
+            bar(graphics, x + 14, y + 125, 292, 7, menu.boonTaint(),
+                    LotmBoonBalance.MAX_TAINT, 0xFFD98A9A);
+        } else if (selectedTab == 7) {
             graphics.fill(x + 12, y + 66, x + 308, y + 226, panelColor(0xFF282438));
         }
     }
@@ -1146,6 +1154,54 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 }
             }
         } else if (selectedTab == 6) {
+            graphics.drawString(font, Component.translatable(
+                    "gui.realscale.lotm_panel.boon.header"), 14, 52, 0xFFEDE4F6, false);
+            if (menu.boonSourceId() == LotmBoonState.SOURCE_NONE) {
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.boon.none"), 14, 76, 0xFFD7CDE4, false);
+                int lineY = 100;
+                for (var line : font.split(Component.translatable(
+                        "gui.realscale.lotm_panel.boon.altar_hint"), 286)) {
+                    graphics.drawString(font, line, 14, lineY, 0xFFB8ADC9, false);
+                    lineY += 13;
+                }
+            } else {
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.boon.source"), 14, 73, 0xFFE5CB9F, false);
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.boon.path"), 166, 73, 0xFFD7CDE4, false);
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.boon.sequence", menu.boonSequence()), 14, 94,
+                        0xFFD7CDE4, false);
+                String state = menu.boonRevoked() ? "revoked"
+                        : menu.boonActive() ? "active"
+                        : menu.boonTaint() >= LotmBoonBalance.ACTIVE_TAINT_LIMIT ? "strained" : "dormant";
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.boon.status." + state), 166, 94,
+                        menu.boonActive() ? 0xFF9ED8C0 : 0xFFEAA0A0, false);
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.boon.taint", menu.boonTaint(),
+                        LotmBoonBalance.MAX_TAINT), 14, 114, 0xFFD7CDE4, false);
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.boon.discoveries",
+                        menu.boonDiscoveries(), LotmBoonBalance.UPGRADE_DISCOVERIES_REQUIRED),
+                        14, 141, 0xFFD7CDE4, false);
+                graphics.drawString(font, Component.translatable(
+                        "gui.realscale.lotm_panel.boon.cooldown",
+                        menu.boonInsightCooldown() / 20.0F), 166, 141, 0xFFB8ADC9, false);
+                Component detail = menu.boonRevoked()
+                        ? Component.translatable("gui.realscale.lotm_panel.boon.rebind_hint")
+                        : menu.boonSequence() == 9
+                                ? Component.translatable("gui.realscale.lotm_panel.boon.villain_hint")
+                                : Component.translatable("gui.realscale.lotm_panel.boon.gardener_hint");
+                int detailY = 164;
+                for (var line : font.split(detail, 286)) {
+                    if (detailY > 214) break;
+                    graphics.drawString(font, line, 14, detailY, 0xFFB8ADC9, false);
+                    detailY += 13;
+                }
+            }
+        } else if (selectedTab == 7) {
             LotmCreatureKind kind = LotmCreatureKind.values()[creatureIndex];
             graphics.drawString(font, Component.translatable(
                     "gui.realscale.lotm_panel.bestiary.header", creatureIndex + 1,
