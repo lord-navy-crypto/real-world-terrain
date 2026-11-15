@@ -28,26 +28,37 @@
           "type": "minecraft:item",
           "name": "realscale:lotm_spirit_ember",
           "weight": 12
-        },
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "conditions": [
+        {
+          "condition": "minecraft:random_chance",
+          "chance": 0.005
+        }
+      ],
+      "entries": [
         {
           "type": "minecraft:item",
           "name": "realscale:lotm_seer_s9_characteristic",
-          "weight": 3
+          "weight": 1
         },
         {
           "type": "minecraft:item",
           "name": "realscale:lotm_mystery_pryer_s9_characteristic",
-          "weight": 3
+          "weight": 1
         },
         {
           "type": "minecraft:item",
           "name": "realscale:lotm_sleepless_s9_characteristic",
-          "weight": 3
+          "weight": 1
         },
         {
           "type": "minecraft:item",
           "name": "realscale:lotm_corpse_collector_s9_characteristic",
-          "weight": 3
+          "weight": 1
         },
         {
           "type": "minecraft:item",
