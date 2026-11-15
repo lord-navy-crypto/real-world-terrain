@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "OCO",
+    "AEA",
+    "OEO"
+  ],
+  "key": {
+    "O": { "item": "minecraft:obsidian" },
+    "C": { "item": "realscale:lotm_star_crystal" },
+    "A": { "item": "minecraft:amethyst_shard" },
+    "E": { "item": "realscale:lotm_echo_quartz" }
+  },
+  "result": {
+    "id": "realscale:lotm_boon_altar",
+    "count": 1
+  }
+}
