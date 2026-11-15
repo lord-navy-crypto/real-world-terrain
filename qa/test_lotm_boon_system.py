@@ -30,7 +30,7 @@ class LotmBoonSystemTests(unittest.TestCase):
         self.assertNotIn("LotmPath.NBT_PATH,", boon)
         self.assertNotIn("LotmPath.NBT_SEQUENCE,", boon)
         self.assertIn("LotmBoonState.copy(original, clone)", state)
-        self.assertIn("LotmState.adjustSanity(player, amount)", state)
+        self.assertIn("LotmBalance.changeSanity(sanity(player), amount)", state)
         self.assertIn("outerDeityBoons", read(JAVA / "LotmConfig.java"))
 
     def test_altar_grant_upgrade_stabilize_and_rebind_are_server_validated(self):
