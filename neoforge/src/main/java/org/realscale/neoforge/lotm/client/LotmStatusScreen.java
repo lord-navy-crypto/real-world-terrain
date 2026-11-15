@@ -814,8 +814,11 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                     : menu.hasDivinationPendulum()
                             ? Component.translatable("item.realscale.lotm_divination_pendulum")
                             : Component.translatable("message.realscale.lotm.status.no_accessory");
+            graphics.drawString(font, Component.translatable(
+                    "gui.realscale.lotm_panel.sanity", menu.sanity(), LotmBalance.MAX_SANITY),
+                    14, 160, menu.sanity() < 40 ? 0xFFEAA0A0 : 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.accessory", accessory),
-                    14, 160, 0xFFB8ADC9, false);
+                    166, 160, 0xFFB8ADC9, false);
             if (menu.sequence() == 9) {
                 graphics.drawString(font, Component.translatable(
                         "gui.realscale.lotm_panel.dashboard.next_requirements",
