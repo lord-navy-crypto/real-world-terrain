@@ -564,5 +564,14 @@
   "gui.realscale.lotm_panel.materials.page": "第 %s / %s 页",
   "gui.realscale.lotm_panel.materials.previous": "上一页材料",
   "gui.realscale.lotm_panel.materials.next": "下一页材料",
-  "gui.realscale.lotm_panel.materials.count": "携带数量：%s"
+  "gui.realscale.lotm_panel.materials.count": "携带数量：%s",
+  "gui.realscale.lotm_panel.skill.tooltip.state.cooling": "技能仍在冷却",
+  "gui.realscale.lotm_panel.skill.tooltip.cooldown_remaining": "剩余冷却：%s秒",
+  "gui.realscale.lotm_panel.skill_tree.cooldown_remaining": "剩余冷却：%s秒",
+  "gui.realscale.lotm_panel.journal.status_filter.all": "全部研究状态",
+  "gui.realscale.lotm_panel.journal.status_filter.discovered": "仅已发现",
+  "gui.realscale.lotm_panel.journal.status_filter.incomplete": "仅未完成",
+  "gui.realscale.lotm_panel.journal.status_filter.verified": "仅已验证",
+  "gui.realscale.lotm_panel.settings.reset_defaults": "恢复默认设置",
+  "gui.realscale.lotm_panel.settings.save_failed": "设置保存失败，请检查配置文件权限。"
 }
