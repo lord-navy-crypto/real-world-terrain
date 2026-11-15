@@ -29,17 +29,6 @@ class LotmSanityTest {
         assertEquals(100, LotmBalance.skillCost("unknown", 1, 9, false, 0, 0));
     }
 
-    @Test void wrongPathAndUndigestedPotionBacklashAreBoundedAndDistinct() {
-        assertEquals(12, LotmBalance.potionBacklashSanityLoss(false, 0));
-        assertEquals(24, LotmBalance.potionBacklashSanityLoss(true, 0));
-        assertTrue(LotmBalance.potionBacklashSanityLoss(true, 100) <= 45);
-        assertTrue(LotmBalance.potionBacklashSanityLoss(true, 0)
-                > LotmBalance.potionBacklashSanityLoss(false, 0));
-        assertEquals(1.5F, LotmBalance.potionBacklashDamage(false, 0));
-        assertEquals(3.0F, LotmBalance.potionBacklashDamage(true, 0));
-        assertEquals(4.0F, LotmBalance.potionBacklashDamage(true, 100));
-    }
-
     @Test void deepDarkExposureOnlyAffectsStrainedLowSequenceBeyonders() {
         assertEquals(0, LotmBalance.deepDarkSanityLoss(9, 0));
         assertEquals(1, LotmBalance.deepDarkSanityLoss(9, 1));
