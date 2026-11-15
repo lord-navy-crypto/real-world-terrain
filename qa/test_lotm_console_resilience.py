@@ -95,6 +95,24 @@ class LotmConsoleResilienceTests(unittest.TestCase):
         self.assertIn("public static Map<String, Supplier<Item>> registeredMaterials()", content)
         self.assertIn("LotmResourceProvenance.get(level).consumePlacement", acting)
 
+    def test_biomes_remain_discovered_after_daily_digestion_cap(self):
+        acting = read(SOURCE / "LotmActing.java")
+        self.assertIn("BIOME_DISCOVERY_PREFIX", acting)
+        self.assertIn("String discoveryKey = BIOME_DISCOVERY_PREFIX + path.id()", acting)
+        self.assertIn("tag.put(discoveryKey, discovered)", acting)
+        self.assertIn('recordJournalEvent(player, "biome", "discovered", "biome:" + biome)', acting)
+        self.assertIn("if (reward > 0)", acting)
+        self.assertIn("target.put(biomeDiscoveryKey, source.get(biomeDiscoveryKey).copy())", acting)
+
+    def test_journal_filter_cache_invalidates_on_server_snapshot_and_search_changes(self):
+        screen = read(SCREEN)
+        self.assertIn("all == cachedJournalSource", screen)
+        self.assertIn("journalFilter == cachedJournalKind", screen)
+        self.assertIn("journalStatusFilter == cachedJournalStatus", screen)
+        self.assertIn("query.equals(cachedJournalQuery)", screen)
+        self.assertIn("cachedJournalEntries = stream.sorted(order).toList()", screen)
+        self.assertIn("cachedJournalSource = all", screen)
+
     def test_bilingual_resilience_and_feedback_labels(self):
         keys = [
             "gui.realscale.lotm_panel.skill.tooltip.state.cooling",
