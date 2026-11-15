@@ -25,7 +25,7 @@ class LotmConsoleResilienceTests(unittest.TestCase):
         self.assertIn("boundedRemaining(end, serverTick(player)", cooldown)
         self.assertIn("left > Math.min(Short.MAX_VALUE, maximumTicks) ? 0", cooldown)
         self.assertIn("recordSuccessfulUse(player, expectedPath, slot, sequence)", skills)
-        self.assertIn("DATA_COUNT = 36", menu)
+        self.assertIn("DATA_COUNT = 42", menu)
         self.assertIn("case 33 -> LotmSkillCooldowns.remaining(player, path, 1)", menu)
         self.assertIn("case 34 -> LotmSkillCooldowns.remaining(player, path, 2)", menu)
         self.assertIn("case 35 -> LotmState.sanity(player)", menu)
