@@ -37,8 +37,71 @@ public final class LotmClientConfig {
         SPEC = builder.build();
     }
 
-    public static void save() {
-        SPEC.save();
+    // When a running client temporarily has malformed/out-of-range config state,
+    // keep the panel usable with conservative defaults and an explicit reset.
+    private static int bounded(ModConfigSpec.IntValue value, int fallback, int minimum, int maximum) {
+        try {
+            return Math.max(minimum, Math.min(maximum, value.get()));
+        } catch (RuntimeException ignored) {
+            return fallback;
+        }
+    }
+
+    private static boolean enabled(ModConfigSpec.BooleanValue value, boolean fallback) {
+        try {
+            return value.get();
+        } catch (RuntimeException ignored) {
+            return fallback;
+        }
+    }
+
+    public static int scalePercent() {
+        return bounded(PANEL_SCALE_PERCENT, 100, 75, 125);
+    }
+
+    public static int opacityPercent() {
+        return bounded(PANEL_OPACITY_PERCENT, 92, 35, 100);
+    }
+
+    public static boolean compactLayout() {
+        return enabled(COMPACT_LAYOUT, false);
+    }
+
+    public static boolean showSkillDetails() {
+        return enabled(SHOW_SKILL_DETAILS, true);
+    }
+
+    public static boolean showJournalTimestamps() {
+        return enabled(SHOW_JOURNAL_TIMESTAMPS, true);
+    }
+
+    public static boolean newestFirst() {
+        return enabled(JOURNAL_NEWEST_FIRST, true);
+    }
+
+    /** Saving should not crash the entire game if the config file is inaccessible. */
+    public static boolean save() {
+        try {
+            SPEC.save();
+            return true;
+        } catch (RuntimeException ignored) {
+            return false;
+        }
+    }
+
+    /** Restore defaults from inside the panel without changing server game balance. */
+    public static boolean restoreDefaults() {
+        try {
+            PANEL_SCALE_PERCENT.set(100);
+            PANEL_OPACITY_PERCENT.set(92);
+            COMPACT_LAYOUT.set(false);
+            SHOW_SKILL_DETAILS.set(true);
+            SHOW_JOURNAL_TIMESTAMPS.set(true);
+            JOURNAL_NEWEST_FIRST.set(true);
+            return save();
+        } catch (RuntimeException ignored) {
+            return false;
+        }
     }
 
     private LotmClientConfig() {}
