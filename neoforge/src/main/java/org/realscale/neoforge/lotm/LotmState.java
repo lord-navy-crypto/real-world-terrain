@@ -93,7 +93,7 @@ public final class LotmState {
 
     /** Apply a bounded positive or negative sanity change; returns the new value. */
     public static int adjustSanity(Player player, int amount) {
-        if (LotmPath.of(player) == null) return sanity(player);
+        // Sanity belongs to the character, not only to normal-path Beyonders.
         int updated = LotmBalance.changeSanity(sanity(player), amount);
         player.getPersistentData().putInt(SANITY_KEY, updated);
         return updated;
@@ -184,9 +184,11 @@ public final class LotmState {
         LotmAppearance.copy(original, clone);
         LotmPreferences.copy(original, clone);
         LotmSkillCooldowns.copy(original, clone);
+        LotmBoonState.copy(original, clone);
         CompoundTag source = original.getPersistentData();
-        if (!source.contains(LotmPath.NBT_PATH)) return;
         CompoundTag target = clone.getPersistentData();
+        if (source.contains(SANITY_KEY)) target.putInt(SANITY_KEY, sanity(original));
+        if (!source.contains(LotmPath.NBT_PATH)) return;
         target.putString(LotmPath.NBT_PATH, source.getString(LotmPath.NBT_PATH));
         target.putInt(LotmPath.NBT_SEQUENCE, source.getInt(LotmPath.NBT_SEQUENCE));
         target.putInt(SPIRIT_KEY, spirit(original));
