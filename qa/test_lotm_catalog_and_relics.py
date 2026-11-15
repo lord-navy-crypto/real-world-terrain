@@ -26,7 +26,7 @@ class LotmCatalogAndRelicTests(unittest.TestCase):
         tab = read(JAVA / "LotmCreativeTab.java")
         block = content.split("for (String material : new String[] {", 1)[1].split("}) material(material);", 1)[0]
         dynamic = set(re.findall(r'"([a-z0-9_]+)"', block))
-        static = set(re.findall(r'MATERIALS\\.put\\("([a-z0-9_]+)"', content))
+        static = set(re.findall(r'MATERIALS\.put\("([a-z0-9_]+)"', content))
         material_ids = dynamic | static
         self.assertGreaterEqual(len(material_ids), 20)
         self.assertIn("LotmContent.registeredMaterials().values().forEach", tab)
