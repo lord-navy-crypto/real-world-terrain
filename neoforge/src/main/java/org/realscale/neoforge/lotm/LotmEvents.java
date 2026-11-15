@@ -113,6 +113,21 @@ public final class LotmEvents {
         int sequence = LotmState.sequence(player);
         if (sequence < 8 || sequence > 9) return;
 
+        // A strained Beyonder slowly loses composure in the Deep Dark. This is
+        // deliberately infrequent and never deals damage by itself.
+        if (player.tickCount % 600 == 0
+                && player.level().getBiome(player.blockPosition()).is(Biomes.DEEP_DARK)) {
+            int loss = LotmBalance.deepDarkSanityLoss(sequence, LotmState.instability(player));
+            if (loss > 0) {
+                int oldSanity = LotmState.sanity(player);
+                int newSanity = LotmState.adjustSanity(player, -loss);
+                if (oldSanity >= 40 && newSanity < 40) {
+                    player.displayClientMessage(Component.translatable(
+                            "message.realscale.lotm.sanity.deep_dark"), true);
+                }
+            }
+        }
+
         // Sequence 8 passives are deliberately distinct and remain server-authoritative.
         if (path == LotmPath.SEER && sequence == 8
                 && player.tickCount % 10 == 0 && player.fallDistance >= 2.0F) {
