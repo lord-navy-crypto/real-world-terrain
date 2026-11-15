@@ -69,6 +69,14 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     private Button nextJournalPage;
     private List<RecipeHolder<LotmAlchemyRecipe>> alchemyRecipes = List.of();
     private int recipeIndex;
+    // Rebuild journal search/sorting only when the server snapshot or a filter changes.
+    // The default render loop calls this from page controls, labels and hover paths.
+    private List<String> cachedJournalSource;
+    private List<String> cachedJournalEntries = List.of();
+    private String cachedJournalQuery = "";
+    private int cachedJournalKind = -1;
+    private int cachedJournalStatus = -1;
+    private boolean cachedNewestFirst;
 
     public LotmStatusScreen(LotmStatusMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -269,9 +277,16 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
 
     private List<String> filteredJournalEntries() {
         List<String> all = LotmPanelNetwork.clientResearchEntries();
+        String query = journalSearch == null ? "" : journalSearch.getValue().trim().toLowerCase(Locale.ROOT);
+        boolean newestFirst = LotmClientConfig.newestFirst();
+        if (all == cachedJournalSource && journalFilter == cachedJournalKind
+                && journalStatusFilter == cachedJournalStatus
+                && newestFirst == cachedNewestFirst && query.equals(cachedJournalQuery)) {
+            return cachedJournalEntries;
+        }
+
         String selectedKind = journalFilterKey();
         String selectedStatus = journalStatusKey();
-        String query = journalSearch == null ? "" : journalSearch.getValue().trim().toLowerCase(Locale.ROOT);
         java.util.stream.Stream<String> stream = all.stream()
                 .filter(source -> ("all".equals(selectedKind) || selectedKind.equals(journalCategory(source)))
                         && ("all".equals(selectedStatus) || selectedStatus.equals(journalStatus(source))));
@@ -280,8 +295,14 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                     || researchName(source).getString().toLowerCase(Locale.ROOT).contains(query));
         }
         Comparator<String> order = Comparator.comparingLong(LotmStatusScreen::journalTimestamp);
-        if (LotmClientConfig.newestFirst()) order = order.reversed();
-        return stream.sorted(order).toList();
+        if (newestFirst) order = order.reversed();
+        cachedJournalEntries = stream.sorted(order).toList();
+        cachedJournalSource = all;
+        cachedJournalKind = journalFilter;
+        cachedJournalStatus = journalStatusFilter;
+        cachedJournalQuery = query;
+        cachedNewestFirst = newestFirst;
+        return cachedJournalEntries;
     }
 
     private String journalFilterKey() {
