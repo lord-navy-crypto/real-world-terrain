@@ -14,7 +14,7 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         menu = (LOTM / "LotmStatusMenu.java").read_text(encoding="utf-8")
         content = (LOTM / "LotmContent.java").read_text(encoding="utf-8")
         screen = (LOTM / "client/LotmStatusScreen.java").read_text(encoding="utf-8")
-        self.assertIn("DATA_COUNT = 33", menu)
+        self.assertIn("DATA_COUNT = 35", menu)
         self.assertIn("LotmContent.countMaterials(player)", menu)
         self.assertIn("public static int countMaterials(Player player)", content)
         self.assertIn("registeredMaterials()", content)
@@ -39,6 +39,8 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn("renderSkillTooltip(graphics", screen)
         self.assertIn("skill.tooltip.state.disabled", screen)
         self.assertIn("skill.tooltip.cooldown", screen)
+        self.assertIn("skill.tooltip.cooldown_remaining", screen)
+        self.assertIn("menu.remainingSkillCooldown(slot)", screen)
         self.assertIn("skill.tooltip.mastery", screen)
         self.assertIn("skill_tree.node.complete", screen)
 
@@ -111,9 +113,13 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn("SHOW_SKILL_DETAILS", config)
         self.assertIn("SHOW_JOURNAL_TIMESTAMPS", config)
         self.assertIn("JOURNAL_NEWEST_FIRST", config)
+        self.assertIn("restoreDefaults()", config)
+        self.assertIn("scalePercent()", config)
+        self.assertIn("opacityPercent()", config)
+        self.assertIn("effectivePanelScale()", screen)
         self.assertIn("ModConfig.Type.CLIENT", mod)
         self.assertIn("panelMouseX(mouseX)", screen)
-        self.assertIn("activeMouseScale = LotmClientConfig.PANEL_SCALE_PERCENT.get() / 100.0D", screen)
+        self.assertIn("activeMouseScale = effectivePanelScale()", screen)
         self.assertIn("current >= 100 ? 35", screen)
         self.assertIn("panelColor(0xFF10111A)", screen)
         self.assertIn("journalPageSize()", screen)
@@ -123,10 +129,12 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         self.assertIn("new EditBox", screen)
         self.assertIn("journalSearch.getValue()", screen)
         self.assertIn("(journalFilter + 1) % 11", screen)
-        self.assertIn("JOURNAL_NEWEST_FIRST", screen)
+        self.assertIn("LotmClientConfig.newestFirst()", screen)
         self.assertIn("journalTimestamp", screen)
         self.assertIn("journalTimeLabel", screen)
         self.assertIn("journal.empty_search", screen)
+        self.assertIn("journalStatusKey()", screen)
+        self.assertIn("journalStatusFilter = (journalStatusFilter + 1) % 4", screen)
         self.assertIn("journal.status.short.", screen)
         self.assertIn("journal.category.", screen)
 
@@ -136,12 +144,16 @@ class LotmConsoleRefinementTests(unittest.TestCase):
             "materials.inventory_header", "materials.inventory_empty", "materials.page",
             "materials.previous", "materials.next", "materials.count",
             "skill.tooltip.state.disabled", "skill.tooltip.state.low_spirit",
-            "skill.tooltip.cost", "skill.tooltip.cooldown", "skill.tooltip.mastery",
+            "skill.tooltip.cost", "skill.tooltip.cooldown", "skill.tooltip.cooldown_remaining", "skill.tooltip.mastery",
+            "skill_tree.cooldown_remaining",
             "journal.search", "journal.search_hint", "journal.sort.newest", "journal.sort.oldest",
-            "journal.timestamp", "journal.empty_search", "journal.status.discovered", "journal.status.verified",
+            "journal.timestamp", "journal.empty_search", "journal.status_filter.all",
+            "journal.status_filter.discovered", "journal.status_filter.incomplete",
+            "journal.status_filter.verified", "journal.status.discovered", "journal.status.verified",
             "journal.status.incomplete", "journal.category.potion", "journal.category.material",
             "journal.category.alchemy", "journal.category.skill", "journal.category.pathway",
-            "settings.page.personal", "settings.page.interface", "settings.scale",
+            "settings.page.personal", "settings.page.interface", "settings.reset_defaults",
+            "settings.save_failed", "settings.scale",
             "settings.opacity", "settings.layout", "settings.timestamps", "settings.sort",
             "settings.skill_details", "setting.sound_toggle", "setting.skill_feedback_toggle",
             "setting.journal_notifications_toggle", "setting.particles_toggle",
