@@ -14,7 +14,7 @@ class LotmConsoleRefinementTests(unittest.TestCase):
         menu = (LOTM / "LotmStatusMenu.java").read_text(encoding="utf-8")
         content = (LOTM / "LotmContent.java").read_text(encoding="utf-8")
         screen = (LOTM / "client/LotmStatusScreen.java").read_text(encoding="utf-8")
-        self.assertIn("DATA_COUNT = 35", menu)
+        self.assertIn("DATA_COUNT = 36", menu)
         self.assertIn("LotmContent.countMaterials(player)", menu)
         self.assertIn("public static int countMaterials(Player player)", content)
         self.assertIn("registeredMaterials()", content)
