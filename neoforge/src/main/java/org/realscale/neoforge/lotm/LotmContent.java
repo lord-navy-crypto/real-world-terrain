@@ -57,8 +57,8 @@ public final class LotmContent {
                     .strength(4.0F).requiresCorrectToolForDrops()));
 
     public static final Supplier<Block> BOON_ALTAR = BLOCKS.register("lotm_boon_altar",
-            () -> new LotmBoonAltarBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.ENCHANTING_TABLE)
-                    .strength(4.0F).requiresCorrectToolForDrops()));
+                () -> new LotmBoonAltarBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.ENCHANTING_TABLE)
+                    .strength(4.0F)));
 
     public static final Supplier<? extends Item> STAR_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_star_crystal_ore", STAR_ORE);
     public static final Supplier<? extends Item> CURSED_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_cursed_crystal_ore", CURSED_ORE);
