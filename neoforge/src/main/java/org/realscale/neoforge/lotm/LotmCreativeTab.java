@@ -17,7 +17,7 @@ public final class LotmCreativeTab {
     private static final Supplier<CreativeModeTab> OCCULT = TABS.register("lotm",
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.realscale.lotm"))
-                    .icon(() -> new ItemStack(LotmContent.SEER_POTION.get()))
+                    .icon(() -> new ItemStack(LotmContent.BOON_ALTAR_ITEM.get()))
                     .displayItems((parameters, output) -> populate(output))
                     .build());
 
