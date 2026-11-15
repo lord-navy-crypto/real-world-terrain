@@ -46,7 +46,7 @@ public final class LotmHud {
                 Component.translatable("lotm.realscale.path." + path.id()),
                 sequence, LotmState.spirit(player), LotmBalance.MAX_SPIRIT,
                 LotmState.digestion(player), LotmBalance.MAX_PRACTICE,
-                LotmState.instability(player));
+                LotmState.instability(player), LotmState.sanity(player));
         player.displayClientMessage(line, true);
     }
 
