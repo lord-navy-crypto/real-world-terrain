@@ -45,7 +45,7 @@ public final class LotmActing {
         StringTag id = StringTag.valueOf(biome);
         if (!seen.contains(id)) {
             int reward = award(player, "exploration", 4);
-            // Do not permanently mark a biome for rewards while the daily cap is full.
+            // Do not permanently mark a biome while the daily cap is full (reward tracking only).
             if (reward > 0) {
                 seen.add(id);
                 tag.put(key, seen);
