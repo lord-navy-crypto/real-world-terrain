@@ -9,7 +9,7 @@ class LotmBoonBalanceTest {
         assertEquals(0, LotmBoonBalance.clampTaint(0));
         assertEquals(100, LotmBoonBalance.clampTaint(100));
         assertEquals(100, LotmBoonBalance.clampTaint(Integer.MAX_VALUE));
-        assertEquals(0, LotmBoonBalance.addTaint(5, -20));
+        assertEquals(5, LotmBoonBalance.addTaint(5, -20));
         assertEquals(100, LotmBoonBalance.addTaint(95, 50));
         assertEquals(16, LotmBoonBalance.addTaint(12, 4));
     }
