@@ -786,7 +786,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.title"),
                 9, 7, 0xFFF0E8FF, false);
         boolean hasPath = menu.pathIndex() > 0 && menu.pathIndex() <= LotmPath.values().length;
-        if (!hasPath && selectedTab != 3 && selectedTab != 4 && selectedTab != 5 && selectedTab != 6) {
+        if (!hasPath && selectedTab != 3 && selectedTab != 4 && selectedTab != 5 && selectedTab != 6 && selectedTab != 7) {
             graphics.drawString(font, Component.translatable("message.realscale.lotm.no_path"),
                     14, 59, 0xFFE0D6E8, false);
             int hintY = 82;
