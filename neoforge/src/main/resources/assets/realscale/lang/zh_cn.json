@@ -573,5 +573,7 @@
   "gui.realscale.lotm_panel.journal.status_filter.incomplete": "仅未完成",
   "gui.realscale.lotm_panel.journal.status_filter.verified": "仅已验证",
   "gui.realscale.lotm_panel.settings.reset_defaults": "恢复默认设置",
-  "gui.realscale.lotm_panel.settings.save_failed": "设置保存失败，请检查配置文件权限。"
+  "gui.realscale.lotm_panel.settings.save_failed": "设置保存失败，请检查配置文件权限。",
+  "gui.realscale.lotm_panel.dashboard.instability_surcharge": "灵性额外消耗：+%s",
+  "gui.realscale.lotm_panel.skill.tooltip.next_sequence": "序列8前置：消化度 %s（魔药需 %s／直接特性需 %s）"
 }
