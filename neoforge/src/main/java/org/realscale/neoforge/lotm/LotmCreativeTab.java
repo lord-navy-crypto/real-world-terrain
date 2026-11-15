@@ -1,10 +1,8 @@
 package org.realscale.neoforge.lotm;
 
-import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -39,6 +37,8 @@ public final class LotmCreativeTab {
         output.accept(LotmContent.FACE_ROSE_ITEM.get());
         output.accept(LotmContent.SOUL_BELLFLOWER_ITEM.get());
         output.accept(LotmContent.BLOOD_ROSE_ITEM.get());
+        output.accept(LotmContent.SPIRIT_QUARTZ_ORE_ITEM.get());
+        output.accept(LotmContent.RELIC_CACHE_ITEM.get());
 
         output.accept(LotmContent.STAR_CRYSTAL.get());
         output.accept(LotmContent.CURSED_CRYSTAL.get());
@@ -52,15 +52,9 @@ public final class LotmCreativeTab {
         output.accept(LotmContent.DIVINATION_PENDULUM.get());
         output.accept(LotmContent.STABILITY_SIGIL.get());
 
-        for (String materialId : new String[] {
-                "lavas_squid_essence", "nightmare_eye_shard", "night_owl_token",
-                "black_spotted_frog_token", "shroudman_crystal", "hornacis_goat_horn",
-                "ironarm_spine", "four_eyed_turtle_heart", "crimson_howler_voice",
-                "death_crow_eye", "occult_catalyst"
-        }) {
-            Supplier<Item> material = LotmContent.materialItem(materialId);
-            if (material != null) output.accept(material.get());
-        }
+        // The registry is the source of truth: newly added active materials
+        // automatically appear in the creative catalogue without a second ID list.
+        LotmContent.registeredMaterials().values().forEach(material -> output.accept(material.get()));
 
         for (LotmPath path : LotmPath.values()) {
             for (int sequence = 9; sequence >= 8; sequence--) {
