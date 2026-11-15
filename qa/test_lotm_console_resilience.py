@@ -22,7 +22,8 @@ class LotmConsoleResilienceTests(unittest.TestCase):
         screen = read(SCREEN)
         self.assertIn("skillCooldownTicks(slot, sequence)", cooldown)
         self.assertIn("recordSuccessfulUse(ServerPlayer player", cooldown)
-        self.assertIn("Math.min(Short.MAX_VALUE, left)", cooldown)
+        self.assertIn("boundedRemaining(end, serverTick(player)", cooldown)
+        self.assertIn("left > Math.min(Short.MAX_VALUE, maximumTicks) ? 0", cooldown)
         self.assertIn("recordSuccessfulUse(player, expectedPath, slot, sequence)", skills)
         self.assertIn("DATA_COUNT = 35", menu)
         self.assertIn("case 33 -> LotmSkillCooldowns.remaining(player, path, 1)", menu)
@@ -31,6 +32,24 @@ class LotmConsoleResilienceTests(unittest.TestCase):
         self.assertIn("LotmSkillCooldowns.copy(original, clone)", state)
         self.assertIn("menu.remainingSkillCooldown(slot)", screen)
         self.assertIn("skill.tooltip.cooldown_remaining", screen)
+
+    def test_alchemy_records_normal_pickup_and_shift_click_from_server_only(self):
+        menu = read(SOURCE / "LotmAlchemyMenu.java")
+        self.assertIn("@Override public void onTake(Player player, ItemStack taken)", menu)
+        self.assertIn("recordCraftedOutput(player, taken)", menu)
+        self.assertIn("if (index == 5) recordCraftedOutput(player, copy)", menu)
+        self.assertIn("private static void recordCraftedOutput(Player player, ItemStack taken)", menu)
+        self.assertIn("player instanceof ServerPlayer serverPlayer", menu)
+        self.assertIn("taken.isEmpty()", menu)
+        self.assertIn('"alchemy", "verified"', menu)
+        self.assertIn('"potion", "discovered"', menu)
+        self.assertIn('"skill", "discovered"', menu)
+
+    def test_cooldown_rollback_bounds_have_junit_coverage(self):
+        java_test = read(ROOT / "neoforge/src/test/java/org/realscale/neoforge/lotm/LotmSkillCooldownsTest.java")
+        self.assertIn("staleAndMalformedCooldownsFailClosed()", java_test)
+        self.assertIn("acceptedSkillsShowRemainingTimeWithoutNegativeValues()", java_test)
+        self.assertIn("sequenceSpecificMaximumIsRespected()", java_test)
 
     def test_settings_have_safe_fallback_and_explicit_reset(self):
         config = read(SOURCE / "client/LotmClientConfig.java")
