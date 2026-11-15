@@ -564,5 +564,14 @@
   "gui.realscale.lotm_panel.materials.page": "Page %s / %s",
   "gui.realscale.lotm_panel.materials.previous": "Prev. materials",
   "gui.realscale.lotm_panel.materials.next": "Next materials",
-  "gui.realscale.lotm_panel.materials.count": "Carried: %s"
+  "gui.realscale.lotm_panel.materials.count": "Carried: %s",
+  "gui.realscale.lotm_panel.skill.tooltip.state.cooling": "On cooldown",
+  "gui.realscale.lotm_panel.skill.tooltip.cooldown_remaining": "Remaining cooldown: %s seconds",
+  "gui.realscale.lotm_panel.skill_tree.cooldown_remaining": "Remaining: %s s",
+  "gui.realscale.lotm_panel.journal.status_filter.all": "All research states",
+  "gui.realscale.lotm_panel.journal.status_filter.discovered": "Discovered only",
+  "gui.realscale.lotm_panel.journal.status_filter.incomplete": "Incomplete only",
+  "gui.realscale.lotm_panel.journal.status_filter.verified": "Verified only",
+  "gui.realscale.lotm_panel.settings.reset_defaults": "Restore defaults",
+  "gui.realscale.lotm_panel.settings.save_failed": "Could not save settings. Check config file permissions."
 }
