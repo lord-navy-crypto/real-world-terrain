@@ -370,11 +370,11 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     }
 
     private double panelMouseX(double mouseX) {
-        return panelMouseX(mouseX, LotmClientConfig.scalePercent() / 100.0D);
+        return panelMouseX(mouseX, effectivePanelScale());
     }
 
     private double panelMouseY(double mouseY) {
-        return panelMouseY(mouseY, LotmClientConfig.scalePercent() / 100.0D);
+        return panelMouseY(mouseY, effectivePanelScale());
     }
 
     private double panelMouseX(double mouseX, double scale) {
