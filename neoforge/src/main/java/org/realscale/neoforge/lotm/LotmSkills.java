@@ -37,7 +37,8 @@ public final class LotmSkills {
 
         int mastery = LotmState.skillMastery(player, expectedPath, slot);
         int baseCost = LotmBalance.skillCost(expectedPath.id(), slot, sequence,
-                LotmCurios.hasDivinationPendulum(player), LotmState.instability(player));
+                LotmCurios.hasDivinationPendulum(player), LotmState.instability(player),
+                LotmState.sanity(player));
         int cost = LotmBalance.skillCostWithMastery(baseCost, mastery,
                 LotmConfig.SKILL_COST_PERCENT.get());
         if (!LotmState.consume(player, cost)) {
