@@ -69,6 +69,7 @@ public final class LotmBoonState {
 
     public static int insightCooldown(Player player) {
         long last = player.getPersistentData().getLong(LAST_INSIGHT_KEY);
+        if (last <= 0L) return 0;
         long remaining = last + LotmBoonBalance.INSIGHT_COOLDOWN_TICKS
                 - player.level().getGameTime();
         return (int) Math.max(0L, Math.min(Integer.MAX_VALUE, remaining));
@@ -197,6 +198,7 @@ public final class LotmBoonState {
 
     private static BlockPos findTrace(ServerPlayer player, int sequence) {
         BlockPos origin = player.blockPosition();
+        BlockPos previouslySeen = null;
         for (int dy = -4; dy <= 4; dy++) {
             for (int dx = -8; dx <= 8; dx++) {
                 for (int dz = -8; dz <= 8; dz++) {
@@ -213,11 +215,16 @@ public final class LotmBoonState {
                                     || block == LotmContent.FACE_ROSE.get()
                                     || block == LotmContent.SOUL_BELLFLOWER.get()
                                     || block == LotmContent.BLOOD_ROSE.get();
-                    if (match) return pos.immutable();
+                    if (!match) continue;
+                    String id = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).toString();
+                    boolean alreadyKnown = player.getPersistentData()
+                            .getList(DISCOVERIES_KEY, Tag.TAG_STRING).contains(StringTag.valueOf(id));
+                    if (!alreadyKnown) return pos.immutable();
+                    if (previouslySeen == null) previouslySeen = pos.immutable();
                 }
             }
         }
-        return null;
+        return previouslySeen;
     }
 
     private static void addTaint(Player player, int amount) {
