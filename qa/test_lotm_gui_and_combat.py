@@ -35,7 +35,7 @@ class LotmGuiAndCombatTests(unittest.TestCase):
         self.assertIn("LotmDropBalance.effectiveChance(", screen)
         self.assertIn("openBestiary.visible = selectedTab == 2", screen)
         menu = (BASE / "lotm/LotmStatusMenu.java").read_text()
-        self.assertIn("public static final int DATA_COUNT = 36", menu)
+        self.assertIn("public static final int DATA_COUNT = 42", menu)
         self.assertIn('LotmActing.dailyUsed(player, "fieldwork")', menu)
         self.assertIn("BUTTON_TOGGLE_PARTICLES", menu)
 
