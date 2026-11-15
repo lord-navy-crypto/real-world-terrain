@@ -10,7 +10,7 @@ import net.minecraft.world.item.ItemStack;
 
 /** Read-only synchronized player panel with server-authoritative preference buttons. */
 public final class LotmStatusMenu extends AbstractContainerMenu {
-    public static final int DATA_COUNT = 36;
+    public static final int DATA_COUNT = 41;
     public static final int BUTTON_TOGGLE_HUD = 0;
     public static final int BUTTON_TOGGLE_APPEARANCE = 1;
     public static final int BUTTON_TOGGLE_SOUND = 2;
@@ -71,6 +71,11 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
                     case 33 -> LotmSkillCooldowns.remaining(player, path, 1);
                     case 34 -> LotmSkillCooldowns.remaining(player, path, 2);
                     case 35 -> LotmState.sanity(player);
+                    case 36 -> LotmBoonState.sourceId(player);
+                    case 37 -> LotmBoonState.sequence(player);
+                    case 38 -> LotmBoonState.taint(player);
+                    case 39 -> LotmBoonState.revoked(player) ? 1 : 0;
+                    case 40 -> LotmBoonState.discoveries(player);
                     default -> 0;
                 };
             }
@@ -85,6 +90,15 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
     public int digestion() { return data.get(3); }
     public int instability() { return data.get(4); }
     public int sanity() { return LotmBalance.clampSanity(data.get(35)); }
+    public int boonSourceId() { return data.get(36); }
+    public int boonSequence() { return data.get(37); }
+    public int boonTaint() { return LotmBoonBalance.clampTaint(data.get(38)); }
+    public boolean boonRevoked() { return data.get(39) != 0; }
+    public int boonDiscoveries() { return Math.max(0, data.get(40)); }
+    public boolean boonActive() {
+        return boonSourceId() == LotmBoonState.SOURCE_FALLEN_MOTHER
+                && !boonRevoked() && boonTaint() < LotmBoonBalance.ACTIVE_TAINT_LIMIT;
+    }
     public int skillMastery(int slot) { return slot == 1 ? data.get(5) : slot == 2 ? data.get(6) : 0; }
     public boolean hudEnabled() { return data.get(7) != 0; }
     public boolean appearanceEnabled() { return data.get(8) != 0; }
