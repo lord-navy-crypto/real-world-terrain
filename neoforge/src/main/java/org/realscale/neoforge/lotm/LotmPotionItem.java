@@ -77,8 +77,9 @@ public final class LotmPotionItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        // Reject invalid rank/path/digestion before the drink animation starts.
-        // The final finishUsingItem() still checks the authoritative transition.
+        // Invalid rank transitions are rejected immediately. Pathway mismatch and
+        // incomplete digestion are warned before the player chooses to complete use.
+        // The server revalidates the transition in finishUsingItem().
         if (!level.isClientSide()) {
             String validation = LotmState.validateAdvance(player, pathway, sequence, characteristic);
             if (!"ready".equals(validation)) {
@@ -105,6 +106,11 @@ public final class LotmPotionItem extends Item {
         String result = LotmState.advance(player, pathway, sequence, characteristic);
         if (!"ready".equals(result)) {
             if ("path".equals(result) || "digestion".equals(result)) {
+                if (player.getAbilities().instabuild) {
+                    player.displayClientMessage(Component.translatable(
+                            "message.realscale.lotm.advance." + result), true);
+                    return stack;
+                }
                 boolean wrongPathway = "path".equals(result);
                 int oldSanity = LotmState.sanity(player);
                 int sanityLoss = LotmBalance.potionBacklashSanityLoss(
