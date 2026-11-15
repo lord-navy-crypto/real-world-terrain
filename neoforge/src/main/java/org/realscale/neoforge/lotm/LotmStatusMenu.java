@@ -10,7 +10,7 @@ import net.minecraft.world.item.ItemStack;
 
 /** Read-only synchronized player panel with server-authoritative preference buttons. */
 public final class LotmStatusMenu extends AbstractContainerMenu {
-    public static final int DATA_COUNT = 35;
+    public static final int DATA_COUNT = 36;
     public static final int BUTTON_TOGGLE_HUD = 0;
     public static final int BUTTON_TOGGLE_APPEARANCE = 1;
     public static final int BUTTON_TOGGLE_SOUND = 2;
@@ -70,6 +70,7 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
                     case 32 -> LotmPreferences.particlesEnabled(player) ? 1 : 0;
                     case 33 -> LotmSkillCooldowns.remaining(player, path, 1);
                     case 34 -> LotmSkillCooldowns.remaining(player, path, 2);
+                    case 35 -> LotmState.sanity(player);
                     default -> 0;
                 };
             }
@@ -83,6 +84,7 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
     public int spirit() { return data.get(2); }
     public int digestion() { return data.get(3); }
     public int instability() { return data.get(4); }
+    public int sanity() { return LotmBalance.clampSanity(data.get(35)); }
     public int skillMastery(int slot) { return slot == 1 ? data.get(5) : slot == 2 ? data.get(6) : 0; }
     public boolean hudEnabled() { return data.get(7) != 0; }
     public boolean appearanceEnabled() { return data.get(8) != 0; }
