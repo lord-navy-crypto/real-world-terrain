@@ -51,7 +51,7 @@ class LotmSanitySystemTests(unittest.TestCase):
         menu = read(JAVA / "LotmStatusMenu.java")
         screen = read(CLIENT / "LotmStatusScreen.java")
         hud = read(JAVA / "LotmHud.java")
-        self.assertIn("DATA_COUNT = 36", menu)
+        self.assertIn("DATA_COUNT = 42", menu)
         self.assertIn("case 35 -> LotmState.sanity(player)", menu)
         self.assertIn("public int sanity()", menu)
         self.assertIn('"gui.realscale.lotm_panel.sanity"', screen)
