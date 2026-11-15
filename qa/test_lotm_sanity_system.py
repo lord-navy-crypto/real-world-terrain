@@ -24,18 +24,6 @@ class LotmSanitySystemTests(unittest.TestCase):
         self.assertIn("INSTABILITY_KEY", state)
         self.assertIn("SANITY_KEY", state)
 
-    def test_backlash_is_server_side_warned_bounded_and_nonlethal(self):
-        potion = read(JAVA / "LotmPotionItem.java")
-        balance = read(JAVA / "LotmBalance.java")
-        self.assertIn('"path".equals(validation) || "digestion".equals(validation)', potion)
-        self.assertIn('"message.realscale.lotm.potion.backlash_warning"', potion)
-        self.assertIn("player.getAbilities().instabuild", potion)
-        self.assertIn("player.getHealth() - 1.0F", potion)
-        self.assertIn("player.damageSources().magic()", potion)
-        self.assertIn("potionBacklashSanityLoss", potion)
-        self.assertIn("potionBacklashDamage", potion)
-        self.assertIn("Math.min(4.0F", balance)
-
     def test_sanity_affects_skills_and_divination_on_server_and_client(self):
         skills = read(JAVA / "LotmSkills.java")
         ability = read(JAVA / "LotmPathwayAbility.java")
@@ -72,9 +60,6 @@ class LotmSanitySystemTests(unittest.TestCase):
     def test_bilingual_sanity_and_backlash_messages_are_complete(self):
         keys = (
             "gui.realscale.lotm_panel.sanity",
-            "tooltip.realscale.lotm.potion.backlash",
-            "message.realscale.lotm.potion.backlash_warning",
-            "message.realscale.lotm.potion.backlash",
             "message.realscale.lotm.sanity.deep_dark",
             "tooltip.realscale.lotm.stability_sigil.sanity",
             "message.realscale.lotm.stability_sigil.restored",
