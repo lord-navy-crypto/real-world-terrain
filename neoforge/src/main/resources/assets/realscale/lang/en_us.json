@@ -578,5 +578,6 @@
   "gui.realscale.lotm_panel.skill.tooltip.next_sequence": "Sequence 8 prerequisite: digestion %s (prepared %s / direct %s)",
   "gui.realscale.lotm_panel.sanity": "Sanity: %s/%s",
   "message.realscale.lotm.sanity.deep_dark": "The Deep Dark's resonance is unsettling your thoughts. Find a safer place to recover.",
-  "tooltip.realscale.lotm.stability_sigil.sanity": "Use the sigil to settle characteristic instability and restore a little sanity."
+  "tooltip.realscale.lotm.stability_sigil.sanity": "Use the sigil to settle characteristic instability and restore a little sanity.",
+  "entity.realscale.lotm.night_church_trader": "Night Church Envoy"
 }
