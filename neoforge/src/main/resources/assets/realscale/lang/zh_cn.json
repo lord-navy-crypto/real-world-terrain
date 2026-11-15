@@ -579,5 +579,6 @@
   "gui.realscale.lotm_panel.sanity": "理智：%s/%s",
   "tooltip.realscale.lotm.potion.backlash": "未充分消化或途径不匹配的魔药可能引发反噬，降低理智并造成少量、非致命的游戏内伤害。",
   "message.realscale.lotm.potion.backlash_warning": "警告：该魔药与当前途径不匹配或尚未充分消化。完成使用将触发有限度的反噬。",
-  "message.realscale.lotm.potion.backlash": "神秘反噬：理智 −%s；实际损失生命值：%s。"
+  "message.realscale.lotm.potion.backlash": "神秘反噬：理智 −%s；实际损失生命值：%s。",
+  "message.realscale.lotm.sanity.deep_dark": "深暗之域的共鸣正在扰乱你的思绪。请前往安全地点恢复。"
 }
