@@ -162,7 +162,7 @@ class LotmConsoleRefinementTests(unittest.TestCase):
             messages = json.loads((ASSETS / (locale + ".json")).read_text(encoding="utf-8"))
             for suffix in required:
                 self.assertTrue(messages["gui.realscale.lotm_panel." + suffix]
-                                if suffix.startswith(("dashboard.", "materials.", "skill.", "journal.", "settings.", "setting."))
+                                if suffix.startswith(("dashboard.", "materials.", "skill.", "skill_tree.", "journal.", "settings.", "setting."))
                                 else messages.get(suffix))
 
 
