@@ -9,6 +9,7 @@ public final class LotmState {
     public static final String SPIRIT_KEY = "realscale_lotm_spirituality";
     public static final String PRACTICE_KEY = "realscale_lotm_practice";
     public static final String INSTABILITY_KEY = "realscale_lotm_characteristic_instability";
+    public static final String SANITY_KEY = "realscale_lotm_sanity";
     private static String skillMasteryKey(LotmPath path, int slot) {
         return "realscale_lotm_skill_mastery_" + path.id() + "_" + slot;
     }
@@ -21,6 +22,7 @@ public final class LotmState {
         tag.putInt(SPIRIT_KEY, LotmBalance.MAX_SPIRIT);
         tag.putInt(PRACTICE_KEY, 0);
         tag.putInt(INSTABILITY_KEY, 0);
+        tag.putInt(SANITY_KEY, LotmBalance.MAX_SANITY);
         for (int slot = 1; slot <= 2; slot++) tag.putInt(skillMasteryKey(path, slot), 0);
         if (player instanceof ServerPlayer serverPlayer) LotmPlayerAbilitySync.sync(serverPlayer);
     }
@@ -46,14 +48,20 @@ public final class LotmState {
 
         if (sequence == 9) {
             initialize(player, path);
-            if (direct) player.getPersistentData().putInt(INSTABILITY_KEY, 1);
+            if (direct) {
+                player.getPersistentData().putInt(INSTABILITY_KEY, 1);
+                adjustSanity(player, -8);
+            }
         } else {
             var tag = player.getPersistentData();
             tag.putInt(LotmPath.NBT_SEQUENCE, sequence);
             tag.putInt(PRACTICE_KEY, 0);
             tag.putInt(SPIRIT_KEY, direct ? 30 : LotmBalance.MAX_SPIRIT);
-            if (direct) tag.putInt(INSTABILITY_KEY,
-                    LotmBalance.addInstability(tag.getInt(INSTABILITY_KEY), 1));
+            if (direct) {
+                tag.putInt(INSTABILITY_KEY,
+                        LotmBalance.addInstability(tag.getInt(INSTABILITY_KEY), 1));
+                adjustSanity(player, -14);
+            }
             if (player instanceof ServerPlayer serverPlayer) LotmPlayerAbilitySync.sync(serverPlayer);
         }
         return "ready";
@@ -72,6 +80,23 @@ public final class LotmState {
             tag.putInt(INSTABILITY_KEY, bounded);
         }
         return bounded;
+    }
+
+    /** Mental state is persisted separately from characteristic instability. */
+    public static int sanity(Player player) {
+        CompoundTag tag = player.getPersistentData();
+        int stored = tag.contains(SANITY_KEY) ? tag.getInt(SANITY_KEY) : LotmBalance.MAX_SANITY;
+        int bounded = LotmBalance.clampSanity(stored);
+        if (tag.contains(SANITY_KEY) && stored != bounded) tag.putInt(SANITY_KEY, bounded);
+        return bounded;
+    }
+
+    /** Apply a bounded positive or negative sanity change; returns the new value. */
+    public static int adjustSanity(Player player, int amount) {
+        if (LotmPath.of(player) == null) return sanity(player);
+        int updated = LotmBalance.changeSanity(sanity(player), amount);
+        player.getPersistentData().putInt(SANITY_KEY, updated);
+        return updated;
     }
 
     /** Reduce accumulated direct-characteristic instability without going below zero. */
@@ -167,6 +192,7 @@ public final class LotmState {
         target.putInt(SPIRIT_KEY, spirit(original));
         target.putInt(PRACTICE_KEY, practice(original));
         target.putInt(INSTABILITY_KEY, instability(original));
+        target.putInt(SANITY_KEY, sanity(original));
         LotmPath path = LotmPath.of(original);
         if (path != null) {
             for (int slot = 1; slot <= 2; slot++) {
