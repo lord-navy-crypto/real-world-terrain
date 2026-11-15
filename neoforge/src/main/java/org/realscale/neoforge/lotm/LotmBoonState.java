@@ -92,7 +92,7 @@ public final class LotmBoonState {
 
     /** Altar interaction: grant, advance, stabilize, or rebind the separate boon track. */
     public static String useAtAltar(ServerPlayer player) {
-        if (!LotmConfig.ENABLED.get()) return "disabled";
+        if (!LotmConfig.ENABLED.get() || !LotmConfig.BOONS_ENABLED.get()) return "disabled";
         if (!hasBoon(player)) {
             if (!hasItems(player, LotmContent.STAR_CRYSTAL.get(), 1)
                     || !hasItems(player, LotmContent.ECHO_QUARTZ.get(), 1)
@@ -163,6 +163,7 @@ public final class LotmBoonState {
 
     /** Activate the non-combat insight granted by the current boon sequence. */
     public static String activateInsight(ServerPlayer player) {
+        if (!LotmConfig.ENABLED.get() || !LotmConfig.BOONS_ENABLED.get()) return "disabled";
         if (!hasBoon(player)) return "no_boon";
         if (revoked(player)) return "revoked";
         if (taint(player) >= LotmBoonBalance.ACTIVE_TAINT_LIMIT) return "strained";
