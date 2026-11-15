@@ -136,6 +136,15 @@ public final class LotmBalance {
         return (sequence == 8 ? 12 : 10) + (hasPendulum ? 2 : 0);
     }
 
+    /** Poor mental state narrows low-sequence divination instead of producing false certainty. */
+    public static int divinationRadiusForSanity(int radius, int sanity) {
+        if (radius <= 0) return 0;
+        int percent = clampSanity(sanity) < 20 ? 50
+                : clampSanity(sanity) < 40 ? 70
+                : clampSanity(sanity) < 70 ? 85 : 100;
+        return Math.max(3, radius * percent / 100);
+    }
+
     /** Skill manuals improve cost efficiency without bypassing sequence or pathway checks. */
     public static int clampSkillMastery(int mastery) {
         return clamp(mastery, 2);
