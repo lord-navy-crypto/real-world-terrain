@@ -573,5 +573,7 @@
   "gui.realscale.lotm_panel.journal.status_filter.incomplete": "Incomplete only",
   "gui.realscale.lotm_panel.journal.status_filter.verified": "Verified only",
   "gui.realscale.lotm_panel.settings.reset_defaults": "Restore defaults",
-  "gui.realscale.lotm_panel.settings.save_failed": "Could not save settings. Check config file permissions."
+  "gui.realscale.lotm_panel.settings.save_failed": "Could not save settings. Check config file permissions.",
+  "gui.realscale.lotm_panel.dashboard.instability_surcharge": "Extra spiritual cost: +%s",
+  "gui.realscale.lotm_panel.skill.tooltip.next_sequence": "Sequence 8 prerequisite: digestion %s (prepared %s / direct %s)"
 }
