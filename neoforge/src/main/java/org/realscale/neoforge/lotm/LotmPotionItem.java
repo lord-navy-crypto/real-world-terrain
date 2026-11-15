@@ -50,7 +50,6 @@ public final class LotmPotionItem extends Item {
         tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.path",
                 Component.translatable("lotm.realscale.path." + pathway.id())));
         tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.rank", sequence));
-        tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.backlash"));
         if (characteristic) {
             tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.characteristic"));
             tooltip.add(Component.translatable("tooltip.realscale.lotm.potion.direct_risk"));
@@ -77,20 +76,18 @@ public final class LotmPotionItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        // Invalid rank transitions are rejected immediately. Pathway mismatch and
-        // incomplete digestion are warned before the player chooses to complete use.
-        // The server revalidates the transition in finishUsingItem().
+        // Reject invalid rank/path/digestion before the drink animation starts.
+        // The final finishUsingItem() still checks the authoritative transition.
         if (!level.isClientSide()) {
             String validation = LotmState.validateAdvance(player, pathway, sequence, characteristic);
             if (!"ready".equals(validation)) {
-                boolean backlashEligible = "path".equals(validation) || "digestion".equals(validation);
-                if (!backlashEligible) {
-                    player.displayClientMessage(Component.translatable(
-                            "message.realscale.lotm.advance." + validation), true);
-                    return InteractionResultHolder.fail(stack);
+                if ("digestion".equals(validation)) {
+                    LotmActing.recordJournalEvent(player, "potion", "incomplete",
+                            pathway.id() + ":" + sequence + (characteristic ? ":characteristic" : ":prepared"));
                 }
                 player.displayClientMessage(Component.translatable(
-                        "message.realscale.lotm.potion.backlash_warning"), true);
+                        "message.realscale.lotm.advance." + validation), true);
+                return InteractionResultHolder.fail(stack);
             }
         }
         player.startUsingItem(hand);
@@ -105,33 +102,6 @@ public final class LotmPotionItem extends Item {
         // may have changed while the player was completing the drink animation.
         String result = LotmState.advance(player, pathway, sequence, characteristic);
         if (!"ready".equals(result)) {
-            if ("path".equals(result) || "digestion".equals(result)) {
-                if (player.getAbilities().instabuild) {
-                    player.displayClientMessage(Component.translatable(
-                            "message.realscale.lotm.advance." + result), true);
-                    return stack;
-                }
-                boolean wrongPathway = "path".equals(result);
-                int oldSanity = LotmState.sanity(player);
-                int sanityLoss = LotmBalance.potionBacklashSanityLoss(
-                        wrongPathway, LotmState.instability(player));
-                LotmState.adjustSanity(player, -sanityLoss);
-                float requestedDamage = LotmBalance.potionBacklashDamage(
-                        wrongPathway, LotmState.instability(player));
-                float safeDamage = Math.min(requestedDamage, Math.max(0.0F, player.getHealth() - 1.0F));
-                float beforeHealth = player.getHealth();
-                if (safeDamage > 0.0F) player.hurt(player.damageSources().magic(), safeDamage);
-                float actualDamage = Math.max(0.0F, beforeHealth - player.getHealth());
-                player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                        net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, 60, 0, true, false));
-                if (!player.getAbilities().instabuild) stack.shrink(1);
-                LotmActing.recordJournalEvent(player, "potion", "incomplete",
-                        pathway.id() + ":" + sequence + (characteristic ? ":characteristic" : ":prepared"));
-                player.displayClientMessage(Component.translatable(
-                        "message.realscale.lotm.potion.backlash",
-                        Math.max(0, oldSanity - LotmState.sanity(player)), actualDamage), false);
-                return stack;
-            }
             player.displayClientMessage(Component.translatable("message.realscale.lotm.advance." + result), true);
             return stack;
         }
