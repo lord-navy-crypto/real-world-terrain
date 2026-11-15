@@ -578,5 +578,6 @@
   "gui.realscale.lotm_panel.skill.tooltip.next_sequence": "序列8前置：消化度 %s（魔药需 %s／直接特性需 %s）",
   "gui.realscale.lotm_panel.sanity": "理智：%s/%s",
   "message.realscale.lotm.sanity.deep_dark": "深暗之域的共鸣正在扰乱你的思绪。请前往安全地点恢复。",
-  "tooltip.realscale.lotm.stability_sigil.sanity": "使用符印平复非凡特性失衡，并恢复少量理智。"
+  "tooltip.realscale.lotm.stability_sigil.sanity": "使用符印平复非凡特性失衡，并恢复少量理智。",
+  "entity.realscale.lotm.night_church_trader": "黑夜教会行商"
 }
