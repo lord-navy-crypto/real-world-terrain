@@ -22,6 +22,7 @@ public final class LotmStabilitySigilItem extends Item {
             List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.realscale.lotm.stability_sigil.effect"));
         tooltip.add(Component.translatable("tooltip.realscale.lotm.stability_sigil.limit"));
+        tooltip.add(Component.translatable("tooltip.realscale.lotm.stability_sigil.sanity"));
     }
 
     @Override
@@ -33,7 +34,10 @@ public final class LotmStabilitySigilItem extends Item {
         }
         if (level.isClientSide()) return InteractionResultHolder.sidedSuccess(stack, true);
         int reduced = LotmState.reduceInstability(player, 1);
-        if (reduced <= 0) {
+        int oldSanity = LotmState.sanity(player);
+        int newSanity = LotmState.adjustSanity(player, 12);
+        int restored = Math.max(0, newSanity - oldSanity);
+        if (reduced <= 0 && restored <= 0) {
             player.displayClientMessage(Component.translatable(
                     "message.realscale.lotm.stability_sigil.no_instability"), true);
             return InteractionResultHolder.fail(stack);
@@ -41,7 +45,7 @@ public final class LotmStabilitySigilItem extends Item {
         if (!player.getAbilities().instabuild) stack.shrink(1);
         player.displayClientMessage(Component.translatable(
                 "message.realscale.lotm.stability_sigil.restored",
-                LotmState.instability(player)), true);
+                reduced, restored, newSanity, LotmState.instability(player)), true);
         return InteractionResultHolder.sidedSuccess(stack, false);
     }
 }
