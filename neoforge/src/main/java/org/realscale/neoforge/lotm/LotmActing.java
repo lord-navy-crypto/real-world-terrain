@@ -43,6 +43,7 @@ public final class LotmActing {
             if (reward > 0) {
                 seen.add(id);
                 tag.put(key, seen);
+                recordJournalEvent(player, "biome", "discovered", "biome:" + biome);
             }
         }
     }
