@@ -42,7 +42,7 @@ public final class LotmBoonState {
     }
 
     public static int sequence(Player player) {
-        return hasBoon(player) ? Math.max(0, Math.min(8,
+        return hasBoon(player) ? Math.max(0, Math.min(9,
                 player.getPersistentData().getInt(SEQUENCE_KEY))) : 0;
     }
 
@@ -123,6 +123,17 @@ public final class LotmBoonState {
             player.getPersistentData().putBoolean(REVOKED_KEY, false);
             LotmState.adjustSanity(player, -5);
             return "rebound";
+        }
+
+        if (taint(player) >= LotmBoonBalance.UPGRADE_TAINT_LIMIT
+                || LotmState.sanity(player) < LotmBoonBalance.UPGRADE_MIN_SANITY) {
+            if (!hasItems(player, LotmContent.ECHO_QUARTZ.get(), 1)
+                    || !hasItems(player, LotmContent.LUNAR_MICA.get(), 1)) return "need_stabilize";
+            consumeItems(player, LotmContent.ECHO_QUARTZ.get(), 1);
+            consumeItems(player, LotmContent.LUNAR_MICA.get(), 1);
+            player.getPersistentData().putInt(TAINT_KEY, Math.max(0, taint(player) - 20));
+            LotmState.adjustSanity(player, 8);
+            return "stabilized";
         }
 
         if (sequence(player) == 9) {
