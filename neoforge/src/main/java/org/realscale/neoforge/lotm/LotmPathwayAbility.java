@@ -71,7 +71,8 @@ public final class LotmPathwayAbility extends ActiveAbility {
             return Component.translatable("message.realscale.lotm.ability.wrong_sequence");
         }
         int baseCost = LotmBalance.skillCost(pathway.id(), slot, sequence,
-                LotmCurios.hasDivinationPendulum(player), LotmState.instability(player));
+                LotmCurios.hasDivinationPendulum(player), LotmState.instability(player),
+                LotmState.sanity(player));
         int cost = LotmBalance.skillCostWithMastery(baseCost,
                 LotmState.skillMastery(player, pathway, slot), LotmConfig.SKILL_COST_PERCENT.get());
         if (LotmState.spirit(player) < cost) {
