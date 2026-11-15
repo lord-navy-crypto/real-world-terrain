@@ -40,6 +40,14 @@ class LotmSanityTest {
         assertEquals(4.0F, LotmBalance.potionBacklashDamage(true, 100));
     }
 
+    @Test void deepDarkExposureOnlyAffectsStrainedLowSequenceBeyonders() {
+        assertEquals(0, LotmBalance.deepDarkSanityLoss(9, 0));
+        assertEquals(1, LotmBalance.deepDarkSanityLoss(9, 1));
+        assertEquals(1, LotmBalance.deepDarkSanityLoss(8, 0));
+        assertEquals(1, LotmBalance.deepDarkSanityLoss(8, 100));
+        assertEquals(0, LotmBalance.deepDarkSanityLoss(7, 0));
+    }
+
     @Test void poorSanityNarrowsDivinationWithoutProducingImpossibleRanges() {
         assertEquals(12, LotmBalance.divinationRadiusForSanity(12, 100));
         assertEquals(10, LotmBalance.divinationRadiusForSanity(12, 69));
