@@ -10,7 +10,7 @@ import net.minecraft.world.item.ItemStack;
 
 /** Read-only synchronized player panel with server-authoritative preference buttons. */
 public final class LotmStatusMenu extends AbstractContainerMenu {
-    public static final int DATA_COUNT = 33;
+    public static final int DATA_COUNT = 35;
     public static final int BUTTON_TOGGLE_HUD = 0;
     public static final int BUTTON_TOGGLE_APPEARANCE = 1;
     public static final int BUTTON_TOGGLE_SOUND = 2;
@@ -68,6 +68,8 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
                     case 30 -> LotmConfig.POTION_PRACTICE.get();
                     case 31 -> LotmConfig.CHARACTERISTIC_PRACTICE.get();
                     case 32 -> LotmPreferences.particlesEnabled(player) ? 1 : 0;
+                    case 33 -> LotmSkillCooldowns.remaining(player, path, 1);
+                    case 34 -> LotmSkillCooldowns.remaining(player, path, 2);
                     default -> 0;
                 };
             }
@@ -116,6 +118,10 @@ public final class LotmStatusMenu extends AbstractContainerMenu {
     public int preparedPotionRequirement() { return data.get(30); }
     public int characteristicRequirement() { return data.get(31); }
     public boolean particlesEnabled() { return data.get(32) != 0; }
+    /** Remaining ticks since a successful server skill activation; not an alternate use gate. */
+    public int remainingSkillCooldown(int slot) {
+        return slot == 1 ? Math.max(0, data.get(33)) : slot == 2 ? Math.max(0, data.get(34)) : 0;
+    }
 
     @Override
     public boolean clickMenuButton(Player player, int id) {
