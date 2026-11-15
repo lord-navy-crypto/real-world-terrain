@@ -231,10 +231,10 @@
   "tooltip.realscale.lotm.divination_pendulum.effect": "While equipped by a Seer: secondary skill costs 4 less spirituality and omen range increases by 2 blocks.",
   "tooltip.realscale.lotm.curio_exclusive_slot": "Uses the single Occult Focus slot; cannot be stacked with the other focus.",
   "item.realscale.lotm_stability_sigil": "Stability Sigil",
-  "tooltip.realscale.lotm.stability_sigil.effect": "Use to reduce direct-characteristic instability by 1.",
-  "tooltip.realscale.lotm.stability_sigil.limit": "Only works for a Beyonder with accumulated instability.",
-  "message.realscale.lotm.stability_sigil.no_instability": "There is no characteristic instability to settle.",
-  "message.realscale.lotm.stability_sigil.restored": "The sigil settles one trace of instability. Remaining instability: %s.",
+  "tooltip.realscale.lotm.stability_sigil.effect": "Use to settle characteristic instability and restore a little sanity.",
+  "tooltip.realscale.lotm.stability_sigil.limit": "Restores up to 1 instability and 12 sanity per sigil.",
+  "message.realscale.lotm.stability_sigil.no_instability": "Your mental state and characteristic stability are already settled.",
+  "message.realscale.lotm.stability_sigil.restored": "Sigil used: instability −%s, sanity +%s. Sanity: %s; remaining instability: %s.",
   "tooltip.realscale.lotm.potion.path": "Pathway: %s",
   "tooltip.realscale.lotm.potion.rank": "Rank: Sequence %s",
   "tooltip.realscale.lotm.potion.characteristic": "Unprepared characteristic",
@@ -575,5 +575,9 @@
   "gui.realscale.lotm_panel.settings.reset_defaults": "Restore defaults",
   "gui.realscale.lotm_panel.settings.save_failed": "Could not save settings. Check config file permissions.",
   "gui.realscale.lotm_panel.dashboard.instability_surcharge": "Extra spiritual cost: +%s",
-  "gui.realscale.lotm_panel.skill.tooltip.next_sequence": "Sequence 8 prerequisite: digestion %s (prepared %s / direct %s)"
+  "gui.realscale.lotm_panel.skill.tooltip.next_sequence": "Sequence 8 prerequisite: digestion %s (prepared %s / direct %s)",
+  "gui.realscale.lotm_panel.sanity": "Sanity: %s/%s",
+  "tooltip.realscale.lotm.potion.backlash": "An undigested or incompatible potion can trigger backlash, lower sanity and deal minor non-lethal damage.",
+  "message.realscale.lotm.potion.backlash_warning": "Warning: this potion is incompatible or not fully digested. Completing its use will trigger a bounded backlash.",
+  "message.realscale.lotm.potion.backlash": "Mystical backlash: sanity −%s; health lost: %s."
 }
