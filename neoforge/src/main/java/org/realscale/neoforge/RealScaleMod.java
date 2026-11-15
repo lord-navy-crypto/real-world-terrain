@@ -30,6 +30,7 @@ public final class RealScaleMod {
         container.registerConfig(ModConfig.Type.COMMON, LotmConfig.SPEC);
         container.registerConfig(ModConfig.Type.CLIENT, org.realscale.neoforge.lotm.client.LotmClientConfig.SPEC);
         NeoForge.EVENT_BUS.addListener(LotmEvents::onJoin);
+        NeoForge.EVENT_BUS.addListener(LotmMerchantTrades::onJoin);
         NeoForge.EVENT_BUS.addListener(LotmEvents::onDrops);
         NeoForge.EVENT_BUS.addListener(LotmEvents::onTick);
         NeoForge.EVENT_BUS.addListener(LotmEvents::onClone);
