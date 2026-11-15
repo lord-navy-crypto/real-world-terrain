@@ -12,6 +12,7 @@ public final class LotmConfig {
     public static final ModConfigSpec.BooleanValue CREATURE_ENTITIES;
     public static final ModConfigSpec.BooleanValue CREATURE_VARIANTS;
     public static final ModConfigSpec.BooleanValue RELIC_SITES;
+    public static final ModConfigSpec.BooleanValue TRADERS_ENABLED;
     public static final ModConfigSpec.IntValue VARIANT_RARITY_PERCENT;
     public static final ModConfigSpec.IntValue RELIC_RARITY;
     public static final ModConfigSpec.IntValue POTION_PRACTICE;
@@ -40,6 +41,8 @@ public final class LotmConfig {
                 .define("creatureVariants", DEFAULT_CREATURE_VARIANTS);
         RELIC_SITES = b.comment("Legacy custom relic-site placement. Disabled; use vanilla structure loot instead.")
                 .define("relicSites", DEFAULT_RELIC_SITES);
+        TRADERS_ENABLED = b.comment("Allow the uncommon Night Church wandering-trader variant and its utility trades.")
+                .define("nightChurchTrader", true);
         VARIANT_RARITY_PERCENT = b.comment("Legacy stand-in frequency percent relative to default (50 = half, 200 = double).")
                 .defineInRange("variantRatePercent", 100, 1, 300);
         RELIC_RARITY = b.comment("Legacy relic-site chance denominator; retained for old config compatibility.")
