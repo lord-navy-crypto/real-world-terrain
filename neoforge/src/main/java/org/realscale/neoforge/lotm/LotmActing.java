@@ -7,7 +7,9 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
@@ -240,31 +242,31 @@ public final class LotmActing {
         List<String> entries = new ArrayList<>();
         ListTag legacy = loadResearchJournal(player, path);
         ListTag journal = player.getPersistentData().getList(eventJournalKey(path), Tag.TAG_STRING);
+        Set<String> eventKeys = new HashSet<>();
+        List<String> recordedEvents = new ArrayList<>(journal.size());
+        for (int index = 0; index < journal.size(); index++) {
+            String value = journal.getString(index);
+            String[] parts = parseJournalEvent(value);
+            if (parts == null) continue;
+            eventKeys.add(parts[2] + "|" + parts[4]);
+            recordedEvents.add(value);
+        }
 
         // Legacy clues are older than timestamped events. Put them first so the
         // network's latest-128 window cannot accidentally hide current experiments.
+        // A hash set avoids O(legacy * events) work during every menu sync tick.
         for (int index = 0; index < legacy.size(); index++) {
             String source = legacy.getString(index);
             String category = researchCategory(source);
             String bounded = source.replace("|", "/");
             if (bounded.length() > 190) bounded = bounded.substring(0, 190);
-            boolean exists = false;
-            for (int eventIndex = 0; eventIndex < journal.size(); eventIndex++) {
-                String[] parts = parseJournalEvent(journal.getString(eventIndex));
-                if (parts != null && category.equals(parts[2]) && bounded.equals(parts[4])) {
-                    exists = true;
-                    break;
-                }
-            }
-            if (!exists) entries.add("event|0|" + category + "|discovered|" + bounded);
+            if (!eventKeys.contains(category + "|" + bounded))
+                entries.add("event|0|" + category + "|discovered|" + bounded);
         }
 
         // Structured events are appended chronologically; status updates are
         // reinserted at the end, so recent verified work wins the bounded snapshot.
-        for (int index = 0; index < journal.size(); index++) {
-            String value = journal.getString(index);
-            if (parseJournalEvent(value) != null) entries.add(value);
-        }
+        for (String value : recordedEvents) entries.add(value);
         return List.copyOf(entries);
     }
 
