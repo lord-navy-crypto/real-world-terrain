@@ -56,6 +56,10 @@ public final class LotmContent {
             () -> new LotmAlchemyBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE_BRICKS)
                     .strength(4.0F).requiresCorrectToolForDrops()));
 
+    public static final Supplier<Block> BOON_ALTAR = BLOCKS.register("lotm_boon_altar",
+            () -> new LotmBoonAltarBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.ENCHANTING_TABLE)
+                    .strength(4.0F).requiresCorrectToolForDrops()));
+
     public static final Supplier<? extends Item> STAR_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_star_crystal_ore", STAR_ORE);
     public static final Supplier<? extends Item> CURSED_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_cursed_crystal_ore", CURSED_ORE);
     public static final Supplier<? extends Item> GRAVE_ORE_ITEM = ITEMS.registerSimpleBlockItem("lotm_grave_crystal_ore", GRAVE_ORE);
@@ -70,6 +74,8 @@ public final class LotmContent {
     public static final Supplier<? extends Item> RELIC_CACHE_ITEM = ITEMS.registerSimpleBlockItem("lotm_relic_cache", RELIC_CACHE);
     public static final Supplier<? extends Item> ALCHEMY_APPARATUS_ITEM =
             ITEMS.registerSimpleBlockItem("lotm_alchemy_apparatus", ALCHEMY_APPARATUS);
+    public static final Supplier<? extends Item> BOON_ALTAR_ITEM =
+            ITEMS.registerSimpleBlockItem("lotm_boon_altar", BOON_ALTAR);
     public static final Supplier<Item> STAR_CRYSTAL = ITEMS.registerSimpleItem("lotm_star_crystal", new Item.Properties());
     public static final Supplier<Item> CURSED_CRYSTAL = ITEMS.registerSimpleItem("lotm_cursed_crystal", new Item.Properties());
     public static final Supplier<Item> GRAVE_CRYSTAL = ITEMS.registerSimpleItem("lotm_grave_crystal", new Item.Properties());
