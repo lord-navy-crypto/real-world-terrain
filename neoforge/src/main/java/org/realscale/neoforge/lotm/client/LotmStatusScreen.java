@@ -890,7 +890,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                         sequence == 8 ? 0xFF9ED8C0 : 0xFFB8ADC9, false);
                 if (activeSequence && menu.skillsEnabled()) {
                     int base = LotmBalance.skillCost(path.id(), slot, sequence,
-                            menu.hasDivinationPendulum(), menu.instability());
+                            menu.hasDivinationPendulum(), menu.instability(), menu.sanity());
                     int cost = LotmBalance.skillCostWithMastery(base, mastery, menu.skillCostPercent());
                     graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.skill_tree.cost",
                             cost, LotmBalance.skillCooldownTicks(slot, sequence)),
