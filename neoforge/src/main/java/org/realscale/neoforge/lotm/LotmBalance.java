@@ -4,6 +4,7 @@ package org.realscale.neoforge.lotm;
 public final class LotmBalance {
     public static final int MAX_SPIRIT = 100;
     public static final int MAX_PRACTICE = 100;
+    public static final int MAX_SANITY = 100;
     /** Persistent sanity ceiling; gameplay surcharge saturates much earlier. */
     public static final int MAX_INSTABILITY = 100;
     private LotmBalance() {}
@@ -23,6 +24,37 @@ public final class LotmBalance {
 
     public static int practice(int current, int amount) {
         return boundedAdd(current, amount, MAX_PRACTICE);
+    }
+
+    /** Sanity is a separate mental-state track; instability remains characteristic residue. */
+    public static int clampSanity(int value) {
+        return clamp(value, MAX_SANITY);
+    }
+
+    /** Saturating signed adjustment for recovery and supernatural stress. */
+    public static int changeSanity(int current, int delta) {
+        long adjusted = (long) clampSanity(current) + delta;
+        return (int) Math.max(0L, Math.min(MAX_SANITY, adjusted));
+    }
+
+    /** Low sanity makes pathway abilities harder to control, not stronger. */
+    public static int sanitySkillSurcharge(int sanity) {
+        int bounded = clampSanity(sanity);
+        if (bounded >= 70) return 0;
+        if (bounded >= 40) return 2;
+        if (bounded >= 20) return 4;
+        return 8;
+    }
+
+    /** A failed potion attempt is bounded and non-lethal in the gameplay layer. */
+    public static int potionBacklashSanityLoss(boolean wrongPathway, int instability) {
+        int base = wrongPathway ? 24 : 12;
+        return Math.min(45, base + clampInstability(instability) / 8);
+    }
+
+    public static float potionBacklashDamage(boolean wrongPathway, int instability) {
+        float base = wrongPathway ? 3.0F : 1.5F;
+        return Math.min(4.0F, base + (clampInstability(instability) >= 40 ? 1.0F : 0.0F));
     }
 
     /** Normalize old or malformed persistent values before they reach gameplay. */
@@ -56,6 +88,14 @@ public final class LotmBalance {
     /** The Pendulum specializes Seer divination; it never discounts other pathways. */
     public static int skillCost(String pathway, int slot, int sequence, boolean hasPendulum) {
         return skillCost(pathway, slot, sequence, hasPendulum, 0);
+    }
+
+    /** Direct-characteristic instability raises costs; low sanity adds a separate surcharge. */
+    public static int skillCost(String pathway, int slot, int sequence,
+            boolean hasPendulum, int instability, int sanity) {
+        int base = skillCost(pathway, slot, sequence, hasPendulum, instability);
+        if (base >= MAX_SPIRIT) return MAX_SPIRIT;
+        return Math.min(MAX_SPIRIT, base + sanitySkillSurcharge(sanity));
     }
 
     /** Direct-characteristic instability raises the cost of exerting pathway abilities. */
