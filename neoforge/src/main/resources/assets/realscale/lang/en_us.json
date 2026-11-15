@@ -577,9 +577,6 @@
   "gui.realscale.lotm_panel.dashboard.instability_surcharge": "Extra spiritual cost: +%s",
   "gui.realscale.lotm_panel.skill.tooltip.next_sequence": "Sequence 8 prerequisite: digestion %s (prepared %s / direct %s)",
   "gui.realscale.lotm_panel.sanity": "Sanity: %s/%s",
-  "tooltip.realscale.lotm.potion.backlash": "An undigested or incompatible potion can trigger backlash, lower sanity and deal minor non-lethal damage.",
-  "message.realscale.lotm.potion.backlash_warning": "Warning: this potion is incompatible or not fully digested. Completing its use will trigger a bounded backlash.",
-  "message.realscale.lotm.potion.backlash": "Mystical backlash: sanity −%s; health lost: %s.",
   "message.realscale.lotm.sanity.deep_dark": "The Deep Dark's resonance is unsettling your thoughts. Find a safer place to recover.",
   "tooltip.realscale.lotm.stability_sigil.sanity": "Use the sigil to settle characteristic instability and restore a little sanity."
 }
