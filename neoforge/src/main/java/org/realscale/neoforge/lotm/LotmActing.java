@@ -32,6 +32,9 @@ public final class LotmActing {
     public static void onPlayerTick(ServerPlayer player) {
         LotmPath path = LotmPath.of(player);
         if (!isActive(player) || path == null) return;
+        // Materials may be obtained from ruins, trades or alchemy, not only by mining.
+        // Poll at most once per 10 seconds so ordinary inventory churn stays cheap.
+        if (player.tickCount % 200 == 0) recordCarriedMaterials(player);
         String biome = player.level().getBiome(player.blockPosition()).unwrapKey()
                 .map(key -> key.location().toString()).orElse("");
         if (biome.isEmpty()) return;
@@ -47,6 +50,24 @@ public final class LotmActing {
                 tag.put(key, seen);
                 recordJournalEvent(player, "biome", "discovered", "biome:" + biome);
             }
+        }
+    }
+
+    /** Record genuine possession discoveries irrespective of how the material was obtained. */
+    private static void recordCarriedMaterials(ServerPlayer player) {
+        Set<net.minecraft.world.item.Item> occultItems = new HashSet<>();
+        for (var supplier : LotmContent.registeredMaterials().values()) {
+            occultItems.add(supplier.get());
+        }
+        Set<net.minecraft.world.item.Item> discovered = new HashSet<>();
+        var inventory = player.getInventory();
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            var stack = inventory.getItem(slot);
+            if (stack.isEmpty() || !occultItems.contains(stack.getItem())
+                    || !discovered.add(stack.getItem())) continue;
+            recordJournalEvent(player, "material", "discovered",
+                    net.minecraft.core.registries.BuiltInRegistries.ITEM
+                            .getKey(stack.getItem()).toString());
         }
     }
 
