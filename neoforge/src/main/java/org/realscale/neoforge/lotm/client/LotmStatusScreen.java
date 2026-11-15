@@ -497,7 +497,10 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         if (previousJournalPage != null) previousJournalPage.visible = selectedTab == 4 && journalPage > 0;
         if (nextJournalPage != null) nextJournalPage.visible = selectedTab == 4
                 && journalPage + 1 < journalPageCount();
-        if (journalSearch != null) journalSearch.visible = selectedTab == 4;
+        if (journalSearch != null) {
+            journalSearch.visible = selectedTab == 4;
+            if (selectedTab != 4 && journalSearch.isFocused()) journalSearch.setFocused(false);
+        }
         if (journalFilterButton != null) {
             journalFilterButton.visible = selectedTab == 4;
             journalFilterButton.setMessage(Component.translatable(
@@ -625,6 +628,11 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                     menu.remainingSkillCooldown(slot) / 20.0F));
             lines.add(Component.translatable("gui.realscale.lotm_panel.skill.tooltip.mastery",
                     menu.skillMastery(slot), sequence == 9 ? 1 : menu.skillMasteryCap()));
+            if (sequence == 9 && mouseY >= topPos + 145 && mouseY < topPos + 173) {
+                lines.add(Component.translatable("gui.realscale.lotm_panel.skill.tooltip.next_sequence",
+                        menu.digestion(), menu.preparedPotionRequirement(),
+                        menu.characteristicRequirement()));
+            }
             if (menu.spirit() < cost) {
                 lines.add(Component.translatable("gui.realscale.lotm_panel.skill.tooltip.low_spirit",
                         cost - menu.spirit()));
@@ -776,6 +784,10 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                     14, 112, 0xFFD7CDE4, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.instability", menu.instability()),
                     14, 136, 0xFFE0B8C8, false);
+            graphics.drawString(font, Component.translatable(
+                    "gui.realscale.lotm_panel.dashboard.instability_surcharge",
+                    LotmBalance.instabilitySurcharge(menu.instability())),
+                    166, 136, 0xFFE0B8C8, false);
             Component accessory = menu.hasSpiritFocus()
                     ? Component.translatable("item.realscale.lotm_spirit_focus")
                     : menu.hasDivinationPendulum()
