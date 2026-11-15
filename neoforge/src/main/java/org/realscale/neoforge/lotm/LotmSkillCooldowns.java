@@ -28,11 +28,23 @@ public final class LotmSkillCooldowns {
         player.getPersistentData().putLong(key(path, slot), end);
     }
 
+    /**
+     * Ignore legacy, malformed or time-rewound expiration values instead of
+     * displaying an impossible cooldown for hours after a world rollback.
+     */
+    static int boundedRemaining(long expiry, long currentTick, int maximumTicks) {
+        if (currentTick < 0 || expiry <= currentTick || maximumTicks <= 0) return 0;
+        long left = expiry - currentTick;
+        return left > Math.min(Short.MAX_VALUE, maximumTicks) ? 0 : (int) left;
+    }
+
     public static int remaining(ServerPlayer player, LotmPath path, int slot) {
         if (path == null || slot < 1 || slot > 2) return 0;
+        int sequence = LotmState.sequence(player);
+        if (sequence != 9 && sequence != 8) return 0;
         long end = player.getPersistentData().getLong(key(path, slot));
-        long left = end - serverTick(player);
-        return (int) Math.max(0L, Math.min(Short.MAX_VALUE, left));
+        return boundedRemaining(end, serverTick(player),
+                LotmBalance.skillCooldownTicks(slot, sequence));
     }
 
     public static void copy(Player original, Player clone) {
