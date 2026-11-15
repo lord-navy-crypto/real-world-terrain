@@ -29,6 +29,7 @@ public final class LotmCreativeTab {
 
     private static void populate(CreativeModeTab.Output output) {
         output.accept(LotmContent.ALCHEMY_APPARATUS_ITEM.get());
+        output.accept(LotmContent.BOON_ALTAR_ITEM.get());
         output.accept(LotmContent.STAR_ORE_ITEM.get());
         output.accept(LotmContent.CURSED_ORE_ITEM.get());
         output.accept(LotmContent.GRAVE_ORE_ITEM.get());
