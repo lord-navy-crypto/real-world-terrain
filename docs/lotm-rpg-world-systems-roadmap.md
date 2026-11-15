@@ -4,7 +4,7 @@ Scope: RealScale NeoForge 1.21.1, current playable pathway tier Sequence 9/8. Th
 
 ## Design invariants
 
-- Keep all supernatural ingredients, potions, rituals, and effects fictional and represented only by Minecraft items, blocks, and server-side game rules.
+- Keep supernatural items, rituals, and effects fictional and represented only by Minecraft items, blocks, and server-side game rules.
 - Keep the four current pathways and Sequence 9/8 as the active progression boundary. Sequence 7 remains registered for save compatibility but unavailable.
 - Keep sanity, characteristic instability, spirituality, and potion digestion as four distinct values.
 - All progression, potion backlash, trade rewards, discoveries, and ritual results are server-authoritative.
@@ -18,7 +18,7 @@ Scope: RealScale NeoForge 1.21.1, current playable pathway tier Sequence 9/8. Th
 - Add the missing Spirit Quartz Ore and Relic Cache block items to the LOTM tab.
 - Move structure characteristics into independent 0.5% bonus-pool rolls, separate from common/rare materials.
 - Add a persistent 0–100 sanity stat independent of characteristic instability.
-- Direct raw-characteristic advancement and failed wrong-path/undigested potion attempts lower sanity.
+- Deep Dark exposure and failed ritual attempts can lower sanity.
 - Low sanity increases active-skill cost and narrows Seer divination range.
 - Sleep and Stability Sigils restore sanity; Deep Dark exposure slowly unsettles strained low-sequence Beyonders.
 - Display sanity in the status panel and compact HUD.
@@ -29,10 +29,9 @@ Scope: RealScale NeoForge 1.21.1, current playable pathway tier Sequence 9/8. Th
 - Build one authoritative item catalogue from LotmContent.registeredMaterials().
 - Audit every item for model, texture, bilingual name, recipe or acquisition source.
 - Show material source hints: biome, ore height band, creature drop, plant harvest, structure loot, or merchant.
-- Extend the in-game recipe browser to cover all custom alchemy recipes and the core field tools.
-- Keep the 2×2 alchemy apparatus server-authoritative, with clear fuel, progress, output, and blocked-state feedback.
-- Audit tool recipes for the divination pendulum, Spirit Focus, Stability Sigil, empty vial, occult catalyst, and alchemy apparatus.
-- Add a compact field-guide/recipe-note flow so players can inspect formulas without an external recipe mod.
+- Extend the in-game guide to cover the divination pendulum, Spirit Focus, Stability Sigil, and other non-potion utility tools.
+- Audit utility-tool recipes, output slots, durability, and clear crafting feedback.
+- Add a compact field guide for material sources, tool recipes, and non-potion research clues.
 
 ## Phase 3 — Sequence 9/8 ability completion
 
@@ -52,9 +51,8 @@ Scope: RealScale NeoForge 1.21.1, current playable pathway tier Sequence 9/8. Th
 
 ## Phase 5 — Wandering traders and formula knowledge
 
-- Potion Trader: offers formula notes, common alchemy materials, empty vials, spirit embers, and catalysts at expensive emerald prices.
-- Night Church Trader: offers divination tools, Spirit Focus, Stability Sigils, and a limited selection of rare materials.
-- Formula notes are server-generated items with pathway/sequence data; using one records a verified formula clue in the research journal.
+- Night Church Trader: an uncommon variant of the vanilla Wandering Trader offering divination tools, Spirit Focus, Stability Sigils, and limited non-potion research supplies for expensive emerald prices.
+- Trader offers are server-authoritative, stock-limited, and persist correctly through save/reload.
 - Traders are uncommon variants of the vanilla Wandering Trader, not a new mandatory entity dependency.
 - Do not sell complete high-value characteristics as routine stock.
 
