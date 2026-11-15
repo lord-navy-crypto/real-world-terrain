@@ -3,7 +3,7 @@ package org.realscale.neoforge.lotm;
 /** Pure balance rules for the separate outer-deity boon progression. */
 public final class LotmBoonBalance {
     public static final int MAX_TAINT = 100;
-    public static final int ACTIVE_TAINT_LIMIT = 90;
+    public static final int ACTIVE_TAINT_LIMIT = 96;
     public static final int UPGRADE_TAINT_LIMIT = 40;
     public static final int UPGRADE_DISCOVERIES_REQUIRED = 3;
     public static final int UPGRADE_MIN_SANITY = 50;
