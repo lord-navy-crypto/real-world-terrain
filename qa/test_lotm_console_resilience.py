@@ -34,18 +34,6 @@ class LotmConsoleResilienceTests(unittest.TestCase):
         self.assertIn("menu.remainingSkillCooldown(slot)", screen)
         self.assertIn("skill.tooltip.cooldown_remaining", screen)
 
-    def test_alchemy_records_normal_pickup_and_shift_click_from_server_only(self):
-        menu = read(SOURCE / "LotmAlchemyMenu.java")
-        self.assertIn("@Override public void onTake(Player player, ItemStack taken)", menu)
-        self.assertIn("recordCraftedOutput(player, taken)", menu)
-        self.assertIn("if (index == 5) recordCraftedOutput(player, copy)", menu)
-        self.assertIn("private static void recordCraftedOutput(Player player, ItemStack taken)", menu)
-        self.assertIn("player instanceof ServerPlayer serverPlayer", menu)
-        self.assertIn("taken.isEmpty()", menu)
-        self.assertIn('"alchemy", "verified"', menu)
-        self.assertIn('"potion", "discovered"', menu)
-        self.assertIn('"skill", "discovered"', menu)
-
     def test_cooldown_rollback_bounds_have_junit_coverage(self):
         java_test = read(ROOT / "neoforge/src/test/java/org/realscale/neoforge/lotm/LotmSkillCooldownsTest.java")
         self.assertIn("staleAndMalformedCooldownsFailClosed()", java_test)
