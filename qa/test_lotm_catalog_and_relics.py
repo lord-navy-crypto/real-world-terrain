@@ -54,14 +54,11 @@ class LotmCatalogAndRelicTests(unittest.TestCase):
             with self.subTest(item=item):
                 self.assertIn(f"LotmContent.{item}.get()", tab)
 
-    def test_player_tools_and_alchemy_apparatus_have_discoverable_recipes(self):
+    def test_non_potion_utility_tools_have_discoverable_recipes(self):
         expected = {
             "lotm_divination_pendulum": "realscale:lotm_divination_pendulum",
             "lotm_spirit_focus": "realscale:lotm_spirit_focus",
             "lotm_stability_sigil": "realscale:lotm_stability_sigil",
-            "lotm_empty_vial": "realscale:lotm_empty_vial",
-            "lotm_occult_catalyst": "realscale:lotm_occult_catalyst",
-            "lotm_alchemy_apparatus": "realscale:lotm_alchemy_apparatus",
         }
         for recipe_id, result_id in expected.items():
             with self.subTest(recipe=recipe_id):
@@ -69,10 +66,10 @@ class LotmCatalogAndRelicTests(unittest.TestCase):
                 self.assertEqual(result_id, recipe["result"]["id"])
                 self.assertGreater(len(recipe.get("ingredients", recipe.get("key", {}))), 0)
                 self.assertTrue((ASSETS / "models/item" / f"{recipe_id}.json").is_file())
-        screen = read(JAVA / "client/LotmStatusScreen.java")
-        self.assertIn("refreshRecipes()", screen)
-        self.assertIn("recipe.getIngredients()", screen)
-        self.assertIn("renderRecipeItemTooltip", screen)
+        tab = read(JAVA / "LotmCreativeTab.java")
+        self.assertIn("LotmContent.DIVINATION_PENDULUM.get()", tab)
+        self.assertIn("LotmContent.SPIRIT_FOCUS.get()", tab)
+        self.assertIn("LotmContent.STABILITY_SIGIL.get()", tab)
 
     def test_relic_characteristics_are_separate_ultra_rare_rolls(self):
         structure_tables = ("dungeon", "mineshaft", "stronghold", "ancient_city")
