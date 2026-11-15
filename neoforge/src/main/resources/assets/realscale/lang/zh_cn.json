@@ -231,10 +231,10 @@
   "tooltip.realscale.lotm.divination_pendulum.effect": "占卜家装备时：辅助技能消耗减少4点灵性，预兆探查范围增加2格。",
   "tooltip.realscale.lotm.curio_exclusive_slot": "占用唯一的神秘聚焦槽，不能与另一件聚焦饰品同时装备。",
   "item.realscale.lotm_stability_sigil": "稳定符印",
-  "tooltip.realscale.lotm.stability_sigil.effect": "使用后，直接服用非凡特性造成的失衡程度降低1级。",
-  "tooltip.realscale.lotm.stability_sigil.limit": "仅对已有累计失衡的非凡者生效。",
-  "message.realscale.lotm.stability_sigil.no_instability": "你目前没有需要平复的特性失衡。",
-  "message.realscale.lotm.stability_sigil.restored": "符印平复了一层特性失衡。剩余失衡：%s。",
+  "tooltip.realscale.lotm.stability_sigil.effect": "使用后平复非凡特性失衡，并恢复少量理智。",
+  "tooltip.realscale.lotm.stability_sigil.limit": "每枚最多平复1级失衡、恢复12点理智。",
+  "message.realscale.lotm.stability_sigil.no_instability": "你的精神状态与特性稳定度已经平复，无需使用符印。",
+  "message.realscale.lotm.stability_sigil.restored": "符印生效：失衡 −%s，理智 +%s。当前理智：%s；剩余失衡：%s。",
   "tooltip.realscale.lotm.potion.path": "途径：%s",
   "tooltip.realscale.lotm.potion.rank": "序列：%s",
   "tooltip.realscale.lotm.potion.characteristic": "未经调制的非凡特性",
@@ -575,5 +575,9 @@
   "gui.realscale.lotm_panel.settings.reset_defaults": "恢复默认设置",
   "gui.realscale.lotm_panel.settings.save_failed": "设置保存失败，请检查配置文件权限。",
   "gui.realscale.lotm_panel.dashboard.instability_surcharge": "灵性额外消耗：+%s",
-  "gui.realscale.lotm_panel.skill.tooltip.next_sequence": "序列8前置：消化度 %s（魔药需 %s／直接特性需 %s）"
+  "gui.realscale.lotm_panel.skill.tooltip.next_sequence": "序列8前置：消化度 %s（魔药需 %s／直接特性需 %s）",
+  "gui.realscale.lotm_panel.sanity": "理智：%s/%s",
+  "tooltip.realscale.lotm.potion.backlash": "未充分消化或途径不匹配的魔药可能引发反噬，降低理智并造成少量、非致命的游戏内伤害。",
+  "message.realscale.lotm.potion.backlash_warning": "警告：该魔药与当前途径不匹配或尚未充分消化。完成使用将触发有限度的反噬。",
+  "message.realscale.lotm.potion.backlash": "神秘反噬：理智 −%s；实际损失生命值：%s。"
 }
