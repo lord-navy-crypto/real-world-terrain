@@ -51,17 +51,6 @@ public final class LotmBalance {
         return (sequence == 8 || clampInstability(instability) > 0) ? 1 : 0;
     }
 
-    /** A failed potion attempt is bounded and non-lethal in the gameplay layer. */
-    public static int potionBacklashSanityLoss(boolean wrongPathway, int instability) {
-        int base = wrongPathway ? 24 : 12;
-        return Math.min(45, base + clampInstability(instability) / 8);
-    }
-
-    public static float potionBacklashDamage(boolean wrongPathway, int instability) {
-        float base = wrongPathway ? 3.0F : 1.5F;
-        return Math.min(4.0F, base + (clampInstability(instability) >= 40 ? 1.0F : 0.0F));
-    }
-
     /** Normalize old or malformed persistent values before they reach gameplay. */
     public static int clampInstability(int value) {
         return clamp(value, MAX_INSTABILITY);
