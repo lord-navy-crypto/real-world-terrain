@@ -35,10 +35,14 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     private int materialPage;
     private int journalPage;
     private int journalFilter;
+    private int journalStatusFilter;
     private int settingsPage;
     private double activeMouseScale = 1.0D;
     private Button journalFilterButton;
     private Button journalSortButton;
+    private Button journalStatusButton;
+    private Button restorePanelDefaultsButton;
+    private boolean settingsSaveFailed;
     private Button settingsPageButton;
     private EditBox journalSearch;
     private Button hudToggle;
@@ -143,7 +147,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 button -> journalPage = Math.min(journalPageCount() - 1, journalPage + 1))
                 .bounds(leftPos + 208, topPos + 238, 100, 18).build());
 
-        journalSearch = addRenderableWidget(new EditBox(font, leftPos + 12, topPos + 52,
+        journalSearch = addRenderableWidget(new EditBox(font, leftPos + 12, topPos + 62,
                 180, 18, Component.translatable("gui.realscale.lotm_panel.journal.search")));
         journalSearch.setMaxLength(48);
         journalSearch.setHint(Component.translatable("gui.realscale.lotm_panel.journal.search_hint"));
@@ -151,13 +155,17 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
 
         journalFilterButton = addRenderableWidget(Button.builder(Component.empty(),
                 button -> { journalFilter = (journalFilter + 1) % 11; journalPage = 0; })
-                .bounds(leftPos + 204, topPos + 52, 104, 18).build());
+                .bounds(leftPos + 204, topPos + 62, 104, 18).build());
         journalSortButton = addRenderableWidget(Button.builder(Component.empty(),
                 button -> {
-                    LotmClientConfig.JOURNAL_NEWEST_FIRST.set(!LotmClientConfig.JOURNAL_NEWEST_FIRST.get());
-                    LotmClientConfig.save();
+                    LotmClientConfig.JOURNAL_NEWEST_FIRST.set(!LotmClientConfig.newestFirst());
+                    settingsSaveFailed = !LotmClientConfig.save();
                     journalPage = 0;
-                }).bounds(leftPos + 204, topPos + 74, 104, 18).build());
+                }).bounds(leftPos + 204, topPos + 84, 104, 18).build());
+
+        journalStatusButton = addRenderableWidget(Button.builder(Component.empty(),
+                button -> { journalStatusFilter = (journalStatusFilter + 1) % 4; journalPage = 0; })
+                .bounds(leftPos + 12, topPos + 84, 180, 18).build());
 
         settingsPageButton = addRenderableWidget(Button.builder(Component.empty(),
                 button -> settingsPage = (settingsPage + 1) % 2)
@@ -181,37 +189,44 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 .bounds(leftPos + 214, topPos + 258, 96, 16).build());
 
         panelScaleButton = addRenderableWidget(Button.builder(Component.empty(), button -> {
-            int current = LotmClientConfig.PANEL_SCALE_PERCENT.get();
+            int current = LotmClientConfig.scalePercent();
             int next = current >= 125 ? 75 : current >= 115 ? 125 : current >= 100 ? 115
                     : current >= 85 ? 100 : 85;
             LotmClientConfig.PANEL_SCALE_PERCENT.set(next);
-            LotmClientConfig.save();
+            settingsSaveFailed = !LotmClientConfig.save();
         }).bounds(leftPos + 14, topPos + 92, 90, 18).build());
         panelOpacityButton = addRenderableWidget(Button.builder(Component.empty(), button -> {
-            int current = LotmClientConfig.PANEL_OPACITY_PERCENT.get();
+            int current = LotmClientConfig.opacityPercent();
             int next = current >= 100 ? 35 : current >= 90 ? 100 : current >= 80 ? 90
                     : current >= 65 ? 80 : current >= 50 ? 65 : 50;
             LotmClientConfig.PANEL_OPACITY_PERCENT.set(next);
-            LotmClientConfig.save();
+            settingsSaveFailed = !LotmClientConfig.save();
         }).bounds(leftPos + 112, topPos + 92, 90, 18).build());
         compactLayoutButton = addRenderableWidget(Button.builder(Component.empty(), button -> {
-            LotmClientConfig.COMPACT_LAYOUT.set(!LotmClientConfig.COMPACT_LAYOUT.get());
-            LotmClientConfig.save();
+            LotmClientConfig.COMPACT_LAYOUT.set(!LotmClientConfig.compactLayout());
+            settingsSaveFailed = !LotmClientConfig.save();
             journalPage = 0;
         }).bounds(leftPos + 210, topPos + 92, 98, 18).build());
         journalTimestampButton = addRenderableWidget(Button.builder(Component.empty(), button -> {
-            LotmClientConfig.SHOW_JOURNAL_TIMESTAMPS.set(!LotmClientConfig.SHOW_JOURNAL_TIMESTAMPS.get());
-            LotmClientConfig.save();
+            LotmClientConfig.SHOW_JOURNAL_TIMESTAMPS.set(!LotmClientConfig.showJournalTimestamps());
+            settingsSaveFailed = !LotmClientConfig.save();
         }).bounds(leftPos + 14, topPos + 122, 90, 18).build());
         journalSortSettingButton = addRenderableWidget(Button.builder(Component.empty(), button -> {
-            LotmClientConfig.JOURNAL_NEWEST_FIRST.set(!LotmClientConfig.JOURNAL_NEWEST_FIRST.get());
-            LotmClientConfig.save();
+            LotmClientConfig.JOURNAL_NEWEST_FIRST.set(!LotmClientConfig.newestFirst());
+            settingsSaveFailed = !LotmClientConfig.save();
             journalPage = 0;
         }).bounds(leftPos + 112, topPos + 122, 90, 18).build());
         skillDetailsButton = addRenderableWidget(Button.builder(Component.empty(), button -> {
-            LotmClientConfig.SHOW_SKILL_DETAILS.set(!LotmClientConfig.SHOW_SKILL_DETAILS.get());
-            LotmClientConfig.save();
+            LotmClientConfig.SHOW_SKILL_DETAILS.set(!LotmClientConfig.showSkillDetails());
+            settingsSaveFailed = !LotmClientConfig.save();
         }).bounds(leftPos + 210, topPos + 122, 98, 18).build());
+
+        restorePanelDefaultsButton = addRenderableWidget(Button.builder(
+                Component.translatable("gui.realscale.lotm_panel.settings.reset_defaults"),
+                button -> {
+                    settingsSaveFailed = !LotmClientConfig.restoreDefaults();
+                    journalPage = 0;
+                }).bounds(leftPos + 108, topPos + 205, 104, 18).build());
     }
 
     private record CarriedMaterial(net.minecraft.world.item.Item item, int count) {}
@@ -255,15 +270,17 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     private List<String> filteredJournalEntries() {
         List<String> all = LotmPanelNetwork.clientResearchEntries();
         String selectedKind = journalFilterKey();
+        String selectedStatus = journalStatusKey();
         String query = journalSearch == null ? "" : journalSearch.getValue().trim().toLowerCase(Locale.ROOT);
         java.util.stream.Stream<String> stream = all.stream()
-                .filter(source -> "all".equals(selectedKind) || selectedKind.equals(journalCategory(source)));
+                .filter(source -> ("all".equals(selectedKind) || selectedKind.equals(journalCategory(source)))
+                        && ("all".equals(selectedStatus) || selectedStatus.equals(journalStatus(source))));
         if (!query.isEmpty()) {
             stream = stream.filter(source -> source.toLowerCase(Locale.ROOT).contains(query)
                     || researchName(source).getString().toLowerCase(Locale.ROOT).contains(query));
         }
         Comparator<String> order = Comparator.comparingLong(LotmStatusScreen::journalTimestamp);
-        if (LotmClientConfig.JOURNAL_NEWEST_FIRST.get()) order = order.reversed();
+        if (LotmClientConfig.newestFirst()) order = order.reversed();
         return stream.sorted(order).toList();
     }
 
@@ -279,6 +296,15 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             case 8 -> "item";
             case 9 -> "biome";
             case 10 -> "other";
+            default -> "all";
+        };
+    }
+
+    private String journalStatusKey() {
+        return switch (journalStatusFilter) {
+            case 1 -> "discovered";
+            case 2 -> "incomplete";
+            case 3 -> "verified";
             default -> "all";
         };
     }
@@ -321,11 +347,11 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     }
 
     private int journalPageSize() {
-        return LotmClientConfig.COMPACT_LAYOUT.get() ? 9 : JOURNAL_DEFAULT_PAGE_SIZE;
+        return LotmClientConfig.compactLayout() ? 9 : JOURNAL_DEFAULT_PAGE_SIZE;
     }
 
     private int journalRowHeight() {
-        return LotmClientConfig.COMPACT_LAYOUT.get() ? 12 : 14;
+        return LotmClientConfig.compactLayout() ? 12 : 14;
     }
 
     private int journalPageCount() {
@@ -334,12 +360,21 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         return Math.max(1, (entries + pageSize - 1) / pageSize);
     }
 
+    private double effectivePanelScale() {
+        double requested = LotmClientConfig.scalePercent() / 100.0D;
+        // A 320x276 panel must still fit when the user chooses a high GUI scale
+        // or shrinks the window. Coordinate inversion uses this same transform.
+        double byWidth = Math.max(0.01D, width * 0.96D / imageWidth);
+        double byHeight = Math.max(0.01D, height * 0.96D / imageHeight);
+        return Math.min(requested, Math.min(byWidth, byHeight));
+    }
+
     private double panelMouseX(double mouseX) {
-        return panelMouseX(mouseX, LotmClientConfig.PANEL_SCALE_PERCENT.get() / 100.0D);
+        return panelMouseX(mouseX, LotmClientConfig.scalePercent() / 100.0D);
     }
 
     private double panelMouseY(double mouseY) {
-        return panelMouseY(mouseY, LotmClientConfig.PANEL_SCALE_PERCENT.get() / 100.0D);
+        return panelMouseY(mouseY, LotmClientConfig.scalePercent() / 100.0D);
     }
 
     private double panelMouseX(double mouseX, double scale) {
@@ -352,7 +387,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        activeMouseScale = LotmClientConfig.PANEL_SCALE_PERCENT.get() / 100.0D;
+        activeMouseScale = effectivePanelScale();
         return super.mouseClicked(panelMouseX(mouseX, activeMouseScale),
                 panelMouseY(mouseY, activeMouseScale), button);
     }
@@ -416,36 +451,36 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         if (panelScaleButton != null) {
             panelScaleButton.visible = interfaceSettings;
             panelScaleButton.setMessage(Component.translatable(
-                    "gui.realscale.lotm_panel.settings.scale", LotmClientConfig.PANEL_SCALE_PERCENT.get()));
+                    "gui.realscale.lotm_panel.settings.scale", LotmClientConfig.scalePercent()));
         }
         if (panelOpacityButton != null) {
             panelOpacityButton.visible = interfaceSettings;
             panelOpacityButton.setMessage(Component.translatable(
-                    "gui.realscale.lotm_panel.settings.opacity", LotmClientConfig.PANEL_OPACITY_PERCENT.get()));
+                    "gui.realscale.lotm_panel.settings.opacity", LotmClientConfig.opacityPercent()));
         }
         if (compactLayoutButton != null) {
             compactLayoutButton.visible = interfaceSettings;
             compactLayoutButton.setMessage(Component.translatable(
                     "gui.realscale.lotm_panel.settings.layout",
-                    onOff(LotmClientConfig.COMPACT_LAYOUT.get())));
+                    onOff(LotmClientConfig.compactLayout())));
         }
         if (journalTimestampButton != null) {
             journalTimestampButton.visible = interfaceSettings;
             journalTimestampButton.setMessage(Component.translatable(
                     "gui.realscale.lotm_panel.settings.timestamps",
-                    onOff(LotmClientConfig.SHOW_JOURNAL_TIMESTAMPS.get())));
+                    onOff(LotmClientConfig.showJournalTimestamps())));
         }
         if (journalSortSettingButton != null) {
             journalSortSettingButton.visible = interfaceSettings;
             journalSortSettingButton.setMessage(Component.translatable(
                     "gui.realscale.lotm_panel.settings.sort",
-                    onOff(LotmClientConfig.JOURNAL_NEWEST_FIRST.get())));
+                    onOff(LotmClientConfig.newestFirst())));
         }
         if (skillDetailsButton != null) {
             skillDetailsButton.visible = interfaceSettings;
             skillDetailsButton.setMessage(Component.translatable(
                     "gui.realscale.lotm_panel.settings.skill_details",
-                    onOff(LotmClientConfig.SHOW_SKILL_DETAILS.get())));
+                    onOff(LotmClientConfig.showSkillDetails())));
         }
         if (previousMaterialPage != null) {
             previousMaterialPage.visible = selectedTab == 2 && materialPage > 0;
@@ -472,10 +507,18 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             journalSortButton.visible = selectedTab == 4;
             journalSortButton.setMessage(Component.translatable(
                     "gui.realscale.lotm_panel.journal.sort." +
-                            (LotmClientConfig.JOURNAL_NEWEST_FIRST.get() ? "newest" : "oldest")));
+                            (LotmClientConfig.newestFirst() ? "newest" : "oldest")));
+        }
+        if (journalStatusButton != null) {
+            journalStatusButton.visible = selectedTab == 4;
+            journalStatusButton.setMessage(Component.translatable(
+                    "gui.realscale.lotm_panel.journal.status_filter." + journalStatusKey()));
+        }
+        if (restorePanelDefaultsButton != null) {
+            restorePanelDefaultsButton.visible = interfaceSettings;
         }
 
-        double scale = LotmClientConfig.PANEL_SCALE_PERCENT.get() / 100.0D;
+        double scale = effectivePanelScale();
         graphics.pose().pushPose();
         graphics.pose().translate(width / 2.0D * (1.0D - scale),
                 height / 2.0D * (1.0D - scale), 0.0D);
@@ -515,7 +558,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
     /** Full clue, verification state and in-game timestamp are available on hover. */
     private void renderJournalEntryTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
         if (selectedTab != 4 || mouseX < leftPos + 166 || mouseX >= leftPos + 300) return;
-        int relativeY = mouseY - (topPos + 102);
+        int relativeY = mouseY - (topPos + 116);
         if (relativeY < 0) return;
         int row = relativeY / journalRowHeight();
         if (row >= journalPageSize() || relativeY % journalRowHeight() >= journalRowHeight() - 2) return;
@@ -527,7 +570,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         lines.add(researchName(entry));
         lines.add(Component.translatable("gui.realscale.lotm_panel.journal.status." + journalStatus(entry)));
         lines.add(Component.translatable("gui.realscale.lotm_panel.journal.category." + journalCategory(entry)));
-        if (LotmClientConfig.SHOW_JOURNAL_TIMESTAMPS.get() && journalTimestamp(entry) > 0L) {
+        if (LotmClientConfig.showJournalTimestamps() && journalTimestamp(entry) > 0L) {
             lines.add(journalTimeLabel(entry));
         }
         graphics.renderTooltip(font, lines, Optional.empty(), mouseX, mouseY);
@@ -562,7 +605,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
         String skillKey = "gui.realscale.lotm_panel.skill." + path.id() + "." + slot;
         List<Component> lines = new ArrayList<>();
         lines.add(Component.translatable(skillKey + ".name"));
-        if (LotmClientConfig.SHOW_SKILL_DETAILS.get()) {
+        if (LotmClientConfig.showSkillDetails()) {
             lines.add(Component.translatable(skillKey + ".description"));
         }
         int sequence = menu.sequence();
@@ -578,6 +621,8 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                     cost, LotmBalance.MAX_SPIRIT));
             lines.add(Component.translatable("gui.realscale.lotm_panel.skill.tooltip.cooldown",
                     LotmBalance.skillCooldownTicks(slot, sequence) / 20.0F));
+            lines.add(Component.translatable("gui.realscale.lotm_panel.skill.tooltip.cooldown_remaining",
+                    menu.remainingSkillCooldown(slot) / 20.0F));
             lines.add(Component.translatable("gui.realscale.lotm_panel.skill.tooltip.mastery",
                     menu.skillMastery(slot), sequence == 9 ? 1 : menu.skillMasteryCap()));
             if (menu.spirit() < cost) {
@@ -680,7 +725,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             graphics.fill(x + 160, y + 66, x + 308, y + 226, panelColor(0xFF282438));
             final String[] categories = {"exploration", "skill", "research", "fieldwork"};
             for (int index = 0; index < categories.length; index++) {
-                bar(graphics, x + 22, y + 104 + index * 24, 120, 4,
+                bar(graphics, x + 22, y + 140 + index * 24, 120, 4,
                         menu.dailyActing(index), LotmActing.dailyCap(categories[index]), 0xFF79B7C7);
             }
         } else if (selectedTab == 5) {
@@ -752,11 +797,14 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                     14, 194, 0xFFD7CDE4, false);
             for (int slot = 1; slot <= 2; slot++) {
                 int cost = menu.skillCost(slot);
+                int cooldownLeft = menu.remainingSkillCooldown(slot);
                 boolean unlocked = menu.skillsEnabled() && (menu.sequence() == 9 || menu.sequence() == 8);
                 Component skillState = !menu.skillsEnabled()
                         ? Component.translatable("gui.realscale.lotm_panel.skill.tooltip.state.disabled")
                         : !unlocked
                                 ? Component.translatable("gui.realscale.lotm_panel.skill.tooltip.state.locked")
+                                : cooldownLeft > 0
+                                ? Component.translatable("gui.realscale.lotm_panel.skill.tooltip.state.cooling")
                                 : menu.spirit() >= cost
                                         ? Component.translatable("gui.realscale.lotm_panel.skill.tooltip.state.sequence" + menu.sequence())
                                         : Component.translatable("gui.realscale.lotm_panel.skill.tooltip.state.low_spirit");
@@ -816,6 +864,10 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                             cardX, 174, menu.spirit() < cost ? 0xFFEAA0A0 : 0xFFB8ADC9, false);
                     graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.mastery",
                             mastery, masteryCap), cardX, 184, 0xFFD7CDE4, false);
+                    graphics.drawString(font, Component.translatable(
+                            "gui.realscale.lotm_panel.skill_tree.cooldown_remaining",
+                            menu.remainingSkillCooldown(slot) / 20.0F),
+                            cardX, 202, menu.remainingSkillCooldown(slot) > 0 ? 0xFFEAA0A0 : 0xFF9ED8C0, false);
                 } else {
                     Component unavailable = !menu.skillsEnabled()
                             ? Component.translatable("gui.realscale.lotm_panel.skill_tree.disabled")
@@ -927,24 +979,24 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             int pages = journalPageCount();
             int rowHeight = journalRowHeight();
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal_header"),
-                    14, 52, 0xFFEDE4F6, false);
+                    14, 48, 0xFFEDE4F6, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal.daily_progress"),
-                    22, 79, 0xFFE5CB9F, false);
+                    22, 107, 0xFFE5CB9F, false);
             graphics.drawString(font, Component.translatable("gui.realscale.lotm_panel.journal.filtered_count",
-                    entries.size(), menu.researchEntries()), 166, 92, 0xFFE5CB9F, false);
+                    entries.size(), menu.researchEntries()), 166, 104, 0xFFE5CB9F, false);
             final String[] categories = {"exploration", "skill", "research", "fieldwork"};
             for (int index = 0; index < categories.length; index++) {
                 graphics.drawString(font, Component.translatable(
                         "gui.realscale.lotm_panel.journal." + categories[index],
                         menu.dailyActing(index), LotmActing.dailyCap(categories[index])),
-                        22, 104 + index * 24, 0xFFD7CDE4, false);
+                        22, 124 + index * 24, 0xFFD7CDE4, false);
             }
             if (entries.isEmpty()) {
-                int emptyY = 108;
+                int emptyY = 120;
                 boolean hasSearch = journalSearch != null && !journalSearch.getValue().isBlank();
                 Component emptyMessage = menu.researchEntries() == 0
                         ? Component.translatable("gui.realscale.lotm_panel.journal.empty")
-                        : journalFilter != 0
+                        : journalFilter != 0 || journalStatusFilter != 0
                                 ? Component.translatable("gui.realscale.lotm_panel.journal.empty_filter")
                                 : hasSearch
                                         ? Component.translatable("gui.realscale.lotm_panel.journal.empty_search")
@@ -956,7 +1008,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
             } else {
                 int first = journalPage * journalPageSize();
                 int last = Math.min(entries.size(), first + journalPageSize());
-                int lineY = 104;
+                int lineY = 120;
                 for (int index = first; index < last; index++) {
                     String entry = entries.get(index);
                     Component status = Component.translatable(
@@ -1051,6 +1103,11 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
                 graphics.drawString(font, Component.translatable(
                         "gui.realscale.lotm_panel.settings.skill_details_description"),
                         166, 176, 0xFFD7CDE4, false);
+                if (settingsSaveFailed) {
+                    graphics.drawString(font, Component.translatable(
+                            "gui.realscale.lotm_panel.settings.save_failed"),
+                            14, 221, 0xFFEAA0A0, false);
+                }
             }
         } else if (selectedTab == 6) {
             LotmCreatureKind kind = LotmCreatureKind.values()[creatureIndex];
@@ -1143,7 +1200,7 @@ public final class LotmStatusScreen extends AbstractContainerScreen<LotmStatusMe
 
     private static int panelColor(int color) {
         int alpha = (color >>> 24) & 0xFF;
-        int adjusted = alpha * LotmClientConfig.PANEL_OPACITY_PERCENT.get() / 100;
+        int adjusted = alpha * LotmClientConfig.opacityPercent() / 100;
         return (color & 0x00FFFFFF) | (adjusted << 24);
     }
 
