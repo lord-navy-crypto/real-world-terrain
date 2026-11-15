@@ -47,6 +47,7 @@ public final class LotmSkills {
 
         int detected = slot == 1 ? activatePrimary(player, expectedPath, sequence, mastery)
                 : activateSecondary(player, expectedPath, sequence, mastery);
+        LotmSkillCooldowns.recordSuccessfulUse(player, expectedPath, slot, sequence);
         LotmActing.recordSkillUse(player, 2 + (9 - sequence), slot);
         if (LotmPreferences.soundEnabled(player)) {
             player.level().playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE,
