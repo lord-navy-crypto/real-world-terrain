@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "realscale:item/lotm_divination_pendulum"
+  }
+}

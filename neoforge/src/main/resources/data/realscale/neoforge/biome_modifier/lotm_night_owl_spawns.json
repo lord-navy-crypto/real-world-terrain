@@ -1,0 +1,23 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": [
+    "minecraft:forest",
+    "minecraft:dark_forest",
+    "minecraft:birch_forest",
+    "minecraft:taiga",
+    "minecraft:old_growth_spruce_taiga",
+    "minecraft:old_growth_pine_taiga",
+    "realscale:oak_to_dark_forest",
+    "realscale:pine_oak_mosaic",
+    "realscale:subalpine_woodland",
+    "realscale:woodland_meadow"
+  ],
+  "spawners": [
+    {
+      "type": "realscale:lotm_night_owl",
+      "weight": 3,
+      "minCount": 1,
+      "maxCount": 2
+    }
+  ]
+}

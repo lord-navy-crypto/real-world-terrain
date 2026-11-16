@@ -1,0 +1,21 @@
+{
+  "type": "realscale:lotm_alchemy",
+  "ingredients": [
+    {
+      "item": "minecraft:book"
+    },
+    {
+      "item": "realscale:lotm_occult_catalyst"
+    },
+    {
+      "item": "realscale:lotm_soul_bellflower"
+    },
+    {
+      "item": "realscale:lotm_stability_sigil"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_sleepless_skill_manual_2",
+    "count": 1
+  }
+}

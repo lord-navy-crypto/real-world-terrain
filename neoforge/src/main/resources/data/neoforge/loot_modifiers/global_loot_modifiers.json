@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "entries": [
+    "realscale:lotm_dungeon_loot",
+    "realscale:lotm_mineshaft_loot",
+    "realscale:lotm_stronghold_loot",
+    "realscale:lotm_ancient_city_loot"
+  ]
+}

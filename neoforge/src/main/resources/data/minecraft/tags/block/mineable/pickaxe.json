@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "realscale:lotm_star_crystal_ore",
+    "realscale:lotm_cursed_crystal_ore",
+    "realscale:lotm_grave_crystal_ore",
+    "realscale:lotm_lunar_mica_ore",
+    "realscale:lotm_echo_quartz_ore",
+    "realscale:lotm_abyssal_salt_ore"
+  ]
+}

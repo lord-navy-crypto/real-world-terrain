@@ -1,0 +1,20 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": [
+    "minecraft:stony_peaks",
+    "minecraft:jagged_peaks",
+    "minecraft:windswept_hills",
+    "minecraft:meadow",
+    "realscale:rocky_alpine_meadow",
+    "realscale:montane_spruce_meadow",
+    "realscale:subalpine_woodland"
+  ],
+  "spawners": [
+    {
+      "type": "realscale:lotm_hornacis_goat",
+      "weight": 3,
+      "minCount": 1,
+      "maxCount": 3
+    }
+  ]
+}

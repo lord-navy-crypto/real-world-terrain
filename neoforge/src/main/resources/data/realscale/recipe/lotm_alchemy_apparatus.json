@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GAG",
+    "SCS",
+    "IRI"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "A": {
+      "item": "minecraft:amethyst_block"
+    },
+    "S": {
+      "item": "minecraft:polished_deepslate"
+    },
+    "C": {
+      "item": "minecraft:brewing_stand"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "result": {
+    "id": "realscale:lotm_alchemy_apparatus",
+    "count": 1
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "realscale:item/lotm_corpse_collector_s7_characteristic"
+  }
+}

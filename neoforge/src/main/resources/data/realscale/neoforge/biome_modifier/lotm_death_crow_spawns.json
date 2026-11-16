@@ -1,0 +1,17 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": [
+    "minecraft:jungle",
+    "minecraft:sparse_jungle",
+    "minecraft:bamboo_jungle",
+    "realscale:tropical_littoral_forest"
+  ],
+  "spawners": [
+    {
+      "type": "realscale:lotm_death_crow",
+      "weight": 2,
+      "minCount": 1,
+      "maxCount": 3
+    }
+  ]
+}

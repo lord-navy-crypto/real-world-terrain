@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " S ",
+    " C ",
+    " A "
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:string"
+    },
+    "C": {
+      "item": "realscale:lotm_star_crystal"
+    },
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    }
+  },
+  "result": {
+    "id": "realscale:lotm_divination_pendulum",
+    "count": 1
+  }
+}

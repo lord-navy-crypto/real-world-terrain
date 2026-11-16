@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "realscale:item/lotm_evil_pattern_panther_essence"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_soul_bellflower"
+    },
+    {
+      "item": "realscale:lotm_echo_quartz"
+    },
+    {
+      "item": "minecraft:paper"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_occult_catalyst",
+    "count": 3
+  }
+}

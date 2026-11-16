@@ -19,6 +19,35 @@ from rcon_worldgen_smoke import Rcon
 
 EXPECTED_PRESET = b"realscale:usgs_big_sur"
 CENTER_CHUNK_SAMPLES = ((0, 0), (-56, -56), (56, -56), (-56, 56), (56, 56))
+LOTM_CREATURE_IDS = (
+    "starlit_squid",
+    "nightmare_eye",
+    "night_owl",
+    "black_spotted_frog",
+    "shroudman",
+    "hornacis_goat",
+    "ironarm_beast",
+    "four_eyed_turtle",
+    "crimson_howler",
+    "death_crow",
+)
+
+
+def verify_lotm_creature_registry(rcon: Rcon) -> None:
+    """Summon every active creature and read its registered health attribute."""
+    for index, creature_id in enumerate(LOTM_CREATURE_IDS):
+        x = -48 + (index % 5) * 24
+        z = -48 + (index // 5) * 48
+        entity_type = f"realscale:lotm_{creature_id}"
+        summon = rcon.send(f"summon {entity_type} {x} 300 {z}")
+        if "Summoned" not in summon:
+            raise RuntimeError(f"Could not summon {entity_type}: {summon}")
+        health = rcon.send(
+            f"data get entity @e[type={entity_type},sort=nearest,limit=1] Health"
+        )
+        if "Health:" not in health:
+            raise RuntimeError(f"{entity_type} did not expose its health attribute: {health}")
+        print("LOTM_ENTITY_REGISTRY_OK:", entity_type, health, flush=True)
 
 
 def main(root: pathlib.Path) -> None:
@@ -113,6 +142,10 @@ def main(root: pathlib.Path) -> None:
             pending = next_pending
             if pending:
                 time.sleep(1.0)
+
+        # The central 8x8 region is now loaded; exercise every registered
+        # independent creature type and confirm its attribute supplier exists.
+        verify_lotm_creature_registry(rcon)
 
         save_reply = rcon.send("save-all flush")
         print("USGS_CENTER_SAVE_ACK:", save_reply, flush=True)

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "G G",
+    " G "
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass"
+    }
+  },
+  "result": {
+    "id": "realscale:lotm_empty_vial",
+    "count": 2
+  }
+}

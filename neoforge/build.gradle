@@ -70,8 +70,32 @@ repositories {
         }
         filter { includeGroup 'maven.modrinth' }
     }
+    // GeckoLib 4: animated GeoBlockEntity support for the 1.21.1 apparatus.
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'GeckoLib'
+                url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+            }
+        }
+        filter { includeGroup 'software.bernie.geckolib' }
+    }
+    // Player Abilities is an external API mod; keep its ARR code out of our JAR.
+    maven {
+        name = 'CurseMaven'
+        url = 'https://www.cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+}
+configurations {
+    // Used only by the external packaged-server smoke test; never shaded into RealScale.
+    lotmSmokeMods
 }
 dependencies {
+    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:${geckolib_version}" // GeckoLib 4, Minecraft 1.21.1
+    implementation 'maven.modrinth:vvuO3ImH:yohfFbgD' // Curios API 9.5.1+1.21.1
+    implementation 'curse.maven:player-abilities-1600309:8825458' // Player Abilities 1.0.9
+    lotmSmokeMods 'curse.maven:player-abilities-1600309:8825458'
     implementation 'dev.isxander:yet-another-config-lib:3.8.1+1.21.1-neoforge' // YACL 3.8.1, official upstream Maven
     compileOnly 'maven.modrinth:XaDC71GB:sPmtDq1X' // OPTIONAL Terrain Lab-only codec: do not load global jigsaw redirect in baseline RealScale
     testImplementation(platform('org.junit:junit-bom:5.14.1'))
@@ -82,6 +106,28 @@ tasks.named('test', Test) {
     useJUnitPlatform()
     testLogging { events 'passed', 'skipped', 'failed' }
 }
+
+// Resolve the official Player Abilities jar separately for runtime smoke tests.
+// The mod is a required external dependency, but its ARR code is never bundled.
+tasks.register('copyLotmSmokeMods') {
+    outputs.dir(layout.buildDirectory.dir('lotm-smoke-mods'))
+    doLast {
+        def output = layout.buildDirectory.dir('lotm-smoke-mods').get().asFile
+        project.delete(output)
+        output.mkdirs()
+        configurations.lotmSmokeMods.files.each { dependencyFile ->
+            project.copy {
+                from dependencyFile
+                into output
+            }
+        }
+        def jars = output.listFiles()?.findAll { it.isFile() && it.name.endsWith('.jar') } ?: []
+        if (jars.size() != 1) {
+            throw new GradleException("Expected one Player Abilities smoke-test jar, found " + jars.size())
+        }
+    }
+}
+tasks.named('build').configure { finalizedBy('copyLotmSmokeMods') }
 
 // NeoForge ModDev supplies the mapped Minecraft/NeoForge compile classpath to
 // the main source set. Reuse it for JUnit tests that directly exercise runtime
@@ -659,3 +705,17 @@ sourceSets.main.resources.srcDir(generatedStructureResources)
 tasks.named("processResources") {
     dependsOn("generateBuiltInStructurePacks")
 }
+
+
+// Original, dependency-free LOTM pixel textures are built reproducibly from source.
+// Generated resources are packaged into the same RealScale JAR (no extra mod).
+def generatedLotmVisuals = layout.buildDirectory.dir("generated/lotm-visuals")
+tasks.register("generateLotmVisuals", Exec) {
+    inputs.file(file("../scripts/generate_lotm_visuals.py"))
+    outputs.dir(generatedLotmVisuals)
+    commandLine(System.getenv("PYTHON") ?: "python3",
+        file("../scripts/generate_lotm_visuals.py").absolutePath,
+        generatedLotmVisuals.get().asFile.absolutePath)
+}
+sourceSets.main.resources.srcDir(generatedLotmVisuals)
+tasks.named("processResources") { dependsOn("generateLotmVisuals") }

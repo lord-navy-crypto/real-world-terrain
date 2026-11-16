@@ -1,0 +1,19 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": [
+    "minecraft:beach",
+    "minecraft:snowy_beach",
+    "minecraft:stony_shore",
+    "realscale:coastal_dune_meadow",
+    "realscale:gravel_shore_fringe",
+    "realscale:coastal_heath"
+  ],
+  "spawners": [
+    {
+      "type": "realscale:lotm_four_eyed_turtle",
+      "weight": 3,
+      "minCount": 1,
+      "maxCount": 2
+    }
+  ]
+}

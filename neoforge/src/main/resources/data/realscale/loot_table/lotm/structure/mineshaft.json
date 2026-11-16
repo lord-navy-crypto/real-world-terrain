@@ -1,0 +1,55 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_spirit_quartz",
+          "weight": 28
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_grave_crystal",
+          "weight": 20
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_star_crystal",
+          "weight": 16
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_spirit_ember",
+          "weight": 18
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_occult_catalyst",
+          "weight": 10
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_lavas_squid_essence",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_ironarm_spine",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_seer_s9_characteristic",
+          "weight": 1
+        },
+        {
+          "type": "minecraft:item",
+          "name": "realscale:lotm_corpse_collector_s9_characteristic",
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

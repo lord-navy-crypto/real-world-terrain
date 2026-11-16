@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "brewing=false": {
+      "model": "realscale:block/lotm_alchemy_apparatus"
+    },
+    "brewing=true": {
+      "model": "realscale:block/lotm_alchemy_apparatus"
+    }
+  }
+}

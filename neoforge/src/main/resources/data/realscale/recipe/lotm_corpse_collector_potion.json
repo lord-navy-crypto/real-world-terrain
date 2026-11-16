@@ -1,0 +1,21 @@
+{
+  "type": "realscale:lotm_alchemy",
+  "ingredients": [
+    {
+      "item": "realscale:lotm_empty_vial"
+    },
+    {
+      "item": "realscale:lotm_black_spotted_frog_token"
+    },
+    {
+      "item": "realscale:lotm_shroudman_crystal"
+    },
+    {
+      "item": "realscale:lotm_occult_catalyst"
+    }
+  ],
+  "result": {
+    "id": "realscale:lotm_corpse_collector_potion",
+    "count": 1
+  }
+}

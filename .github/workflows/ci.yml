@@ -26,6 +26,16 @@ jobs:
           python-version: '3.12'
       - name: Verify recovered source, artifacts and actual saved world
         run: python3 qa/verify_repository.py
+      - name: Validate active LOTM Sequence 9/8 resources and archived Sequence 7 boundaries
+        run: python3 -m unittest discover -s qa -p 'test_lotm_sequence9_8_resources.py' -v
+      - name: Validate independent LOTM creature assets, habitats and vanilla loot
+        run: python3 -m unittest discover -s qa -p 'test_lotm_creature_assets.py' -v
+      - name: Validate all new LOTM mineral families and alchemy crafting chains
+        run: python3 -m unittest discover -s qa -p 'test_lotm_mineral_family_expansion.py' -v
+      - name: Validate LOTM occult botanical routes, research journal and anti-farming
+        run: python3 -m unittest discover -s qa -p 'test_lotm_rpg_systems_expansion.py' -v
+      - name: Validate LOTM skill manuals, interactive panel, appearance and gameplay settings
+        run: python3 -m unittest discover -s qa -p 'test_lotm_skill_manuals_and_panel.py' -v
       - name: Validate custom biome registry resources (static)
         run: python3 scripts/check_custom_biomes.py
       - name: Validate Grand Ecology registrations and preserved dimensions

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " A ",
+    "ALA",
+    " A "
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "L": {
+      "item": "realscale:lotm_lunar_mica"
+    }
+  },
+  "result": {
+    "id": "realscale:lotm_spirit_focus",
+    "count": 1
+  }
+}
