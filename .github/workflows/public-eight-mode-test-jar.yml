@@ -1,4 +1,4 @@
-name: Public seven-mode test JAR (Natural plus six fits)
+name: Public eight-mode test JAR (Natural Automate + Natural + six fits)
 on:
   pull_request:
     paths:
@@ -16,11 +16,11 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: public-seven-${{ github.ref }}
+  group: public-eight-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   verify-and-build:
-    name: Verify seven visible terrain modes; keep original resources unchanged
+    name: Verify eight visible terrain modes; keep original resources unchanged
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -35,12 +35,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
-      - name: Check all seven choices, six fits and original source bytes
+      - name: Check all eight choices, six fits and original source bytes
         run: python3 -m unittest discover -s qa -p 'test_realscale_branding_compat.py' -v
       - name: Build NeoForge candidate JAR
         working-directory: neoforge
         run: gradle --no-daemon build
-      - name: Verify packaged JAR exposes seven choices without USGS
+      - name: Verify packaged JAR exposes eight choices without USGS
         run: |
           python3 - <<'PY'
           import json
@@ -53,12 +53,15 @@ jobs:
           with ZipFile(jars[0]) as z:
               paths = set(z.namelist())
               root = "data/minecraft/tags/worldgen/world_preset/"
-              expected = ["realscale:" + v for v in ("natural_three_realms", "alpine_three_realms", "canyon_three_realms", "glacial_three_realms", "volcanic_three_realms", "karst_three_realms", "dune_three_realms")]
+              expected = ["realscale:" + v for v in ("natural_automate_three_realms", "natural_three_realms", "alpine_three_realms", "canyon_three_realms", "glacial_three_realms", "volcanic_three_realms", "karst_three_realms", "dune_three_realms")]
               for menu in ("normal", "extended"):
                   data = json.loads(z.read(root + menu + ".json"))
                   if data["values"] != expected:
                       raise SystemExit(f"Packaged {menu} release menu mismatch: {data}")
               for resource in (
+                  "data/realscale/worldgen/world_preset/natural_automate_three_realms.json",
+                  "data/realscale/worldgen/noise_settings/natural_automate.json",
+                  "data/realscale/worldgen/density_function/natural_automate/height_signal.json",
                   "data/realscale/worldgen/world_preset/natural_three_realms.json",
                   "data/realscale/worldgen/world_preset/usgs_big_sur.json",
                   "data/realscale/worldgen/noise_settings/usgs_big_sur.json",
@@ -76,23 +79,20 @@ jobs:
               )
               if any(any(token in name for token in forbidden) for name in paths):
                   raise SystemExit("Removed offline pregenerator was found in compiled JAR")
-              screen_classes = [name for name in paths if name.endswith("WorldAtlasMapScreen.class")]
-              if len(screen_classes) != 1:
-                  raise SystemExit("Read-only Atlas map screen class missing")
-              screen_bytes = z.read(screen_classes[0])
-              if b"WorldAtlasOfflinePregenerator" in screen_bytes or b"/chunky" in screen_bytes or b"setClipboard" in screen_bytes:
-                  raise SystemExit("Atlas class still references offline generation or Chunky command copying")
+              atlas_classes = [name for name in paths if "WorldAtlas" in name]
+              if atlas_classes:
+                  raise SystemExit(f"Retired World Atlas classes remain in the JAR: {atlas_classes}")
               dem_classes = [name for name in paths if name.endswith("RealDemDataSource.class")]
               if len(dem_classes) != 1:
                   raise SystemExit("DEM data source class missing")
               if b"https://elevation.nationalmap.gov/" in z.read(dem_classes[0]):
                   raise SystemExit("Fixed USGS runtime provenance endpoint remains in JAR")
-          print("PUBLIC_SEVEN_MODE_PACKAGED_JAR_OK", jars[0])
+          print("PUBLIC_EIGHT_MODE_PACKAGED_JAR_OK", jars[0])
           PY
       - name: Upload candidate only (not a certified Stable release)
         uses: actions/upload-artifact@v4
         with:
-          name: RealScale-7-Modes-Public-Experimental-Test-JAR
+          name: RealScale-8-Modes-Public-Experimental-Test-JAR
           path: neoforge/build/libs/RealScale-NeoForge-1.21.1-*.jar
           if-no-files-found: error
           retention-days: 7
@@ -107,6 +107,8 @@ jobs:
       max-parallel: 2
       matrix:
         include:
+          - name: natural-automate
+            preset: realscale:natural_automate_three_realms
           - name: natural
             preset: realscale:natural_three_realms
           - name: volcanic
@@ -156,7 +158,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: RealScale-7-Mode-${{ matrix.name }}-Worldgen-Evidence
+          name: RealScale-8-Mode-${{ matrix.name }}-Worldgen-Evidence
           path: |
             neoforge/build/rcon_distant_server.log
             neoforge/build/rcon_distant_thread_dump_*.txt
