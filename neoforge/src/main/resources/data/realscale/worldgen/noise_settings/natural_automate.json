@@ -100,7 +100,7 @@
           "pole_distance": 500098,
           "strength": 0.58
         },
-        "height_signal": "realscale:natural_automate/original_height_signal",
+        "height_signal": "realscale:natural_automate/height_signal",
         "continents": "realscale:realism_max/continental_field",
         "selector": {
           "type": "minecraft:noise",
