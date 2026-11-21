@@ -34,7 +34,7 @@ The preview is a statistical prototype, not a geological process simulator. A fi
 
 ## Runtime integration status
 
-The six fitted profiles are compiled into six selectable NeoForge density graphs and six world presets. Each graph consumes measured relief, multiscale RMS ratios, slope-derived ridge/cliff/valley indices, spectral wavelength and orientation. The original DEM grids are never replayed or packaged. The seven-mode menu shares the same biome-source chain and keeps the Nether and End definitions identical; only the Overworld noise-settings reference changes among the six fitted modes.
+The six fitted profiles are compiled into six standalone NeoForge density graphs and six retained world-preset resources for compatibility and controlled QA. They are hidden from ordinary Create World menus. The single public Natural Automate profile composes all six fitted morphology kernels over the smoothed Natural baseline, selecting and blending them from regional affinity, climate and topography. The original DEM grids are never replayed or packaged. All seven internal/reference profiles share the same biome-source chain and the same Nether/End definitions.
 
 The runtime kernel currently applies **relative morphology modifiers over the existing base density field**. This is a procedural parametric model, not a neural network and not an absolute-heightfield renderer. It does not yet map every vertical meter to one Minecraft block or reproduce Everest's exact summit elevation and the Grand Canyon's exact river-floor elevation. Minecraft's finite vertical budget makes that a separate, explicit vertical-compression decision rather than something the fitter should silently guess.
 
@@ -51,10 +51,10 @@ The actual-server smoke matrix boots each fitted world preset, checks the saved 
 
 ## Publishing the fitted presets
 
-The controlled `.github/workflows/publish-fitted-terrain-presets.yml` workflow regenerates all six profiles from public source tiles, compiles the profile coefficients into the six runtime density graphs, merges the seven-mode menu/localizations, runs the focused regression gates, and commits only the compact profiles plus generated resources after every preflight test passes. It activates only when the head commit subject contains `[publish-terrain-presets]` on a same-repository pull request. Raw DEM tiles and cropped rasters remain build-local and are never committed.
+The controlled `.github/workflows/publish-fitted-terrain-presets.yml` workflow regenerates all six profiles from public source tiles, compiles the profile coefficients into the six standalone runtime density graphs, synchronizes those exact coefficients into the six internal Natural Automate kernels, preserves the one-entry public menu, runs the focused regression gates, and commits only the compact profiles plus generated resources after every preflight test passes. It activates only when the head commit subject contains `[publish-terrain-presets]` on a same-repository pull request. Raw DEM tiles and cropped rasters remain build-local and are never committed.
 
 
-The publication preflight deliberately runs the focused seven-preset, source-provenance, shared-biome-chain, and worldgen resource contract suites. The separate Terrain Lab suite contains older, unrelated assumptions about experimental dimension toggles; it is not used as a gate for publishing the fitted presets.
+The publication preflight deliberately runs the focused seven-profile internal/reference, source-provenance, shared-biome-chain, and worldgen resource contract suites. The separate Terrain Lab suite contains older, unrelated assumptions about experimental dimension toggles; it is not used as a gate for publishing the fitted presets.
 
 
 The first actual NeoForge server smoke exposed a real registry-reference mismatch in the generated settings: the Realism MAX graph names its continentalness, erosion and ridge signals `continental_field`, `erosion_field` and `mountain_axis`, unlike the older Himalayan/Grand Canyon graphs. The compiler now maps those source-specific registry IDs explicitly and the compiler test verifies each target exists before resources can be published.
@@ -71,7 +71,7 @@ Publication preflight now also checks that YACL Terrain Lab drafts remain an exp
 
 ## Current calibration and runtime status
 
-The six public Copernicus DEM GLO-90 crops are fitted to compact multiscale coefficients and compiled into the six NeoForge `realscale:terrain_archetype` density resources. The raw rasters are not replayed in the infinite world. The fitted wavelength, orientation, relief budget, macro/meso/micro ratios, ridge, cliff, and valley statistics parameterize the family kernels.
+The six Copernicus DEM GLO-90 crops are fitted to compact multiscale coefficients and compiled into six hidden standalone NeoForge `realscale:terrain_archetype` reference resources; the same six coefficients drive the internal Natural Automate kernels. The raw rasters are not replayed in the infinite world. The fitted wavelength, orientation, relief budget, macro/meso/micro ratios, ridge, cliff, and valley statistics parameterize the family kernels.
 
 This is a **morphology-calibrated procedural preset**, not an exact reconstruction of absolute elevations. The existing 2,096-block world-height budget remains in place; a validated meters-to-vertical-blocks mapping and measured generated-terrain error report are still follow-up work. Calibration previews are synthetic outputs from fitted parameters, not screenshots or direct output samples from the NeoForge runtime.
 

@@ -9,6 +9,7 @@ public final class DensityPerfSamplerSmoke {
     public static void main(String[] args) {
         var cave=DensityPerfSampler.Stage.OVERWORLD_CAVE;
         var sky=DensityPerfSampler.Stage.SKY_BIOME;
+        var blend=DensityPerfSampler.Stage.NATURAL_AUTOMATE_BLEND;
         if(!DensityPerfSampler.ENABLED) {
             for(int i=0;i<10_000;i++) {
                 long started=DensityPerfSampler.begin(cave);
@@ -17,6 +18,8 @@ public final class DensityPerfSamplerSmoke {
             }
             check(DensityPerfSampler.snapshot(cave).contains("samples=0"),
                     "Disabled profiler recorded data");
+            check(DensityPerfSampler.snapshot(blend).contains("samples=0"),
+                    "Disabled Natural Automate profiler recorded data");
             System.out.println("TVA_DENSITY_SAMPLER_DISABLED_PASS");
             return;
         }
@@ -34,6 +37,8 @@ public final class DensityPerfSamplerSmoke {
         check(snap.contains("p95_bucket_upper_us="),"Missing bounded histogram");
         check(DensityPerfSampler.snapshot(sky).contains("samples=0"),
                 "Stages must have independent counters");
+        check(DensityPerfSampler.snapshot(blend).contains("samples=0"),
+                "Natural Automate blend stage must be independent");
         for(int i=0;i<1024;i++)
             DensityPerfSampler.finish(sky,DensityPerfSampler.begin(sky));
         check(DensityPerfSampler.snapshot(sky).contains("samples=1"),
@@ -52,6 +57,11 @@ public final class DensityPerfSamplerSmoke {
         check(memo.contains("hits=1 misses=1")
                         &&memo.contains("hit_rate_percent=50.00"),
                 "Wrong horizontal memo hit-rate counters: "+memo);
-        System.out.println("TVA_DENSITY_SAMPLER_ENABLED_PASS "+snap+" "+memo);
+        for(int i=0;i<1024;i++)
+            DensityPerfSampler.finish(blend,DensityPerfSampler.begin(blend));
+        check(DensityPerfSampler.snapshot(blend).contains("samples=1"),
+                "Natural Automate blend sampling cadence should be independent");
+        System.out.println("TVA_DENSITY_SAMPLER_ENABLED_PASS "+snap+" "+memo
+                +" "+DensityPerfSampler.snapshot(blend));
     }
 }

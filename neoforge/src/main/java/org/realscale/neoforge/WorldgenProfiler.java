@@ -15,7 +15,8 @@ import java.util.concurrent.atomic.LongAdder;
  * generation, terrain noise, Minecraft rendering, or server TPS.
  */
 final class WorldgenProfiler {
-    static final boolean ENABLED = Boolean.getBoolean("realscale.worldgen.profile");
+    static final boolean ENABLED = RealScalePerformanceProfile.worldgenDiagnosticsEnabled()
+            || Boolean.getBoolean("realscale.worldgen.profile");
     private static final long LOG_INTERVAL = 4096L;
 
     enum Section { RIVER, GRAND_ECOLOGY, SKY_ISLAND }

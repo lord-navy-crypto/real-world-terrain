@@ -32,11 +32,12 @@ final class TerrainArchetypeMath {
     private final double volcanicRadius;
     private final double karstTowerRadius;
     private final double karstSinkRadius;
+    private final TerrainArchetypeMath[] naturalKernels;
 
     // Volcanic geometry depends only on horizontal block coordinates. Worldgen
     // samples many Y values for the same X/Z, so cache the expensive radial
     // shield/caldera shape per worker rather than repeating hash/hypot/pow/exp.
-    private static final int VOLCANIC_CACHE_SLOTS = 1024;
+    private static final int VOLCANIC_CACHE_SLOTS = RealScalePerformanceProfile.cacheSlots("archetype_volcanic",1024);
     // A 2048-block fitted region has a fixed, seed-derived geographic center.
     // Reusing this per worker avoids re-hashing region seeds and generating
     // the same tower/sinksite positions for every horizontal density sample.
@@ -84,7 +85,7 @@ final class TerrainArchetypeMath {
         private double lastShape;
     }
 
-    private static final int HORIZONTAL_CACHE_SLOTS = 1024;
+    private static final int HORIZONTAL_CACHE_SLOTS = RealScalePerformanceProfile.cacheSlots("archetype_horizontal",1024);
     private static final class HorizontalShapeCache {
         private final long[] xBits = new long[HORIZONTAL_CACHE_SLOTS];
         private final long[] zBits = new long[HORIZONTAL_CACHE_SLOTS];
@@ -98,7 +99,7 @@ final class TerrainArchetypeMath {
     private final ThreadLocal<HorizontalShapeCache> horizontalShapeCache =
             ThreadLocal.withInitial(HorizontalShapeCache::new);
 
-    private static final int KARST_CACHE_SLOTS = 1024;
+    private static final int KARST_CACHE_SLOTS = RealScalePerformanceProfile.cacheSlots("archetype_karst",1024);
     private static final class KarstShapeCache {
         private final long[] keys = new long[KARST_CACHE_SLOTS];
         private final double[] towers = new double[KARST_CACHE_SLOTS];
@@ -135,14 +136,42 @@ final class TerrainArchetypeMath {
         this.volcanicRadius = fittedScale(0.025, 250.0, 800.0);
         this.karstTowerRadius = fittedScale(0.025, 80.0, 450.0);
         this.karstSinkRadius = fittedScale(0.012, 40.0, 200.0);
+        // Natural Automate composes the six measured morphology kernels.
+        // Each sub-kernel keeps its own fitted coefficients and exact cache logic.
+        this.naturalKernels = "natural_automate".equals(family)
+                ? new TerrainArchetypeMath[] {
+                    new TerrainArchetypeMath("alpine",0.920334,0.388031,0.04917,0.965848,0.353898,0.442335,0.493463,0.506537,1.018168,-3.141592653589793,18151.56),
+                    new TerrainArchetypeMath("glacial",0.976883,0.211697,0.029717,0.713694,0.347762,0.176078,0.502144,0.497856,0.990941,1.570796,17311.0169),
+                    new TerrainArchetypeMath("canyon",0.918247,0.387271,0.082729,0.363634,0.597412,0.291044,0.520377,0.479623,1.045483,-2.243785,34289.3669),
+                    new TerrainArchetypeMath("volcanic",0.993788,0.111131,0.005939,0.735566,0.129572,0.0,0.496722,0.503278,1.058617,-1.800358,25035.3016),
+                    new TerrainArchetypeMath("karst",0.860842,0.497984,0.104702,0.263639,0.30154,0.19569,0.483278,0.516722,1.095601,1.863521,7936.9415),
+                    new TerrainArchetypeMath("dune",0.972392,0.222451,0.070499,0.147684,0.211133,0.0,0.52343,0.47657,1.160985,1.570796,4775.6305)
+                }
+                : null;
     }
 
     double compute(double original, double continent, double rawSignal,
             double x, double z) {
+        return compute(original,continent,rawSignal,rawSignal,0.0,0.0,x,z);
+    }
+
+    double compute(double original, double continent, double rawSignal,
+            double rawRegionSignal,double x, double z) {
+        return compute(original,continent,rawSignal,rawRegionSignal,
+                0.0,0.0,x,z);
+    }
+
+    double compute(double original, double continent, double rawSignal,
+            double rawRegionSignal,double temperature,double humidity,
+            double x,double z) {
         double landGate = smoothstep(-0.10, 0.22, continent);
         if (landGate <= 0.0) return original;
 
         double signal = unitNoise(rawSignal);
+        if ("natural_automate".equals(family))
+            return naturalAutomate(original,continent,signal,rawRegionSignal,
+                    temperature,humidity,x,z);
+
         // Keep each family's trigonometry and geometric work inside that
         // family's branch. Density functions are sampled millions of times
         // during chunk generation; computing canyon waves for a volcano (or
@@ -156,6 +185,130 @@ final class TerrainArchetypeMath {
             case "dune" -> duneRidges(original, landGate, x, z, signal);
             default -> original;
         };
+    }
+
+    /**
+     * Ecology-aware composition of the six measured kernels over the natural
+     * baseline. A low-frequency regional field supplies deterministic
+     * geological affinity; climate and topographic gates decide whether a
+     * fitted morphology is suitable at that location. When no family fits,
+     * the natural baseline remains bit-for-bit unchanged.
+     *
+     * <p>Only suitable families are evaluated. Their normalized weights sum
+     * to a smooth coverage factor, so transitions between fitted families
+     * and the natural baseline are continuous rather than hard region cuts.
+     */
+    private double naturalAutomate(double original,double continent,double signal,
+            double rawRegionSignal,double temperature,double humidity,
+            double x,double z) {
+        // These source fields are shared by all six family gates.
+        // Normalize once rather than repeating the same transforms twelve times.
+        double region=unitNoise(rawRegionSignal);
+        double temp=unitNoise(temperature);
+        double moisture=unitNoise(humidity);
+
+        // Allocation-free: density is sampled repeatedly during chunk generation.
+        double s0=naturalFamilySuitabilityNormalized(0,original,temp,moisture,region);
+        double s1=naturalFamilySuitabilityNormalized(1,original,temp,moisture,region);
+        double s2=naturalFamilySuitabilityNormalized(2,original,temp,moisture,region);
+        double s3=naturalFamilySuitabilityNormalized(3,original,temp,moisture,region);
+        double s4=naturalFamilySuitabilityNormalized(4,original,temp,moisture,region);
+        double s5=naturalFamilySuitabilityNormalized(5,original,temp,moisture,region);
+        double total=s0+s1+s2+s3+s4+s5;
+        if(total<=1.0e-12)return original;
+        double maxSuitability=Math.max(Math.max(Math.max(s0,s1),
+                Math.max(s2,s3)),Math.max(s4,s5));
+        double coverage=smoothstep(0.22,0.58,maxSuitability);
+        if(coverage<=0.0)return original;
+
+        double weightedDelta=0.0;
+        if(s0>0.01)weightedDelta+=(naturalKernels[0].compute(
+                original,continent,signal,x,z)-original)*(s0/total);
+        if(s1>0.01)weightedDelta+=(naturalKernels[1].compute(
+                original,continent,signal,x,z)-original)*(s1/total);
+        if(s2>0.01)weightedDelta+=(naturalKernels[2].compute(
+                original,continent,signal,x,z)-original)*(s2/total);
+        if(s3>0.01)weightedDelta+=(naturalKernels[3].compute(
+                original,continent,signal,x,z)-original)*(s3/total);
+        if(s4>0.01)weightedDelta+=(naturalKernels[4].compute(
+                original,continent,signal,x,z)-original)*(s4/total);
+        if(s5>0.01)weightedDelta+=(naturalKernels[5].compute(
+                original,continent,signal,x,z)-original)*(s5/total);
+        return original+weightedDelta*coverage*(reliefGain/0.72);
+    }
+
+    /**
+     * Bounded family suitability. Temperature and humidity are the same raw
+     * shifted climate fields used by the Overworld biome sampler; they are
+     * climate proxies, not direct biome-ID queries. Regional affinity is a
+     * deterministic geological prior, not a claim of a literal tectonic map.
+     */
+    static double naturalFamilySuitability(int familyIndex,double original,
+            double temperature,double humidity,double regionSignal) {
+        return naturalFamilySuitabilityNormalized(familyIndex,original,
+                unitNoise(temperature),unitNoise(humidity),unitNoise(regionSignal));
+    }
+
+    /** Inputs are already normalized to [-1,1]; no per-family re-normalization. */
+    private static double naturalFamilySuitabilityNormalized(int familyIndex,
+            double original,double temp,double moisture,double region) {
+        if(familyIndex<0 || familyIndex>=6)return 0.0;
+        double center=-5.0/6.0+familyIndex/3.0;
+        double regionalAffinity=1.0-smoothstep(0.18,0.62,
+                Math.abs(region-center));
+        if(regionalAffinity<=0.0)return 0.0;
+
+        double warmth=smoothstep(-0.45,0.45,temp);
+        double coldness=1.0-smoothstep(-0.45,0.35,temp);
+        double wetness=smoothstep(-0.50,0.45,moisture);
+        double dryness=1.0-smoothstep(-0.15,0.55,moisture);
+
+        double topographicSuitability;
+        double climateSuitability;
+        switch(familyIndex) {
+            case 0 -> {
+                topographicSuitability=smoothstep(0.65,1.7,original);
+                climateSuitability=0.15+0.85*coldness;
+            }
+            case 1 -> {
+                topographicSuitability=smoothstep(0.18,0.62,original);
+                climateSuitability=coldness*(0.40+0.60*wetness);
+            }
+            case 2 -> {
+                topographicSuitability=0.45+0.55*smoothstep(-0.10,0.28,original);
+                climateSuitability=0.18+0.82*dryness;
+            }
+            case 3 -> {
+                topographicSuitability=smoothstep(0.05,0.42,original);
+                climateSuitability=0.60+0.40*warmth;
+            }
+            case 4 -> {
+                topographicSuitability=smoothstep(-0.12,0.22,original)
+                        *(1.0-smoothstep(0.72,1.05,original));
+                climateSuitability=(0.30+0.70*wetness)
+                        *(0.40+0.60*warmth);
+            }
+            case 5 -> {
+                topographicSuitability=1.0-smoothstep(0.12,0.58,original);
+                climateSuitability=warmth*dryness;
+            }
+            default -> { return 0.0; }
+        }
+        return Math.max(0.0,Math.min(1.0,
+                regionalAffinity*topographicSuitability*climateSuitability));
+    }
+
+    /** Legacy diagnostic helper; runtime selection now uses suitability weights. */
+    static int naturalFamilyIndex(double regionSignal) {
+        double position=(unitNoise(regionSignal)+1.0)*3.0;
+        return Math.max(0,Math.min(5,(int)Math.floor(position)));
+    }
+
+    /** Legacy diagnostic helper; runtime cross-fading uses normalized suitability. */
+    static double naturalFamilyTransition(double regionSignal) {
+        double position=(unitNoise(regionSignal)+1.0)*3.0;
+        if(position<=0.0 || position>=6.0)return 0.0;
+        return smoothstep(0.84,1.0,position-Math.floor(position));
     }
 
     /**

@@ -24,7 +24,7 @@ def synthetic_relief(rows=64, cols=64, cell=32.0):
 
 
 class TerrainProfileCompilerTests(unittest.TestCase):
-    def test_compiler_emits_six_fitted_modes_plus_generic_default(self):
+    def test_compiler_emits_six_hidden_references_plus_one_unified_public_mode(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             profiles = root / "profiles"
@@ -60,9 +60,7 @@ class TerrainProfileCompilerTests(unittest.TestCase):
             self.assertEqual(len(entries), 6)
             for tag_name in ("normal", "extended"):
                 tag = json.loads((out / "data/minecraft/tags/worldgen/world_preset" / f"{tag_name}.json").read_text())
-                self.assertEqual(len(tag["values"]), 7)
-                self.assertEqual(tag["values"][0], "realscale:natural_three_realms")
-                self.assertIn("realscale:dune_three_realms", tag["values"])
+                self.assertEqual(tag["values"], ["realscale:natural_automate_three_realms"])
                 self.assertNotIn("realscale:measured_three_realms", tag["values"])
 
             for family, config in COMPILER.FAMILY_CONFIG.items():
@@ -137,8 +135,13 @@ class TerrainProfileCompilerTests(unittest.TestCase):
                     for field in signal_fields.values():
                         self.assertTrue((source_density_root / f"{field}.json").is_file(), field)
 
+            automate = json.loads((out / "data/realscale/worldgen/world_preset/natural_automate_three_realms.json").read_text())
+            self.assertEqual(automate["dimensions"]["minecraft:overworld"]["generator"]["settings"], "realscale:natural_automate_v2")
             provenance = json.loads((out / "terrain-profile-provenance.json").read_text())
+            self.assertEqual(provenance["default_mode"], "realscale:natural_automate_three_realms")
             self.assertEqual(provenance["preset_count"], 7)
+            self.assertEqual(provenance["public_preset_count"], 1)
+            self.assertEqual(provenance["reference_preset_count"], 6)
             self.assertEqual(provenance["profile_count"], 6)
             self.assertFalse(provenance["raw_dem_grids_embedded"])
             datapack_zip = out.parent / "RealScale-Terrain-Archetypes-Datapack.zip"
@@ -150,6 +153,7 @@ class TerrainProfileCompilerTests(unittest.TestCase):
                 self.assertIn("pack.mcmeta", names)
                 self.assertIn("data/minecraft/tags/worldgen/world_preset/normal.json", names)
                 self.assertIn("data/realscale/worldgen/world_preset/dune_three_realms.json", names)
+                self.assertIn("data/realscale/worldgen/world_preset/natural_automate_three_realms.json", names)
             with zipfile.ZipFile(language_zip) as archive:
                 names = set(archive.namelist())
                 self.assertIn("pack.mcmeta", names)

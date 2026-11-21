@@ -1,16 +1,50 @@
-# RealScale Terrain 版本恢复清单（2026-10-11）
+# RealScale Terrain — version and recovery status
 
-| 版本 | 已上传到本仓库的源文件 | 实际集成状态 |
-| --- | --- | --- |
-| v0.4 AUDIT | `archive/v0.4/` 数据包与旧 JAR | 历史实验版 |
-| v0.5 GEOREAL | `archive/v0.5/` 数据包 | 历史实验版 |
-| v0.6 REALISM MAX | `archive/v0.6/` 数据包；七种预设也保留在 v1.1 | 历史实验版 |
-| v0.7 GeoCore | `research/v0.7/`：原始 Java 源码、独立测试与使用说明 | 仅研究原型，未完全集成 |
-| v0.8 Geology | `research/v0.8/`：地质隆起、侵蚀、沉积 Java 数值内核和测试 | 仅研究原型，未完全集成 |
-| v0.9 GeoEngine | `research/v0.9/`：区域流域、水文、缓存、Java 测试 | 仅研究原型，未完全集成 |
-| v1.0 Real Data | `research/v1.0/`：实测高程导入 Java + Python GIS 脚本 + 测试；`data/usgs-big-sur/` 存官方采样记录 | 实测导入原型，与 v1.1 密度函数不是同一套完整管线 |
-| **v1.1 Final Battle** | **`neoforge/` 完整 NeoForge 源码；`dist/v1.1/` JAR；`qa/` 与 `evidence/` 验收资料** | **最新可安装的测试候选版** |
+**Status snapshot:** 2026-11-21  
+**Current source version:** `2.0.0-preview.2-test.11` (from `neoforge/build.gradle` and `META-INF/neoforge.mods.toml`)  
+**Release status:** experimental development baseline; not Stable.
 
-v1.1 用户下载的原始交付 JAR 已额外上传到 `dist/v1.1/RealScaleTerrain_NeoForge_1.21.1_FinalBattle_v1.1.jar`。其 SHA-256：`638ef85e4b3978e6344ec8b52d37e0c463c21bfd2a7cf7e8564d5b7eab5ada43`。
+## Current source baseline
 
-**重要限制：** 研究代码的恢复不表示其模型已在 NeoForge 客户端运行。v1.1 主要实现 USGS DEM 高程密度函数和预设注册，现实河网/侵蚀/岩性/雨影的完整算法仍需未来集成和实际 GameTest。原始来源和测试细节详见 [RESEARCH_PROVENANCE.md](RESEARCH_PROVENANCE.md)。
+| Item | Status |
+|---|---|
+| Current source tree | `neoforge/`, Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 |
+| Public world menu | One entry: Natural Automate composite; Natural baseline and six fitted standalone references are hidden |
+| Measured USGS profiles | Hidden from ordinary Create World menus by prior product decision; resources retained |
+| Terrain Lab | Natural Automate composite profile with morphology/relief controls; three old blended-noise families retained as Legacy Advanced; no live preview yet |
+| World Atlas | Removed; no local-save scanner, Anvil reader or Atlas UI remains |
+| Geographic Climate Inspector | Read-only fixed 1:20 geographic/solar report |
+| Performance Studio | Balanced / Low Memory / Smooth Render / combined profiles, bounded cache controls, live frame/queue/JVM-heap telemetry; physical-client A/B still required |
+| Full build status | Natural Automate integration and performance consolidation are under CI validation; unrelated orphan LOTM tests have been removed from this RealScale branch |
+
+The source version number is not proof that a matching distributable JAR has passed all release gates. The current single-mode Natural Automate source baseline must be validated independently from historical artifacts.
+
+## Historical recovery
+
+| Version | Recovered material | Status |
+|---|---|---|
+| v0.4 AUDIT | `archive/v0.4/` datapack and historical material | Archived experiment |
+| v0.5 GEOREAL | `archive/v0.5/` datapack | Archived experiment |
+| v0.6 REALISM MAX | `archive/v0.6/` datapack; historical preset resources retained where needed | Archived experiment / compatibility source |
+| v0.7 GeoCore | `research/v0.7/`: original Java numerical core and independent tests | Research prototype, not a complete playable integration |
+| v0.8 Geology | `research/v0.8/`: uplift, erosion and deposition numerical kernels | Research prototype, not a complete playable integration |
+| v0.9 GeoEngine | `research/v0.9/`: regional watershed/hydrology, cache and tests | Research prototype, not a complete playable integration |
+| v1.0 Real Data | `research/v1.0/`: original measured-elevation importer, GIS scripts and tests | Research prototype; not the same as the current runtime DEM pipeline |
+| v1.1 Final Battle | `dist/v1.1/` historical installable JAR and matching evidence | Historical test candidate; not the current single-mode Natural Automate source baseline |
+
+## Current world-preset policy
+
+The current public Create World menus expose exactly one choice:
+
+- Natural Automate Three Realms (unified experimental composite)
+
+Natural Three Realms and the six standalone fitted presets remain packaged as hidden compatibility/diagnostic resources. Their algorithms are retained and the six fitted kernels are invoked internally by Natural Automate. Do not delete their registry IDs or datapack resources merely to reduce visible clutter; old saves and controlled QA may depend on them.
+
+
+## Research provenance and limits
+
+The recovered v0.7–v1.0 research directories are not proof that every numerical method has been integrated into the playable mod. The current runtime includes a separate USGS 3DEP offline importer and DEM density pipeline; its source coverage, resolution, coordinate mapping and procedural fallback limits must remain explicit.
+
+The historical v1.1 JAR SHA-256 is retained in the repository's historical README/evidence records. It should not be described as the current single-mode Natural Automate build.
+
+See [RESEARCH_PROVENANCE.md](RESEARCH_PROVENANCE.md), [UNIFIED_FEATURE_CONSOLIDATION.md](UNIFIED_FEATURE_CONSOLIDATION.md), and [neoforge/CHANGELOG.md](../neoforge/CHANGELOG.md) for details.

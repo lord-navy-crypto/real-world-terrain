@@ -11,12 +11,13 @@ import net.neoforged.fml.ModList;
  *
  * This only changes distant fake-chunk cave visibility. It does not alter
  * vanilla section meshes, worldgen, saved blocks, cave data, or cave height.
- * The feature is opt-in and uses the public DH API reflectively so DH remains
- * an optional dependency.
+ * The feature is opt-in with -Drealscale.experimental.client.underground_lod_culling=true
+ * or the explicit smooth_render profile. It uses the public DH API reflectively
+ * so DH remains an optional dependency.
  */
 final class DistantHorizonsCaveLodController {
-    private static final boolean ENABLED=Boolean.getBoolean(
-            "realscale.experimental.client.underground_lod_culling");
+    private static final boolean ENABLED=
+            RealScalePerformanceProfile.undergroundLodEnabled();
     private static final String DH_MOD_ID="distanthorizons";
     private static final String API_PACKAGE="com.seibel.distanthorizons.api.";
 

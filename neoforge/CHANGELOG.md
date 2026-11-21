@@ -1,6 +1,73 @@
 # RealScale — Changelog / 更新日志
 
-本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
+本文件记录 **RealScale 地形主模组**的版本变化。当前主线将可选的 Distant Horizons × Chunky 兼容钩子嵌入主模组 JAR；历史独立 `dhchunkyguard` 插件与嵌入版本不兼容，不应同时安装。实验构建不能直接视为正式稳定版。
+
+## 2.0.0-preview.2-test.12 — 2026-11-21 — Final Natural Automate integration candidate (Experimental)
+
+### Completed
+- Natural Automate remains the only public RealScale world-generation profile in both standard and extended Create World menus.
+- The Terrain Lab exporter now derives new worlds from `natural_automate_v2`, so YACL/CLI exports also include the expanded cave topology without rewriting the old registry entry.
+- Enabled Cave Exploration V2 in Natural Automate's default final-density pipeline: deterministic multi-tier loop passages, satellite-room connections and annex chambers now share the unified Overworld density field with the existing cave network. The public world preset uses a new `natural_automate_v2` noise-settings registry key; the old `natural_automate` key remains unchanged so existing saves keep their original generator reference.
+- Removed the Legacy Landscape / Alpine / Canyon selectors from the player-facing Terrain Lab screen. Their schemas, saved-draft migration and exporter support remain internal for compatibility.
+- Updated the cave contracts, preset validator and Terrain Lab regression checks to prevent the six-kernel engine or expanded cave network from silently reverting.
+- Repaired APES Gallery's RCON acceptance harness: it no longer assumes the Gradle parent process remains alive after Minecraft starts; it now tickets each satellite chunk, waits for loaded-state acknowledgements, flushes the world and stops the server through RCON.
+
+### Validation scope
+- Dedicated-server and Anvil checks must pass on this exact commit, including all 16 APES gallery biome palettes and the satellite FULL chunks.
+- Natural Automate's expanded cave codec is checked by the unified test-JAR server boot and the cave topology parity tests.
+- Legacy worldgen codecs still default `gallery_v2` to false when the field is absent, preserving older preset behavior.
+- This is the final experimental integration candidate, not a Stable certification. Client FPS, GPU behavior, shaders and every third-party mod combination still require physical-client validation.
+
+## 2.0.0-preview.2-test.11 — 2026-11-21 — Single public Natural Automate composite (Experimental)
+
+### Changed
+- The standard and extended Create World menus now expose only `natural_automate_three_realms`.
+- Natural baseline and six standalone fitted world-preset resources remain packaged but hidden as compatibility/diagnostic references; the six fitted morphology kernels remain active inside Natural Automate.
+- The public composite retains the natural height baseline, regional/climate/topography suitability, normalized six-kernel cross-fades, natural fallback, shared ecology chain, and Overworld/Nether/End configuration.
+- Updated the preset catalog, validator, source tests and candidate-JAR workflow to enforce exactly one public mode.
+
+### Validation status and limits
+- Source changes are committed to the feature branch; the new one-mode CI and packaged-JAR checks must pass before the updated candidate is considered ready.
+- This remains an experimental build. Hidden kernel references are retained, and client FPS improvement still requires physical-client A/B testing.
+
+## 2.0.0-preview.2-test.10 — 2026-11-21 — Natural Automate & Studio consolidation (Experimental)
+
+### Added
+- Added **Natural Automate Three Realms** as the first and recommended experimental world profile. It composes the six existing fitted morphology kernels (Alpine, Glacial, Canyon, Volcanic, Karst and Dune) using a low-frequency Weirdness regional selector and a 16% smooth transition band. The local Erosion selector remains separate for morphology detail.
+- Natural Automate keeps the natural terrain base, mountain-relief signal, Grand Overworld cave graph, Natural Ecotones, Sky Ocean and Cave Depth Habitats. Geological Wonders remain explicitly outside the default profile.
+- Added a new Terrain Lab export path for Natural Automate. Custom profiles are content-addressed and create new world preset/noise/density IDs; they do not modify existing saves.
+- Added one **RealScale Studio** pause-menu entry with routes to Terrain Lab, Performance Studio and Geographic Climate Inspector.
+- Added **Performance Studio** live telemetry: Minecraft-reported FPS, opt-in frame interval percentiles, compile/upload queue state, free mesh buffers, JVM heap use and approximate Natural Automate cache-array memory per worker.
+- Added a unified performance configuration file, `config/realscale-performance.json`, with Balanced, Low Memory, Smooth Render and combined profiles plus opt-in diagnostics.
+
+### Changed
+- Terrain Lab now defaults to Natural Automate. The older Landscape / Alpine / Canyon blended-noise families remain available as Legacy Advanced and are clearly distinguished from the six fitted archetype kernels.
+- Natural Automate exposes composite morphology strength and terrain relief controls; the shared 1:20 climate strength applies to the exported profile.
+- The Performance Core selectively integrates bounded cache capacities from PR #156 and additionally includes the three horizontal morphology caches plus volcanic and karst shape caches in its Low Memory profile and estimate.
+- The current Create World menu contains eight public choices: Natural Automate, Natural baseline, and the six fitted archetypes.
+
+### Removed
+- Removed World Atlas completely: Atlas screens, local save-directory scanning, Anvil heightmap readers, localization keys and Atlas-specific tests. No replacement save scanner is retained.
+- Removed the unrelated orphan LOTM test and QA test from the RealScale branch; LOTM remains a separate workstream.
+
+### Validation status and limits
+- The catalog validator checks all 41 world-preset resources, both eight-entry menu tags, public biome-source chains and worldgen resource counts.
+- Natural Automate is experimental and still requires multi-seed saved-Anvil validation. No live terrain preview is claimed.
+- Performance telemetry is observational. Smooth Render time-slices FIFO upload completion; it does not reduce mesh compilation or GPU draw calls. No FPS improvement is claimed until physical-client A/B testing.
+- Full GitHub Actions and in-game validation are pending for this branch. This is not a Stable release.
+
+## 2.0.0-preview.2-test.9 — 2026-11-21 — Previous experimental baseline (superseded)
+
+### Current source state
+- The current Create World tags expose seven profiles: Natural plus Alpine, Canyon, Glacial, Volcanic, Karst and Dune.
+- The six fitted profiles remain experimental. The USGS Big Sur modes remain hidden from the ordinary new-world menu by the earlier product decision; measured resources are retained for compatibility and controlled testing.
+- Terrain Lab still edits three families (Landscape, Alpine and Canyon). It is not yet unified with all seven public profiles and does not provide a live terrain preview.
+- World Atlas remains a read-only saved-Anvil coverage/heightmap inspector. Geographic Climate Inspector remains a read-only 1:20 geographic/solar report.
+- No new general FPS or world-generation speedup is claimed by this source-version bump.
+
+### Known integration blockers
+- The current source tree contains an unrelated LOTM test referencing a missing `LotmBalance` class on main. Isolate the independent LOTM module/test and rerun full CI before promoting this source baseline.
+- Unified profile catalog, shared ecology-layer controls and Visualization Studio remain planned consolidation work, not completed features.
 
 ## Seven-mode public test build — 2026-10-27
 **Artifact basis:** `2.0.0-preview.2-test.6` (the JAR's internal version was not bumped for this menu-only test build).

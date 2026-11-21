@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile verified fitted profiles into a selectable seven-mode worldgen datapack.
+"""Compile six hidden fitted reference profiles for the public Natural Automate mode.
 
 The output is a staging datapack/resource-pack pair. It never modifies source
 resources in-place; reviewed output can be copied into the mod after QA.
@@ -132,10 +132,15 @@ def replace_root(value, old: str, new: str):
 def compile_profiles(profiles_dir: Path, resources_root: Path, out_dir: Path):
     data_root = resources_root / "data" / "realscale" / "worldgen"
     preset_template = read_json(data_root / "world_preset" / "natural_three_realms.json")
+    automate_preset = read_json(data_root / "world_preset" / "natural_automate_three_realms.json")
     manifest_entries = []
     lang_en = {}
     lang_zh = {}
-    preset_values = [f"realscale:{name}" for name, _ in CANONICAL]
+    preset_values = ["realscale:natural_automate_three_realms"]
+    write_json(
+        out_dir / "data/realscale/worldgen/world_preset/natural_automate_three_realms.json",
+        automate_preset,
+    )
 
     for family, config in FAMILY_CONFIG.items():
         profile_path = profiles_dir / f"{config['target']}.json"
@@ -278,8 +283,10 @@ def compile_profiles(profiles_dir: Path, resources_root: Path, out_dir: Path):
     write_json(lang_dir / "zh_cn.json", lang_zh)
     write_json(out_dir / "terrain-profile-provenance.json", {
         "schema": "realscale:compiled_terrain_archetypes/v1",
-        "default_mode": "realscale:natural_three_realms",
-        "preset_count": len(CANONICAL),
+        "default_mode": "realscale:natural_automate_three_realms",
+        "preset_count": 1 + len(manifest_entries),
+        "public_preset_count": 1,
+        "reference_preset_count": len(manifest_entries),
         "profile_count": len(manifest_entries),
         "profiles": manifest_entries,
         "raw_dem_grids_embedded": False,
@@ -289,7 +296,7 @@ def compile_profiles(profiles_dir: Path, resources_root: Path, out_dir: Path):
     write_json(out_dir / "pack.mcmeta", {
         "pack": {
             "pack_format": 48,
-            "description": "RealScale fitted terrain archetypes — Natural + six real-data profiles",
+            "description": "RealScale Natural Automate — six hidden fitted reference profiles",
         }
     })
 
@@ -327,7 +334,7 @@ def compile_profiles(profiles_dir: Path, resources_root: Path, out_dir: Path):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Compile six verified fit profiles into a selectable RealScale worldgen pack")
+    parser = argparse.ArgumentParser(description="Compile six fitted reference profiles for the unified Natural Automate worldgen pack")
     parser.add_argument("--profiles-dir", type=Path, required=True)
     parser.add_argument("--resources-root", type=Path, default=DEFAULT_RESOURCES)
     parser.add_argument("--out-dir", type=Path, required=True)
@@ -335,7 +342,8 @@ def main(argv=None):
     entries = compile_profiles(args.profiles_dir, args.resources_root, args.out_dir)
     print(json.dumps({
         "out_dir": str(args.out_dir),
-        "preset_count": len(CANONICAL),
+        "preset_count": 1,
+        "reference_preset_count": len(entries),
         "fitted_profile_count": len(entries),
         "families": [entry["family"] for entry in entries],
         "raw_dem_grids_embedded": False,

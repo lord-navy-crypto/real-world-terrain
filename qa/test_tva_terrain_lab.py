@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Actual cross-branch regression: Terrain Lab exports inherit the default plus six
-DEM-fitted choices, keep optional experiments hidden, and preserve three realm dimensions.
+"""Actual cross-branch regression: one public Natural Automate choice; baseline
+and six DEM-fitted references remain packaged but hidden.
 """
 import importlib.util
 import json
@@ -19,15 +19,9 @@ TVA={
  "alpine":"tva_alpine_three_realms",
  "canyon":"tva_canyon_three_realms",
 }
-CORE=("realscale:natural_three_realms",
-      "realscale:alpine_three_realms",
-      "realscale:canyon_three_realms",
-      "realscale:glacial_three_realms",
-      "realscale:volcanic_three_realms",
-      "realscale:karst_three_realms",
-      "realscale:dune_three_realms")
-# Experimental Wonders/invasion and cave-ocean variants stay available on disk,
-# but the new-world menu contains only the default and six fitted archetypes.
+CORE=("realscale:natural_automate_three_realms",)
+# Experimental Wonders/invasion and cave-ocean variants stay available on disk;
+# Natural baseline and six fitted references are also hidden behind the single public Natural Automate entry.
 MENU=CORE
 
 def read(path):
@@ -43,7 +37,7 @@ class RealScaleRecoveredTerrainLab(unittest.TestCase):
                        "assets/minecraft/lang"):
             shutil.copytree(SOURCES/folder,self.root/folder)
 
-    def test_default_and_six_fitted_menu_items_hide_optional_experiments(self):
+    def test_single_public_menu_item_hides_optional_experiments(self):
         for key in ("normal","extended"):
             j=read(self.root/"data/minecraft/tags/worldgen/world_preset"/(key+".json"))
             self.assertEqual(tuple(j["values"]),MENU)

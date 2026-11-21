@@ -140,7 +140,11 @@ class MountainBasinPlateauTest(unittest.TestCase):
         self.assertIn("double conservative=radius*1.100000001;",site_cache)
         self.assertIn("return dx*dx+dz*dz>=envelopeSquared;",site_cache)
         self.assertIn("new Site(gx,gz);",site_cache)
-        self.assertIn("private final Site[] sites=new Site[SLOTS];",site_cache)
+        self.assertIn("static final int SLOTS=64;",site_cache)
+        self.assertIn('RealScalePerformanceProfile.cacheSlots("mountain_relief", SLOTS)',site_cache)
+        self.assertIn("private final Site[] sites;",site_cache)
+        self.assertIn("this.sites = new Site[slots];",site_cache)
+        self.assertIn("this.victim = new byte[slots >>> 1];",site_cache)
         self.assertLess(terrain.index("if (s.type == MountainReliefMath.NONE) return original;"),
                         terrain.index("double continent = continents.compute(ctx);"))
         # The seeded selector must be evaluated only INSIDE the hash-defined

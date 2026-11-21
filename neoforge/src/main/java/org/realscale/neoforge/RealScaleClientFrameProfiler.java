@@ -27,8 +27,8 @@ import net.neoforged.neoforge.client.event.RenderFrameEvent;
 public final class RealScaleClientFrameProfiler {
     private RealScaleClientFrameProfiler(){}
 
-    private static final boolean ENABLED =
-            Boolean.parseBoolean(System.getProperty(
+    private static final boolean ENABLED = RealScalePerformanceProfile.diagnosticsEnabled()
+            || Boolean.parseBoolean(System.getProperty(
                     "realscale.client.fps.profile","false"));
     private static final long WARMUP_NANOS=10_000_000_000L;
     private static final long REPORT_NANOS=30_000_000_000L;
@@ -90,6 +90,18 @@ public final class RealScaleClientFrameProfiler {
             window=new ClientFrameIntervalStats();
             windowStarted=now;
         }
+    }
+
+    public record FrameSnapshot(boolean enabled,long frames,double meanFps,
+            double p50IntervalMs,double p95IntervalMs,double p99IntervalMs,
+            long slowFramesOver50ms,double maxIntervalMs) {}
+
+    public static FrameSnapshot snapshot() {
+        ClientFrameIntervalStats current=window;
+        return new FrameSnapshot(ENABLED,current.frames(),current.fps(),
+                current.percentileUpperMs(0.50),current.percentileUpperMs(0.95),
+                current.percentileUpperMs(0.99),current.slowFramesOver50ms(),
+                current.maxFrameMs());
     }
 
     private static void reset(ClientLevel world,long now) {

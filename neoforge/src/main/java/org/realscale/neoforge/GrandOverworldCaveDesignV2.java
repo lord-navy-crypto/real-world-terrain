@@ -1,9 +1,10 @@
 package org.realscale.neoforge;
 
 /**
- * Experimental seed-stable additional caves for the separate Cave Exploration
- * preset. Each existing 768-block cell gains four loops and four terminal
- * grottos. No chunk loading, block writes, global random state or world data.
+ * Expanded seed-stable cave topology shared by Natural Automate and the
+ * dedicated Cave Exploration preset. Each eligible 768-block cell gains four
+ * loops and four terminal grottos. No chunk loading, block writes, global
+ * random state or world data.
  */
 public final class GrandOverworldCaveDesignV2 {
     private GrandOverworldCaveDesignV2() {}

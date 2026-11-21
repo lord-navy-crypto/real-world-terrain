@@ -17,17 +17,10 @@ modified_density='neoforge/src/main/java/org/realscale/neoforge/RealDemDensity.j
 for name,want in checks.items():
  if name in modified_preset_tags:
   tag=json.loads((ROOT/name).read_text())
-  expected=[
-   'realscale:natural_three_realms',
-   'realscale:alpine_three_realms',
-   'realscale:canyon_three_realms',
-   'realscale:glacial_three_realms',
-   'realscale:volcanic_three_realms',
-   'realscale:karst_three_realms',
-   'realscale:dune_three_realms']
+  expected=['realscale:natural_automate_three_realms']
   assert tag.get('values',[])==expected,(name,tag.get('values'))
 
-  print('INTENTIONAL MODIFICATION: Natural plus six visible data-fitted test families; original USGS hidden')
+  print('INTENTIONAL MODIFICATION: one public Natural Automate profile; Natural baseline and six fitted references remain hidden')
   continue
  if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):
   # Preserve the exact historical text for every legacy ID while allowing
@@ -37,7 +30,7 @@ for name,want in checks.items():
    old=json.loads(oldjar.read(rel))
   new=json.loads((ROOT/name).read_text())
   assert all(new.get(key)==value for key,value in old.items()),name
-  for preset in ('natural_three_realms','alpine_three_realms',
+  for preset in ('natural_automate_three_realms','natural_three_realms','alpine_three_realms',
                  'canyon_three_realms','glacial_three_realms','volcanic_three_realms','karst_three_realms','dune_three_realms'):
    assert new.get('generator.realscale.'+preset), (name,preset)
   print('INTENTIONAL MODIFICATION: additive RealScale labels, historical labels unchanged')
@@ -45,7 +38,7 @@ for name,want in checks.items():
  if name=='neoforge/src/main/resources/META-INF/neoforge.mods.toml':
   descriptor=(ROOT/name).read_text()
   for required in ('modLoader="javafml"','modId="realscale"',
-                   'version="2.0.0-preview.2-test.9"',
+                   'version="2.0.0-preview.2-test.12"',
                    'versionRange="[21.1.0,)"',
                    'versionRange="[1.21.1,1.21.2)"',
                    'modId="yet_another_config_lib_v3"'):

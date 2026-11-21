@@ -45,6 +45,9 @@ def _copy_jar_resources(jar: Path, root: Path) -> None:
     needed = (
         "data/realscale/worldgen/noise_settings/realism_max.json",
         "data/realscale/worldgen/world_preset/realism_max.json",
+        "data/realscale/worldgen/noise_settings/natural_automate.json",
+        "data/realscale/worldgen/world_preset/natural_automate_three_realms.json",
+        "data/realscale/worldgen/density_function/natural_automate/height_signal.json",
         "assets/minecraft/lang/en_us.json",
         "assets/minecraft/lang/zh_cn.json",
     )
@@ -68,6 +71,7 @@ def _draft_options(path: Path) -> dict:
         "basinPercent": 0,
         "fantasyDimensions": False, "lithostitchedBlend": False,
         "lithostitchedGeology": False,
+        "naturalMorphologyPercent": 100,
     }
     for key, default in optional.items():
         val = draft.get(key, default)
@@ -91,6 +95,7 @@ def _draft_options(path: Path) -> dict:
         fantasy_dimensions=optional["fantasyDimensions"],
         lithostitched_blend=optional["lithostitchedBlend"],
         lithostitched_geology=optional["lithostitchedGeology"],
+        natural_morphology_percent=optional["naturalMorphologyPercent"],
     )
 
 

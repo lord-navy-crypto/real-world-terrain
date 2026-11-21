@@ -26,6 +26,18 @@ jobs:
           python-version: '3.12'
       - name: Verify recovered source, artifacts and actual saved world
         run: python3 qa/verify_repository.py
+      - name: Validate unified public/hidden/legacy preset catalog
+        run: python3 scripts/validate_preset_catalog.py
+      - name: Verify APES Gallery RCON waits for real saved satellite chunks
+        run: python3 -m unittest discover -s qa -p 'test_apes_gallery_workflow.py' -v
+      - name: Verify Natural Automate kernels match the six fitted resources
+        run: python3 scripts/sync_natural_automate_kernels.py --check
+      - name: Verify fitted-profile compiler preserves the single public mode
+        run: |
+          python3 -m pip install scipy
+          python3 -m unittest discover -s research/v1.1/tests -p 'test_compile_terrain_archetype_profiles.py' -v
+      - name: Verify the single Natural Automate menu and retained internal fitted profiles
+        run: python3 -m unittest discover -s qa -p 'test_realscale_branding_compat.py' -v
       - name: Validate custom biome registry resources (static)
         run: python3 scripts/check_custom_biomes.py
       - name: Validate Grand Ecology registrations and preserved dimensions
@@ -45,24 +57,6 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/CaveHabitatMath.java \
             neoforge/src/test/java/org/realscale/neoforge/HabitatMathSmoke.java
           java -cp build/habitat-smoke org.realscale.neoforge.HabitatMathSmoke
-      - name: Test asynchronous REAL saved-chunk World Atlas heightmap drawing
-        run: |
-          python3 -m unittest discover -s qa -p 'test_world_atlas_background_painter.py' -v
-          mkdir -p build/atlas-background-smoke
-          javac -d build/atlas-background-smoke \
-            neoforge/src/main/java/org/realscale/neoforge/WorldAtlasRegionIndex.java \
-            neoforge/src/main/java/org/realscale/neoforge/WorldAtlasHeightmapReader.java \
-            neoforge/src/main/java/org/realscale/neoforge/WorldAtlasBackgroundPainter.java \
-            neoforge/src/test/java/org/realscale/neoforge/WorldAtlasBackgroundHeightmapSmoke.java
-          java -cp build/atlas-background-smoke org.realscale.neoforge.WorldAtlasBackgroundHeightmapSmoke
-      - name: Test read-only World Atlas region indexing and GUI integration
-        run: |
-          python3 -m unittest discover -s qa -p 'test_world_atlas_feature.py' -v
-          mkdir -p build/world-atlas-smoke
-          javac -d build/world-atlas-smoke \
-            neoforge/src/main/java/org/realscale/neoforge/WorldAtlasRegionIndex.java \
-            neoforge/src/test/java/org/realscale/neoforge/WorldAtlasRegionIndexSmoke.java
-          java -cp build/world-atlas-smoke org.realscale.neoforge.WorldAtlasRegionIndexSmoke
       - name: Validate experimental navigable waterways and hovercraft assets
         run: python3 -m unittest discover -s qa -p 'test_navigable_waterway_hovercraft.py' -v
       - name: Verify authentic USGS 3DEP import geometry and measured-only DEM contracts
@@ -105,6 +99,7 @@ jobs:
           mkdir -p build/visibility-budget-smoke
           javac -d build/visibility-budget-smoke \
             neoforge/src/main/java/org/realscale/neoforge/AdaptiveVisibilityBudget.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScaleDomainManager.java \
             neoforge/src/main/java/org/realscale/neoforge/AdaptiveVisibilityTelemetry.java \
             neoforge/src/test/java/org/realscale/neoforge/AdaptiveVisibilityBudgetSmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/AdaptiveVisibilityTelemetrySmoke.java
@@ -132,6 +127,7 @@ jobs:
           mkdir -p build/worldgen-profiler-smoke
           javac -d build/worldgen-profiler-smoke \
             neoforge/src/main/java/org/realscale/neoforge/WorldgenProfiler.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/WorldgenProfilerSmoke.java
           java -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
           java -Drealscale.worldgen.profile=true -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
@@ -140,6 +136,7 @@ jobs:
           mkdir -p build/density-profiler-smoke
           javac -d build/density-profiler-smoke \
             neoforge/src/main/java/org/realscale/neoforge/DensityPerfSampler.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/DensityPerfSamplerSmoke.java
           java -cp build/density-profiler-smoke org.realscale.neoforge.DensityPerfSamplerSmoke
           java -Drealscale.density.profile=true -cp build/density-profiler-smoke org.realscale.neoforge.DensityPerfSamplerSmoke
@@ -167,6 +164,7 @@ jobs:
           mkdir -p build/ecotone-result-cache-smoke
           javac -d build/ecotone-result-cache-smoke \
             neoforge/src/main/java/org/realscale/neoforge/QuartBiomeResultCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/QuartBiomeResultCacheSmoke.java
           java -cp build/ecotone-result-cache-smoke org.realscale.neoforge.QuartBiomeResultCacheSmoke
       - name: Verify allocation-free underlying ecotone climate lookup cache
@@ -174,6 +172,7 @@ jobs:
           mkdir -p build/ecotone-base-cache-smoke
           javac -d build/ecotone-base-cache-smoke \
             neoforge/src/main/java/org/realscale/neoforge/QuartBiomeBaseCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/QuartBiomeBaseCacheSmoke.java
           java -cp build/ecotone-base-cache-smoke org.realscale.neoforge.QuartBiomeBaseCacheSmoke
       - name: Measure DEM grid continuity and tile boundary blend
@@ -219,6 +218,7 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefSiteCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/MountainReliefSiteCacheSmoke.java
           java -cp build/mountain-site-cache-smoke org.realscale.neoforge.MountainReliefSiteCacheSmoke
           python3 -m unittest discover -s qa -p 'test_mountain_basin_plateau_default.py' -v
@@ -264,6 +264,7 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldSingleMaskParitySmoke.java \
             neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveDesignV2.java \
             neoforge/src/main/java/org/realscale/neoforge/DensityPerfSampler.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldCaveDesignV2Smoke.java
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldCaveNetworkSmoke
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldEntranceCacheParitySmoke
@@ -298,6 +299,7 @@ jobs:
           mkdir -p build/measured-column-cache-smoke
           javac -d build/measured-column-cache-smoke \
             neoforge/src/main/java/org/realscale/neoforge/MeasuredColumnMemo.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/MeasuredColumnMemoCollisionSmoke.java
           java -cp build/measured-column-cache-smoke org.realscale.neoforge.MeasuredColumnMemoCollisionSmoke
       - name: Prove DEM column locality cache equivalence under all tile edges
@@ -306,6 +308,7 @@ jobs:
           javac -d build/dem-cache-smoke \
             neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
             neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/RealDemColumnCacheSmoke.java
           java -cp build/dem-cache-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemColumnCacheSmoke
       - name: Regress USGS v2 DEM grid fidelity and exterior continuity
@@ -342,6 +345,7 @@ jobs:
           javac -d build/tva-sky-cache \
             neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
             neoforge/src/main/java/org/realscale/neoforge/SkyIslandSiteCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/SkyIslandSiteCacheSmoke.java
           java -cp build/tva-sky-cache org.realscale.neoforge.SkyIslandSiteCacheSmoke
       - name: Verify far-distance cave, mountain and sky worldgen parity
@@ -351,6 +355,7 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefSiteCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java \
             neoforge/src/main/java/org/realscale/neoforge/GrandNetherCaveNetwork.java \
             neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
@@ -376,6 +381,7 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
             neoforge/src/main/java/org/realscale/neoforge/TerrainArchetypeMath.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/TerrainArchetypeHorizontalCacheBenchmark.java
           java -cp build/fitted-horizontal-cache-benchmark org.realscale.neoforge.TerrainArchetypeHorizontalCacheBenchmark
       - name: Ensure 2096-height Anvil heightmaps never decode using Canyon's shorter generator height

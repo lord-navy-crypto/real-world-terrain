@@ -25,6 +25,9 @@ public final class ClientChunkUploadBudget {
     private boolean predictiveThisFrame;
     private long estimatedTaskNanos;
     private long predictiveStops;
+    private RealScaleDomainManager.Domain activeDomain=
+            RealScaleDomainManager.Domain.TRANSITION;
+    private int activeUploadMultiplier;
 
     /** Explicit local categories; this pure-Java scheduler has no client dependencies. */
     public enum VisibilityMode { TRANSITION, OPEN_SURFACE, SEALED_CAVE }
@@ -46,6 +49,8 @@ public final class ClientChunkUploadBudget {
         frameMaxNanos=maxNanos;
         frameMaxTasks=maxTasks;
         predictiveThisFrame=false;
+        activeDomain=RealScaleDomainManager.Domain.TRANSITION;
+        activeUploadMultiplier=0;
     }
 
     /**
@@ -83,28 +88,29 @@ public final class ClientChunkUploadBudget {
             beginFrame(false);
             return;
         }
-        if(mode==null || mode==VisibilityMode.TRANSITION) {
+        AdaptiveVisibilityBudget.Mode visibilityMode = mode==null
+                ? AdaptiveVisibilityBudget.Mode.TRANSITION
+                : switch(mode) {
+                    case TRANSITION -> AdaptiveVisibilityBudget.Mode.TRANSITION;
+                    case OPEN_SURFACE -> AdaptiveVisibilityBudget.Mode.OPEN_SURFACE;
+                    case SEALED_CAVE -> AdaptiveVisibilityBudget.Mode.SEALED_CAVE;
+                };
+        RealScaleDomainManager.FramePlan plan=
+                RealScaleDomainManager.framePlan(
+                        visibilityMode,pendingUploads,framePressure);
+        if(plan.failOpen()) {
             beginFrame(false);
             transitionBypasses++;
             return;
         }
         beginFrame(true);
+        activeDomain=plan.activeDomain();
+        activeUploadMultiplier=plan.uploadMultiplier();
         predictiveThisFrame=predictive;
-        int multiplier=mode==VisibilityMode.SEALED_CAVE?2:1;
-        // A large old backlog must make forward progress; bounded catch-up
-        // avoids permanent delayed terrain without changing FIFO order.
-        if(pendingUploads>=64) {
-            multiplier=Math.max(2,multiplier);
-            backlogRescueFrames++;
-        }
-        // A slow client should not add more upload work to an overloaded
-        // render frame. Keep the existing base quota and FIFO forward progress.
-        if(framePressure) {
-            multiplier=1;
-            adaptiveReducedFrames++;
-        }
-        frameMaxTasks=Math.min(64,maxTasks*multiplier);
-        frameMaxNanos=Math.min(10_000_000L,maxNanos*multiplier);
+        if(pendingUploads>=64)backlogRescueFrames++;
+        if(framePressure)adaptiveReducedFrames++;
+        frameMaxTasks=Math.min(64,maxTasks*activeUploadMultiplier);
+        frameMaxNanos=Math.min(10_000_000L,maxNanos*activeUploadMultiplier);
     }
 
     /** End BEFORE menus/disconnects or future vanilla invocations. */
@@ -157,6 +163,8 @@ public final class ClientChunkUploadBudget {
     public long adaptiveReducedFrames(){return adaptiveReducedFrames;}
     public long predictiveStops(){return predictiveStops;}
     public long estimatedTaskNanos(){return estimatedTaskNanos;}
+    public RealScaleDomainManager.Domain activeDomain(){return activeDomain;}
+    public int activeUploadMultiplier(){return activeUploadMultiplier;}
     /** World changes and menus discard obsolete task-cost estimates. */
     public void resetPrediction(){
         estimatedTaskNanos=0L;

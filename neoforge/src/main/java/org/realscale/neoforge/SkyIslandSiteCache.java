@@ -39,12 +39,35 @@ final class SkyIslandSiteCache {
     }
 
     private static final int BUCKETS=SLOTS/2;
-    private final Entry[] entries=new Entry[SLOTS];
-    private final byte[] victim=new byte[BUCKETS];
+    private final int capacity;
+    private final int bucketMask;
+    private final Entry[] entries;
+    private final byte[] victim;
     private Entry mostRecent;
 
+    SkyIslandSiteCache() {
+        this(RealScalePerformanceProfile.cacheSlots("sky_island", SLOTS));
+    }
+
+    SkyIslandSiteCache(int slots) {
+        if (slots < 16 || (slots & (slots - 1)) != 0)
+            throw new IllegalArgumentException("Cache slots must be a power of two >= 16");
+        this.capacity = slots;
+        this.bucketMask = (slots >>> 1) - 1;
+        this.entries = new Entry[slots];
+        this.victim = new byte[slots >>> 1];
+    }
+
+    int capacity() {
+        return capacity;
+    }
+
     static int bucket(long gx,long gz) {
-        return hash(gx,gz)&(BUCKETS-1);
+        return bucket(gx,gz,BUCKETS - 1);
+    }
+
+    private static int bucket(long gx,long gz,int mask) {
+        return hash(gx,gz)&mask;
     }
 
     Entry at(int x,int z) {
@@ -52,7 +75,7 @@ final class SkyIslandSiteCache {
         long gz=Math.floorDiv((long)z+SkyIslandLayout.GRID/2,SkyIslandLayout.GRID);
         Entry last=mostRecent;
         if(last!=null && last.gx==gx && last.gz==gz)return last;
-        int bucket=bucket(gx,gz),first=bucket<<1;
+        int bucket=bucket(gx,gz,bucketMask),first=bucket<<1;
         Entry a=entries[first],b=entries[first+1];
         if(a!=null && a.gx==gx && a.gz==gz) {
             mostRecent=a;

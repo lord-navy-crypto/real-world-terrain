@@ -16,6 +16,7 @@ OLD = [
     "tva_cave_ocean_ecology_test_three_realms",
 ]
 NEW = [
+    "natural_automate_three_realms",
     "natural_three_realms",
     "alpine_three_realms",
     "canyon_three_realms",
@@ -55,13 +56,67 @@ def source_chain(source):
 
 
 class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
-    def test_new_world_menu_has_natural_and_six_fitted_tests_without_usgs(self):
-        menu = ["realscale:" + name for name in CANONICAL]
+    def test_new_world_menu_exposes_only_the_unified_natural_automate_profile(self):
+        menu = ["realscale:natural_automate_three_realms"]
         for name in ("normal", "extended"):
             tag = read(TAG_ROOT / (name + ".json"))
             self.assertEqual(tag["values"], menu)
-            self.assertEqual(len(set(menu)), 7)
+            self.assertEqual(len(set(tag["values"])), 1)
             self.assertNotIn("realscale:usgs_big_sur", tag["values"])
+
+    def test_natural_baseline_and_six_fitted_presets_remain_packaged_but_hidden(self):
+        names = ("natural_three_realms", "alpine_three_realms", "canyon_three_realms",
+                 "glacial_three_realms", "volcanic_three_realms", "karst_three_realms",
+                 "dune_three_realms")
+        for name in names:
+            with self.subTest(preset=name):
+                self.assertTrue((WORLD / (name + ".json")).is_file(), name)
+                for menu in ("normal.json", "extended.json"):
+                    self.assertNotIn("realscale:" + name, read(TAG_ROOT / menu)["values"])
+
+    def test_natural_automate_is_the_single_public_composite_over_the_natural_base(self):
+        world = read(WORLD / "natural_automate_three_realms.json")
+        overworld = world["dimensions"]["minecraft:overworld"]
+        self.assertEqual(overworld["generator"]["settings"], "realscale:natural_automate_v2")
+        self.assertEqual(
+            source_chain(overworld["generator"]["biome_source"]),
+            ["realscale:sky_ocean", "realscale:geo_wonders_opt_in",
+             "realscale:natural_ecotones", "realscale:cave_depth_habitats",
+             "minecraft:multi_noise"],
+        )
+        noise = read(RES / "data/realscale/worldgen/noise_settings/natural_automate_v2.json")
+        self.assertEqual(
+            noise["noise_router"]["temperature"]["adjusted"]["height_signal"],
+            "realscale:natural_automate/height_signal",
+        )
+        height=read(RES / "data/realscale/worldgen/density_function/natural_automate/height_signal.json")
+        self.assertEqual(height["argument"]["base"],"realscale:tva_natural_smoothed/height_signal")
+        environment=height["argument"]["environment"]
+        self.assertEqual(environment["region_selector"]["noise"],"minecraft:offset")
+        self.assertEqual(environment["temperature"]["noise"],"minecraft:temperature")
+        self.assertEqual(environment["humidity"]["noise"],"minecraft:vegetation")
+
+    def test_terrain_lab_exposes_only_the_unified_engine_and_migrates_legacy_drafts(self):
+        client=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleTerrainLabClient.java").read_text()
+        screen=client.split("public static Screen createScreen(Screen parent)",1)[1]
+        self.assertNotIn("World Generation Profile",screen)
+        self.assertNotIn("familyCategory(",screen)
+        self.assertIn("Natural Automate | Unified World Engine",screen)
+        self.assertIn('d.profiles.put(d.preset, FamilySettings.fromDraft(d));',client)
+        self.assertIn('d.preset = "natural_automate";',client)
+
+    def test_natural_automate_enables_the_expanded_default_cave_network(self):
+        noise=read(RES/"data/realscale/worldgen/noise_settings/natural_automate_v2.json")
+        final=noise["noise_router"]["final_density"]
+        self.assertEqual(final["type"],"realscale:grand_overworld_caverns")
+        self.assertIs(final.get("gallery_v2"),True)
+        legacy=read(RES/"data/realscale/worldgen/noise_settings/natural_automate.json")
+        self.assertFalse(legacy["noise_router"]["final_density"].get("gallery_v2",False))
+
+    def test_natural_automate_has_bilingual_player_facing_name(self):
+        for name in ("en_us.json", "zh_cn.json"):
+            labels = read(RES / "assets/minecraft/lang" / name)
+            self.assertIn("RealScale", labels["generator.realscale.natural_automate_three_realms"])
 
     def test_six_fitted_presets_share_universal_biome_layers(self):
         for name, settings_id in CANONICAL.items():
@@ -213,8 +268,8 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
     def test_mod_name_and_archive_name_are_realscale_only(self):
         gradle = (ROOT / "neoforge/build.gradle").read_text()
         toml = (RES / "META-INF/neoforge.mods.toml").read_text()
-        self.assertIn("2.0.0-preview.2-test.9", gradle)
-        self.assertIn('version="2.0.0-preview.2-test.9"', toml)
+        self.assertIn("2.0.0-preview.2-test.12", gradle)
+        self.assertIn('version="2.0.0-preview.2-test.12"', toml)
         self.assertIn("RealScale-NeoForge-1.21.1", gradle)
         self.assertNotIn("TVA", toml)
         self.assertNotIn("RealScale-TVA", gradle)

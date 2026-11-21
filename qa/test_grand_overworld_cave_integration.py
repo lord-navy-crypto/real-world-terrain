@@ -9,7 +9,7 @@ JAVA=ROOT/"neoforge/src/main/java/org/realscale/neoforge"
 DATA=ROOT/"neoforge/src/main/resources/data/realscale/worldgen"
 
 CAVE_WORLDS=(
-    "tva_natural_smoothed","tva_alpine_smoothed",
+    "natural_automate_v2","tva_natural_smoothed","tva_alpine_smoothed",
     "tva_canyon_smoothed","usgs_big_sur_v2"
 )
 
@@ -18,7 +18,7 @@ def read(path):
 
 
 class OverworldCaveContracts(unittest.TestCase):
-    def test_four_public_realms_actually_carve_caves_in_final_density(self):
+    def test_natural_automate_and_legacy_realms_actually_carve_caves_in_final_density(self):
         for preset in CAVE_WORLDS:
             with self.subTest(preset=preset):
                 noise=read(DATA/"noise_settings"/f"{preset}.json")
@@ -26,12 +26,15 @@ class OverworldCaveContracts(unittest.TestCase):
                 self.assertIsInstance(node,dict)
                 self.assertEqual(node["type"],"realscale:grand_overworld_caverns")
                 self.assertEqual(node["small_caves"],"realscale:realism_max/cave_core")
+                if preset=="natural_automate_v2":
+                    self.assertIs(node.get("gallery_v2"),True)
                 self.assertEqual(node["warp"]["type"],"minecraft:noise")
                 self.assertEqual(noise["sea_level"],63)
                 if preset!="usgs_big_sur_v2":
-                    self.assertEqual(node["base"],f"realscale:{preset}/terrain_density")
+                    density_family="natural_automate" if preset=="natural_automate_v2" else preset
+                    self.assertEqual(node["base"],f"realscale:{density_family}/terrain_density")
                     self.assertEqual(noise["noise_router"]["depth"],
-                                     f"realscale:{preset}/terrain_density")
+                                     f"realscale:{density_family}/terrain_density")
                 else:
                     # The original range_choice(min(T, caves), T) is fused
                     # to compute identical T once, preserving both cave

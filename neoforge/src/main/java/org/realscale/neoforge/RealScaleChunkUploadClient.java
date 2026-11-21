@@ -20,24 +20,22 @@ import net.neoforged.neoforge.client.event.RenderFrameEvent;
 public final class RealScaleChunkUploadClient {
     private RealScaleChunkUploadClient(){}
 
-    public static final boolean ENABLED=Boolean.parseBoolean(System.getProperty(
-            "realscale.experimental.client.uploadbudget","false"));
+    public static final boolean ENABLED=
+            RealScalePerformanceProfile.clientUploadBudgetEnabled();
     // Both properties are required. Mode-aware scheduling never activates
     // the experimental upload Mixin by itself.
-    public static final boolean MODE_AWARE=ENABLED &&
-            Boolean.parseBoolean(System.getProperty(
-                    "realscale.experimental.client.uploadbudget.modeaware","false"));
-    public static final boolean ADAPTIVE=MODE_AWARE &&
-            Boolean.parseBoolean(System.getProperty(
-                    "realscale.experimental.client.uploadbudget.adaptive","false"));
-    public static final boolean PREDICTIVE=MODE_AWARE &&
-            Boolean.parseBoolean(System.getProperty(
-                    "realscale.experimental.client.uploadbudget.predictive","false"));
+    public static final boolean MODE_AWARE=
+            RealScalePerformanceProfile.modeAwareUploadEnabled();
+    public static final boolean ADAPTIVE=
+            RealScalePerformanceProfile.adaptiveUploadEnabled();
+    public static final boolean PREDICTIVE=
+            RealScalePerformanceProfile.predictiveUploadEnabled();
     private static final ClientUploadFrameGovernor GOVERNOR=
             new ClientUploadFrameGovernor();
     private static long frameBeginNanos;
-    private static final boolean PROFILE=ENABLED ||
-            Boolean.getBoolean("realscale.client.chunkqueue.profile");
+    private static final boolean PROFILE=ENABLED
+            || RealScalePerformanceProfile.diagnosticsEnabled()
+            || Boolean.getBoolean("realscale.client.chunkqueue.profile");
     public static final ClientChunkUploadBudget BUDGET =
             ClientChunkUploadBudget.fromProperties();
 
@@ -47,6 +45,7 @@ public final class RealScaleChunkUploadClient {
     private static int peakQueued,peakUploading,minFreeBuffers=Integer.MAX_VALUE;
     private static long budgetFrames,uploaded;
     private static long lastReportedDeferred;
+    private static long heapSamples,totalHeapUsedBytes,peakHeapUsedBytes,maxHeapBytes;
 
     @SubscribeEvent public static void onPre(RenderFrameEvent.Pre event){
         if(!PROFILE)return;
@@ -67,12 +66,12 @@ public final class RealScaleChunkUploadClient {
             if(MODE_AWARE) {
                 SectionRenderDispatcher dispatcher=playing
                         ?mc.levelRenderer.getSectionRenderDispatcher():null;
-                AdaptiveVisibilityBudget.Mode state=playing&&dispatcher!=null
-                        ?RealScaleAdaptiveVisibilityClient.currentModeFor(world,mc.player)
-                        :AdaptiveVisibilityBudget.Mode.TRANSITION;
-                ClientChunkUploadBudget.VisibilityMode uploadMode=switch(state) {
-                    case OPEN_SURFACE -> ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE;
-                    case SEALED_CAVE -> ClientChunkUploadBudget.VisibilityMode.SEALED_CAVE;
+                RealScaleDomainManager.Domain domain=playing&&dispatcher!=null
+                        ?RealScaleAdaptiveVisibilityClient.currentDomainFor(world,mc.player)
+                        :RealScaleDomainManager.Domain.TRANSITION;
+                ClientChunkUploadBudget.VisibilityMode uploadMode=switch(domain) {
+                    case SURFACE -> ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE;
+                    case UNDERGROUND -> ClientChunkUploadBudget.VisibilityMode.SEALED_CAVE;
                     case TRANSITION -> ClientChunkUploadBudget.VisibilityMode.TRANSITION;
                 };
                 BUDGET.beginModeAwareFrame(playing,uploadMode,
@@ -104,6 +103,14 @@ public final class RealScaleChunkUploadClient {
         int queued=Math.max(0,dispatcher.getToBatchCount());
         int uploading=Math.max(0,dispatcher.getToUpload());
         int free=Math.max(0,dispatcher.getFreeBufferCount());
+        Runtime runtime=Runtime.getRuntime();
+        long heapUsed=Math.max(0L,runtime.totalMemory()-runtime.freeMemory());
+        long heapMax=Math.max(1L,runtime.maxMemory());
+        heapSamples++;
+        totalHeapUsedBytes=Long.MAX_VALUE-totalHeapUsedBytes<heapUsed
+                ?Long.MAX_VALUE:totalHeapUsedBytes+heapUsed;
+        peakHeapUsedBytes=Math.max(peakHeapUsedBytes,heapUsed);
+        maxHeapBytes=Math.max(maxHeapBytes,heapMax);
         frames++;
         if(queued>0||uploading>0)framesWithBacklog++;
         totalQueued+=queued;
@@ -138,6 +145,11 @@ public final class RealScaleChunkUploadClient {
                     " avg_upload_pending="+String.format(java.util.Locale.ROOT,"%.2f",totalUploading/denom)+
                     " peak_upload_pending="+peakUploading+
                     " min_free_mesh_buffers="+minFreeBuffers+
+                    " avg_heap_used_mib="+(heapSamples==0?0:totalHeapUsedBytes/heapSamples/1_048_576L)+
+                    " peak_heap_used_mib="+(peakHeapUsedBytes/1_048_576L)+
+                    " max_heap_mib="+(maxHeapBytes/1_048_576L)+
+                    " peak_heap_used_pct="+(maxHeapBytes<=0?0:Math.round(100.0*peakHeapUsedBytes/maxHeapBytes))+
+                    " heap_metric=JVM_heap_not_GPU_memory"+
                     " uploaded_by_budget="+uploaded+
                     " budget_frames="+budgetFrames+
                     " deferred_calls="+(currentDeferred-lastReportedDeferred)+
@@ -148,7 +160,41 @@ public final class RealScaleChunkUploadClient {
         frames=framesWithBacklog=totalQueued=totalUploading=budgetFrames=uploaded=0;
         peakQueued=peakUploading=0;
         minFreeBuffers=Integer.MAX_VALUE;
+        heapSamples=totalHeapUsedBytes=peakHeapUsedBytes=maxHeapBytes=0L;
         lastReportNanos=now;
+    }
+
+    public record QueueSnapshot(boolean available,boolean budgetEnabled,
+            boolean modeAware,boolean adaptive,boolean predictive,
+            int compilePending,int uploadPending,int freeMeshBuffers,
+            long sampleFrames,double averageCompilePending,double averageUploadPending,
+            int peakCompilePending,int peakUploadPending,long heapUsedBytes,
+            long heapMaxBytes,long deferredCalls,long uploadedTasks,
+            RealScaleDomainManager.Domain activeDomain,int uploadMultiplier) {}
+
+    public static QueueSnapshot snapshot() {
+        Minecraft mc=Minecraft.getInstance();
+        int queued=0,uploading=0,free=0;
+        boolean available=mc.level!=null && mc.player!=null
+                && mc.levelRenderer!=null;
+        if(available) {
+            SectionRenderDispatcher dispatcher=mc.levelRenderer.getSectionRenderDispatcher();
+            if(dispatcher==null) available=false;
+            else {
+                queued=Math.max(0,dispatcher.getToBatchCount());
+                uploading=Math.max(0,dispatcher.getToUpload());
+                free=Math.max(0,dispatcher.getFreeBufferCount());
+            }
+        }
+        Runtime runtime=Runtime.getRuntime();
+        long heapUsed=Math.max(0L,runtime.totalMemory()-runtime.freeMemory());
+        long heapMax=Math.max(1L,runtime.maxMemory());
+        double denominator=Math.max(1L,frames);
+        return new QueueSnapshot(available,ENABLED,MODE_AWARE,ADAPTIVE,PREDICTIVE,
+                queued,uploading,free,frames,totalQueued/denominator,
+                totalUploading/denominator,peakQueued,peakUploading,
+                heapUsed,heapMax,BUDGET.deferredCalls(),BUDGET.tasksThisFrame(),
+                BUDGET.activeDomain(),BUDGET.activeUploadMultiplier());
     }
 
     private static void reset(ClientLevel world){
@@ -156,6 +202,7 @@ public final class RealScaleChunkUploadClient {
         frames=framesWithBacklog=totalQueued=totalUploading=budgetFrames=uploaded=0;
         peakQueued=peakUploading=0;
         minFreeBuffers=Integer.MAX_VALUE;
+        heapSamples=totalHeapUsedBytes=peakHeapUsedBytes=maxHeapBytes=0L;
         lastReportNanos=0L;
         lastReportedDeferred=BUDGET.deferredCalls();
         if(ENABLED)BUDGET.endFrame();

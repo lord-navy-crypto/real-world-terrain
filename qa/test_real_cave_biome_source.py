@@ -93,9 +93,10 @@ class RealCaveBiomeTests(unittest.TestCase):
             self.assertNotIn("cave_depth_habitats",json.dumps(p))
 
         # New canonical presets compose the cave layer with the shared wonder/ecotone stack.
-        for canonical in ("natural_three_realms","alpine_three_realms",
-                          "canyon_three_realms","glacial_three_realms",
-                          "volcanic_three_realms","karst_three_realms","dune_three_realms"):
+        for canonical in ("natural_automate_three_realms","natural_three_realms",
+                          "alpine_three_realms","canyon_three_realms",
+                          "glacial_three_realms","volcanic_three_realms",
+                          "karst_three_realms","dune_three_realms"):
             p=load(presets/(canonical+".json"))
             chain=p["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
             self.assertEqual(chain["type"],"realscale:sky_ocean")
@@ -107,15 +108,7 @@ class RealCaveBiomeTests(unittest.TestCase):
             self.assertEqual(chain["type"],"realscale:cave_depth_habitats")
 
         menu=load(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
-        self.assertEqual(menu["values"],[
-            "realscale:natural_three_realms",
-            "realscale:alpine_three_realms",
-            "realscale:canyon_three_realms",
-            "realscale:glacial_three_realms",
-            "realscale:volcanic_three_realms",
-            "realscale:karst_three_realms",
-            "realscale:dune_three_realms",
-        ])
+        self.assertEqual(menu["values"],["realscale:natural_automate_three_realms"])
     def test_warm_reef_has_waterlogged_coral_and_temperate_seagrass(self):
         java=(JAVA/"CaveMarineHabitatFeature.java").read_text()
         for coral in ("TUBE_CORAL_FAN","BRAIN_CORAL_FAN","BUBBLE_CORAL_FAN",

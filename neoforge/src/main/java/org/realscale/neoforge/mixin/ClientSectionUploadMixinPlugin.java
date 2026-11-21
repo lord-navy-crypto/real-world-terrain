@@ -2,6 +2,7 @@ package org.realscale.neoforge.mixin;
 
 import java.util.List;
 import java.util.Set;
+import org.realscale.neoforge.RealScalePerformanceProfile;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -12,7 +13,7 @@ public final class ClientSectionUploadMixinPlugin implements IMixinConfigPlugin 
     @Override public String getRefMapperConfig(){return null;}
     @Override public boolean shouldApplyMixin(String target,String mixin){
         boolean enabled=mixin.endsWith(".VanillaSectionUploadBudgetMixin")
-                &&Boolean.parseBoolean(System.getProperty("realscale.experimental.client.uploadbudget","false"));
+                &&RealScalePerformanceProfile.clientUploadBudgetEnabled();
         System.err.println("REALSCALE_CLIENT_UPLOAD_MIXIN_DECISION "+mixin+
                 " enabled="+enabled);
         return enabled;
