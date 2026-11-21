@@ -70,7 +70,7 @@ CHINESE = {
     "canyon":"峡谷台地（大峡谷 + 大陆地形）",
     "natural_automate":"自然自动综合（六种拟合地貌 + 自然生态）",
 }
-NORMAL = ("natural_automate_three_realms","natural_three_realms","alpine_three_realms","canyon_three_realms","glacial_three_realms","volcanic_three_realms","karst_three_realms","dune_three_realms")
+NORMAL = ("natural_automate_three_realms",)
 GEO_ROOT = Path("data/realscale/worldgen")
 LABEL_ROOT = Path("assets/minecraft/lang")
 TAG_ROOT = Path("data/minecraft/tags/worldgen/world_preset")
