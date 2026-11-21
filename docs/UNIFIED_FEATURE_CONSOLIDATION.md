@@ -14,7 +14,7 @@ The objective is not to delete features or merge every historical branch. It is 
 2. Remove duplicate user-facing entry points and overlapping configuration models.
 3. Make optional and experimental behavior explicit.
 4. Preserve legacy registry IDs and saved-world compatibility.
-5. Give Terrain Lab, World Atlas, Climate Inspector, and performance diagnostics one coherent control and visualization architecture.
+5. Give Terrain Lab, Climate Inspector, and performance diagnostics one coherent control and visualization architecture; keep local-save scanning out of the product.
 6. Promote features only after source-level, worldgen, saved-Anvil, and client validation.
 
 **Do not force-merge old branches or remove worldgen resources merely because they are hidden from the Create World menu.** A hidden registry ID may still be required by an existing save or datapack.
@@ -214,7 +214,7 @@ The target product should have six visible feature centers:
 1. **Terrain Engine** — terrain profiles, fitted landforms, DEM source, relief, ridge, erosion, strata, elevation, caves and river grade.
 2. **Ecology Engine** — natural ecotones, cave-depth habitats, ocean/sky layers, climate, marine habitats and optional geological wonders.
 3. **World Systems** — Overworld/Nether/End, caves, sky islands, structures, architecture library and optional transport.
-4. **Visualization Studio** — Terrain Lab, generated-terrain preview, World Atlas, climate/geography overlays and profile comparison.
+4. **RealScale Studio** — Terrain Lab, bounded generated-terrain preview, climate/geography overlays, profile comparison and Performance Studio.
 5. **Performance Core** — cache profile, memory estimates, worldgen profiling, frame telemetry and optional upload pacing.
 6. **Compatibility & Advanced** — Distant Horizons, Chunky lifecycle diagnostics, optional client visuals, experimental toggles and migration information.
 
@@ -274,9 +274,9 @@ The preview must distinguish sampled procedural predictions from actual saved An
 
 ### Phase 3 — Visualization Studio
 
-- Connect Terrain Lab, World Atlas and Climate Inspector through one Studio entry point.
+- Connect Terrain Lab, Climate Inspector and Performance Studio through one RealScale Studio entry point.
 - Add bounded terrain preview and layer overlays.
-- Reuse profile definitions and deterministic sampling code; keep saved-world reads read-only.
+- Reuse profile definitions and deterministic sampling code; previews must not scan local saves or modify existing worlds.
 - Add preview-versus-generated Anvil comparison before promoting preview as authoritative.
 
 ### Phase 4 — Performance Core
@@ -311,7 +311,7 @@ The preview must distinguish sampled procedural predictions from actual saved An
 4. DEM imports validate source metadata, checksums, coordinate mapping, coverage gaps and seam behavior.
 5. Every public profile's biome-source chain and optional-layer flags match the catalog.
 6. Terrain Lab exports the exact profile that the user selected; old config drafts still migrate safely.
-7. World Atlas reads existing saves without writes or hidden server startup.
+7. World Atlas is absent: no save-directory scanner, Anvil reader or hidden server startup remains.
 8. Visualization preview is explicitly labelled as sampled prediction until measured parity is demonstrated.
 9. Performance claims require repeatable A/B tests with comparable seeds, hardware, mod lists and new-chunk workloads; report p50/p95/p99 and GC/frame data where applicable.
 10. Existing saved-world registry IDs and datapack selections remain compatible.
