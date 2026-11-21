@@ -39,7 +39,7 @@ def java_number(value: object, family: str, field: str) -> str:
     number = float(value)
     if not (-1.0e9 < number < 1.0e9):
         raise ValueError(f"{family}.{field} is outside the supported finite range")
-    rendered = format(number, ".17g")
+    rendered = repr(number)
     if "." not in rendered and "e" not in rendered.lower():
         rendered += ".0"
     return rendered
