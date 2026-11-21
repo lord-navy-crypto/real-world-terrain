@@ -126,9 +126,10 @@ public final class RealScalePerformanceProfile {
     }
 
     /**
-     * Approximate primitive-array bytes for one representative RealScale cache set.
-     * It includes one instance of each counted cache family, not every density
-     * instance, total JVM memory, GPU memory, object headers or other mods.
+     * Approximate array-payload bytes for one representative RealScale cache set.
+     * It includes one instance of each counted cache family, including nested
+     * sky-island satellite reference arrays, but not stored objects/object headers,
+     * every density instance, total JVM memory, GPU memory or other mods.
      */
     static long estimatedCacheArrayBytesOneSet(Profile profile) {
         long demSlots = cacheSlots(profile, "real_dem_column", 4096);
@@ -149,7 +150,8 @@ public final class RealScalePerformanceProfile {
         long biomeResult = biomeResultSlots * (Long.BYTES + Long.BYTES)
                 + biomeResultSlots / 2L;
         long relief = reliefSlots * Long.BYTES + reliefSlots / 2L;
-        long sky = skySlots * Long.BYTES + skySlots / 2L;
+        long sky = skySlots * (Long.BYTES * (1L + SkyIslandLayout.SLOTS))
+                + skySlots / 2L;
         long archetypeHorizontal = 3L * horizontalSlots
                 * (Long.BYTES * 2L + Double.BYTES * 2L + 1L);
         long archetypeVolcanic = volcanicSlots
