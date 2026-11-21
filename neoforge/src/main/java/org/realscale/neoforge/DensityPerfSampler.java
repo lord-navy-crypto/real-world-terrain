@@ -16,7 +16,8 @@ import java.util.concurrent.atomic.LongAdder;
  * retained. A graceful shutdown reports samples even on short play sessions.
  */
 final class DensityPerfSampler {
-    static final boolean ENABLED=Boolean.getBoolean("realscale.density.profile");
+    static final boolean ENABLED=RealScalePerformanceProfile.worldgenDiagnosticsEnabled()
+            || Boolean.getBoolean("realscale.density.profile");
     static final int STRIDE=1024;
     enum Stage { OVERWORLD_CAVE, NETHER_CAVE, ECOTONE_BIOME, SKY_BIOME,
         MOUNTAIN_RELIEF, TERRAIN_ARCHETYPE, REAL_DEM_LEGACY, REAL_DEM_SEAMLESS }
