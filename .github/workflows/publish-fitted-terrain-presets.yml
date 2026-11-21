@@ -64,8 +64,8 @@ jobs:
           for preset in alpine canyon glacial volcanic karst dune; do
             cp "$pack/data/realscale/worldgen/world_preset/${preset}_three_realms.json" "$presets/"
           done
-          cp "$pack/data/minecraft/tags/worldgen/world_preset/normal.json" "$tags/normal.json"
-          cp "$pack/data/minecraft/tags/worldgen/world_preset/extended.json" "$tags/extended.json"
+          # Keep the repository-owned single-entry Natural Automate menu.
+          # The compiler pack contains standalone fit references for QA, not public menu choices.
           cp build/terrain-archetype-calibration/profiles/*.json research/v1.1/profiles/
           cp "$pack/terrain-profile-provenance.json" research/v1.1/profiles/terrain-profile-provenance.json
           python - <<'PY'
@@ -80,10 +80,25 @@ jobs:
               current.update(labels)
               destination.write_text(json.dumps(current, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           PY
+      - name: Synchronize all six fitted kernels into Natural Automate
+        if: steps.gate.outputs.publish == 'true'
+        run: |
+          python3 scripts/sync_natural_automate_kernels.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          tags = Path("neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset")
+          expected = ["realscale:natural_automate_three_realms"]
+          for name in ("normal", "extended"):
+              actual = json.loads((tags / f"{name}.json").read_text())["values"]
+              assert actual == expected, (name, actual)
+          PY
       - name: Verify profile and preset contracts before publishing
         if: steps.gate.outputs.publish == 'true'
         run: |
           python -m unittest discover -s research/v1.1/tests -p "test_*.py" -v
+          python3 scripts/sync_natural_automate_kernels.py --check
+          python3 scripts/validate_preset_catalog.py
           python3 scripts/check_tva_sacred_timeline.py
           python3 -m unittest discover -s qa -p "test_realscale_branding_compat.py" -v
           python3 -m unittest discover -s qa -p "test_real_cave_biome_source.py" -v
@@ -91,6 +106,7 @@ jobs:
           python3 -m unittest discover -s qa -p "test_tva_smoothed_families.py" -v
           python3 -m unittest discover -s qa -p "test_tva_woven_optional_features.py" -v
           python3 -m unittest discover -s qa -p "test_terrain_lab.py" -v
+          python3 -m unittest discover -s qa -p "test_tva_terrain_lab.py" -v
       - name: Commit and push the verified generated presets
         if: steps.gate.outputs.publish == 'true'
         shell: bash
@@ -100,6 +116,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_*_fitted.json
           git add neoforge/src/main/resources/data/realscale/worldgen/density_function/tva_*_fitted
+          git add neoforge/src/main/java/org/realscale/neoforge/TerrainArchetypeMath.java
           git add neoforge/src/main/resources/data/realscale/worldgen/world_preset/{alpine,canyon,glacial,volcanic,karst,dune}_three_realms.json
           git add neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/{normal,extended}.json
           git add neoforge/src/main/resources/assets/minecraft/lang/{en_us,zh_cn}.json
