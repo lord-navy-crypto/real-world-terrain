@@ -60,6 +60,7 @@ jobs:
                       raise SystemExit(f"Packaged {menu} release menu mismatch: {data}")
               for resource in (
                   "data/realscale/worldgen/world_preset/natural_automate_three_realms.json",
+                  "data/realscale/worldgen/noise_settings/natural_automate_v2.json",
                   "data/realscale/worldgen/noise_settings/natural_automate.json",
                   "data/realscale/worldgen/density_function/natural_automate/height_signal.json",
                   "data/realscale/worldgen/world_preset/natural_three_realms.json",
@@ -87,6 +88,21 @@ jobs:
                   raise SystemExit("DEM data source class missing")
               if b"https://elevation.nationalmap.gov/" in z.read(dem_classes[0]):
                   raise SystemExit("Fixed USGS runtime provenance endpoint remains in JAR")
+              preset = json.loads(z.read(
+                  "data/realscale/worldgen/world_preset/natural_automate_three_realms.json"))
+              settings = preset["dimensions"]["minecraft:overworld"]["generator"]["settings"]
+              if settings != "realscale:natural_automate_v2":
+                  raise SystemExit(f"Public preset must use versioned Natural Automate V2 settings: {settings}")
+              current = json.loads(z.read(
+                  "data/realscale/worldgen/noise_settings/natural_automate_v2.json"))
+              legacy = json.loads(z.read(
+                  "data/realscale/worldgen/noise_settings/natural_automate.json"))
+              current_caves = current["noise_router"]["final_density"]
+              legacy_caves = legacy["noise_router"]["final_density"]
+              if current_caves.get("gallery_v2") is not True:
+                  raise SystemExit("Natural Automate V2 must enable Cave Exploration V2")
+              if legacy_caves.get("gallery_v2", False):
+                  raise SystemExit("Legacy natural_automate settings must remain unchanged")
           print("UNIFIED_NATURAL_AUTOMATE_PACKAGED_JAR_OK", jars[0])
           PY
       - name: Upload candidate only (not a certified Stable release)
