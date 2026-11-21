@@ -35,7 +35,7 @@ Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与�
 
 这些功能已经存在，但尚未整合成统一工作台：
 
-- **Terrain Lab：** YACL 参数编辑器和新世界数据包导出。目前只有 Landscape、Alpine、Canyon 三个可编辑家族，尚未覆盖全部七个公开模式，也没有实时地形预览。
+- **Terrain Lab：** YACL 参数编辑器和新世界数据包导出。目前编辑的是旧版 Landscape / Alpine / Canyon 混合噪声家族；六种公开拟合地貌使用另一套 `TerrainArchetypeDensity` 形态学引擎，尚未接入同一编辑器，也没有实时地形预览。
 - **World Atlas：** 只读查看已经保存的 Anvil 区块覆盖与高度图；不会生成新区块、启动隐藏服务器或控制 Chunky。
 - **Geographic Climate Inspector：** 只读显示当前坐标的 1:20 地理纬度、虚拟太阳季节、日照和高度温度估算；不是实时天气模拟。
 - **Performance diagnostics：** 当前主要由可选采样器和日志提供，尚未形成性能热力图工作台。
