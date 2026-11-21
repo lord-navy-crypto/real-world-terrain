@@ -42,7 +42,7 @@ public final class RealScalePerformanceStudioScreen extends Screen {
         var profile=RealScalePerformanceProfile.activeProfile();
         line(graphics,left,y,"Active profile",profile.name().toLowerCase(Locale.ROOT)); y+=16;
         long estimate=RealScalePerformanceProfile.estimatedCacheArrayBytesOneSet();
-        line(graphics,left,y,"Estimated Natural Automate cache arrays / worker",
+        line(graphics,left,y,"Estimated RealScale cache arrays / one cache set",
                 String.format(Locale.ROOT,"%.2f MiB",estimate/1048576.0)); y+=17;
         line(graphics,left,y,"Minecraft-reported FPS",
                 Integer.toString(Minecraft.getInstance().getFps())); y+=18;
