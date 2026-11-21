@@ -106,6 +106,33 @@ class ExporterTests(unittest.TestCase):
                 "data/realscale/worldgen/world_preset/lab_canyon_")
                 for n in archive.namelist()))
 
+    def test_natural_automate_round_trips_through_standalone_datapack(self):
+        draft=json.loads(self.draft.read_text(encoding="utf-8"))
+        draft.update(preset="natural_automate",reliefPercent=100,elevation=0,
+                     latitudeMode="fixed_1_20",latitudeStrength=58,
+                     naturalMorphologyPercent=110,inland=True)
+        self.draft.write_text(json.dumps(draft),encoding="utf-8")
+        profile,_=export(self.jar,self.draft,self.output)
+        self.assertTrue(profile.startswith("realscale:lab_natural_automate_"))
+        with ZipFile(self.output) as archive:
+            stem=profile.split(":")[1]
+            height=json.loads(archive.read(
+                "data/realscale/worldgen/density_function/terrain_lab/"
+                +stem+"/height_signal.json"))
+            kernel=height["argument"]
+            self.assertEqual(kernel["type"],"realscale:terrain_archetype")
+            self.assertEqual(kernel["family"],"natural_automate")
+            self.assertAlmostEqual(kernel["relief_gain"],0.792)
+            self.assertEqual(kernel["region_selector"]["noise"],"minecraft:weirdness")
+            noise=json.loads(archive.read(
+                "data/realscale/worldgen/noise_settings/"+stem+".json"))
+            self.assertEqual(noise["noise_router"]["depth"],
+                             "realscale:terrain_lab/"+stem+"/terrain_density")
+            preset=json.loads(archive.read(
+                "data/realscale/worldgen/world_preset/"+stem+".json"))
+            self.assertEqual(preset["dimensions"]["minecraft:overworld"]["generator"]["settings"],
+                             profile)
+
     def test_no_silent_overwrite(self):
         export(self.jar, self.draft, self.output)
         with self.assertRaises(FileExistsError):
