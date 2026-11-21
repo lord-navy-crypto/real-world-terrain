@@ -167,6 +167,7 @@ jobs:
           mkdir -p build/ecotone-result-cache-smoke
           javac -d build/ecotone-result-cache-smoke \
             neoforge/src/main/java/org/realscale/neoforge/QuartBiomeResultCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/QuartBiomeResultCacheSmoke.java
           java -cp build/ecotone-result-cache-smoke org.realscale.neoforge.QuartBiomeResultCacheSmoke
       - name: Verify allocation-free underlying ecotone climate lookup cache
@@ -174,6 +175,7 @@ jobs:
           mkdir -p build/ecotone-base-cache-smoke
           javac -d build/ecotone-base-cache-smoke \
             neoforge/src/main/java/org/realscale/neoforge/QuartBiomeBaseCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/QuartBiomeBaseCacheSmoke.java
           java -cp build/ecotone-base-cache-smoke org.realscale.neoforge.QuartBiomeBaseCacheSmoke
       - name: Measure DEM grid continuity and tile boundary blend
@@ -219,6 +221,7 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefSiteCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/MountainReliefSiteCacheSmoke.java
           java -cp build/mountain-site-cache-smoke org.realscale.neoforge.MountainReliefSiteCacheSmoke
           python3 -m unittest discover -s qa -p 'test_mountain_basin_plateau_default.py' -v
@@ -298,6 +301,7 @@ jobs:
           mkdir -p build/measured-column-cache-smoke
           javac -d build/measured-column-cache-smoke \
             neoforge/src/main/java/org/realscale/neoforge/MeasuredColumnMemo.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/MeasuredColumnMemoCollisionSmoke.java
           java -cp build/measured-column-cache-smoke org.realscale.neoforge.MeasuredColumnMemoCollisionSmoke
       - name: Prove DEM column locality cache equivalence under all tile edges
@@ -306,6 +310,7 @@ jobs:
           javac -d build/dem-cache-smoke \
             neoforge/src/main/java/org/realscale/neoforge/RealDemTile.java \
             neoforge/src/main/java/org/realscale/neoforge/RealDemColumnCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/RealDemColumnCacheSmoke.java
           java -cp build/dem-cache-smoke:neoforge/src/main/resources org.realscale.neoforge.RealDemColumnCacheSmoke
       - name: Regress USGS v2 DEM grid fidelity and exterior continuity
@@ -342,6 +347,7 @@ jobs:
           javac -d build/tva-sky-cache \
             neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
             neoforge/src/main/java/org/realscale/neoforge/SkyIslandSiteCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/SkyIslandSiteCacheSmoke.java
           java -cp build/tva-sky-cache org.realscale.neoforge.SkyIslandSiteCacheSmoke
       - name: Verify far-distance cave, mountain and sky worldgen parity
@@ -351,6 +357,7 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/GeoMath.java \
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefMath.java \
             neoforge/src/main/java/org/realscale/neoforge/MountainReliefSiteCache.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java \
             neoforge/src/main/java/org/realscale/neoforge/GrandNetherCaveNetwork.java \
             neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
