@@ -1,6 +1,6 @@
 # RealScale Terrain
 
-An experimental real-scale terrain and ecology mod for Minecraft 1.21.1 / NeoForge 21.1.x / Java 21. The current source version is **2.0.0-preview.2-test.9**. This is an experimental development build, not a Stable release.
+An experimental real-scale terrain and ecology mod for Minecraft 1.21.1 / NeoForge 21.1.x / Java 21. The current source version is **2.0.0-preview.2-test.10**. This is an experimental development build, not a Stable release.
 
 The repository is undergoing an architecture consolidation. The goal is to organize terrain, ecology, dimensions, structures, visualization and performance into one coherent product rather than continuing to add overlapping presets and configuration entry points.
 
