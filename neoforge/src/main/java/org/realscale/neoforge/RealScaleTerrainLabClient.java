@@ -194,6 +194,7 @@ public final class RealScaleTerrainLabClient {
                 d.architectureStructuresEnabled = Boolean.TRUE;
             if (d.urbanDistrictsEnabled == null)
                 d.urbanDistrictsEnabled = Boolean.FALSE;
+            if (d.performanceProfile == null) d.performanceProfile = "balanced";
             // Saved YACL drafts from v1.4.1 remain readable. These names are
             // normalized only in the next-world draft, never in existing saves.
             if (d.preset == null) d.preset = "natural_automate";
@@ -222,6 +223,10 @@ public final class RealScaleTerrainLabClient {
         }
 
         private static boolean valid(Draft d) {
+            if (!("balanced".equals(d.performanceProfile)
+                    || "low_memory".equals(d.performanceProfile)
+                    || "smooth_render".equals(d.performanceProfile)
+                    || "low_memory_smooth_render".equals(d.performanceProfile))) return false;
             if (!RealScaleStructurePacks.validOverworld(d.structureDensity)
                     || !RealScaleStructurePacks.validDimensions(d.dimensionStructureDensity))
                 return false;
@@ -391,7 +396,7 @@ public final class RealScaleTerrainLabClient {
             .build();
     }
 
-    private static Screen createScreen(Screen parent) {
+    public static Screen createScreen(Screen parent) {
         Draft d=Draft.read();
         d.initializeProfiles();
         return YetAnotherConfigLib.createBuilder()
@@ -420,15 +425,6 @@ public final class RealScaleTerrainLabClient {
                     .binding(100, () -> d.reliefPercent, v -> d.reliefPercent=v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o)
                             .range(80,125).step(1)).build())
-                .build())
-            .category(ConfigCategory.createBuilder()
-                .name(Component.literal("Legacy Advanced | Blended Noise"))
-                .option(Option.<String>createBuilder()
-                    .name(Component.literal("Legacy Blend Family"))
-                    .description(description("Only used when the Primary World Model is Landscape, Alpine or Canyon. These older blended-noise families are not the six fitted morphology kernels."))
-                    .binding("landscape", () -> d.preset, v -> d.preset=v)
-                    .controller(o -> CyclingListControllerBuilder.create(o)
-                            .values("landscape","alpine","canyon")).build())
                 .build())
             .category(familyCategory("Legacy Blend | Landscape",d.profiles.get("landscape")))
             .category(familyCategory("Legacy Blend | Alpine",d.profiles.get("alpine")))
