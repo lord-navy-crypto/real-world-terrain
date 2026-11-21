@@ -227,6 +227,7 @@ def natural_automate_files_for(root, relief, elevation, latitude_strength,
     noise = replace_refs(noise, {
         "realscale:natural_automate/terrain_density": new_terrain,
         "realscale:natural_automate/preliminary_density": density_id + "/preliminary_density",
+        "realscale:natural_automate/height_signal": new_height,
     })
 
     def tune_latitude(node):
