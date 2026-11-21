@@ -17,18 +17,10 @@ modified_density='neoforge/src/main/java/org/realscale/neoforge/RealDemDensity.j
 for name,want in checks.items():
  if name in modified_preset_tags:
   tag=json.loads((ROOT/name).read_text())
-  expected=[
-   'realscale:natural_automate_three_realms',
-   'realscale:natural_three_realms',
-   'realscale:alpine_three_realms',
-   'realscale:canyon_three_realms',
-   'realscale:glacial_three_realms',
-   'realscale:volcanic_three_realms',
-   'realscale:karst_three_realms',
-   'realscale:dune_three_realms']
+  expected=['realscale:natural_automate_three_realms']
   assert tag.get('values',[])==expected,(name,tag.get('values'))
 
-  print('INTENTIONAL MODIFICATION: Natural Automate, Natural baseline and six fitted profiles; original USGS hidden')
+  print('INTENTIONAL MODIFICATION: one public Natural Automate profile; Natural baseline and six fitted references remain hidden')
   continue
  if name.startswith('neoforge/src/main/resources/assets/minecraft/lang/') and name.endswith('.json'):
   # Preserve the exact historical text for every legacy ID while allowing
@@ -46,7 +38,7 @@ for name,want in checks.items():
  if name=='neoforge/src/main/resources/META-INF/neoforge.mods.toml':
   descriptor=(ROOT/name).read_text()
   for required in ('modLoader="javafml"','modId="realscale"',
-                   'version="2.0.0-preview.2-test.10"',
+                   'version="2.0.0-preview.2-test.11"',
                    'versionRange="[21.1.0,)"',
                    'versionRange="[1.21.1,1.21.2)"',
                    'modId="yet_another_config_lib_v3"'):

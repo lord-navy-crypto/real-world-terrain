@@ -162,7 +162,7 @@ Their kernel code, coefficients and research provenance remain intact. The six i
 
 ### Complete hidden / legacy resource inventory
 
-The remaining 40 resources are intentionally not ordinary menu choices:
+The other 33 hidden/legacy resources are intentionally not ordinary menu choices:
 
 | Classification | IDs |
 |---|---|
