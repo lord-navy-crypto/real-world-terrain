@@ -126,9 +126,9 @@ public final class RealScalePerformanceProfile {
     }
 
     /**
-     * Approximate array bytes for one Natural Automate density instance and one
-     * worldgen worker. It includes three horizontal morphology caches plus the
-     * volcanic and karst geometry caches, not JVM objects or other mods.
+     * Approximate primitive-array bytes for one representative RealScale cache set.
+     * It includes one instance of each counted cache family, not every density
+     * instance, total JVM memory, GPU memory, object headers or other mods.
      */
     static long estimatedCacheArrayBytesOneSet(Profile profile) {
         long demSlots = cacheSlots(profile, "real_dem_column", 4096);
