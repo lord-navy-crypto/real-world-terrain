@@ -135,6 +135,7 @@ public final class RealScaleTerrainLabClient {
         String preset = "natural_automate";
         int naturalMorphologyPercent = 100;
         int naturalReliefPercent = 100;
+        boolean naturalInlandSpawn = true;
         int blendPercent = 25;
         boolean lithostitchedBlend = false;
         boolean lithostitchedGeology = false;
@@ -264,7 +265,10 @@ public final class RealScaleTerrainLabClient {
         void save() {
             initializeProfiles();
             if (profiles.containsKey(preset)) profiles.get(preset).copyTo(this);
-            else if ("natural_automate".equals(preset)) reliefPercent=naturalReliefPercent;
+            else if ("natural_automate".equals(preset)) {
+                reliefPercent=naturalReliefPercent;
+                inland=naturalInlandSpawn;
+            }
             if (!valid(this)) throw new IllegalArgumentException("Terrain Lab draft is invalid");
             Path temp = CONFIG.resolveSibling(CONFIG.getFileName().toString() + ".tmp");
             try {
@@ -427,6 +431,11 @@ public final class RealScaleTerrainLabClient {
                     .binding(100, () -> d.naturalReliefPercent, v -> d.naturalReliefPercent=v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o)
                             .range(80,125).step(1)).build())
+                .option(Option.<Boolean>createBuilder()
+                    .name(Component.literal("Prefer Inland Spawn"))
+                    .description(description("Uses a stronger inland continentalness target for the NEW world's first spawn."))
+                    .binding(true, () -> d.naturalInlandSpawn, v -> d.naturalInlandSpawn=v)
+                    .controller(BooleanControllerBuilder::create).build())
                 .build())
             .category(familyCategory("Legacy Blend | Landscape",d.profiles.get("landscape")))
             .category(familyCategory("Legacy Blend | Alpine",d.profiles.get("alpine")))
