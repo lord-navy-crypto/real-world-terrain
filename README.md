@@ -36,12 +36,12 @@ Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与�
 
 这些功能已经存在，但尚未整合成统一工作台：
 
-- **Terrain Lab：** 正在重构为统一地形编辑器。旧版 Landscape / Alpine / Canyon 混合噪声入口将降级为 Legacy Advanced；新的主线是 Natural Automate 和六种拟合地貌算法。
+- **Terrain Lab：** 已将 Natural Automate 设为主线，支持自适应六种拟合地貌、地形起伏和 1:20 气候配置；旧版 Landscape / Alpine / Canyon 混合噪声入口保留为 Legacy Advanced。尚无实时地形预览。
 - **World Atlas：** 已移除，不再扫描本地存档。
 - **Geographic Climate Inspector：** 只读显示当前坐标的 1:20 地理纬度、虚拟太阳季节、日照和高度温度估算；不是实时天气模拟。
-- **Performance Studio：** 正在整合缓存配置、客户端帧时间、区块上传队列、内存统计和性能可视化。
+- **Performance Studio：** 已提供四种性能配置、缓存容量管理、FPS/帧间隔、区块上传队列和 JVM 堆内存遥测。
 
-这些能力将在统一的 **RealScale Studio** 架构中逐步整合。不能把尚未实现的实时预览、性能热力图或完整 3D 编辑器描述成现有功能。
+这些能力现在通过统一的 **RealScale Studio** 入口访问，但尚未成为一个完整的实时 3D 工作台。不能把尚未实现的实时预览或完整地形热力图描述成现有功能。
 
 ## Optional architecture library
 
@@ -74,7 +74,7 @@ cd neoforge
 gradle --no-daemon build
 ```
 
-**当前已知构建阻塞：** main 测试目录含有一个独立 LOTM 测试文件，它引用了 main 中不存在的 `LotmBalance` 类。LOTM 是独立开发内容，不能作为 RealScale 核心的一部分混入；在清理该测试边界并重新运行完整 CI 前，不应把当前源码标记为通过全部构建门槛。
+**当前验证状态：** 本分支已移除与 RealScale 无关的 LOTM 孤立测试。Natural Automate、Studio 和性能配置仍需通过本分支完整 CI 与实际客户端测试；目前不应将其标记为 Stable。
 
 不要在已有世界上替换生成器配置。创建新世界测试前备份实例，并且不要同时安装多个 RealScale 主模组 JAR。
 
