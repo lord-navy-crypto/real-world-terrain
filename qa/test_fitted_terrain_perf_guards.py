@@ -21,7 +21,7 @@ class FittedTerrainPerfGuards(unittest.TestCase):
 
     def test_horizontal_morphology_kernels_reuse_exact_column_shapes(self):
         src=(JAVA/"TerrainArchetypeMath.java").read_text(encoding="utf-8")
-        self.assertIn("private static final int HORIZONTAL_CACHE_SLOTS = 1024;",src)
+        self.assertIn('private static final int HORIZONTAL_CACHE_SLOTS = RealScalePerformanceProfile.cacheSlots("archetype_horizontal",1024);',src)
         self.assertIn("private final ThreadLocal<HorizontalShapeCache> horizontalShapeCache",src)
         self.assertIn("private void horizontalShapesAt(HorizontalShapeCache cache,double x,double z)",src)
         self.assertIn("cache.lastXBits==xBits && cache.lastZBits==zBits",src)
@@ -51,7 +51,8 @@ class FittedTerrainPerfGuards(unittest.TestCase):
 
     def test_karst_and_volcano_cache_horizontal_shape_before_repeated_y_samples(self):
         src=(JAVA/"TerrainArchetypeMath.java").read_text(encoding="utf-8")
-        self.assertIn("private static final int KARST_CACHE_SLOTS = 1024;",src)
+        self.assertIn('private static final int KARST_CACHE_SLOTS = RealScalePerformanceProfile.cacheSlots("archetype_karst",1024);',src)
+        self.assertIn('private static final int VOLCANIC_CACHE_SLOTS = RealScalePerformanceProfile.cacheSlots("archetype_volcanic",1024);',src)
         self.assertIn("private final ThreadLocal<KarstShapeCache> karstShapeCache",src)
         self.assertIn("if (cache.lastValid && cache.lastKey == key) return cache.lastShape;",src)
         self.assertIn("private void karstShapesAt(KarstShapeCache cache, int x, int z)",src)
