@@ -25,5 +25,6 @@
   "generator.realscale.dune_three_realms": "RealScale | Sand Dunes — Namib Sand Sea fit [Experimental]",
   "generator.realscale.glacial_three_realms": "RealScale | Glacial Valleys — Yosemite fit [Experimental]",
   "generator.realscale.karst_three_realms": "RealScale | Karst Landscapes — Guilin fit [Experimental]",
-  "generator.realscale.volcanic_three_realms": "RealScale | Volcanic Landscapes — Hawaiʻi fit [Experimental]"
+  "generator.realscale.volcanic_three_realms": "RealScale | Volcanic Landscapes — Hawaiʻi fit [Experimental]",
+  "generator.realscale.natural_automate_three_realms": "RealScale Natural Automate — Adaptive Terrain & Ecology (Experimental)"
 }
