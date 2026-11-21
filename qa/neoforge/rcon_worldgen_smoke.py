@@ -250,7 +250,7 @@ def main(root,expected_preset,profile):
                 progress_lines=[line for line in lines
                     if "Preparing spawn area:" in line]
                 if progress_lines:
-                    match=re.search(r"Preparing spawn area:\\s*(\\d+)%",progress_lines[-1])
+                    match=re.search(r"Preparing spawn area:\s*(\d+)%",progress_lines[-1])
                     if match:
                         percent=int(match.group(1))
                         if percent!=last_spawn_percent:
@@ -489,7 +489,7 @@ def main(root,expected_preset,profile):
             except (OSError,subprocess.SubprocessError) as diag_error:
                 print("REALSCALE_STARTUP_DIAGNOSTIC_UNAVAILABLE:",
                       repr(diag_error),flush=True)
-        if isinstance(exc,TimeoutError) and proc.poll() is None:
+        if isinstance(exc,TimeoutError) and proc.poll() is None and not startup_dumps_captured:
             try:
                 dump=subprocess.run(
                     ["jcmd","-l"],capture_output=True,text=True,timeout=8)
