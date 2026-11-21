@@ -21,13 +21,13 @@ The objective is not to delete features or merge every historical branch. It is 
 
 ## 2. Repository inventory
 
-The audited pre-consolidation `main` baseline contained 1,605 repository paths. The Natural Automate branch adds the composite preset and Studio modules while removing the retired Atlas implementation. The audited baseline worldgen resource inventory included: 
+The audited pre-consolidation `main` baseline contained 1,605 repository paths. The Natural Automate branch adds the composite preset and Studio modules while removing the retired Atlas implementation. The audited baseline worldgen resource inventory included the following counts; the Natural Automate branch adds one preset, one noise setting and four density functions:
 
 | Resource family | JSON files |
 |---|---:|
-| World presets | 40 |
-| Noise settings | 32 |
-| Density functions | 125 |
+| World presets | 41 |
+| Noise settings | 33 |
+| Density functions | 129 |
 | Biomes | 69 |
 | Configured features | 106 |
 | Placed features | 122 |
