@@ -31,7 +31,9 @@
         "minecraft:the_nether",
         "minecraft:the_end"
       ],
-      "validation_level": "natural_regression_and_ocean_checks"
+      "validation_level": "natural_regression_and_ocean_checks",
+      "terrain_model": "natural_baseline",
+      "current_terrain_lab_support": "legacy_landscape_export_is_not_a_direct_editor_for_this_public_profile"
     },
     {
       "id": "alpine_three_realms",
@@ -50,7 +52,10 @@
         "minecraft:the_nether",
         "minecraft:the_end"
       ],
-      "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa"
+      "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa",
+      "terrain_model": "fitted_archetype",
+      "archetype_family": "alpine",
+      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab"
     },
     {
       "id": "canyon_three_realms",
@@ -69,7 +74,10 @@
         "minecraft:the_nether",
         "minecraft:the_end"
       ],
-      "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa"
+      "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa",
+      "terrain_model": "fitted_archetype",
+      "archetype_family": "canyon",
+      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab"
     },
     {
       "id": "glacial_three_realms",
@@ -88,7 +96,10 @@
         "minecraft:the_nether",
         "minecraft:the_end"
       ],
-      "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa"
+      "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa",
+      "terrain_model": "fitted_archetype",
+      "archetype_family": "glacial",
+      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab"
     },
     {
       "id": "volcanic_three_realms",
@@ -107,7 +118,10 @@
         "minecraft:the_nether",
         "minecraft:the_end"
       ],
-      "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa"
+      "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa",
+      "terrain_model": "fitted_archetype",
+      "archetype_family": "volcanic",
+      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab"
     },
     {
       "id": "karst_three_realms",
@@ -126,7 +140,10 @@
         "minecraft:the_nether",
         "minecraft:the_end"
       ],
-      "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa"
+      "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa",
+      "terrain_model": "fitted_archetype",
+      "archetype_family": "karst",
+      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab"
     },
     {
       "id": "dune_three_realms",
@@ -145,7 +162,10 @@
         "minecraft:the_nether",
         "minecraft:the_end"
       ],
-      "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa"
+      "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa",
+      "terrain_model": "fitted_archetype",
+      "archetype_family": "dune",
+      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab"
     }
   ],
   "hidden_profiles": [
@@ -183,31 +203,37 @@
       "id": "grand_ecology_three_realms",
       "category": "compatibility_or_ecology",
       "status": "hidden",
-      "notes": "Older Realism MAX plus Natural Ecotones composition"
+      "notes": "Older Realism MAX plus Natural Ecotones composition",
+      "terrain_model": "legacy_realism_max"
     },
     {
       "id": "measured_three_realms",
       "category": "measured_experimental",
       "status": "hidden",
-      "notes": "USGS Big Sur v2 measured profile; hidden from ordinary menu by prior decision"
+      "notes": "USGS Big Sur v2 measured profile; hidden from ordinary menu by prior decision",
+      "terrain_model": "measured_dem",
+      "editability": "read_only"
     },
     {
       "id": "realism_max_three_realms",
       "category": "compatibility",
       "status": "hidden",
-      "notes": "Historical Realism MAX three-realm profile"
+      "notes": "Historical Realism MAX three-realm profile",
+      "terrain_model": "legacy_realism_max"
     },
     {
       "id": "realism_max_ecotones",
       "category": "compatibility",
       "status": "hidden",
-      "notes": "Historical ecotone profile"
+      "notes": "Historical ecotone profile",
+      "terrain_model": "legacy_realism_max"
     },
     {
       "id": "realism_max_ecotones_skylands",
       "category": "compatibility",
       "status": "hidden",
-      "notes": "Historical ecotone plus skylands profile"
+      "notes": "Historical ecotone plus skylands profile",
+      "terrain_model": "legacy_realism_max"
     },
     {
       "id": "skylands_test_deep_ocean",
@@ -249,7 +275,9 @@
       "id": "tva_measured_three_realms",
       "category": "measured_qa",
       "status": "hidden",
-      "notes": "Measured USGS multi-seed QA profile"
+      "notes": "Measured USGS multi-seed QA profile",
+      "terrain_model": "measured_dem",
+      "editability": "read_only"
     },
     {
       "id": "tva_natural_smoothing_probe",
@@ -299,55 +327,64 @@
       "id": "continental",
       "category": "legacy_height_source",
       "status": "hidden_legacy",
-      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe."
+      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe.",
+      "terrain_model": "legacy_height_source"
     },
     {
       "id": "georeal_ultimate",
       "category": "legacy_height_source",
       "status": "hidden_legacy",
-      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe."
+      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe.",
+      "terrain_model": "legacy_height_source"
     },
     {
       "id": "grand_canyon",
       "category": "legacy_height_source",
       "status": "hidden_legacy",
-      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe."
+      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe.",
+      "terrain_model": "legacy_height_source"
     },
     {
       "id": "himalayan",
       "category": "legacy_height_source",
       "status": "hidden_legacy",
-      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe."
+      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe.",
+      "terrain_model": "legacy_height_source"
     },
     {
       "id": "realism_max",
       "category": "legacy_noise_settings",
       "status": "hidden_legacy",
-      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe."
+      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe.",
+      "terrain_model": "legacy_height_source"
     },
     {
       "id": "realistic_mountains",
       "category": "legacy_height_source",
       "status": "hidden_legacy",
-      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe."
+      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe.",
+      "terrain_model": "legacy_height_source"
     },
     {
       "id": "ultimate",
       "category": "legacy_height_source",
       "status": "hidden_legacy",
-      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe."
+      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe.",
+      "terrain_model": "legacy_height_source"
     },
     {
       "id": "usgs_big_sur",
       "category": "legacy_measured",
       "status": "hidden_legacy",
-      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe."
+      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe.",
+      "terrain_model": "measured_dem"
     },
     {
       "id": "usgs_big_sur_v2",
       "category": "legacy_measured",
       "status": "hidden_legacy",
-      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe."
+      "notes": "Retain registry resource and ID until saved-world/datapack compatibility audit proves removal safe.",
+      "terrain_model": "measured_dem"
     }
   ],
   "notes": [
@@ -355,6 +392,7 @@
     "Natural currently lacks the cave_depth_habitats and geo_wonders_opt_in wrappers present in the six fitted profiles; preserve this difference until an explicit layer-consolidation decision and regression tests.",
     "The six fitted modes are experimental. Alpine and Canyon have multi-seed saved-Anvil evidence in the current workflow; do not infer equivalent validation for Glacial, Volcanic, Karst or Dune.",
     "Measured DEM profiles are read-only and remain hidden from the ordinary Create World menu.",
-    "The current multi-seed workflow exercises internal tva_alpine_three_realms and tva_canyon_three_realms smoothed QA profiles, not the public alpine_three_realms and canyon_three_realms fitted profiles. Do not count those internal runs as direct validation of the public fitted presets."
+    "The current multi-seed workflow exercises internal tva_alpine_three_realms and tva_canyon_three_realms smoothed QA profiles, not the public alpine_three_realms and canyon_three_realms fitted profiles. Do not count those internal runs as direct validation of the public fitted presets.",
+    "The current Terrain Lab's legacy `landscape`/`alpine`/`canyon` blend families are a separate model from the six `TerrainArchetypeDensity` fitted families. The public Alpine and Canyon names therefore refer to different algorithms in the old editor and the public preset catalog."
   ]
 }
