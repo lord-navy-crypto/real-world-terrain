@@ -1,7 +1,7 @@
 # RealScale Terrain — version and recovery status
 
 **Status snapshot:** 2026-11-21  
-**Current source version:** `2.0.0-preview.2-test.9` (from `neoforge/build.gradle` and `META-INF/neoforge.mods.toml`)  
+**Current source version:** `2.0.0-preview.2-test.10` (from `neoforge/build.gradle` and `META-INF/neoforge.mods.toml`)  
 **Release status:** experimental development baseline; not Stable.
 
 ## Current source baseline
