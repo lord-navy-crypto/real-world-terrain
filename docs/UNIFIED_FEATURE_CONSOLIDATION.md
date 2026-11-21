@@ -63,6 +63,21 @@ The USGS Big Sur modes are intentionally absent from the public menu following t
 
 The three editable Terrain Lab families are currently `landscape`, `alpine`, and `canyon`, and they belong to the older merged-noise model (Realism MAX + GeoReal, Himalayan + Realistic Mountains, Grand Canyon + Continental). They are not simply the first three of the seven public modes. The six fitted public modes use a separate `TerrainArchetypeDensity` / `TerrainArchetypeMath` morphology engine with six family-specific kernels (alpine, canyon, glacial, volcanic, karst, dune) and a different coefficient set. Terrain Lab does not currently edit those fitted coefficients. This is a deeper model/schema mismatch, not just four missing menu options. There is also a naming collision: the legacy editor's `alpine` and `canyon` blends are not the same algorithms as the public fitted `alpine` and `canyon` archetypes. The UI now labels the old controls as `Legacy Blend` to make this distinction visible; the eventual catalog should use namespaced IDs such as `legacy_blend.alpine` and `fitted_archetype.alpine`.
 
+#### Six fitted morphology kernels
+
+The fitted engine is not one generic height filter. `TerrainArchetypeMath` dispatches to six distinct deterministic kernels:
+
+| Archetype | Morphology kernel |
+|---|---|
+| Alpine | Ridge and high-relief mountain morphology |
+| Canyon | Incised valleys and canyon-ridge morphology |
+| Glacial | Glacial valley geometry |
+| Volcanic | Shield-volcano / caldera geometry |
+| Karst | Karst towers and sink depressions |
+| Dune | Directional dune ridges |
+
+The shared codec exposes fitted controls including `macro_gain`, `meso_gain`, `micro_gain`, `relief_gain`, `ridge_sharpness`, `cliff_index`, `valley_index`, `ridge_index`, `anisotropy_gain`, `dune_axis_radians`, and `dominant_wavelength_m`. The unified editor should keep family-specific controls and validated defaults; it should not flatten these into one generic slider set or discard the measured fit coefficients.
+
 ### B. Biome and ecology engine
 
 | Existing implementation | Current role | Consolidation decision |
