@@ -15,8 +15,8 @@ import net.neoforged.fml.ModList;
  * an optional dependency.
  */
 final class DistantHorizonsCaveLodController {
-    private static final boolean ENABLED=Boolean.getBoolean(
-            "realscale.experimental.client.underground_lod_culling");
+    private static final boolean ENABLED=
+            RealScalePerformanceProfile.undergroundLodEnabled();
     private static final String DH_MOD_ID="distanthorizons";
     private static final String API_PACKAGE="com.seibel.distanthorizons.api.";
 
