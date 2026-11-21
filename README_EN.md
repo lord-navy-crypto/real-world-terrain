@@ -36,12 +36,12 @@ See the [Preset Catalog](docs/PRESET_CATALOG.json) for all 41 public, hidden and
 
 These tools exist, but they are not yet one unified workbench:
 
-- **Terrain Lab:** being rebuilt as one terrain editor. The old Landscape / Alpine / Canyon blended-noise families will move to Legacy Advanced; the new primary path is Natural Automate plus the six fitted morphology kernels.
+- **Terrain Lab:** Natural Automate is now the primary path, with adaptive six-kernel morphology, terrain-relief and 1:20 climate controls. The older Landscape / Alpine / Canyon blended-noise families remain under Legacy Advanced. There is no live terrain preview yet.
 - **World Atlas:** retired and removed; the mod no longer scans local saves.
 - **Geographic Climate Inspector:** read-only 1:20 geographic latitude, virtual solar season, daylight and altitude-temperature estimates. It is not a live weather simulator.
-- **Performance Studio:** cache profiles, frame intervals, chunk-upload queues, memory statistics and visual diagnostics are being consolidated.
+- **Performance Studio:** provides four performance profiles, bounded cache controls, FPS/frame-interval telemetry, chunk-upload queue state and JVM-heap statistics.
 
-These capabilities will be progressively integrated into a unified **RealScale Studio**. Do not describe live terrain preview, performance heatmaps or a complete 3D editor as existing functionality yet.
+These tools now share a unified **RealScale Studio** entry point, but they are not yet a complete real-time 3D workbench. Do not describe live terrain preview or full terrain heatmaps as existing functionality yet.
 
 ## Optional architecture library
 
@@ -74,7 +74,7 @@ cd neoforge
 gradle --no-daemon build
 ```
 
-**Known current build blocker:** the main test tree contains an unrelated LOTM test that references `LotmBalance`, which is absent from main. LOTM is separate development work and must not be mixed into the RealScale core. Do not label the current source as passing all build gates until this test boundary is isolated and the full CI suite is rerun.
+**Current validation status:** this branch removes the unrelated orphan LOTM test from RealScale validation. Natural Automate, Studio and performance settings still require this branch's full CI and real-client testing; do not label it Stable yet.
 
 Do not replace generator settings in an existing world. Back up the instance before new-world testing, and never install multiple RealScale main-mod JARs together.
 
