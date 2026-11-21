@@ -4,11 +4,11 @@
   "minecraft_version": "1.21.1",
   "neoforge_line": "21.1.x",
   "source_version": "2.0.0-preview.2-test.10",
-  "public_menu_policy": "Eight entries in both normal and extended tags: Natural Automate, Natural baseline, and six fitted archetypes. USGS Big Sur modes remain hidden from the ordinary menu by prior product decision.",
+  "public_menu_policy": "Exactly one entry in both normal and extended tags: Natural Automate. The Natural baseline and six fitted archetype preset IDs remain packaged as hidden internal/compatibility resources; all six fitted morphology kernels are composed by the single public Natural Automate profile. USGS Big Sur modes remain hidden.",
   "counts": {
     "world_preset_json": 41,
-    "public_profiles": 8,
-    "hidden_or_legacy_profiles": 33,
+    "public_profiles": 1,
+    "hidden_or_legacy_profiles": 40,
     "noise_settings_json": 33,
     "density_function_json": 129,
     "biome_json": 69,
@@ -37,11 +37,13 @@
       "validation_level": "new_profile_requires_multi_seed_saved_anvil_qa",
       "selection_model": "regional_affinity_temperature_humidity_topography_with_natural_fallback",
       "domain_model": "single_overworld_surface_underground_density_composition"
-    },
+    }
+  ],
+  "hidden_profiles": [
     {
       "id": "natural_three_realms",
       "display_name": "Natural Three Realms",
-      "status": "baseline",
+      "status": "hidden_internal",
       "noise_settings": "tva_natural_smoothed",
       "biome_source_chain": [
         "realscale:sky_ocean",
@@ -55,12 +57,14 @@
       ],
       "validation_level": "natural_regression_and_ocean_checks",
       "terrain_model": "natural_baseline",
-      "current_terrain_lab_support": "legacy_landscape_export_is_not_a_direct_editor_for_this_public_profile"
+      "current_terrain_lab_support": "legacy_landscape_export_is_not_a_direct_editor_for_this_public_profile",
+      "category": "natural_baseline_reference",
+      "notes": "Retained as the Natural Automate natural-height baseline and a compatibility/diagnostic reference; hidden from ordinary Create World menus."
     },
     {
       "id": "alpine_three_realms",
       "display_name": "Alpine Three Realms",
-      "status": "experimental",
+      "status": "hidden_internal",
       "noise_settings": "tva_alpine_fitted",
       "biome_source_chain": [
         "realscale:sky_ocean",
@@ -77,12 +81,14 @@
       "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa",
       "terrain_model": "fitted_archetype",
       "archetype_family": "alpine",
-      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab"
+      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab",
+      "category": "fitted_kernel_compatibility",
+      "notes": "Retained as a standalone compatibility/diagnostic preset. Its fitted morphology kernel is also composed inside Natural Automate; hidden from ordinary Create World menus."
     },
     {
       "id": "canyon_three_realms",
       "display_name": "Canyon Three Realms",
-      "status": "experimental",
+      "status": "hidden_internal",
       "noise_settings": "tva_canyon_fitted",
       "biome_source_chain": [
         "realscale:sky_ocean",
@@ -99,12 +105,14 @@
       "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa",
       "terrain_model": "fitted_archetype",
       "archetype_family": "canyon",
-      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab"
+      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab",
+      "category": "fitted_kernel_compatibility",
+      "notes": "Retained as a standalone compatibility/diagnostic preset. Its fitted morphology kernel is also composed inside Natural Automate; hidden from ordinary Create World menus."
     },
     {
       "id": "glacial_three_realms",
       "display_name": "Glacial Three Realms",
-      "status": "experimental",
+      "status": "hidden_internal",
       "noise_settings": "tva_glacial_fitted",
       "biome_source_chain": [
         "realscale:sky_ocean",
@@ -121,12 +129,14 @@
       "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa",
       "terrain_model": "fitted_archetype",
       "archetype_family": "glacial",
-      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab"
+      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab",
+      "category": "fitted_kernel_compatibility",
+      "notes": "Retained as a standalone compatibility/diagnostic preset. Its fitted morphology kernel is also composed inside Natural Automate; hidden from ordinary Create World menus."
     },
     {
       "id": "volcanic_three_realms",
       "display_name": "Volcanic Three Realms",
-      "status": "experimental",
+      "status": "hidden_internal",
       "noise_settings": "tva_volcanic_fitted",
       "biome_source_chain": [
         "realscale:sky_ocean",
@@ -143,12 +153,14 @@
       "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa",
       "terrain_model": "fitted_archetype",
       "archetype_family": "volcanic",
-      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab"
+      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab",
+      "category": "fitted_kernel_compatibility",
+      "notes": "Retained as a standalone compatibility/diagnostic preset. Its fitted morphology kernel is also composed inside Natural Automate; hidden from ordinary Create World menus."
     },
     {
       "id": "karst_three_realms",
       "display_name": "Karst Three Realms",
-      "status": "experimental",
+      "status": "hidden_internal",
       "noise_settings": "tva_karst_fitted",
       "biome_source_chain": [
         "realscale:sky_ocean",
@@ -165,12 +177,14 @@
       "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa",
       "terrain_model": "fitted_archetype",
       "archetype_family": "karst",
-      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab"
+      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab",
+      "category": "fitted_kernel_compatibility",
+      "notes": "Retained as a standalone compatibility/diagnostic preset. Its fitted morphology kernel is also composed inside Natural Automate; hidden from ordinary Create World menus."
     },
     {
       "id": "dune_three_realms",
       "display_name": "Dune Three Realms",
-      "status": "experimental",
+      "status": "hidden_internal",
       "noise_settings": "tva_dune_fitted",
       "biome_source_chain": [
         "realscale:sky_ocean",
@@ -187,10 +201,10 @@
       "validation_level": "needs_direct_public_profile_multi_seed_saved_anvil_qa",
       "terrain_model": "fitted_archetype",
       "archetype_family": "dune",
-      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab"
-    }
-  ],
-  "hidden_profiles": [
+      "current_terrain_lab_support": "not_yet_exposed_in_terrain_lab",
+      "category": "fitted_kernel_compatibility",
+      "notes": "Retained as a standalone compatibility/diagnostic preset. Its fitted morphology kernel is also composed inside Natural Automate; hidden from ordinary Create World menus."
+    },
     {
       "id": "apes_gallery_three_realms",
       "category": "gallery",
@@ -412,10 +426,10 @@
   "notes": [
     "This catalog is an audit snapshot, not yet the runtime source of truth.",
     "Natural Automate now shares the fitted profiles' GeoWonders, Natural Ecotones and Cave Depth Habitats source chain; conservative Natural Three Realms remains unchanged.",
-    "The six fitted modes are experimental. Alpine and Canyon have multi-seed saved-Anvil evidence in the current workflow; do not infer equivalent validation for Glacial, Volcanic, Karst or Dune.",
+    "The six fitted morphology kernels are internal components of Natural Automate; their standalone world-preset IDs are hidden and retained for compatibility/diagnostics. Kernel suitability tests do not substitute for full multi-seed terrain-quality validation.",
     "Measured DEM profiles are read-only and remain hidden from the ordinary Create World menu.",
     "The current multi-seed workflow exercises internal tva_alpine_three_realms and tva_canyon_three_realms smoothed QA profiles, not the public alpine_three_realms and canyon_three_realms fitted profiles. Do not count those internal runs as direct validation of the public fitted presets.",
     "The current Terrain Lab's legacy `landscape`/`alpine`/`canyon` blend families are a separate model from the six `TerrainArchetypeDensity` fitted families. The public Alpine and Canyon names therefore refer to different algorithms in the old editor and the public preset catalog.",
-    "Natural Automate adds one public world preset, one noise-settings graph and four density-function resources to the audited main baseline; the composite now uses climate/topography suitability with an explicit natural-baseline fallback."
+    "Natural Automate is the sole public Create World preset. It composes the natural baseline with six climate/topography-gated fitted morphology kernels and retains the shared ecology and three-realm dimension stack."
   ]
 }

@@ -2,6 +2,18 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。当前主线将可选的 Distant Horizons × Chunky 兼容钩子嵌入主模组 JAR；历史独立 `dhchunkyguard` 插件与嵌入版本不兼容，不应同时安装。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.11 — 2026-11-21 — Single public Natural Automate composite (Experimental)
+
+### Changed
+- The standard and extended Create World menus now expose only `natural_automate_three_realms`.
+- Natural baseline and six standalone fitted world-preset resources remain packaged but hidden as compatibility/diagnostic references; the six fitted morphology kernels remain active inside Natural Automate.
+- The public composite retains the natural height baseline, regional/climate/topography suitability, normalized six-kernel cross-fades, natural fallback, shared ecology chain, and Overworld/Nether/End configuration.
+- Updated the preset catalog, validator, source tests and candidate-JAR workflow to enforce exactly one public mode.
+
+### Validation status and limits
+- Source changes are committed to the feature branch; the new one-mode CI and packaged-JAR checks must pass before the updated candidate is considered ready.
+- This remains an experimental build. Hidden kernel references are retained, and client FPS improvement still requires physical-client A/B testing.
+
 ## 2.0.0-preview.2-test.10 — 2026-11-21 — Natural Automate & Studio consolidation (Experimental)
 
 ### Added

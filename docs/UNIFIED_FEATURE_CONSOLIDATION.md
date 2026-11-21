@@ -34,18 +34,9 @@ The audited pre-consolidation `main` baseline contained 1,605 repository paths. 
 
 These counts describe the source tree, not the number of player-selectable modes or proof that every resource is active.
 
-The Natural Automate branch's `normal` and `extended` world-preset tags expose **eight** entries:
+The Create World `normal` and `extended` world-preset tags expose **exactly one** RealScale entry: Natural Automate Three Realms. It is the sole public terrain-generation mode. Its density graph composes the natural height baseline with all six fitted morphology kernels (Alpine, Glacial, Canyon, Volcanic, Karst and Dune), climate/topography/regional suitability gates, normalized cross-fades and exact Natural fallback.
 
-1. Natural Automate Three Realms (new experimental composite)
-2. Natural Three Realms
-3. Alpine Three Realms
-4. Canyon Three Realms
-5. Glacial Three Realms
-6. Volcanic Three Realms
-7. Karst Three Realms
-8. Dune Three Realms
-
-The USGS Big Sur modes are intentionally absent from the public menu following the earlier decision to remove them. Their resources and the `measured_three_realms` profile remain available for compatibility and controlled testing. Do not re-add them to the public menu without an explicit product decision.
+The standalone Natural baseline and six fitted world-preset JSON resources remain registered and packaged as hidden compatibility/diagnostic references; they are not ordinary menu choices. Hiding these references does not disable or delete their kernels. USGS Big Sur modes remain hidden as previously decided.
 
 ## 3. Feature catalog and disposition
 
@@ -97,7 +88,7 @@ On the client, `RealScaleDomainManager` maps the conservative exposure classifie
 | CaveMarineHabitatFeature / CaveWonderNetworkFeature | Cave and marine habitats | Retain as optional ecology layers until full live-world validation |
 | EarthSystemsAccentFeature / EarthWonderFeature / GeoWonderRegionFeature | Geological accents and larger wonder prototypes | Keep experimental until multi-seed saved-world evidence supports promotion |
 
-**Unified composite source chain:** Natural Automate and the six fitted public profiles now use the same explicit layer order:
+**Unified composite source chain:** Natural Automate and its six hidden standalone fitted reference presets use the same explicit layer order:
 
 `sky_ocean → geo_wonders_opt_in → natural_ecotones → cave_depth_habitats → vanilla multi_noise`
 
@@ -154,23 +145,24 @@ The four `RealScalePerformanceProfile` modes from PR #156 have been selectively 
 
 ## 4. Preset classification
 
-The 41 world-preset resources are enumerated in the machine-readable [PRESET_CATALOG.json](PRESET_CATALOG.json). The catalog is an audit snapshot and the validator checks it against both menu tags, the actual world-preset resources, the eight public biome-source chains and the audited resource counts. It should become the single source of truth for later UI/exporter generation rather than treating all 41 resources as equivalent user options.
+The 41 world-preset resources are enumerated in the machine-readable [PRESET_CATALOG.json](PRESET_CATALOG.json). The catalog is an audit snapshot and the validator checks it against both menu tags, the actual world-preset resources, the single public composite biome-source chain and the audited resource counts. It should become the single source of truth for later UI/exporter generation rather than treating all 41 resources as equivalent user options.
 
-### Public profiles
+### Public profile
 
-- Natural Three Realms
-- Alpine Three Realms
-- Canyon Three Realms
-- Glacial Three Realms
-- Volcanic Three Realms
-- Karst Three Realms
-- Dune Three Realms
+- Natural Automate Three Realms — the only ordinary Create World choice.
 
-The six fitted profiles remain visibly experimental until each has its own representative multi-seed saved-Anvil validation. Current multi-seed evidence must not be generalized from Alpine and Canyon to all six fitted modes.
+### Hidden internal / compatibility profiles
+
+The following seven standalone references remain packaged but are no longer separate player-facing modes:
+
+- `natural_three_realms` — Natural baseline used by the composite and retained for compatibility.
+- `alpine_three_realms`, `canyon_three_realms`, `glacial_three_realms`, `volcanic_three_realms`, `karst_three_realms`, `dune_three_realms` — standalone reference presets for the six kernels composed inside Natural Automate.
+
+Their kernel code, coefficients and research provenance remain intact. The six internal kernels still require representative multi-seed terrain-quality validation; hiding their standalone presets does not imply that every terrain family has identical validation coverage.
 
 ### Complete hidden / legacy resource inventory
 
-The remaining 33 resources are intentionally not ordinary menu choices:
+The remaining 40 resources are intentionally not ordinary menu choices:
 
 | Classification | IDs |
 |---|---|
@@ -266,7 +258,7 @@ The preview must distinguish sampled procedural predictions from actual saved An
 ### Phase 1 — catalog and configuration convergence
 
 - Add a machine-readable preset catalog.
-- Make the eight public profiles and all hidden/legacy profiles explicit by status.
+- Make the single public composite profile and all hidden/legacy profiles explicit by status.
 - Complete the Natural Automate editor and keep the three Legacy Advanced blends clearly separated from fitted archetypes.
 - Preserve old config migrations, world-preset IDs and saved-world datapack behavior.
 - Remove duplicate hand-maintained profile lists by generating menu labels, exporter mappings and docs from the catalog where feasible.
@@ -301,7 +293,7 @@ The preview must distinguish sampled procedural predictions from actual saved An
 
 ## 7. Evidence and blockers observed on 2026-11-21
 
-- The Natural Automate branch exposes eight profiles; README, catalog and both menu tags are aligned. Source metadata is bumped to `2.0.0-preview.2-test.10`; a distributable JAR is not certified until CI and in-game validation pass.
+- The Natural Automate branch exposes one public profile; README, catalog and both menu tags are aligned. Source metadata is bumped to `2.0.0-preview.2-test.10`; a distributable JAR is not certified until CI and in-game validation pass.
 - The performance implementation in this branch is a selective integration of PR #156; avoid merging duplicate cache/profile files from that draft PR. Run the new branch's own CI and physical-client A/B tests before promotion.
 - PR #144 and older fitted-profile branches have heads that are ancestors of main; their changes should not be re-merged just because their PRs remain open. In particular, the legacy `tva_alpine_three_realms` and `tva_canyon_three_realms` QA aliases use smoothed settings and must not be confused with the current public fitted profiles.
 - PR #143's zonal/horizontal mapping branch is divergent and proposes a major coordinate-model change: X/Z become 20 source metres per Minecraft block while Y remains 1 metre per block, plus periodic latitude and preset-aware spawn selection. Current main uses 1:20 only for the geographic climate latitude model; terrain X/Z sampling remains 1 block = 1 metre. This changes apparent relief, DEM sampling, caves, structures, rivers and spawn geometry. It needs an explicit product decision and independent saved-world validation; do not merge it into the terrain-consolidation work as a routine cleanup.
@@ -312,7 +304,7 @@ The preview must distinguish sampled procedural predictions from actual saved An
 ## 8. Non-negotiable acceptance gates
 
 1. Java 21 / NeoForge build and all unit/source-integrity tests pass on the exact final commit.
-2. Every public world profile boots on a dedicated server and has multi-seed saved-Anvil evidence.
+2. The single public Natural Automate profile boots on a dedicated server and has multi-seed saved-Anvil evidence; each internal fitted kernel has direct suitability and terrain-quality regression coverage.
 3. Ocean and river water columns, cave roofs and networks, sky-island cores, mountain/plateau geometry, structures, and dimension heights remain valid.
 4. DEM imports validate source metadata, checksums, coordinate mapping, coverage gaps and seam behavior.
 5. Every public profile's biome-source chain and optional-layer flags match the catalog.

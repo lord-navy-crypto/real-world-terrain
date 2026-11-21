@@ -31,8 +31,8 @@ def main() -> int:
 
     if len(all_ids) != len(set(all_ids)):
         fail("duplicate preset ID in catalog")
-    if len(public_ids) != 8:
-        fail(f"expected eight public profiles, found {len(public_ids)}")
+    if len(public_ids) != 1:
+        fail(f"expected exactly one public profile, found {len(public_ids)}")
     if len(hidden) + len(legacy) != catalog["counts"]["hidden_or_legacy_profiles"]:
         fail("hidden/legacy catalog count does not match metadata")
 
@@ -125,7 +125,7 @@ def main() -> int:
             fail(f"{key}: catalog says {expected}, repository has {actual}")
 
     print(
-        "PASS: preset catalog matches all 41 world presets, both eight-entry menu tags, "
+        "PASS: preset catalog matches all 41 world presets, both single-entry menu tags, 
         "public noise settings, biome-source chains and audited resource counts."
     )
     return 0

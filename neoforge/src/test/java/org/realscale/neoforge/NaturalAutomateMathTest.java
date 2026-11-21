@@ -45,6 +45,26 @@ final class NaturalAutomateMathTest {
     }
 
     @Test
+    void allSixFittedFamiliesAreReachableInsideTheUnifiedComposite() {
+        double[][] representativeInputs={
+            {1.50,-0.90,0.10,-5.0/6.0}, // Alpine: cold, high relief
+            {0.84,-0.85,0.75,-0.50},   // Glacial: cold, wet highlands
+            {0.20,0.00,-0.90,-1.0/6.0},// Canyon: dry incised terrain
+            {0.50,0.90,0.00,1.0/6.0},  // Volcanic: warm, elevated terrain
+            {0.30,0.50,0.90,0.50},     // Karst: warm, humid moderate relief
+            {0.05,0.90,-0.90,5.0/6.0}  // Dune: warm, dry lowlands
+        };
+        String[] names={"Alpine","Glacial","Canyon","Volcanic","Karst","Dune"};
+        for(int family=0;family<6;family++) {
+            double[] input=representativeInputs[family];
+            double suitability=TerrainArchetypeMath.naturalFamilySuitability(
+                    family,input[0],input[1],input[2],input[3]);
+            assertTrue(suitability>0.85,
+                    names[family]+" kernel should be reachable in the unified profile: "+suitability);
+        }
+    }
+
+    @Test
     void unsuitableClimateAndTopographyRetainTheNaturalBaselineExactly() {
         TerrainArchetypeMath math=kernel();
         double original=0.05;

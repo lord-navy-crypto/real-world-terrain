@@ -56,15 +56,25 @@ def source_chain(source):
 
 
 class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
-    def test_new_world_menu_has_natural_and_six_fitted_tests_without_usgs(self):
-        menu = ["realscale:natural_automate_three_realms"] + ["realscale:" + name for name in CANONICAL]
+    def test_new_world_menu_exposes_only_the_unified_natural_automate_profile(self):
+        menu = ["realscale:natural_automate_three_realms"]
         for name in ("normal", "extended"):
             tag = read(TAG_ROOT / (name + ".json"))
             self.assertEqual(tag["values"], menu)
-            self.assertEqual(len(set(menu)), 8)
+            self.assertEqual(len(set(tag["values"])), 1)
             self.assertNotIn("realscale:usgs_big_sur", tag["values"])
 
-    def test_natural_automate_is_a_separate_composite_over_the_natural_base(self):
+    def test_natural_baseline_and_six_fitted_presets_remain_packaged_but_hidden(self):
+        names = ("natural_three_realms", "alpine_three_realms", "canyon_three_realms",
+                 "glacial_three_realms", "volcanic_three_realms", "karst_three_realms",
+                 "dune_three_realms")
+        for name in names:
+            with self.subTest(preset=name):
+                self.assertTrue((WORLD / (name + ".json")).is_file(), name)
+                for menu in ("normal.json", "extended.json"):
+                    self.assertNotIn("realscale:" + name, read(TAG_ROOT / menu)["values"])
+
+    def test_natural_automate_is_the_single_public_composite_over_the_natural_base(self):
         world = read(WORLD / "natural_automate_three_realms.json")
         overworld = world["dimensions"]["minecraft:overworld"]
         self.assertEqual(overworld["generator"]["settings"], "realscale:natural_automate")
@@ -240,8 +250,8 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
     def test_mod_name_and_archive_name_are_realscale_only(self):
         gradle = (ROOT / "neoforge/build.gradle").read_text()
         toml = (RES / "META-INF/neoforge.mods.toml").read_text()
-        self.assertIn("2.0.0-preview.2-test.10", gradle)
-        self.assertIn('version="2.0.0-preview.2-test.10"', toml)
+        self.assertIn("2.0.0-preview.2-test.11", gradle)
+        self.assertIn('version="2.0.0-preview.2-test.11"', toml)
         self.assertIn("RealScale-NeoForge-1.21.1", gradle)
         self.assertNotIn("TVA", toml)
         self.assertNotIn("RealScale-TVA", gradle)

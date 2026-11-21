@@ -1,4 +1,4 @@
-name: Public eight-mode test JAR (Natural Automate + Natural + six fits)
+name: Unified Natural Automate test JAR (one public mode; six fused kernels)
 on:
   pull_request:
     paths:
@@ -16,11 +16,11 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: public-eight-${{ github.ref }}
+  group: unified-natural-automate-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   verify-and-build:
-    name: Verify eight visible terrain modes; keep original resources unchanged
+    name: Verify one visible terrain mode; retain all internal profiles
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -35,12 +35,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
-      - name: Check all eight choices, six fits and original source bytes
+      - name: Check one public choice, six fused kernels and original source bytes
         run: python3 -m unittest discover -s qa -p 'test_realscale_branding_compat.py' -v
       - name: Build NeoForge candidate JAR
         working-directory: neoforge
         run: gradle --no-daemon build
-      - name: Verify packaged JAR exposes eight choices without USGS
+      - name: Verify packaged JAR exposes one unified choice and retains hidden kernels
         run: |
           python3 - <<'PY'
           import json
@@ -53,7 +53,7 @@ jobs:
           with ZipFile(jars[0]) as z:
               paths = set(z.namelist())
               root = "data/minecraft/tags/worldgen/world_preset/"
-              expected = ["realscale:" + v for v in ("natural_automate_three_realms", "natural_three_realms", "alpine_three_realms", "canyon_three_realms", "glacial_three_realms", "volcanic_three_realms", "karst_three_realms", "dune_three_realms")]
+              expected = ["realscale:natural_automate_three_realms"]
               for menu in ("normal", "extended"):
                   data = json.loads(z.read(root + menu + ".json"))
                   if data["values"] != expected:
@@ -87,12 +87,12 @@ jobs:
                   raise SystemExit("DEM data source class missing")
               if b"https://elevation.nationalmap.gov/" in z.read(dem_classes[0]):
                   raise SystemExit("Fixed USGS runtime provenance endpoint remains in JAR")
-          print("PUBLIC_EIGHT_MODE_PACKAGED_JAR_OK", jars[0])
+          print("UNIFIED_NATURAL_AUTOMATE_PACKAGED_JAR_OK", jars[0])
           PY
       - name: Upload candidate only (not a certified Stable release)
         uses: actions/upload-artifact@v4
         with:
-          name: RealScale-8-Modes-Public-Experimental-Test-JAR
+          name: RealScale-Natural-Automate-Unified-Experimental-Test-JAR
           path: neoforge/build/libs/RealScale-NeoForge-1.21.1-*.jar
           if-no-files-found: error
           retention-days: 7
@@ -158,7 +158,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: RealScale-8-Mode-${{ matrix.name }}-Worldgen-Evidence
+          name: RealScale-Unified-Internal-QA-${{ matrix.name }}-Worldgen-Evidence
           path: |
             neoforge/build/rcon_distant_server.log
             neoforge/build/rcon_distant_thread_dump_*.txt

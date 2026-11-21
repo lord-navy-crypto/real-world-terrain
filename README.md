@@ -1,25 +1,20 @@
 # RealScale Terrain
 
-Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与生态系统模组。当前源码版本为 **2.0.0-preview.2-test.10**；这是实验开发版本，不是 Stable 发布版。
+Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与生态系统模组。当前源码版本为 **2.0.0-preview.2-test.11**；这是实验开发版本，不是 Stable 发布版。
 
 本仓库正在进行一次统一架构整合。目标是把地形、生态、维度、结构、可视化和性能系统放入一致的产品结构，而不是继续增加互相重复的预设和配置入口。
 
 ## 当前新世界菜单（2026-11-21）
 
-当前 `normal` 与 `extended` 世界类型菜单均提供八个选项：
+`normal` 与 `extended` 世界类型菜单现在都只提供 **一个 RealScale 选项**：
 
-1. **Natural Automate Three Realms** — 六种拟合地貌的自适应区域组合，推荐实验模式。
-2. **Natural Three Realms** — 自然地形基线。
-3. **Alpine Three Realms** — 高山拟合地形（实验）。
-4. **Canyon Three Realms** — 峡谷拟合地形（实验）。
-5. **Glacial Three Realms** — 冰川拟合地形（实验）。
-6. **Volcanic Three Realms** — 火山拟合地形（实验）。
-7. **Karst Three Realms** — 喀斯特拟合地形（实验）。
-8. **Dune Three Realms** — 沙丘拟合地形（实验）。
+1. **Natural Automate Three Realms** — 统一地形与生态预设。
 
-六种拟合模式仍属于实验配置，不能把部分模式的测试结果推广成全部模式已经完成真实地理拟合验证。
+Natural Automate 以原有 Natural 地形信号为基线，将 Alpine、Glacial、Canyon、Volcanic、Karst 和 Dune 六种拟合形态作为内部计算核。系统依据区域地质先验、温度、湿度和局部地形适宜性自动分配权重，在适合的区域叠加相应地貌，在过渡区平滑混合，在不适合的区域精确保留 Natural 基线。普通玩家不再需要在六种地貌或 Natural 之间手动选择。
 
-**USGS Big Sur / Big Sur v2 已按此前决定从普通新世界菜单中移除。** 实测地形资源和 `measured_three_realms` 等内部配置仍保留，用于兼容、数据导入和受控实验；不要将其误认为当前公开菜单选项。USGS 3DEP 数据导入是离线、可选流程，不代表整个世界都是实测地形。
+Natural 基线和六个独立拟合预设的 JSON / registry ID 仍保留在 JAR 中，供兼容性、受控 QA 和开发对照使用；它们不再作为普通新世界菜单选项。隐藏独立预设不等于删除六种算法：六个拟合核仍由 Natural Automate 调用。
+
+**USGS Big Sur / Big Sur v2 仍按此前决定从普通新世界菜单中移除。** 实测地形资源和内部配置继续保留，用于兼容、数据导入和受控实验；不要将其误认为当前公开菜单选项。USGS 3DEP 数据导入是离线、可选流程，不代表整个世界都是实测地形。
 
 ## 核心系统
 
@@ -62,7 +57,7 @@ World Atlas 的存档扫描和地图读取代码已从当前分支删除；没�
 - `assets/architecture/` — 建筑模板源素材及许可记录。
 - `archive/` — 历史数据包和旧版本材料。
 - `research/` — 尚未完整集成的数值地质、水文和数据导入研究原型。
-- `dist/v1.1/` — 历史 v1.1 测试候选 JAR，不是当前八模式源码构建。
+- `dist/v1.1/` — 历史 v1.1 测试候选 JAR，不是当前单一 Natural Automate 菜单构建。
 
 ## Build and validation
 
@@ -74,7 +69,7 @@ cd neoforge
 gradle --no-daemon build
 ```
 
-**当前验证状态：** 本分支已移除与 RealScale 无关的 LOTM 孤立测试。Natural Automate、Studio 和性能配置仍需通过本分支完整 CI 与实际客户端测试；目前不应将其标记为 Stable。
+**当前验证状态：** 本分支已移除与 RealScale 无关的 LOTM 孤立测试。单一 Natural Automate 菜单、Studio 和性能配置仍需通过本分支完整 CI 与实际客户端测试；目前不应将其标记为 Stable。
 
 不要在已有世界上替换生成器配置。创建新世界测试前备份实例，并且不要同时安装多个 RealScale 主模组 JAR。
 
