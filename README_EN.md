@@ -29,7 +29,7 @@ The six fitted modes remain experimental. Validation of a subset must not be pre
 - **Performance:** world-generation sampling, cache diagnostics, client frame intervals and optional chunk-upload pacing.
 - **Compatibility:** optional Distant Horizons / Chunky hooks and external client-visual tools.
 
-See [Unified Feature Consolidation](docs/UNIFIED_FEATURE_CONSOLIDATION.md) for the detailed inventory, status classification, conflict review and integration plan.
+See the [Preset Catalog](docs/PRESET_CATALOG.json) for all 40 public, hidden and historical world profiles, and [Unified Feature Consolidation](docs/UNIFIED_FEATURE_CONSOLIDATION.md) for the detailed inventory, status classification, conflict review and integration plan.
 
 ## Current visualization status
 
