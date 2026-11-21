@@ -3,8 +3,8 @@
   "audit_date": "2026-11-21",
   "minecraft_version": "1.21.1",
   "neoforge_line": "21.1.x",
-  "source_version": "2.0.0-preview.2-test.9",
-  "public_menu_policy": "Seven entries in both normal and extended tags. USGS Big Sur modes remain hidden from the ordinary menu by prior product decision.",
+  "source_version": "2.0.0-preview.2-test.10",
+  "public_menu_policy": "Eight entries in both normal and extended tags: Natural Automate, Natural baseline, and six fitted archetypes. USGS Big Sur modes remain hidden from the ordinary menu by prior product decision.",
   "counts": {
     "world_preset_json": 41,
     "public_profiles": 8,
