@@ -19,6 +19,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
     private final DensityFunction base;
     private final DensityFunction continents;
     private final DensityFunction selector;
+    private final DensityFunction regionSelector;
     private final String family;
     private final boolean alpineFamily;
     private final boolean selectorFreeFamily;
@@ -39,6 +40,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
             DensityFunction base,
             DensityFunction continents,
             DensityFunction selector,
+            DensityFunction regionSelector,
             String family,
             double macroGain,
             double mesoGain,
@@ -57,6 +59,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
         this.base = base;
         this.continents = continents;
         this.selector = selector;
+        this.regionSelector = regionSelector == null ? selector : regionSelector;
         this.family = family;
         this.alpineFamily = "alpine".equals(family);
         this.selectorFreeFamily = "glacial".equals(family) || "volcanic".equals(family);
@@ -80,12 +83,14 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
     private static boolean isSupportedFamily(String value) {
         return "alpine".equals(value) || "canyon".equals(value)
                 || "glacial".equals(value) || "volcanic".equals(value)
-                || "karst".equals(value) || "dune".equals(value);
+                || "karst".equals(value) || "dune".equals(value)
+                || "natural_automate".equals(value);
     }
 
     public DensityFunction base() { return base; }
     public DensityFunction continents() { return continents; }
     public DensityFunction selector() { return selector; }
+    public DensityFunction regionSelector() { return regionSelector; }
     public String family() { return family; }
     public double macroGain() { return macroGain; }
     public double mesoGain() { return mesoGain; }
@@ -104,6 +109,8 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(TerrainArchetypeDensity::base),
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("continents").forGetter(TerrainArchetypeDensity::continents),
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("selector").forGetter(TerrainArchetypeDensity::selector),
+                    DensityFunction.HOLDER_HELPER_CODEC.optionalFieldOf("region_selector")
+                            .forGetter(d -> java.util.Optional.ofNullable(d.regionSelector == d.selector ? null : d.regionSelector)),
                     Codec.STRING.fieldOf("family").forGetter(TerrainArchetypeDensity::family),
                     Codec.doubleRange(0.0, 1.0).fieldOf("macro_gain").forGetter(TerrainArchetypeDensity::macroGain),
                     Codec.doubleRange(0.0, 1.0).fieldOf("meso_gain").forGetter(TerrainArchetypeDensity::mesoGain),
@@ -116,7 +123,15 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
                     Codec.doubleRange(0.5, 2.0).fieldOf("anisotropy_gain").forGetter(TerrainArchetypeDensity::anisotropyGain),
                     Codec.doubleRange(-Math.PI, Math.PI).fieldOf("dune_axis_radians").forGetter(TerrainArchetypeDensity::duneAxisRadians),
                     Codec.doubleRange(1.0, 1000000.0).fieldOf("dominant_wavelength_m").forGetter(TerrainArchetypeDensity::dominantWavelengthM)
-            ).apply(i, TerrainArchetypeDensity::new));
+            ).apply(i, (base, continents, selector, regionSelector, family,
+                    macroGain, mesoGain, microGain, reliefGain, ridgeSharpness,
+                    cliffIndex, valleyIndex, ridgeIndex, anisotropyGain,
+                    duneAxisRadians, dominantWavelengthM) ->
+                    new TerrainArchetypeDensity(base, continents, selector,
+                            regionSelector.orElse(selector), family, macroGain,
+                            mesoGain, microGain, reliefGain, ridgeSharpness,
+                            cliffIndex, valleyIndex, ridgeIndex, anisotropyGain,
+                            duneAxisRadians, dominantWavelengthM)));
     private static final KeyDispatchDataCodec<TerrainArchetypeDensity> DISPATCH =
             KeyDispatchDataCodec.of(MAP_CODEC);
 
@@ -142,14 +157,18 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
         // are computed once per codec instance instead of comparing strings
         // for every sampled block.
         double signal = selectorFreeFamily ? 0.0 : selector.compute(ctx);
-        return morphology.compute(original, continent, signal, ctx.blockX(), ctx.blockZ());
+        double regionSignal = "natural_automate".equals(family)
+                ? regionSelector.compute(ctx) : signal;
+        return morphology.compute(original, continent, signal, regionSignal,
+                ctx.blockX(), ctx.blockZ());
     }
 
     @Override
     public DensityFunction mapAll(DensityFunction.Visitor visitor) {
         return visitor.apply(new TerrainArchetypeDensity(
                 base.mapAll(visitor), continents.mapAll(visitor), selector.mapAll(visitor),
-                family, macroGain, mesoGain, microGain, reliefGain, ridgeSharpness, cliffIndex,
+                regionSelector.mapAll(visitor), family, macroGain, mesoGain, microGain,
+                reliefGain, ridgeSharpness, cliffIndex,
                 valleyIndex, ridgeIndex, anisotropyGain, duneAxisRadians, dominantWavelengthM));
     }
 
