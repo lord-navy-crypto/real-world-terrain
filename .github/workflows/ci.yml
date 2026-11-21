@@ -116,6 +116,7 @@ jobs:
           mkdir -p build/worldgen-profiler-smoke
           javac -d build/worldgen-profiler-smoke \
             neoforge/src/main/java/org/realscale/neoforge/WorldgenProfiler.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/WorldgenProfilerSmoke.java
           java -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
           java -Drealscale.worldgen.profile=true -cp build/worldgen-profiler-smoke org.realscale.neoforge.WorldgenProfilerSmoke
@@ -124,6 +125,7 @@ jobs:
           mkdir -p build/density-profiler-smoke
           javac -d build/density-profiler-smoke \
             neoforge/src/main/java/org/realscale/neoforge/DensityPerfSampler.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/DensityPerfSamplerSmoke.java
           java -cp build/density-profiler-smoke org.realscale.neoforge.DensityPerfSamplerSmoke
           java -Drealscale.density.profile=true -cp build/density-profiler-smoke org.realscale.neoforge.DensityPerfSamplerSmoke
@@ -251,6 +253,7 @@ jobs:
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldSingleMaskParitySmoke.java \
             neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveDesignV2.java \
             neoforge/src/main/java/org/realscale/neoforge/DensityPerfSampler.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/GrandOverworldCaveDesignV2Smoke.java
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldCaveNetworkSmoke
           java -cp build/grand-overworld-cave-smoke org.realscale.neoforge.GrandOverworldEntranceCacheParitySmoke
