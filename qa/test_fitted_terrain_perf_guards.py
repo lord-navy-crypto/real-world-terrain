@@ -8,6 +8,24 @@ JAVA=ROOT/"neoforge/src/main/java/org/realscale/neoforge"
 
 
 class FittedTerrainPerfGuards(unittest.TestCase):
+    def test_experimental_beardifier_cull_is_explicit_opt_in_and_default_off(self):
+        plugin=(JAVA/"mixin/ExperimentalVanillaMixinPlugin.java").read_text(encoding="utf-8")
+        self.assertIn(
+            'System.getProperty(FLAG,"false")',
+            plugin)
+        self.assertNotIn(
+            'System.getProperty(FLAG,"true")',
+            plugin)
+
+    def test_aquifer_readonly_audit_is_explicit_opt_in_and_default_off(self):
+        plugin=(JAVA/"mixin/AquiferReadOnlyAuditMixinPlugin.java").read_text(encoding="utf-8")
+        self.assertIn(
+            'System.getProperty("realscale.experimental.aquifer.audit","false")',
+            plugin)
+        self.assertNotIn(
+            'System.getProperty("realscale.experimental.aquifer.audit","true")',
+            plugin)
+
     def test_alpine_lowland_skips_continental_noise_before_sampling(self):
         src=(JAVA/"TerrainArchetypeDensity.java").read_text(encoding="utf-8")
         part=src[src.index("public double compute(DensityFunction.FunctionContext ctx)"):]

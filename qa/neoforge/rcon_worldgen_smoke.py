@@ -26,6 +26,83 @@ HEADER=struct.Struct("<iii")
 # negative coordinates. No preloading/ticket batching between waypoints.
 FAR_ROUTE_SITES=((1024,1024),(-2048,1536),(4096,-2048))
 
+def find_game_jvm_pid():
+    listing=subprocess.run(["jcmd","-l"],capture_output=True,text=True,timeout=12)
+    candidates=[]
+    for line in listing.stdout.splitlines():
+        lowered=line.lower()
+        if not any(name in lowered for name in
+                   ("net.neoforged","minecraft","bootstraplauncher")):
+            continue
+        pid=line.split()[0]
+        if pid.isdigit():candidates.append(pid)
+    if len(candidates)==1:return candidates[0]
+    if len(candidates)>1:
+        print("REALSCALE_JFR_AMBIGUOUS_GAME_JVMS:",candidates,flush=True)
+    return None
+
+
+def start_worldgen_jfr(pid):
+    result=subprocess.run(
+        ["jcmd",pid,"JFR.start","name=realscale_worldgen",
+         "settings=profile","disk=true","maxsize=128m"],
+        capture_output=True,text=True,timeout=30,check=True)
+    print("REALSCALE_JFR_STARTED_DURING_STARTUP:",pid,
+          result.stdout.strip(),flush=True)
+
+
+def dump_worldgen_jfr(root,pid):
+    recording=root/"build"/"realscale_worldgen_cpu.jfr"
+    recording.parent.mkdir(parents=True,exist_ok=True)
+    result=subprocess.run(
+        ["jcmd",pid,"JFR.dump","name=realscale_worldgen",
+         "filename="+str(recording)],
+        capture_output=True,text=True,timeout=45,check=True)
+    print("REALSCALE_JFR_DUMP:",recording,
+          "bytes=",recording.stat().st_size,flush=True)
+    print("REALSCALE_JFR_CAPTURE_MESSAGE:",result.stdout.strip(),flush=True)
+    subprocess.run(["jcmd",pid,"JFR.stop","name=realscale_worldgen"],
+                   capture_output=True,text=True,timeout=30,check=True)
+
+
+def capture_worldgen_thread_diagnostics(root,profile,pid):
+    snapshots=[]
+    for sample in range(3):
+        result=subprocess.run(["jcmd",pid,"Thread.print"],
+            capture_output=True,text=True,timeout=15)
+        if result.returncode!=0:
+            print("REALSCALE_STARTUP_JCMD_FAILED:",result.stderr[-700:],
+                  flush=True)
+            break
+        dump_path=root/"build"/(
+            "rcon_"+profile+"_thread_dump_"+str(sample)+".txt")
+        dump_path.write_text(result.stdout+result.stderr,encoding="utf-8")
+        snapshots.append(result.stdout)
+        print("REALSCALE_STARTUP_THREAD_DUMP:",dump_path,flush=True)
+        if sample<2:time.sleep(2)
+    if snapshots:
+        from diagnose_worldgen_threads import diagnose_dumps
+        report=diagnose_dumps(snapshots)
+        report_path=root/"build"/(
+            "rcon_"+profile+"_stall_fingerprint.json")
+        report_path.write_text(json.dumps(report,indent=2),encoding="utf-8")
+        print("REALSCALE_STARTUP_STALL_FINGERPRINT:",json.dumps({
+            "samples":report["samples"],
+            "thread_states":report["thread_states"],
+            "marker_observations":report["marker_observations"],
+            "top_leaf_frames":report["top_leaf_frames"],
+            "hypotheses_not_proven_causes":
+                report["hypotheses_not_proven_causes"]
+        },sort_keys=True),flush=True)
+        for thread in report["sampled_threads"][:10]:
+            print("REALSCALE_STARTUP_STALL_THREAD:",json.dumps({
+                "sample":thread["sample"],"name":thread["thread"],
+                "state":thread["state"],"markers":thread["markers"],
+                "frames":thread["frames"][:9]
+            }),flush=True)
+        print("REALSCALE_STARTUP_STALL_FINGERPRINT_FILE:",
+              report_path,flush=True)
+
 class Rcon:
     def __init__(self, host="127.0.0.1", port=PORT, password=PASSWORD, timeout=25):
         self.sock=socket.create_connection((host,port),timeout=12)
@@ -148,9 +225,47 @@ def main(root,expected_preset,profile):
     t=threading.Thread(target=drain,daemon=True)
     t.start()
     failed=None
+    jfr_pid=None
+    jfr_dumped=False
+    startup_dumps_captured=False
+    diagnostic_jfr=os.getenv("REALSCALE_JFR_DIAGNOSTIC")=="1"
+    next_jvm_probe=0.0
+    last_spawn_percent=None
+    last_spawn_progress=time.monotonic()
     try:
         deadline=time.monotonic()+570
         while not ready.is_set() and proc.poll() is None and time.monotonic()<deadline:
+            now=time.monotonic()
+            if diagnostic_jfr and jfr_pid is None and now>=next_jvm_probe:
+                next_jvm_probe=now+10
+                try:
+                    candidate=find_game_jvm_pid()
+                    if candidate is not None:
+                        start_worldgen_jfr(candidate)
+                        jfr_pid=candidate
+                except (OSError,subprocess.SubprocessError) as diag_error:
+                    print("REALSCALE_JFR_STARTUP_PROBE_FAILED:",
+                          repr(diag_error),flush=True)
+            if not startup_dumps_captured:
+                progress_lines=[line for line in lines
+                    if "Preparing spawn area:" in line]
+                if progress_lines:
+                    match=re.search(r"Preparing spawn area:\s*(\d+)%",progress_lines[-1])
+                    if match:
+                        percent=int(match.group(1))
+                        if percent!=last_spawn_percent:
+                            last_spawn_percent=percent
+                            last_spawn_progress=now
+                        elif now-last_spawn_progress>=60:
+                            try:
+                                pid=jfr_pid or find_game_jvm_pid()
+                                if pid is not None:
+                                    capture_worldgen_thread_diagnostics(
+                                        root,profile,pid)
+                                    startup_dumps_captured=True
+                            except (OSError,subprocess.SubprocessError) as diag_error:
+                                print("REALSCALE_STARTUP_THREAD_CAPTURE_FAILED:",
+                                      repr(diag_error),flush=True)
             time.sleep(1)
         if not ready.is_set():
             raise RuntimeError("Server failed to reach Done; return code "+str(proc.poll()))
@@ -163,25 +278,11 @@ def main(root,expected_preset,profile):
                 time.sleep(1)
 
         if rcon is None:raise RuntimeError("Cannot authenticate to enabled RCON")
-        jfr_pid=None
-        if os.getenv("REALSCALE_JFR_DIAGNOSTIC")=="1":
-            listing=subprocess.run(["jcmd","-l"],capture_output=True,text=True,timeout=15,check=True)
-            candidates=[]
-            for line in listing.stdout.splitlines():
-                if not any(name in line.lower() for name in ("net.neoforged","minecraft","bootstraplauncher")):
-                    continue
-                pid=line.split()[0]
-                if pid.isdigit():
-                    candidates.append(pid)
-            if len(candidates)!=1:
-                raise RuntimeError("JFR profile requires exactly one active game server, got "+
-                                   str(candidates)+": "+listing.stdout[-2400:])
-            jfr_pid=candidates[0]
-            cmd=["jcmd",jfr_pid,"JFR.start","name=realscale_worldgen",
-                 "settings=profile","disk=true","maxsize=128m"]
-            start_result=subprocess.run(cmd,capture_output=True,text=True,
-                                        timeout=30,check=True)
-            print("REALSCALE_JFR_STARTED:",jfr_pid,start_result.stdout.strip(),flush=True)
+        if diagnostic_jfr and jfr_pid is None:
+            jfr_pid=find_game_jvm_pid()
+            if jfr_pid is None:
+                raise RuntimeError("JFR profile could not identify exactly one active game server")
+            start_worldgen_jfr(jfr_pid)
         try:
             if profile=="usgs":
                 # Previous QA requested 25 + 9*9 chunks at once in a
@@ -354,18 +455,9 @@ def main(root,expected_preset,profile):
             else:
                 for command in commands:
                     rcon.send(command)
-            if jfr_pid is not None:
-                recording=root/"build"/"realscale_worldgen_cpu.jfr"
-                capture=subprocess.run(
-                    ["jcmd",jfr_pid,"JFR.dump","name=realscale_worldgen",
-                     "filename="+str(recording)],
-                    capture_output=True,text=True,timeout=45,check=True)
-                print("REALSCALE_JFR_DUMP:",recording,
-                      "bytes=",recording.stat().st_size,flush=True)
-                print("REALSCALE_JFR_CAPTURE_MESSAGE:",capture.stdout.strip(),
-                      flush=True)
-                subprocess.run(["jcmd",jfr_pid,"JFR.stop","name=realscale_worldgen"],
-                               capture_output=True,text=True,timeout=30,check=True)
+            if jfr_pid is not None and not jfr_dumped:
+                dump_worldgen_jfr(root,jfr_pid)
+                jfr_dumped=True
             time.sleep(5 if profile=="structures" else (100 if profile=="fantasy" else (5 if profile=="usgs" else 35)))
             rcon.send("save-all flush")
             time.sleep(5)
@@ -379,10 +471,33 @@ def main(root,expected_preset,profile):
     except Exception as exc:
         failed=exc
         print("RCON WORLDGEN FAILURE:",repr(exc),flush=True)
-        # An unanswered RCON request can mean a worldgen deadlock or simply
-        # a very expensive chunk. Preserve the running JVM thread stacks
-        # BEFORE teardown so we can fix the actual hotspot.
-        if isinstance(exc,TimeoutError) and proc.poll() is None:
+        # Startup can stall before RCON exists and before the server emits
+        # Done. Keep JFR and thread capture independent: a failed JFR dump
+        # must never suppress the thread stacks that can reveal the stall.
+        if proc.poll() is None:
+            if diagnostic_jfr and jfr_pid is None:
+                try:
+                    jfr_pid=find_game_jvm_pid()
+                except (OSError,subprocess.SubprocessError) as diag_error:
+                    print("REALSCALE_JFR_PID_LOOKUP_FAILED:",
+                          repr(diag_error),flush=True)
+            if jfr_pid is not None and not jfr_dumped:
+                try:
+                    dump_worldgen_jfr(root,jfr_pid)
+                    jfr_dumped=True
+                except (OSError,subprocess.SubprocessError) as diag_error:
+                    print("REALSCALE_JFR_DUMP_FAILED:",
+                          repr(diag_error),flush=True)
+            if (not ready.is_set() or isinstance(exc,TimeoutError)) and not startup_dumps_captured:
+                try:
+                    pid=jfr_pid or find_game_jvm_pid()
+                    if pid is not None:
+                        capture_worldgen_thread_diagnostics(root,profile,pid)
+                        startup_dumps_captured=True
+                except (OSError,subprocess.SubprocessError) as diag_error:
+                    print("REALSCALE_STARTUP_THREAD_CAPTURE_FAILED:",
+                          repr(diag_error),flush=True)
+        if isinstance(exc,TimeoutError) and proc.poll() is None and not startup_dumps_captured:
             try:
                 dump=subprocess.run(
                     ["jcmd","-l"],capture_output=True,text=True,timeout=8)
