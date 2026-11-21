@@ -9,8 +9,8 @@
     "world_preset_json": 41,
     "public_profiles": 8,
     "hidden_or_legacy_profiles": 33,
-    "noise_settings_json": 32,
-    "density_function_json": 125,
+    "noise_settings_json": 33,
+    "density_function_json": 129,
     "biome_json": 69,
     "configured_feature_json": 106,
     "placed_feature_json": 122
@@ -412,6 +412,7 @@
     "The six fitted modes are experimental. Alpine and Canyon have multi-seed saved-Anvil evidence in the current workflow; do not infer equivalent validation for Glacial, Volcanic, Karst or Dune.",
     "Measured DEM profiles are read-only and remain hidden from the ordinary Create World menu.",
     "The current multi-seed workflow exercises internal tva_alpine_three_realms and tva_canyon_three_realms smoothed QA profiles, not the public alpine_three_realms and canyon_three_realms fitted profiles. Do not count those internal runs as direct validation of the public fitted presets.",
-    "The current Terrain Lab's legacy `landscape`/`alpine`/`canyon` blend families are a separate model from the six `TerrainArchetypeDensity` fitted families. The public Alpine and Canyon names therefore refer to different algorithms in the old editor and the public preset catalog."
+    "The current Terrain Lab's legacy `landscape`/`alpine`/`canyon` blend families are a separate model from the six `TerrainArchetypeDensity` fitted families. The public Alpine and Canyon names therefore refer to different algorithms in the old editor and the public preset catalog.",
+    "Natural Automate adds one public world preset, one noise-settings graph and four density-function resources to the audited main baseline."
   ]
 }
