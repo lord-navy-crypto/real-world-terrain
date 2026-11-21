@@ -7,11 +7,13 @@ import java.util.stream.IntStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class NaturalAutomateMathTest {
-    private static TerrainArchetypeMath kernel() {
+    private static TerrainArchetypeMath kernel(double strength) {
         return new TerrainArchetypeMath("natural_automate",
-                0.92,0.38,0.07,0.72,0.36,0.30,0.50,0.50,
+                0.92,0.38,0.07,strength,0.36,0.30,0.50,0.50,
                 1.05,0.25,12000.0);
     }
+
+    private static TerrainArchetypeMath kernel() { return kernel(0.72); }
 
     @Test
     void selectorCoversAllSixFittedFamiliesInOrder() {
@@ -64,6 +66,17 @@ final class NaturalAutomateMathTest {
                 assertTrue(first>-1.5 && first<2.5,
                         "composite morphology escaped its conservative density envelope");
             }
+        }
+    }
+
+    @Test
+    void zeroCompositeStrengthReturnsTheNaturalBaseWithoutFittedMorphology() {
+        TerrainArchetypeMath disabled=kernel(0.0);
+        for(double region=-1.0;region<=1.0;region+=0.05) {
+            double original=0.61;
+            double actual=disabled.compute(original,0.52,0.73,region,911,-1337);
+            assertEquals(Double.doubleToRawLongBits(original),
+                    Double.doubleToRawLongBits(actual));
         }
     }
 
