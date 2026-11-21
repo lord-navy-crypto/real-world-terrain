@@ -96,6 +96,7 @@ class TerrainLabTests(unittest.TestCase):
                          "realscale:terrain_lab/"+name+"/terrain_density")
         self.assertEqual(noise["noise_router"]["temperature"]["adjusted"]["height_signal"],
                          "realscale:terrain_lab/"+name+"/height_signal")
+        self.assertEqual(noise["spawn_target"][0]["continentalness"][0],0.12)
         world=lab.jread(self.root,lab.GEO_ROOT/"world_preset"/(name+".json"))
         source=world["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
         chain=[]
@@ -108,6 +109,14 @@ class TerrainLabTests(unittest.TestCase):
         self.assertEqual(options["morphology_percent"],100)
         self.assertEqual(len(world["dimensions"]),3)
         self.assertTrue(paths)
+
+    def test_natural_automate_can_keep_coastal_spawn_policy_when_requested(self):
+        name,_,_=lab.apply(
+            self.root,"natural_automate",1.0,0,50,6,inland=False,
+            latitude=lab.FIXED_LATITUDE_MODE,latitude_strength=58,
+            natural_morphology_percent=100)
+        noise=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
+        self.assertEqual(noise["spawn_target"][0]["continentalness"][0],-0.11)
 
     def test_natural_automate_zero_strength_disables_only_fitted_morphology(self):
         name,_,_=lab.apply(
