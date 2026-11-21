@@ -23,8 +23,14 @@ class RealWorldgenCiFairSampling(unittest.TestCase):
     def test_apes_startup_avoids_unnecessary_high_ceiling_spawn_load(self):
         source=APES.read_text()
         self.assertIn("spawn-chunk-radius=0",source)
-        self.assertIn("deadline=time.time()+540",source)
+        self.assertIn("deadline=time.time()+660",source)
+        self.assertIn("if ready.is_set():",source)
+        self.assertIn("APES_GRADLE_PARENT_STATE_AFTER_BOOT",source)
+        self.assertIn("forceload add {x} 0",source)
         self.assertIn("execute if loaded",source)
+        self.assertIn("until=time.monotonic()+480",source)
+        self.assertIn("save-all flush",source)
+        self.assertIn("rcon(rcon_socket,'stop',2502)",source)
         self.assertIn("check_apes_gallery.py",source)
         self.assertIn("assert", (ROOT/"qa/neoforge/check_apes_gallery.py").read_text())
 
