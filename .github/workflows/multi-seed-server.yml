@@ -56,6 +56,9 @@ jobs:
       - name: Boot real NeoForge and load distant chunks with authenticated RCON
         working-directory: neoforge
         run: python3 ../qa/neoforge/rcon_worldgen_smoke.py . 'realscale:${{ matrix.preset }}' distant
+      - name: Verify RealScale skipped vanilla 121-chunk spawn spiral
+        working-directory: neoforge
+        run: grep -q "REALSCALE_FAST_INITIAL_SPAWN" build/rcon_distant_server.log
       - name: Inspect ACTUAL saved terrain columns, abrupt cliffs and underground voids
         working-directory: neoforge
         run: python3 ../qa/neoforge/check_realism_continuity.py . '${{ matrix.preset }}'
