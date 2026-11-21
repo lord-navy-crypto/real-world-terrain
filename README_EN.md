@@ -1,23 +1,16 @@
 # RealScale Terrain
 
-An experimental real-scale terrain and ecology mod for Minecraft 1.21.1 / NeoForge 21.1.x / Java 21. The current source version is **2.0.0-preview.2-test.10**. This is an experimental development build, not a Stable release.
+An experimental real-scale terrain and ecology mod for Minecraft 1.21.1 / NeoForge 21.1.x / Java 21. The current source version is **2.0.0-preview.2-test.12**. This is an experimental development build, not a Stable release.
 
 The repository is undergoing an architecture consolidation. The goal is to organize terrain, ecology, dimensions, structures, visualization and performance into one coherent product rather than continuing to add overlapping presets and configuration entry points.
 
 ## Current Create World menu (2026-11-21)
 
-The `normal` and `extended` world-preset tags currently expose eight choices:
+The `normal` and `extended` world-preset tags expose **one RealScale choice**:
 
-1. **Natural Automate Three Realms** — adaptive regional composition of all six fitted landforms; recommended experimental mode.
-2. **Natural Three Realms** — natural terrain baseline.
-3. **Alpine Three Realms** — fitted alpine terrain (experimental).
-4. **Canyon Three Realms** — fitted canyon terrain (experimental).
-5. **Glacial Three Realms** — fitted glacial terrain (experimental).
-6. **Volcanic Three Realms** — fitted volcanic terrain (experimental).
-7. **Karst Three Realms** — fitted karst terrain (experimental).
-8. **Dune Three Realms** — fitted dune terrain (experimental).
+1. **Natural Automate Three Realms** — the unified experimental engine, combining the natural-smoothed baseline, six fitted morphology kernels, climate/regional suitability, smooth cross-fades, shared ecology layers and the expanded Cave Exploration V2 underground network.
 
-The six fitted modes remain experimental. Validation of a subset must not be presented as proof that all six are fully validated geographic fits.
+The natural baseline and six standalone fitted presets remain packaged as hidden compatibility and QA references. Their algorithms are not separate player-selectable world modes. The fitted kernels remain experimental geographic approximations; the unified selector does not imply that every generated region is an exact real-world match.
 
 **USGS Big Sur / Big Sur v2 were removed from the ordinary new-world menu following the earlier product decision.** Measured-terrain resources and internal profiles such as `measured_three_realms` remain for compatibility, data import and controlled experiments; they are not current public menu choices. USGS 3DEP import is an optional offline workflow and does not make the entire world measured terrain.
 
@@ -36,7 +29,7 @@ See the [Preset Catalog](docs/PRESET_CATALOG.json) for all 41 public, hidden and
 
 These tools exist, but they are not yet one unified workbench:
 
-- **Terrain Lab:** Natural Automate is now the primary path, with adaptive six-kernel morphology, terrain-relief and 1:20 climate controls. The older Landscape / Alpine / Canyon blended-noise families remain under Legacy Advanced. There is no live terrain preview yet.
+- **Terrain Lab:** Natural Automate is the only player-facing world-generation profile, with adaptive six-kernel morphology, terrain-relief and 1:20 climate controls. Legacy Landscape / Alpine / Canyon blend schemas remain internal for old-draft migration and exporter compatibility; they are not selectable in the player UI. There is no live terrain preview yet.
 - **World Atlas:** retired and removed; the mod no longer scans local saves.
 - **Geographic Climate Inspector:** read-only 1:20 geographic latitude, virtual solar season, daylight and altitude-temperature estimates. It is not a live weather simulator.
 - **Performance Studio:** provides four performance profiles, bounded cache controls, FPS/frame-interval telemetry, chunk-upload queue state and JVM-heap statistics.
@@ -74,7 +67,7 @@ cd neoforge
 gradle --no-daemon build
 ```
 
-**Current validation status:** this branch removes the unrelated orphan LOTM test from RealScale validation. Natural Automate, Studio and performance settings still require this branch's full CI and real-client testing; do not label it Stable yet.
+**Current validation status:** the final integration candidate checks the single Natural Automate entry, six-kernel composite, default Cave Exploration V2 network, legacy-draft migration, saved-world generation and performance guards. It remains an experimental candidate, not a Stable release; physical-client FPS, shader and broad third-party-mod compatibility still require separate A/B testing.
 
 Do not replace generator settings in an existing world. Back up the instance before new-world testing, and never install multiple RealScale main-mod JARs together.
 

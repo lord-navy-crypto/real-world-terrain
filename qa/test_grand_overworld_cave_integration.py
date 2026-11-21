@@ -9,7 +9,7 @@ JAVA=ROOT/"neoforge/src/main/java/org/realscale/neoforge"
 DATA=ROOT/"neoforge/src/main/resources/data/realscale/worldgen"
 
 CAVE_WORLDS=(
-    "tva_natural_smoothed","tva_alpine_smoothed",
+    "natural_automate","tva_natural_smoothed","tva_alpine_smoothed",
     "tva_canyon_smoothed","usgs_big_sur_v2"
 )
 
@@ -26,6 +26,8 @@ class OverworldCaveContracts(unittest.TestCase):
                 self.assertIsInstance(node,dict)
                 self.assertEqual(node["type"],"realscale:grand_overworld_caverns")
                 self.assertEqual(node["small_caves"],"realscale:realism_max/cave_core")
+                if preset=="natural_automate":
+                    self.assertIs(node.get("gallery_v2"),True)
                 self.assertEqual(node["warp"]["type"],"minecraft:noise")
                 self.assertEqual(noise["sea_level"],63)
                 if preset!="usgs_big_sur_v2":

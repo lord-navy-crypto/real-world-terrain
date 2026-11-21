@@ -206,6 +206,18 @@ public final class RealScaleTerrainLabClient {
                 case "grand_canyon", "continental" -> d.preset = "canyon";
                 default -> { }
             }
+            // The three historical blend families remain readable by the
+            // exporter, but are no longer player-selectable generation modes.
+            // Preserve the last valid legacy draft before normalizing the UI
+            // to the single public Natural Automate engine.
+            if ("landscape".equals(d.preset) || "alpine".equals(d.preset)
+                    || "canyon".equals(d.preset)) {
+                if (d.profiles == null) d.profiles = new LinkedHashMap<>();
+                FamilySettings saved = d.profiles.get(d.preset);
+                if (saved == null || !saved.valid())
+                    d.profiles.put(d.preset, FamilySettings.fromDraft(d));
+                d.preset = "natural_automate";
+            }
             // Prior drafts predate this field, so Gson initializes it to 0.
             // Retain 0 as a valid "original-mode only" blend choice.
         }
@@ -408,19 +420,10 @@ public final class RealScaleTerrainLabClient {
         return YetAnotherConfigLib.createBuilder()
             .title(Component.literal("RealScale Studio | Natural Automate & Performance"))
             .category(ConfigCategory.createBuilder()
-                .name(Component.literal("Primary World Model"))
-                .option(Option.<String>createBuilder()
-                    .name(Component.literal("World Generation Profile"))
-                    .description(description("Recommended: Natural Automate combines the six fitted morphology kernels through a deterministic low-frequency regional selector with smooth transitions, using the natural terrain, mountain relief, cave, ecotone and sky-ocean systems. The three older blended-noise families remain available under Legacy Advanced for compatibility. Export creates a new immutable world preset; it never edits an existing save."))
-                    .binding("natural_automate", () -> d.preset, v -> d.preset=v)
-                    .controller(o -> CyclingListControllerBuilder.create(o).values(
-                        "natural_automate","landscape","alpine","canyon")).build())
-                .build())
-            .category(ConfigCategory.createBuilder()
-                .name(Component.literal("Natural Automate | Unified Morphology"))
+                .name(Component.literal("Natural Automate | Unified World Engine"))
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Adaptive Morphology Strength (%)"))
-                    .description(description("0 disables the six-kernel composite; 100 uses the fitted regional blend; up to 135 increases its contribution within the validated density-codec range."))
+                    .description(description("The single public RealScale engine composes all six fitted kernels over the smoothed Natural baseline with climate, regional and topographic suitability gates. The expanded Cave Exploration V2 ring-and-annex network is enabled in this world profile. 0 disables fitted morphology; 100 is the fitted default; up to 135 increases its bounded contribution."))
                     .binding(100, () -> d.naturalMorphologyPercent,
                             v -> d.naturalMorphologyPercent=v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o)
@@ -437,9 +440,6 @@ public final class RealScaleTerrainLabClient {
                     .binding(true, () -> d.naturalInlandSpawn, v -> d.naturalInlandSpawn=v)
                     .controller(BooleanControllerBuilder::create).build())
                 .build())
-            .category(familyCategory("Legacy Blend | Landscape",d.profiles.get("landscape")))
-            .category(familyCategory("Legacy Blend | Alpine",d.profiles.get("alpine")))
-            .category(familyCategory("Legacy Blend | Canyon",d.profiles.get("canyon")))
             .category(ConfigCategory.createBuilder()
                 .name(Component.literal("Built-in Vanilla Structures"))
                 .option(Option.<Integer>createBuilder()

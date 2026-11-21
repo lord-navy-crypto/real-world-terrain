@@ -2,6 +2,21 @@
 
 本文件记录 **RealScale 地形主模组**的版本变化。当前主线将可选的 Distant Horizons × Chunky 兼容钩子嵌入主模组 JAR；历史独立 `dhchunkyguard` 插件与嵌入版本不兼容，不应同时安装。实验构建不能直接视为正式稳定版。
 
+## 2.0.0-preview.2-test.12 — 2026-11-21 — Final Natural Automate integration candidate (Experimental)
+
+### Completed
+- Natural Automate remains the only public RealScale world-generation profile in both standard and extended Create World menus.
+- Enabled Cave Exploration V2 in Natural Automate's default final-density pipeline: deterministic multi-tier loop passages, satellite-room connections and annex chambers now share the unified Overworld density field with the existing cave network.
+- Removed the Legacy Landscape / Alpine / Canyon selectors from the player-facing Terrain Lab screen. Their schemas, saved-draft migration and exporter support remain internal for compatibility.
+- Updated the cave contracts, preset validator and Terrain Lab regression checks to prevent the six-kernel engine or expanded cave network from silently reverting.
+- Repaired APES Gallery's RCON acceptance harness: it no longer assumes the Gradle parent process remains alive after Minecraft starts; it now tickets each satellite chunk, waits for loaded-state acknowledgements, flushes the world and stops the server through RCON.
+
+### Validation scope
+- Dedicated-server and Anvil checks must pass on this exact commit, including all 16 APES gallery biome palettes and the satellite FULL chunks.
+- Natural Automate's expanded cave codec is checked by the unified test-JAR server boot and the cave topology parity tests.
+- Legacy worldgen codecs still default `gallery_v2` to false when the field is absent, preserving older preset behavior.
+- This is the final experimental integration candidate, not a Stable certification. Client FPS, GPU behavior, shaders and every third-party mod combination still require physical-client validation.
+
 ## 2.0.0-preview.2-test.11 — 2026-11-21 — Single public Natural Automate composite (Experimental)
 
 ### Changed

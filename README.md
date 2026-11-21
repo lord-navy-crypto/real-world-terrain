@@ -1,6 +1,6 @@
 # RealScale Terrain
 
-Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与生态系统模组。当前源码版本为 **2.0.0-preview.2-test.11**；这是实验开发版本，不是 Stable 发布版。
+Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与生态系统模组。当前源码版本为 **2.0.0-preview.2-test.12**；这是实验开发版本，不是 Stable 发布版。
 
 本仓库正在进行一次统一架构整合。目标是把地形、生态、维度、结构、可视化和性能系统放入一致的产品结构，而不是继续增加互相重复的预设和配置入口。
 
@@ -10,7 +10,7 @@ Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与�
 
 1. **Natural Automate Three Realms** — 统一地形与生态预设。
 
-Natural Automate 以原有 Natural 地形信号为基线，将 Alpine、Glacial、Canyon、Volcanic、Karst 和 Dune 六种拟合形态作为内部计算核。系统依据区域地质先验、温度、湿度和局部地形适宜性自动分配权重，在适合的区域叠加相应地貌，在过渡区平滑混合，在不适合的区域精确保留 Natural 基线。普通玩家不再需要在六种地貌或 Natural 之间手动选择。
+Natural Automate 以经过平滑处理的 Natural 地形信号为基线，将 Alpine、Glacial、Canyon、Volcanic、Karst 和 Dune 六种拟合形态作为内部计算核。系统依据区域地质先验、温度、湿度和局部地形适宜性自动分配权重，在适合的区域叠加相应地貌，在过渡区平滑混合，在不适合的区域精确保留 Natural 基线。基础大型洞穴与 Cave Exploration V2 的环形洞室、附属洞室和多层连接网络也已进入这一默认生成引擎。普通玩家不再需要在六种地貌或 Natural 之间手动选择。
 
 Natural 基线和六个独立拟合预设的 JSON / registry ID 仍保留在 JAR 中，供兼容性、受控 QA 和开发对照使用；它们不再作为普通新世界菜单选项。隐藏独立预设不等于删除六种算法：六个拟合核仍由 Natural Automate 调用。
 
@@ -31,7 +31,7 @@ Natural 基线和六个独立拟合预设的 JSON / registry ID 仍保留在 JAR
 
 这些功能已经存在，但尚未整合成统一工作台：
 
-- **Terrain Lab：** 已将 Natural Automate 设为主线，支持自适应六种拟合地貌、地形起伏和 1:20 气候配置；旧版 Landscape / Alpine / Canyon 混合噪声入口保留为 Legacy Advanced。尚无实时地形预览。
+- **Terrain Lab：** 只提供 Natural Automate 的玩家配置入口，支持自适应六种拟合地貌、地形起伏和 1:20 气候配置。旧版 Landscape / Alpine / Canyon 混合噪声配置及导出兼容仍保留在内部，不再作为普通玩家可选模式。尚无实时地形预览。
 - **World Atlas：** 已移除，不再扫描本地存档。
 - **Geographic Climate Inspector：** 只读显示当前坐标的 1:20 地理纬度、虚拟太阳季节、日照和高度温度估算；不是实时天气模拟。
 - **Performance Studio：** 已提供四种性能配置、缓存容量管理、FPS/帧间隔、区块上传队列和 JVM 堆内存遥测。
@@ -69,7 +69,7 @@ cd neoforge
 gradle --no-daemon build
 ```
 
-**当前验证状态：** 本分支已移除与 RealScale 无关的 LOTM 孤立测试。单一 Natural Automate 菜单、Studio 和性能配置仍需通过本分支完整 CI 与实际客户端测试；目前不应将其标记为 Stable。
+**当前验证状态：** 本分支的单一 Natural Automate 入口、六核融合、默认 Cave Exploration V2、Legacy 配置迁移和服务器验收均纳入自动检查。此版本仍是实验性候选，不应标记为 Stable；客户端 FPS、特定光影与所有外部模组组合仍需真实客户端 A/B 验证。
 
 不要在已有世界上替换生成器配置。创建新世界测试前备份实例，并且不要同时安装多个 RealScale 主模组 JAR。
 

@@ -36,7 +36,8 @@
         "xz_scale": 0.038,
         "y_scale": 0.03
       },
-      "small_caves": "realscale:realism_max/cave_core"
+      "small_caves": "realscale:realism_max/cave_core",
+      "gallery_v2": true
     },
     "fluid_level_floodedness": {
       "noise": "minecraft:aquifer_fluid_level_floodedness",

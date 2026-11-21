@@ -65,6 +65,10 @@ class TerrainLabTests(unittest.TestCase):
         self.assertIn('"landscape", "alpine", "canyon"',native)
         self.assertIn('Secondary Landform Mix (%)',native)
         self.assertIn('blendPercent',native)
+        screen=native.split("public static Screen createScreen(Screen parent)",1)[1]
+        self.assertNotIn("World Generation Profile",screen)
+        self.assertNotIn("familyCategory(",screen)
+        self.assertIn("Natural Automate | Unified World Engine",screen)
         self.assertNotIn('"realism_max", "georeal_ultimate", "himalayan", "grand_canyon",',native)
         original=lab.jread(self.root,lab.TAG_ROOT/"extended.json")
         self.assertEqual([x for x in original["values"] if not x.startswith("realscale:lab_")],["realscale:natural_automate_three_realms"])

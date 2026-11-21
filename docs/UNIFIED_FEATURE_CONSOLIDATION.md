@@ -2,7 +2,7 @@
 
 **Audit date:** 2026-11-21  
 **Audit base:** `main` at `de1ff487ad5b297d5bb6e7054fa903dd752ded54`  
-**Status:** architecture audit and integration plan; no production world-generation behavior is changed by this document.
+**Status:** final integration candidate. Natural Automate is the only public generator; the six fitted kernels and Cave Exploration V2 are integrated in its default pipeline. Remaining release limits are explicit in §8.
 
 ## 1. Goal
 
@@ -16,6 +16,15 @@ The objective is not to delete features or merge every historical branch. It is 
 4. Preserve legacy registry IDs and saved-world compatibility.
 5. Give Terrain Lab, Climate Inspector, and performance diagnostics one coherent control and visualization architecture; keep local-save scanning out of the product.
 6. Promote features only after source-level, worldgen, saved-Anvil, and client validation.
+
+### Final integration candidate — 2026-11-21
+
+- The Create World tags expose one public generator: Natural Automate Three Realms.
+- Natural Automate now enables `gallery_v2: true` in its `grand_overworld_caverns` final-density codec. The deterministic V2 loop network and tiered annexes are part of the same Overworld density field, not a second dimension or separate public preset.
+- Legacy Landscape / Alpine / Canyon blend settings remain readable by the exporter and saved-draft migration, but their selector categories are no longer exposed in the player-facing Terrain Lab screen.
+- Cave Marine Habitat, Cave Wonder Network and Geological Wonders retain their explicit opt-in boundaries; this integration does not silently promote unrelated experimental ecology features.
+- APES Gallery's saved-world workflow now uses RCON independently of the Gradle parent-process lifetime and continues to require all 16 biome palettes plus real FULL satellite chunks.
+
 
 **Do not force-merge old branches or remove worldgen resources merely because they are hidden from the Create World menu.** A hidden registry ID may still be required by an existing save or datapack.
 
@@ -53,7 +62,7 @@ The standalone Natural baseline and six fitted world-preset JSON resources remai
 | WatershedRoutingMath / RiverChannelFeature | River routing and protected channel generation | Retain; validate long-range connectivity and water safety |
 | GeoMath and latitude/temperature density functions | Geographic and climate calculations | Consolidate around the fixed 1:20 WGS84 meridional model |
 
-Terrain Lab's primary `natural_automate` profile now composes the six fitted `TerrainArchetypeMath` kernels (alpine, glacial, canyon, volcanic, karst, dune) over the original natural height signal. A registered low-frequency `minecraft:offset` field supplies broad deterministic regional/geological affinity; raw shifted `minecraft:temperature` and `minecraft:vegetation` fields, together with the local terrain-height signal, gate each fitted family. Suitable families cross-fade through normalized weights. Where no family is suitable, the natural baseline remains unchanged. The old Landscape / Alpine / Canyon blend families remain available under Legacy Advanced; they are not the same algorithms as the fitted Alpine and Canyon archetypes. The content-addressed Terrain Lab exporter copies the same climate-aware density graph, and its model revision changes so old generated profile IDs remain immutable. The fit uses climate proxies from the same raw noise fields as the Overworld climate sampler; it does not query a biome ID directly. Per-kernel editing and a live preview remain later enhancements.
+Terrain Lab's only player-facing `natural_automate` profile composes the six fitted `TerrainArchetypeMath` kernels (alpine, glacial, canyon, volcanic, karst, dune) over the smoothed Natural height signal. A registered low-frequency `minecraft:offset` field supplies broad deterministic regional/geological affinity; raw shifted `minecraft:temperature` and `minecraft:vegetation` fields, together with the local terrain-height signal, gate each fitted family. Suitable families cross-fade through normalized weights. Where no family is suitable, the Natural baseline remains unchanged. The old Landscape / Alpine / Canyon blend schemas remain available to the exporter and legacy-draft migration but are not player-selectable. The content-addressed Terrain Lab exporter copies the same climate-aware density graph, and its model revision changes so old generated profile IDs remain immutable. The fit uses climate proxies from the same raw noise fields as the Overworld climate sampler; it does not query a biome ID directly. Per-kernel editing and a live preview remain later enhancements.
 
 #### Six fitted morphology kernels
 
@@ -116,7 +125,7 @@ Structure density packs must remain mutually exclusive where they override the s
 | Tool | What it actually does today | Current limitation |
 |---|---|---|
 | World Atlas | Removed from the active product at the user's direction | All Atlas screens, save-directory scanning, map readers, localization keys and Atlas-specific tests are removed; no replacement save scanner is planned |
-| Terrain Lab | Natural Automate composite editor plus three Legacy Advanced blend families; YACL draft and content-addressed new-world datapack exporter | No live terrain preview; individual fitted-kernel controls remain a later enhancement |
+| Terrain Lab | Natural Automate composite editor; legacy blend schemas remain internal for saved-draft migration/export compatibility | No live terrain preview; individual fitted-kernel controls remain a later enhancement |
 | Geographic Climate Inspector | Read-only current-position report for 1:20 latitude, climate belt, virtual solar season/daylight, top-of-atmosphere irradiance and altitude lapse estimate | Not local weather; not a live weather simulation; independent of the active NoiseRouter |
 | Adaptive Visibility | Classifies OPEN_SURFACE / SEALED_CAVE / TRANSITION and records telemetry | Does not itself suppress vanilla section meshes |
 | Client FPS profiler | Records Post-to-Post frame intervals and scene labels | Includes VSync/idle pacing; not a GPU-only measurement |
@@ -230,7 +239,7 @@ Introduce one versioned, immutable `TerrainProfile` / `WorldProfile` model as th
 
 The profile catalog should describe each ID, display name, status, terrain source, biome-layer stack, dimension set, defaults, legacy aliases, and validation level. Do not maintain separate hand-written lists for the YACL screen, Python exporter, world-preset tags and docs.
 
-Natural Automate is now the primary editable composite profile; it exposes morphology strength, terrain relief and the shared fixed 1:20 climate strength. The three old blended-noise families remain under Legacy Advanced. Individual per-kernel tuning and live preview remain future work. Keep measured DEM read-only and optional.
+Natural Automate is the only player-facing composite profile; it exposes morphology strength, terrain relief and the shared fixed 1:20 climate strength. The three old blended-noise families remain internal for migration/export compatibility and are not shown as selectable player modes. Cave Exploration V2 is enabled in the default Natural Automate final-density codec; legacy presets without the flag retain their original cave behavior. Individual per-kernel tuning and live preview remain future work. Keep measured DEM read-only and optional.
 
 ### One Visualization Studio
 
@@ -259,7 +268,7 @@ The preview must distinguish sampled procedural predictions from actual saved An
 
 - Add a machine-readable preset catalog.
 - Make the single public composite profile and all hidden/legacy profiles explicit by status.
-- Complete the Natural Automate editor and keep the three Legacy Advanced blends clearly separated from fitted archetypes.
+- Keep Natural Automate as the only player-facing world-generation editor; retain the three Legacy blend schemas only for migration and exporter compatibility.
 - Preserve old config migrations, world-preset IDs and saved-world datapack behavior.
 - Remove duplicate hand-maintained profile lists by generating menu labels, exporter mappings and docs from the catalog where feasible.
 
@@ -293,7 +302,7 @@ The preview must distinguish sampled procedural predictions from actual saved An
 
 ## 7. Evidence and blockers observed on 2026-11-21
 
-- The Natural Automate branch exposes one public profile; README, catalog and both menu tags are aligned. Source metadata is bumped to `2.0.0-preview.2-test.11`; a distributable JAR is not certified until CI and in-game validation pass.
+- The final integration candidate exposes one public profile; README, catalog and both menu tags are aligned. Natural Automate enables Cave Exploration V2 by default, while legacy codecs retain the old false default. Source metadata is bumped to `2.0.0-preview.2-test.12`; a distributable JAR is not Stable until CI and in-game validation pass.
 - The performance implementation in this branch is a selective integration of PR #156; avoid merging duplicate cache/profile files from that draft PR. Run the new branch's own CI and physical-client A/B tests before promotion.
 - PR #144 and older fitted-profile branches have heads that are ancestors of main; their changes should not be re-merged just because their PRs remain open. In particular, the legacy `tva_alpine_three_realms` and `tva_canyon_three_realms` QA aliases use smoothed settings and must not be confused with the current public fitted profiles.
 - PR #143's zonal/horizontal mapping branch is divergent and proposes a major coordinate-model change: X/Z become 20 source metres per Minecraft block while Y remains 1 metre per block, plus periodic latitude and preset-aware spawn selection. Current main uses 1:20 only for the geographic climate latitude model; terrain X/Z sampling remains 1 block = 1 metre. This changes apparent relief, DEM sampling, caves, structures, rivers and spawn geometry. It needs an explicit product decision and independent saved-world validation; do not merge it into the terrain-consolidation work as a routine cleanup.

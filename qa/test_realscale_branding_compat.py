@@ -96,6 +96,21 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
         self.assertEqual(environment["temperature"]["noise"],"minecraft:temperature")
         self.assertEqual(environment["humidity"]["noise"],"minecraft:vegetation")
 
+    def test_terrain_lab_exposes_only_the_unified_engine_and_migrates_legacy_drafts(self):
+        client=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleTerrainLabClient.java").read_text()
+        screen=client.split("public static Screen createScreen(Screen parent)",1)[1]
+        self.assertNotIn("World Generation Profile",screen)
+        self.assertNotIn("familyCategory(",screen)
+        self.assertIn("Natural Automate | Unified World Engine",screen)
+        self.assertIn('d.profiles.put(d.preset, FamilySettings.fromDraft(d));',client)
+        self.assertIn('d.preset = "natural_automate";',client)
+
+    def test_natural_automate_enables_the_expanded_default_cave_network(self):
+        noise=read(RES/"data/realscale/worldgen/noise_settings/natural_automate.json")
+        final=noise["noise_router"]["final_density"]
+        self.assertEqual(final["type"],"realscale:grand_overworld_caverns")
+        self.assertIs(final.get("gallery_v2"),True)
+
     def test_natural_automate_has_bilingual_player_facing_name(self):
         for name in ("en_us.json", "zh_cn.json"):
             labels = read(RES / "assets/minecraft/lang" / name)
@@ -251,8 +266,8 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
     def test_mod_name_and_archive_name_are_realscale_only(self):
         gradle = (ROOT / "neoforge/build.gradle").read_text()
         toml = (RES / "META-INF/neoforge.mods.toml").read_text()
-        self.assertIn("2.0.0-preview.2-test.11", gradle)
-        self.assertIn('version="2.0.0-preview.2-test.11"', toml)
+        self.assertIn("2.0.0-preview.2-test.12", gradle)
+        self.assertIn('version="2.0.0-preview.2-test.12"', toml)
         self.assertIn("RealScale-NeoForge-1.21.1", gradle)
         self.assertNotIn("TVA", toml)
         self.assertNotIn("RealScale-TVA", gradle)

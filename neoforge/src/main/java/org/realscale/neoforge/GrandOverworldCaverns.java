@@ -108,9 +108,10 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
     }
 
     /**
-     * Separate opt-in exploration world only: preserve legacy density exactly
-     * for all old presets, but connect satellite rooms into walkable loops
-     * and add tier-shaped annexes in the new saved noise settings.
+     * Expanded cave topology selected by an explicit saved noise-setting flag.
+     * Natural Automate and the dedicated Cave Exploration preset enable it;
+     * older noise settings omit the flag and retain the legacy network exactly.
+     * The added loops and tier-shaped annexes remain deterministic and bounded.
      */
     private double computeExpanded(DensityFunction.FunctionContext ctx) {
         double original=base.compute(ctx);

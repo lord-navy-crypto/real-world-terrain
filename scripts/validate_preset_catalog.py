@@ -80,6 +80,12 @@ def main() -> int:
             kernel = load(height_path).get("argument", {})
             if kernel.get("family") != "natural_automate":
                 fail("Natural Automate is missing its composite morphology density")
+            noise_data = load(noise_path)
+            final_density = noise_data.get("noise_router", {}).get("final_density", {})
+            if final_density.get("type") != "realscale:grand_overworld_caverns":
+                fail("Natural Automate must use the shared Overworld cave density codec")
+            if final_density.get("gallery_v2") is not True:
+                fail("Natural Automate must enable the expanded Cave Exploration V2 network")
             environment = kernel.get("environment", {})
             if not {"temperature", "humidity", "region_selector"}.issubset(environment):
                 fail("Natural Automate must use raw temperature, humidity and regional suitability inputs")
