@@ -14,6 +14,15 @@ class ApesGalleryWorkflowContracts(unittest.TestCase):
         self.assertIn("APES_GRADLE_PARENT_STATE_AFTER_BOOT",source)
         self.assertIn("rcon_socket=connect_rcon()",source)
 
+    def test_waits_for_minecraft_done_after_gradle_parent_exits(self):
+        source=WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("while time.time()<deadline and not ready.is_set():",source)
+        self.assertIn("if p.poll() is not None and not t.is_alive():break",source)
+        self.assertNotIn(
+            "while time.time()<deadline and p.poll() is None and not ready.is_set():",
+            source,
+        )
+
     def test_all_satellite_chunks_must_be_fully_loaded_and_saved(self):
         source=WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("positions=(112,128,144,160)",source)

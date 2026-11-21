@@ -67,7 +67,15 @@ jobs:
               if 'Done (' in line and 'For help' in line:ready.set()
           t=threading.Thread(target=read,daemon=True);t.start()
           deadline=time.time()+660
-          while time.time()<deadline and p.poll() is None and not ready.is_set():time.sleep(1)
+          # The Gradle runServer parent can exit while the detached Minecraft
+          # server continues writing to the inherited stdout pipe. Keep waiting
+          # for the actual Minecraft Done marker; only stop early if both the
+          # parent has exited and the log-reader thread has ended.
+          while time.time()<deadline and not ready.is_set():
+            if p.poll() is not None and not t.is_alive():break
+            time.sleep(1)
+          if not ready.is_set():
+            raise SystemExit('FAIL: Minecraft server did not emit Done before startup deadline')
           # Gradle runServer does not reliably forward post-boot stdin
           # commands to Minecraft. Use the actual local dedicated-server RCON.
           # This is a disposable CI world only, never a production setting.

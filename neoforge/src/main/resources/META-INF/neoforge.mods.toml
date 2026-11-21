@@ -53,6 +53,12 @@ side="BOTH"
 [[mixins]]
 config="realscale.dhchunky.mixins.json"
 
+# RealScale-only initial spawn fast path. It samples the climate-selected
+# chunk's terrain columns directly instead of generating up to 121 FULL chunks
+# while vanilla searches outward for a safe spawn.
+[[mixins]]
+config="realscale.fastspawn.mixins.json"
+
 # TEST MAIN ONLY: original gameplay by default. These plugins enable their
 # individual opt-in mixins only when explicit JVM flags are supplied.
 # NEVER merge to release without full saved-world parity and client FPS proof.
