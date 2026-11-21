@@ -18,14 +18,14 @@ FAMILIES={
  "tva_canyon_three_realms":"realscale:tva_canyon_smoothed",
  "tva_measured_three_realms":"realscale:usgs_big_sur_v2",
 }
-expected=["realscale:"+k for k in ("natural_automate_three_realms","natural_three_realms","alpine_three_realms","canyon_three_realms","glacial_three_realms","volcanic_three_realms","karst_three_realms","dune_three_realms")]
-# Natural Automate, the generic baseline and six data-fitted terrain modes are exposed to new worlds.
+expected=["realscale:natural_automate_three_realms"]
+# Natural Automate is the only public menu entry; the Natural baseline and six fitted archetypes remain internal/hidden references.
 # The optional cave ecology experiment remains available but hidden.
 assert (D/"worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json").is_file()
 for name in ("normal","extended"):
     tag=read(R/"neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset"/(name+".json"))
     assert tag["replace"] is False and tag["values"]==expected,(name,tag)
-    assert len(tag["values"])==len(set(tag["values"]))==8
+    assert len(tag["values"])==len(set(tag["values"]))==1
 for name,settings in FAMILIES.items():
     world=read(D/"worldgen/world_preset"/(name+".json"))
     assert world["dimensions"]["minecraft:overworld"]["generator"]["settings"]==settings,name

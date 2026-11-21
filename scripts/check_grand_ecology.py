@@ -63,7 +63,7 @@ def check():
         "source": old_overworld["generator"]["biome_source"]
     }
     tags = read(BASE / "neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/normal.json")
-    assert "realscale:natural_three_realms" in tags["values"]
+    assert tags["values"] == ["realscale:natural_automate_three_realms"]
     assert (WORLD_PRESET / "grand_ecology_three_realms.json").is_file()
     assert (WORLD_PRESET / "realism_max_three_realms.json").is_file()
     gallery = read(WORLD_PRESET / "apes_gallery_three_realms.json")

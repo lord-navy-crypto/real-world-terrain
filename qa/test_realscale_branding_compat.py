@@ -90,6 +90,7 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
             "realscale:natural_automate/height_signal",
         )
         height=read(RES / "data/realscale/worldgen/density_function/natural_automate/height_signal.json")
+        self.assertEqual(height["argument"]["base"],"realscale:tva_natural_smoothed/height_signal")
         environment=height["argument"]["environment"]
         self.assertEqual(environment["region_selector"]["noise"],"minecraft:offset")
         self.assertEqual(environment["temperature"]["noise"],"minecraft:temperature")
