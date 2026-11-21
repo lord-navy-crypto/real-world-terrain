@@ -117,7 +117,7 @@ Structure density packs must remain mutually exclusive where they override the s
 
 | Tool | What it actually does today | Current limitation |
 |---|---|---|
-| World Atlas | Read-only 48×48 saved-region coverage map; bounded 512–4096 block radius; background sampling of persisted Anvil heightmaps | Does not preview ungenerated terrain, render a 3D terrain model, control Chunky, or start a hidden server |
+| World Atlas | Removed from the active product at the user's direction | All Atlas screens, save-directory scanning, map readers, localization keys and Atlas-specific tests are removed; no replacement save scanner is planned |
 | Terrain Lab | YACL configuration for three editable families; saves a next-world draft; exporter creates a new-world datapack | No live terrain preview; only three editable families; disconnected from the seven-mode catalog |
 | Geographic Climate Inspector | Read-only current-position report for 1:20 latitude, climate belt, virtual solar season/daylight, top-of-atmosphere irradiance and altitude lapse estimate | Not local weather; not a live weather simulation; independent of the active NoiseRouter |
 | Adaptive Visibility | Classifies OPEN_SURFACE / SEALED_CAVE / TRANSITION and records telemetry | Does not itself suppress vanilla section meshes |
@@ -126,7 +126,7 @@ Structure density packs must remain mutually exclusive where they override the s
 | Distant Horizons cave LOD controller | Optional DH API integration | Must remain fail-open and be validated on actual client setups |
 | install_realscale_visuals.py | Installs pinned Iris/Sodium and external shader/texture packs into a local development run | A development-instance installer, not an in-game visualization subsystem |
 
-There is currently **no unified Visualization Studio**. The existing tools live in different entry points: world-list screen, mod config screen, pause menu, and log output.
+There is currently **no unified RealScale Studio**. Terrain Lab, Climate Inspector and performance telemetry still use separate entry points. World Atlas has been retired and must not be reintroduced.
 
 ### E. Performance and compatibility
 
@@ -240,11 +240,11 @@ The unified Studio should provide these tabs or modes:
 - **Terrain:** profile selection, shared controls and a sampled height/slope/relief preview.
 - **Ecology:** biome and habitat layers, cave-depth selection, ocean/sky systems and explicit wonder opt-in.
 - **Climate:** current 1:20 geographic report, virtual solar estimates and altitude-aware climate diagnostics.
-- **Atlas:** existing saved-world coverage and persisted-heightmap view.
+- **Atlas:** retired; no local-save scanning or persisted-heightmap view.
 - **Compare:** compare profile A/B and preview-versus-saved terrain.
 - **Performance:** worldgen stage samples, cache metrics, client frame intervals, upload queue and memory estimates.
 
-World Atlas should remain read-only when inspecting saves. Preview generation must use a separate bounded worker and must never silently generate or modify the user's saved world.
+World Atlas has been removed. Any future terrain preview must operate only on a bounded synthetic/sample model or the currently loaded world, with no offline save-directory scanning and no hidden server startup.
 
 The preview must distinguish sampled procedural predictions from actual saved Anvil data. Do not claim exact preview parity until the same generator path has been measured against real generated chunks.
 
@@ -301,7 +301,7 @@ The preview must distinguish sampled procedural predictions from actual saved An
 - PR #143's zonal/horizontal mapping branch is divergent and proposes a major coordinate-model change: X/Z become 20 source metres per Minecraft block while Y remains 1 metre per block, plus periodic latitude and preset-aware spawn selection. Current main uses 1:20 only for the geographic climate latitude model; terrain X/Z sampling remains 1 block = 1 metre. This changes apparent relief, DEM sampling, caves, structures, rivers and spawn geometry. It needs an explicit product decision and independent saved-world validation; do not merge it into the terrain-consolidation work as a routine cleanup.
 - The old `feature/terrain-generation-optimization` branch is divergent and its own documentation labels its DEM cache work experimental; do not replace current main code with it without fresh parity and real-server A/B evidence.
 - The USGS 3DEP importer, river-network implementation and several ecology/terrain features already have source-path coverage in main; avoid duplicate cherry-picks from stale branches.
-- World Atlas v0.1/v0.2 is a read-only saved-world inspector. Older Chunky/offline-pregeneration experiments are not part of its current release scope.
+- World Atlas is retired and removed in the Natural Automate consolidation branch. Older Chunky/offline-pregeneration experiments remain out of scope.
 
 ## 8. Non-negotiable acceptance gates
 
