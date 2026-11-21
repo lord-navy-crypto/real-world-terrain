@@ -185,7 +185,7 @@ final class TerrainArchetypeMath {
             case "canyon" -> canyon(original, landGate, signal, x, z);
             case "glacial" -> glacialValley(original, landGate, x, z);
             case "volcanic" -> volcanicShield(original, landGate, x, z);
-            case "karst" -> karstTowers(original, landGate, signal, x, z);
+            case "karst" -> karstTowers(original, landGate, x, z, signal);
             case "dune" -> duneRidges(original, landGate, signal, x, z);
             default -> original;
         };
