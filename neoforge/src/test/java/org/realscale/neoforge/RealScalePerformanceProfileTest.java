@@ -33,6 +33,12 @@ final class RealScalePerformanceProfileTest {
                 compact, "mountain", 64));
         assertEquals(64, RealScalePerformanceProfile.cacheSlots(
                 compact, "sky", 256));
+        assertEquals(256, RealScalePerformanceProfile.cacheSlots(
+                compact, "archetype_horizontal", 1024));
+        assertEquals(256, RealScalePerformanceProfile.cacheSlots(
+                compact, "archetype_volcanic", 1024));
+        assertEquals(256, RealScalePerformanceProfile.cacheSlots(
+                compact, "archetype_karst", 1024));
         assertThrows(IllegalArgumentException.class, () ->
                 RealScalePerformanceProfile.cacheSlots(compact, "invalid", 12));
     }
@@ -43,8 +49,8 @@ final class RealScalePerformanceProfileTest {
                 RealScalePerformanceProfile.Profile.BALANCED);
         long compact = RealScalePerformanceProfile.estimatedCacheArrayBytesOneSet(
                 RealScalePerformanceProfile.Profile.LOW_MEMORY);
-        assertEquals(396_960L, balanced);
-        assertEquals(99_240L, compact);
+        assertEquals(541_440L, balanced);
+        assertEquals(135_432L, compact);
         assertTrue(compact < balanced);
     }
 
