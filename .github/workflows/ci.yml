@@ -362,7 +362,6 @@ jobs:
             neoforge/src/main/java/org/realscale/neoforge/GrandNetherCaveNetwork.java \
             neoforge/src/main/java/org/realscale/neoforge/SkyIslandLayout.java \
             neoforge/src/main/java/org/realscale/neoforge/SkyIslandSiteCache.java \
-            neoforge/src/main/java/org/realscale/neoforge/RealScalePerformanceProfile.java \
             neoforge/src/test/java/org/realscale/neoforge/FarDistanceWorldgenSmoke.java
           java -cp build/far-worldgen-smoke org.realscale.neoforge.FarDistanceWorldgenSmoke
       - name: Verify NeoForge runClient task is registered
