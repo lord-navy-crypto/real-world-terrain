@@ -85,7 +85,7 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
             labels = read(RES / "assets/minecraft/lang" / name)
             self.assertIn("RealScale", labels["generator.realscale.natural_automate_three_realms"])
 
-    def test_six_fitted_presets_share_universal_biome_layers:
+    def test_six_fitted_presets_share_universal_biome_layers(self):
         for name, settings_id in CANONICAL.items():
             if name == "natural_three_realms":
                 continue
