@@ -35,6 +35,7 @@ import java.util.Map;
 @Mod(value = "realscale", dist = Dist.CLIENT)
 public final class RealScaleTerrainLabClient {
     private static final Path CONFIG = Path.of("config", "realscale-terrain-lab.json");
+    private static final Path PERFORMANCE_CONFIG = Path.of("config", "realscale-performance.json");
     private static final Gson JSON = new GsonBuilder().setPrettyPrinting().create();
 
     public RealScaleTerrainLabClient(ModContainer container) {
@@ -131,7 +132,8 @@ public final class RealScaleTerrainLabClient {
     }
 
     private static class Draft {
-        String preset = "landscape";
+        String preset = "natural_automate";
+        int naturalMorphologyPercent = 100;
         int blendPercent = 25;
         boolean lithostitchedBlend = false;
         boolean lithostitchedGeology = false;
@@ -156,13 +158,16 @@ public final class RealScaleTerrainLabClient {
         Boolean architectureStructuresEnabled = Boolean.TRUE;
         // OFF by default; new high-rise district generation is experimental.
         Boolean urbanDistrictsEnabled = Boolean.FALSE;
+        String performanceProfile = "balanced";
+        boolean performanceDiagnostics = false;
+        boolean predictiveUpload = false;
+        boolean worldgenDiagnostics = false;
         Map<String,FamilySettings> profiles = new LinkedHashMap<>();
 
         static Draft defaults() {
             Draft d = new Draft();
             for (String family : EDITABLE_FAMILIES)
                 d.profiles.put(family, FamilySettings.defaults(family));
-            d.profiles.get(d.preset).copyTo(d);
             return d;
         }
 
@@ -191,7 +196,7 @@ public final class RealScaleTerrainLabClient {
                 d.urbanDistrictsEnabled = Boolean.FALSE;
             // Saved YACL drafts from v1.4.1 remain readable. These names are
             // normalized only in the next-world draft, never in existing saves.
-            if (d.preset == null) return;
+            if (d.preset == null) d.preset = "natural_automate";
             switch (d.preset) {
                 case "realism_max", "georeal_ultimate", "ultimate" -> d.preset = "landscape";
                 case "himalayan", "realistic_mountains" -> d.preset = "alpine";
@@ -221,6 +226,13 @@ public final class RealScaleTerrainLabClient {
                     || !RealScaleStructurePacks.validDimensions(d.dimensionStructureDensity))
                 return false;
             return switch (d.preset) {
+                case "natural_automate" -> d.naturalMorphologyPercent >= 0
+                        && d.naturalMorphologyPercent <= 135
+                        && d.reliefPercent >= 80 && d.reliefPercent <= 125
+                        && d.latitudeStrength >= 0 && d.latitudeStrength <= 100
+                        && "fixed_1_20".equals(d.latitudeMode)
+                        && d.architectureStructuresEnabled != null
+                        && d.urbanDistrictsEnabled != null;
                 case "landscape", "alpine", "canyon" ->
                         d.blendPercent >= 0 && d.blendPercent <= 50
                         && (!d.lithostitchedGeology || d.blendPercent > 0)
@@ -245,7 +257,7 @@ public final class RealScaleTerrainLabClient {
 
         void save() {
             initializeProfiles();
-            profiles.get(preset).copyTo(this);
+            if (profiles.containsKey(preset)) profiles.get(preset).copyTo(this);
             if (!valid(this)) throw new IllegalArgumentException("Terrain Lab draft is invalid");
             Path temp = CONFIG.resolveSibling(CONFIG.getFileName().toString() + ".tmp");
             try {
@@ -262,6 +274,34 @@ public final class RealScaleTerrainLabClient {
                 throw new IllegalStateException("Cannot save next-world Terrain Lab draft", ex);
             } finally {
                 try { Files.deleteIfExists(temp); } catch (IOException ignored) { }
+            }
+            savePerformanceSettings();
+        }
+
+        private void savePerformanceSettings() {
+            Map<String,Object> settings=new LinkedHashMap<>();
+            settings.put("profile",performanceProfile);
+            settings.put("diagnostics",performanceDiagnostics);
+            settings.put("predictiveUpload",predictiveUpload);
+            settings.put("worldgenDiagnostics",worldgenDiagnostics);
+            Path temp=PERFORMANCE_CONFIG.resolveSibling(
+                    PERFORMANCE_CONFIG.getFileName().toString()+".tmp");
+            try {
+                Files.createDirectories(PERFORMANCE_CONFIG.getParent());
+                Files.writeString(temp,JSON.toJson(settings),StandardCharsets.UTF_8);
+                try {
+                    Files.move(temp,PERFORMANCE_CONFIG,
+                            java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                } catch (java.nio.file.AtomicMoveNotSupportedException ex) {
+                    Files.move(temp,PERFORMANCE_CONFIG,
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch(IOException ex) {
+                throw new IllegalStateException(
+                        "Cannot save RealScale performance settings",ex);
+            } finally {
+                try { Files.deleteIfExists(temp); } catch(IOException ignored) { }
             }
         }
     }
@@ -355,15 +395,40 @@ public final class RealScaleTerrainLabClient {
         Draft d=Draft.read();
         d.initializeProfiles();
         return YetAnotherConfigLib.createBuilder()
-            .title(Component.literal("RealScale | Terrain Lab — 3 Editable Families"))
+            .title(Component.literal("RealScale Studio | Natural Automate & Performance"))
             .category(ConfigCategory.createBuilder()
-                .name(Component.literal("Choose World Type"))
+                .name(Component.literal("Primary World Model"))
                 .option(Option.<String>createBuilder()
-                    .name(Component.literal("Editable Terrain Family"))
-                    .description(description("This editor currently covers three LEGACY BLENDED-NOISE families: Landscape (Realism MAX + GeoReal), Alpine (Himalayan + Realistic Mountains) and Canyon (Grand Canyon + Continental). These are NOT the same algorithms as the public fitted Alpine and Canyon archetypes. The six public fitted landforms use a separate TerrainArchetypeDensity engine and are not editable here yet. Edit each legacy blend family in its OWN tab. Save exports only the chosen family. To apply it, exit Minecraft and run the matching RealScale-Config-Exporter.pyz with the mod JAR and saved YACL JSON; enable its ZIP when creating a NEW world. Measured USGS profiles remain hidden from the ordinary menu and read-only. Legacy world IDs remain compatible."))
-                    .binding("landscape", () -> d.preset, v -> d.preset=v)
+                    .name(Component.literal("World Generation Profile"))
+                    .description(description("Recommended: Natural Automate combines the six fitted morphology kernels through a deterministic low-frequency regional selector with smooth transitions, using the natural terrain, mountain relief, cave, ecotone and sky-ocean systems. The three older blended-noise families remain available under Legacy Advanced for compatibility. Export creates a new immutable world preset; it never edits an existing save."))
+                    .binding("natural_automate", () -> d.preset, v -> d.preset=v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(
-                        "landscape","alpine","canyon")).build())
+                        "natural_automate","landscape","alpine","canyon")).build())
+                .build())
+            .category(ConfigCategory.createBuilder()
+                .name(Component.literal("Natural Automate | Unified Morphology"))
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Adaptive Morphology Strength (%)"))
+                    .description(description("0 disables the six-kernel composite; 100 uses the fitted regional blend; up to 135 increases its contribution within the validated density-codec range."))
+                    .binding(100, () -> d.naturalMorphologyPercent,
+                            v -> d.naturalMorphologyPercent=v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o)
+                            .range(0,135).step(5)).build())
+                .option(Option.<Integer>createBuilder()
+                    .name(Component.literal("Natural Automate Terrain Relief (%)"))
+                    .description(description("80-125%; scales the composite height signal for NEW worlds only. Sea level remains Y=63."))
+                    .binding(100, () -> d.reliefPercent, v -> d.reliefPercent=v)
+                    .controller(o -> IntegerSliderControllerBuilder.create(o)
+                            .range(80,125).step(1)).build())
+                .build())
+            .category(ConfigCategory.createBuilder()
+                .name(Component.literal("Legacy Advanced | Blended Noise"))
+                .option(Option.<String>createBuilder()
+                    .name(Component.literal("Legacy Blend Family"))
+                    .description(description("Only used when the Primary World Model is Landscape, Alpine or Canyon. These older blended-noise families are not the six fitted morphology kernels."))
+                    .binding("landscape", () -> d.preset, v -> d.preset=v)
+                    .controller(o -> CyclingListControllerBuilder.create(o)
+                            .values("landscape","alpine","canyon")).build())
                 .build())
             .category(familyCategory("Legacy Blend | Landscape",d.profiles.get("landscape")))
             .category(familyCategory("Legacy Blend | Alpine",d.profiles.get("alpine")))
@@ -397,12 +462,41 @@ public final class RealScaleTerrainLabClient {
                     .controller(BooleanControllerBuilder::create).build())
                 .build())
             .category(ConfigCategory.createBuilder()
-                .name(Component.literal("Shared Climate & Latitude / Export"))
+                .name(Component.literal("Shared Climate & Export"))
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Fixed 1:20 Latitude Temperature Strength"))
                     .description(description("One fixed WGS84 meridional model: equator Z=0 and approximately 500,098 blocks from equator to either pole. 1:20 applies ONLY to climate latitude; terrain coordinates and X/Z sampling remain 1 block = 1 metre. Set strength to 0 to disable the latitude contribution."))
                     .binding(70, () -> d.latitudeStrength, v -> d.latitudeStrength=v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5)).build())
+                .build())
+            .category(ConfigCategory.createBuilder()
+                .name(Component.literal("Performance Studio | Configuration"))
+                .option(Option.<String>createBuilder()
+                    .name(Component.literal("Performance Profile"))
+                    .description(description("Balanced preserves current cache sizes and disables upload pacing. Low Memory reduces bounded RealScale cache capacities to one quarter. Smooth Render enables guarded FIFO upload pacing, adaptive frame-pressure control and the optional DH cave-LOD adapter. Combined applies both. Restart required."))
+                    .binding("balanced", () -> d.performanceProfile,
+                            v -> d.performanceProfile=v)
+                    .controller(o -> CyclingListControllerBuilder.create(o).values(
+                        "balanced","low_memory","smooth_render",
+                        "low_memory_smooth_render")).build())
+                .option(Option.<Boolean>createBuilder()
+                    .name(Component.literal("Live Performance Diagnostics"))
+                    .description(description("Enables bounded client frame/queue/heap telemetry for Performance Studio. Measurements include frame pacing and JVM heap; they are not GPU-only timings or VRAM. Restart required."))
+                    .binding(false, () -> d.performanceDiagnostics,
+                            v -> d.performanceDiagnostics=v)
+                    .controller(BooleanControllerBuilder::create).build())
+                .option(Option.<Boolean>createBuilder()
+                    .name(Component.literal("Predictive Upload Pacing (Experimental)"))
+                    .description(description("Uses a bounded moving estimate to defer later FIFO upload tasks. It never drops or reorders tasks, but may delay distant terrain appearance. Keep OFF until client A/B tests show a benefit. Restart required."))
+                    .binding(false, () -> d.predictiveUpload,
+                            v -> d.predictiveUpload=v)
+                    .controller(BooleanControllerBuilder::create).build())
+                .option(Option.<Boolean>createBuilder()
+                    .name(Component.literal("Worldgen Density Diagnostics"))
+                    .description(description("Enables low-allocation density-function timing. Diagnostic overhead is measurable; use only during controlled profiling. Restart required."))
+                    .binding(false, () -> d.worldgenDiagnostics,
+                            v -> d.worldgenDiagnostics=v)
+                    .controller(BooleanControllerBuilder::create).build())
                 .build())
             // Saves an immutable next-world configuration DRAFT only. Players
             // use matching Config Exporter to create the new world's datapack.
