@@ -90,9 +90,9 @@ tasks.named('test', Test) {
 sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
 sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
 
-// YACL currently stores 3 editable families (Landscape, Alpine, Canyon).
-// The public Create World catalog contains 7 profiles; extending this editor
-// to all public profiles is tracked in docs/UNIFIED_FEATURE_CONSOLIDATION.md.
+// YACL exposes Natural Automate as the primary composite profile plus three
+// Legacy Advanced blended-noise families (Landscape, Alpine, Canyon).
+// The public Create World catalog contains eight selectable profiles.
 // Export remains explicit and creates a NEW-WORLD datapack only.
 
 
