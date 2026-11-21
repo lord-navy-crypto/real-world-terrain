@@ -97,7 +97,7 @@ public final class RealScalePerformanceStudioScreen extends Screen {
                 Component.literal("Frame intervals include VSync and scheduling; they are not GPU-only timings."),
                 width/2,noteY,0xffb5c0c8);
         graphics.drawCenteredString(font,
-                Component.literal("Heap values are JVM heap, not GPU VRAM. Upload pacing may delay terrain appearance."),
+                Component.literal("Heap is JVM heap, not VRAM; cache estimate is one array set, not total process memory. Upload pacing may delay terrain appearance."),
                 width/2,noteY+13,0xff9eabb5);
         if(!frame.enabled())
             graphics.drawCenteredString(font,
