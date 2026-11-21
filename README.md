@@ -1,65 +1,84 @@
 # RealScale Terrain
 
-Minecraft 1.21.1 / NeoForge / Java 21 的真实尺度地形实验项目。仓库保留 **v1.1 历史测试候选版**：USGS Big Sur 高程覆盖层 + 七个历史程序化预设。当前开发分支正在把新世界入口精简为四个规范地形家族，并建立由真实 DEM 拟合参数驱动的离线原型。地表单位为 1 方块 = 1 米；这不意味着原始观测分辨率为 1 米。
+Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与生态系统模组。当前源码版本为 **2.0.0-preview.2-test.9**；这是实验开发版本，不是 Stable 发布版。
 
-## 当前实验预览与兼容组件（2026-10-23）
+本仓库正在进行一次统一架构整合。目标是把地形、生态、维度、结构、可视化和性能系统放入一致的产品结构，而不是继续增加互相重复的预设和配置入口。
 
-最新实验性主模组采用 **RealScale 2.0.0-preview.2-test.6** 命名，下载 JAR 的前缀为 **RealScale-NeoForge-1.21.1**。本分支将新世界菜单精简为四项：自然地貌、高山地貌、峡谷与河谷、实测地形。地质奇观、洞穴生物群系和海洋栖息地作为可组合的共享层；跨维度入侵仍保留为隐藏的实验资源。旧世界注册 ID 与可选实验资源继续保留，避免删除历史兼容路径。对已有世界，请先备份再测试新版本。
+## 当前新世界菜单（2026-11-21）
 
-RealScale 与 Distant Horizons / Chunky 的独立兼容补丁统一在本仓库的 [`dh-chunky-guard/`](dh-chunky-guard/) 管理。它拥有**单独的 Java / Mixin / Gradle 和 JAR 构建**，不是 RealScale 主模组必需依赖；需要使用精确匹配的 DH 3.3.3、Chunky 1.4.23、NeoForge 1.21.1。不要把两款 RealScale 主模组 JAR 同时安装，也不要同时安装两个 Guard 版本。
+当前 `normal` 与 `extended` 世界类型菜单均提供七个选项：
 
-详细说明请见 [品牌命名与旧世界迁移约定](docs/REAL_SCALE_BRANDING_COMPATIBILITY.md)。实验性优化尚未完成全部旧存档等价性及 Mac 光影实测，**不应以 Stable 名义发布**。
+1. **Natural Three Realms** — 自然地形基线。
+2. **Alpine Three Realms** — 高山拟合地形（实验）。
+3. **Canyon Three Realms** — 峡谷拟合地形（实验）。
+4. **Glacial Three Realms** — 冰川拟合地形（实验）。
+5. **Volcanic Three Realms** — 火山拟合地形（实验）。
+6. **Karst Three Realms** — 喀斯特拟合地形（实验）。
+7. **Dune Three Realms** — 沙丘拟合地形（实验）。
 
-主模组各版本更新请参阅 [RealScale 更新日志](neoforge/CHANGELOG.md)。DH–Chunky 独立补丁的更新记录请参阅 [兼容补丁更新日志](dh-chunky-guard/CHANGELOG.md)。
+六种拟合模式仍属于实验配置，不能把部分模式的测试结果推广成全部模式已经完成真实地理拟合验证。
 
-## 当前交付与边界
+**USGS Big Sur / Big Sur v2 已按此前决定从普通新世界菜单中移除。** 实测地形资源和 `measured_three_realms` 等内部配置仍保留，用于兼容、数据导入和受控实验；不要将其误认为当前公开菜单选项。USGS 3DEP 数据导入是离线、可选流程，不代表整个世界都是实测地形。
 
-- `neoforge/`：从已成功构建的原始快照恢复的完整可读 Java 模组源码、Gradle 配置、世界生成 JSON、DEM 与独立 Java 测试。
-- `archive/v0.4–v0.6/`：分别保存可读的数据包历史快照；v0.4 另保留本机已有的旧 JAR。目录实际名为 `v0.4`、`v0.5`、`v0.6`。
-- `data/usgs-big-sur/`：144 条 USGS EPQS 请求记录、12×12 高程网格与来源信息。
-- `qa/`：历史 Minecraft NBT/Anvil 解析测试、真实服务器区块高程核验，以及迁移完整性检查。
-- `dist/v1.1/`：从 GitHub Actions 恢复的可安装 NeoForge JAR。
-- `evidence/`：带 SHA-256 校验的原始构建附件、构建附件及服务器报告。
-- `docs/`：来源清单、版本恢复状态、许可说明和验证范围。
-- `research/v0.7`～`research/v1.0`：原始 Java 数值地质、水文与 USGS 测量数据导入算法及其独立测试；尚未完整接入可玩版。
+## 核心系统
 
-**v0.7–v1.0 的原始独立 GeoCore／地质／水文／实测数据导入源码已补充恢复到 [`research/`](research/)。** 这些是独立测试原型，**没有全部集成到 v1.1 可安装模组**。v1.1 的三个 Java 类主要负责 DEM 加载、密度函数和注册，并非完整自定义 `ChunkGenerator`。详见 [版本清单](docs/VERSIONS.md) 与 [原型来源校验](docs/RESEARCH_PROVENANCE.md)。
+- **Terrain Engine：** Realism MAX、Terrain Archetype、DEM、山脉起伏、侵蚀、地层和河流地形。
+- **Ecology Engine：** Natural Ecotones、Sky Ocean、Sky Islands、Cave Depth Habitats、海洋和洞穴生态、可选 Geological Wonders。
+- **World Systems：** 扩展 Overworld 洞穴、Grand Nether / End、天空岛、结构密度包、100 结构建筑库和可选水上载具。
+- **Visualization：** World Atlas、Terrain Lab、Geographic Climate Inspector。
+- **Performance：** 世界生成采样、缓存诊断、客户端帧间隔和可选区块上传节流。
+- **Compatibility：** 可选 Distant Horizons / Chunky 兼容钩子及外部客户端视觉工具。
 
-## 安装测试候选版
+完整 40 个世界预设的公开、隐藏和历史分类见 [Preset Catalog](docs/PRESET_CATALOG.json)。详细功能清单、状态分级、冲突判断和最终整合路线见 [Unified Feature Consolidation](docs/UNIFIED_FEATURE_CONSOLIDATION.md)。
 
-优先下载 [与原始交付字节一致的 v1.1 JAR](dist/v1.1/RealScaleTerrain_NeoForge_1.21.1_FinalBattle_v1.1.jar)（SHA-256: `638ef85e4b3978e6344ec8b52d37e0c463c21bfd2a7cf7e8564d5b7eab5ada43`），或从 [dist/v1.1](dist/v1.1/) 浏览其他构建产物；将 JAR，放入 Minecraft 1.21.1、NeoForge 21.1.249、Java 21 实例的 `mods` 文件夹。关闭游戏后操作，先备份实例。只装一份 RealScale，创建新的实验世界，选择 USGS Big Sur 预设，建议种子 `785312`，观察世界原点附近。
+## 当前可视化状态
 
-DEM 覆盖约 480×480 米，32 米网格由约 54–67 米间距的 USGS 服务值重采样而来；内侧 96 米过渡带混合回 Realism MAX。真实降水、岩性、侵蚀与完整河网不在这个 JAR 中。客户端画面、村庄落地、长距离河流和性能仍待测试。
+这些功能已经存在，但尚未整合成统一工作台：
 
-## 可选建筑库（当前架构开发分支）
+- **Terrain Lab：** YACL 参数编辑器和新世界数据包导出。目前编辑的是旧版 Landscape / Alpine / Canyon 混合噪声家族；六种公开拟合地貌使用另一套 `TerrainArchetypeDensity` 形态学引擎，尚未接入同一编辑器，也没有实时地形预览。
+- **World Atlas：** 只读查看已经保存的 Anvil 区块覆盖与高度图；不会生成新区块、启动隐藏服务器或控制 Chunky。
+- **Geographic Climate Inspector：** 只读显示当前坐标的 1:20 地理纬度、虚拟太阳季节、日照和高度温度估算；不是实时天气模拟。
+- **Performance diagnostics：** 当前主要由可选采样器和日志提供，尚未形成性能热力图工作台。
 
-当前版本还包含一个独立的 **RealScale Architecture Library**：
-- 100 种 Minecraft 1.21.1 结构模板：3 种经 Apache-2.0 许可核验的 GDMC 导入，以及 97 种原创设计。
-- 42 种扩展设计采用 22 种不同建筑形制，包括长屋、庭院、温室、架空建筑、梯田、工业场、码头、市场、塔楼、风车、回廊和市政大厅。
-现有 100 种模板共用确定性的细节强化流程：入口雨棚与道路、按建筑用途配置的室内设施、补充照明和适用的屋顶排气/烟囱；不增加模板 ID，也不改变建筑尺寸。三种 GDMC 来源文件保持原样，只有经过许可转换的 NBT 副本接受附加细节。
-- 原创设计由 5 种基础设计、50 种批量建筑和 42 种 Expansion 3 新设计组成，涵盖山地避难所、丛林高架站点、湿地市场、沙漠设施、铁路与河流基础设施、公共建筑和工业复合建筑。
-- NBT 模板位于模组基础数据资源中，可用于显式 `/place template` 放置；自然生成的群系标签、结构定义和结构集则位于独立可选数据包。
-- 新世界创建时，在 **Data Packs** 中选择 **RealScale | Architecture Library (100 Structures)**，才会启用自然生成。普通世界不会被强制添加这些建筑。
+这些能力将在统一的 **RealScale Studio** 架构中逐步整合。不能把尚未实现的实时预览、性能热力图或完整 3D 编辑器描述成现有功能。
 
-来源、生成器、群系分布和验证边界见 [建筑生成说明](docs/architecture/ORIGINAL_ARCHITECTURE_GENERATOR.md) 与 [资产来源记录](docs/architecture/ASSET_PROVENANCE.md)。
+## Optional architecture library
 
-## 构建与验证
+主模组包含可选的 100 结构建筑库。新世界创建时可在 Data Packs 中启用；它不是强制加入所有世界的功能。结构密度包之间有互斥限制，创建世界前应只选择一套适用的 Overworld 密度配置。
 
-要求 Java 21、Python 3.9+、Gradle **8.14.3**（与原验证环境一致）。
+## Distant Horizons / Chunky compatibility
+
+当前 main 在主模组中嵌入可选的 DH–Chunky 兼容钩子，针对已测试的 Distant Horizons 3.3.3 + Chunky 1.4.23 组合。历史独立 `dhchunkyguard` 插件与当前嵌入版本不应同时安装；本分支没有独立的顶层 `dh-chunky-guard/` 子项目。
+
+World Atlas 与 Chunky 保持独立：Atlas 不复制命令、不启动后台服务器、不接管 Chunky 任务。
+
+## Repository layout
+
+- `neoforge/` — NeoForge 主模组源码、注册、世界生成资源和客户端界面。
+- `scripts/` — Terrain Lab exporter、USGS 3DEP importer、结构模板生成和开发工具。
+- `qa/` — 源码完整性、数据、Anvil、世界生成和性能回归检查。
+- `docs/` — 当前架构、验证范围、来源记录和历史设计。
+- `assets/architecture/` — 建筑模板源素材及许可记录。
+- `archive/` — 历史数据包和旧版本材料。
+- `research/` — 尚未完整集成的数值地质、水文和数据导入研究原型。
+- `dist/v1.1/` — 历史 v1.1 测试候选 JAR，不是当前七模式源码构建。
+
+## Build and validation
+
+要求 Java 21、Minecraft 1.21.1、NeoForge 21.1.x 和 Python 3。
 
 ```sh
 python3 qa/verify_repository.py
 cd neoforge
 gradle --no-daemon build
-gradle --no-daemon runServer
 ```
 
-启动服务器前需自行阅读并接受 Minecraft EULA；测试应使用一次性新世界。原始 `neoforge/README_CN.md` 保留为历史文件，其中旧 SWARM-MOBS 本机启动路径不适用于此独立仓库，以上命令取代该路径。
+**当前已知构建阻塞：** main 测试目录含有一个独立 LOTM 测试文件，它引用了 main 中不存在的 `LotmBalance` 类。LOTM 是独立开发内容，不能作为 RealScale 核心的一部分混入；在清理该测试边界并重新运行完整 CI 前，不应把当前源码标记为通过全部构建门槛。
 
-CI 自动运行离线核验、Java DEM 测试和 NeoForge 构建，并保留新构建 JAR。服务器 CI 在一次性世界中启动真正的 NeoForge 并检查保存区块；完整服务器存档 ZIP 因上传审核容量限制未进入 GitHub；提供该文件路径作为 `qa/verify_repository.py` 的第一个参数可离线重验。历史来源与新 CI 结果分别记录，详见 [验证说明](docs/VALIDATION.md)。
+不要在已有世界上替换生成器配置。创建新世界测试前备份实例，并且不要同时安装多个 RealScale 主模组 JAR。
 
-## 来源与许可
+## Version and licensing
 
-[来源清单](docs/PROVENANCE.json)记录原始提交、压缩快照校验值、Actions run 和附件 ID。只迁移 RealScale 相关路径；没有导入 SWARM-MOBS 的怪物 AI、资源或提交历史。旧版本以 archive 保存。
+当前源码版本以 `neoforge/build.gradle` 和 `META-INF/neoforge.mods.toml` 为准；更新记录见 [CHANGELOG](neoforge/CHANGELOG.md)。历史恢复状态见 [VERSIONS](docs/VERSIONS.md)。
 
-原始源码没有明确的开源许可授权，本次没有擅自补成 MIT。请阅读 [LICENSE](LICENSE) 和 [第三方来源声明](THIRD_PARTY_NOTICES.md)。
+原始源码没有明确的开源许可授权，本次没有擅自补成 MIT。请阅读 [LICENSE](LICENSE) 和 [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md)。

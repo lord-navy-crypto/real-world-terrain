@@ -1,6 +1,19 @@
 # RealScale — Changelog / 更新日志
 
-本文件记录 **RealScale 地形主模组**的版本变化。Distant Horizons × Chunky Guard 是单独安装的兼容补丁，版本说明见 `dh-chunky-guard/CHANGELOG.md`。实验构建不能直接视为正式稳定版。
+本文件记录 **RealScale 地形主模组**的版本变化。当前 main 将可选的 Distant Horizons × Chunky 兼容钩子嵌入主模组 JAR；历史独立 `dhchunkyguard` 插件与嵌入版本不兼容，不应同时安装。实验构建不能直接视为正式稳定版。
+
+## 2.0.0-preview.2-test.9 — 2026-11-21 — Experimental source baseline
+
+### Current source state
+- The current Create World tags expose seven profiles: Natural plus Alpine, Canyon, Glacial, Volcanic, Karst and Dune.
+- The six fitted profiles remain experimental. The USGS Big Sur modes remain hidden from the ordinary new-world menu by the earlier product decision; measured resources are retained for compatibility and controlled testing.
+- Terrain Lab still edits three families (Landscape, Alpine and Canyon). It is not yet unified with all seven public profiles and does not provide a live terrain preview.
+- World Atlas remains a read-only saved-Anvil coverage/heightmap inspector. Geographic Climate Inspector remains a read-only 1:20 geographic/solar report.
+- No new general FPS or world-generation speedup is claimed by this source-version bump.
+
+### Known integration blockers
+- The current source tree contains an unrelated LOTM test referencing a missing `LotmBalance` class on main. Isolate the independent LOTM module/test and rerun full CI before promoting this source baseline.
+- Unified profile catalog, shared ecology-layer controls and Visualization Studio remain planned consolidation work, not completed features.
 
 ## Seven-mode public test build — 2026-10-27
 **Artifact basis:** `2.0.0-preview.2-test.6` (the JAR's internal version was not bumped for this menu-only test build).

@@ -6,7 +6,7 @@ modId="realscale"
 version="2.0.0-preview.2-test.9"
 displayName="RealScale — Terrain, Caves & Oceans (Experimental)"
 authors="RealScale Research"
-description="Experimental four-family three-realm terrain: Natural, Alpine, Canyon, USGS Big Sur v2; Grand Nether/End, ecotones, APES ecology and offshore skylands."
+description="Experimental seven-profile three-realm terrain: Natural, Alpine, Canyon, Glacial, Volcanic, Karst and Dune; measured USGS profiles remain hidden. Includes ecotones, cave habitats, offshore skylands and expanded Nether/End."
 [[dependencies.realscale]]
 modId="neoforge"
 type="required"
