@@ -472,23 +472,31 @@ def main(root,expected_preset,profile):
         failed=exc
         print("RCON WORLDGEN FAILURE:",repr(exc),flush=True)
         # Startup can stall before RCON exists and before the server emits
-        # Done. Capture JVM evidence in that path too, not only after RCON
-        # timeouts. JFR started during startup spans spawn-region generation.
+        # Done. Keep JFR and thread capture independent: a failed JFR dump
+        # must never suppress the thread stacks that can reveal the stall.
         if proc.poll() is None:
-            try:
-                if diagnostic_jfr and jfr_pid is None:
+            if diagnostic_jfr and jfr_pid is None:
+                try:
                     jfr_pid=find_game_jvm_pid()
-                if jfr_pid is not None and not jfr_dumped:
+                except (OSError,subprocess.SubprocessError) as diag_error:
+                    print("REALSCALE_JFR_PID_LOOKUP_FAILED:",
+                          repr(diag_error),flush=True)
+            if jfr_pid is not None and not jfr_dumped:
+                try:
                     dump_worldgen_jfr(root,jfr_pid)
                     jfr_dumped=True
-                if (not ready.is_set() or isinstance(exc,TimeoutError)) and not startup_dumps_captured:
+                except (OSError,subprocess.SubprocessError) as diag_error:
+                    print("REALSCALE_JFR_DUMP_FAILED:",
+                          repr(diag_error),flush=True)
+            if (not ready.is_set() or isinstance(exc,TimeoutError)) and not startup_dumps_captured:
+                try:
                     pid=jfr_pid or find_game_jvm_pid()
                     if pid is not None:
                         capture_worldgen_thread_diagnostics(root,profile,pid)
                         startup_dumps_captured=True
-            except (OSError,subprocess.SubprocessError) as diag_error:
-                print("REALSCALE_STARTUP_DIAGNOSTIC_UNAVAILABLE:",
-                      repr(diag_error),flush=True)
+                except (OSError,subprocess.SubprocessError) as diag_error:
+                    print("REALSCALE_STARTUP_THREAD_CAPTURE_FAILED:",
+                          repr(diag_error),flush=True)
         if isinstance(exc,TimeoutError) and proc.poll() is None and not startup_dumps_captured:
             try:
                 dump=subprocess.run(
