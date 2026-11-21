@@ -90,8 +90,13 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
             "realscale:natural_automate/height_signal",
         )
         height=read(RES / "data/realscale/worldgen/density_function/natural_automate/height_signal.json")
-        self.assertEqual(height["argument"]["base"],"realscale:tva_natural_smoothed/height_signal")
-        environment=height["argument"]["environment"]
+        self.assertEqual(height["type"],"realscale:measured_horizontal_memo")
+        self.assertEqual(height["input"]["type"],"minecraft:cache_2d")
+        morphology=height["input"]["argument"]
+        self.assertEqual(morphology["type"],"realscale:terrain_archetype")
+        self.assertEqual(morphology["family"],"natural_automate")
+        self.assertEqual(morphology["base"],"realscale:tva_natural_smoothed/height_signal")
+        environment=morphology["environment"]
         self.assertEqual(environment["region_selector"]["noise"],"minecraft:offset")
         self.assertEqual(environment["temperature"]["noise"],"minecraft:temperature")
         self.assertEqual(environment["humidity"]["noise"],"minecraft:vegetation")
