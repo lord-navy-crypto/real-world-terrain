@@ -745,7 +745,8 @@ def gui(root, launch):
     climate=tk.IntVar(value=65)
     valley=tk.IntVar(value=0)
     latitude=tk.StringVar(value=FIXED_LATITUDE_MODE)
-    latitude_strength=tk.IntVar(value=70)
+    latitude_strength=tk.IntVar(value=58)
+    natural_morphology=tk.IntVar(value=100)
     basin=tk.IntVar(value=0)
     inland=tk.BooleanVar(value=True)
     fantasy=tk.BooleanVar(value=False)
@@ -765,20 +766,21 @@ def gui(root, launch):
         tk.Scale(frame,from_=frm,to=to,resolution=resolution,orient="horizontal",
                  showvalue=True,variable=variable,length=440).pack(side="left",fill="x",expand=True)
     slider("Terrain relief multiplier",relief,0.8,1.25,.01)
-    slider("Secondary landform feature mix (%)",blend,0,50,1)
+    slider("Natural Automate morphology strength (0..135%)",natural_morphology,0,135,5)
+    slider("Legacy Advanced only — secondary landform mix (%)",blend,0,50,1)
     ttk.Checkbutton(main,text="Lithostitched adaptive blend (new world)",variable=lithomix).pack(anchor="w",pady=(7,0))
     ttk.Checkbutton(main,text="Lithostitched Deep Geology (new world)",variable=lithogeology).pack(anchor="w",pady=(7,0))
-    slider("Coherent ridge shaping (0..40)",ridge,0,40,1)
-    slider("Noise-driven incisional erosion (0..30)",erosion,0,30,1)
-    slider("Warped vertical strata solidity (0..20)",strata,0,20,1)
-    slider("Altitude-aware biome cooling (0..100)",climate,0,100,1)
-    slider("Optional valley-floor warming (0..100)",valley,0,100,5)
+    slider("Legacy Advanced only — coherent ridge shaping (0..40)",ridge,0,40,1)
+    slider("Legacy Advanced only — noise-driven incisional erosion (0..30)",erosion,0,30,1)
+    slider("Legacy Advanced only — warped vertical strata solidity (0..20)",strata,0,20,1)
+    slider("Legacy Advanced only — altitude-aware biome cooling (0..100)",climate,0,100,1)
+    slider("Legacy Advanced only — optional valley-floor warming (0..100)",valley,0,100,5)
     ttk.Label(main,text="Fixed WGS84 1:20 latitude model | equator Z=0 | 500,098 blocks to either pole. Climate only; terrain remains 1 block = 1 metre.").pack(anchor="w",pady=(9,0))
     slider("Latitude temperature strength (0..100; 0 disables)",latitude_strength,0,100,5)
-    slider("Optional enclosed-basin warming (0..100)",basin,0,100,5)
+    slider("Legacy Advanced only — optional enclosed-basin warming (0..100)",basin,0,100,5)
     slider("Elevation offset (blocks)",elevation,-48,48)
-    slider("Cave activity (higher = more caves)",caves,20,80)
-    chooser("Safe river grade: Off=0, Steep-safe=3, Normal=6, Flexible=9",
+    slider("Legacy Advanced only — cave activity (higher = more caves)",caves,20,80)
+    chooser("Legacy Advanced only — safe river grade: Off=0, Steep-safe=3, Normal=6, Flexible=9",
             grade,(0,3,6,9))
     ttk.Checkbutton(main,text="Prefer inland spawn climate",variable=inland).pack(anchor="w",pady=(7,0))
     ttk.Checkbutton(main,text="Experimental: enlarge Nether and End for NEW worlds",variable=fantasy).pack(anchor="w",pady=(7,0))
@@ -792,7 +794,7 @@ def gui(root, launch):
     def save():
         try:
             name,_,_=apply(root,preset.get(),round(relief.get(),2),elevation.get(),caves.get(),grade.get(),inland.get(),blend_percent=blend.get(),ridge=ridge.get(),erosion=erosion.get(),strata=strata.get(),climate=climate.get(),valley=valley.get(),latitude=FIXED_LATITUDE_MODE,
-                    latitude_strength=latitude_strength.get(),basin=basin.get(),fantasy_dimensions=fantasy.get(),lithostitched_blend=lithomix.get(),lithostitched_geology=lithogeology.get())
+                    latitude_strength=latitude_strength.get(),basin=basin.get(),fantasy_dimensions=fantasy.get(),lithostitched_blend=lithomix.get(),lithostitched_geology=lithogeology.get(),natural_morphology_percent=natural_morphology.get())
         except Exception as ex:
             messagebox.showerror("Terrain Lab",str(ex))
             return
