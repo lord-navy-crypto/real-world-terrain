@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exercise real compiled RealScale .jar -> YACL draft -> self-contained new-world pack.
 
-Must preserve one default plus six fitted menu choices, hide experiments, and keep Grand dimensions.
+Must preserve Natural Automate, one natural baseline, six fitted menu choices, hide experiments, and keep Grand dimensions.
 """
 import json
 from pathlib import Path
@@ -29,6 +29,7 @@ def main():
         cave_test=("data/realscale/worldgen/world_preset/"
             "cave_ocean_ecology_three_realms.json") in source.namelist()
     original=[
+        "realscale:natural_automate_three_realms",
         "realscale:natural_three_realms",
         "realscale:alpine_three_realms",
         "realscale:canyon_three_realms",
@@ -41,7 +42,7 @@ def main():
     if cave_test:
         experimental.append("realscale:cave_ocean_ecology_three_realms")
     require(core["replace"] is False and core["values"]==original,
-            "RealScale built mod must expose only the default and six DEM-fitted presets")
+            "RealScale built mod must expose Natural Automate, the natural baseline, and six DEM-fitted presets")
     require(not any(preset in core["values"] for preset in experimental),
             "Experimental world presets must remain available on disk but hidden from the default menu")
     with tempfile.TemporaryDirectory(prefix="realscale-lab-export-") as temporary:
@@ -100,7 +101,7 @@ def main():
             pass
         else:
             raise AssertionError("Exporter unexpectedly overwrote a pre-existing pack")
-    print("REALSCALE_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, 7 canonical fitted modes, hidden experiments and immutable export")
+    print("REALSCALE_EXPORTER_E2E_PASS: compiled jar, 3-realm Lab pack, 8 public terrain modes, hidden experiments and immutable export")
 
 if __name__=="__main__":
     main()
