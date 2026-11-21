@@ -16,6 +16,7 @@ OLD = [
     "tva_cave_ocean_ecology_test_three_realms",
 ]
 NEW = [
+    "natural_automate_three_realms",
     "natural_three_realms",
     "alpine_three_realms",
     "canyon_three_realms",
@@ -56,14 +57,35 @@ def source_chain(source):
 
 class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
     def test_new_world_menu_has_natural_and_six_fitted_tests_without_usgs(self):
-        menu = ["realscale:" + name for name in CANONICAL]
+        menu = ["realscale:natural_automate_three_realms"] + ["realscale:" + name for name in CANONICAL]
         for name in ("normal", "extended"):
             tag = read(TAG_ROOT / (name + ".json"))
             self.assertEqual(tag["values"], menu)
-            self.assertEqual(len(set(menu)), 7)
+            self.assertEqual(len(set(menu)), 8)
             self.assertNotIn("realscale:usgs_big_sur", tag["values"])
 
-    def test_six_fitted_presets_share_universal_biome_layers(self):
+    def test_natural_automate_is_a_separate_composite_over_the_natural_base(self):
+        world = read(WORLD / "natural_automate_three_realms.json")
+        overworld = world["dimensions"]["minecraft:overworld"]
+        self.assertEqual(overworld["generator"]["settings"], "realscale:natural_automate")
+        self.assertEqual(
+            source_chain(overworld["generator"]["biome_source"]),
+            ["realscale:sky_ocean", "realscale:natural_ecotones",
+             "realscale:cave_depth_habitats", "minecraft:multi_noise"],
+        )
+        noise = read(RES / "data/realscale/worldgen/noise_settings/natural_automate.json")
+        self.assertEqual(
+            noise["noise_router"]["temperature"]["adjusted"]["height_signal"],
+            "realscale:natural_automate/height_signal",
+        )
+        self.assertTrue((RES / "data/realscale/worldgen/density_function/natural_automate/height_signal.json").is_file())
+
+    def test_natural_automate_has_bilingual_player_facing_name(self):
+        for name in ("en_us.json", "zh_cn.json"):
+            labels = read(RES / "assets/minecraft/lang" / name)
+            self.assertIn("RealScale", labels["generator.realscale.natural_automate_three_realms"])
+
+    def test_six_fitted_presets_share_universal_biome_layers:
         for name, settings_id in CANONICAL.items():
             if name == "natural_three_realms":
                 continue
@@ -213,8 +235,8 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
     def test_mod_name_and_archive_name_are_realscale_only(self):
         gradle = (ROOT / "neoforge/build.gradle").read_text()
         toml = (RES / "META-INF/neoforge.mods.toml").read_text()
-        self.assertIn("2.0.0-preview.2-test.9", gradle)
-        self.assertIn('version="2.0.0-preview.2-test.9"', toml)
+        self.assertIn("2.0.0-preview.2-test.10", gradle)
+        self.assertIn('version="2.0.0-preview.2-test.10"', toml)
         self.assertIn("RealScale-NeoForge-1.21.1", gradle)
         self.assertNotIn("TVA", toml)
         self.assertNotIn("RealScale-TVA", gradle)
