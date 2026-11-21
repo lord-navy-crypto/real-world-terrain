@@ -178,7 +178,8 @@ public final class RealScalePerformanceProfile {
     }
 
     public static boolean predictiveUploadEnabled() {
-        return modeAwareUploadEnabled() && SETTINGS.predictiveUpload();
+        return modeAwareUploadEnabled() && (SETTINGS.predictiveUpload()
+                || Boolean.getBoolean("realscale.experimental.client.uploadbudget.predictive"));
     }
 
     public static boolean undergroundLodEnabled() {
