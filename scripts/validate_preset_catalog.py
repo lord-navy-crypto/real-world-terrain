@@ -77,8 +77,16 @@ def main() -> int:
             fail(f"{preset_id}: biome source chain differs; actual={chain}")
         if preset_id == "natural_automate_three_realms":
             height_path = RES / "data/realscale/worldgen/density_function/natural_automate/height_signal.json"
-            kernel = load(height_path).get("argument", {})
-            if kernel.get("family") != "natural_automate":
+            height = load(height_path)
+            # The complete Y-independent height signal is memoized, but the
+            # original native cache_2d and fitted morphology must remain intact.
+            if height.get("type") != "realscale:measured_horizontal_memo":
+                fail("Natural Automate needs its exact X/Z height memo")
+            cached = height.get("input", {})
+            if cached.get("type") != "minecraft:cache_2d":
+                fail("Natural Automate changed its native cache_2d graph")
+            kernel = cached.get("argument", {})
+            if kernel.get("type") != "realscale:terrain_archetype" or kernel.get("family") != "natural_automate":
                 fail("Natural Automate is missing its composite morphology density")
             noise_data = load(noise_path)
             final_density = noise_data.get("noise_router", {}).get("final_density", {})
