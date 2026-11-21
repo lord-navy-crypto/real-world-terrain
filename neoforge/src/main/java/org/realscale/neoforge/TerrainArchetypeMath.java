@@ -32,6 +32,7 @@ final class TerrainArchetypeMath {
     private final double volcanicRadius;
     private final double karstTowerRadius;
     private final double karstSinkRadius;
+    private final TerrainArchetypeMath[] naturalKernels;
 
     // Volcanic geometry depends only on horizontal block coordinates. Worldgen
     // samples many Y values for the same X/Z, so cache the expensive radial
@@ -135,14 +136,46 @@ final class TerrainArchetypeMath {
         this.volcanicRadius = fittedScale(0.025, 250.0, 800.0);
         this.karstTowerRadius = fittedScale(0.025, 80.0, 450.0);
         this.karstSinkRadius = fittedScale(0.012, 40.0, 200.0);
+        // Natural Automate composes the six measured morphology kernels.
+        // Each sub-kernel keeps its own fitted coefficients and exact cache logic.
+        this.naturalKernels = "natural_automate".equals(family)
+                ? new TerrainArchetypeMath[] {
+                    new TerrainArchetypeMath("alpine",0.920334,0.388031,0.049170,
+                            0.965848,0.353898,0.442335,0.493463,0.506537,
+                            1.018168,-Math.PI,18151.56),
+                    new TerrainArchetypeMath("glacial",0.976883,0.211697,0.029717,
+                            0.713694,0.347762,0.176078,0.502144,0.497856,
+                            0.990941,Math.PI/2.0,17311.0169),
+                    new TerrainArchetypeMath("canyon",0.918247,0.387271,0.082729,
+                            0.363634,0.597412,0.291044,0.520377,0.479623,
+                            1.045483,-2.243785,34289.3669),
+                    new TerrainArchetypeMath("volcanic",0.993788,0.111131,0.005939,
+                            0.735566,0.129572,0.0,0.496722,0.503278,
+                            1.058617,-1.800358,25035.3016),
+                    new TerrainArchetypeMath("karst",0.860842,0.497984,0.104702,
+                            0.263639,0.301540,0.195690,0.483278,0.516722,
+                            1.095601,1.863521,7936.9415),
+                    new TerrainArchetypeMath("dune",0.972392,0.222451,0.070499,
+                            0.147684,0.211133,0.0,0.523430,0.476570,
+                            1.160985,Math.PI/2.0,4775.6305)
+                }
+                : null;
     }
 
     double compute(double original, double continent, double rawSignal,
             double x, double z) {
+        return compute(original,continent,rawSignal,rawSignal,x,z);
+    }
+
+    double compute(double original, double continent, double rawSignal,
+            double rawRegionSignal,double x, double z) {
         double landGate = smoothstep(-0.10, 0.22, continent);
         if (landGate <= 0.0) return original;
 
         double signal = unitNoise(rawSignal);
+        if ("natural_automate".equals(family))
+            return naturalAutomate(original,continent,signal,rawRegionSignal,x,z);
+
         // Keep each family's trigonometry and geometric work inside that
         // family's branch. Density functions are sampled millions of times
         // during chunk generation; computing canyon waves for a volcano (or
@@ -152,10 +185,61 @@ final class TerrainArchetypeMath {
             case "canyon" -> canyon(original, landGate, signal, x, z);
             case "glacial" -> glacialValley(original, landGate, x, z);
             case "volcanic" -> volcanicShield(original, landGate, x, z);
-            case "karst" -> karstTowers(original, landGate, x, z, signal);
-            case "dune" -> duneRidges(original, landGate, x, z, signal);
+            case "karst" -> karstTowers(original, landGate, signal, x, z);
+            case "dune" -> duneRidges(original, landGate, signal, x, z);
             default -> original;
         };
+    }
+
+    /**
+     * Select one fitted morphology family per broad deterministic region.
+     * Adjacent regions cross-fade over the final 16% of each selector band,
+     * preserving continuity. Topographic gates keep highland/lowland forms
+     * from being indiscriminately stamped across the wrong terrain.
+     */
+    private double naturalAutomate(double original,double continent,double signal,
+            double rawRegionSignal,double x,double z) {
+        double region=unitNoise(rawRegionSignal);
+        double position=(region+1.0)*3.0;
+        if(position<=0.0)
+            return naturalFamily(0,original,continent,signal,x,z);
+        if(position>=6.0)
+            return naturalFamily(5,original,continent,signal,x,z);
+        int index=(int)Math.floor(position);
+        double fraction=position-index;
+        double first=naturalFamily(index,original,continent,signal,x,z);
+        if(index>=5 || fraction<=0.84)return first;
+        double second=naturalFamily(index+1,original,continent,signal,x,z);
+        double blend=smoothstep(0.84,1.0,fraction);
+        return first+(second-first)*blend;
+    }
+
+    private double naturalFamily(int index,double original,double continent,
+            double signal,double x,double z) {
+        double candidate=naturalKernels[index].compute(
+                original,continent,signal,x,z);
+        double domainWeight=switch(index) {
+            case 0 -> 1.0; // Alpine kernel has its own highland gate.
+            case 1 -> smoothstep(0.18,0.62,original); // glacial highlands
+            case 2 -> 1.0; // canyon incision spans broad landforms
+            case 3 -> smoothstep(0.05,0.42,original); // elevated volcanic regions
+            case 4 -> smoothstep(-0.12,0.22,original)
+                    *(1.0-smoothstep(0.72,1.05,original)); // karst uplands
+            case 5 -> 1.0-smoothstep(0.12,0.58,original); // lowland dune fields
+            default -> 0.0;
+        };
+        return original+(candidate-original)*domainWeight;
+    }
+
+    static int naturalFamilyIndex(double regionSignal) {
+        double position=(unitNoise(regionSignal)+1.0)*3.0;
+        return Math.max(0,Math.min(5,(int)Math.floor(position)));
+    }
+
+    static double naturalFamilyTransition(double regionSignal) {
+        double position=(unitNoise(regionSignal)+1.0)*3.0;
+        if(position<=0.0 || position>=6.0)return 0.0;
+        return smoothstep(0.84,1.0,position-Math.floor(position));
     }
 
     /**
