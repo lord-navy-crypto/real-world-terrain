@@ -25,7 +25,7 @@ Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与�
 - **Terrain Engine：** Realism MAX、Terrain Archetype、DEM、山脉起伏、侵蚀、地层和河流地形。
 - **Ecology Engine：** Natural Ecotones、Sky Ocean、Sky Islands、Cave Depth Habitats、海洋和洞穴生态、可选 Geological Wonders。
 - **World Systems：** 扩展 Overworld 洞穴、Grand Nether / End、天空岛、结构密度包、100 结构建筑库和可选水上载具。
-- **Visualization：** World Atlas、Terrain Lab、Geographic Climate Inspector。
+- **RealScale Studio：** 统一 Terrain Lab、Climate Inspector 与 Performance Studio；World Atlas 已从当前产品中移除。
 - **Performance：** 世界生成采样、缓存诊断、客户端帧间隔和可选区块上传节流。
 - **Compatibility：** 可选 Distant Horizons / Chunky 兼容钩子及外部客户端视觉工具。
 
@@ -35,10 +35,10 @@ Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与�
 
 这些功能已经存在，但尚未整合成统一工作台：
 
-- **Terrain Lab：** YACL 参数编辑器和新世界数据包导出。目前编辑的是旧版 Landscape / Alpine / Canyon 混合噪声家族；六种公开拟合地貌使用另一套 `TerrainArchetypeDensity` 形态学引擎，尚未接入同一编辑器，也没有实时地形预览。
-- **World Atlas：** 只读查看已经保存的 Anvil 区块覆盖与高度图；不会生成新区块、启动隐藏服务器或控制 Chunky。
+- **Terrain Lab：** 正在重构为统一地形编辑器。旧版 Landscape / Alpine / Canyon 混合噪声入口将降级为 Legacy Advanced；新的主线是 Natural Automate 和六种拟合地貌算法。
+- **World Atlas：** 已移除，不再扫描本地存档。
 - **Geographic Climate Inspector：** 只读显示当前坐标的 1:20 地理纬度、虚拟太阳季节、日照和高度温度估算；不是实时天气模拟。
-- **Performance diagnostics：** 当前主要由可选采样器和日志提供，尚未形成性能热力图工作台。
+- **Performance Studio：** 正在整合缓存配置、客户端帧时间、区块上传队列、内存统计和性能可视化。
 
 这些能力将在统一的 **RealScale Studio** 架构中逐步整合。不能把尚未实现的实时预览、性能热力图或完整 3D 编辑器描述成现有功能。
 
