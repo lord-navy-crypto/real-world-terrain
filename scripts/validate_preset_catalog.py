@@ -31,8 +31,8 @@ def main() -> int:
 
     if len(all_ids) != len(set(all_ids)):
         fail("duplicate preset ID in catalog")
-    if len(public_ids) != 7:
-        fail(f"expected seven public profiles, found {len(public_ids)}")
+    if len(public_ids) != 8:
+        fail(f"expected eight public profiles, found {len(public_ids)}")
     if len(hidden) + len(legacy) != catalog["counts"]["hidden_or_legacy_profiles"]:
         fail("hidden/legacy catalog count does not match metadata")
 
