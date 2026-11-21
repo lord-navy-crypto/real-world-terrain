@@ -37,7 +37,7 @@ final class TerrainArchetypeMath {
     // Volcanic geometry depends only on horizontal block coordinates. Worldgen
     // samples many Y values for the same X/Z, so cache the expensive radial
     // shield/caldera shape per worker rather than repeating hash/hypot/pow/exp.
-    private static final int VOLCANIC_CACHE_SLOTS = 1024;
+    private static final int VOLCANIC_CACHE_SLOTS = RealScalePerformanceProfile.cacheSlots("archetype_volcanic",1024);
     // A 2048-block fitted region has a fixed, seed-derived geographic center.
     // Reusing this per worker avoids re-hashing region seeds and generating
     // the same tower/sinksite positions for every horizontal density sample.
@@ -85,7 +85,7 @@ final class TerrainArchetypeMath {
         private double lastShape;
     }
 
-    private static final int HORIZONTAL_CACHE_SLOTS = 1024;
+    private static final int HORIZONTAL_CACHE_SLOTS = RealScalePerformanceProfile.cacheSlots("archetype_horizontal",1024);
     private static final class HorizontalShapeCache {
         private final long[] xBits = new long[HORIZONTAL_CACHE_SLOTS];
         private final long[] zBits = new long[HORIZONTAL_CACHE_SLOTS];
@@ -99,7 +99,7 @@ final class TerrainArchetypeMath {
     private final ThreadLocal<HorizontalShapeCache> horizontalShapeCache =
             ThreadLocal.withInitial(HorizontalShapeCache::new);
 
-    private static final int KARST_CACHE_SLOTS = 1024;
+    private static final int KARST_CACHE_SLOTS = RealScalePerformanceProfile.cacheSlots("archetype_karst",1024);
     private static final class KarstShapeCache {
         private final long[] keys = new long[KARST_CACHE_SLOTS];
         private final double[] towers = new double[KARST_CACHE_SLOTS];
