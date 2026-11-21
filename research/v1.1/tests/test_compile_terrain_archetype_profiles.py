@@ -136,7 +136,7 @@ class TerrainProfileCompilerTests(unittest.TestCase):
                         self.assertTrue((source_density_root / f"{field}.json").is_file(), field)
 
             automate = json.loads((out / "data/realscale/worldgen/world_preset/natural_automate_three_realms.json").read_text())
-            self.assertEqual(automate["dimensions"]["minecraft:overworld"]["generator"]["settings"], "realscale:natural_automate")
+            self.assertEqual(automate["dimensions"]["minecraft:overworld"]["generator"]["settings"], "realscale:natural_automate_v2")
             provenance = json.loads((out / "terrain-profile-provenance.json").read_text())
             self.assertEqual(provenance["default_mode"], "realscale:natural_automate_three_realms")
             self.assertEqual(provenance["preset_count"], 7)
