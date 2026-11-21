@@ -30,6 +30,10 @@ jobs:
         run: python3 scripts/validate_preset_catalog.py
       - name: Verify Natural Automate kernels match the six fitted resources
         run: python3 scripts/sync_natural_automate_kernels.py --check
+      - name: Verify fitted-profile compiler preserves the single public mode
+        run: |
+          python3 -m pip install numpy
+          python3 -m unittest discover -s research/v1.1/tests -p 'test_compile_terrain_archetype_profiles.py' -v
       - name: Verify the single Natural Automate menu and retained internal fitted profiles
         run: python3 -m unittest discover -s qa -p 'test_realscale_branding_compat.py' -v
       - name: Validate custom biome registry resources (static)
