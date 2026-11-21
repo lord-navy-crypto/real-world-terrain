@@ -45,6 +45,6 @@ Natural Three Realms and the six standalone fitted presets remain packaged as hi
 
 The recovered v0.7–v1.0 research directories are not proof that every numerical method has been integrated into the playable mod. The current runtime includes a separate USGS 3DEP offline importer and DEM density pipeline; its source coverage, resolution, coordinate mapping and procedural fallback limits must remain explicit.
 
-The historical v1.1 JAR SHA-256 is retained in the repository's historical README/evidence records. It should not be described as the current eight-mode build.
+The historical v1.1 JAR SHA-256 is retained in the repository's historical README/evidence records. It should not be described as the current single-mode Natural Automate build.
 
 See [RESEARCH_PROVENANCE.md](RESEARCH_PROVENANCE.md), [UNIFIED_FEATURE_CONSOLIDATION.md](UNIFIED_FEATURE_CONSOLIDATION.md), and [neoforge/CHANGELOG.md](../neoforge/CHANGELOG.md) for details.
