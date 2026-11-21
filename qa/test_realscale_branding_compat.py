@@ -77,14 +77,14 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
     def test_natural_automate_is_the_single_public_composite_over_the_natural_base(self):
         world = read(WORLD / "natural_automate_three_realms.json")
         overworld = world["dimensions"]["minecraft:overworld"]
-        self.assertEqual(overworld["generator"]["settings"], "realscale:natural_automate")
+        self.assertEqual(overworld["generator"]["settings"], "realscale:natural_automate_v2")
         self.assertEqual(
             source_chain(overworld["generator"]["biome_source"]),
             ["realscale:sky_ocean", "realscale:geo_wonders_opt_in",
              "realscale:natural_ecotones", "realscale:cave_depth_habitats",
              "minecraft:multi_noise"],
         )
-        noise = read(RES / "data/realscale/worldgen/noise_settings/natural_automate.json")
+        noise = read(RES / "data/realscale/worldgen/noise_settings/natural_automate_v2.json")
         self.assertEqual(
             noise["noise_router"]["temperature"]["adjusted"]["height_signal"],
             "realscale:natural_automate/height_signal",
@@ -106,10 +106,12 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
         self.assertIn('d.preset = "natural_automate";',client)
 
     def test_natural_automate_enables_the_expanded_default_cave_network(self):
-        noise=read(RES/"data/realscale/worldgen/noise_settings/natural_automate.json")
+        noise=read(RES/"data/realscale/worldgen/noise_settings/natural_automate_v2.json")
         final=noise["noise_router"]["final_density"]
         self.assertEqual(final["type"],"realscale:grand_overworld_caverns")
         self.assertIs(final.get("gallery_v2"),True)
+        legacy=read(RES/"data/realscale/worldgen/noise_settings/natural_automate.json")
+        self.assertFalse(legacy["noise_router"]["final_density"].get("gallery_v2",False))
 
     def test_natural_automate_has_bilingual_player_facing_name(self):
         for name in ("en_us.json", "zh_cn.json"):

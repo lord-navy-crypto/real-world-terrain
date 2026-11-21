@@ -31,9 +31,10 @@ class OverworldCaveContracts(unittest.TestCase):
                 self.assertEqual(node["warp"]["type"],"minecraft:noise")
                 self.assertEqual(noise["sea_level"],63)
                 if preset!="usgs_big_sur_v2":
-                    self.assertEqual(node["base"],f"realscale:{preset}/terrain_density")
+                    density_family="natural_automate" if preset=="natural_automate_v2" else preset
+                    self.assertEqual(node["base"],f"realscale:{density_family}/terrain_density")
                     self.assertEqual(noise["noise_router"]["depth"],
-                                     f"realscale:{preset}/terrain_density")
+                                     f"realscale:{density_family}/terrain_density")
                 else:
                     # The original range_choice(min(T, caves), T) is fused
                     # to compute identical T once, preserving both cave

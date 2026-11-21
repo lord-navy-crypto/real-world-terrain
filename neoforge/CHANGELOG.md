@@ -6,7 +6,8 @@
 
 ### Completed
 - Natural Automate remains the only public RealScale world-generation profile in both standard and extended Create World menus.
-- Enabled Cave Exploration V2 in Natural Automate's default final-density pipeline: deterministic multi-tier loop passages, satellite-room connections and annex chambers now share the unified Overworld density field with the existing cave network.
+- The Terrain Lab exporter now derives new worlds from `natural_automate_v2`, so YACL/CLI exports also include the expanded cave topology without rewriting the old registry entry.
+- Enabled Cave Exploration V2 in Natural Automate's default final-density pipeline: deterministic multi-tier loop passages, satellite-room connections and annex chambers now share the unified Overworld density field with the existing cave network. The public world preset uses a new `natural_automate_v2` noise-settings registry key; the old `natural_automate` key remains unchanged so existing saves keep their original generator reference.
 - Removed the Legacy Landscape / Alpine / Canyon selectors from the player-facing Terrain Lab screen. Their schemas, saved-draft migration and exporter support remain internal for compatibility.
 - Updated the cave contracts, preset validator and Terrain Lab regression checks to prevent the six-kernel engine or expanded cave network from silently reverting.
 - Repaired APES Gallery's RCON acceptance harness: it no longer assumes the Gradle parent process remains alive after Minecraft starts; it now tickets each satellite chunk, waits for loaded-state acknowledgements, flushes the world and stops the server through RCON.

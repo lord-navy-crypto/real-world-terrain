@@ -8,7 +8,7 @@ The repository is undergoing an architecture consolidation. The goal is to organ
 
 The `normal` and `extended` world-preset tags expose **one RealScale choice**:
 
-1. **Natural Automate Three Realms** — the unified experimental engine, combining the natural-smoothed baseline, six fitted morphology kernels, climate/regional suitability, smooth cross-fades, shared ecology layers and the expanded Cave Exploration V2 underground network.
+1. **Natural Automate Three Realms** — the unified experimental engine, combining the natural-smoothed baseline, six fitted morphology kernels, climate/regional suitability, smooth cross-fades, shared ecology layers and the expanded Cave Exploration V2 underground network. The public preset points to a new versioned `natural_automate_v2` noise-settings ID; the old `natural_automate` registry entry is retained unchanged for existing saves.
 
 The natural baseline and six standalone fitted presets remain packaged as hidden compatibility and QA references. Their algorithms are not separate player-selectable world modes. The fitted kernels remain experimental geographic approximations; the unified selector does not imply that every generated region is an exact real-world match.
 

@@ -10,7 +10,7 @@ Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与�
 
 1. **Natural Automate Three Realms** — 统一地形与生态预设。
 
-Natural Automate 以经过平滑处理的 Natural 地形信号为基线，将 Alpine、Glacial、Canyon、Volcanic、Karst 和 Dune 六种拟合形态作为内部计算核。系统依据区域地质先验、温度、湿度和局部地形适宜性自动分配权重，在适合的区域叠加相应地貌，在过渡区平滑混合，在不适合的区域精确保留 Natural 基线。基础大型洞穴与 Cave Exploration V2 的环形洞室、附属洞室和多层连接网络也已进入这一默认生成引擎。普通玩家不再需要在六种地貌或 Natural 之间手动选择。
+Natural Automate 以经过平滑处理的 Natural 地形信号为基线，将 Alpine、Glacial、Canyon、Volcanic、Karst 和 Dune 六种拟合形态作为内部计算核。系统依据区域地质先验、温度、湿度和局部地形适宜性自动分配权重，在适合的区域叠加相应地貌，在过渡区平滑混合，在不适合的区域精确保留 Natural 基线。基础大型洞穴与 Cave Exploration V2 的环形洞室、附属洞室和多层连接网络也已进入这一默认生成引擎。为保护旧存档，新的公开世界预设使用独立的 `natural_automate_v2` 噪声设置 ID；旧的 `natural_automate` 注册 ID 保持原样，已有世界不会因为升级而自动切换洞穴结构。普通玩家不再需要在六种地貌或 Natural 之间手动选择。
 
 Natural 基线和六个独立拟合预设的 JSON / registry ID 仍保留在 JAR 中，供兼容性、受控 QA 和开发对照使用；它们不再作为普通新世界菜单选项。隐藏独立预设不等于删除六种算法：六个拟合核仍由 Natural Automate 调用。
 

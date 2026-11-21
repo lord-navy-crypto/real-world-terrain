@@ -1,4 +1,4 @@
-name: RealScale multi-seed 4-family real terrain and cave quality QA
+name: RealScale multi-seed 5-profile real terrain and cave quality QA
 on:
   pull_request:
     paths: ['neoforge/**', 'qa/**', '.github/workflows/multi-seed-server.yml']
@@ -16,6 +16,9 @@ jobs:
       matrix:
         preset: [tva_sacred_timeline_three_realms, tva_alpine_three_realms, tva_canyon_three_realms, tva_measured_three_realms]
         seed: [2, 42]
+        include:
+          - preset: natural_automate_three_realms
+            seed: 2
     name: Multi-seed QA / ${{ matrix.preset }} / ${{ matrix.seed }}
     runs-on: ubuntu-latest
     timeout-minutes: 35

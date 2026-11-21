@@ -8,7 +8,9 @@ D=ROOT/"neoforge/src/main/resources/data/realscale/worldgen"
 
 class CaveExplorationPresetContracts(unittest.TestCase):
     def test_natural_automate_and_cave_exploration_enable_gallery_v2(self):
-        enabled={"natural_automate.json","tva_cave_exploration.json"}
+        enabled={"natural_automate_v2.json","tva_cave_exploration.json"}
+        legacy=json.loads((D/"noise_settings/natural_automate.json").read_text())
+        self.assertFalse(legacy["noise_router"]["final_density"].get("gallery_v2",False))
         for path in (D/"noise_settings").glob("*.json"):
             data=json.loads(path.read_text())
             node=data.get("noise_router",{}).get("final_density")

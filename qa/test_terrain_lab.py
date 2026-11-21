@@ -95,6 +95,7 @@ class TerrainLabTests(unittest.TestCase):
                          "realscale:terrain_lab/"+name+"/height_signal")
         noise=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
         self.assertEqual(noise["sea_level"],63)
+        self.assertIs(noise["noise_router"]["final_density"].get("gallery_v2"),True)
         self.assertEqual(noise["noise_router"]["depth"],
                          "realscale:terrain_lab/"+name+"/terrain_density")
         self.assertEqual(noise["noise_router"]["temperature"]["adjusted"]["height_signal"],

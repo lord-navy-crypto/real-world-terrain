@@ -18,7 +18,7 @@
             }
           }
         },
-        "settings": "realscale:natural_automate",
+        "settings": "realscale:natural_automate_v2",
         "type": "minecraft:noise"
       },
       "type": "realscale:realism_max_overworld"

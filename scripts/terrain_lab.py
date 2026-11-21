@@ -223,7 +223,7 @@ def natural_automate_files_for(root, relief, elevation, latitude_strength,
     })
 
     noise = copy.deepcopy(jread(
-        root, GEO_ROOT / "noise_settings" / "natural_automate.json"))
+        root, GEO_ROOT / "noise_settings" / "natural_automate_v2.json"))
     noise = replace_refs(noise, {
         "realscale:natural_automate/terrain_density": new_terrain,
         "realscale:natural_automate/preliminary_density": density_id + "/preliminary_density",
