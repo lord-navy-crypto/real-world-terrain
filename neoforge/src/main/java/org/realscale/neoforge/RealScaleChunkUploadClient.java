@@ -33,8 +33,9 @@ public final class RealScaleChunkUploadClient {
     private static final ClientUploadFrameGovernor GOVERNOR=
             new ClientUploadFrameGovernor();
     private static long frameBeginNanos;
-    private static final boolean PROFILE=ENABLED ||
-            Boolean.getBoolean("realscale.client.chunkqueue.profile");
+    private static final boolean PROFILE=ENABLED
+            || RealScalePerformanceProfile.diagnosticsEnabled()
+            || Boolean.getBoolean("realscale.client.chunkqueue.profile");
     public static final ClientChunkUploadBudget BUDGET =
             ClientChunkUploadBudget.fromProperties();
 
@@ -161,6 +162,37 @@ public final class RealScaleChunkUploadClient {
         minFreeBuffers=Integer.MAX_VALUE;
         heapSamples=totalHeapUsedBytes=peakHeapUsedBytes=maxHeapBytes=0L;
         lastReportNanos=now;
+    }
+
+    public record QueueSnapshot(boolean available,boolean budgetEnabled,
+            boolean modeAware,boolean adaptive,boolean predictive,
+            int compilePending,int uploadPending,int freeMeshBuffers,
+            long sampleFrames,double averageCompilePending,double averageUploadPending,
+            int peakCompilePending,int peakUploadPending,long heapUsedBytes,
+            long heapMaxBytes,long deferredCalls,long uploadedTasks) {}
+
+    public static QueueSnapshot snapshot() {
+        Minecraft mc=Minecraft.getInstance();
+        int queued=0,uploading=0,free=0;
+        boolean available=mc.level!=null && mc.player!=null
+                && mc.levelRenderer!=null;
+        if(available) {
+            SectionRenderDispatcher dispatcher=mc.levelRenderer.getSectionRenderDispatcher();
+            if(dispatcher==null) available=false;
+            else {
+                queued=Math.max(0,dispatcher.getToBatchCount());
+                uploading=Math.max(0,dispatcher.getToUpload());
+                free=Math.max(0,dispatcher.getFreeBufferCount());
+            }
+        }
+        Runtime runtime=Runtime.getRuntime();
+        long heapUsed=Math.max(0L,runtime.totalMemory()-runtime.freeMemory());
+        long heapMax=Math.max(1L,runtime.maxMemory());
+        double denominator=Math.max(1L,frames);
+        return new QueueSnapshot(available,ENABLED,MODE_AWARE,ADAPTIVE,PREDICTIVE,
+                queued,uploading,free,frames,totalQueued/denominator,
+                totalUploading/denominator,peakQueued,peakUploading,
+                heapUsed,heapMax,BUDGET.deferredCalls(),BUDGET.tasksThisFrame());
     }
 
     private static void reset(ClientLevel world){
