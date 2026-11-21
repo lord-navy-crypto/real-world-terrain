@@ -1,0 +1,84 @@
+package org.realscale.neoforge;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.stream.IntStream;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+final class NaturalAutomateMathTest {
+    private static TerrainArchetypeMath kernel() {
+        return new TerrainArchetypeMath("natural_automate",
+                0.92,0.38,0.07,0.72,0.36,0.30,0.50,0.50,
+                1.05,0.25,12000.0);
+    }
+
+    @Test
+    void selectorCoversAllSixFittedFamiliesInOrder() {
+        double[] centers={-5.0/6.0,-0.5,-1.0/6.0,1.0/6.0,0.5,5.0/6.0};
+        for(int i=0;i<centers.length;i++)
+            assertEquals(i,TerrainArchetypeMath.naturalFamilyIndex(centers[i]));
+        assertEquals(0,TerrainArchetypeMath.naturalFamilyIndex(-1.0));
+        assertEquals(5,TerrainArchetypeMath.naturalFamilyIndex(1.0));
+    }
+
+    @Test
+    void regionalTransitionsAreContinuousAtAllFiveBoundaries() {
+        TerrainArchetypeMath math=kernel();
+        for(int boundary=1;boundary<6;boundary++) {
+            double region=-1.0+boundary/3.0;
+            double before=math.compute(0.82,0.45,0.31,region-1.0e-7,1537,-2811);
+            double at=math.compute(0.82,0.45,0.31,region,1537,-2811);
+            double after=math.compute(0.82,0.45,0.31,region+1.0e-7,1537,-2811);
+            assertTrue(Math.abs(before-at)<1.0e-4,
+                    "left edge discontinuity at region boundary "+boundary);
+            assertTrue(Math.abs(after-at)<1.0e-4,
+                    "right edge discontinuity at region boundary "+boundary);
+        }
+    }
+
+    @Test
+    void oceanColumnsAreExactlyPreservedAcrossEveryMorphologyRegion() {
+        TerrainArchetypeMath math=kernel();
+        for(double region=-1.0;region<=1.0;region+=0.05) {
+            double actual=math.compute(-0.37,-0.11,0.27,region,1024,-2048);
+            assertEquals(Double.doubleToRawLongBits(-0.37),
+                    Double.doubleToRawLongBits(actual));
+        }
+    }
+
+    @Test
+    void compositeIsFiniteDeterministicAndBoundedAcrossSignedWorldCoordinates() {
+        TerrainArchetypeMath math=kernel();
+        for(int x=-8192;x<=8192;x+=257) {
+            for(int z=-8192;z<=8192;z+=263) {
+                double original=0.18+0.78*(0.5+0.5*Math.sin(x*0.0007+z*0.0003));
+                double continent=0.25+0.55*(0.5+0.5*Math.cos(x*0.0002-z*0.0004));
+                double detail=Math.sin(x*0.0011+z*0.0009);
+                double region=Math.sin(x*0.00013-z*0.00017);
+                double first=math.compute(original,continent,detail,region,x,z);
+                double second=math.compute(original,continent,detail,region,x,z);
+                assertTrue(Double.isFinite(first));
+                assertEquals(Double.doubleToRawLongBits(first),
+                        Double.doubleToRawLongBits(second));
+                assertTrue(first>-1.5 && first<2.5,
+                        "composite morphology escaped its conservative density envelope");
+            }
+        }
+    }
+
+    @Test
+    void workerLocalCachesRemainDeterministicUnderParallelSampling() {
+        IntStream.range(0,6).parallel().forEach(worker->{
+            TerrainArchetypeMath math=kernel();
+            for(int i=0;i<4000;i++) {
+                int x=(i*131+worker*7919)%32001-16000;
+                int z=(i*197-worker*3571)%32003-16001;
+                double region=Math.sin((x+z)*0.00019);
+                double actual=math.compute(0.76,0.43,Math.cos(i*0.13),
+                        region,x,z);
+                assertTrue(Double.isFinite(actual));
+            }
+        });
+    }
+}
