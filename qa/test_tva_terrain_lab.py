@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Actual cross-branch regression: Terrain Lab exports inherit the default plus six
-DEM-fitted choices, keep optional experiments hidden, and preserve three realm dimensions.
+"""Actual cross-branch regression: Natural Automate plus the baseline and six
+DEM-fitted choices stay public; optional experiments remain hidden.
 """
 import importlib.util
 import json
@@ -19,7 +19,8 @@ TVA={
  "alpine":"tva_alpine_three_realms",
  "canyon":"tva_canyon_three_realms",
 }
-CORE=("realscale:natural_three_realms",
+CORE=("realscale:natural_automate_three_realms",
+      "realscale:natural_three_realms",
       "realscale:alpine_three_realms",
       "realscale:canyon_three_realms",
       "realscale:glacial_three_realms",
@@ -27,7 +28,7 @@ CORE=("realscale:natural_three_realms",
       "realscale:karst_three_realms",
       "realscale:dune_three_realms")
 # Experimental Wonders/invasion and cave-ocean variants stay available on disk,
-# but the new-world menu contains only the default and six fitted archetypes.
+# but the new-world menu exposes Natural Automate, Natural baseline and six fitted archetypes.
 MENU=CORE
 
 def read(path):
