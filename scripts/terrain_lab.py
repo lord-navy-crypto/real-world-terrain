@@ -172,7 +172,7 @@ def natural_automate_files_for(root, relief, elevation, latitude_strength,
         morphology_percent=morphology_percent,
         latitude_strength=int(latitude_strength),
         inland=bool(inland),
-        model_revision="six_kernel_regional_crossfade_v1",
+        model_revision="climate_suitability_natural_fallback_v2",
     )
     checksum = hashlib.sha256(
         json.dumps(options, sort_keys=True).encode()).hexdigest()[:10]

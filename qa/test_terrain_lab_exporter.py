@@ -123,7 +123,9 @@ class ExporterTests(unittest.TestCase):
             self.assertEqual(kernel["type"],"realscale:terrain_archetype")
             self.assertEqual(kernel["family"],"natural_automate")
             self.assertAlmostEqual(kernel["relief_gain"],0.792)
-            self.assertEqual(kernel["region_selector"]["noise"],"minecraft:weirdness")
+            self.assertEqual(kernel["region_selector"]["noise"],"minecraft:offset")
+            self.assertIn("temperature",kernel)
+            self.assertIn("humidity",kernel)
             noise=json.loads(archive.read(
                 "data/realscale/worldgen/noise_settings/"+stem+".json"))
             self.assertEqual(noise["noise_router"]["depth"],
@@ -132,6 +134,12 @@ class ExporterTests(unittest.TestCase):
                 "data/realscale/worldgen/world_preset/"+stem+".json"))
             self.assertEqual(preset["dimensions"]["minecraft:overworld"]["generator"]["settings"],
                              profile)
+            source=preset["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+            self.assertEqual(source["type"],"realscale:sky_ocean")
+            self.assertEqual(source["source"]["type"],"realscale:geo_wonders_opt_in")
+            self.assertEqual(source["source"]["source"]["type"],"realscale:natural_ecotones")
+            self.assertEqual(source["source"]["source"]["source"]["type"],
+                             "realscale:cave_depth_habitats")
 
     def test_no_silent_overwrite(self):
         export(self.jar, self.draft, self.output)

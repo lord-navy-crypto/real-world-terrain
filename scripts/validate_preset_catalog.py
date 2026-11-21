@@ -75,6 +75,40 @@ def main() -> int:
             biome_source = biome_source.get("source")
         if chain != profile["biome_source_chain"]:
             fail(f"{preset_id}: biome source chain differs; actual={chain}")
+        if preset_id == "natural_automate_three_realms":
+            height_path = RES / "data/realscale/worldgen/density_function/natural_automate/height_signal.json"
+            kernel = load(height_path).get("argument", {})
+            if kernel.get("family") != "natural_automate":
+                fail("Natural Automate is missing its composite morphology density")
+            if not {"temperature", "humidity"}.issubset(kernel):
+                fail("Natural Automate must use raw temperature and humidity suitability inputs")
+            if kernel.get("region_selector", {}).get("noise") != "minecraft:offset":
+                fail("Natural Automate regional selector must reference a registered vanilla noise")
+            expected_chain = [
+                "realscale:sky_ocean",
+                "realscale:geo_wonders_opt_in",
+                "realscale:natural_ecotones",
+                "realscale:cave_depth_habitats",
+                "minecraft:multi_noise",
+            ]
+            if chain != expected_chain:
+                fail(f"Natural Automate ecology chain differs; actual={chain}")
+
+    # Regression guard: minecraft:weirdness is a density-function key, not a
+    # worldgen/noise registry entry. It must never be referenced by minecraft:noise.
+    density_root = RES / "data/realscale/worldgen/density_function"
+    for density_path in density_root.rglob("*.json"):
+        density_data = load(density_path)
+        def reject_unregistered_weirdness(node):
+            if isinstance(node, dict):
+                if node.get("type") == "minecraft:noise" and node.get("noise") == "minecraft:weirdness":
+                    fail(f"{density_path.relative_to(ROOT)} references unregistered minecraft:weirdness noise")
+                for value in node.values():
+                    reject_unregistered_weirdness(value)
+            elif isinstance(node, list):
+                for value in node:
+                    reject_unregistered_weirdness(value)
+        reject_unregistered_weirdness(density_data)
 
     resource_counts = {
         "world_preset_json": len(list(preset_root.glob("*.json"))),

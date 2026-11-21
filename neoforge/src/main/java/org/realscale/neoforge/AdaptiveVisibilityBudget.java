@@ -59,7 +59,8 @@ public final class AdaptiveVisibilityBudget {
      * is never affected by this policy.
      */
     public static boolean shouldCullDistantHorizonCaves(Mode mode) {
-        return mode == Mode.OPEN_SURFACE;
+        return RealScaleDomainManager.shouldCullDistantHorizonCaves(
+                RealScaleDomainManager.fromVisibilityMode(mode));
     }
 
     /**
@@ -69,27 +70,21 @@ public final class AdaptiveVisibilityBudget {
      * can honor it without delaying player-visible rebuilds.
      */
     public static int priority(Mode mode, Task task) {
-        if (task == Task.VISIBLE_OR_PLAYER_CHANGED) return 100;
-        return switch (mode) {
-            case OPEN_SURFACE -> switch (task) {
-                case DISTANT_SURFACE_MESH, OPTIONAL_HORIZON_LOD -> 75;
-                case NEAR_CAVE_MESH -> 35;
-                case BACKGROUND_MAINTENANCE -> 20;
-                default -> 100;
-            };
-            case SEALED_CAVE -> switch (task) {
-                case NEAR_CAVE_MESH -> 75;
-                case DISTANT_SURFACE_MESH, OPTIONAL_HORIZON_LOD -> 35;
-                case BACKGROUND_MAINTENANCE -> 20;
-                default -> 100;
-            };
-            case TRANSITION -> switch (task) {
-                case NEAR_CAVE_MESH, DISTANT_SURFACE_MESH -> 65;
-                case OPTIONAL_HORIZON_LOD -> 40;
-                case BACKGROUND_MAINTENANCE -> 20;
-                default -> 100;
-            };
+        RealScaleDomainManager.Domain domain =
+                RealScaleDomainManager.fromVisibilityMode(mode);
+        RealScaleDomainManager.Work work = switch (task) {
+            case VISIBLE_OR_PLAYER_CHANGED ->
+                    RealScaleDomainManager.Work.PLAYER_VISIBLE;
+            case NEAR_CAVE_MESH ->
+                    RealScaleDomainManager.Work.NEAR_UNDERGROUND_MESH;
+            case DISTANT_SURFACE_MESH ->
+                    RealScaleDomainManager.Work.DISTANT_SURFACE_MESH;
+            case OPTIONAL_HORIZON_LOD ->
+                    RealScaleDomainManager.Work.OPTIONAL_HORIZON_LOD;
+            case BACKGROUND_MAINTENANCE ->
+                    RealScaleDomainManager.Work.BACKGROUND_MAINTENANCE;
         };
+        return RealScaleDomainManager.priority(domain,work);
     }
 
     /**

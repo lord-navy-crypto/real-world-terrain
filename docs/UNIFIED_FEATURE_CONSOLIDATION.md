@@ -62,7 +62,7 @@ The USGS Big Sur modes are intentionally absent from the public menu following t
 | WatershedRoutingMath / RiverChannelFeature | River routing and protected channel generation | Retain; validate long-range connectivity and water safety |
 | GeoMath and latitude/temperature density functions | Geographic and climate calculations | Consolidate around the fixed 1:20 WGS84 meridional model |
 
-Terrain Lab now has a new primary `natural_automate` profile. It composes the six existing fitted `TerrainArchetypeMath` kernels (alpine, glacial, canyon, volcanic, karst, dune) through a separate low-frequency `minecraft:weirdness` regional selector and a 16% cross-fade at region boundaries. A separate `minecraft:erosion` signal remains the local shape selector. Family-specific DEM-fit coefficients are retained in the composite. The old Landscape / Alpine / Canyon blend families remain available under Legacy Advanced; they are not the same algorithms as the fitted Alpine and Canyon archetypes. The first Natural Automate editor exposes composite morphology strength, terrain relief and the shared 1:20 climate control. It does not yet provide individual per-kernel editing or a live preview. **Important limitation:** this first prototype routes among the six fitted kernels using low-frequency Weirdness plus local Erosion and topographic gates; it does not yet use biome/climate suitability to decide where a fit belongs, and it has no explicit seventh 'leave the natural baseline untouched' region. The intended ecology-aware natural-versus-fitted suitability calculator remains unfinished.
+Terrain Lab's primary `natural_automate` profile now composes the six fitted `TerrainArchetypeMath` kernels (alpine, glacial, canyon, volcanic, karst, dune) over the original natural height signal. A registered low-frequency `minecraft:offset` field supplies broad deterministic regional/geological affinity; raw shifted `minecraft:temperature` and `minecraft:vegetation` fields, together with the local terrain-height signal, gate each fitted family. Suitable families cross-fade through normalized weights. Where no family is suitable, the natural baseline remains unchanged. The old Landscape / Alpine / Canyon blend families remain available under Legacy Advanced; they are not the same algorithms as the fitted Alpine and Canyon archetypes. The content-addressed Terrain Lab exporter copies the same climate-aware density graph, and its model revision changes so old generated profile IDs remain immutable. The fit uses climate proxies from the same raw noise fields as the Overworld climate sampler; it does not query a biome ID directly. Per-kernel editing and a live preview remain later enhancements.
 
 #### Six fitted morphology kernels
 
@@ -79,6 +79,12 @@ The fitted engine is not one generic height filter. `TerrainArchetypeMath` dispa
 
 The shared codec exposes fitted controls including `macro_gain`, `meso_gain`, `micro_gain`, `relief_gain`, `ridge_sharpness`, `cliff_index`, `valley_index`, `ridge_index`, `anisotropy_gain`, `dune_axis_radians`, and `dominant_wavelength_m`. The unified editor should keep family-specific controls and validated defaults; it should not flatten these into one generic slider set or discard the measured fit coefficients.
 
+#### Single registered dimension, two internal world domains
+
+RealScale keeps one `minecraft:overworld` DimensionType, one coordinate system, one chunk store and one saved world. World generation is split internally into two density branches: the Surface Domain owns the natural/fitted height field; the Underground Domain owns cave networks and small-cave subtraction. `RealScaleDomainComposition` merges them into the one final density field before block placement. The resulting blocks, fluids, lighting, entities and saved chunks remain unified.
+
+On the client, `RealScaleDomainManager` maps the conservative exposure classifier into SURFACE, UNDERGROUND or TRANSITION policies. The existing optional Distant Horizons cave-LOD adapter and FIFO upload pacing consume those policies. This is domain-aware scheduling, not two independent Sodium/vanilla section-render queues: vanilla section order and visibility remain unchanged, uncertain boundaries fail open, and player-visible work is never demoted.
+
 ### B. Biome and ecology engine
 
 | Existing implementation | Current role | Consolidation decision |
@@ -91,15 +97,15 @@ The shared codec exposes fitted controls including `macro_gain`, `meso_gain`, `m
 | CaveMarineHabitatFeature / CaveWonderNetworkFeature | Cave and marine habitats | Retain as optional ecology layers until full live-world validation |
 | EarthSystemsAccentFeature / EarthWonderFeature / GeoWonderRegionFeature | Geological accents and larger wonder prototypes | Keep experimental until multi-seed saved-world evidence supports promotion |
 
-**Important source-chain inconsistency:** Natural currently uses:
-
-`sky_ocean → natural_ecotones → vanilla multi_noise`
-
-The six fitted public profiles currently use:
+**Unified composite source chain:** Natural Automate and the six fitted public profiles now use the same explicit layer order:
 
 `sky_ocean → geo_wonders_opt_in → natural_ecotones → cave_depth_habitats → vanilla multi_noise`
 
-This means the six fitted modes carry additional ecology markers and cave-depth selection that Natural does not. The final architecture should represent these as explicit, independently testable layers, not accidental differences hidden in preset JSON. Do not silently change Natural's generation until regression tests pass.
+The conservative Natural Three Realms baseline intentionally remains:
+
+`sky_ocean → natural_ecotones → vanilla multi_noise`
+
+Selecting Natural Automate explicitly opts into the geological-wonder marker as part of the six-profile composite. The wrapper preserves the underlying vanilla biome selection; it gates the experimental wonder features. The baseline preset remains unchanged.
 
 ### C. Dimensions, exploration and structures
 

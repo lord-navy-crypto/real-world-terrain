@@ -25,6 +25,52 @@ final class NaturalAutomateMathTest {
     }
 
     @Test
+    void coldWetHighlandsPreferGlacialFit() {
+        double glacial=TerrainArchetypeMath.naturalFamilySuitability(
+                1,0.84,-0.85,0.75,-0.5);
+        double alpine=TerrainArchetypeMath.naturalFamilySuitability(
+                0,0.84,-0.85,0.75,-0.5);
+        assertTrue(glacial>0.85);
+        assertTrue(glacial>alpine);
+    }
+
+    @Test
+    void warmDryLowlandsPreferDuneFit() {
+        double dune=TerrainArchetypeMath.naturalFamilySuitability(
+                5,0.05,0.90,-0.90,5.0/6.0);
+        double alpine=TerrainArchetypeMath.naturalFamilySuitability(
+                0,0.05,0.90,-0.90,5.0/6.0);
+        assertTrue(dune>0.95);
+        assertEquals(0.0,alpine);
+    }
+
+    @Test
+    void unsuitableClimateAndTopographyRetainTheNaturalBaselineExactly() {
+        TerrainArchetypeMath math=kernel();
+        double original=0.05;
+        double actual=math.compute(original,0.45,0.31,-5.0/6.0,
+                0.90,0.90,1537,-2811);
+        assertEquals(Double.doubleToRawLongBits(original),
+                Double.doubleToRawLongBits(actual));
+    }
+
+    @Test
+    void climateAndRegionalSuitabilityAreContinuousAtFamilyBoundaries() {
+        TerrainArchetypeMath math=kernel();
+        for(int boundary=1;boundary<6;boundary++) {
+            double region=-1.0+boundary/3.0;
+            double before=math.compute(0.82,0.45,0.31,region-1.0e-7,
+                    -0.78,0.66,1537,-2811);
+            double at=math.compute(0.82,0.45,0.31,region,
+                    -0.78,0.66,1537,-2811);
+            double after=math.compute(0.82,0.45,0.31,region+1.0e-7,
+                    -0.78,0.66,1537,-2811);
+            assertTrue(Math.abs(before-at)<1.0e-4);
+            assertTrue(Math.abs(after-at)<1.0e-4);
+        }
+    }
+
+    @Test
     void regionalTransitionsAreContinuousAtAllFiveBoundaries() {
         TerrainArchetypeMath math=kernel();
         for(int boundary=1;boundary<6;boundary++) {

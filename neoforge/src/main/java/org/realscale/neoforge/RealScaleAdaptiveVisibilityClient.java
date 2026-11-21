@@ -281,6 +281,13 @@ public final class RealScaleAdaptiveVisibilityClient {
         return TRACKER.mode();
     }
 
+    /** Domain view shared by the client upload and optional DH adapters. */
+    public static RealScaleDomainManager.Domain currentDomainFor(
+            ClientLevel world,LocalPlayer player) {
+        return RealScaleDomainManager.fromVisibilityMode(
+                currentModeFor(world,player));
+    }
+
     /** Read-only context for opt-in FPS attribution, never a renderer hook. */
     public static AdaptiveVisibilityBudget.Mode currentMode() {
         return ACTIVE ? TRACKER.mode() :

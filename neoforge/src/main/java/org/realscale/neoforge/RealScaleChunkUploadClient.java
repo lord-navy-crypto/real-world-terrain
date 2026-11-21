@@ -66,12 +66,12 @@ public final class RealScaleChunkUploadClient {
             if(MODE_AWARE) {
                 SectionRenderDispatcher dispatcher=playing
                         ?mc.levelRenderer.getSectionRenderDispatcher():null;
-                AdaptiveVisibilityBudget.Mode state=playing&&dispatcher!=null
-                        ?RealScaleAdaptiveVisibilityClient.currentModeFor(world,mc.player)
-                        :AdaptiveVisibilityBudget.Mode.TRANSITION;
-                ClientChunkUploadBudget.VisibilityMode uploadMode=switch(state) {
-                    case OPEN_SURFACE -> ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE;
-                    case SEALED_CAVE -> ClientChunkUploadBudget.VisibilityMode.SEALED_CAVE;
+                RealScaleDomainManager.Domain domain=playing&&dispatcher!=null
+                        ?RealScaleAdaptiveVisibilityClient.currentDomainFor(world,mc.player)
+                        :RealScaleDomainManager.Domain.TRANSITION;
+                ClientChunkUploadBudget.VisibilityMode uploadMode=switch(domain) {
+                    case SURFACE -> ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE;
+                    case UNDERGROUND -> ClientChunkUploadBudget.VisibilityMode.SEALED_CAVE;
                     case TRANSITION -> ClientChunkUploadBudget.VisibilityMode.TRANSITION;
                 };
                 BUDGET.beginModeAwareFrame(playing,uploadMode,

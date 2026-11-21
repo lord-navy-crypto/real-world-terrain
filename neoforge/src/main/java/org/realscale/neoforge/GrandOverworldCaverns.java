@@ -7,7 +7,10 @@ import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.world.level.levelgen.DensityFunction;
 
 /**
- * Restores actual underground caves to the RealScale main Overworld presets.
+ * Underground-domain pipeline for the single RealScale Overworld.
+ * The base density belongs to the surface domain; the cave network and
+ * original small-cave noise belong to the underground domain. Their results
+ * are composed by RealScaleDomainComposition into the one shared chunk field.
  * Cave network + original small-cave noise are used only well INSIDE solid
  * mountain strata. Original surface/noise/ocean/depth routing stays intact.
  *
@@ -39,11 +42,7 @@ public record GrandOverworldCaverns(DensityFunction base, DensityFunction warp,
      * Preserve the aquifers and the protected ocean/sea floor.
      */
     static double carve(double original,double tiny,double strength) {
-        if(original <= 0.24) return original;
-        double chosen=original;
-        if(tiny < 0.0) chosen=Math.min(chosen,tiny);
-        if(strength > 0.0) chosen=Math.min(chosen,-2.4*strength);
-        return chosen;
+        return RealScaleDomainComposition.compose(original,tiny,strength);
     }
 
     @Override public double compute(DensityFunction.FunctionContext ctx) {

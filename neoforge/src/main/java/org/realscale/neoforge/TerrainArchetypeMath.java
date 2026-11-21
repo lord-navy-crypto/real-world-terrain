@@ -164,17 +164,25 @@ final class TerrainArchetypeMath {
 
     double compute(double original, double continent, double rawSignal,
             double x, double z) {
-        return compute(original,continent,rawSignal,rawSignal,x,z);
+        return compute(original,continent,rawSignal,rawSignal,0.0,0.0,x,z);
     }
 
     double compute(double original, double continent, double rawSignal,
             double rawRegionSignal,double x, double z) {
+        return compute(original,continent,rawSignal,rawRegionSignal,
+                0.0,0.0,x,z);
+    }
+
+    double compute(double original, double continent, double rawSignal,
+            double rawRegionSignal,double temperature,double humidity,
+            double x,double z) {
         double landGate = smoothstep(-0.10, 0.22, continent);
         if (landGate <= 0.0) return original;
 
         double signal = unitNoise(rawSignal);
         if ("natural_automate".equals(family))
-            return naturalAutomate(original,continent,signal,rawRegionSignal,x,z);
+            return naturalAutomate(original,continent,signal,rawRegionSignal,
+                    temperature,humidity,x,z);
 
         // Keep each family's trigonometry and geometric work inside that
         // family's branch. Density functions are sampled millions of times
@@ -186,57 +194,116 @@ final class TerrainArchetypeMath {
             case "glacial" -> glacialValley(original, landGate, x, z);
             case "volcanic" -> volcanicShield(original, landGate, x, z);
             case "karst" -> karstTowers(original, landGate, x, z, signal);
-            case "dune" -> duneRidges(original, landGate, x, z, signal);
+            case "dune" -> duneRidges(original, landGate, signal, x, z);
             default -> original;
         };
     }
 
     /**
-     * Select one fitted morphology family per broad deterministic region.
-     * Adjacent regions cross-fade over the final 16% of each selector band,
-     * preserving continuity. Topographic gates keep highland/lowland forms
-     * from being indiscriminately stamped across the wrong terrain.
+     * Ecology-aware composition of the six measured kernels over the natural
+     * baseline. A low-frequency regional field supplies deterministic
+     * geological affinity; climate and topographic gates decide whether a
+     * fitted morphology is suitable at that location. When no family fits,
+     * the natural baseline remains bit-for-bit unchanged.
+     *
+     * <p>Only suitable families are evaluated. Their normalized weights sum
+     * to a smooth coverage factor, so transitions between fitted families
+     * and the natural baseline are continuous rather than hard region cuts.
      */
     private double naturalAutomate(double original,double continent,double signal,
-            double rawRegionSignal,double x,double z) {
+            double rawRegionSignal,double temperature,double humidity,
+            double x,double z) {
         double region=unitNoise(rawRegionSignal);
-        double position=(region+1.0)*3.0;
-        if(position<=0.0)
-            return naturalFamily(0,original,continent,signal,x,z);
-        if(position>=6.0)
-            return naturalFamily(5,original,continent,signal,x,z);
-        int index=(int)Math.floor(position);
-        double fraction=position-index;
-        double first=naturalFamily(index,original,continent,signal,x,z);
-        if(index>=5 || fraction<=0.84)return first;
-        double second=naturalFamily(index+1,original,continent,signal,x,z);
-        double blend=smoothstep(0.84,1.0,fraction);
-        return first+(second-first)*blend;
+        double maxSuitability=0.0;
+        double totalSuitability=0.0;
+        for(int familyIndex=0;familyIndex<naturalKernels.length;familyIndex++) {
+            double suitability=naturalFamilySuitability(familyIndex,original,
+                    temperature,humidity,region);
+            maxSuitability=Math.max(maxSuitability,suitability);
+            totalSuitability+=suitability;
+        }
+        if(totalSuitability<=1.0e-12)return original;
+        double coverage=smoothstep(0.22,0.58,maxSuitability);
+        if(coverage<=0.0)return original;
+
+        double weightedDelta=0.0;
+        for(int familyIndex=0;familyIndex<naturalKernels.length;familyIndex++) {
+            double suitability=naturalFamilySuitability(familyIndex,original,
+                    temperature,humidity,region);
+            if(suitability<=0.01)continue;
+            double candidate=naturalKernels[familyIndex].compute(
+                    original,continent,signal,x,z);
+            weightedDelta+=(candidate-original)*(suitability/totalSuitability);
+        }
+        return original+weightedDelta*coverage*(reliefGain/0.72);
     }
 
-    private double naturalFamily(int index,double original,double continent,
-            double signal,double x,double z) {
-        double candidate=naturalKernels[index].compute(
-                original,continent,signal,x,z);
-        double domainWeight=switch(index) {
-            case 0 -> 1.0; // Alpine kernel has its own highland gate.
-            case 1 -> smoothstep(0.18,0.62,original); // glacial highlands
-            case 2 -> 1.0; // canyon incision spans broad landforms
-            case 3 -> smoothstep(0.05,0.42,original); // elevated volcanic regions
-            case 4 -> smoothstep(-0.12,0.22,original)
-                    *(1.0-smoothstep(0.72,1.05,original)); // karst uplands
-            case 5 -> 1.0-smoothstep(0.12,0.58,original); // lowland dune fields
-            default -> 0.0;
-        };
-        double compositeStrength=reliefGain/0.72;
-        return original+(candidate-original)*domainWeight*compositeStrength;
+    /**
+     * Bounded family suitability. Temperature and humidity are the same raw
+     * shifted climate fields used by the Overworld biome sampler; they are
+     * climate proxies, not direct biome-ID queries. Regional affinity is a
+     * deterministic geological prior, not a claim of a literal tectonic map.
+     */
+    static double naturalFamilySuitability(int familyIndex,double original,
+            double temperature,double humidity,double regionSignal) {
+        if(familyIndex<0 || familyIndex>=6)return 0.0;
+        double region=unitNoise(regionSignal);
+        double center=-5.0/6.0+familyIndex/3.0;
+        double regionalAffinity=1.0-smoothstep(0.18,0.62,
+                Math.abs(region-center));
+        if(regionalAffinity<=0.0)return 0.0;
+
+        double temp=unitNoise(temperature);
+        double moisture=unitNoise(humidity);
+        double warmth=smoothstep(-0.45,0.45,temp);
+        double coldness=1.0-smoothstep(-0.45,0.35,temp);
+        double wetness=smoothstep(-0.50,0.45,moisture);
+        double dryness=1.0-smoothstep(-0.15,0.55,moisture);
+
+        double topographicSuitability;
+        double climateSuitability;
+        switch(familyIndex) {
+            case 0 -> {
+                topographicSuitability=smoothstep(0.65,1.7,original);
+                climateSuitability=0.15+0.85*coldness;
+            }
+            case 1 -> {
+                topographicSuitability=smoothstep(0.18,0.62,original);
+                climateSuitability=coldness*(0.40+0.60*wetness);
+            }
+            case 2 -> {
+                topographicSuitability=0.45+0.55*smoothstep(-0.10,0.28,original);
+                climateSuitability=0.18+0.82*dryness;
+            }
+            case 3 -> {
+                topographicSuitability=smoothstep(0.05,0.42,original);
+                // Volcanic suitability is primarily regional geology; climate
+                // only weakly biases warm volcanic provinces.
+                climateSuitability=0.60+0.40*warmth;
+            }
+            case 4 -> {
+                topographicSuitability=smoothstep(-0.12,0.22,original)
+                        *(1.0-smoothstep(0.72,1.05,original));
+                climateSuitability=(0.30+0.70*wetness)
+                        *(0.40+0.60*warmth);
+            }
+            case 5 -> {
+                topographicSuitability=1.0-smoothstep(0.12,0.58,original);
+                climateSuitability=warmth*dryness;
+            }
+            default -> { return 0.0; }
+        }
+        return Math.max(0.0,Math.min(1.0,
+                regionalAffinity*topographicSuitability*climateSuitability));
     }
 
+    /** Legacy diagnostic helper; runtime selection now uses suitability weights. */
     static int naturalFamilyIndex(double regionSignal) {
         double position=(unitNoise(regionSignal)+1.0)*3.0;
         return Math.max(0,Math.min(5,(int)Math.floor(position)));
     }
 
+    /** Legacy diagnostic helper; runtime cross-fading uses normalized suitability. */
     static double naturalFamilyTransition(double regionSignal) {
         double position=(unitNoise(regionSignal)+1.0)*3.0;
         if(position<=0.0 || position>=6.0)return 0.0;

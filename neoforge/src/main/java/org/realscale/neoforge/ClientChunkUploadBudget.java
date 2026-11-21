@@ -83,26 +83,26 @@ public final class ClientChunkUploadBudget {
             beginFrame(false);
             return;
         }
-        if(mode==null || mode==VisibilityMode.TRANSITION) {
+        AdaptiveVisibilityBudget.Mode visibilityMode = mode==null
+                ? AdaptiveVisibilityBudget.Mode.TRANSITION
+                : switch(mode) {
+                    case TRANSITION -> AdaptiveVisibilityBudget.Mode.TRANSITION;
+                    case OPEN_SURFACE -> AdaptiveVisibilityBudget.Mode.OPEN_SURFACE;
+                    case SEALED_CAVE -> AdaptiveVisibilityBudget.Mode.SEALED_CAVE;
+                };
+        RealScaleDomainManager.Domain domain =
+                RealScaleDomainManager.fromVisibilityMode(visibilityMode);
+        if(domain==RealScaleDomainManager.Domain.TRANSITION) {
             beginFrame(false);
             transitionBypasses++;
             return;
         }
         beginFrame(true);
         predictiveThisFrame=predictive;
-        int multiplier=mode==VisibilityMode.SEALED_CAVE?2:1;
-        // A large old backlog must make forward progress; bounded catch-up
-        // avoids permanent delayed terrain without changing FIFO order.
-        if(pendingUploads>=64) {
-            multiplier=Math.max(2,multiplier);
-            backlogRescueFrames++;
-        }
-        // A slow client should not add more upload work to an overloaded
-        // render frame. Keep the existing base quota and FIFO forward progress.
-        if(framePressure) {
-            multiplier=1;
-            adaptiveReducedFrames++;
-        }
+        if(pendingUploads>=64)backlogRescueFrames++;
+        if(framePressure)adaptiveReducedFrames++;
+        int multiplier=RealScaleDomainManager.uploadMultiplier(
+                domain,pendingUploads,framePressure);
         frameMaxTasks=Math.min(64,maxTasks*multiplier);
         frameMaxNanos=Math.min(10_000_000L,maxNanos*multiplier);
     }

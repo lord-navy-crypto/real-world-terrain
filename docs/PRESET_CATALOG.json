@@ -21,9 +21,10 @@
       "display_name": "Natural Automate — Unified Adaptive Terrain",
       "status": "experimental_recommended",
       "noise_settings": "natural_automate",
-      "terrain_model": "composite_fitted_archetypes",
+      "terrain_model": "natural_baseline_plus_climate_gated_fitted_archetypes",
       "biome_source_chain": [
         "realscale:sky_ocean",
+        "realscale:geo_wonders_opt_in",
         "realscale:natural_ecotones",
         "realscale:cave_depth_habitats",
         "minecraft:multi_noise"
@@ -33,7 +34,9 @@
         "minecraft:the_nether",
         "minecraft:the_end"
       ],
-      "validation_level": "new_profile_requires_multi_seed_saved_anvil_qa"
+      "validation_level": "new_profile_requires_multi_seed_saved_anvil_qa",
+      "selection_model": "regional_affinity_temperature_humidity_topography_with_natural_fallback",
+      "domain_model": "single_overworld_surface_underground_density_composition"
     },
     {
       "id": "natural_three_realms",
@@ -408,11 +411,11 @@
   ],
   "notes": [
     "This catalog is an audit snapshot, not yet the runtime source of truth.",
-    "Natural currently lacks the cave_depth_habitats and geo_wonders_opt_in wrappers present in the six fitted profiles; preserve this difference until an explicit layer-consolidation decision and regression tests.",
+    "Natural Automate now shares the fitted profiles' GeoWonders, Natural Ecotones and Cave Depth Habitats source chain; conservative Natural Three Realms remains unchanged.",
     "The six fitted modes are experimental. Alpine and Canyon have multi-seed saved-Anvil evidence in the current workflow; do not infer equivalent validation for Glacial, Volcanic, Karst or Dune.",
     "Measured DEM profiles are read-only and remain hidden from the ordinary Create World menu.",
     "The current multi-seed workflow exercises internal tva_alpine_three_realms and tva_canyon_three_realms smoothed QA profiles, not the public alpine_three_realms and canyon_three_realms fitted profiles. Do not count those internal runs as direct validation of the public fitted presets.",
     "The current Terrain Lab's legacy `landscape`/`alpine`/`canyon` blend families are a separate model from the six `TerrainArchetypeDensity` fitted families. The public Alpine and Canyon names therefore refer to different algorithms in the old editor and the public preset catalog.",
-    "Natural Automate adds one public world preset, one noise-settings graph and four density-function resources to the audited main baseline."
+    "Natural Automate adds one public world preset, one noise-settings graph and four density-function resources to the audited main baseline; the composite now uses climate/topography suitability with an explicit natural-baseline fallback."
   ]
 }

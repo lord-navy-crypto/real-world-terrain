@@ -42,6 +42,6 @@ class NoDimensionalInvasionTests(unittest.TestCase):
         self.assertNotIn("invasion",json.dumps(sacred))
         for menu in ("normal","extended"):
             values=json.loads((TAGS/(menu+".json")).read_text())["values"]
-            self.assertEqual(len(values),7)
+            self.assertEqual(len(values),8)
             self.assertFalse(any("invasion" in value for value in values))
 if __name__=="__main__": unittest.main()
