@@ -232,7 +232,7 @@ Introduce one versioned, immutable `TerrainProfile` / `WorldProfile` model as th
 
 The profile catalog should describe each ID, display name, status, terrain source, biome-layer stack, dimension set, defaults, legacy aliases, and validation level. Do not maintain separate hand-written lists for the YACL screen, Python exporter, world-preset tags and docs.
 
-Expand the editable model to cover the seven public profiles while retaining migrations for old three-family YACL drafts. Keep measured DEM read-only and optional.
+Natural Automate is now the primary editable composite profile; it exposes morphology strength, terrain relief and the shared fixed 1:20 climate strength. The three old blended-noise families remain under Legacy Advanced. Individual per-kernel tuning and live preview remain future work. Keep measured DEM read-only and optional.
 
 ### One Visualization Studio
 
@@ -241,7 +241,7 @@ The unified Studio should provide these tabs or modes:
 - **Terrain:** profile selection, shared controls and a sampled height/slope/relief preview.
 - **Ecology:** biome and habitat layers, cave-depth selection, ocean/sky systems and explicit wonder opt-in.
 - **Climate:** current 1:20 geographic report, virtual solar estimates and altitude-aware climate diagnostics.
-- **Atlas:** retired; no local-save scanning or persisted-heightmap view.
+- **Overview:** Studio status, current profile and links to the active workspace pages. No local-save scanning or persisted-heightmap view.
 - **Compare:** compare profile A/B and preview-versus-saved terrain.
 - **Performance:** worldgen stage samples, cache metrics, client frame intervals, upload queue and memory estimates.
 
@@ -274,15 +274,15 @@ The preview must distinguish sampled procedural predictions from actual saved An
 
 ### Phase 3 — Visualization Studio
 
-- Connect Terrain Lab, Climate Inspector and Performance Studio through one RealScale Studio entry point. (The shared pause-menu entry and Performance Studio page are now implemented in this branch.)
+- Connect Terrain Lab, Climate Inspector and Performance Studio through one RealScale Studio entry point. The shared pause-menu entry and Performance Studio page are implemented in this branch.
 - Add bounded terrain preview and layer overlays.
 - Reuse profile definitions and deterministic sampling code; previews must not scan local saves or modify existing worlds.
 - Add preview-versus-generated Anvil comparison before promoting preview as authoritative.
 
 ### Phase 4 — Performance Core
 
-- Repair and re-run PR #156 CI.
-- Validate all cache capacities, eviction correctness and memory estimates.
+- Run the Natural Automate branch's full CI for the selectively integrated PR #156 cache/profile work.
+- Validate all cache capacities, eviction correctness and memory estimates, including the three horizontal morphology caches plus volcanic and karst caches.
 - Keep `balanced` as default.
 - Require physical-client A/B for `smooth_render`; no FPS claim based on compile or unit tests.
 
