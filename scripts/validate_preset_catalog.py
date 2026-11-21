@@ -90,7 +90,7 @@ def main() -> int:
             fail(f"{key}: catalog says {expected}, repository has {actual}")
 
     print(
-        "PASS: preset catalog matches all 40 world presets, both seven-entry menu tags, "
+        "PASS: preset catalog matches all 41 world presets, both eight-entry menu tags, "
         "public noise settings, biome-source chains and audited resource counts."
     )
     return 0
