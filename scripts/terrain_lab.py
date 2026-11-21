@@ -115,8 +115,6 @@ def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ri
             raise ValueError("Natural Automate latitude strength must be 0..100")
         if latitude not in ("fixed_1_20", "off"):
             raise ValueError("Natural Automate supports only fixed 1:20 latitude or off")
-        if type(inland if False else True) is not bool:
-            raise ValueError("Invalid spawn policy")
         return
     if preset in ("usgs_big_sur","usgs_big_sur_v2"):
         raise ValueError("USGS Big Sur DEM is measured, read-only terrain: cannot rescale sampled height")
@@ -724,7 +722,7 @@ def gui(root, launch):
     main.pack(fill="both",expand=True)
     ttk.Label(main,text="RealScale Terrain Lab",font=("",18,"bold")).pack(anchor="w",pady=(0,8))
     ttk.Label(main,text="Each Apply creates a new world preset. Existing worlds are unchanged.").pack(anchor="w")
-    preset=tk.StringVar(value="landscape")
+    preset=tk.StringVar(value="natural_automate")
     profile=tk.StringVar(value="natural")
     relief=tk.DoubleVar(value=1.0)
     elevation=tk.IntVar(value=0)
@@ -748,7 +746,7 @@ def gui(root, launch):
         box=ttk.Combobox(main,textvariable=variable,values=values,state="readonly")
         box.pack(fill="x")
         return box
-    chooser("Original terrain mode",preset,EDITABLE)
+    chooser("Primary world mode",preset,PRIMARY_PROFILES+EDITABLE)
     chooser("Suggested tuning mode",profile,tuple(PROFILES))
     def slider(label,variable,frm,to,resolution=1):
         ttk.Label(main,text=label).pack(anchor="w",pady=(9,0))
@@ -832,7 +830,7 @@ def main(argv=None):
     parser.add_argument("--launch",action="store_true",help="Launch runClient after generating a preset")
     parser.add_argument("--root",type=Path,default=None,help=argparse.SUPPRESS)
     args=parser.parse_args(argv)
-    latitude_mode = args.latitude_mode or (FIXED_LATITUDE_MODE if args.preset in FAMILIES else "off")
+    latitude_mode = args.latitude_mode or (FIXED_LATITUDE_MODE if args.preset in FAMILIES or args.preset in PRIMARY_PROFILES else "off")
     if args.list:
         print("Recommended primary mode: Natural Automate (six fitted landform kernels with smooth regional transitions).")
         print("Legacy merged modes:",", ".join(FAMILIES))
