@@ -21,7 +21,7 @@ The objective is not to delete features or merge every historical branch. It is 
 
 ## 2. Repository inventory
 
-The audited `main` tree contains 1,605 repository paths. The current worldgen resource inventory includes:
+The audited pre-consolidation `main` baseline contained 1,605 repository paths. The Natural Automate branch adds the composite preset and Studio modules while removing the retired Atlas implementation. The audited baseline worldgen resource inventory included: 
 
 | Resource family | JSON files |
 |---|---:|
@@ -34,15 +34,16 @@ The audited `main` tree contains 1,605 repository paths. The current worldgen re
 
 These counts describe the source tree, not the number of player-selectable modes or proof that every resource is active.
 
-The default `normal` and `extended` world-preset tags currently expose **seven** entries:
+The Natural Automate branch's `normal` and `extended` world-preset tags expose **eight** entries:
 
-1. Natural Three Realms
-2. Alpine Three Realms
-3. Canyon Three Realms
-4. Glacial Three Realms
-5. Volcanic Three Realms
-6. Karst Three Realms
-7. Dune Three Realms
+1. Natural Automate Three Realms (new experimental composite)
+2. Natural Three Realms
+3. Alpine Three Realms
+4. Canyon Three Realms
+5. Glacial Three Realms
+6. Volcanic Three Realms
+7. Karst Three Realms
+8. Dune Three Realms
 
 The USGS Big Sur modes are intentionally absent from the public menu following the earlier decision to remove them. Their resources and the `measured_three_realms` profile remain available for compatibility and controlled testing. Do not re-add them to the public menu without an explicit product decision.
 
@@ -61,7 +62,7 @@ The USGS Big Sur modes are intentionally absent from the public menu following t
 | WatershedRoutingMath / RiverChannelFeature | River routing and protected channel generation | Retain; validate long-range connectivity and water safety |
 | GeoMath and latitude/temperature density functions | Geographic and climate calculations | Consolidate around the fixed 1:20 WGS84 meridional model |
 
-The three editable Terrain Lab families are currently `landscape`, `alpine`, and `canyon`, and they belong to the older merged-noise model (Realism MAX + GeoReal, Himalayan + Realistic Mountains, Grand Canyon + Continental). They are not simply the first three of the seven public modes. The six fitted public modes use a separate `TerrainArchetypeDensity` / `TerrainArchetypeMath` morphology engine with six family-specific kernels (alpine, canyon, glacial, volcanic, karst, dune) and a different coefficient set. Terrain Lab does not currently edit those fitted coefficients. This is a deeper model/schema mismatch, not just four missing menu options. There is also a naming collision: the legacy editor's `alpine` and `canyon` blends are not the same algorithms as the public fitted `alpine` and `canyon` archetypes. The UI now labels the old controls as `Legacy Blend` to make this distinction visible; the eventual catalog should use namespaced IDs such as `legacy_blend.alpine` and `fitted_archetype.alpine`.
+Terrain Lab now has a new primary `natural_automate` profile. It composes the six existing fitted `TerrainArchetypeMath` kernels (alpine, glacial, canyon, volcanic, karst, dune) through a separate low-frequency `minecraft:weirdness` regional selector and a 16% cross-fade at region boundaries. A separate `minecraft:erosion` signal remains the local shape selector. Family-specific DEM-fit coefficients are retained in the composite. The old Landscape / Alpine / Canyon blend families remain available under Legacy Advanced; they are not the same algorithms as the fitted Alpine and Canyon archetypes. The first Natural Automate editor exposes composite morphology strength, terrain relief and the shared 1:20 climate control. It does not yet provide individual per-kernel editing or a live preview.
 
 #### Six fitted morphology kernels
 
@@ -118,7 +119,7 @@ Structure density packs must remain mutually exclusive where they override the s
 | Tool | What it actually does today | Current limitation |
 |---|---|---|
 | World Atlas | Removed from the active product at the user's direction | All Atlas screens, save-directory scanning, map readers, localization keys and Atlas-specific tests are removed; no replacement save scanner is planned |
-| Terrain Lab | YACL configuration for three editable families; saves a next-world draft; exporter creates a new-world datapack | No live terrain preview; only three editable families; disconnected from the seven-mode catalog |
+| Terrain Lab | Natural Automate composite editor plus three Legacy Advanced blend families; YACL draft and content-addressed new-world datapack exporter | No live terrain preview; individual fitted-kernel controls remain a later enhancement |
 | Geographic Climate Inspector | Read-only current-position report for 1:20 latitude, climate belt, virtual solar season/daylight, top-of-atmosphere irradiance and altitude lapse estimate | Not local weather; not a live weather simulation; independent of the active NoiseRouter |
 | Adaptive Visibility | Classifies OPEN_SURFACE / SEALED_CAVE / TRANSITION and records telemetry | Does not itself suppress vanilla section meshes |
 | Client FPS profiler | Records Post-to-Post frame intervals and scene labels | Includes VSync/idle pacing; not a GPU-only measurement |
@@ -126,7 +127,7 @@ Structure density packs must remain mutually exclusive where they override the s
 | Distant Horizons cave LOD controller | Optional DH API integration | Must remain fail-open and be validated on actual client setups |
 | install_realscale_visuals.py | Installs pinned Iris/Sodium and external shader/texture packs into a local development run | A development-instance installer, not an in-game visualization subsystem |
 
-There is currently **no unified RealScale Studio**. Terrain Lab, Climate Inspector and performance telemetry still use separate entry points. World Atlas has been retired and must not be reintroduced.
+The Natural Automate branch adds a single **RealScale Studio** pause-menu entry, with routes to Terrain Lab, Performance Studio and Climate Inspector. World Atlas has been retired and must not be reintroduced.
 
 ### E. Performance and compatibility
 
@@ -147,7 +148,7 @@ The newest candidate is [PR #156 — RealScale Performance Core](https://github.
 
 ## 4. Preset classification
 
-The 40 world-preset resources are now enumerated in the machine-readable [PRESET_CATALOG.json](PRESET_CATALOG.json). The catalog is an audit snapshot and the validator checks it against both menu tags, the actual world-preset resources, the seven public biome-source chains and the audited resource counts. It should become the single source of truth for later UI/exporter generation rather than treating all 40 resources as equivalent user options.
+The 41 world-preset resources are enumerated in the machine-readable [PRESET_CATALOG.json](PRESET_CATALOG.json). The catalog is an audit snapshot and the validator checks it against both menu tags, the actual world-preset resources, the eight public biome-source chains and the audited resource counts. It should become the single source of truth for later UI/exporter generation rather than treating all 41 resources as equivalent user options.
 
 ### Public profiles
 
@@ -260,8 +261,8 @@ The preview must distinguish sampled procedural predictions from actual saved An
 ### Phase 1 — catalog and configuration convergence
 
 - Add a machine-readable preset catalog.
-- Make the seven public profiles and all hidden/legacy profiles explicit by status.
-- Expand Terrain Lab from three editable families to the seven public profiles.
+- Make the eight public profiles and all hidden/legacy profiles explicit by status.
+- Complete the Natural Automate editor and keep the three Legacy Advanced blends clearly separated from fitted archetypes.
 - Preserve old config migrations, world-preset IDs and saved-world datapack behavior.
 - Remove duplicate hand-maintained profile lists by generating menu labels, exporter mappings and docs from the catalog where feasible.
 
@@ -295,7 +296,7 @@ The preview must distinguish sampled procedural predictions from actual saved An
 
 ## 7. Evidence and blockers observed on 2026-11-21
 
-- The default Create World tags expose seven profiles; the changelog says seven, while README text still describes four and `docs/VERSIONS.md` still identifies v1.1 as the latest installable candidate. These documents need one current source of truth.
+- The Natural Automate branch exposes eight profiles; README, catalog and both menu tags are aligned. The source version/JAR release identity still needs a deliberate version bump after CI and in-game validation.
 - PR #156 is a draft. Its profile design is promising, but its current full-build jobs fail because of the unrelated missing `LotmBalance` source referenced by `LotmSanityTest`. Several separate worldgen and opt-in boot jobs on that head did pass; this does not make the full PR merge-ready.
 - PR #144 and older fitted-profile branches have heads that are ancestors of main; their changes should not be re-merged just because their PRs remain open. In particular, the legacy `tva_alpine_three_realms` and `tva_canyon_three_realms` QA aliases use smoothed settings and must not be confused with the current public fitted profiles.
 - PR #143's zonal/horizontal mapping branch is divergent and proposes a major coordinate-model change: X/Z become 20 source metres per Minecraft block while Y remains 1 metre per block, plus periodic latitude and preset-aware spawn selection. Current main uses 1:20 only for the geographic climate latitude model; terrain X/Z sampling remains 1 block = 1 metre. This changes apparent relief, DEM sampling, caves, structures, rivers and spawn geometry. It needs an explicit product decision and independent saved-world validation; do not merge it into the terrain-consolidation work as a routine cleanup.
