@@ -228,7 +228,8 @@ final class TerrainArchetypeMath {
             case 5 -> 1.0-smoothstep(0.12,0.58,original); // lowland dune fields
             default -> 0.0;
         };
-        return original+(candidate-original)*domainWeight;
+        double compositeStrength=reliefGain/0.72;
+        return original+(candidate-original)*domainWeight*compositeStrength;
     }
 
     static int naturalFamilyIndex(double regionSignal) {
