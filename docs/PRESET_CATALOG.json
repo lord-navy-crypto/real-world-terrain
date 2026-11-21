@@ -6,8 +6,8 @@
   "source_version": "2.0.0-preview.2-test.9",
   "public_menu_policy": "Seven entries in both normal and extended tags. USGS Big Sur modes remain hidden from the ordinary menu by prior product decision.",
   "counts": {
-    "world_preset_json": 40,
-    "public_profiles": 7,
+    "world_preset_json": 41,
+    "public_profiles": 8,
     "hidden_or_legacy_profiles": 33,
     "noise_settings_json": 32,
     "density_function_json": 125,
@@ -16,6 +16,25 @@
     "placed_feature_json": 122
   },
   "public_profiles": [
+    {
+      "id": "natural_automate_three_realms",
+      "display_name": "Natural Automate — Unified Adaptive Terrain",
+      "status": "experimental_recommended",
+      "noise_settings": "natural_automate",
+      "terrain_model": "composite_fitted_archetypes",
+      "biome_source_chain": [
+        "realscale:sky_ocean",
+        "realscale:natural_ecotones",
+        "realscale:cave_depth_habitats",
+        "minecraft:multi_noise"
+      ],
+      "dimensions": [
+        "minecraft:overworld",
+        "minecraft:the_nether",
+        "minecraft:the_end"
+      ],
+      "validation_level": "new_profile_requires_multi_seed_saved_anvil_qa"
+    },
     {
       "id": "natural_three_realms",
       "display_name": "Natural Three Realms",
