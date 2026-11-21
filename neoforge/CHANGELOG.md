@@ -1,8 +1,34 @@
 # RealScale — Changelog / 更新日志
 
-本文件记录 **RealScale 地形主模组**的版本变化。当前 main 将可选的 Distant Horizons × Chunky 兼容钩子嵌入主模组 JAR；历史独立 `dhchunkyguard` 插件与嵌入版本不兼容，不应同时安装。实验构建不能直接视为正式稳定版。
+本文件记录 **RealScale 地形主模组**的版本变化。当前主线将可选的 Distant Horizons × Chunky 兼容钩子嵌入主模组 JAR；历史独立 `dhchunkyguard` 插件与嵌入版本不兼容，不应同时安装。实验构建不能直接视为正式稳定版。
 
-## 2.0.0-preview.2-test.9 — 2026-11-21 — Experimental source baseline
+## 2.0.0-preview.2-test.10 — 2026-11-21 — Natural Automate & Studio consolidation (Experimental)
+
+### Added
+- Added **Natural Automate Three Realms** as the first and recommended experimental world profile. It composes the six existing fitted morphology kernels (Alpine, Glacial, Canyon, Volcanic, Karst and Dune) using a low-frequency Weirdness regional selector and a 16% smooth transition band. The local Erosion selector remains separate for morphology detail.
+- Natural Automate keeps the natural terrain base, mountain-relief signal, Grand Overworld cave graph, Natural Ecotones, Sky Ocean and Cave Depth Habitats. Geological Wonders remain explicitly outside the default profile.
+- Added a new Terrain Lab export path for Natural Automate. Custom profiles are content-addressed and create new world preset/noise/density IDs; they do not modify existing saves.
+- Added one **RealScale Studio** pause-menu entry with routes to Terrain Lab, Performance Studio and Geographic Climate Inspector.
+- Added **Performance Studio** live telemetry: Minecraft-reported FPS, opt-in frame interval percentiles, compile/upload queue state, free mesh buffers, JVM heap use and approximate Natural Automate cache-array memory per worker.
+- Added a unified performance configuration file, `config/realscale-performance.json`, with Balanced, Low Memory, Smooth Render and combined profiles plus opt-in diagnostics.
+
+### Changed
+- Terrain Lab now defaults to Natural Automate. The older Landscape / Alpine / Canyon blended-noise families remain available as Legacy Advanced and are clearly distinguished from the six fitted archetype kernels.
+- Natural Automate exposes composite morphology strength and terrain relief controls; the shared 1:20 climate strength applies to the exported profile.
+- The Performance Core selectively integrates bounded cache capacities from PR #156 and additionally includes the three horizontal morphology caches plus volcanic and karst shape caches in its Low Memory profile and estimate.
+- The current Create World menu contains eight public choices: Natural Automate, Natural baseline, and the six fitted archetypes.
+
+### Removed
+- Removed World Atlas completely: Atlas screens, local save-directory scanning, Anvil heightmap readers, localization keys and Atlas-specific tests. No replacement save scanner is retained.
+- Removed the unrelated orphan LOTM test and QA test from the RealScale branch; LOTM remains a separate workstream.
+
+### Validation status and limits
+- The catalog validator checks all 41 world-preset resources, both eight-entry menu tags, public biome-source chains and worldgen resource counts.
+- Natural Automate is experimental and still requires multi-seed saved-Anvil validation. No live terrain preview is claimed.
+- Performance telemetry is observational. Smooth Render time-slices FIFO upload completion; it does not reduce mesh compilation or GPU draw calls. No FPS improvement is claimed until physical-client A/B testing.
+- Full GitHub Actions and in-game validation are pending for this branch. This is not a Stable release.
+
+## 2.0.0-preview.2-test.9 — 2026-11-21 — Previous experimental baseline (superseded)
 
 ### Current source state
 - The current Create World tags expose seven profiles: Natural plus Alpine, Canyon, Glacial, Volcanic, Karst and Dune.
