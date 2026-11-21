@@ -38,10 +38,12 @@ class NoDimensionalInvasionTests(unittest.TestCase):
         self.assertIn('"latitude_temperature"',mod)
         self.assertIn('"radial_latitude_temperature"',mod)
         sacred=json.loads((PRESETS/"tva_sacred_timeline_three_realms.json").read_text())
-        self.assertEqual(set(sacred["dimensions"]),{"minecraft:overworld","minecraft:the_nether","minecraft:the_end"})
-        self.assertNotIn("invasion",json.dumps(sacred))
+        automate=json.loads((PRESETS/"natural_automate_three_realms.json").read_text())
+        for world in (sacred,automate):
+            self.assertEqual(set(world["dimensions"]),{"minecraft:overworld","minecraft:the_nether","minecraft:the_end"})
+            self.assertNotIn("invasion",json.dumps(world))
         for menu in ("normal","extended"):
             values=json.loads((TAGS/(menu+".json")).read_text())["values"]
-            self.assertEqual(len(values),8)
+            self.assertEqual(values,["realscale:natural_automate_three_realms"])
             self.assertFalse(any("invasion" in value for value in values))
 if __name__=="__main__": unittest.main()
