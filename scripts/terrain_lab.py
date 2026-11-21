@@ -30,6 +30,7 @@ PRESETS = (
     "realism_max", "georeal_ultimate", "himalayan", "grand_canyon",
     "usgs_big_sur", "usgs_big_sur_v2", "continental", "realistic_mountains", "ultimate",
 )
+PRIMARY_PROFILES = ("natural_automate",)
 # A small public UI, with legacy algorithms still accepted for old worlds and CLI.
 # These are REAL combinations of two underlying height density signals, not UI aliases.
 FAMILIES = {
@@ -55,6 +56,7 @@ ENGLISH = {
     "landscape":"Natural Landscape (Realism + GeoReal)",
     "alpine":"Alpine Mountains (Himalayan + Realistic Mountains)",
     "canyon":"Canyons and Plateaus (Grand Canyon + Continental)",
+    "natural_automate":"Natural Automate (six fitted landforms + natural ecology)",
 }
 CHINESE = {
     "realism_max":"综合真实地形", "georeal_ultimate":"多尺度地貌",
@@ -66,6 +68,7 @@ CHINESE = {
     "landscape":"自然地貌（真实综合 + GeoReal）",
     "alpine":"高山地貌（喜马拉雅 + 真实山脉）",
     "canyon":"峡谷台地（大峡谷 + 大陆地形）",
+    "natural_automate":"自然自动综合（六种拟合地貌 + 自然生态）",
 }
 NORMAL = ("natural_three_realms","alpine_three_realms","canyon_three_realms","glacial_three_realms","volcanic_three_realms","karst_three_realms","dune_three_realms")
 GEO_ROOT = Path("data/realscale/worldgen")
@@ -98,9 +101,23 @@ def replace_refs(node, replacements):
         return {key:replace_refs(value,replacements) for key,value in node.items()}
     return node
 
-def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False):
-    if preset not in PRESETS and preset not in FAMILIES:
+def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False, natural_morphology_percent=100):
+    if preset not in PRESETS and preset not in FAMILIES and preset not in PRIMARY_PROFILES:
         raise ValueError("Unknown terrain preset")
+    if preset == "natural_automate":
+        if not 0.8 <= relief <= 1.25:
+            raise ValueError("Natural Automate relief must be 0.80 to 1.25")
+        if not -48 <= elevation <= 48:
+            raise ValueError("Natural Automate elevation must be -48 to 48")
+        if type(natural_morphology_percent) is not int or not 0 <= natural_morphology_percent <= 135:
+            raise ValueError("Natural Automate morphology strength must be 0..135")
+        if type(latitude_strength) is not int or not 0 <= latitude_strength <= 100:
+            raise ValueError("Natural Automate latitude strength must be 0..100")
+        if latitude not in ("fixed_1_20", "off"):
+            raise ValueError("Natural Automate supports only fixed 1:20 latitude or off")
+        if type(inland if False else True) is not bool:
+            raise ValueError("Invalid spawn policy")
+        return
     if preset in ("usgs_big_sur","usgs_big_sur_v2"):
         raise ValueError("USGS Big Sur DEM is measured, read-only terrain: cannot rescale sampled height")
     if type(lithostitched_blend) is not bool:
@@ -145,9 +162,113 @@ def validate(preset, relief, elevation, caves, river_grade, blend_percent=25, ri
     if river_grade not in (0,3,6,9):
         raise ValueError("River slope must be Off (0), Conservative (3), Standard (6) or Flexible (9)")
 
-def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False, universal_biomes=False):
-    validate(preset,relief,elevation,caves,river_grade,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology)
+def natural_automate_files_for(root, relief, elevation, latitude_strength,
+                                inland=True, morphology_percent=100):
+    """Build a content-addressed Natural Automate profile for a NEW world."""
+    if type(morphology_percent) is not int or not 0 <= morphology_percent <= 135:
+        raise ValueError("Natural Automate morphology strength must be 0..135")
+    options = dict(
+        preset="natural_automate",
+        relief=round(float(relief), 3),
+        elevation=int(elevation),
+        morphology_percent=morphology_percent,
+        latitude_strength=int(latitude_strength),
+        inland=bool(inland),
+        model_revision="six_kernel_regional_crossfade_v1",
+    )
+    checksum = hashlib.sha256(
+        json.dumps(options, sort_keys=True).encode()).hexdigest()[:10]
+    name = "lab_natural_automate_" + checksum
+    density_folder = "terrain_lab/" + name
+    density_id = "realscale:" + density_folder
+    base = GEO_ROOT / "density_function" / "natural_automate"
+
+    height = copy.deepcopy(jread(root, base / "height_signal.json"))
+    found_kernel = False
+
+    def tune_kernel(node):
+        nonlocal found_kernel
+        if isinstance(node, dict):
+            if node.get("type") == "realscale:terrain_archetype" and node.get("family") == "natural_automate":
+                node["relief_gain"] = round(
+                    float(node["relief_gain"]) * morphology_percent / 100.0, 6)
+                found_kernel = True
+            for value in node.values():
+                tune_kernel(value)
+        elif isinstance(node, list):
+            for value in node:
+                tune_kernel(value)
+
+    tune_kernel(height)
+    if not found_kernel:
+        raise ValueError("Natural Automate source is missing its fitted morphology codec")
+
+    terrain = copy.deepcopy(jread(root, base / "terrain_density.json"))
+    preliminary = copy.deepcopy(jread(root, base / "preliminary_density.json"))
+    new_height = density_id + "/height_signal"
+    new_terrain = density_id + "/terrain_density"
+    if terrain.get("type") != "minecraft:add":
+        raise ValueError("Natural Automate terrain density has an unexpected graph")
+    # Apply global relief/elevation only to the height signal; preserve the
+    # vanilla Y-clamped vertical gradient and its Y=63 sea-level crossing.
+    terrain["argument1"] = {
+        "type": "minecraft:add",
+        "argument1": {
+            "type": "minecraft:mul",
+            "argument1": float(options["relief"]),
+            "argument2": new_height,
+        },
+        "argument2": options["elevation"] / 128.0,
+    }
+    preliminary = replace_refs(preliminary, {
+        "realscale:natural_automate/terrain_density": new_terrain,
+    })
+
+    noise = copy.deepcopy(jread(
+        root, GEO_ROOT / "noise_settings" / "natural_automate.json"))
+    noise = replace_refs(noise, {
+        "realscale:natural_automate/terrain_density": new_terrain,
+        "realscale:natural_automate/preliminary_density": density_id + "/preliminary_density",
+    })
+
+    def tune_latitude(node):
+        if isinstance(node, dict):
+            if node.get("type") == "realscale:latitude_temperature":
+                node["strength"] = round(latitude_strength / 100.0, 5)
+            for value in node.values():
+                tune_latitude(value)
+        elif isinstance(node, list):
+            for value in node:
+                tune_latitude(value)
+
+    tune_latitude(noise.get("noise_router", {}).get("temperature", {}))
+    if inland:
+        for target in noise.get("spawn_target", []):
+            continentalness = target.get("continentalness")
+            if isinstance(continentalness, list) and continentalness:
+                continentalness[0] = 0.12
+
+    world_preset = copy.deepcopy(jread(
+        root, GEO_ROOT / "world_preset" / "natural_automate_three_realms.json"))
+    world_preset["dimensions"]["minecraft:overworld"]["generator"]["settings"] = (
+        "realscale:" + name)
+
+    output = {
+        GEO_ROOT / "density_function" / density_folder / "height_signal.json": height,
+        GEO_ROOT / "density_function" / density_folder / "terrain_density.json": terrain,
+        GEO_ROOT / "density_function" / density_folder / "preliminary_density.json": preliminary,
+        GEO_ROOT / "noise_settings" / (name + ".json"): noise,
+        GEO_ROOT / "world_preset" / (name + ".json"): world_preset,
+    }
+    return name, options, output
+
+
+def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False, universal_biomes=False, natural_morphology_percent=100):
+    validate(preset,relief,elevation,caves,river_grade,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology,natural_morphology_percent)
     latitude = canonical_latitude_mode(latitude)
+    if preset == "natural_automate":
+        return natural_automate_files_for(root,relief,elevation,latitude_strength,
+                                          inland,natural_morphology_percent)
     # Fixed geographic reference: equator Z=0; quarter-meridian distance / 20.
     # Legacy center values are accepted at the API boundary but never applied.
     equator_z = 0
@@ -539,8 +660,8 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
         output[GEO_ROOT/"density_function"/density_folder/"biome_temperature.json"]=temp_value
     return name,options,output
 
-def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False, universal_biomes=False):
-    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology,universal_biomes)
+def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_run=False, blend_percent=25, ridge=0, erosion=0, strata=0, climate=0, valley=0, latitude="off", latitude_strength=70, equator_z=0, basin=0, center_x=0, cold_limit=60, fantasy_dimensions=False, lithostitched_blend=False, lithostitched_geology=False, universal_biomes=False, natural_morphology_percent=100):
+    name,options,output=files_for(root,preset,relief,elevation,caves,river_grade,inland,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology,universal_biomes,natural_morphology_percent)
     paths={path:serialized(obj) for path,obj in output.items()}
     preset_id="realscale:"+name
     for tag in ("normal","extended"):
@@ -683,10 +804,11 @@ def main(argv=None):
     parser.add_argument("--from-yacl",type=Path,default=None,
                         help="Import a saved YACL draft; creates a NEW immutable world preset")
     parser.add_argument("--list",action="store_true",help="List preset and tuning choices")
-    parser.add_argument("--preset",choices=PRESETS+tuple(FAMILIES),default="landscape")
+    parser.add_argument("--preset",choices=PRESETS+tuple(FAMILIES)+PRIMARY_PROFILES,default="natural_automate")
     parser.add_argument("--profile",choices=PROFILES,default="natural")
     parser.add_argument("--relief",type=float,default=None)
-    parser.add_argument("--blend",type=int,default=25,help="Secondary landform mix (0-50%) for merged modes")
+    parser.add_argument("--blend",type=int,default=25,help="Secondary landform mix (0-50%) for legacy merged modes")
+    parser.add_argument("--natural-morphology",type=int,default=100,help="Natural Automate six-kernel morphology strength (0..135)")
     parser.add_argument("--ridge",type=int,default=0,help="Opt-in ridgeline density perturbation (0-40)")
     parser.add_argument("--erosion",type=int,default=0,help="Opt-in erosion density perturbation (0-30)")
     parser.add_argument("--strata",type=int,default=0,help="Opt-in vertical strata solidity (0-20)")
@@ -712,11 +834,13 @@ def main(argv=None):
     args=parser.parse_args(argv)
     latitude_mode = args.latitude_mode or (FIXED_LATITUDE_MODE if args.preset in FAMILIES else "off")
     if args.list:
-        print("Main merged modes:",", ".join(FAMILIES))
+        print("Recommended primary mode: Natural Automate (six fitted landform kernels with smooth regional transitions).")
+        print("Legacy merged modes:",", ".join(FAMILIES))
         print("Measured (read-only): usgs_big_sur_v2; original legacy DEM: usgs_big_sur")
         print("Legacy compatible algorithms:",", ".join(LEGACY_EDITABLE))
         print("Tuning modes:",", ".join(PROFILES))
-        print("Adjustable: mix 0..50%, ridge 0..40, erosion 0..30, strata 0..20, biome cooling 0..100, valley warming 0..100, fixed 1:20 latitude strength 0..100, basin warming 0..100, relief 0.80..1.25, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
+        print("Natural Automate controls: morphology 0..135%, relief 0.80..1.25, fixed 1:20 latitude strength 0..100, inland spawn preference.")
+        print("Legacy Advanced controls: mix 0..50%, ridge 0..40, erosion 0..30, strata 0..20, biome cooling 0..100, valley warming 0..100, basin warming 0..100, elevation -48..48, caves 20..80, river grade 0/3/6/9.")
         print("USGS Big Sur v2 is the read-only measured DEM. RealScale's 512-block dimension layouts remain enabled.")
         print("Optional Lithostitched terrain blending: --lithostitched-blend (merged families).")
         print("Deep geology suite: --lithostitched-geology (nonzero merged blend required).")
@@ -746,7 +870,8 @@ def main(argv=None):
             legacy_mode,raw.get("latitudeStrength",70),0,
             raw.get("basinPercent",0),0,0,
             raw.get("fantasyDimensions",False),raw.get("lithostitchedBlend",False),
-            raw.get("lithostitchedGeology",False))
+            raw.get("lithostitchedGeology",False),False,
+            raw.get("naturalMorphologyPercent",100))
         print("YACL draft compiled to new world preset: realscale:"+name)
         print("Worldgen resource files:",len(files))
         return 0
@@ -761,7 +886,8 @@ def main(argv=None):
         name,opts,files=apply(root,args.preset,relief,elevation,caves,grade,
                               not args.coastal_spawn,args.dry_run,args.blend,args.ridge,args.erosion,args.strata,args.biome_cooling,args.valley_warming,
                               latitude_mode,args.latitude_strength,0,args.basin_warming,
-                              0,0,args.fantasy_dimensions,args.lithostitched_blend,args.lithostitched_geology)
+                              0,0,args.fantasy_dimensions,args.lithostitched_blend,args.lithostitched_geology,
+                              False,args.natural_morphology)
         print("Prepared world type: realscale:"+name)
         print("Settings:",json.dumps(opts,sort_keys=True))
         print("World preset files:",len(files))
