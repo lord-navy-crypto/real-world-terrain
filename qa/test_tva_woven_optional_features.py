@@ -49,13 +49,14 @@ class GeoWondersOptInTest(unittest.TestCase):
         self.assertEqual(ecotones["source"]["type"],"minecraft:multi_noise")
         self.assertNotIn("cross_realm",json.dumps(self.wonders))
 
-    def test_wonders_remain_opt_in_and_public_menu_is_unchanged(self):
+    def test_wonders_remain_opt_in_and_eight_profile_public_menu_is_preserved(self):
         canonical=json.dumps(self.canonical)
         self.assertNotIn("geo_wonders_opt_in",canonical)
         self.assertNotIn("cross_realm",canonical)
         self.assertTrue((JAVA/"GeoWondersBiomeSource.java").is_file())
         self.assertTrue((JAVA/"SkyOceanBiomeSource.java").is_file())
         expected=[
+            "realscale:natural_automate_three_realms",
             "realscale:natural_three_realms",
             "realscale:alpine_three_realms",
             "realscale:canyon_three_realms",
