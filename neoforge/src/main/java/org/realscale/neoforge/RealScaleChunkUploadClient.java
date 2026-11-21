@@ -168,6 +168,7 @@ public final class RealScaleChunkUploadClient {
         frames=framesWithBacklog=totalQueued=totalUploading=budgetFrames=uploaded=0;
         peakQueued=peakUploading=0;
         minFreeBuffers=Integer.MAX_VALUE;
+        heapSamples=totalHeapUsedBytes=peakHeapUsedBytes=maxHeapBytes=0L;
         lastReportNanos=0L;
         lastReportedDeferred=BUDGET.deferredCalls();
         if(ENABLED)BUDGET.endFrame();

@@ -13,7 +13,7 @@ package org.realscale.neoforge;
  * allocate a distinct cache per mapped density function and worldgen thread.
  */
 final class MountainReliefSiteCache {
-    static final int SLOTS=64; // fixed memory; collisions can only cause misses
+    static final int SLOTS=64; // balanced-profile default; collisions can only cause misses
     static final class Site {
         final int gx,gz;
         final long hash;
@@ -48,8 +48,8 @@ final class MountainReliefSiteCache {
 
     // Two-way set association preserves both hot mountain cells when their
     // old direct-mapped hash collides during multi-column structure probes.
-    // Total capacity remains exactly 64 sites per mapped density and worker.
-    // Eviction changes only reuse; the original site geometry is untouched.
+    // Capacity follows the selected profile and remains bounded per mapped
+    // density and worker. Eviction changes only reuse; site geometry is untouched.
     private static final int BUCKETS=SLOTS/2;
     private final int capacity;
     private final int bucketMask;
