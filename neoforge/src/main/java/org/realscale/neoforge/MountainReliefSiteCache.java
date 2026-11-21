@@ -13,7 +13,7 @@ package org.realscale.neoforge;
  * allocate a distinct cache per mapped density function and worldgen thread.
  */
 final class MountainReliefSiteCache {
-    static final int SLOTS=64; // fixed memory; collisions can only cause misses
+    static final int SLOTS=64; // balanced-profile default; collisions can only cause misses
     static final class Site {
         final int gx,gz;
         final long hash;
@@ -48,22 +48,45 @@ final class MountainReliefSiteCache {
 
     // Two-way set association preserves both hot mountain cells when their
     // old direct-mapped hash collides during multi-column structure probes.
-    // Total capacity remains exactly 64 sites per mapped density and worker.
-    // Eviction changes only reuse; the original site geometry is untouched.
+    // Capacity follows the selected profile and remains bounded per mapped
+    // density and worker. Eviction changes only reuse; site geometry is untouched.
     private static final int BUCKETS=SLOTS/2;
-    private final Site[] sites=new Site[SLOTS];
-    private final byte[] victim=new byte[BUCKETS];
+    private final int capacity;
+    private final int bucketMask;
+    private final Site[] sites;
+    private final byte[] victim;
     private Site last;
 
-    private static int bucket(int gx,int gz) {
+    MountainReliefSiteCache() {
+        this(RealScalePerformanceProfile.cacheSlots("mountain_relief", SLOTS));
+    }
+
+    MountainReliefSiteCache(int slots) {
+        if (slots < 16 || (slots & (slots - 1)) != 0)
+            throw new IllegalArgumentException("Cache slots must be a power of two >= 16");
+        this.capacity = slots;
+        this.bucketMask = (slots >>> 1) - 1;
+        this.sites = new Site[slots];
+        this.victim = new byte[slots >>> 1];
+    }
+
+    int capacity() {
+        return capacity;
+    }
+
+    static int bucket(int gx,int gz) {
+        return bucket(gx,gz,BUCKETS - 1);
+    }
+
+    private static int bucket(int gx,int gz,int mask) {
         int hash=gx*0x9e3779b9 ^ gz*0x85ebca6b;
-        return hash & (BUCKETS-1);
+        return hash & mask;
     }
 
     Site get(int gx,int gz) {
         Site prev=last;
         if(prev!=null && prev.gx==gx && prev.gz==gz)return prev;
-        int bucket=bucket(gx,gz),first=bucket<<1;
+        int bucket=bucket(gx,gz,bucketMask),first=bucket<<1;
         Site a=sites[first],b=sites[first+1];
         if(a!=null && a.gx==gx && a.gz==gz) {
             last=a;
