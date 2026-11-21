@@ -30,6 +30,8 @@ public final class RealScalePerformanceProfile {
     private static final Settings SETTINGS = loadSettings();
     private static final Profile ACTIVE = SETTINGS.profile();
     private static final AtomicBoolean REPORTED = new AtomicBoolean();
+    // SkyIslandLayout.SLOTS; kept local so this settings class stays dependency-free.
+    private static final int SKY_ISLAND_SITE_SLOTS = 5;
 
     private RealScalePerformanceProfile() {}
 
@@ -150,7 +152,7 @@ public final class RealScalePerformanceProfile {
         long biomeResult = biomeResultSlots * (Long.BYTES + Long.BYTES)
                 + biomeResultSlots / 2L;
         long relief = reliefSlots * Long.BYTES + reliefSlots / 2L;
-        long sky = skySlots * (Long.BYTES * (1L + SkyIslandLayout.SLOTS))
+        long sky = skySlots * (Long.BYTES * (1L + SKY_ISLAND_SITE_SLOTS))
                 + skySlots / 2L;
         long archetypeHorizontal = 3L * horizontalSlots
                 * (Long.BYTES * 2L + Double.BYTES * 2L + 1L);
