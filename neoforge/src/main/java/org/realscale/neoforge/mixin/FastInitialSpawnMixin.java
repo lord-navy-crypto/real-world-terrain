@@ -29,7 +29,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(value = MinecraftServer.class, remap = false)
 public abstract class FastInitialSpawnMixin {
-    private static final int[][] REALSCALE$SPAWN_OFFSETS = {
+    @Unique private static final int[][] REALSCALE$SPAWN_OFFSETS = {
             {8, 8}, {4, 4}, {12, 4}, {4, 12}, {12, 12},
             {8, 4}, {8, 12}, {4, 8}, {12, 8}
     };
@@ -50,16 +50,23 @@ public abstract class FastInitialSpawnMixin {
         }
 
         RandomState randomState = chunks.randomState();
+        long climateStart = System.nanoTime();
         BlockPos climateTarget = randomState.sampler().findSpawnPosition();
+        long climateNanos = System.nanoTime() - climateStart;
         ChunkPos spawnChunk = new ChunkPos(climateTarget);
+        long heightStart = System.nanoTime();
         BlockPos spawn = realscale$sampleSpawnColumn(
                 level, generator, randomState, spawnChunk);
+        long heightNanos = System.nanoTime() - heightStart;
 
         levelData.setSpawn(spawn, 0.0F);
         System.err.println("REALSCALE_FAST_INITIAL_SPAWN x=" + spawn.getX()
                 + " y=" + spawn.getY() + " z=" + spawn.getZ()
                 + " climateChunk=" + spawnChunk.x + "," + spawnChunk.z
-                + " sampledColumns=" + REALSCALE$SPAWN_OFFSETS.length);
+                + " sampledColumns=" + REALSCALE$SPAWN_OFFSETS.length
+                + " climate_ms=" + (climateNanos / 1_000_000.0)
+                + " height_ms=" + (heightNanos / 1_000_000.0)
+                + " total_ms=" + ((climateNanos + heightNanos) / 1_000_000.0));
         ci.cancel();
     }
 
