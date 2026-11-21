@@ -11,20 +11,41 @@ package org.realscale.neoforge;
 final class MeasuredColumnMemo {
     static final int SLOTS = 8192;
     private static final int BUCKETS = SLOTS / 2;
-    private final long[] coordinates = new long[SLOTS];
-    private final double[] values = new double[SLOTS];
-    private final boolean[] valid = new boolean[SLOTS];
-    private final byte[] victim = new byte[BUCKETS];
+    private final int capacity;
+    private final int bucketMask;
+    private final long[] coordinates;
+    private final double[] values;
+    private final boolean[] valid;
+    private final byte[] victim;
     private boolean lastValid;
     private long lastCoordinate;
     private double lastValue;
     private long missCoordinate;
     private int missBucket;
 
+    MeasuredColumnMemo() {
+        this(RealScalePerformanceProfile.cacheSlots("measured_horizontal", SLOTS));
+    }
+
+    MeasuredColumnMemo(int slots) {
+        if (slots < 16 || (slots & (slots - 1)) != 0)
+            throw new IllegalArgumentException("Cache slots must be a power of two >= 16");
+        this.capacity = slots;
+        this.bucketMask = (slots >>> 1) - 1;
+        this.coordinates = new long[slots];
+        this.values = new double[slots];
+        this.valid = new boolean[slots];
+        this.victim = new byte[slots >>> 1];
+    }
+
+    int capacity() {
+        return capacity;
+    }
+
     boolean lookup(int x, int z) {
         long coordinate = ((long)x << 32) | (z & 0xffffffffL);
         if (lastValid && lastCoordinate == coordinate) return true;
-        int first = bucket(x,z) << 1;
+        int first = bucket(x,z,bucketMask) << 1;
         if (valid[first] && coordinates[first] == coordinate) {
             lastCoordinate = coordinate;
             lastValue = values[first];
@@ -66,7 +87,11 @@ final class MeasuredColumnMemo {
     }
 
     static int bucket(int x,int z) {
+        return bucket(x,z,BUCKETS - 1);
+    }
+
+    private static int bucket(int x,int z,int mask) {
         int hash = x * 0x9e3779b9 ^ Integer.rotateLeft(z * 0x85ebca6b,13);
-        return (hash ^ (hash >>> 16)) & (BUCKETS - 1);
+        return (hash ^ (hash >>> 16)) & mask;
     }
 }
