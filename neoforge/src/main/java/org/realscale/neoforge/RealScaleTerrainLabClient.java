@@ -134,6 +134,7 @@ public final class RealScaleTerrainLabClient {
     private static class Draft {
         String preset = "natural_automate";
         int naturalMorphologyPercent = 100;
+        int naturalReliefPercent = 100;
         int blendPercent = 25;
         boolean lithostitchedBlend = false;
         boolean lithostitchedGeology = false;
@@ -233,7 +234,7 @@ public final class RealScaleTerrainLabClient {
             return switch (d.preset) {
                 case "natural_automate" -> d.naturalMorphologyPercent >= 0
                         && d.naturalMorphologyPercent <= 135
-                        && d.reliefPercent >= 80 && d.reliefPercent <= 125
+                        && d.naturalReliefPercent >= 80 && d.naturalReliefPercent <= 125
                         && d.latitudeStrength >= 0 && d.latitudeStrength <= 100
                         && "fixed_1_20".equals(d.latitudeMode)
                         && d.architectureStructuresEnabled != null
@@ -263,6 +264,7 @@ public final class RealScaleTerrainLabClient {
         void save() {
             initializeProfiles();
             if (profiles.containsKey(preset)) profiles.get(preset).copyTo(this);
+            else if ("natural_automate".equals(preset)) reliefPercent=naturalReliefPercent;
             if (!valid(this)) throw new IllegalArgumentException("Terrain Lab draft is invalid");
             Path temp = CONFIG.resolveSibling(CONFIG.getFileName().toString() + ".tmp");
             try {
@@ -422,7 +424,7 @@ public final class RealScaleTerrainLabClient {
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Natural Automate Terrain Relief (%)"))
                     .description(description("80-125%; scales the composite height signal for NEW worlds only. Sea level remains Y=63."))
-                    .binding(100, () -> d.reliefPercent, v -> d.reliefPercent=v)
+                    .binding(100, () -> d.naturalReliefPercent, v -> d.naturalReliefPercent=v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o)
                             .range(80,125).step(1)).build())
                 .build())
