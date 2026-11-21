@@ -355,12 +355,12 @@ public final class RealScaleTerrainLabClient {
         Draft d=Draft.read();
         d.initializeProfiles();
         return YetAnotherConfigLib.createBuilder()
-            .title(Component.literal("RealScale | 4 Terrain Types / 3 Custom Families"))
+            .title(Component.literal("RealScale | Terrain Lab — 3 Editable Families"))
             .category(ConfigCategory.createBuilder()
                 .name(Component.literal("Choose World Type"))
                 .option(Option.<String>createBuilder()
                     .name(Component.literal("Editable Terrain Family"))
-                    .description(description("Natural blends Realism MAX + GeoReal; Alpine blends Himalayan + Realistic Mountains; Canyon blends Grand Canyon + Continental. Edit each family in its OWN tab. Save exports only the chosen family. To apply it, exit Minecraft and run the matching RealScale-Config-Exporter.pyz with the mod JAR and saved YACL JSON; enable its ZIP when creating a NEW world. Fourth type, USGS Big Sur v2, is measured/read-only: choose it directly under Create New World > World Type. Legacy world IDs remain compatible."))
+                    .description(description("This editor currently covers three editable families: Landscape, Alpine and Canyon. The public Create World catalog has seven profiles, so Glacial, Volcanic, Karst and Dune are not independently editable here yet. Edit each family in its OWN tab. Save exports only the chosen family. To apply it, exit Minecraft and run the matching RealScale-Config-Exporter.pyz with the mod JAR and saved YACL JSON; enable its ZIP when creating a NEW world. Measured USGS profiles remain hidden from the ordinary menu and read-only. Legacy world IDs remain compatible."))
                     .binding("landscape", () -> d.preset, v -> d.preset=v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(
                         "landscape","alpine","canyon")).build())
