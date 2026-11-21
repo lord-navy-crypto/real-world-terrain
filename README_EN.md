@@ -35,7 +35,7 @@ See the [Preset Catalog](docs/PRESET_CATALOG.json) for all 40 public, hidden and
 
 These tools exist, but they are not yet one unified workbench:
 
-- **Terrain Lab:** YACL configuration and new-world datapack export. It currently edits only Landscape, Alpine and Canyon families, does not cover all seven public profiles, and has no live terrain preview.
+- **Terrain Lab:** YACL configuration and new-world datapack export. It currently edits the older Landscape / Alpine / Canyon blended-noise families. The six public fitted landforms use a separate `TerrainArchetypeDensity` morphology engine that is not yet exposed in the same editor; there is also no live terrain preview.
 - **World Atlas:** read-only saved-Anvil region coverage and heightmap inspection. It does not generate new chunks, start a hidden server or control Chunky.
 - **Geographic Climate Inspector:** read-only 1:20 geographic latitude, virtual solar season, daylight and altitude-temperature estimates. It is not a live weather simulator.
 - **Performance diagnostics:** currently provided mainly by opt-in samplers and logs, not a performance heatmap workbench.
