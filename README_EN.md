@@ -25,7 +25,7 @@ The six fitted modes remain experimental. Validation of a subset must not be pre
 - **Terrain Engine:** Realism MAX, Terrain Archetypes, DEM, mountain relief, erosion, strata and river terrain.
 - **Ecology Engine:** Natural Ecotones, Sky Ocean, Sky Islands, Cave Depth Habitats, marine/cave ecology and optional Geological Wonders.
 - **World Systems:** expanded Overworld caves, Grand Nether / End, sky islands, structure-density packs, the 100-structure architecture library and optional water transport.
-- **Visualization:** World Atlas, Terrain Lab and Geographic Climate Inspector.
+- **RealScale Studio:** a unified home for Terrain Lab, Climate Inspector and Performance Studio. World Atlas has been retired and removed.
 - **Performance:** world-generation sampling, cache diagnostics, client frame intervals and optional chunk-upload pacing.
 - **Compatibility:** optional Distant Horizons / Chunky hooks and external client-visual tools.
 
@@ -35,10 +35,10 @@ See the [Preset Catalog](docs/PRESET_CATALOG.json) for all 40 public, hidden and
 
 These tools exist, but they are not yet one unified workbench:
 
-- **Terrain Lab:** YACL configuration and new-world datapack export. It currently edits the older Landscape / Alpine / Canyon blended-noise families. The six public fitted landforms use a separate `TerrainArchetypeDensity` morphology engine that is not yet exposed in the same editor; there is also no live terrain preview.
-- **World Atlas:** read-only saved-Anvil region coverage and heightmap inspection. It does not generate new chunks, start a hidden server or control Chunky.
+- **Terrain Lab:** being rebuilt as one terrain editor. The old Landscape / Alpine / Canyon blended-noise families will move to Legacy Advanced; the new primary path is Natural Automate plus the six fitted morphology kernels.
+- **World Atlas:** retired and removed; the mod no longer scans local saves.
 - **Geographic Climate Inspector:** read-only 1:20 geographic latitude, virtual solar season, daylight and altitude-temperature estimates. It is not a live weather simulator.
-- **Performance diagnostics:** currently provided mainly by opt-in samplers and logs, not a performance heatmap workbench.
+- **Performance Studio:** cache profiles, frame intervals, chunk-upload queues, memory statistics and visual diagnostics are being consolidated.
 
 These capabilities will be progressively integrated into a unified **RealScale Studio**. Do not describe live terrain preview, performance heatmaps or a complete 3D editor as existing functionality yet.
 
