@@ -80,9 +80,10 @@ def main() -> int:
             kernel = load(height_path).get("argument", {})
             if kernel.get("family") != "natural_automate":
                 fail("Natural Automate is missing its composite morphology density")
-            if not {"temperature", "humidity"}.issubset(kernel):
-                fail("Natural Automate must use raw temperature and humidity suitability inputs")
-            if kernel.get("region_selector", {}).get("noise") != "minecraft:offset":
+            environment = kernel.get("environment", {})
+            if not {"temperature", "humidity", "region_selector"}.issubset(environment):
+                fail("Natural Automate must use raw temperature, humidity and regional suitability inputs")
+            if environment.get("region_selector", {}).get("noise") != "minecraft:offset":
                 fail("Natural Automate regional selector must reference a registered vanilla noise")
             expected_chain = [
                 "realscale:sky_ocean",

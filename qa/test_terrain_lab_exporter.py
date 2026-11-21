@@ -123,9 +123,10 @@ class ExporterTests(unittest.TestCase):
             self.assertEqual(kernel["type"],"realscale:terrain_archetype")
             self.assertEqual(kernel["family"],"natural_automate")
             self.assertAlmostEqual(kernel["relief_gain"],0.792)
-            self.assertEqual(kernel["region_selector"]["noise"],"minecraft:offset")
-            self.assertIn("temperature",kernel)
-            self.assertIn("humidity",kernel)
+            environment=kernel["environment"]
+            self.assertEqual(environment["region_selector"]["noise"],"minecraft:offset")
+            self.assertIn("temperature",environment)
+            self.assertIn("humidity",environment)
             noise=json.loads(archive.read(
                 "data/realscale/worldgen/noise_settings/"+stem+".json"))
             self.assertEqual(noise["noise_router"]["depth"],

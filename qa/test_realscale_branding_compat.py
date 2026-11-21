@@ -70,15 +70,20 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
         self.assertEqual(overworld["generator"]["settings"], "realscale:natural_automate")
         self.assertEqual(
             source_chain(overworld["generator"]["biome_source"]),
-            ["realscale:sky_ocean", "realscale:natural_ecotones",
-             "realscale:cave_depth_habitats", "minecraft:multi_noise"],
+            ["realscale:sky_ocean", "realscale:geo_wonders_opt_in",
+             "realscale:natural_ecotones", "realscale:cave_depth_habitats",
+             "minecraft:multi_noise"],
         )
         noise = read(RES / "data/realscale/worldgen/noise_settings/natural_automate.json")
         self.assertEqual(
             noise["noise_router"]["temperature"]["adjusted"]["height_signal"],
             "realscale:natural_automate/height_signal",
         )
-        self.assertTrue((RES / "data/realscale/worldgen/density_function/natural_automate/height_signal.json").is_file())
+        height=read(RES / "data/realscale/worldgen/density_function/natural_automate/height_signal.json")
+        environment=height["argument"]["environment"]
+        self.assertEqual(environment["region_selector"]["noise"],"minecraft:offset")
+        self.assertEqual(environment["temperature"]["noise"],"minecraft:temperature")
+        self.assertEqual(environment["humidity"]["noise"],"minecraft:vegetation")
 
     def test_natural_automate_has_bilingual_player_facing_name(self):
         for name in ("en_us.json", "zh_cn.json"):

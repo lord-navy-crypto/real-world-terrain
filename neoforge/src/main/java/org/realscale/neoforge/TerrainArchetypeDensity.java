@@ -133,17 +133,35 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
     public double duneAxisRadians() { return duneAxisRadians; }
     public double dominantWavelengthM() { return dominantWavelengthM; }
 
+    private record EnvironmentInputs(DensityFunction regionSelector,
+            DensityFunction temperature,DensityFunction humidity) {
+        private static final Codec<EnvironmentInputs> CODEC =
+                RecordCodecBuilder.create(i -> i.group(
+                        DensityFunction.HOLDER_HELPER_CODEC.optionalFieldOf("region_selector")
+                                .forGetter(e -> java.util.Optional.ofNullable(e.regionSelector)),
+                        DensityFunction.HOLDER_HELPER_CODEC.optionalFieldOf("temperature")
+                                .forGetter(e -> java.util.Optional.ofNullable(e.temperature)),
+                        DensityFunction.HOLDER_HELPER_CODEC.optionalFieldOf("humidity")
+                                .forGetter(e -> java.util.Optional.ofNullable(e.humidity))
+                ).apply(i,(region,temperature,humidity) ->
+                        new EnvironmentInputs(region.orElse(null),
+                                temperature.orElse(null),humidity.orElse(null))));
+    }
+
+    private java.util.Optional<EnvironmentInputs> environmentInputs() {
+        if(regionSelector==selector && temperature==null && humidity==null)
+            return java.util.Optional.empty();
+        return java.util.Optional.of(new EnvironmentInputs(
+                regionSelector==selector?null:regionSelector,temperature,humidity));
+    }
+
     public static final MapCodec<TerrainArchetypeDensity> MAP_CODEC =
             RecordCodecBuilder.mapCodec(i -> i.group(
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(TerrainArchetypeDensity::base),
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("continents").forGetter(TerrainArchetypeDensity::continents),
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("selector").forGetter(TerrainArchetypeDensity::selector),
-                    DensityFunction.HOLDER_HELPER_CODEC.optionalFieldOf("region_selector")
-                            .forGetter(d -> java.util.Optional.ofNullable(d.regionSelector == d.selector ? null : d.regionSelector)),
-                    DensityFunction.HOLDER_HELPER_CODEC.optionalFieldOf("temperature")
-                            .forGetter(d -> java.util.Optional.ofNullable(d.temperature)),
-                    DensityFunction.HOLDER_HELPER_CODEC.optionalFieldOf("humidity")
-                            .forGetter(d -> java.util.Optional.ofNullable(d.humidity)),
+                    EnvironmentInputs.CODEC.optionalFieldOf("environment")
+                            .forGetter(TerrainArchetypeDensity::environmentInputs),
                     Codec.STRING.fieldOf("family").forGetter(TerrainArchetypeDensity::family),
                     Codec.doubleRange(0.0, 1.0).fieldOf("macro_gain").forGetter(TerrainArchetypeDensity::macroGain),
                     Codec.doubleRange(0.0, 1.0).fieldOf("meso_gain").forGetter(TerrainArchetypeDensity::mesoGain),
@@ -156,16 +174,17 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
                     Codec.doubleRange(0.5, 2.0).fieldOf("anisotropy_gain").forGetter(TerrainArchetypeDensity::anisotropyGain),
                     Codec.doubleRange(-Math.PI, Math.PI).fieldOf("dune_axis_radians").forGetter(TerrainArchetypeDensity::duneAxisRadians),
                     Codec.doubleRange(1.0, 1000000.0).fieldOf("dominant_wavelength_m").forGetter(TerrainArchetypeDensity::dominantWavelengthM)
-            ).apply(i, (base, continents, selector, regionSelector, temperature,
-                    humidity, family, macroGain, mesoGain, microGain, reliefGain,
-                    ridgeSharpness, cliffIndex, valleyIndex, ridgeIndex,
-                    anisotropyGain, duneAxisRadians, dominantWavelengthM) ->
+            ).apply(i, (base, continents, selector, environment, family,
+                    macroGain, mesoGain, microGain, reliefGain, ridgeSharpness,
+                    cliffIndex, valleyIndex, ridgeIndex, anisotropyGain,
+                    duneAxisRadians, dominantWavelengthM) ->
                     new TerrainArchetypeDensity(base, continents, selector,
-                            regionSelector.orElse(selector), family, macroGain,
-                            mesoGain, microGain, reliefGain, ridgeSharpness,
-                            cliffIndex, valleyIndex, ridgeIndex, anisotropyGain,
-                            duneAxisRadians, dominantWavelengthM,
-                            temperature.orElse(null),humidity.orElse(null)));
+                            environment.map(EnvironmentInputs::regionSelector).orElse(null),
+                            family, macroGain, mesoGain, microGain, reliefGain,
+                            ridgeSharpness, cliffIndex, valleyIndex, ridgeIndex,
+                            anisotropyGain, duneAxisRadians, dominantWavelengthM,
+                            environment.map(EnvironmentInputs::temperature).orElse(null),
+                            environment.map(EnvironmentInputs::humidity).orElse(null)));
     private static final KeyDispatchDataCodec<TerrainArchetypeDensity> DISPATCH =
             KeyDispatchDataCodec.of(MAP_CODEC);
 
@@ -204,12 +223,15 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
 
     @Override
     public DensityFunction mapAll(DensityFunction.Visitor visitor) {
+        DensityFunction mappedSelector=selector.mapAll(visitor);
+        DensityFunction mappedRegionSelector=regionSelector==selector
+                ?mappedSelector:regionSelector.mapAll(visitor);
         return visitor.apply(new TerrainArchetypeDensity(
-                base.mapAll(visitor), continents.mapAll(visitor), selector.mapAll(visitor),
-                regionSelector.mapAll(visitor), family, macroGain, mesoGain, microGain,
-                reliefGain, ridgeSharpness, cliffIndex,
-                valleyIndex, ridgeIndex, anisotropyGain, duneAxisRadians,
-                dominantWavelengthM,temperature==null?null:temperature.mapAll(visitor),
+                base.mapAll(visitor),continents.mapAll(visitor),mappedSelector,
+                mappedRegionSelector,family,macroGain,mesoGain,microGain,
+                reliefGain,ridgeSharpness,cliffIndex,valleyIndex,ridgeIndex,
+                anisotropyGain,duneAxisRadians,dominantWavelengthM,
+                temperature==null?null:temperature.mapAll(visitor),
                 humidity==null?null:humidity.mapAll(visitor)));
     }
 

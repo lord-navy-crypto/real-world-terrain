@@ -89,6 +89,7 @@ jobs:
           mkdir -p build/visibility-budget-smoke
           javac -d build/visibility-budget-smoke \
             neoforge/src/main/java/org/realscale/neoforge/AdaptiveVisibilityBudget.java \
+            neoforge/src/main/java/org/realscale/neoforge/RealScaleDomainManager.java \
             neoforge/src/main/java/org/realscale/neoforge/AdaptiveVisibilityTelemetry.java \
             neoforge/src/test/java/org/realscale/neoforge/AdaptiveVisibilityBudgetSmoke.java \
             neoforge/src/test/java/org/realscale/neoforge/AdaptiveVisibilityTelemetrySmoke.java
