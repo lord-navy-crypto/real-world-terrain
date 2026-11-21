@@ -64,6 +64,17 @@ public final class RealScalePerformanceStudioScreen extends Screen {
         }
 
         y+=5;
+        graphics.drawString(font,Component.literal("GPU TIMESTAMP SPAN"),left,y,0xff80c8ff); y+=15;
+        RealScaleGpuTimestampProfiler.Snapshot gpu=
+                RealScaleGpuTimestampProfiler.snapshot();
+        line(graphics,left,y,"Timer queries",
+                gpu.enabled()?(gpu.supported()?"available":"initializing"):"off / unsupported"); y+=15;
+        line(graphics,left,y,"Samples / mean GPU span",
+                gpu.samples()+" / "+ms(gpu.meanMs())); y+=15;
+        line(graphics,left,y,"P50 / P95 / P99 GPU span",
+                ms(gpu.p50Ms())+" / "+ms(gpu.p95Ms())+" / "+ms(gpu.p99Ms())); y+=15;
+
+        y+=5;
         graphics.drawString(font,Component.literal("CHUNK QUEUE & MEMORY"),
                 left,y,0xff80c8ff); y+=15;
         RealScaleChunkUploadClient.QueueSnapshot queue=
@@ -94,10 +105,10 @@ public final class RealScalePerformanceStudioScreen extends Screen {
 
         int noteY=Math.min(height-55,y+5);
         graphics.drawCenteredString(font,
-                Component.literal("Frame intervals include VSync and scheduling; they are not GPU-only timings."),
+                Component.literal("Frame intervals include VSync; GPU timestamp spans are not GPU utilization and may include idle gaps."),
                 width/2,noteY,0xffb5c0c8);
         graphics.drawCenteredString(font,
-                Component.literal("Heap is JVM heap, not VRAM; cache estimate is one array set, not total process memory. Upload pacing may delay terrain appearance."),
+                Component.literal("Heap is JVM heap, not VRAM; timestamp span is not GPU busy time. Upload pacing may delay terrain appearance."),
                 width/2,noteY+13,0xff9eabb5);
         if(!frame.enabled())
             graphics.drawCenteredString(font,

@@ -59,6 +59,34 @@ public final class RealScaleDomainManager {
         };
     }
 
+    /**
+     * A render-frame policy for the two logical domains inside one Overworld.
+     * Density composition is performed by GrandOverworldCaverns; this plan
+     * governs client-side throughput and exposes safe advisory priorities.
+     * The vanilla upload queue remains FIFO because its Runnable entries do
+     * not carry a stable public RenderSection identity.
+     */
+    public record FramePlan(Domain activeDomain,int uploadMultiplier,
+            boolean cullDistantHorizonCaves,int nearSurfacePriority,
+            int nearUndergroundPriority,int distantSurfacePriority,
+            int optionalHorizonPriority,int backgroundPriority,
+            boolean failOpen) {}
+
+    public static FramePlan framePlan(AdaptiveVisibilityBudget.Mode mode,
+            int pendingUploads,boolean framePressure) {
+        Domain domain=fromVisibilityMode(mode);
+        boolean failOpen=domain==Domain.TRANSITION;
+        return new FramePlan(domain,
+                uploadMultiplier(domain,pendingUploads,framePressure),
+                shouldCullDistantHorizonCaves(domain),
+                priority(domain,Work.NEAR_SURFACE_MESH),
+                priority(domain,Work.NEAR_UNDERGROUND_MESH),
+                priority(domain,Work.DISTANT_SURFACE_MESH),
+                priority(domain,Work.OPTIONAL_HORIZON_LOD),
+                priority(domain,Work.BACKGROUND_MAINTENANCE),
+                failOpen);
+    }
+
     /** Only confidently open surface may hide DH's distant cave LOD geometry. */
     public static boolean shouldCullDistantHorizonCaves(Domain domain) {
         return domain == Domain.SURFACE;

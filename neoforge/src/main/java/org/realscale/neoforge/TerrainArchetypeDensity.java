@@ -223,8 +223,19 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
                 ? temperature.compute(ctx) : 0.0;
         double humiditySignal = naturalAutomate && humidity != null
                 ? humidity.compute(ctx) : 0.0;
-        return morphology.compute(original, continent, signal, regionSignal,
-                temperatureSignal, humiditySignal,ctx.blockX(),ctx.blockZ());
+        if(naturalAutomate && DensityPerfSampler.ENABLED) {
+            long blendStarted=DensityPerfSampler.begin(
+                    DensityPerfSampler.Stage.NATURAL_AUTOMATE_BLEND);
+            try {
+                return morphology.compute(original,continent,signal,regionSignal,
+                        temperatureSignal,humiditySignal,ctx.blockX(),ctx.blockZ());
+            } finally {
+                DensityPerfSampler.finish(
+                        DensityPerfSampler.Stage.NATURAL_AUTOMATE_BLEND,blendStarted);
+            }
+        }
+        return morphology.compute(original,continent,signal,regionSignal,
+                temperatureSignal,humiditySignal,ctx.blockX(),ctx.blockZ());
     }
 
     @Override

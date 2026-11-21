@@ -49,6 +49,24 @@ final class RealScaleDomainManagerTest {
                 RealScaleDomainManager.Domain.TRANSITION,100,false));
     }
 
+    @Test void framePlanKeepsTheTwoDomainsSeparateInsideOneOverworld() {
+        var surface=RealScaleDomainManager.framePlan(
+                AdaptiveVisibilityBudget.Mode.OPEN_SURFACE,0,false);
+        var cave=RealScaleDomainManager.framePlan(
+                AdaptiveVisibilityBudget.Mode.SEALED_CAVE,0,false);
+        var transition=RealScaleDomainManager.framePlan(
+                AdaptiveVisibilityBudget.Mode.TRANSITION,128,false);
+        assertEquals(RealScaleDomainManager.Domain.SURFACE,surface.activeDomain());
+        assertEquals(RealScaleDomainManager.Domain.UNDERGROUND,cave.activeDomain());
+        assertTrue(surface.cullDistantHorizonCaves());
+        assertFalse(cave.cullDistantHorizonCaves());
+        assertTrue(surface.nearSurfacePriority()>surface.nearUndergroundPriority());
+        assertTrue(cave.nearUndergroundPriority()>cave.nearSurfacePriority());
+        assertTrue(transition.failOpen());
+        assertEquals(0,transition.uploadMultiplier());
+        assertFalse(transition.cullDistantHorizonCaves());
+    }
+
     @Test void undergroundGetsBoundedUploadBoostAndFramePressureRemovesIt() {
         assertEquals(1,RealScaleDomainManager.uploadMultiplier(
                 RealScaleDomainManager.Domain.SURFACE,0,false));

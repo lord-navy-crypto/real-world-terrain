@@ -21,6 +21,23 @@ final class ClientChunkUploadModeAwareTest {
         budget.endFrame();
     }
 
+    @Test void activeDomainAndUploadMultiplierFollowTheSameFramePlan() {
+        var budget=newBudget();
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.OPEN_SURFACE,0);
+        assertEquals(RealScaleDomainManager.Domain.SURFACE,budget.activeDomain());
+        assertEquals(1,budget.activeUploadMultiplier());
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.SEALED_CAVE,0);
+        assertEquals(RealScaleDomainManager.Domain.UNDERGROUND,budget.activeDomain());
+        assertEquals(2,budget.activeUploadMultiplier());
+        budget.beginModeAwareFrame(true,
+                ClientChunkUploadBudget.VisibilityMode.TRANSITION,128);
+        assertEquals(RealScaleDomainManager.Domain.TRANSITION,budget.activeDomain());
+        assertEquals(0,budget.activeUploadMultiplier());
+        assertFalse(budget.active());
+    }
+
     @Test void stableSurfaceUsesStandardBudgetAndCaveGetsDoubleCapacity() {
         ClientChunkUploadBudget budget=newBudget();
         budget.beginModeAwareFrame(true,

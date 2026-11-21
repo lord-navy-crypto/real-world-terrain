@@ -169,7 +169,8 @@ public final class RealScaleChunkUploadClient {
             int compilePending,int uploadPending,int freeMeshBuffers,
             long sampleFrames,double averageCompilePending,double averageUploadPending,
             int peakCompilePending,int peakUploadPending,long heapUsedBytes,
-            long heapMaxBytes,long deferredCalls,long uploadedTasks) {}
+            long heapMaxBytes,long deferredCalls,long uploadedTasks,
+            RealScaleDomainManager.Domain activeDomain,int uploadMultiplier) {}
 
     public static QueueSnapshot snapshot() {
         Minecraft mc=Minecraft.getInstance();
@@ -192,7 +193,8 @@ public final class RealScaleChunkUploadClient {
         return new QueueSnapshot(available,ENABLED,MODE_AWARE,ADAPTIVE,PREDICTIVE,
                 queued,uploading,free,frames,totalQueued/denominator,
                 totalUploading/denominator,peakQueued,peakUploading,
-                heapUsed,heapMax,BUDGET.deferredCalls(),BUDGET.tasksThisFrame());
+                heapUsed,heapMax,BUDGET.deferredCalls(),BUDGET.tasksThisFrame(),
+                BUDGET.activeDomain(),BUDGET.activeUploadMultiplier());
     }
 
     private static void reset(ClientLevel world){

@@ -20,7 +20,8 @@ final class DensityPerfSampler {
             || Boolean.getBoolean("realscale.density.profile");
     static final int STRIDE=1024;
     enum Stage { OVERWORLD_CAVE, NETHER_CAVE, ECOTONE_BIOME, SKY_BIOME,
-        MOUNTAIN_RELIEF, TERRAIN_ARCHETYPE, REAL_DEM_LEGACY, REAL_DEM_SEAMLESS }
+        MOUNTAIN_RELIEF, TERRAIN_ARCHETYPE, NATURAL_AUTOMATE_BLEND,
+        REAL_DEM_LEGACY, REAL_DEM_SEAMLESS }
     private static final ThreadLocal<int[]> CALLS=ThreadLocal.withInitial(
             ()->new int[Stage.values().length]);
     // Keep metric-array cardinality coupled to Stage so adding a new

@@ -213,28 +213,39 @@ final class TerrainArchetypeMath {
     private double naturalAutomate(double original,double continent,double signal,
             double rawRegionSignal,double temperature,double humidity,
             double x,double z) {
+        // These source fields are shared by all six family gates.
+        // Normalize once rather than repeating the same transforms twelve times.
         double region=unitNoise(rawRegionSignal);
-        double maxSuitability=0.0;
-        double totalSuitability=0.0;
-        for(int familyIndex=0;familyIndex<naturalKernels.length;familyIndex++) {
-            double suitability=naturalFamilySuitability(familyIndex,original,
-                    temperature,humidity,region);
-            maxSuitability=Math.max(maxSuitability,suitability);
-            totalSuitability+=suitability;
-        }
-        if(totalSuitability<=1.0e-12)return original;
+        double temp=unitNoise(temperature);
+        double moisture=unitNoise(humidity);
+
+        // Allocation-free: density is sampled repeatedly during chunk generation.
+        double s0=naturalFamilySuitabilityNormalized(0,original,temp,moisture,region);
+        double s1=naturalFamilySuitabilityNormalized(1,original,temp,moisture,region);
+        double s2=naturalFamilySuitabilityNormalized(2,original,temp,moisture,region);
+        double s3=naturalFamilySuitabilityNormalized(3,original,temp,moisture,region);
+        double s4=naturalFamilySuitabilityNormalized(4,original,temp,moisture,region);
+        double s5=naturalFamilySuitabilityNormalized(5,original,temp,moisture,region);
+        double total=s0+s1+s2+s3+s4+s5;
+        if(total<=1.0e-12)return original;
+        double maxSuitability=Math.max(Math.max(Math.max(s0,s1),
+                Math.max(s2,s3)),Math.max(s4,s5));
         double coverage=smoothstep(0.22,0.58,maxSuitability);
         if(coverage<=0.0)return original;
 
         double weightedDelta=0.0;
-        for(int familyIndex=0;familyIndex<naturalKernels.length;familyIndex++) {
-            double suitability=naturalFamilySuitability(familyIndex,original,
-                    temperature,humidity,region);
-            if(suitability<=0.01)continue;
-            double candidate=naturalKernels[familyIndex].compute(
-                    original,continent,signal,x,z);
-            weightedDelta+=(candidate-original)*(suitability/totalSuitability);
-        }
+        if(s0>0.01)weightedDelta+=(naturalKernels[0].compute(
+                original,continent,signal,x,z)-original)*(s0/total);
+        if(s1>0.01)weightedDelta+=(naturalKernels[1].compute(
+                original,continent,signal,x,z)-original)*(s1/total);
+        if(s2>0.01)weightedDelta+=(naturalKernels[2].compute(
+                original,continent,signal,x,z)-original)*(s2/total);
+        if(s3>0.01)weightedDelta+=(naturalKernels[3].compute(
+                original,continent,signal,x,z)-original)*(s3/total);
+        if(s4>0.01)weightedDelta+=(naturalKernels[4].compute(
+                original,continent,signal,x,z)-original)*(s4/total);
+        if(s5>0.01)weightedDelta+=(naturalKernels[5].compute(
+                original,continent,signal,x,z)-original)*(s5/total);
         return original+weightedDelta*coverage*(reliefGain/0.72);
     }
 
@@ -246,15 +257,19 @@ final class TerrainArchetypeMath {
      */
     static double naturalFamilySuitability(int familyIndex,double original,
             double temperature,double humidity,double regionSignal) {
+        return naturalFamilySuitabilityNormalized(familyIndex,original,
+                unitNoise(temperature),unitNoise(humidity),unitNoise(regionSignal));
+    }
+
+    /** Inputs are already normalized to [-1,1]; no per-family re-normalization. */
+    private static double naturalFamilySuitabilityNormalized(int familyIndex,
+            double original,double temp,double moisture,double region) {
         if(familyIndex<0 || familyIndex>=6)return 0.0;
-        double region=unitNoise(regionSignal);
         double center=-5.0/6.0+familyIndex/3.0;
         double regionalAffinity=1.0-smoothstep(0.18,0.62,
                 Math.abs(region-center));
         if(regionalAffinity<=0.0)return 0.0;
 
-        double temp=unitNoise(temperature);
-        double moisture=unitNoise(humidity);
         double warmth=smoothstep(-0.45,0.45,temp);
         double coldness=1.0-smoothstep(-0.45,0.35,temp);
         double wetness=smoothstep(-0.50,0.45,moisture);
@@ -277,8 +292,6 @@ final class TerrainArchetypeMath {
             }
             case 3 -> {
                 topographicSuitability=smoothstep(0.05,0.42,original);
-                // Volcanic suitability is primarily regional geology; climate
-                // only weakly biases warm volcanic provinces.
                 climateSuitability=0.60+0.40*warmth;
             }
             case 4 -> {
