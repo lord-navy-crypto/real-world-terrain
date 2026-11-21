@@ -6,15 +6,16 @@ The repository is undergoing an architecture consolidation. The goal is to organ
 
 ## Current Create World menu (2026-11-21)
 
-The `normal` and `extended` world-preset tags currently expose seven choices:
+The `normal` and `extended` world-preset tags currently expose eight choices:
 
-1. **Natural Three Realms** — natural terrain baseline.
-2. **Alpine Three Realms** — fitted alpine terrain (experimental).
-3. **Canyon Three Realms** — fitted canyon terrain (experimental).
-4. **Glacial Three Realms** — fitted glacial terrain (experimental).
-5. **Volcanic Three Realms** — fitted volcanic terrain (experimental).
-6. **Karst Three Realms** — fitted karst terrain (experimental).
-7. **Dune Three Realms** — fitted dune terrain (experimental).
+1. **Natural Automate Three Realms** — adaptive regional composition of all six fitted landforms; recommended experimental mode.
+2. **Natural Three Realms** — natural terrain baseline.
+3. **Alpine Three Realms** — fitted alpine terrain (experimental).
+4. **Canyon Three Realms** — fitted canyon terrain (experimental).
+5. **Glacial Three Realms** — fitted glacial terrain (experimental).
+6. **Volcanic Three Realms** — fitted volcanic terrain (experimental).
+7. **Karst Three Realms** — fitted karst terrain (experimental).
+8. **Dune Three Realms** — fitted dune terrain (experimental).
 
 The six fitted modes remain experimental. Validation of a subset must not be presented as proof that all six are fully validated geographic fits.
 
@@ -29,7 +30,7 @@ The six fitted modes remain experimental. Validation of a subset must not be pre
 - **Performance:** world-generation sampling, cache diagnostics, client frame intervals and optional chunk-upload pacing.
 - **Compatibility:** optional Distant Horizons / Chunky hooks and external client-visual tools.
 
-See the [Preset Catalog](docs/PRESET_CATALOG.json) for all 40 public, hidden and historical world profiles, and [Unified Feature Consolidation](docs/UNIFIED_FEATURE_CONSOLIDATION.md) for the detailed inventory, status classification, conflict review and integration plan.
+See the [Preset Catalog](docs/PRESET_CATALOG.json) for all 41 public, hidden and historical world profiles, and [Unified Feature Consolidation](docs/UNIFIED_FEATURE_CONSOLIDATION.md) for the detailed inventory, status classification, conflict review and integration plan.
 
 ## Current visualization status
 
@@ -50,7 +51,7 @@ The main mod contains an optional 100-structure architecture library. It can be 
 
 The current main branch embeds optional DH–Chunky compatibility hooks in the main mod, targeting the tested Distant Horizons 3.3.3 + Chunky 1.4.23 combination. A historical standalone `dhchunkyguard` addon must not be installed alongside the embedded version; there is no standalone top-level `dh-chunky-guard/` subproject in the audited main tree.
 
-World Atlas remains independent of Chunky: it does not copy commands, start a background server or take control of Chunky tasks.
+World Atlas save scanning and map-reading code have been deleted from this branch; no replacement save scanner is retained.
 
 ## Repository layout
 
@@ -61,7 +62,7 @@ World Atlas remains independent of Chunky: it does not copy commands, start a ba
 - `assets/architecture/` — structure-template source assets and license records.
 - `archive/` — historical datapacks and old-version materials.
 - `research/` — numerical geology, hydrology and data-import prototypes not yet fully integrated.
-- `dist/v1.1/` — historical v1.1 test-candidate JAR, not the current seven-mode source build.
+- `dist/v1.1/` — historical v1.1 test-candidate JAR, not the current eight-mode source build.
 
 ## Build and validation
 
