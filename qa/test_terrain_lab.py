@@ -80,7 +80,7 @@ class TerrainLabTests(unittest.TestCase):
             natural_morphology_percent=100)
         prefix=lab.GEO_ROOT/"density_function/terrain_lab"/name
         height=lab.jread(self.root,prefix/"height_signal.json")
-        kernel=height["argument"]["argument"]
+        kernel=height["argument"]
         self.assertEqual(kernel["type"],"realscale:terrain_archetype")
         self.assertEqual(kernel["family"],"natural_automate")
         self.assertEqual(kernel["region_selector"]["noise"],"minecraft:weirdness")
@@ -116,7 +116,7 @@ class TerrainLabTests(unittest.TestCase):
             natural_morphology_percent=0)
         height=lab.jread(self.root,
             lab.GEO_ROOT/"density_function/terrain_lab"/name/"height_signal.json")
-        self.assertEqual(height["argument"]["argument"]["relief_gain"],0.0)
+        self.assertEqual(height["argument"]["relief_gain"],0.0)
 
     def test_merged_families_blend_actual_height_density_functions(self):
         for family,(base,secondary) in lab.FAMILIES.items():
