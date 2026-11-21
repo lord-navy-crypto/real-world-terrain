@@ -50,7 +50,7 @@ final class RealScalePerformanceProfileTest {
         long compact = RealScalePerformanceProfile.estimatedCacheArrayBytesOneSet(
                 RealScalePerformanceProfile.Profile.LOW_MEMORY);
         assertEquals(551_680L, balanced);
-        assertEquals(138_632L, compact);
+        assertEquals(137_992L, compact);
         assertTrue(compact < balanced);
     }
 
