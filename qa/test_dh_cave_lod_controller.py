@@ -28,10 +28,13 @@ class DhCaveLodControllerTests(unittest.TestCase):
     def test_only_confident_open_surface_culls_distant_cave_lods(self):
         policy = (JAVA / "AdaptiveVisibilityBudget.java").read_text(encoding="utf-8")
         client = (JAVA / "RealScaleAdaptiveVisibilityClient.java").read_text(encoding="utf-8")
+        manager = (JAVA / "RealScaleDomainManager.java").read_text(encoding="utf-8")
         self.assertIn(
-            'return mode == Mode.OPEN_SURFACE;',
+            "RealScaleDomainManager.shouldCullDistantHorizonCaves(",
             policy,
         )
+        self.assertIn("return domain == Domain.SURFACE;", manager)
+        self.assertIn("Domain.TRANSITION", manager)
         self.assertIn('shouldCullDistantHorizonCaves(mode)', client)
         self.assertIn('DistantHorizonsCaveLodController.observe(mode)', client)
         self.assertIn('DistantHorizonsCaveLodController.observe(', client)
