@@ -6,15 +6,16 @@ Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与�
 
 ## 当前新世界菜单（2026-11-21）
 
-当前 `normal` 与 `extended` 世界类型菜单均提供七个选项：
+当前 `normal` 与 `extended` 世界类型菜单均提供八个选项：
 
-1. **Natural Three Realms** — 自然地形基线。
-2. **Alpine Three Realms** — 高山拟合地形（实验）。
-3. **Canyon Three Realms** — 峡谷拟合地形（实验）。
-4. **Glacial Three Realms** — 冰川拟合地形（实验）。
-5. **Volcanic Three Realms** — 火山拟合地形（实验）。
-6. **Karst Three Realms** — 喀斯特拟合地形（实验）。
-7. **Dune Three Realms** — 沙丘拟合地形（实验）。
+1. **Natural Automate Three Realms** — 六种拟合地貌的自适应区域组合，推荐实验模式。
+2. **Natural Three Realms** — 自然地形基线。
+3. **Alpine Three Realms** — 高山拟合地形（实验）。
+4. **Canyon Three Realms** — 峡谷拟合地形（实验）。
+5. **Glacial Three Realms** — 冰川拟合地形（实验）。
+6. **Volcanic Three Realms** — 火山拟合地形（实验）。
+7. **Karst Three Realms** — 喀斯特拟合地形（实验）。
+8. **Dune Three Realms** — 沙丘拟合地形（实验）。
 
 六种拟合模式仍属于实验配置，不能把部分模式的测试结果推广成全部模式已经完成真实地理拟合验证。
 
@@ -29,7 +30,7 @@ Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与�
 - **Performance：** 世界生成采样、缓存诊断、客户端帧间隔和可选区块上传节流。
 - **Compatibility：** 可选 Distant Horizons / Chunky 兼容钩子及外部客户端视觉工具。
 
-完整 40 个世界预设的公开、隐藏和历史分类见 [Preset Catalog](docs/PRESET_CATALOG.json)。详细功能清单、状态分级、冲突判断和最终整合路线见 [Unified Feature Consolidation](docs/UNIFIED_FEATURE_CONSOLIDATION.md)。
+完整 41 个世界预设的公开、隐藏和历史分类见 [Preset Catalog](docs/PRESET_CATALOG.json)。详细功能清单、状态分级、冲突判断和最终整合路线见 [Unified Feature Consolidation](docs/UNIFIED_FEATURE_CONSOLIDATION.md)。
 
 ## 当前可视化状态
 
@@ -50,7 +51,7 @@ Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与�
 
 当前 main 在主模组中嵌入可选的 DH–Chunky 兼容钩子，针对已测试的 Distant Horizons 3.3.3 + Chunky 1.4.23 组合。历史独立 `dhchunkyguard` 插件与当前嵌入版本不应同时安装；本分支没有独立的顶层 `dh-chunky-guard/` 子项目。
 
-World Atlas 与 Chunky 保持独立：Atlas 不复制命令、不启动后台服务器、不接管 Chunky 任务。
+World Atlas 的存档扫描和地图读取代码已从当前分支删除；没有保留替代存档扫描器。
 
 ## Repository layout
 
@@ -61,7 +62,7 @@ World Atlas 与 Chunky 保持独立：Atlas 不复制命令、不启动后台服
 - `assets/architecture/` — 建筑模板源素材及许可记录。
 - `archive/` — 历史数据包和旧版本材料。
 - `research/` — 尚未完整集成的数值地质、水文和数据导入研究原型。
-- `dist/v1.1/` — 历史 v1.1 测试候选 JAR，不是当前七模式源码构建。
+- `dist/v1.1/` — 历史 v1.1 测试候选 JAR，不是当前八模式源码构建。
 
 ## Build and validation
 
