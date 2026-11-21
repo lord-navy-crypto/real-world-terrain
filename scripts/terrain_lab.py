@@ -70,7 +70,7 @@ CHINESE = {
     "canyon":"峡谷台地（大峡谷 + 大陆地形）",
     "natural_automate":"自然自动综合（六种拟合地貌 + 自然生态）",
 }
-NORMAL = ("natural_three_realms","alpine_three_realms","canyon_three_realms","glacial_three_realms","volcanic_three_realms","karst_three_realms","dune_three_realms")
+NORMAL = ("natural_automate_three_realms","natural_three_realms","alpine_three_realms","canyon_three_realms","glacial_three_realms","volcanic_three_realms","karst_three_realms","dune_three_realms")
 GEO_ROOT = Path("data/realscale/worldgen")
 LABEL_ROOT = Path("assets/minecraft/lang")
 TAG_ROOT = Path("data/minecraft/tags/worldgen/world_preset")
@@ -265,7 +265,8 @@ def files_for(root, preset, relief, elevation, caves, river_grade, inland=True, 
     validate(preset,relief,elevation,caves,river_grade,blend_percent,ridge,erosion,strata,climate,valley,latitude,latitude_strength,equator_z,basin,center_x,cold_limit,fantasy_dimensions,lithostitched_blend,lithostitched_geology,natural_morphology_percent)
     latitude = canonical_latitude_mode(latitude)
     if preset == "natural_automate":
-        return natural_automate_files_for(root,relief,elevation,latitude_strength,
+        return natural_automate_files_for(root,relief,elevation,
+                                          0 if latitude == "off" else latitude_strength,
                                           inland,natural_morphology_percent)
     # Fixed geographic reference: equator Z=0; quarter-meridian distance / 20.
     # Legacy center values are accepted at the API boundary but never applied.
