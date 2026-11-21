@@ -142,7 +142,7 @@ Existing performance building blocks include:
 - ClientUploadFrameGovernor and ClientChunkUploadBudget
 - Optional Distant Horizons and Chunky compatibility hooks
 
-The newest candidate is [PR #156 — RealScale Performance Core](https://github.com/lord-navy-crypto/real-world-terrain/pull/156). It proposes `balanced`, `low_memory`, `smooth_render`, and `low_memory_smooth_render` profiles. It is still a draft. Its documentation correctly states that low-memory cache resizing can increase recomputation and that smooth-render upload pacing does not establish an FPS improvement. One remaining integration gap: `TerrainArchetypeMath` has additional fixed 1,024-slot per-worker caches for volcanic, horizontal morphology and karst shape data, plus a per-worker site-geometry cache. These are not yet controlled by the proposed `RealScalePerformanceProfile`, so its low-memory estimate is not a complete inventory of all RealScale-owned caches.
+The four `RealScalePerformanceProfile` modes from PR #156 have been selectively integrated into this branch and extended to include the Natural Automate morphology caches: three horizontal morphology caches plus volcanic and karst shape caches. `RealScale Studio` now saves the profile and diagnostic switches to `config/realscale-performance.json`; the runtime reads them at startup, so changes require restart. `Performance Studio` displays live FPS, frame-interval percentiles when diagnostics are enabled, chunk queue state, JVM heap and the estimated one-worker cache-array budget. Low Memory can increase recomputation; Smooth Render only time-slices FIFO uploads and does not establish an FPS improvement. Physical-client A/B tests remain mandatory.
 
 **Promotion rule:** keep the existing balanced behavior as default. Do not claim FPS improvement or promote client pacing until repeatable physical-client A/B tests show acceptable p95/p99 frame intervals and no unacceptable terrain-appearance delay.
 
@@ -253,8 +253,7 @@ The preview must distinguish sampled procedural predictions from actual saved An
 
 ### Phase 0 — establish a buildable baseline
 
-- Isolate unrelated LOTM work from the RealScale build.
-- The current main tree contains `neoforge/src/test/java/org/realscale/neoforge/lotm/LotmSanityTest.java`, which references `LotmBalance`, while that production class is absent from main. The separate draft LOTM PR #155 contains the unrelated LOTM module. This orphan test is currently a compile-test blocker and must be isolated or restored as a complete independent module.
+- Keep unrelated LOTM work out of the RealScale build. The orphan LOTM test and its QA file have been removed from this Natural Automate branch; the separate LOTM PR remains an independent workstream.
 - Reconcile the README, version inventory, changelog and current artifact status.
 - Clarify the DH–Chunky packaging claim: current main contains `compat/dhchunky` code, while the README describes a separate top-level `dh-chunky-guard/` project that is not present in the audited main tree.
 
@@ -275,7 +274,7 @@ The preview must distinguish sampled procedural predictions from actual saved An
 
 ### Phase 3 — Visualization Studio
 
-- Connect Terrain Lab, Climate Inspector and Performance Studio through one RealScale Studio entry point.
+- Connect Terrain Lab, Climate Inspector and Performance Studio through one RealScale Studio entry point. (The shared pause-menu entry and Performance Studio page are now implemented in this branch.)
 - Add bounded terrain preview and layer overlays.
 - Reuse profile definitions and deterministic sampling code; previews must not scan local saves or modify existing worlds.
 - Add preview-versus-generated Anvil comparison before promoting preview as authoritative.
@@ -297,7 +296,7 @@ The preview must distinguish sampled procedural predictions from actual saved An
 ## 7. Evidence and blockers observed on 2026-11-21
 
 - The Natural Automate branch exposes eight profiles; README, catalog and both menu tags are aligned. The source version/JAR release identity still needs a deliberate version bump after CI and in-game validation.
-- PR #156 is a draft. Its profile design is promising, but its current full-build jobs fail because of the unrelated missing `LotmBalance` source referenced by `LotmSanityTest`. Several separate worldgen and opt-in boot jobs on that head did pass; this does not make the full PR merge-ready.
+- The performance implementation in this branch is a selective integration of PR #156; avoid merging duplicate cache/profile files from that draft PR. Run the new branch's own CI and physical-client A/B tests before promotion.
 - PR #144 and older fitted-profile branches have heads that are ancestors of main; their changes should not be re-merged just because their PRs remain open. In particular, the legacy `tva_alpine_three_realms` and `tva_canyon_three_realms` QA aliases use smoothed settings and must not be confused with the current public fitted profiles.
 - PR #143's zonal/horizontal mapping branch is divergent and proposes a major coordinate-model change: X/Z become 20 source metres per Minecraft block while Y remains 1 metre per block, plus periodic latitude and preset-aware spawn selection. Current main uses 1:20 only for the geographic climate latitude model; terrain X/Z sampling remains 1 block = 1 metre. This changes apparent relief, DEM sampling, caves, structures, rivers and spawn geometry. It needs an explicit product decision and independent saved-world validation; do not merge it into the terrain-consolidation work as a routine cleanup.
 - The old `feature/terrain-generation-optimization` branch is divergent and its own documentation labels its DEM cache work experimental; do not replace current main code with it without fresh parity and real-server A/B evidence.
