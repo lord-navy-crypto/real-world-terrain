@@ -61,7 +61,7 @@ The USGS Big Sur modes are intentionally absent from the public menu following t
 | WatershedRoutingMath / RiverChannelFeature | River routing and protected channel generation | Retain; validate long-range connectivity and water safety |
 | GeoMath and latitude/temperature density functions | Geographic and climate calculations | Consolidate around the fixed 1:20 WGS84 meridional model |
 
-The three editable Terrain Lab families are currently `landscape`, `alpine`, and `canyon`. They do **not** cover all seven public world modes. The six fitted public modes are currently static world profiles and are not all editable through the same Terrain Lab family model. This is a primary integration gap.
+The three editable Terrain Lab families are currently `landscape`, `alpine`, and `canyon`, and they belong to the older merged-noise model (Realism MAX + GeoReal, Himalayan + Realistic Mountains, Grand Canyon + Continental). They are not simply the first three of the seven public modes. The six fitted public modes use a separate `TerrainArchetypeDensity` / `TerrainArchetypeMath` morphology engine with six family-specific kernels (alpine, canyon, glacial, volcanic, karst, dune) and a different coefficient set. Terrain Lab does not currently edit those fitted coefficients. This is a deeper model/schema mismatch, not just four missing menu options.
 
 ### B. Biome and ecology engine
 
@@ -126,7 +126,7 @@ Existing performance building blocks include:
 - ClientUploadFrameGovernor and ClientChunkUploadBudget
 - Optional Distant Horizons and Chunky compatibility hooks
 
-The newest candidate is [PR #156 — RealScale Performance Core](https://github.com/lord-navy-crypto/real-world-terrain/pull/156). It proposes `balanced`, `low_memory`, `smooth_render`, and `low_memory_smooth_render` profiles. It is still a draft. Its documentation correctly states that low-memory cache resizing can increase recomputation and that smooth-render upload pacing does not establish an FPS improvement.
+The newest candidate is [PR #156 — RealScale Performance Core](https://github.com/lord-navy-crypto/real-world-terrain/pull/156). It proposes `balanced`, `low_memory`, `smooth_render`, and `low_memory_smooth_render` profiles. It is still a draft. Its documentation correctly states that low-memory cache resizing can increase recomputation and that smooth-render upload pacing does not establish an FPS improvement. One remaining integration gap: `TerrainArchetypeMath` has additional fixed 1,024-slot per-worker caches for volcanic, horizontal morphology and karst shape data, plus a per-worker site-geometry cache. These are not yet controlled by the proposed `RealScalePerformanceProfile`, so its low-memory estimate is not a complete inventory of all RealScale-owned caches.
 
 **Promotion rule:** keep the existing balanced behavior as default. Do not claim FPS improvement or promote client pacing until repeatable physical-client A/B tests show acceptable p95/p99 frame intervals and no unacceptable terrain-appearance delay.
 
@@ -205,7 +205,7 @@ The target product should have six visible feature centers:
 
 ### One configuration model
 
-Introduce one versioned, immutable `TerrainProfile` / `WorldProfile` model as the source of truth for:
+Introduce one versioned, immutable `TerrainProfile` / `WorldProfile` model as the source of truth. It must include an explicit `model_kind` such as `natural_baseline`, `procedural_blend`, `fitted_archetype`, or `measured_dem`; do not force the older three-family blend model and the six fitted morphology kernels into one misleading parameter list. The model is the source of truth for:
 
 - the Create World profile selector;
 - Terrain Lab controls;
