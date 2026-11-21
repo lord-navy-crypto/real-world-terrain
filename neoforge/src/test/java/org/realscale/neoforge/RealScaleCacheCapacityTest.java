@@ -52,8 +52,8 @@ final class RealScaleCacheCapacityTest {
             assertEquals(gx, site.gx);
             assertEquals(gz, site.gz);
             assertEquals(hash, site.hash);
-            assertEquals(Math.toIntExact(x), site.centerX);
-            assertEquals(Math.toIntExact(z), site.centerZ);
+            assertEquals((double) Math.toIntExact(x), site.centerX, 0.0);
+            assertEquals((double) Math.toIntExact(z), site.centerZ, 0.0);
             assertEquals(Double.doubleToRawLongBits(MountainReliefMath.radius(hash)),
                     Double.doubleToRawLongBits(site.radius));
         }
