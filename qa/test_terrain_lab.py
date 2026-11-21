@@ -59,7 +59,7 @@ class TerrainLabTests(unittest.TestCase):
                 self.assertEqual(len(paths),10)
 
 
-    def test_ui_exposes_three_editable_lab_families_and_seven_world_presets(self):
+    def test_ui_exposes_natural_automate_and_eight_public_world_presets(self):
         self.assertEqual(lab.EDITABLE,("landscape","alpine","canyon"))
         native=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleTerrainLabClient.java").read_text()
         self.assertIn('"landscape", "alpine", "canyon"',native)
@@ -68,10 +68,55 @@ class TerrainLabTests(unittest.TestCase):
         self.assertNotIn('"realism_max", "georeal_ultimate", "himalayan", "grand_canyon",',native)
         original=lab.jread(self.root,lab.TAG_ROOT/"extended.json")
         self.assertEqual([x for x in original["values"] if not x.startswith("realscale:lab_")][-1],"realscale:dune_three_realms")
-        self.assertEqual(len([x for x in original["values"] if not x.startswith("realscale:lab_")]),7)
+        self.assertEqual(len([x for x in original["values"] if not x.startswith("realscale:lab_")]),8)
         self.assertEqual(original["values"],lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"])
         self.assertEqual([x for x in lab.jread(self.root,lab.TAG_ROOT/"normal.json")["values"] if not x.startswith("realscale:lab_")],
-                         ["realscale:natural_three_realms","realscale:alpine_three_realms","realscale:canyon_three_realms","realscale:glacial_three_realms","realscale:volcanic_three_realms","realscale:karst_three_realms","realscale:dune_three_realms"])
+                         ["realscale:natural_automate_three_realms","realscale:natural_three_realms","realscale:alpine_three_realms","realscale:canyon_three_realms","realscale:glacial_three_realms","realscale:volcanic_three_realms","realscale:karst_three_realms","realscale:dune_three_realms"])
+
+    def test_natural_automate_exports_six_fitted_kernels_and_shared_ecology(self):
+        name,options,paths=lab.apply(
+            self.root,"natural_automate",1.0,0,50,6,
+            latitude=lab.FIXED_LATITUDE_MODE,latitude_strength=58,
+            natural_morphology_percent=100)
+        prefix=lab.GEO_ROOT/"density_function/terrain_lab"/name
+        height=lab.jread(self.root,prefix/"height_signal.json")
+        kernel=height["argument"]["argument"]
+        self.assertEqual(kernel["type"],"realscale:terrain_archetype")
+        self.assertEqual(kernel["family"],"natural_automate")
+        self.assertEqual(kernel["region_selector"]["noise"],"minecraft:weirdness")
+        self.assertEqual(kernel["selector"]["noise"],"minecraft:erosion")
+        self.assertEqual(kernel["relief_gain"],0.72)
+        terrain=lab.jread(self.root,prefix/"terrain_density.json")
+        self.assertEqual(terrain["argument1"]["argument1"]["argument1"],1.0)
+        self.assertEqual(terrain["argument1"]["argument1"]["argument2"],
+                         "realscale:terrain_lab/"+name+"/height_signal")
+        noise=lab.jread(self.root,lab.GEO_ROOT/"noise_settings"/(name+".json"))
+        self.assertEqual(noise["sea_level"],63)
+        self.assertEqual(noise["noise_router"]["depth"],
+                         "realscale:terrain_lab/"+name+"/terrain_density")
+        self.assertEqual(noise["noise_router"]["temperature"]["adjusted"]["height_signal"],
+                         "realscale:terrain_lab/"+name+"/height_signal")
+        world=lab.jread(self.root,lab.GEO_ROOT/"world_preset"/(name+".json"))
+        source=world["dimensions"]["minecraft:overworld"]["generator"]["biome_source"]
+        chain=[]
+        while isinstance(source,dict):
+            chain.append(source["type"])
+            source=source.get("source")
+        self.assertEqual(chain,[
+            "realscale:sky_ocean","realscale:natural_ecotones",
+            "realscale:cave_depth_habitats","minecraft:multi_noise"])
+        self.assertEqual(options["morphology_percent"],100)
+        self.assertEqual(len(world["dimensions"]),3)
+        self.assertTrue(paths)
+
+    def test_natural_automate_zero_strength_disables_only_fitted_morphology(self):
+        name,_,_=lab.apply(
+            self.root,"natural_automate",1.0,0,50,6,
+            latitude=lab.FIXED_LATITUDE_MODE,latitude_strength=58,
+            natural_morphology_percent=0)
+        height=lab.jread(self.root,
+            lab.GEO_ROOT/"density_function/terrain_lab"/name/"height_signal.json")
+        self.assertEqual(height["argument"]["argument"]["relief_gain"],0.0)
 
     def test_merged_families_blend_actual_height_density_functions(self):
         for family,(base,secondary) in lab.FAMILIES.items():
