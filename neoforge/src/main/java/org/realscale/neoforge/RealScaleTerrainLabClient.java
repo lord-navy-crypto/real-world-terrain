@@ -143,7 +143,7 @@ public final class RealScaleTerrainLabClient {
         int climatePercent = 65;
         int valleyPercent = 0;
         String latitudeMode = "fixed_1_20";
-        int latitudeStrength = 70;
+        int latitudeStrength = 58;
         int basinPercent = 0;
         int reliefPercent = 100;
         int elevation = 0;
@@ -462,7 +462,7 @@ public final class RealScaleTerrainLabClient {
                 .option(Option.<Integer>createBuilder()
                     .name(Component.literal("Fixed 1:20 Latitude Temperature Strength"))
                     .description(description("One fixed WGS84 meridional model: equator Z=0 and approximately 500,098 blocks from equator to either pole. 1:20 applies ONLY to climate latitude; terrain coordinates and X/Z sampling remain 1 block = 1 metre. Set strength to 0 to disable the latitude contribution."))
-                    .binding(70, () -> d.latitudeStrength, v -> d.latitudeStrength=v)
+                    .binding(58, () -> d.latitudeStrength, v -> d.latitudeStrength=v)
                     .controller(o -> IntegerSliderControllerBuilder.create(o).range(0,100).step(5)).build())
                 .build())
             .category(ConfigCategory.createBuilder()
