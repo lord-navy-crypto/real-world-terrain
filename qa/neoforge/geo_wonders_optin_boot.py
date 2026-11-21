@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Opt-in Geo Wonders real NeoForge boot and persisted smart-spawn proof."""
+"""Opt-in Geo Wonders real NeoForge boot and persisted vanilla-spawn proof."""
 import gzip
 import os
 import pathlib
-import re
 import signal
 import subprocess
 import threading
@@ -88,26 +87,11 @@ level_data=read_nbt(level_bytes).get("Data",{})
 spawn_x=int(level_data.get("SpawnX",0))
 spawn_y=int(level_data.get("SpawnY",-9999))
 spawn_z=int(level_data.get("SpawnZ",0))
-log_text="".join(log)
-spawn_match=re.search(
-    r"RealScale selected initial spawn x=(-?\d+) y=(-?\d+) z=(-?\d+) targetY=(-?\d+) relief=(\d+)",
-    log_text,
-)
-if not spawn_match:
-    raise AssertionError("NeoForge did not report selecting a RealScale initial spawn")
-logged_x,logged_y,logged_z,target_y,relief=map(int,spawn_match.groups())
-if (spawn_x,spawn_y,spawn_z)!=(logged_x,logged_y,logged_z):
-    raise AssertionError("Persisted spawn differs from the RealScale-selected position")
-if not (-62<spawn_y<2031):
-    raise AssertionError("RealScale initial spawn is outside generator height bounds: "+str((spawn_x,spawn_y,spawn_z)))
-if spawn_x*spawn_x+spawn_z*spawn_z>2048*2048+64:
-    raise AssertionError("RealScale initial spawn is outside the bounded Natural search radius: "+str((spawn_x,spawn_y,spawn_z)))
-if abs(spawn_y-target_y)>256:
-    raise AssertionError("Selected spawn is too far from the preset's low-to-mid target quantile")
-if relief>128:
-    raise AssertionError("Selected spawn is on an excessively steep local slope: "+str(relief))
-print("REALSCALE_SMART_SPAWN_PERSISTED",spawn_x,spawn_y,spawn_z,
-      "target",target_y,"relief",relief,flush=True)
+if spawn_y == -9999:
+    raise AssertionError("Vanilla spawn was not initialized in the saved world")
+if not (-64 < spawn_y < 2032):
+    raise AssertionError("Persisted vanilla spawn is outside the Natural Automate generator height bounds: "+str((spawn_x,spawn_y,spawn_z)))
+print("REALSCALE_VANILLA_SPAWN_PERSISTED",spawn_x,spawn_y,spawn_z,flush=True)
 
 required=[b"realscale:geo_wonders_opt_in",b"realscale:sky_ocean",
           b"realscale:grand_nether",b"realscale:grand_end"]
@@ -117,5 +101,5 @@ for expected in required:
 regions=list(worlds[0].parent.glob("region/*.mca"))
 if not regions or not any(path.stat().st_size>=8192 for path in regions):
     raise AssertionError("Experimental world has no persisted real Anvil chunks")
-print("PASS: opt-in world, smart spawn and source codecs verified",
+print("PASS: opt-in world, vanilla spawn and source codecs verified",
       PROFILE,worlds[0],len(regions),flush=True)

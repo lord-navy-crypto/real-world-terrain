@@ -14,7 +14,6 @@ public final class RealScaleMod {
         RealScaleVehicles.register(bus);
         bus.addListener(RealScaleStructurePacks::register);
         bus.addListener(this::registerDensity);
-        NeoForge.EVENT_BUS.addListener(RealScaleSpawnPosition::onCreateSpawnPosition);
         NeoForge.EVENT_BUS.addListener(DhChunkyGuardCommands::registerCommands);
     }
     private void registerDensity(RegisterEvent event) {
