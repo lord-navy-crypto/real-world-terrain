@@ -673,10 +673,18 @@ def apply(root, preset, relief, elevation, caves, river_grade, inland=True, dry_
     for lang,names in (("en_us",ENGLISH),("zh_cn",CHINESE)):
         path=LABEL_ROOT/(lang+".json")
         labels=jread(root,path)
-        label=(f"RealScale Lab | {names[preset]} "
-               f"| relief {relief:.2f}, height {elevation:+d}, caves {caves}, river {river_grade}"
-               if lang=="en_us"
-               else f"地形实验室 | {names[preset]} | 起伏 {relief:.2f}, 高差 {elevation:+d}, 洞穴 {caves}, 河流 {river_grade}")
+        if preset == "natural_automate":
+            label=(f"RealScale Natural Automate | morphology {natural_morphology_percent}% "
+                   f"| relief {relief:.2f} | latitude {latitude_strength}%"
+                   if lang=="en_us"
+                   else f"自然自动综合 | 地貌强度 {natural_morphology_percent}% | 起伏 {relief:.2f} | 纬度气候 {latitude_strength}%")
+            if inland:
+                label += " | inland spawn" if lang=="en_us" else " | 内陆出生点"
+        else:
+            label=(f"RealScale Lab | {names[preset]} "
+                   f"| relief {relief:.2f}, height {elevation:+d}, caves {caves}, river {river_grade}"
+                   if lang=="en_us"
+                   else f"地形实验室 | {names[preset]} | 起伏 {relief:.2f}, 高差 {elevation:+d}, 洞穴 {caves}, 河流 {river_grade}")
         if preset in FAMILIES:
             label+=f" | mix {blend_percent}%"
             if ridge or erosion or strata:
