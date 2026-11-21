@@ -61,15 +61,16 @@ public final class RealScalePerformanceProfile {
     }
 
     private static String stringSetting(String json,String key,String fallback) {
-        Matcher matcher=Pattern.compile("\\"" + Pattern.quote(key)
-                + "\\"\\s*:\\s*\\"([^\\"]*)\\"").matcher(json);
+        String quotedKey=Pattern.quote("\"" + key + "\"");
+        Matcher matcher=Pattern.compile(quotedKey + "\\s*:\\s*\"([^\"]*)\"")
+                .matcher(json);
         return matcher.find()?matcher.group(1):fallback;
     }
 
     private static boolean booleanSetting(String json,String key,boolean fallback) {
-        Matcher matcher=Pattern.compile("\\"" + Pattern.quote(key)
-                + "\\"\\s*:\\s*(true|false)",Pattern.CASE_INSENSITIVE)
-                .matcher(json);
+        String quotedKey=Pattern.quote("\"" + key + "\"");
+        Matcher matcher=Pattern.compile(quotedKey + "\\s*:\\s*(true|false)",
+                Pattern.CASE_INSENSITIVE).matcher(json);
         return matcher.find()?Boolean.parseBoolean(matcher.group(1)):fallback;
     }
 
