@@ -39,7 +39,7 @@ public abstract class FastInitialSpawnMixin {
     private static void realscale$fastInitialSpawn(ServerLevel level,
             ServerLevelData levelData, boolean bonusChest, boolean debugWorld,
             CallbackInfo ci) {
-        if (debugWorld || bonusChest || level.dimension() != Level.OVERWORLD) {
+        if (debugWorld || bonusChest || !level.dimension().equals(Level.OVERWORLD)) {
             return;
         }
 
