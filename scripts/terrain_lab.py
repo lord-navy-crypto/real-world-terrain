@@ -241,11 +241,10 @@ def natural_automate_files_for(root, relief, elevation, latitude_strength,
                 tune_latitude(value)
 
     tune_latitude(noise.get("noise_router", {}).get("temperature", {}))
-    if inland:
-        for target in noise.get("spawn_target", []):
-            continentalness = target.get("continentalness")
-            if isinstance(continentalness, list) and continentalness:
-                continentalness[0] = 0.12 if inland else -0.11
+    for target in noise.get("spawn_target", []):
+        continentalness = target.get("continentalness")
+        if isinstance(continentalness, list) and continentalness:
+            continentalness[0] = 0.12 if inland else -0.11
 
     world_preset = copy.deepcopy(jread(
         root, GEO_ROOT / "world_preset" / "natural_automate_three_realms.json"))
