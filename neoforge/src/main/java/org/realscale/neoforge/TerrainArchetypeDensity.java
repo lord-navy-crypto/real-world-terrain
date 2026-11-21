@@ -115,7 +115,7 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
                     Codec.doubleRange(0.0, 1.0).fieldOf("macro_gain").forGetter(TerrainArchetypeDensity::macroGain),
                     Codec.doubleRange(0.0, 1.0).fieldOf("meso_gain").forGetter(TerrainArchetypeDensity::mesoGain),
                     Codec.doubleRange(0.0, 1.0).fieldOf("micro_gain").forGetter(TerrainArchetypeDensity::microGain),
-                    Codec.doubleRange(0.1, 1.0).fieldOf("relief_gain").forGetter(TerrainArchetypeDensity::reliefGain),
+                    Codec.doubleRange(0.0, 1.0).fieldOf("relief_gain").forGetter(TerrainArchetypeDensity::reliefGain),
                     Codec.doubleRange(0.0, 1.0).fieldOf("ridge_sharpness").forGetter(TerrainArchetypeDensity::ridgeSharpness),
                     Codec.doubleRange(0.0, 1.0).fieldOf("cliff_index").forGetter(TerrainArchetypeDensity::cliffIndex),
                     Codec.doubleRange(0.0, 1.0).fieldOf("valley_index").forGetter(TerrainArchetypeDensity::valleyIndex),
