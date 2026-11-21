@@ -1,41 +1,31 @@
 #!/usr/bin/env python3
-"""Source contract for bounded, seed-stable RealScale initial spawn selection."""
+"""The unified RealScale preset deliberately uses vanilla spawn selection."""
+import json
 import unittest
 from pathlib import Path
 
-ROOT=Path(__file__).resolve().parents[1]
-JAVA=ROOT/"neoforge/src/main/java/org/realscale/neoforge"
+ROOT = Path(__file__).resolve().parents[1]
+JAVA = ROOT / "neoforge/src/main/java/org/realscale/neoforge"
+PRESET = ROOT / "neoforge/src/main/resources/data/realscale/worldgen/world_preset/natural_automate_three_realms.json"
 
-class RealScaleSpawnProfileTests(unittest.TestCase):
-    def test_math_helper_exposes_seeded_preset_quantile_contract(self):
-        source=(JAVA/"RealScaleSpawnMath.java").read_text()
-        for token in ("record Profile","profileFor(","targetQuantilePermille(",
-                      "targetHeight(","sampledHeights","score(","isHeightAllowed("):
-            self.assertIn(token,source)
-        for token in ("alpine","canyon","glacial","volcanic","karst","dune","usgs"):
-            self.assertIn(token,source.lower())
 
-    def test_event_is_overworld_realscale_only_and_preserves_vanilla_fallback(self):
-        source=(JAVA/"RealScaleSpawnPosition.java").read_text()
-        for token in ("LevelEvent.CreateSpawnPosition","instanceof ServerLevel",
-                      "Level.OVERWORLD","settingsHolder.unwrapKey()",
-                      "RealScaleSpawnMath.profileFor","event.getSettings().setSpawn",
-                      "event.setCanceled(true)"):
-            self.assertIn(token,source)
-        self.assertIn("if (best == null)",source)
-        self.assertIn("keeping vanilla selection",source)
+class VanillaSpawnSelectionTests(unittest.TestCase):
+    def test_custom_spawn_search_is_not_registered(self):
+        mod = (JAVA / "RealScaleMod.java").read_text(encoding="utf-8")
+        self.assertNotIn("RealScaleSpawnPosition", mod)
+        self.assertNotIn("CreateSpawnPosition", mod)
 
-    def test_sampling_uses_base_terrain_without_forcing_chunks(self):
-        source=(JAVA/"RealScaleSpawnPosition.java").read_text()
-        for token in ("getBaseHeight(","getBaseColumn(","Heightmap.Types.WORLD_SURFACE_WG",
-                      "randomState()","getFluidState().isEmpty()","profile.candidateCount()"):
-            self.assertIn(token,source)
-        self.assertNotRegex(source,r"\.getChunk\s*\(")
-        self.assertNotRegex(source,r"\.getHeight\s*\(")
-        self.assertRegex(source,r"MAX_CANDIDATES\s*=\s*\d+")
+    def test_custom_spawn_search_implementation_is_removed(self):
+        self.assertFalse((JAVA / "RealScaleSpawnPosition.java").exists())
+        self.assertFalse((JAVA / "RealScaleSpawnMath.java").exists())
 
-    def test_listener_is_registered_once_on_neoforge_event_bus(self):
-        mod=(JAVA/"RealScaleMod.java").read_text()
-        self.assertIn("NeoForge.EVENT_BUS.addListener(RealScaleSpawnPosition::onCreateSpawnPosition)",mod)
+    def test_natural_automate_does_not_override_vanilla_spawn(self):
+        preset = json.loads(PRESET.read_text(encoding="utf-8"))
+        overworld = preset["dimensions"]["minecraft:overworld"]
+        self.assertNotIn("spawn", overworld)
+        self.assertNotIn("spawn_position", overworld)
+        self.assertNotIn("spawn_override", overworld)
 
-if __name__=="__main__": unittest.main()
+
+if __name__ == "__main__":
+    unittest.main()
