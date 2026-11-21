@@ -1,12 +1,11 @@
 package org.realscale.neoforge;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -42,12 +41,11 @@ public final class RealScalePerformanceProfile {
         Path path = Path.of("config", "realscale-performance.json");
         try {
             if (Files.isRegularFile(path)) {
-                JsonObject json = JsonParser.parseString(
-                        Files.readString(path)).getAsJsonObject();
-                if (json.has("profile")) profile = parseProfile(json.get("profile").getAsString());
-                if (json.has("diagnostics")) diagnostics = json.get("diagnostics").getAsBoolean();
-                if (json.has("predictiveUpload")) predictive = json.get("predictiveUpload").getAsBoolean();
-                if (json.has("worldgenDiagnostics")) worldgen = json.get("worldgenDiagnostics").getAsBoolean();
+                String json=Files.readString(path);
+                profile=parseProfile(stringSetting(json,"profile","balanced"));
+                diagnostics=booleanSetting(json,"diagnostics",false);
+                predictive=booleanSetting(json,"predictiveUpload",false);
+                worldgen=booleanSetting(json,"worldgenDiagnostics",false);
             }
         } catch (IOException | RuntimeException ex) {
             System.err.println("[RealScale performance] Could not read config/realscale-performance.json; using balanced defaults: "
@@ -60,6 +58,19 @@ public final class RealScalePerformanceProfile {
         predictive = booleanOverride("realscale.experimental.client.uploadbudget.predictive", predictive);
         worldgen = booleanOverride("realscale.performance.worldgen_diagnostics", worldgen);
         return new Settings(profile, diagnostics, predictive, worldgen);
+    }
+
+    private static String stringSetting(String json,String key,String fallback) {
+        Matcher matcher=Pattern.compile("\\"" + Pattern.quote(key)
+                + "\\"\\s*:\\s*\\"([^\\"]*)\\"").matcher(json);
+        return matcher.find()?matcher.group(1):fallback;
+    }
+
+    private static boolean booleanSetting(String json,String key,boolean fallback) {
+        Matcher matcher=Pattern.compile("\\"" + Pattern.quote(key)
+                + "\\"\\s*:\\s*(true|false)",Pattern.CASE_INSENSITIVE)
+                .matcher(json);
+        return matcher.find()?Boolean.parseBoolean(matcher.group(1)):fallback;
     }
 
     private static boolean booleanOverride(String property, boolean fallback) {
