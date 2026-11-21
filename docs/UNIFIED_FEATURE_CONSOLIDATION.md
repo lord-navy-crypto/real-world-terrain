@@ -132,7 +132,7 @@ The newest candidate is [PR #156 — RealScale Performance Core](https://github.
 
 ## 4. Preset classification
 
-The 40 world-preset resources should be classified into a catalog rather than treated as 40 equivalent user options.
+The 40 world-preset resources are now enumerated in the machine-readable [PRESET_CATALOG.json](PRESET_CATALOG.json). The catalog is an audit snapshot and the validator checks it against both menu tags, the actual world-preset resources, the seven public biome-source chains and the audited resource counts. It should become the single source of truth for later UI/exporter generation rather than treating all 40 resources as equivalent user options.
 
 ### Public profiles
 
@@ -145,6 +145,21 @@ The 40 world-preset resources should be classified into a catalog rather than tr
 - Dune Three Realms
 
 The six fitted profiles remain visibly experimental until each has its own representative multi-seed saved-Anvil validation. Current multi-seed evidence must not be generalized from Alpine and Canyon to all six fitted modes.
+
+### Complete hidden / legacy resource inventory
+
+The remaining 33 resources are intentionally not ordinary menu choices:
+
+| Classification | IDs |
+|---|---|
+| Galleries and diagnostics | `apes_gallery_three_realms`, `biome_lab`, `cave_exploration_three_realms`, `cave_ocean_ecology_three_realms`, `ecotone_gallery`, `skylands_test_deep_ocean` |
+| Smoothing / source-chain probes | `tva_alpine_smoothing_probe`, `tva_canyon_smoothing_probe`, `tva_natural_smoothing_probe`, `tva_cave_ocean_ecology_test_three_realms` |
+| Measured / geological-wonder experiments | `measured_three_realms`, `tva_measured_three_realms`, `tva_natural_wonders_experimental_three_realms` |
+| Historical / specialized ecology profiles | `grand_ecology_three_realms`, `tva_sacred_timeline_three_realms`, `tva_alpine_three_realms`, `tva_canyon_three_realms` |
+| PR25 candidate profiles | `tva_pr25_alpine_three_realms`, `tva_pr25_canyon_three_realms`, `tva_pr25_measured_three_realms`, `tva_pr25_natural_three_realms` |
+| Legacy height / noise profiles | `continental`, `georeal_ultimate`, `grand_canyon`, `himalayan`, `realism_max`, `realism_max_ecotones`, `realism_max_ecotones_skylands`, `realism_max_three_realms`, `realistic_mountains`, `ultimate`, `usgs_big_sur`, `usgs_big_sur_v2` |
+
+The classification is a maintenance label, not permission to delete the resource. Preserve IDs until saved-world and datapack reference audits prove removal safe.
 
 ### Hidden diagnostics and showcases
 
