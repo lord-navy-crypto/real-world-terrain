@@ -282,7 +282,7 @@ The preview must distinguish sampled procedural predictions from actual saved An
 
 - The default Create World tags expose seven profiles; the changelog says seven, while README text still describes four and `docs/VERSIONS.md` still identifies v1.1 as the latest installable candidate. These documents need one current source of truth.
 - PR #156 is a draft. Its profile design is promising, but its current full-build jobs fail because of the unrelated missing `LotmBalance` source referenced by `LotmSanityTest`. Several separate worldgen and opt-in boot jobs on that head did pass; this does not make the full PR merge-ready.
-- PR #144 and older fitted-profile branches have heads that are ancestors of main; their changes should not be re-merged just because their PRs remain open.
+- PR #144 and older fitted-profile branches have heads that are ancestors of main; their changes should not be re-merged just because their PRs remain open. In particular, the legacy `tva_alpine_three_realms` and `tva_canyon_three_realms` QA aliases use smoothed settings and must not be confused with the current public fitted profiles.
 - PR #143's zonal/horizontal mapping branch is divergent and changes coordinate/DEM/spawn behavior. It needs an independent technical review and must not be merged into the terrain-consolidation work as a routine cleanup.
 - The old `feature/terrain-generation-optimization` branch is divergent and its own documentation labels its DEM cache work experimental; do not replace current main code with it without fresh parity and real-server A/B evidence.
 - The USGS 3DEP importer, river-network implementation and several ecology/terrain features already have source-path coverage in main; avoid duplicate cherry-picks from stale branches.
