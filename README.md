@@ -29,7 +29,7 @@ Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与�
 - **Performance：** 世界生成采样、缓存诊断、客户端帧间隔和可选区块上传节流。
 - **Compatibility：** 可选 Distant Horizons / Chunky 兼容钩子及外部客户端视觉工具。
 
-详细功能清单、状态分级、冲突判断和最终整合路线见 [Unified Feature Consolidation](docs/UNIFIED_FEATURE_CONSOLIDATION.md)。
+完整 40 个世界预设的公开、隐藏和历史分类见 [Preset Catalog](docs/PRESET_CATALOG.json)。详细功能清单、状态分级、冲突判断和最终整合路线见 [Unified Feature Consolidation](docs/UNIFIED_FEATURE_CONSOLIDATION.md)。
 
 ## 当前可视化状态
 
