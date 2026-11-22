@@ -3,13 +3,12 @@ package org.realscale.neoforge.client.clipmap;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.realscale.neoforge.network.ClipmapHeightTilePayload;
 
 /** Client-only S2C payload registration; never loads Minecraft client classes on a dedicated server. */
 @EventBusSubscriber(modid = "realscale",
-        bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+        bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class GeometryClipmapClientPayloads {
     private GeometryClipmapClientPayloads() {}
 
