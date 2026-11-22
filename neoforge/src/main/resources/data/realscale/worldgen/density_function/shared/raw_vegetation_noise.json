@@ -1,6 +1,6 @@
 {
-  "type": "realscale:measured_horizontal_memo",
-  "input": {
+  "type": "minecraft:cache_2d",
+  "argument": {
     "type": "minecraft:shifted_noise",
     "noise": "minecraft:vegetation",
     "shift_x": "minecraft:shift_x",
