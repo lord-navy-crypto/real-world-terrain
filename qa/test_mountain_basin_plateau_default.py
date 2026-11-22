@@ -37,11 +37,15 @@ class MountainBasinPlateauTest(unittest.TestCase):
                 self.assertEqual(shape["type"],"realscale:mountain_relief")
                 self.assertEqual(shape["base"],f"realscale:{preset}/original_height_signal")
                 self.assertEqual(shape["continents"],f"realscale:{continental}")
-                self.assertEqual(shape["selector"],{
-                    "type":"minecraft:noise",
-                    "noise":"minecraft:erosion",
-                    "xz_scale":0.006,"y_scale":0
-                })
+                expected_selector = (
+                    "realscale:shared/raw_erosion_selector"
+                    if preset=="tva_natural_smoothed" else {
+                        "type":"minecraft:noise",
+                        "noise":"minecraft:erosion",
+                        "xz_scale":0.006,"y_scale":0
+                    }
+                )
+                self.assertEqual(shape["selector"],expected_selector)
                 self.assertGreater(shape["basin_depth"],0)
                 self.assertGreater(shape["plateau_rise"],0)
                 terrain=read(root/"terrain_density.json")
