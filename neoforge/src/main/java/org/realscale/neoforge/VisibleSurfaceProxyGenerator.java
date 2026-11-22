@@ -59,8 +59,8 @@ public final class VisibleSurfaceProxyGenerator {
             SurfaceFeatureProxyProvider.Context context,
             List<VisibleSurfaceProxy> output) {
         for (GeometryClipmapLayout.Level level : context.layout().levels()) {
-            int step = Math.max(64, Math.multiplyExact(
-                    level.cellSpacingBlocks(), 8));
+            long step = Math.max(64L, Math.multiplyExact(
+                    level.cellSpacingBlocks(), 8L));
             GeometryClipmapLayout.Bounds outer = level.outerBounds();
             GeometryClipmapLayout.Bounds inner = level.innerBounds();
             for (long x = outer.minX(); x < outer.maxX(); x += step) {
