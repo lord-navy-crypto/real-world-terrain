@@ -22,12 +22,12 @@ final class ClipmapHeightGridTest {
 
         assertEquals(calls.get(), grid.sampledVertexCount());
         assertEquals(grid.sampledVertexCount(), grid.newlySampledVertexCount());
-        assertEquals(7_200, grid.sampledVertexCount());
+        assertEquals(11_600, grid.sampledVertexCount());
         assertTrue(grid.sampledVertexCount() < 129 * 129);
-        assertEquals(-256L, grid.originX());
-        assertEquals(-256L, grid.originZ());
-        assertEquals(4, grid.cellSpacingBlocks());
-        assertEquals(-252.0f * 0.01f + -248.0f * 0.02f,
+        assertEquals(-512L, grid.originX());
+        assertEquals(-512L, grid.originZ());
+        assertEquals(8, grid.cellSpacingBlocks());
+        assertEquals(-504.0f * 0.01f + -496.0f * 0.02f,
                 grid.heightAt(1, 2), 1.0e-5f);
     }
 
@@ -53,7 +53,7 @@ final class ClipmapHeightGridTest {
                     return x * 0.01f + z * 0.02f;
                 });
 
-        GeometryClipmapLayout.Layout after = planner.compute(64.1, 0.0, before);
+        GeometryClipmapLayout.Layout after = planner.compute(128.1, 0.0, before);
         AtomicInteger secondCalls = new AtomicInteger();
         ClipmapHeightGrid second = ClipmapHeightGrid.sample(after.levels().get(0),
                 128, (x, z) -> {
@@ -64,7 +64,7 @@ final class ClipmapHeightGridTest {
         assertEquals(second.newlySampledVertexCount(), secondCalls.get());
         assertTrue(secondCalls.get() < firstCalls.get());
         assertTrue(second.sampledVertexCount() > second.newlySampledVertexCount());
-        assertEquals(first.heightAt(80, 20), second.heightAt(64, 20), 0.0f);
+        assertEquals(first.heightAt(64, 64), second.heightAt(32, 32), 0.0f);
     }
 
     @Test

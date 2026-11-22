@@ -17,7 +17,7 @@ import java.util.List;
 public final class GeometryClipmapLayout {
     public static final int DEFAULT_GRID_CELLS = 128;
     public static final int DEFAULT_LEVEL_COUNT = 6;
-    public static final int DEFAULT_BASE_CELL_SPACING_BLOCKS = 4;
+    public static final int DEFAULT_BASE_CELL_SPACING_BLOCKS = 8;
     public static final int DEFAULT_NEAR_RENDER_DISTANCE_CHUNKS = 10;
 
     private final int gridCells;
@@ -49,7 +49,7 @@ public final class GeometryClipmapLayout {
         }
 
         long nearRadius = nearRenderDistanceChunks * 16L;
-        long centreSnapSpacing = (long) baseCellSpacingBlocks << (levelCount - 2);
+        long centreSnapSpacing = (long) baseCellSpacingBlocks << (levelCount - 1);
         long cameraOffsetAllowance = centreSnapSpacing / 2L;
         long protectedInnerRadius = nearRadius + cameraOffsetAllowance;
         long finestHalfExtent = (long) (gridCells / 2) * baseCellSpacingBlocks;
@@ -78,9 +78,7 @@ public final class GeometryClipmapLayout {
             throw new IllegalArgumentException("render distance must be between 2 and 64 chunks");
         }
         int spacing = DEFAULT_BASE_CELL_SPACING_BLOCKS;
-        while ((long) chunks * 16L
-                + (((long) spacing << (DEFAULT_LEVEL_COUNT - 2)) / 2L)
-                >= (long) (DEFAULT_GRID_CELLS / 2) * spacing) {
+        while (chunks > 2L * spacing) {
             spacing <<= 1;
         }
         return new GeometryClipmapLayout(DEFAULT_GRID_CELLS,
@@ -101,7 +99,7 @@ public final class GeometryClipmapLayout {
         validatePrevious(previous);
 
         List<Level> levels = new ArrayList<>(levelCount);
-        long centreSnapSpacing = (long) baseCellSpacingBlocks << (levelCount - 2);
+        long centreSnapSpacing = (long) baseCellSpacingBlocks << (levelCount - 1);
         long sharedCenterX = snapNearest(cameraX, centreSnapSpacing);
         long sharedCenterZ = snapNearest(cameraZ, centreSnapSpacing);
 
@@ -125,12 +123,10 @@ public final class GeometryClipmapLayout {
                 throw new IllegalStateException(
                         "clipmap level " + index + " does not contain its inner window");
             }
-            if (!isGridAligned(outer.minX(), spacing)
-                    || !isGridAligned(outer.minZ(), spacing)
-                    || !isGridAligned(inner.minX(), spacing)
-                    || !isGridAligned(inner.minZ(), spacing)
-                    || !isGridAligned(inner.maxX(), spacing)
-                    || !isGridAligned(inner.maxZ(), spacing)) {
+            if (!isGridAligned(inner.minX() - outer.minX(), spacing)
+                    || !isGridAligned(inner.minZ() - outer.minZ(), spacing)
+                    || !isGridAligned(inner.maxX() - outer.minX(), spacing)
+                    || !isGridAligned(inner.maxZ() - outer.minZ(), spacing)) {
                 throw new IllegalStateException(
                         "clipmap ring boundaries must align to level " + index + " vertices");
             }
@@ -198,8 +194,8 @@ public final class GeometryClipmapLayout {
         return Math.floorDiv(block + spacing / 2L, spacing) * spacing;
     }
 
-    private static boolean isGridAligned(long coordinate, long spacing) {
-        return Math.floorMod(coordinate, spacing) == 0L;
+    private static boolean isGridAligned(long offsetFromOrigin, long spacing) {
+        return Math.floorMod(offsetFromOrigin, spacing) == 0L;
     }
 
     private static void validateCameraCoordinate(double coordinate) {

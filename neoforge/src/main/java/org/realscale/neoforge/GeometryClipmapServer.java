@@ -103,7 +103,7 @@ public final class GeometryClipmapServer {
         long seed = level.getSeed();
         if (!Objects.equals(session.dimensionKey, dimensionKey)
                 || session.seed != seed
-                || !Objects.equals(session.settingsId, settingsId)) {
+                || !Objects.equals(session.settingsId, settingsId.toString())) {
             session.resetWorld(dimensionKey, seed, settingsId);
         }
         if (session.inFlight) return;

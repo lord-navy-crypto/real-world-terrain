@@ -16,7 +16,6 @@ public final class RealScaleMod {
         bus.addListener(RealScaleStructurePacks::register);
         bus.addListener(this::registerDensity);
         NeoForge.EVENT_BUS.addListener(DhChunkyGuardCommands::registerCommands);
-        NeoForge.EVENT_BUS.addListener(GeometryClipmapServer::onServerTick);
         bus.addListener(GeometryClipmapNetwork::registerPayloads);
     }
     private void registerDensity(RegisterEvent event) {
