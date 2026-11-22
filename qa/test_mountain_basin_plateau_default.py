@@ -83,7 +83,14 @@ class MountainBasinPlateauTest(unittest.TestCase):
             if preset=="tva_natural_smoothed":
                 self.assertEqual(landform["type"],"minecraft:cache_2d")
                 landform=landform["argument"]
-            self.assertEqual(adjusted["selector"],landform["selector"])
+            def resolved_selector(value):
+                if value=="realscale:shared/raw_erosion_selector":
+                    return read(DATA/"density_function/shared/raw_erosion_selector.json")["argument"]
+                return value
+            self.assertEqual(
+                resolved_selector(adjusted["selector"]),
+                resolved_selector(landform["selector"]),
+            )
             self.assertEqual(adjusted["continents"],landform["continents"])
             self.assertGreater(adjusted["warmth"],0)
             self.assertLessEqual(adjusted["warmth"],0.25)
