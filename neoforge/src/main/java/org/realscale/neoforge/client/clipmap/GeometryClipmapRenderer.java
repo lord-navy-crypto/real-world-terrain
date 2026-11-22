@@ -64,9 +64,7 @@ final class GeometryClipmapRenderer {
                     / max(2.0 * uSpacing, 1.0);
 
                 vec2 worldXZ = uOrigin + aGrid * uSpacing;
-                vec3 relative = vec3(worldXZ.x - uCameraXZ.x,
-                                     surfaceY - uCameraY,
-                                     worldXZ.y - uCameraXZ.y);
+                vec3 relative = vec3(worldXZ.x, surfaceY - uCameraY, worldXZ.y);
                 vHeight = surfaceY;
                 vOcean = ocean;
                 vSlope = slope;
@@ -112,8 +110,8 @@ final class GeometryClipmapRenderer {
     private static int gridCells = -1;
     private static int nearChunks = -1;
     private static int baseSpacing = -1;
-    private static final ClipmapHeightTilePayloadHolder[] uploaded =
-            new ClipmapHeightTilePayloadHolder[LEVEL_COUNT];
+    private static final org.realscale.neoforge.network.ClipmapHeightTilePayload[] uploaded =
+            new org.realscale.neoforge.network.ClipmapHeightTilePayload[LEVEL_COUNT];
 
     private GeometryClipmapRenderer() {}
 
@@ -147,9 +145,9 @@ final class GeometryClipmapRenderer {
 
         for (int i = 0; i < LEVEL_COUNT; i++) {
             var tile = tiles.get(i);
-            if (uploaded[i].payload != tile) {
+            if (uploaded[i] != tile) {
                 upload(i, tile);
-                uploaded[i].payload = tile;
+                uploaded[i] = tile;
             }
         }
 
@@ -172,7 +170,7 @@ final class GeometryClipmapRenderer {
         gridCells = -1;
         nearChunks = -1;
         baseSpacing = -1;
-        for (int i = 0; i < uploaded.length; i++) uploaded[i].payload = null;
+        for (int i = 0; i < uploaded.length; i++) uploaded[i] = null;
     }
 
     private static void initialize(int cells, int near, int spacing) {
@@ -298,8 +296,6 @@ final class GeometryClipmapRenderer {
             double cameraX = camera.getPosition().x;
             double cameraY = camera.getPosition().y;
             double cameraZ = camera.getPosition().z;
-            GL20.glUniform2f(GL20.glGetUniformLocation(program, "uCameraXZ"),
-                    (float) cameraX, (float) cameraZ);
             GL20.glUniform1f(GL20.glGetUniformLocation(program, "uCameraY"),
                     (float) cameraY);
             GL20.glUniform1f(GL20.glGetUniformLocation(program, "uGridCells"),
@@ -319,7 +315,8 @@ final class GeometryClipmapRenderer {
             for (int level = LEVEL_COUNT - 1; level >= 0; level--) {
                 var tile = tiles.get(level);
                 GL20.glUniform2f(GL20.glGetUniformLocation(program, "uOrigin"),
-                        (float) tile.originX(), (float) tile.originZ());
+                        (float) (tile.originX() - cameraX),
+                        (float) (tile.originZ() - cameraZ));
                 GL20.glUniform1f(GL20.glGetUniformLocation(program, "uSpacing"),
                         tile.cellSpacingBlocks());
                 GL13.glActiveTexture(GL13.GL_TEXTURE0);
@@ -366,10 +363,6 @@ final class GeometryClipmapRenderer {
             throw new IllegalStateException("Geometry Clipmap shader compile failed: " + log);
         }
         return shader;
-    }
-
-    private static final class ClipmapHeightTilePayloadHolder {
-        private org.realscale.neoforge.network.ClipmapHeightTilePayload payload;
     }
 
     private record State(int program, int vao, int arrayBuffer,
