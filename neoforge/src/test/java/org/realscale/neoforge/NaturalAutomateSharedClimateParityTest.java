@@ -114,7 +114,7 @@ final class NaturalAutomateSharedClimateParityTest {
                 original,continent,signal,x,z)-original)*(s4/total);
         if(s5>0.01)weightedDelta+=(kernels[5].compute(
                 original,continent,signal,x,z)-original)*(s5/total);
-        return original+weightedDelta;
+        return original+weightedDelta*coverage;
     }
 
     private static double smoothstep(double edge0,double edge1,double value) {
