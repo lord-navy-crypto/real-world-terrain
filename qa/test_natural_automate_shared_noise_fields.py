@@ -69,6 +69,26 @@ class NaturalAutomateSharedNoiseFieldsTest(unittest.TestCase):
                     router["vegetation"],
                 )
 
+    def test_smoothed_baseline_noise_router_reuses_shared_horizontal_nodes(self):
+        router = load("noise_settings/tva_natural_smoothed.json")["noise_router"]
+        climate = router["temperature"]
+        self.assertEqual(
+            "realscale:shared/raw_temperature_noise",
+            climate["original"],
+        )
+        self.assertEqual(
+            "realscale:shared/raw_temperature_noise",
+            climate["adjusted"]["base"]["base"]["argument1"],
+        )
+        self.assertEqual(
+            "realscale:shared/raw_erosion_selector",
+            climate["adjusted"]["selector"],
+        )
+        self.assertEqual(
+            "realscale:shared/raw_vegetation_noise",
+            router["vegetation"],
+        )
+
     def test_height_signal_and_smoothed_baseline_share_erosion_and_climate(self):
         natural = load("density_function/natural_automate/height_signal.json")
         argument = natural["input"]["argument"]
