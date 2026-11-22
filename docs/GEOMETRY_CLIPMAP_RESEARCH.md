@@ -366,3 +366,8 @@ submission overhead, not GPU execution time, and does not force a GPU stall.
 * Added a group-scoped Google-hosted Maven Central mirror for Gson in plugin
   management, ahead of Maven Central, to reduce transient HTTP 429 failures
   when multiple independent CI workflows resolve the same plugin dependency.
+
+
+The telemetry source-contract test checks for an actual \`glFinish(...)\` call,
+not for the word in the explanatory comment. This keeps the guard focused on
+blocking a synchronous GPU stall rather than blocking its documentation.
