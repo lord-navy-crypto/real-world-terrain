@@ -1,7 +1,6 @@
 package org.realscale.neoforge.client.clipmap;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
@@ -136,12 +135,7 @@ final class VisibleSurfaceProxyRenderer {
             double distanceSquared = dx * dx + dz * dz;
             if (distanceSquared < nearRadiusSquared
                     || distanceSquared > farRadiusSquared) continue;
-            double radius = proxy.radius();
-            AABB bounds = new AABB(
-                    proxy.x() - radius, proxy.y(),
-                    proxy.z() - radius, proxy.x() + radius,
-                    proxy.y() + proxy.height(), proxy.z() + radius);
-            if (event.getFrustum().isVisible(bounds)) visible.add(proxy);
+            if (event.getFrustum().isVisible(proxy.bounds())) visible.add(proxy);
         }
         if (visible.isEmpty()) return;
 

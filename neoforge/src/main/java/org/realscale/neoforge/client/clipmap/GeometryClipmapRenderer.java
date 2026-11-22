@@ -335,10 +335,10 @@ final class GeometryClipmapRenderer {
     private static void upload(int level,
             org.realscale.neoforge.network.ClipmapHeightTilePayload tile) {
         int side = tile.gridCells() + 1;
-        short[] values = tile.heights();
         ShortBuffer buffer = reusableHeightUpload;
         buffer.clear();
-        buffer.put(values).flip();
+        tile.copyHeightsTo(buffer);
+        buffer.flip();
         GL13.glActiveTexture(GL13.GL_TEXTURE0);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, textures[level]);
         GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0,

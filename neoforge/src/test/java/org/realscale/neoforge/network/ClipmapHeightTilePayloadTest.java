@@ -1,0 +1,46 @@
+package org.realscale.neoforge.network;
+
+import org.junit.jupiter.api.Test;
+import java.nio.ShortBuffer;
+import static org.junit.jupiter.api.Assertions.*;
+
+final class ClipmapHeightTilePayloadTest {
+    private static ClipmapHeightTilePayload payload(short[] samples) {
+        return new ClipmapHeightTilePayload(
+                "minecraft:overworld", 10, 16, 0, 8,
+                -64, -64, -64, 2032, samples);
+    }
+
+    @Test
+    void constructorAndAccessorKeepThePayloadArrayDefensive() {
+        short[] source = new short[17 * 17];
+        source[0] = 1234;
+        ClipmapHeightTilePayload payload = payload(source);
+        source[0] = 7;
+        assertEquals(1234, payload.heights()[0]);
+
+        short[] copy = payload.heights();
+        copy[0] = 9;
+        assertEquals(1234, payload.heights()[0]);
+    }
+
+    @Test
+    void copiesSamplesDirectlyIntoCallerOwnedUploadBuffer() {
+        short[] source = new short[17 * 17];
+        for (int i = 0; i < source.length; i++) source[i] = (short) (i * 13);
+        ClipmapHeightTilePayload payload = payload(source);
+        ShortBuffer destination = ShortBuffer.allocate(source.length);
+        payload.copyHeightsTo(destination);
+        destination.flip();
+        for (short expected : source) assertEquals(expected, destination.get());
+    }
+
+    @Test
+    void rejectsInsufficientDestinationCapacity() {
+        ClipmapHeightTilePayload payload = payload(new short[17 * 17]);
+        assertThrows(IllegalArgumentException.class,
+                () -> payload.copyHeightsTo(ShortBuffer.allocate(10)));
+        assertThrows(IllegalArgumentException.class,
+                () -> payload.copyHeightsTo(null));
+    }
+}

@@ -93,6 +93,25 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertNotIn("new ArrayList", draw)
         self.assertNotIn("new Matrix4f", draw)
 
+    def test_proxy_renderer_uses_precomputed_bounds_without_per_frame_aabb_creation(self):
+        proxy = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/VisibleSurfaceProxyRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        draw = proxy.split("static void draw(", 1)[1].split("static void dispose(", 1)[0]
+        self.assertIn("proxy.bounds()", draw)
+        self.assertNotIn("new AABB", draw)
+
+    def test_height_payload_can_copy_without_exposing_or_cloning_samples(self):
+        payload = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/network/ClipmapHeightTilePayload.java").read_text(
+            encoding="utf-8"
+        )
+        renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("public void copyHeightsTo(ShortBuffer destination)", payload)
+        self.assertIn("tile.copyHeightsTo(buffer)", renderer)
+        self.assertIn("short[] values = value.heights;", payload)
+
     def test_terrain_and_proxy_draws_reuse_matrix_objects(self):
         terrain = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
             encoding="utf-8"

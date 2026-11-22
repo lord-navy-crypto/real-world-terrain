@@ -310,3 +310,18 @@ Visual verification is still needed to characterize remaining artifacts.
   would render entirely as fog.
 * Proxy instance and matrix buffers plus the visibility scratch list remain
   bounded by the 4096-proxy network contract.
+
+
+## 2026-11-22 cached proxy bounds and low-copy height transfer
+
+* \`VisibleSurfaceProxy\` now computes its immutable world AABB once when
+  generated or decoded. The per-frame frustum loop no longer allocates one
+  AABB for every proxy. Its accessors and record-style equality/hash semantics
+  are preserved.
+* \`ClipmapHeightTilePayload.copyHeightsTo(ShortBuffer)\` writes the payload's
+  private immutable samples directly into the renderer's reusable upload
+  buffer. Network encoding also reads the owned array internally rather than
+  cloning it through the public defensive accessor. Public \`heights()\`
+  remains defensive.
+* Added unit tests for cached bounds, value semantics, defensive payload
+  ownership and direct height-buffer copying.

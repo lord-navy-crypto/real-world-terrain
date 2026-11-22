@@ -6,6 +6,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import java.nio.ShortBuffer;
 
 /**
  * One quantized visible-surface height grid. Payload size is bounded and never
@@ -56,7 +57,7 @@ public record ClipmapHeightTilePayload(
                 @Override
                 public void encode(RegistryFriendlyByteBuf buffer,
                         ClipmapHeightTilePayload value) {
-                    short[] values = value.heights();
+                    short[] values = value.heights;
                     validate(value.dimensionKey(), value.nearRenderDistanceChunks(),
                             value.gridCells(), value.levelIndex(),
                             value.cellSpacingBlocks(), value.minHeight(),
@@ -84,6 +85,17 @@ public record ClipmapHeightTilePayload(
     @Override
     public short[] heights() {
         return heights.clone();
+    }
+
+    /**
+     * Copies immutable samples into a caller-owned buffer without exposing or
+     * cloning the internal array.
+     */
+    public void copyHeightsTo(ShortBuffer destination) {
+        if (destination == null || destination.remaining() < heights.length) {
+            throw new IllegalArgumentException("destination buffer is too small for clipmap heights");
+        }
+        destination.put(heights);
     }
 
     private static void validate(String dimension, int near, int cells,
