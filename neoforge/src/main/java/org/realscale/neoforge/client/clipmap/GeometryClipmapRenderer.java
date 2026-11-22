@@ -43,6 +43,7 @@ final class GeometryClipmapRenderer {
             uniform float uHeightMax;
             uniform float uSeaLevel;
             uniform float uSkirtDepth;
+            uniform float uMorphBandCells;
             out float vHeight;
             out float vOcean;
             out float vDistance;
@@ -53,6 +54,30 @@ final class GeometryClipmapRenderer {
                 float side = uGridCells + 1.0;
                 vec2 uv = (grid + vec2(0.5)) / side;
                 float h = mix(uHeightMin, uHeightMax, texture(uHeightMap, uv).r);
+                // A fine outer boundary must converge on the 2x parent grid.
+                // These parent heights are sampled at even vertices of this
+                // SAME R16 texture; no additional worldgen or network data.
+                float edgeCells = min(min(grid.x, grid.y),
+                    min(uGridCells - grid.x, uGridCells - grid.y));
+                if (uMorphBandCells > 0.0 && edgeCells < uMorphBandCells) {
+                    vec2 parentGrid = floor(grid * 0.5) * 2.0;
+                    vec2 parentUV = (parentGrid + vec2(0.5)) / side;
+                    float pixelStep = 2.0 / side;
+                    vec2 blend = (grid - parentGrid) * 0.5;
+                    float h00 = texture(uHeightMap, parentUV).r;
+                    float h10 = texture(uHeightMap,
+                        parentUV + vec2(pixelStep, 0.0)).r;
+                    float h01 = texture(uHeightMap,
+                        parentUV + vec2(0.0, pixelStep)).r;
+                    float h11 = texture(uHeightMap,
+                        parentUV + vec2(pixelStep, pixelStep)).r;
+                    float parentHeight = mix(mix(h00, h10, blend.x),
+                        mix(h01, h11, blend.x), blend.y);
+                    parentHeight = mix(uHeightMin, uHeightMax, parentHeight);
+                    float morph = 1.0 - smoothstep(0.0,
+                        uMorphBandCells, edgeCells);
+                    h = mix(h, parentHeight, morph);
+                }
                 float ocean = step(h, uSeaLevel);
                 float surfaceY = mix(h, uSeaLevel, ocean)
                     - aGridAndSkirt.z * uSkirtDepth;
@@ -78,6 +103,7 @@ final class GeometryClipmapRenderer {
             uniform float uFogStart;
             uniform float uFogEnd;
             uniform float uNearClipBlocks;
+            uniform float uSeaLevel;
             uniform vec3 uFogColor;
             out vec4 fragColor;
 
@@ -142,6 +168,10 @@ final class GeometryClipmapRenderer {
                     mix(regional, micro, detailFade * 0.55));
                 land *= variation;
                 vec3 color = mix(land, water * mix(0.90, 1.10, macro), vOcean);
+                float shallowShore = vOcean *
+                    (1.0 - smoothstep(0.0, 5.0, uSeaLevel - vHeight));
+                color = mix(color, vec3(0.52, 0.64, 0.61),
+                    shallowShore * 0.23);
                 vec3 sun = normalize(vec3(0.38, 0.83, 0.40));
                 color *= 0.60 + 0.40 * max(dot(normal, sun), 0.0);
 
@@ -363,6 +393,8 @@ final class GeometryClipmapRenderer {
             GL20.glUniform1f(uniforms.skirtDepth(),
                     Math.min(32.0f, Math.max(4.0f,
                             tile.cellSpacingBlocks() * 0.125f)));
+            GL20.glUniform1f(uniforms.morphBandCells(),
+                    level == LEVEL_COUNT - 1 ? 0.0f : 8.0f);
             GL13.glActiveTexture(GL13.GL_TEXTURE0);
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, textures[level]);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER,
@@ -417,7 +449,8 @@ final class GeometryClipmapRenderer {
             int heightMin, int heightMax, int seaLevel,
             int fogStart, int fogEnd, int fogColor,
             int heightMap, int nearClipBlocks, int origin,
-            int spacing, int noiseOrigin, int skirtDepth) {
+            int spacing, int noiseOrigin, int skirtDepth,
+            int morphBandCells) {
         private static UniformLocations lookup(int program) {
             return new UniformLocations(
                     GL20.glGetUniformLocation(program, "uViewProjection"),
@@ -434,7 +467,8 @@ final class GeometryClipmapRenderer {
                     GL20.glGetUniformLocation(program, "uOrigin"),
                     GL20.glGetUniformLocation(program, "uSpacing"),
                     GL20.glGetUniformLocation(program, "uNoiseOrigin"),
-                    GL20.glGetUniformLocation(program, "uSkirtDepth"));
+                    GL20.glGetUniformLocation(program, "uSkirtDepth"),
+                    GL20.glGetUniformLocation(program, "uMorphBandCells"));
         }
     }
 

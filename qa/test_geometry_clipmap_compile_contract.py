@@ -78,5 +78,15 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
                          renderer.split("private static void draw(", 1)[1].split("private static int linkProgram(", 1)[0])
 
 
+    def test_geomorph_uses_existing_height_grid_and_cached_uniform(self):
+        renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("parentGrid = floor(grid * 0.5) * 2.0", renderer)
+        self.assertIn("h = mix(h, parentHeight, morph);", renderer)
+        self.assertIn("uniforms.morphBandCells()", renderer)
+        self.assertIn('GL20.glGetUniformLocation(program, "uMorphBandCells")', renderer)
+
+
 if __name__ == "__main__":
     unittest.main()

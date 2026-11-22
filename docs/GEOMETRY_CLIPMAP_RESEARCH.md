@@ -252,3 +252,16 @@ a dedicated server boot test alone cannot validate an S2C request/response.
   than on each frame and each ring.
 * These are correctness/overhead improvements. GPU frame times, Mac OpenGL
   client compatibility and any visible improvement still require measurement.
+
+## 2026-11-22 coarser-height ring geomorph and shallow coast shading
+
+Fine LOD surface vertices morph across their outer eight grid cells
+toward the even-indexed 2x parent lattice, using the same compact R16
+height map. This preserves full detail in the interior while matching
+the coarser grid's boundary curve; down-facing seam skirts remain a
+backup against sampling discontinuities. The outermost level does not morph.
+
+A pure CPU reference with JUnit parity checks tests border interpolation
+and weight falloff. The fragment shader adds a subtle shallow-ocean
+coastline colour. Client GPU seams, FPS and macOS shader behavior still
+require in-game evidence.

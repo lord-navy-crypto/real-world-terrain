@@ -65,7 +65,7 @@ final class ClipmapSnapshotAssemblerTest {
                 () -> a.accept(2, 128, 30, 0, 0, 10, "a", "x"));
         assertThrows(IllegalArgumentException.class,
                 () -> a.accept(2, 128, 12, 0, 0, 10, "a", "x"));
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(NullPointerException.class,
                 () -> a.accept(0, 128, 8, 0, 0, 10, "a", null));
     }
 }
