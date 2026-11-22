@@ -208,12 +208,25 @@ final class TerrainArchetypeMath {
         double moisture=unitNoise(humidity);
 
         // Allocation-free: density is sampled repeatedly during chunk generation.
-        double s0=naturalFamilySuitabilityNormalized(0,original,temp,moisture,region);
-        double s1=naturalFamilySuitabilityNormalized(1,original,temp,moisture,region);
-        double s2=naturalFamilySuitabilityNormalized(2,original,temp,moisture,region);
-        double s3=naturalFamilySuitabilityNormalized(3,original,temp,moisture,region);
-        double s4=naturalFamilySuitabilityNormalized(4,original,temp,moisture,region);
-        double s5=naturalFamilySuitabilityNormalized(5,original,temp,moisture,region);
+        // All six families consume the same climate fields. Derive these four
+        // smooth climate factors once per horizontal sample instead of once
+        // per family (24 repeated smoothstep evaluations in the old path).
+        double warmth=smoothstep(-0.45,0.45,temp);
+        double coldness=1.0-smoothstep(-0.45,0.35,temp);
+        double wetness=smoothstep(-0.50,0.45,moisture);
+        double dryness=1.0-smoothstep(-0.15,0.55,moisture);
+        double s0=naturalFamilySuitabilityWithClimate(0,original,region,
+                warmth,coldness,wetness,dryness);
+        double s1=naturalFamilySuitabilityWithClimate(1,original,region,
+                warmth,coldness,wetness,dryness);
+        double s2=naturalFamilySuitabilityWithClimate(2,original,region,
+                warmth,coldness,wetness,dryness);
+        double s3=naturalFamilySuitabilityWithClimate(3,original,region,
+                warmth,coldness,wetness,dryness);
+        double s4=naturalFamilySuitabilityWithClimate(4,original,region,
+                warmth,coldness,wetness,dryness);
+        double s5=naturalFamilySuitabilityWithClimate(5,original,region,
+                warmth,coldness,wetness,dryness);
         double total=s0+s1+s2+s3+s4+s5;
         if(total<=1.0e-12)return original;
         double maxSuitability=Math.max(Math.max(Math.max(s0,s1),
@@ -222,19 +235,39 @@ final class TerrainArchetypeMath {
         if(coverage<=0.0)return original;
 
         double weightedDelta=0.0;
-        if(s0>0.01)weightedDelta+=(naturalKernels[0].compute(
-                original,continent,signal,x,z)-original)*(s0/total);
-        if(s1>0.01)weightedDelta+=(naturalKernels[1].compute(
-                original,continent,signal,x,z)-original)*(s1/total);
-        if(s2>0.01)weightedDelta+=(naturalKernels[2].compute(
-                original,continent,signal,x,z)-original)*(s2/total);
-        if(s3>0.01)weightedDelta+=(naturalKernels[3].compute(
-                original,continent,signal,x,z)-original)*(s3/total);
-        if(s4>0.01)weightedDelta+=(naturalKernels[4].compute(
-                original,continent,signal,x,z)-original)*(s4/total);
-        if(s5>0.01)weightedDelta+=(naturalKernels[5].compute(
-                original,continent,signal,x,z)-original)*(s5/total);
+        if(s0>0.01)weightedDelta+=(naturalKernels[0].computeNaturalKernel(
+                original,landGate,signal,x,z)-original)*(s0/total);
+        if(s1>0.01)weightedDelta+=(naturalKernels[1].computeNaturalKernel(
+                original,landGate,signal,x,z)-original)*(s1/total);
+        if(s2>0.01)weightedDelta+=(naturalKernels[2].computeNaturalKernel(
+                original,landGate,signal,x,z)-original)*(s2/total);
+        if(s3>0.01)weightedDelta+=(naturalKernels[3].computeNaturalKernel(
+                original,landGate,signal,x,z)-original)*(s3/total);
+        if(s4>0.01)weightedDelta+=(naturalKernels[4].computeNaturalKernel(
+                original,landGate,signal,x,z)-original)*(s4/total);
+        if(s5>0.01)weightedDelta+=(naturalKernels[5].computeNaturalKernel(
+                original,landGate,signal,x,z)-original)*(s5/total);
         return original+weightedDelta*coverage*(reliefGain/0.72);
+    }
+
+    /**
+     * Natural Automate has already evaluated the shared land gate and clamped
+     * selector once in its parent kernel. Reuse those exact values for each
+     * fitted family instead of repeating one smoothstep and one clamp per
+     * active family. This method is called only on the six non-composite
+     * kernels created by the Natural Automate constructor.
+     */
+    private double computeNaturalKernel(double original,double landGate,
+            double signal,double x,double z) {
+        return switch(family) {
+            case "alpine" -> alpine(original,landGate,signal,x,z);
+            case "canyon" -> canyon(original,landGate,signal,x,z);
+            case "glacial" -> glacialValley(original,landGate,x,z);
+            case "volcanic" -> volcanicShield(original,landGate,x,z);
+            case "karst" -> karstTowers(original,landGate,x,z,signal);
+            case "dune" -> duneRidges(original,landGate,x,z,signal);
+            default -> original;
+        };
     }
 
     /**
@@ -252,16 +285,25 @@ final class TerrainArchetypeMath {
     /** Inputs are already normalized to [-1,1]; no per-family re-normalization. */
     private static double naturalFamilySuitabilityNormalized(int familyIndex,
             double original,double temp,double moisture,double region) {
+        // Preserve the standalone helper contract while sharing the same
+        // precomputed-climate implementation used by Natural Automate.
+        double warmth=smoothstep(-0.45,0.45,temp);
+        double coldness=1.0-smoothstep(-0.45,0.35,temp);
+        double wetness=smoothstep(-0.50,0.45,moisture);
+        double dryness=1.0-smoothstep(-0.15,0.55,moisture);
+        return naturalFamilySuitabilityWithClimate(familyIndex,original,region,
+                warmth,coldness,wetness,dryness);
+    }
+
+    /** Inputs are normalized; shared climate factors are computed only once per X/Z. */
+    private static double naturalFamilySuitabilityWithClimate(int familyIndex,
+            double original,double region,double warmth,double coldness,
+            double wetness,double dryness) {
         if(familyIndex<0 || familyIndex>=6)return 0.0;
         double center=-5.0/6.0+familyIndex/3.0;
         double regionalAffinity=1.0-smoothstep(0.18,0.62,
                 Math.abs(region-center));
         if(regionalAffinity<=0.0)return 0.0;
-
-        double warmth=smoothstep(-0.45,0.45,temp);
-        double coldness=1.0-smoothstep(-0.45,0.35,temp);
-        double wetness=smoothstep(-0.50,0.45,moisture);
-        double dryness=1.0-smoothstep(-0.15,0.55,moisture);
 
         double topographicSuitability;
         double climateSuitability;
