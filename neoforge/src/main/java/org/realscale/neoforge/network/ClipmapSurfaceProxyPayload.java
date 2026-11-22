@@ -14,6 +14,8 @@ import java.util.List;
 /** Bounded exterior-only feature proxies; never contains hidden interiors or block arrays. */
 public record ClipmapSurfaceProxyPayload(
         String dimensionKey,
+        long centerX,
+        long centerZ,
         List<VisibleSurfaceProxy> proxies) implements CustomPacketPayload {
     public static final int MAX_PROXIES = 4096;
     private static final int MAX_DIMENSION_KEY_LENGTH = 256;
@@ -27,6 +29,8 @@ public record ClipmapSurfaceProxyPayload(
                 @Override
                 public ClipmapSurfaceProxyPayload decode(RegistryFriendlyByteBuf buffer) {
                     String dimension = buffer.readUtf(MAX_DIMENSION_KEY_LENGTH);
+                    long centerX = buffer.readLong();
+                    long centerZ = buffer.readLong();
                     int count = buffer.readVarInt();
                     if (count < 0 || count > MAX_PROXIES) {
                         throw new DecoderException("Invalid clipmap proxy count: " + count);
@@ -47,7 +51,8 @@ public record ClipmapSurfaceProxyPayload(
                             throw new DecoderException("Invalid visible-surface proxy", invalid);
                         }
                     }
-                    return new ClipmapSurfaceProxyPayload(dimension, values);
+                    return new ClipmapSurfaceProxyPayload(
+                            dimension, centerX, centerZ, values);
                 }
 
                 @Override
@@ -57,6 +62,8 @@ public record ClipmapSurfaceProxyPayload(
                         throw new EncoderException("Too many clipmap surface proxies");
                     }
                     buffer.writeUtf(value.dimensionKey(), MAX_DIMENSION_KEY_LENGTH);
+                    buffer.writeLong(value.centerX());
+                    buffer.writeLong(value.centerZ());
                     buffer.writeVarInt(value.proxies().size());
                     for (VisibleSurfaceProxy proxy : value.proxies()) {
                         buffer.writeInt(proxy.x());

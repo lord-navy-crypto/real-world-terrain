@@ -1,15 +1,25 @@
 package org.realscale.neoforge.network;
 
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.realscale.neoforge.GeometryClipmapServer;
 
-/** Common-side registration for the bounded clipmap request. */
+/**
+ * Both directions are registered on BOTH physical sides. Merely registering
+ * clientbound codecs in a Dist.CLIENT subscriber leaves a dedicated server
+ * unable to encode the packets it sends.
+ *
+ * <p>The only references to client-only classes occur inside guarded client
+ * delivery callbacks. Dedicated servers never execute those callbacks.
+ */
 public final class GeometryClipmapNetwork {
     private GeometryClipmapNetwork() {}
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        event.registrar("1").playToServer(
+        var registrar = event.registrar("2");
+        registrar.playToServer(
                 ClipmapRequestPayload.TYPE,
                 ClipmapRequestPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
@@ -18,5 +28,31 @@ public final class GeometryClipmapNetwork {
                                 payload.nearRenderDistanceChunks());
                     }
                 }));
+        registrar.playToClient(
+                ClipmapHeightTilePayload.TYPE,
+                ClipmapHeightTilePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        clientHeight(payload);
+                    }
+                }));
+        registrar.playToClient(
+                ClipmapSurfaceProxyPayload.TYPE,
+                ClipmapSurfaceProxyPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        clientProxies(payload);
+                    }
+                }));
+    }
+
+    private static void clientHeight(ClipmapHeightTilePayload payload) {
+        org.realscale.neoforge.client.clipmap.GeometryClipmapClientPayloads
+                .acceptHeight(payload);
+    }
+
+    private static void clientProxies(ClipmapSurfaceProxyPayload payload) {
+        org.realscale.neoforge.client.clipmap.GeometryClipmapClientPayloads
+                .acceptProxies(payload);
     }
 }

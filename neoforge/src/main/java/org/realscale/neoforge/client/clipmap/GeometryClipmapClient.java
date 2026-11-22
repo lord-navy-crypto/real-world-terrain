@@ -13,8 +13,6 @@ import org.realscale.neoforge.network.ClipmapRequestPayload;
 import org.realscale.neoforge.network.ClipmapSurfaceProxyPayload;
 import java.util.List;
 
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Opt-in client entry point for the Geometry Clipmap renderer.
@@ -26,10 +24,13 @@ import java.util.Map;
 public final class GeometryClipmapClient {
     private static final boolean ENABLED =
             Boolean.getBoolean("realscale.experimental.geometryclipmap");
-    private static final Map<Integer, ClipmapHeightTilePayload> TILES = new HashMap<>();
+    private static final ClipmapSnapshotAssembler<ClipmapHeightTilePayload> TILES =
+            new ClipmapSnapshotAssembler<>(6);
     private static List<VisibleSurfaceProxy> PROXIES = List.of();
     private static ClientLevel lastLevel;
     private static int lastNearChunks = -1;
+    private static long proxyCenterX = Long.MIN_VALUE;
+    private static long proxyCenterZ = Long.MIN_VALUE;
 
     private GeometryClipmapClient() {}
 
@@ -41,7 +42,16 @@ public final class GeometryClipmapClient {
                         .equals(payload.dimensionKey())) {
             return;
         }
-        TILES.put(payload.levelIndex(), payload);
+        if (TILES.accept(payload.levelIndex(), payload.gridCells(),
+                payload.cellSpacingBlocks(), payload.originX(), payload.originZ(),
+                payload.nearRenderDistanceChunks(), payload.dimensionKey(), payload)) {
+            var key = TILES.activeKey();
+            if (key != null
+                    && (proxyCenterX != key.centerX()
+                        || proxyCenterZ != key.centerZ())) {
+                PROXIES = List.of();
+            }
+        }
     }
 
     public static void accept(ClipmapSurfaceProxyPayload payload) {
@@ -50,7 +60,14 @@ public final class GeometryClipmapClient {
         if (minecraft.level == null
                 || !minecraft.level.dimension().location().toString()
                         .equals(payload.dimensionKey())) return;
+        var key = TILES.activeKey();
+        if (key == null || key.centerX() != payload.centerX()
+                || key.centerZ() != payload.centerZ()) {
+            return;
+        }
         PROXIES = payload.proxies();
+        proxyCenterX = payload.centerX();
+        proxyCenterZ = payload.centerZ();
     }
 
     @SubscribeEvent
@@ -78,14 +95,24 @@ public final class GeometryClipmapClient {
     public static void onRenderLevel(RenderLevelStageEvent event) {
         if (!ENABLED || event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null || TILES.size() < 6) return;
-        GeometryClipmapRenderer.render(event, TILES,
+        if (minecraft.level == null || TILES.activeKey() == null) return;
+        var key = TILES.activeKey();
+        // Do not show the old region's terrain after a teleport while
+        // the server is preparing the next sparse surface snapshot.
+        double cameraX = event.getCamera().getPosition().x;
+        double cameraZ = event.getCamera().getPosition().z;
+        double safeX = key.gridCells() * (double) key.baseSpacing() / 2.0;
+        if (Math.abs(cameraX - key.centerX()) > safeX
+                || Math.abs(cameraZ - key.centerZ()) > safeX) return;
+        GeometryClipmapRenderer.render(event, TILES.activeTiles(),
                 minecraft.level.dimension().location().toString(), PROXIES);
     }
 
     private static void clear() {
         TILES.clear();
         PROXIES = List.of();
+        proxyCenterX = Long.MIN_VALUE;
+        proxyCenterZ = Long.MIN_VALUE;
         if (Minecraft.getInstance().isSameThread()) {
             GeometryClipmapRenderer.dispose();
         }

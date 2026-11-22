@@ -215,3 +215,24 @@ Shader compilation under OpenGL 4.1, frame pacing, seam visibility and actual
 client screenshots have not been established by dedicated server tests.
 Do not claim parity or superiority to Distant Horizons until those are
 measured in-game.
+
+## 2026-11-22: actual multiplayer packet delivery and atomic snapshots
+
+NeoForge 1.21.1 requires clientbound payload *codecs* to be registered on
+both physical sides via the common mod-bus registration event. The original
+Dist.CLIENT registration was not sufficient for a dedicated server encoder.
+The common GeometryClipmapNetwork now owns all three payload registrations;
+client-only delivery classes are reached only after a client-side guard.
+The experimental network protocol version is now `2` (both sides must use
+the same testing JAR).
+
+Six height packets are staged and validated as one snapped-centre snapshot
+before any new terrain texture is published to the render loop. A previous
+complete snapshot remains active while new tiles arrive, and client rendering
+is suppressed after a far teleport until a nearby snapshot is ready.
+Visible-feature proxy packets carry the matching centre to prevent
+old trees/structures from being drawn with new terrain. No 3D voxel chunks
+are needed for any of these changes.
+
+Real-world networking still requires an in-game connected-client test:
+a dedicated server boot test alone cannot validate an S2C request/response.

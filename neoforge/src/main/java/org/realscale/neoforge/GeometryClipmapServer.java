@@ -161,7 +161,9 @@ public final class GeometryClipmapServer {
                             VisibleSurfaceProxyGenerator.collect(generator, randomState,
                                     nextLayout, targetSeed);
                     ClipmapSurfaceProxyPayload proxyPayload =
-                            new ClipmapSurfaceProxyPayload(targetDimension, proxies);
+                            new ClipmapSurfaceProxyPayload(targetDimension,
+                                    nextLayout.levels().get(0).centerX(),
+                                    nextLayout.levels().get(0).centerZ(), proxies);
                     server.execute(() -> {
                         if (SESSIONS.get(player.getUUID()) != session
                                 || server.getPlayerList().getPlayer(player.getUUID()) != player

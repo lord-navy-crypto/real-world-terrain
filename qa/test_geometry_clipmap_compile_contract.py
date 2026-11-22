@@ -46,5 +46,19 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("nearRadius - cameraOffsetAllowance", layout)
 
 
+    def test_clientbound_packets_are_registered_on_both_physical_sides(self):
+        network = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/network/GeometryClipmapNetwork.java").read_text(
+            encoding="utf-8"
+        )
+        client = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapClientPayloads.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertEqual(2, network.count("registrar.playToClient("))
+        self.assertNotIn("@EventBusSubscriber", client)
+        self.assertIn("ClipmapSnapshotAssembler<ClipmapHeightTilePayload>", (
+            ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapClient.java"
+        ).read_text(encoding="utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()

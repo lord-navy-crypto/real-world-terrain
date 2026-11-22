@@ -1,29 +1,23 @@
 package org.realscale.neoforge.client.clipmap;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.realscale.neoforge.network.ClipmapHeightTilePayload;
 import org.realscale.neoforge.network.ClipmapSurfaceProxyPayload;
 
-/** Client-only S2C payload registration; never loads Minecraft client classes on a dedicated server. */
-@EventBusSubscriber(modid = "realscale",
-        bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+/**
+ * Client-only delivery target. Payload CODECS are registered on the common
+ * mod bus by GeometryClipmapNetwork so dedicated servers can encode them.
+ *
+ * <p>Do not subscribe this class to RegisterPayloadHandlersEvent: that would
+ * double-register the same clientbound payloads.
+ */
 public final class GeometryClipmapClientPayloads {
     private GeometryClipmapClientPayloads() {}
 
-    @SubscribeEvent
-    public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        event.registrar("1").playToClient(
-                ClipmapHeightTilePayload.TYPE,
-                ClipmapHeightTilePayload.STREAM_CODEC,
-                (payload, context) -> context.enqueueWork(
-                        () -> GeometryClipmapClient.accept(payload)));
-        event.registrar("1").playToClient(
-                ClipmapSurfaceProxyPayload.TYPE,
-                ClipmapSurfaceProxyPayload.STREAM_CODEC,
-                (payload, context) -> context.enqueueWork(
-                        () -> GeometryClipmapClient.accept(payload)));
+    public static void acceptHeight(ClipmapHeightTilePayload payload) {
+        GeometryClipmapClient.accept(payload);
+    }
+
+    public static void acceptProxies(ClipmapSurfaceProxyPayload payload) {
+        GeometryClipmapClient.accept(payload);
     }
 }
