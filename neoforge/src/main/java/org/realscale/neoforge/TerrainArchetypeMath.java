@@ -169,7 +169,7 @@ final class TerrainArchetypeMath {
 
         double signal = unitNoise(rawSignal);
         if ("natural_automate".equals(family))
-            return naturalAutomate(original,continent,signal,rawRegionSignal,
+            return naturalAutomate(original,landGate,signal,rawRegionSignal,
                     temperature,humidity,x,z);
 
         // Keep each family's trigonometry and geometric work inside that
@@ -198,7 +198,7 @@ final class TerrainArchetypeMath {
      * to a smooth coverage factor, so transitions between fitted families
      * and the natural baseline are continuous rather than hard region cuts.
      */
-    private double naturalAutomate(double original,double continent,double signal,
+    private double naturalAutomate(double original,double landGate,double signal,
             double rawRegionSignal,double temperature,double humidity,
             double x,double z) {
         // These source fields are shared by all six family gates.
