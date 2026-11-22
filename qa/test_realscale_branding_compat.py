@@ -98,8 +98,8 @@ class RealScaleBrandingAndSaveCompatibility(unittest.TestCase):
         self.assertEqual(morphology["base"],"realscale:tva_natural_smoothed/height_signal")
         environment=morphology["environment"]
         self.assertEqual(environment["region_selector"]["noise"],"minecraft:offset")
-        self.assertEqual(environment["temperature"]["noise"],"minecraft:temperature")
-        self.assertEqual(environment["humidity"]["noise"],"minecraft:vegetation")
+        self.assertEqual(environment["temperature"],"realscale:shared/raw_temperature_noise")
+        self.assertEqual(environment["humidity"],"realscale:shared/raw_vegetation_noise")
 
     def test_terrain_lab_exposes_only_the_unified_engine_and_migrates_legacy_drafts(self):
         client=(ROOT/"neoforge/src/main/java/org/realscale/neoforge/RealScaleTerrainLabClient.java").read_text()
