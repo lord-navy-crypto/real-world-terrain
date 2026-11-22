@@ -141,7 +141,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn('realscale.experimental.geometryclipmap.debug', renderer)
         self.assertIn('queueWait=%.1fms sample=%.1fms', server)
         self.assertIn('cpuSubmitAvg=%.2fms', renderer)
-        self.assertNotRegex(renderer, r"\\bglFinish\\s*\\(")
+        self.assertNotRegex(renderer, r"\bglFinish\s*\(")
 
     def test_server_clipmap_jobs_are_generation_guarded_and_backed_off(self):
         server = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java").read_text(
