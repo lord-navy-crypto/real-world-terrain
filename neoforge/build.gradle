@@ -80,7 +80,10 @@ dependencies {
 }
 tasks.named('test', Test) {
     useJUnitPlatform()
-    testLogging { events 'passed', 'skipped', 'failed' }
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat 'full'
+    }
 }
 
 // NeoForge ModDev supplies the mapped Minecraft/NeoForge compile classpath to

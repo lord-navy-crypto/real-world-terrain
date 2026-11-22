@@ -69,7 +69,16 @@ final class ClipmapHeightGridTest {
         assertFalse(second.isSampledAt(82, 82));
 
         // (-128, 400) remains in both visible rings and must be reused without resampling.
-        assertEquals(first.heightAt(48, 114), second.heightAt(16, 82), 0.0f);
+        assertEquals(-128L, first.originX() + 48L * first.cellSpacingBlocks());
+        assertEquals(400L, first.originZ() + 114L * first.cellSpacingBlocks());
+        assertEquals(-128L, second.originX() + 16L * second.cellSpacingBlocks());
+        assertEquals(400L, second.originZ() + 82L * second.cellSpacingBlocks());
+
+        float expectedHeight = first.heightAt(48, 114);
+        float actualHeight = second.heightAt(16, 82);
+        assertEquals(expectedHeight, actualHeight, 0.0f,
+                () -> "The same world vertex must retain its exact sampled height: expected "
+                        + expectedHeight + ", actual " + actualHeight);
     }
 
     @Test
