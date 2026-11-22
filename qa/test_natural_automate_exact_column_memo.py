@@ -58,7 +58,9 @@ class NaturalAutomateExactMemo(unittest.TestCase):
         self.assertEqual(native["argument"],expected)
         self.assertEqual(sum(node.get("type")=="realscale:measured_horizontal_memo"
                              for node in walk(signal)),1)
-        self.assertEqual(len(tuple(walk(native["argument"]["environment"]))),4)
+        # Only the regional selector remains inline; temperature and
+        # humidity now resolve to the shared registry density nodes.
+        self.assertEqual(len(tuple(walk(native["argument"]["environment"]))),2)
 
     def test_signal_is_independent_of_vertical_coordinate(self):
         node=read_density("natural_automate/height_signal")
