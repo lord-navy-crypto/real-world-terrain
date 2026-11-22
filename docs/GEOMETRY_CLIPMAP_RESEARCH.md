@@ -191,3 +191,27 @@ These are intentional exclusions, not missing features.
 - No unbounded sampling, network, memory, or GPU-upload queues.
 - Baseline Minecraft/DH behavior remains unchanged when the feature is disabled.
 - Feature remains opt-in until client-side A/B results are repeatable.
+
+
+## 2026-11-22 visual quality and boundary safety iteration
+
+- Camera-safe ring hole: the unsampled area stays inside the nearby vanilla
+  chunk field even when the shared snap centre trails the moving camera.
+  Very short view distances use a finer shared snap instead of a blank gap.
+- GPU-only seam skirts: an added static vertex layer covers inner/outer
+  boundaries; it reuses existing height texels, with no chunk work.
+- Procedural terrain surface materials: three periodic world-aligned noise
+  frequencies (including distant attenuation of microdetail), height/slope-
+  dependent grass, dry ground, rock, beach, snow and ocean colours.
+- Directional diffuse light using fragment derivatives of the rendered mesh
+  replaces four extra vertex texture neighbour reads.
+- Exterior impostors: three crossed planes, lobed tree silhouettes and
+  simple stylized building facade variation. These are not real full 3D
+  buildings, nor Minecraft block textures.
+
+The experimental renderer still requires the opt-in JVM flag
+\`-Drealscale.experimental.geometryclipmap=true\`.
+Shader compilation under OpenGL 4.1, frame pacing, seam visibility and actual
+client screenshots have not been established by dedicated server tests.
+Do not claim parity or superiority to Distant Horizons until those are
+measured in-game.

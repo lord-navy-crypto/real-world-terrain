@@ -58,11 +58,16 @@ final class VisibleSurfaceProxyRenderer {
                 float x = abs(vUv.x - 0.5);
                 vec3 color = vColor;
                 if (vType < 1.5) {
-                    float canopyHalf = mix(0.48, 0.035, vUv.y);
-                    bool trunk = vUv.y < 0.34 && x < 0.075;
-                    bool canopy = vUv.y >= 0.18 && x < canopyHalf;
+                    float silhouette = 0.39 + 0.10 * sin(vUv.y * 5.2);
+                    silhouette *= 1.0 - smoothstep(0.62, 1.0, vUv.y);
+                    silhouette += 0.025 * sin(vUv.y * 25.0 + vUv.x * 8.0);
+                    bool trunk = vUv.y < 0.35 && x < 0.065;
+                    bool canopy = vUv.y >= 0.20 && x < max(0.025, silhouette);
                     if (!trunk && !canopy) discard;
-                    color = trunk ? vec3(0.28, 0.19, 0.10) : vColor;
+                    float foliageShade = 0.80 + 0.20
+                        * smoothstep(0.15, 0.90, vUv.y);
+                    color = trunk ? vec3(0.28, 0.19, 0.10)
+                        : vColor * foliageShade;
                 } else if (vType < 2.5) {
                     float halfWidth = mix(0.22, 0.48, smoothstep(0.0, 0.55, vUv.y));
                     halfWidth *= 1.0 - 0.18 * smoothstep(0.72, 1.0, vUv.y);
@@ -73,7 +78,13 @@ final class VisibleSurfaceProxyRenderer {
                 } else if (vType < 3.5) {
                     float roofWidth = mix(0.46, 0.06, max(0.0, (vUv.y - 0.76) / 0.24));
                     if (x > roofWidth) discard;
-                    color = vColor * (vUv.y > 0.76 ? 0.72 : 1.0);
+                    float windowsX = fract(vUv.x * 6.0);
+                    float windowsY = fract(vUv.y * 9.0);
+                    bool window = vUv.y > 0.12 && vUv.y < 0.74
+                        && windowsX > 0.20 && windowsX < 0.66
+                        && windowsY > 0.22 && windowsY < 0.72;
+                    color = window ? mix(vColor, vec3(0.13, 0.23, 0.29), 0.77)
+                        : vColor * (vUv.y > 0.76 ? 0.72 : 1.0);
                 } else {
                     float arch = 0.22 + 0.25 * sqrt(max(0.0, 1.0 - pow((vUv.x - 0.5) / 0.5, 2.0)));
                     bool rim = vUv.y < arch && vUv.y > arch - 0.12;
@@ -147,6 +158,9 @@ final class VisibleSurfaceProxyRenderer {
         GL20.glUniform3f(axisLocation, 1.0f, 0.0f, 0.0f);
         GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 6, visible.size());
         GL20.glUniform3f(axisLocation, 0.0f, 0.0f, 1.0f);
+        GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 6, visible.size());
+        // Third view plane limits edge-on disappearance without full meshes.
+        GL20.glUniform3f(axisLocation, 0.70710677f, 0.0f, 0.70710677f);
         GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 6, visible.size());
         GL30.glBindVertexArray(0);
     }

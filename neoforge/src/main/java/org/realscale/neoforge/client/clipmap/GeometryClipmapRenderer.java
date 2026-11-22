@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.List;
 
 /**
- * OpenGL 4.1 terrain-only Geometry Clipmap renderer.
+ * OpenGL 4.1 Geometry Clipmap with procedural exterior shading.
  *
  * <p>It draws six nested surface rings from compact R16 height textures.
  * The mesh is static; height textures are replaced when the server sends a
@@ -31,44 +31,39 @@ final class GeometryClipmapRenderer {
     private static final int MAX_HEIGHT = 2032;
     private static final String VERTEX_SHADER = """
             #version 410 core
-            layout(location = 0) in vec2 aGrid;
+            layout(location = 0) in vec3 aGridAndSkirt;
             uniform mat4 uViewProjection;
             uniform sampler2D uHeightMap;
             uniform vec2 uOrigin;
+            uniform vec2 uNoiseOrigin;
             uniform float uCameraY;
             uniform float uSpacing;
             uniform float uGridCells;
             uniform float uHeightMin;
             uniform float uHeightMax;
             uniform float uSeaLevel;
+            uniform float uSkirtDepth;
             out float vHeight;
             out float vOcean;
-            out float vSlope;
             out float vDistance;
+            out vec3 vPosition;
+            out vec2 vNoiseXZ;
             void main() {
+                vec2 grid = aGridAndSkirt.xy;
                 float side = uGridCells + 1.0;
-                vec2 uv = (aGrid + vec2(0.5)) / side;
+                vec2 uv = (grid + vec2(0.5)) / side;
                 float h = mix(uHeightMin, uHeightMax, texture(uHeightMap, uv).r);
                 float ocean = step(h, uSeaLevel);
-                float surfaceY = mix(h, uSeaLevel, ocean);
+                float surfaceY = mix(h, uSeaLevel, ocean)
+                    - aGridAndSkirt.z * uSkirtDepth;
 
-                float leftH = mix(uHeightMin, uHeightMax,
-                    texture(uHeightMap, uv - vec2(1.0 / side, 0.0)).r);
-                float rightH = mix(uHeightMin, uHeightMax,
-                    texture(uHeightMap, uv + vec2(1.0 / side, 0.0)).r);
-                float northH = mix(uHeightMin, uHeightMax,
-                    texture(uHeightMap, uv - vec2(0.0, 1.0 / side)).r);
-                float southH = mix(uHeightMin, uHeightMax,
-                    texture(uHeightMap, uv + vec2(0.0, 1.0 / side)).r);
-                float slope = length(vec2(rightH - leftH, southH - northH))
-                    / max(2.0 * uSpacing, 1.0);
-
-                vec2 worldXZ = uOrigin + aGrid * uSpacing;
+                vec2 worldXZ = uOrigin + grid * uSpacing;
                 vec3 relative = vec3(worldXZ.x, surfaceY - uCameraY, worldXZ.y);
-                vHeight = surfaceY;
+                vHeight = h;
                 vOcean = ocean;
-                vSlope = slope;
+                vPosition = relative;
                 vDistance = length(relative.xz);
+                vNoiseXZ = uNoiseOrigin + grid * uSpacing;
                 gl_Position = uViewProjection * vec4(relative, 1.0);
             }
             """;
@@ -77,27 +72,81 @@ final class GeometryClipmapRenderer {
             #version 410 core
             in float vHeight;
             in float vOcean;
-            in float vSlope;
             in float vDistance;
+            in vec3 vPosition;
+            in vec2 vNoiseXZ;
             uniform float uFogStart;
             uniform float uFogEnd;
+            uniform float uNearClipBlocks;
             uniform vec3 uFogColor;
             out vec4 fragColor;
-            void main() {
-                vec3 grass = vec3(0.20, 0.34, 0.16);
-                vec3 rock = vec3(0.40, 0.39, 0.36);
-                vec3 snow = vec3(0.82, 0.85, 0.88);
-                vec3 water = vec3(0.055, 0.22, 0.34);
 
-                float steep = smoothstep(0.18, 0.62, vSlope);
-                float highland = smoothstep(260.0, 780.0, vHeight);
-                vec3 land = mix(grass, rock, max(steep, highland));
-                land = mix(land, snow, smoothstep(720.0, 1320.0, vHeight));
-                vec3 color = mix(land, water, vOcean);
+            // World-aligned, periodic detail. Each octave wraps at exactly
+            // 65536 blocks to avoid float precision collapse at far coords.
+            float hashCell(vec2 p) {
+                vec3 p3 = fract(vec3(p.x, p.y, p.x) * 0.1031);
+                p3 += dot(p3, p3.yzx + 33.33);
+                return fract((p3.x + p3.y) * p3.z);
+            }
+            float valueNoise(vec2 p, float period) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                float a = hashCell(mod(i, period));
+                float b = hashCell(mod(i + vec2(1.0, 0.0), period));
+                float c = hashCell(mod(i + vec2(0.0, 1.0), period));
+                float d = hashCell(mod(i + vec2(1.0, 1.0), period));
+                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+            }
+
+            void main() {
+                // Leave almost all real near chunks to the vanilla renderer,
+                // retaining one chunk of overlap so no hole opens at the seam.
+                if (length(vPosition.xz) < uNearClipBlocks) discard;
+
+                // One texture lookup in the vertex shader; derive mesh normals
+                // from GPU derivatives rather than sampling four extra heights.
+                vec3 rawNormal = cross(dFdx(vPosition), dFdy(vPosition));
+                float normalLength = length(rawNormal);
+                vec3 normal = normalLength > 0.00001
+                    ? rawNormal / normalLength : vec3(0.0, 1.0, 0.0);
+                if (normal.y < 0.0) normal = -normal;
+                float slope = 1.0 - clamp(normal.y, 0.0, 1.0);
+
+                float macro = valueNoise(vNoiseXZ / 512.0, 128.0);
+                float regional = valueNoise(vNoiseXZ / 128.0, 512.0);
+                float detailFade = 1.0 - smoothstep(700.0, 4500.0, vDistance);
+                float micro = detailFade > 0.0
+                    ? valueNoise(vNoiseXZ / 32.0, 2048.0) : 0.5;
+                float moisture = clamp(0.6 * macro + 0.4 * regional, 0.0, 1.0);
+
+                vec3 dryGrass = vec3(0.37, 0.34, 0.22);
+                vec3 grass = vec3(0.18, 0.34, 0.16);
+                vec3 rock = vec3(0.42, 0.40, 0.37);
+                vec3 sand = vec3(0.61, 0.55, 0.38);
+                vec3 snow = vec3(0.84, 0.88, 0.91);
+                vec3 water = vec3(0.065, 0.23, 0.33);
+
+                vec3 land = mix(dryGrass, grass, smoothstep(0.15, 0.85, moisture));
+                float rockCover = max(smoothstep(0.10, 0.45, slope),
+                    smoothstep(260.0, 800.0, vHeight) * 0.6);
+                land = mix(land, rock, rockCover);
+                float beach = (1.0 - smoothstep(65.0, 88.0, vHeight))
+                    * (1.0 - smoothstep(0.10, 0.34, slope));
+                land = mix(land, sand, 0.85 * beach);
+                float snowCover = smoothstep(740.0, 1220.0,
+                    vHeight + (macro - 0.5) * 260.0);
+                land = mix(land, snow, snowCover);
+
+                float variation = mix(0.88, 1.12,
+                    mix(regional, micro, detailFade * 0.55));
+                land *= variation;
+                vec3 color = mix(land, water * mix(0.90, 1.10, macro), vOcean);
+                vec3 sun = normalize(vec3(0.38, 0.83, 0.40));
+                color *= 0.60 + 0.40 * max(dot(normal, sun), 0.0);
 
                 float fog = smoothstep(uFogStart, uFogEnd, vDistance);
-                color = mix(color, uFogColor, fog);
-                fragColor = vec4(color, 1.0);
+                fragColor = vec4(mix(color, uFogColor, fog), 1.0);
             }
             """;
 
@@ -186,22 +235,24 @@ final class GeometryClipmapRenderer {
         indexCounts = new int[LEVEL_COUNT];
 
         int side = cells + 1;
-        FloatBuffer vertices = BufferUtils.createFloatBuffer(side * side * 2);
-        for (int z = 0; z <= cells; z++) {
-            for (int x = 0; x <= cells; x++) {
-                vertices.put((float) x).put((float) z);
-            }
-        }
-        vertices.flip();
+        float[] meshVertices = ClipmapRingMesh.vertices(cells);
+        FloatBuffer vertices = BufferUtils.createFloatBuffer(meshVertices.length);
+        vertices.put(meshVertices).flip();
 
         GL30.glBindVertexArray(vao);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vertexBuffer);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertices, GL15.GL_STATIC_DRAW);
         GL20.glEnableVertexAttribArray(0);
-        GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 2 * Float.BYTES, 0L);
+        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 3 * Float.BYTES, 0L);
 
         for (int level = 0; level < LEVEL_COUNT; level++) {
-            int[] indices = buildRingIndices(cells, near, spacing, level);
+            long levelSpacing = (long) spacing << level;
+            int innerHalfCells = level == 0
+                    ? Math.toIntExact((near * 16L
+                            - ((long) spacing << (LEVEL_COUNT - 1)) / 2L)
+                            / levelSpacing)
+                    : cells / 4;
+            int[] indices = ClipmapRingMesh.indices(cells, innerHalfCells);
             indexCounts[level] = indices.length;
             IntBuffer indexBuffer = BufferUtils.createIntBuffer(indices.length);
             indexBuffer.put(indices).flip();
@@ -227,38 +278,6 @@ final class GeometryClipmapRenderer {
         }
         GL30.glBindVertexArray(0);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-    }
-
-    private static int[] buildRingIndices(int cells, int near, int baseSpacing,
-            int level) {
-        int spacing = baseSpacing << level;
-        int innerHalfCells;
-        if (level == 0) {
-            long centreSnapSpacing = (long) baseSpacing << (LEVEL_COUNT - 1);
-            long protectedRadius = near * 16L + centreSnapSpacing / 2L;
-            innerHalfCells = Math.toIntExact(protectedRadius / spacing);
-        } else {
-            innerHalfCells = cells / 4;
-        }
-        int center = cells / 2;
-        int min = center - innerHalfCells;
-        int max = center + innerHalfCells;
-        IntBuffer buffer = BufferUtils.createIntBuffer(cells * cells * 6);
-        for (int z = 0; z < cells; z++) {
-            for (int x = 0; x < cells; x++) {
-                if (x >= min && x < max && z >= min && z < max) continue;
-                int a = z * (cells + 1) + x;
-                int b = (z + 1) * (cells + 1) + x;
-                int c = z * (cells + 1) + x + 1;
-                int d = (z + 1) * (cells + 1) + x + 1;
-                buffer.put(a).put(b).put(c);
-                buffer.put(c).put(b).put(d);
-            }
-        }
-        buffer.flip();
-        int[] result = new int[buffer.remaining()];
-        buffer.get(result);
-        return result;
     }
 
     private static void upload(int level,
@@ -312,6 +331,8 @@ final class GeometryClipmapRenderer {
             GL20.glUniform3f(GL20.glGetUniformLocation(program, "uFogColor"),
                     0.58f, 0.69f, 0.80f);
             GL20.glUniform1i(GL20.glGetUniformLocation(program, "uHeightMap"), 0);
+            GL20.glUniform1f(GL20.glGetUniformLocation(program, "uNearClipBlocks"),
+                    Math.max(0.0f, nearChunks * 16.0f - 16.0f));
 
             GL30.glBindVertexArray(vao);
             for (int level = LEVEL_COUNT - 1; level >= 0; level--) {
@@ -321,6 +342,12 @@ final class GeometryClipmapRenderer {
                         (float) (tile.originZ() - cameraZ));
                 GL20.glUniform1f(GL20.glGetUniformLocation(program, "uSpacing"),
                         tile.cellSpacingBlocks());
+                GL20.glUniform2f(GL20.glGetUniformLocation(program, "uNoiseOrigin"),
+                        (float) Math.floorMod(tile.originX(), 65536L),
+                        (float) Math.floorMod(tile.originZ(), 65536L));
+                GL20.glUniform1f(GL20.glGetUniformLocation(program, "uSkirtDepth"),
+                        Math.min(32.0f, Math.max(4.0f,
+                                tile.cellSpacingBlocks() * 0.125f)));
                 GL13.glActiveTexture(GL13.GL_TEXTURE0);
                 GL11.glBindTexture(GL11.GL_TEXTURE_2D, textures[level]);
                 GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER,

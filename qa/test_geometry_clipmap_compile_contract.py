@@ -30,5 +30,21 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         )
 
 
+    def test_visual_quality_shaders_and_meshes_are_wired(self):
+        renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        layout = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapLayout.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("ClipmapRingMesh.indices(", renderer)
+        self.assertIn("ClipmapRingMesh.vertices(", renderer)
+        self.assertIn("uSkirtDepth", renderer)
+        self.assertIn("uNoiseOrigin", renderer)
+        self.assertIn("dFdx(vPosition)", renderer)
+        self.assertIn("uNearClipBlocks", renderer)
+        self.assertIn("nearRadius - cameraOffsetAllowance", layout)
+
+
 if __name__ == "__main__":
     unittest.main()
