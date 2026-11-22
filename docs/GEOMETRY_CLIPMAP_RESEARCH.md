@@ -325,3 +325,11 @@ Visual verification is still needed to characterize remaining artifacts.
   remains defensive.
 * Added unit tests for cached bounds, value semantics, defensive payload
   ownership and direct height-buffer copying.
+
+
+## 2026-11-22 complete 2D pixel-unpack state isolation
+
+The R16 uploader now normalizes and restores not only unpack alignment but
+also row length, skipped rows/pixels and byte swapping. This prevents another
+renderer/mod from leaving non-default pixel-store values that would corrupt
+the clipmap texture rows even when alignment is set correctly.

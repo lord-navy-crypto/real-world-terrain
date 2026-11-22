@@ -72,6 +72,10 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1);", render)
         self.assertIn("GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, unpackAlignment);", renderer)
         self.assertIn("GL11.glGetInteger(GL11.GL_UNPACK_ALIGNMENT)", renderer)
+        self.assertIn("GL11.glGetInteger(GL11.GL_UNPACK_ROW_LENGTH)", renderer)
+        self.assertIn("GL11.glGetInteger(GL11.GL_UNPACK_SKIP_PIXELS)", renderer)
+        self.assertIn("GL11.glGetInteger(GL11.GL_UNPACK_SKIP_ROWS)", renderer)
+        self.assertIn("GL11.glGetInteger(GL11.GL_UNPACK_SWAP_BYTES)", renderer)
         self.assertIn("reusableHeightUpload.clear()", renderer.replace("buffer.clear()", "reusableHeightUpload.clear()"))
         self.assertIn("UniformLocations.lookup(program)", renderer)
         self.assertNotIn('glGetUniformLocation(program, "uOrigin")',

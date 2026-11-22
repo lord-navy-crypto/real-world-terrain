@@ -235,6 +235,10 @@ final class GeometryClipmapRenderer {
             // R16 height grids have an odd width (129 texels = 258 bytes/row).
             // Default 4-byte GL unpack alignment would overread/skew every row.
             GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1);
+            GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, 0);
+            GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0);
+            GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0);
+            GL11.glPixelStorei(GL11.GL_UNPACK_SWAP_BYTES, 0);
             for (int i = 0; i < LEVEL_COUNT; i++) {
                 var tile = tiles.get(i);
                 if (uploaded[i] != tile) {
@@ -482,7 +486,9 @@ final class GeometryClipmapRenderer {
     }
 
     private record State(int program, int vao, int arrayBuffer,
-            int activeTexture, int texture0, int unpackAlignment, int depthFunc,
+            int activeTexture, int texture0, int unpackAlignment,
+            int unpackRowLength, int unpackSkipPixels, int unpackSkipRows,
+            int unpackSwapBytes, int depthFunc,
             boolean depthTest, boolean blend, boolean cull,
             boolean depthMask) {
         private static State capture() {
@@ -496,6 +502,10 @@ final class GeometryClipmapRenderer {
                     GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING),
                     active, texture0,
                     GL11.glGetInteger(GL11.GL_UNPACK_ALIGNMENT),
+                    GL11.glGetInteger(GL11.GL_UNPACK_ROW_LENGTH),
+                    GL11.glGetInteger(GL11.GL_UNPACK_SKIP_PIXELS),
+                    GL11.glGetInteger(GL11.GL_UNPACK_SKIP_ROWS),
+                    GL11.glGetInteger(GL11.GL_UNPACK_SWAP_BYTES),
                     GL11.glGetInteger(GL11.GL_DEPTH_FUNC),
                     GL11.glIsEnabled(GL11.GL_DEPTH_TEST),
                     GL11.glIsEnabled(GL11.GL_BLEND),
@@ -513,6 +523,10 @@ final class GeometryClipmapRenderer {
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, texture0);
             GL13.glActiveTexture(activeTexture);
             GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, unpackAlignment);
+            GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, unpackRowLength);
+            GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, unpackSkipPixels);
+            GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, unpackSkipRows);
+            GL11.glPixelStorei(GL11.GL_UNPACK_SWAP_BYTES, unpackSwapBytes);
             if (depthTest) RenderSystem.enableDepthTest();
             else RenderSystem.disableDepthTest();
             if (blend) RenderSystem.enableBlend();
