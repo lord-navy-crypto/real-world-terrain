@@ -47,6 +47,10 @@ The Create World `normal` and `extended` world-preset tags expose **exactly one*
 
 The standalone Natural baseline and six fitted world-preset JSON resources remain registered and packaged as hidden compatibility/diagnostic references; they are not ordinary menu choices. Hiding these references does not disable or delete their kernels. USGS Big Sur modes remain hidden as previously decided.
 
+### Ultimate archive source layout — 2026-11-22
+
+The source of truth for the 40 hidden/legacy world-preset definitions and 31 non-core noise-setting definitions now lives under `archive/ultimate/resource-overlay/`. The corresponding paths under `neoforge/src/main/resources/` are relative symbolic-link compatibility pointers, so existing source tests, Gradle resource processing, registry IDs, and built-JAR resource paths remain unchanged. Only `natural_automate_three_realms.json` and the three current noise settings are regular files in the active worldgen resource folders. The 132 density functions, 69 biomes, features, dimension types, and Java kernels remain in their existing locations; they were not moved because they participate in shared dependency graphs. See `archive/ultimate/README.md` and `archive/ultimate/MANIFEST.json` for the exact inventory.
+
 ## 3. Feature catalog and disposition
 
 ### A. Terrain and geography engine

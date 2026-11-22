@@ -430,6 +430,18 @@
     "Measured DEM profiles are read-only and remain hidden from the ordinary Create World menu.",
     "The current multi-seed workflow exercises internal tva_alpine_three_realms and tva_canyon_three_realms smoothed QA profiles, not the public alpine_three_realms and canyon_three_realms fitted profiles. Do not count those internal runs as direct validation of the public fitted presets.",
     "The current Terrain Lab's legacy `landscape`/`alpine`/`canyon` blend families are a separate model from the six `TerrainArchetypeDensity` fitted families. The public Alpine and Canyon names therefore refer to different algorithms in the old editor and the public preset catalog.",
-    "Natural Automate is the sole public Create World preset. It composes the natural baseline with six climate/topography-gated fitted morphology kernels and retains the shared ecology and three-realm dimension stack."
-  ]
+    "Natural Automate is the sole public Create World preset. It composes the natural baseline with six climate/topography-gated fitted morphology kernels and retains the shared ecology and three-realm dimension stack.",
+    "Ultimate archive source layout (2026-11-22): 40 hidden/legacy world-preset JSON definitions and 31 non-core noise-setting JSON definitions are stored under archive/ultimate/resource-overlay. Active resource paths retain relative symbolic-link pointers so their original JAR registry paths and IDs remain unchanged. The one public preset and three current noise settings remain regular active source files."
+  ],
+  "archive_layout": {
+    "root": "archive/ultimate",
+    "archived_world_preset_json": 40,
+    "archived_noise_settings_json": 31,
+    "active_public_world_preset_json": 1,
+    "active_noise_settings_json": 3,
+    "compatibility": "relative symbolic links in the original neoforge/src/main/resources registry paths",
+    "unchanged_runtime_registry_paths": true,
+    "density_functions_moved": 0,
+    "biome_and_feature_resources_moved": 0
+  }
 }
