@@ -13,7 +13,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         source = REGISTRY.read_text(encoding="utf-8")
         self.assertRegex(
             source,
-            r"(?m)^\\s*public\\s+static\\s+void\\s+collect\\s*\\(",
+            r"(?m)^\s*public\s+static\s+void\s+collect\s*\(",
             "VisibleSurfaceProxyGenerator is in a different package, so the "
             "registry collection entry point must be public.",
         )
@@ -22,9 +22,9 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         source = GENERATOR.read_text(encoding="utf-8")
         self.assertRegex(
             source,
-            r"(?m)^\\s*long\\s+step\\s*=\\s*Math\\.max\\(\\s*64L,\\s*"
-            r"Math\\.multiplyExact\\(\\s*level\\.cellSpacingBlocks\\(\\),\\s*8L\\s*"
-            r"\\)\\s*\\)\\s*;",
+            r"(?m)^\s*long\s+step\s*=\s*Math\.max\(\s*64L,\s*"
+            r"Math\.multiplyExact\(\s*level\.cellSpacingBlocks\(\),\s*8L\s*"
+            r"\)\s*\)\s*;",
             "Clipmap spacing is a long; the canopy sampling step must remain long "
             "and must not narrow to int.",
         )
