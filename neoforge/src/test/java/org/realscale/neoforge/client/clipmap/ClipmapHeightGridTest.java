@@ -64,18 +64,18 @@ final class ClipmapHeightGridTest {
         assertEquals(second.newlySampledVertexCount(), secondCalls.get());
         assertTrue(secondCalls.get() < firstCalls.get());
         assertTrue(second.sampledVertexCount() > second.newlySampledVertexCount());
-        // (400, 400) moves into the finer level's covered interior after recentering.
-        assertTrue(first.isSampledAt(114, 114));
+        // (400, 144) moves into the finer level's covered interior after recentering.
+        assertTrue(first.isSampledAt(114, 82));
         assertFalse(second.isSampledAt(82, 82));
 
         // (-128, 400) remains in both visible rings and must be reused without resampling.
         assertEquals(-128L, first.originX() + 48L * first.cellSpacingBlocks());
         assertEquals(400L, first.originZ() + 114L * first.cellSpacingBlocks());
         assertEquals(-128L, second.originX() + 16L * second.cellSpacingBlocks());
-        assertEquals(400L, second.originZ() + 82L * second.cellSpacingBlocks());
+        assertEquals(400L, second.originZ() + 114L * second.cellSpacingBlocks());
 
         float expectedHeight = first.heightAt(48, 114);
-        float actualHeight = second.heightAt(16, 82);
+        float actualHeight = second.heightAt(16, 114);
         assertEquals(expectedHeight, actualHeight, 0.0f,
                 () -> "The same world vertex must retain its exact sampled height: expected "
                         + expectedHeight + ", actual " + actualHeight);
