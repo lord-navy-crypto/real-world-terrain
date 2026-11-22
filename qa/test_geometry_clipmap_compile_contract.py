@@ -60,5 +60,23 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         ).read_text(encoding="utf-8"))
 
 
+    def test_gpu_texture_transfer_is_aligned_and_full_transaction_restores_state(self):
+        renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        render = renderer.split("static void render(", 1)[1].split("static void dispose(", 1)[0]
+        self.assertLess(render.index("State state = State.capture()"),
+                        render.index("initialize(nextGridCells"))
+        self.assertLess(render.index("State state = State.capture()"),
+                        render.index("upload(i, tile)"))
+        self.assertIn("GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1);", render)
+        self.assertIn("GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, unpackAlignment);", renderer)
+        self.assertIn("GL11.glGetInteger(GL11.GL_UNPACK_ALIGNMENT)", renderer)
+        self.assertIn("reusableHeightUpload.clear()", renderer.replace("buffer.clear()", "reusableHeightUpload.clear()"))
+        self.assertIn("UniformLocations.lookup(program)", renderer)
+        self.assertNotIn('glGetUniformLocation(program, "uOrigin")',
+                         renderer.split("private static void draw(", 1)[1].split("private static int linkProgram(", 1)[0])
+
+
 if __name__ == "__main__":
     unittest.main()

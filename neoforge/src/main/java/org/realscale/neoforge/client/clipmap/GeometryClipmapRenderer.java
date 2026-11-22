@@ -151,6 +151,8 @@ final class GeometryClipmapRenderer {
             """;
 
     private static int program;
+    private static UniformLocations uniforms;
+    private static ShortBuffer reusableHeightUpload;
     private static int vao;
     private static int vertexBuffer;
     private static int[] elementBuffers = new int[0];
@@ -186,21 +188,31 @@ final class GeometryClipmapRenderer {
             }
         }
 
-        if (program == 0 || gridCells != nextGridCells
-                || nearChunks != nextNearChunks || baseSpacing != nextBaseSpacing) {
-            dispose();
-            initialize(nextGridCells, nextNearChunks, nextBaseSpacing);
-        }
-
-        for (int i = 0; i < LEVEL_COUNT; i++) {
-            var tile = tiles.get(i);
-            if (uploaded[i] != tile) {
-                upload(i, tile);
-                uploaded[i] = tile;
+        // Capture BEFORE initialization/texture uploads. Otherwise Minecraft's
+        // previous VAO, texture unit, binding and pixel-store state may leak.
+        State state = State.capture();
+        try {
+            if (program == 0 || gridCells != nextGridCells
+                    || nearChunks != nextNearChunks || baseSpacing != nextBaseSpacing) {
+                dispose();
+                initialize(nextGridCells, nextNearChunks, nextBaseSpacing);
             }
-        }
 
-        draw(event, tiles, proxies);
+            // R16 height grids have an odd width (129 texels = 258 bytes/row).
+            // Default 4-byte GL unpack alignment would overread/skew every row.
+            GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1);
+            for (int i = 0; i < LEVEL_COUNT; i++) {
+                var tile = tiles.get(i);
+                if (uploaded[i] != tile) {
+                    upload(i, tile);
+                    uploaded[i] = tile;
+                }
+            }
+
+            draw(event, tiles, proxies);
+        } finally {
+            state.restore();
+        }
     }
 
     static void dispose() {
@@ -212,6 +224,8 @@ final class GeometryClipmapRenderer {
         if (program != 0) GL20.glDeleteProgram(program);
         VisibleSurfaceProxyRenderer.dispose();
         program = 0;
+        uniforms = null;
+        reusableHeightUpload = null;
         vao = 0;
         vertexBuffer = 0;
         elementBuffers = new int[0];
@@ -228,6 +242,8 @@ final class GeometryClipmapRenderer {
         nearChunks = near;
         baseSpacing = spacing;
         program = linkProgram(VERTEX_SHADER, FRAGMENT_SHADER);
+        uniforms = UniformLocations.lookup(program);
+        reusableHeightUpload = BufferUtils.createShortBuffer((cells + 1) * (cells + 1));
         vao = GL30.glGenVertexArrays();
         vertexBuffer = GL15.glGenBuffers();
         elementBuffers = new int[LEVEL_COUNT];
@@ -284,7 +300,8 @@ final class GeometryClipmapRenderer {
             org.realscale.neoforge.network.ClipmapHeightTilePayload tile) {
         int side = tile.gridCells() + 1;
         short[] values = tile.heights();
-        ShortBuffer buffer = BufferUtils.createShortBuffer(values.length);
+        ShortBuffer buffer = reusableHeightUpload;
+        buffer.clear();
         buffer.put(values).flip();
         GL13.glActiveTexture(GL13.GL_TEXTURE0);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, textures[level]);
@@ -293,73 +310,68 @@ final class GeometryClipmapRenderer {
     }
 
     private static void draw(RenderLevelStageEvent event,
-            Map<Integer, org.realscale.neoforge.network.ClipmapHeightTilePayload> tiles,
-            List<VisibleSurfaceProxy> proxies) {
-        State state = State.capture();
-        try {
-            RenderSystem.enableDepthTest();
-            RenderSystem.depthFunc(GL11.GL_LEQUAL);
-            RenderSystem.depthMask(true);
-            RenderSystem.disableBlend();
-            RenderSystem.disableCull();
+        Map<Integer, org.realscale.neoforge.network.ClipmapHeightTilePayload> tiles,
+        List<VisibleSurfaceProxy> proxies) {
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(GL11.GL_LEQUAL);
+        RenderSystem.depthMask(true);
+        RenderSystem.disableBlend();
+        RenderSystem.disableCull();
 
-            GL20.glUseProgram(program);
-            Matrix4f modelView = new Matrix4f(event.getModelViewMatrix());
-            modelView.setTranslation(0.0f, 0.0f, 0.0f);
-            Matrix4f viewProjection = new Matrix4f(event.getProjectionMatrix()).mul(modelView);
-            FloatBuffer matrix = BufferUtils.createFloatBuffer(16);
-            viewProjection.get(matrix);
-            matrix.flip();
+        GL20.glUseProgram(program);
+        Matrix4f modelView = new Matrix4f(event.getModelViewMatrix());
+        modelView.setTranslation(0.0f, 0.0f, 0.0f);
+        Matrix4f viewProjection = new Matrix4f(event.getProjectionMatrix()).mul(modelView);
+        FloatBuffer matrix = BufferUtils.createFloatBuffer(16);
+        viewProjection.get(matrix);
+        matrix.flip();
 
-            int loc = GL20.glGetUniformLocation(program, "uViewProjection");
-            GL20.glUniformMatrix4fv(loc, false, matrix);
-            Camera camera = event.getCamera();
-            double cameraX = camera.getPosition().x;
-            double cameraY = camera.getPosition().y;
-            double cameraZ = camera.getPosition().z;
-            GL20.glUniform1f(GL20.glGetUniformLocation(program, "uCameraY"),
-                    (float) cameraY);
-            GL20.glUniform1f(GL20.glGetUniformLocation(program, "uGridCells"),
-                    gridCells);
-            GL20.glUniform1f(GL20.glGetUniformLocation(program, "uHeightMin"),
-                    MIN_HEIGHT);
-            GL20.glUniform1f(GL20.glGetUniformLocation(program, "uHeightMax"),
-                    MAX_HEIGHT);
-            GL20.glUniform1f(GL20.glGetUniformLocation(program, "uSeaLevel"), 63.0f);
-            GL20.glUniform1f(GL20.glGetUniformLocation(program, "uFogStart"), 6500.0f);
-            GL20.glUniform1f(GL20.glGetUniformLocation(program, "uFogEnd"), 19000.0f);
-            GL20.glUniform3f(GL20.glGetUniformLocation(program, "uFogColor"),
-                    0.58f, 0.69f, 0.80f);
-            GL20.glUniform1i(GL20.glGetUniformLocation(program, "uHeightMap"), 0);
-            GL20.glUniform1f(GL20.glGetUniformLocation(program, "uNearClipBlocks"),
-                    Math.max(0.0f, nearChunks * 16.0f - 16.0f));
+        int loc = uniforms.viewProjection();
+        GL20.glUniformMatrix4fv(loc, false, matrix);
+        Camera camera = event.getCamera();
+        double cameraX = camera.getPosition().x;
+        double cameraY = camera.getPosition().y;
+        double cameraZ = camera.getPosition().z;
+        GL20.glUniform1f(uniforms.cameraY(),
+                (float) cameraY);
+        GL20.glUniform1f(uniforms.gridCells(),
+                gridCells);
+        GL20.glUniform1f(uniforms.heightMin(),
+                MIN_HEIGHT);
+        GL20.glUniform1f(uniforms.heightMax(),
+                MAX_HEIGHT);
+        GL20.glUniform1f(uniforms.seaLevel(), 63.0f);
+        GL20.glUniform1f(uniforms.fogStart(), 6500.0f);
+        GL20.glUniform1f(uniforms.fogEnd(), 19000.0f);
+        GL20.glUniform3f(uniforms.fogColor(),
+                0.58f, 0.69f, 0.80f);
+        GL20.glUniform1i(uniforms.heightMap(), 0);
+        GL20.glUniform1f(uniforms.nearClipBlocks(),
+                Math.max(0.0f, nearChunks * 16.0f - 16.0f));
 
-            GL30.glBindVertexArray(vao);
-            for (int level = LEVEL_COUNT - 1; level >= 0; level--) {
-                var tile = tiles.get(level);
-                GL20.glUniform2f(GL20.glGetUniformLocation(program, "uOrigin"),
-                        (float) (tile.originX() - cameraX),
-                        (float) (tile.originZ() - cameraZ));
-                GL20.glUniform1f(GL20.glGetUniformLocation(program, "uSpacing"),
-                        tile.cellSpacingBlocks());
-                GL20.glUniform2f(GL20.glGetUniformLocation(program, "uNoiseOrigin"),
-                        (float) Math.floorMod(tile.originX(), 65536L),
-                        (float) Math.floorMod(tile.originZ(), 65536L));
-                GL20.glUniform1f(GL20.glGetUniformLocation(program, "uSkirtDepth"),
-                        Math.min(32.0f, Math.max(4.0f,
-                                tile.cellSpacingBlocks() * 0.125f)));
-                GL13.glActiveTexture(GL13.GL_TEXTURE0);
-                GL11.glBindTexture(GL11.GL_TEXTURE_2D, textures[level]);
-                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER,
-                        elementBuffers[level]);
-                GL11.glDrawElements(GL11.GL_TRIANGLES, indexCounts[level],
-                        GL11.GL_UNSIGNED_INT, 0L);
-            }
-            GL30.glBindVertexArray(0);
-            VisibleSurfaceProxyRenderer.draw(event, proxies);
-        } finally {
-            state.restore();
+        GL30.glBindVertexArray(vao);
+        for (int level = LEVEL_COUNT - 1; level >= 0; level--) {
+            var tile = tiles.get(level);
+            GL20.glUniform2f(uniforms.origin(),
+                    (float) (tile.originX() - cameraX),
+                    (float) (tile.originZ() - cameraZ));
+            GL20.glUniform1f(uniforms.spacing(),
+                    tile.cellSpacingBlocks());
+            GL20.glUniform2f(uniforms.noiseOrigin(),
+                    (float) Math.floorMod(tile.originX(), 65536L),
+                    (float) Math.floorMod(tile.originZ(), 65536L));
+            GL20.glUniform1f(uniforms.skirtDepth(),
+                    Math.min(32.0f, Math.max(4.0f,
+                            tile.cellSpacingBlocks() * 0.125f)));
+            GL13.glActiveTexture(GL13.GL_TEXTURE0);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, textures[level]);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER,
+                    elementBuffers[level]);
+            GL11.glDrawElements(GL11.GL_TRIANGLES, indexCounts[level],
+                    GL11.GL_UNSIGNED_INT, 0L);
         }
+        GL30.glBindVertexArray(0);
+        VisibleSurfaceProxyRenderer.draw(event, proxies);
     }
 
     private static int linkProgram(String vertexSource, String fragmentSource) {
@@ -395,8 +407,39 @@ final class GeometryClipmapRenderer {
         return shader;
     }
 
+
+    /**
+     * Resolved once when the program links. glGetUniformLocation on every
+     * frame and every LOD ring caused avoidable driver calls.
+     */
+    private record UniformLocations(
+            int viewProjection, int cameraY, int gridCells,
+            int heightMin, int heightMax, int seaLevel,
+            int fogStart, int fogEnd, int fogColor,
+            int heightMap, int nearClipBlocks, int origin,
+            int spacing, int noiseOrigin, int skirtDepth) {
+        private static UniformLocations lookup(int program) {
+            return new UniformLocations(
+                    GL20.glGetUniformLocation(program, "uViewProjection"),
+                    GL20.glGetUniformLocation(program, "uCameraY"),
+                    GL20.glGetUniformLocation(program, "uGridCells"),
+                    GL20.glGetUniformLocation(program, "uHeightMin"),
+                    GL20.glGetUniformLocation(program, "uHeightMax"),
+                    GL20.glGetUniformLocation(program, "uSeaLevel"),
+                    GL20.glGetUniformLocation(program, "uFogStart"),
+                    GL20.glGetUniformLocation(program, "uFogEnd"),
+                    GL20.glGetUniformLocation(program, "uFogColor"),
+                    GL20.glGetUniformLocation(program, "uHeightMap"),
+                    GL20.glGetUniformLocation(program, "uNearClipBlocks"),
+                    GL20.glGetUniformLocation(program, "uOrigin"),
+                    GL20.glGetUniformLocation(program, "uSpacing"),
+                    GL20.glGetUniformLocation(program, "uNoiseOrigin"),
+                    GL20.glGetUniformLocation(program, "uSkirtDepth"));
+        }
+    }
+
     private record State(int program, int vao, int arrayBuffer,
-            int activeTexture, int texture0, int depthFunc,
+            int activeTexture, int texture0, int unpackAlignment, int depthFunc,
             boolean depthTest, boolean blend, boolean cull,
             boolean depthMask) {
         private static State capture() {
@@ -409,6 +452,7 @@ final class GeometryClipmapRenderer {
                     GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING),
                     GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING),
                     active, texture0,
+                    GL11.glGetInteger(GL11.GL_UNPACK_ALIGNMENT),
                     GL11.glGetInteger(GL11.GL_DEPTH_FUNC),
                     GL11.glIsEnabled(GL11.GL_DEPTH_TEST),
                     GL11.glIsEnabled(GL11.GL_BLEND),
@@ -420,9 +464,12 @@ final class GeometryClipmapRenderer {
             GL20.glUseProgram(program);
             GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, arrayBuffer);
-            RenderSystem.activeTexture(GL13.GL_TEXTURE0);
-            RenderSystem.bindTexture(texture0);
-            RenderSystem.activeTexture(activeTexture);
+            // Restore raw bindings via raw GL. RenderSystem may cache
+            // texture state, while our texture upload uses direct LWJGL.
+            GL13.glActiveTexture(GL13.GL_TEXTURE0);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, texture0);
+            GL13.glActiveTexture(activeTexture);
+            GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, unpackAlignment);
             if (depthTest) RenderSystem.enableDepthTest();
             else RenderSystem.disableDepthTest();
             if (blend) RenderSystem.enableBlend();

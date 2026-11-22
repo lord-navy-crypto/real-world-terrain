@@ -236,3 +236,19 @@ are needed for any of these changes.
 
 Real-world networking still requires an in-game connected-client test:
 a dedicated server boot test alone cannot validate an S2C request/response.
+
+
+## 2026-11-22 OpenGL texture-upload and state-isolation hardening
+
+* R16 height rows contain 129 unsigned shorts (258 bytes), which are NOT
+  aligned to the OpenGL default `GL_UNPACK_ALIGNMENT=4`. Use unpack alignment
+  one while uploading and restore the previous state.
+* The render transaction now captures GL state before shader/VAO
+  initialization, before height texture uploads and before drawing; this avoids
+  leaking temporary bindings into Minecraft's render pipeline.
+* The height upload buffer is reused on the render thread instead of allocating
+  six fresh direct native buffers for each new centre.
+* GLSL uniform locations are queried when the shader program links rather
+  than on each frame and each ring.
+* These are correctness/overhead improvements. GPU frame times, Mac OpenGL
+  client compatibility and any visible improvement still require measurement.
