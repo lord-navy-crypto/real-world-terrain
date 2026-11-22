@@ -11,6 +11,15 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/SkyOceanBiomeSource.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/QuartBiomeBaseCache.java'
+  pull_request:
+    paths:
+      - '.github/workflows/paired-far-route-benchmark.yml'
+      - 'neoforge/src/main/java/org/realscale/neoforge/TerrainArchetypeMath.java'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/natural_automate/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/shared/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/natural_automate*.json'
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'qa/neoforge/compare_paired_far_route.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,6 +39,8 @@ jobs:
             seed: 42
           - preset: tva_measured_three_realms
             seed: 2
+          - preset: natural_automate_three_realms
+            seed: 2
     name: Same-runner A/B / ${{ matrix.preset }} / seed ${{ matrix.seed }}
     steps:
       - uses: actions/checkout@v4
@@ -44,8 +55,8 @@ jobs:
           gradle-version: '8.14.3'
       - name: Prepare separate clean worktrees on the same runner
         env:
-          BEFORE_SHA: '9d8aae88e23f023abec4693321c9b618e5af17e8'
-          AFTER_SHA: ${{ github.sha }}
+          BEFORE_SHA: ${{ github.event.pull_request.base.sha || '9d8aae88e23f023abec4693321c9b618e5af17e8' }}
+          AFTER_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           PRESET: ${{ matrix.preset }}
           SEED: ${{ matrix.seed }}
         run: |
@@ -83,6 +94,7 @@ jobs:
         env:
           BASEDIR: ${{ runner.temp }}
           PRESET: ${{ matrix.preset }}
+          REALSCALE_JFR_DIAGNOSTIC: '1'
         run: |
           cd "$BASEDIR/realscale-before/neoforge"
           python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
@@ -90,6 +102,7 @@ jobs:
         env:
           BASEDIR: ${{ runner.temp }}
           PRESET: ${{ matrix.preset }}
+          REALSCALE_JFR_DIAGNOSTIC: '1'
         run: |
           cd "$BASEDIR/realscale-after/neoforge"
           python3 ../qa/neoforge/rcon_worldgen_smoke.py . "realscale:$PRESET" distant_route
@@ -115,4 +128,6 @@ jobs:
             ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_timing.json
             ${{ runner.temp }}/realscale-before/neoforge/build/rcon_distant_route_server.log
             ${{ runner.temp }}/realscale-after/neoforge/build/rcon_distant_route_server.log
+            ${{ runner.temp }}/realscale-before/neoforge/build/realscale_worldgen_cpu.jfr
+            ${{ runner.temp }}/realscale-after/neoforge/build/realscale_worldgen_cpu.jfr
           if-no-files-found: warn

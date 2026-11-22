@@ -27,8 +27,7 @@ class SacredHorizontalMemoTest(unittest.TestCase):
                     "type":"realscale:mountain_relief",
                     "base":"realscale:tva_natural_smoothed/original_height_signal",
                     "continents":"realscale:realism_max/continental_field",
-                    "selector":{"type":"minecraft:noise","noise":"minecraft:erosion",
-                                "xz_scale":0.006,"y_scale":0},
+                    "selector":"realscale:shared/raw_erosion_selector",
                     "basin_depth":0.9,"plateau_rise":0.65
                 }
             }

@@ -37,11 +37,41 @@ def main() -> int:
         fail("hidden/legacy catalog count does not match metadata")
 
     preset_root = RES / "data" / "realscale" / "worldgen" / "world_preset"
+    archive_root = ROOT / "archive" / "ultimate" / "resource-overlay"
+    archived_preset_root = archive_root / "data/realscale/worldgen/world_preset"
     actual_ids = sorted(path.stem for path in preset_root.glob("*.json"))
     if set(actual_ids) != set(all_ids):
         missing = sorted(set(actual_ids) - set(all_ids))
         unknown = sorted(set(all_ids) - set(actual_ids))
         fail(f"catalog/resource mismatch; uncataloged={missing}, missing_resources={unknown}")
+
+    # Only the public preset is a regular source file. Hidden and legacy IDs
+    # are symlink pointers whose single source of truth lives in archive/ultimate.
+    active_preset_ids = {p.stem for p in preset_root.glob("*.json") if not p.is_symlink()}
+    archived_preset_ids = {p.stem for p in archived_preset_root.glob("*.json") if not p.is_symlink()}
+    preset_pointer_ids = {p.stem for p in preset_root.glob("*.json") if p.is_symlink()}
+    expected_archived_ids = {entry["id"] for entry in hidden + legacy}
+    if active_preset_ids != set(public_ids):
+        fail(f"active preset source must contain only public IDs; found={sorted(active_preset_ids)}")
+    if archived_preset_ids != expected_archived_ids or preset_pointer_ids != expected_archived_ids:
+        fail("hidden/legacy preset archive and compatibility pointers do not match the catalog")
+    for pointer in preset_root.glob("*.json"):
+        if pointer.is_symlink() and pointer.resolve() != (archived_preset_root / pointer.name).resolve():
+            fail(f"preset compatibility pointer does not target the ultimate archive: {pointer.name}")
+
+    noise_root = RES / "data/realscale/worldgen/noise_settings"
+    archived_noise_root = archive_root / "data/realscale/worldgen/noise_settings"
+    active_noise_ids = {p.stem for p in noise_root.glob("*.json") if not p.is_symlink()}
+    archived_noise_ids = {p.stem for p in archived_noise_root.glob("*.json") if not p.is_symlink()}
+    noise_pointer_ids = {p.stem for p in noise_root.glob("*.json") if p.is_symlink()}
+    expected_active_noise = {"natural_automate_v2", "grand_end", "grand_nether"}
+    if active_noise_ids != expected_active_noise:
+        fail(f"active noise settings must be exactly {sorted(expected_active_noise)}")
+    if len(archived_noise_ids) != 31 or noise_pointer_ids != archived_noise_ids:
+        fail("the 31 legacy noise settings and their compatibility pointers must be archived")
+    for pointer in noise_root.glob("*.json"):
+        if pointer.is_symlink() and pointer.resolve() != (archived_noise_root / pointer.name).resolve():
+            fail(f"noise-setting compatibility pointer does not target the ultimate archive: {pointer.name}")
 
     expected_tag_values = [f"realscale:{preset_id}" for preset_id in public_ids]
     tag_root = RES / "data" / "minecraft" / "tags" / "worldgen" / "world_preset"
@@ -139,8 +169,8 @@ def main() -> int:
             fail(f"{key}: catalog says {expected}, repository has {actual}")
 
     print(
-        "PASS: preset catalog matches all 41 world presets, both single-entry menu tags, "
-        "public noise settings, biome-source chains and audited resource counts."
+        "PASS: one active public preset; 40 hidden/legacy presets and 31 legacy noise settings archived "
+        "behind compatibility symlinks; all original IDs, menu tags, biome-source chains and resource counts match."
     )
     return 0
 

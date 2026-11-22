@@ -39,10 +39,7 @@ class NaturalAutomateExactMemo(unittest.TestCase):
             "type":"realscale:terrain_archetype",
             "base":"realscale:tva_natural_smoothed/height_signal",
             "continents":"realscale:realism_max/continental_field",
-            "selector":{
-                "type":"minecraft:noise",
-                "noise":"minecraft:erosion","xz_scale":0.006,"y_scale":0
-            },
+            "selector":"realscale:shared/raw_erosion_selector",
             "family":"natural_automate",
             "macro_gain":0.92,"meso_gain":0.38,"micro_gain":0.07,
             "relief_gain":0.72,"ridge_sharpness":0.36,
@@ -54,24 +51,16 @@ class NaturalAutomateExactMemo(unittest.TestCase):
                     "type":"minecraft:noise","noise":"minecraft:offset",
                     "xz_scale":0.00042,"y_scale":0
                 },
-                "temperature":{
-                    "type":"minecraft:shifted_noise","noise":"minecraft:temperature",
-                    "shift_x":"minecraft:shift_x","shift_y":0,
-                    "shift_z":"minecraft:shift_z",
-                    "xz_scale":0.15,"y_scale":0
-                },
-                "humidity":{
-                    "type":"minecraft:shifted_noise","noise":"minecraft:vegetation",
-                    "shift_x":"minecraft:shift_x","shift_y":0,
-                    "shift_z":"minecraft:shift_z",
-                    "xz_scale":0.15,"y_scale":0
-                }
+                "temperature":"realscale:shared/raw_temperature_noise",
+                "humidity":"realscale:shared/raw_vegetation_noise"
             }
         }
         self.assertEqual(native["argument"],expected)
         self.assertEqual(sum(node.get("type")=="realscale:measured_horizontal_memo"
                              for node in walk(signal)),1)
-        self.assertEqual(len(tuple(walk(native["argument"]["environment"]))),4)
+        # Only the regional selector remains inline; temperature and
+        # humidity now resolve to the shared registry density nodes.
+        self.assertEqual(len(tuple(walk(native["argument"]["environment"]))),2)
 
     def test_signal_is_independent_of_vertical_coordinate(self):
         node=read_density("natural_automate/height_signal")

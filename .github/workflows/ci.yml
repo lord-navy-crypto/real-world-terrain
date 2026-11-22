@@ -28,10 +28,16 @@ jobs:
         run: python3 qa/verify_repository.py
       - name: Validate unified public/hidden/legacy preset catalog
         run: python3 scripts/validate_preset_catalog.py
+      - name: Verify ultimate archive source layout
+        run: python3 -m unittest discover -s qa -p 'test_ultimate_archive_layout.py' -v
       - name: Verify APES Gallery RCON waits for real saved satellite chunks
         run: python3 -m unittest discover -s qa -p 'test_apes_gallery_workflow.py' -v
       - name: Verify Natural Automate kernels match the six fitted resources
         run: python3 scripts/sync_natural_automate_kernels.py --check
+      - name: Verify Natural Automate shares exact Y-invariant noise nodes
+        run: python3 -m unittest discover -s qa -p 'test_natural_automate_shared_noise_fields.py' -v
+      - name: Verify Natural Automate exact horizontal memo and cave-safe density graph
+        run: python3 -m unittest discover -s qa -p 'test_natural_automate_exact_column_memo.py' -v
       - name: Verify fitted-profile compiler preserves the single public mode
         run: |
           python3 -m pip install scipy

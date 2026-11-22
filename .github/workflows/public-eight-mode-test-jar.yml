@@ -5,6 +5,7 @@ on:
       - 'neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/world_preset/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/**'
+      - 'archive/ultimate/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/usgs_big_sur/**'
       - 'neoforge/build.gradle'
       - 'qa/test_realscale_branding_compat.py'
@@ -40,7 +41,7 @@ jobs:
       - name: Build NeoForge candidate JAR
         working-directory: neoforge
         run: gradle --no-daemon build
-      - name: Verify packaged JAR exposes one unified choice and retains hidden kernels
+      - name: Verify ultimate archive registry resources in the built JAR
         run: |
           python3 - <<'PY'
           import json
@@ -74,6 +75,21 @@ jobs:
                   profile = f"data/realscale/worldgen/world_preset/{fitted}_three_realms.json"
                   if profile not in paths:
                       raise SystemExit(f"Fitted terrain preset missing: {profile}")
+              catalog = json.loads(Path("docs/PRESET_CATALOG.json").read_text())
+              for entry in catalog["public_profiles"] + catalog["hidden_profiles"] + catalog["legacy_profiles"]:
+                  resource = f"data/realscale/worldgen/world_preset/{entry['id']}.json"
+                  if resource not in paths:
+                      raise SystemExit(f"World-preset registry resource missing from JAR: {resource}")
+              active_noise = Path("neoforge/src/main/resources/data/realscale/worldgen/noise_settings")
+              archived_noise = Path("archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings")
+              noise_names = {p.name for p in active_noise.glob("*.json")} | {p.name for p in archived_noise.glob("*.json")}
+              if len(noise_names) != 34:
+                  raise SystemExit(f"Expected 34 current + archived noise settings, found {len(noise_names)}")
+              for noise_name in noise_names:
+                  resource = "data/realscale/worldgen/noise_settings/" + noise_name
+                  if resource not in paths:
+                      raise SystemExit(f"Noise-setting registry resource missing from JAR: {resource}")
+              print("ULTIMATE_ARCHIVE_REGISTRY_RESOURCES_OK", len(catalog["public_profiles"]) + len(catalog["hidden_profiles"]) + len(catalog["legacy_profiles"]), len(noise_names))
               forbidden = (
                   "WorldAtlasOfflinePregenerator",
                   "WorldAtlasRealChunkySmoke",

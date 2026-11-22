@@ -1,0 +1,521 @@
+{
+  "schema_version": 1,
+  "created": "2026-11-22",
+  "purpose": "Single source of truth for hidden/legacy worldgen registry resources; original resource paths remain as relative symlink pointers.",
+  "counts": {
+    "world_presets": 40,
+    "noise_settings": 31,
+    "total": 71
+  },
+  "active_regular_files": {
+    "world_preset": [
+      "natural_automate_three_realms.json"
+    ],
+    "noise_settings": [
+      "natural_automate_v2.json",
+      "grand_end.json",
+      "grand_nether.json"
+    ]
+  },
+  "world_presets": [
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/alpine_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/alpine_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/alpine_three_realms.json",
+      "git_blob_sha1": "72002621f72c89a2d220893f3fa0bf9c51fa5882",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/apes_gallery_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/apes_gallery_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/apes_gallery_three_realms.json",
+      "git_blob_sha1": "67a56a0ab8b80346e0303c12d6cf28f1f16e3083",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/biome_lab.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/biome_lab.json",
+      "registry_path": "data/realscale/worldgen/world_preset/biome_lab.json",
+      "git_blob_sha1": "1f4ab34a6f006fbffa46844200b1341e50fe3d82",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/canyon_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/canyon_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/canyon_three_realms.json",
+      "git_blob_sha1": "788571c74eec2cd27540912ce9170248a483c826",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/cave_exploration_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/cave_exploration_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/cave_exploration_three_realms.json",
+      "git_blob_sha1": "0988caf5469aae9e9f9b86722e347f32633cbb12",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/cave_ocean_ecology_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/cave_ocean_ecology_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/cave_ocean_ecology_three_realms.json",
+      "git_blob_sha1": "537059abe6d7f2d5a6fbff48f5e67c4f8684b05f",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/continental.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/continental.json",
+      "registry_path": "data/realscale/worldgen/world_preset/continental.json",
+      "git_blob_sha1": "49f03dbb2f2a21e71b62738b10dbfc64e65617d7",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/dune_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/dune_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/dune_three_realms.json",
+      "git_blob_sha1": "b63b17e91eb85dc0f7f66ba0ee1113ec55826436",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/ecotone_gallery.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/ecotone_gallery.json",
+      "registry_path": "data/realscale/worldgen/world_preset/ecotone_gallery.json",
+      "git_blob_sha1": "063790dcebfa09f0a5e16b8b6e95a71e0d8edd49",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/georeal_ultimate.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/georeal_ultimate.json",
+      "registry_path": "data/realscale/worldgen/world_preset/georeal_ultimate.json",
+      "git_blob_sha1": "92d72ec3274411a27aab8b6ed2399d6f87576325",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/glacial_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/glacial_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/glacial_three_realms.json",
+      "git_blob_sha1": "3d8a72895408a3ba8667bb5b880b59a25c580c44",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/grand_canyon.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/grand_canyon.json",
+      "registry_path": "data/realscale/worldgen/world_preset/grand_canyon.json",
+      "git_blob_sha1": "af332b468e18aec29e3ac97d839eb4783c59c1a5",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/grand_ecology_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/grand_ecology_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/grand_ecology_three_realms.json",
+      "git_blob_sha1": "ac58337ae9f89eb1f10488b6167f7cc0cd96bd37",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/himalayan.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/himalayan.json",
+      "registry_path": "data/realscale/worldgen/world_preset/himalayan.json",
+      "git_blob_sha1": "585deec004ae96c96064b2142b743560a66750e6",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/karst_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/karst_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/karst_three_realms.json",
+      "git_blob_sha1": "8ce611a6d0914a49dd3acfe53b21f5dfbb8ad7f2",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/measured_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/measured_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/measured_three_realms.json",
+      "git_blob_sha1": "6a4c3bbc98ed5ff3d821392945e4c7dbe64fa153",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/natural_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/natural_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/natural_three_realms.json",
+      "git_blob_sha1": "563ed6ca4b0fd09b6ae1aa05854c834908690f23",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/realism_max.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/realism_max.json",
+      "registry_path": "data/realscale/worldgen/world_preset/realism_max.json",
+      "git_blob_sha1": "4fa84f8e93f06a8cf3f52798a9399259ab075108",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/realism_max_ecotones.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/realism_max_ecotones.json",
+      "registry_path": "data/realscale/worldgen/world_preset/realism_max_ecotones.json",
+      "git_blob_sha1": "6d1ccc8f2210ace9243798afd663b5258c6bd1ed",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/realism_max_ecotones_skylands.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/realism_max_ecotones_skylands.json",
+      "registry_path": "data/realscale/worldgen/world_preset/realism_max_ecotones_skylands.json",
+      "git_blob_sha1": "efb29d9e33c0b72582ef806800cb8325dcaeebca",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/realism_max_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/realism_max_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/realism_max_three_realms.json",
+      "git_blob_sha1": "700283eba6fa068a75bcefe5580690e0b6fd9d1c",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/realistic_mountains.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/realistic_mountains.json",
+      "registry_path": "data/realscale/worldgen/world_preset/realistic_mountains.json",
+      "git_blob_sha1": "55d1780153c03b0c52efc31333b3d5e5a2d5a64e",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/skylands_test_deep_ocean.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/skylands_test_deep_ocean.json",
+      "registry_path": "data/realscale/worldgen/world_preset/skylands_test_deep_ocean.json",
+      "git_blob_sha1": "7e5f0c4349ef884bb4da1b8e19a240c406e1f586",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_alpine_smoothing_probe.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_alpine_smoothing_probe.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_alpine_smoothing_probe.json",
+      "git_blob_sha1": "7d36eaa11c21f404127d2b8d6a34d11642713f57",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_alpine_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_alpine_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_alpine_three_realms.json",
+      "git_blob_sha1": "543313b776077a910dc6aa5781d3b5a5555cb885",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_canyon_smoothing_probe.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_canyon_smoothing_probe.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_canyon_smoothing_probe.json",
+      "git_blob_sha1": "ec72455f5414fb33a09f4ed12f4bbf61822824ce",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_canyon_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_canyon_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_canyon_three_realms.json",
+      "git_blob_sha1": "696d80d2a4e14961b73adb9a3e9fb065b66d8fc3",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_cave_ocean_ecology_test_three_realms.json",
+      "git_blob_sha1": "537059abe6d7f2d5a6fbff48f5e67c4f8684b05f",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_measured_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_measured_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_measured_three_realms.json",
+      "git_blob_sha1": "1c40d6f06b29a35c8b5a613f9d8d23a24e2f1808",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_natural_smoothing_probe.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_natural_smoothing_probe.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_natural_smoothing_probe.json",
+      "git_blob_sha1": "d0594b4162c3c3231f2a4da6259449075c954c88",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_natural_wonders_experimental_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_natural_wonders_experimental_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_natural_wonders_experimental_three_realms.json",
+      "git_blob_sha1": "87d056038235284485f6661be62ac892f59d2954",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_pr25_alpine_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_pr25_alpine_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_pr25_alpine_three_realms.json",
+      "git_blob_sha1": "825f27777fc06e4c8d751dba4d57df081f538366",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_pr25_canyon_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_pr25_canyon_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_pr25_canyon_three_realms.json",
+      "git_blob_sha1": "fe17086e3b8fd4933bf113a4390cd9a0370d08c4",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_pr25_measured_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_pr25_measured_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_pr25_measured_three_realms.json",
+      "git_blob_sha1": "308cf46993d32046f4131a69712aed0a9be11de8",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_pr25_natural_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_pr25_natural_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_pr25_natural_three_realms.json",
+      "git_blob_sha1": "eac6ca9108c02c2bec4ef7d5a5f61a48125c082b",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/tva_sacred_timeline_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/tva_sacred_timeline_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/tva_sacred_timeline_three_realms.json",
+      "git_blob_sha1": "563ed6ca4b0fd09b6ae1aa05854c834908690f23",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/ultimate.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/ultimate.json",
+      "registry_path": "data/realscale/worldgen/world_preset/ultimate.json",
+      "git_blob_sha1": "8a7dea8588adf93789a1702804298ac6724c020c",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/usgs_big_sur.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/usgs_big_sur.json",
+      "registry_path": "data/realscale/worldgen/world_preset/usgs_big_sur.json",
+      "git_blob_sha1": "97be6c20ed9dfc5d8d51287282df3b516d7cf461",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/usgs_big_sur_v2.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/usgs_big_sur_v2.json",
+      "registry_path": "data/realscale/worldgen/world_preset/usgs_big_sur_v2.json",
+      "git_blob_sha1": "0c3a724186365372d41151af4b13449a8860f40a",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/world_preset/volcanic_three_realms.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/world_preset/volcanic_three_realms.json",
+      "registry_path": "data/realscale/worldgen/world_preset/volcanic_three_realms.json",
+      "git_blob_sha1": "9817777114f1e27f589332f7c3a020c97499bd3d",
+      "compatibility_pointer": true
+    }
+  ],
+  "noise_settings": [
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/continental.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/continental.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/continental.json",
+      "git_blob_sha1": "3b9b05f4bff91e64e20014a08ef09f3967ea76b3",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/fantasy_end_v1.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/fantasy_end_v1.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/fantasy_end_v1.json",
+      "git_blob_sha1": "9936bc46247757cd6a7e5ae4eb0a350ad8332b35",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/fantasy_end_v2.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/fantasy_end_v2.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/fantasy_end_v2.json",
+      "git_blob_sha1": "63136dd96d6d0b31a7f93f38dcbe9947b91b4eb7",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/fantasy_nether_v1.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/fantasy_nether_v1.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/fantasy_nether_v1.json",
+      "git_blob_sha1": "fd1c59f8dd1e25516a8005adfaf4a4fdb185f665",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/fantasy_nether_v2.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/fantasy_nether_v2.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/fantasy_nether_v2.json",
+      "git_blob_sha1": "7d6030975a48e7ce91d7aaa15c1a50a9473fd8e7",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/georeal_ultimate.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/georeal_ultimate.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/georeal_ultimate.json",
+      "git_blob_sha1": "18cbb5bea7f73e601dde547bc70469b7a102f7ef",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/grand_canyon.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/grand_canyon.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/grand_canyon.json",
+      "git_blob_sha1": "beb3509f5a9d83ed5ffc289ea93c73b9160ff699",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/himalayan.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/himalayan.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/himalayan.json",
+      "git_blob_sha1": "5a0412f77fc363d4bfc50742710cdc5cac3c2929",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/natural_automate.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/natural_automate.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/natural_automate.json",
+      "git_blob_sha1": "7f5fa286b6902d9b9da09b7fbcfde50e7f506fa7",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/realism_max.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/realism_max.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/realism_max.json",
+      "git_blob_sha1": "306db8deb44a0f2c87560a1b50a7fa640dc435e1",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/realistic_mountains.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/realistic_mountains.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/realistic_mountains.json",
+      "git_blob_sha1": "838fa1efc6292e66df7e0c4aea6b0bc5dfb60d2a",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_alpine_fitted.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_alpine_fitted.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_alpine_fitted.json",
+      "git_blob_sha1": "3e80feabfb11a60f13b858b64cea031d3e14c486",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_alpine_smoothed.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_alpine_smoothed.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_alpine_smoothed.json",
+      "git_blob_sha1": "6e68d214ab301679677fa249d611677bc04cb1f0",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_alpine_smoothing_probe.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_alpine_smoothing_probe.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_alpine_smoothing_probe.json",
+      "git_blob_sha1": "b2eea79d91779a4148867b3fffb8f36d6264280b",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_canyon_fitted.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_canyon_fitted.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_canyon_fitted.json",
+      "git_blob_sha1": "6fe172378c404c4344a99f31c91c839ac0740a1e",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_canyon_smoothed.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_canyon_smoothed.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_canyon_smoothed.json",
+      "git_blob_sha1": "0bf8d95bb828361f3f9b63c937d2c810b8dd4841",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_canyon_smoothing_probe.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_canyon_smoothing_probe.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_canyon_smoothing_probe.json",
+      "git_blob_sha1": "230e13aaa970b626d195deba7831c93221560f6d",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_cave_exploration.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_cave_exploration.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_cave_exploration.json",
+      "git_blob_sha1": "bd04156290812f4e927e9f5aca628bb25795cd8d",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_dune_fitted.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_dune_fitted.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_dune_fitted.json",
+      "git_blob_sha1": "4ede1795f9ef0576358de894c1e771f86d391917",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_glacial_fitted.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_glacial_fitted.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_glacial_fitted.json",
+      "git_blob_sha1": "567245758d594faa70834cd834a9a6db227f07d5",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_karst_fitted.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_karst_fitted.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_karst_fitted.json",
+      "git_blob_sha1": "da0c99667e08257e87cacb487ca48a012540bf79",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_natural_smoothed.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_natural_smoothed.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_natural_smoothed.json",
+      "git_blob_sha1": "451da951d80f30b50b230e51cf671c98faf923fc",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_natural_smoothing_probe.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_natural_smoothing_probe.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_natural_smoothing_probe.json",
+      "git_blob_sha1": "e1c12d4a2b3c1d363c12333bf56a999876223825",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_pr25_alpine_climate.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_pr25_alpine_climate.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_pr25_alpine_climate.json",
+      "git_blob_sha1": "e12e387839aab18c29178242bd9fad2be5c7e506",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_pr25_canyon_climate.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_pr25_canyon_climate.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_pr25_canyon_climate.json",
+      "git_blob_sha1": "bb5a8f36448fa69d45ac9a7aab9af31d68d97fc7",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_pr25_measured_climate.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_pr25_measured_climate.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_pr25_measured_climate.json",
+      "git_blob_sha1": "7e19615df199a914bb11525f3b5fd40b89997172",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_pr25_natural_climate.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_pr25_natural_climate.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_pr25_natural_climate.json",
+      "git_blob_sha1": "62a9542258ba081997eb929e657017d598809e95",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_volcanic_fitted.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/tva_volcanic_fitted.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/tva_volcanic_fitted.json",
+      "git_blob_sha1": "e78fbf40e33b3119b0992f2d8c45d0a2f1c16f99",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/ultimate.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/ultimate.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/ultimate.json",
+      "git_blob_sha1": "435f9970134c19035c77ebc414c341a682d5dff7",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/usgs_big_sur.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/usgs_big_sur.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/usgs_big_sur.json",
+      "git_blob_sha1": "2a56e3e6dfae35ef165286a814e2277aee4b7ff6",
+      "compatibility_pointer": true
+    },
+    {
+      "source_path": "neoforge/src/main/resources/data/realscale/worldgen/noise_settings/usgs_big_sur_v2.json",
+      "archive_path": "archive/ultimate/resource-overlay/data/realscale/worldgen/noise_settings/usgs_big_sur_v2.json",
+      "registry_path": "data/realscale/worldgen/noise_settings/usgs_big_sur_v2.json",
+      "git_blob_sha1": "ac333acbc8af2e8739f042ee45c625960e98d98a",
+      "compatibility_pointer": true
+    }
+  ]
+}

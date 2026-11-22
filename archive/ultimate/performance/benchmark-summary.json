@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "evidence_commit": "16f783beb899657e1f8a4e00c156921104498fba",
+  "benchmark_workflow": "RealScale paired A-B far-route performance",
+  "measurement_policy": "one paired sample per profile; not statistically stable",
+  "results": [
+    {
+      "profile": "Natural Automate",
+      "seed": 2,
+      "baseline_seconds": 92.619,
+      "candidate_seconds": 87.371,
+      "observed_change_percent": 5.67,
+      "interpretation": "observed single-sample improvement; requires repeated runs before claiming a stable gain"
+    },
+    {
+      "profile": "TVA Sacred Timeline",
+      "seed": 42,
+      "baseline_seconds": 51.377,
+      "candidate_seconds": 51.218,
+      "observed_change_percent": 0.31,
+      "interpretation": "within small single-sample variation; no material conclusion"
+    },
+    {
+      "profile": "Measured",
+      "seed": 2,
+      "baseline_seconds": 44.557,
+      "candidate_seconds": 44.524,
+      "observed_change_percent": 0.07,
+      "interpretation": "within small single-sample variation; no material conclusion"
+    }
+  ],
+  "strict_180_second_regression": {
+    "seeds": [
+      2,
+      42
+    ],
+    "result": "passed",
+    "interpretation": "the tested distant-chunk generation completed within the strict 180-second limit"
+  },
+  "prior_validation_snapshot": {
+    "workflow_runs": 21,
+    "successful_workflow_runs": 21,
+    "check_runs": 47,
+    "successful_check_runs": 47,
+    "applies_to_commit": "16f783beb899657e1f8a4e00c156921104498fba",
+    "scope": "the pre-archive performance/worldgen validation head; archive migration itself requires a fresh CI run"
+  }
+}

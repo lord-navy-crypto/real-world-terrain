@@ -12,7 +12,7 @@ Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的实验性真实尺度地形与�
 
 Natural Automate 以经过平滑处理的 Natural 地形信号为基线，将 Alpine、Glacial、Canyon、Volcanic、Karst 和 Dune 六种拟合形态作为内部计算核。系统依据区域地质先验、温度、湿度和局部地形适宜性自动分配权重，在适合的区域叠加相应地貌，在过渡区平滑混合，在不适合的区域精确保留 Natural 基线。基础大型洞穴与 Cave Exploration V2 的环形洞室、附属洞室和多层连接网络也已进入这一默认生成引擎。为保护旧存档，新的公开世界预设使用独立的 `natural_automate_v2` 噪声设置 ID；旧的 `natural_automate` 注册 ID 保持原样，已有世界不会因为升级而自动切换洞穴结构。普通玩家不再需要在六种地貌或 Natural 之间手动选择。
 
-Natural 基线和六个独立拟合预设的 JSON / registry ID 仍保留在 JAR 中，供兼容性、受控 QA 和开发对照使用；它们不再作为普通新世界菜单选项。隐藏独立预设不等于删除六种算法：六个拟合核仍由 Natural Automate 调用。
+Natural 基线和六个独立拟合预设的 JSON / registry ID 仍保留在 JAR 中，供兼容性、受控 QA 和开发对照使用；它们不再作为普通新世界菜单选项。隐藏独立预设不等于删除六种算法：六个拟合核仍由 Natural Automate 调用。40 个隐藏/历史世界预设和 31 个非核心旧噪声设置的真实文件统一放在 `archive/ultimate/`；主资源目录只保留兼容性符号链接，原始 JAR 注册路径与 ID 不变。
 
 **USGS Big Sur / Big Sur v2 仍按此前决定从普通新世界菜单中移除。** 实测地形资源和内部配置继续保留，用于兼容、数据导入和受控实验；不要将其误认为当前公开菜单选项。USGS 3DEP 数据导入是离线、可选流程，不代表整个世界都是实测地形。
 
@@ -55,7 +55,7 @@ World Atlas 的存档扫描和地图读取代码已从当前分支删除；没�
 - `qa/` — 源码完整性、数据、Anvil、世界生成和性能回归检查。
 - `docs/` — 当前架构、验证范围、来源记录和历史设计。
 - `assets/architecture/` — 建筑模板源素材及许可记录。
-- `archive/` — 历史数据包和旧版本材料。
+- `archive/` — 历史数据包、旧版本材料，以及 `archive/ultimate/` 中统一保存的隐藏/历史世界生成资源与性能证据。
 - `research/` — 尚未完整集成的数值地质、水文和数据导入研究原型。
 - `dist/v1.1/` — 历史 v1.1 测试候选 JAR，不是当前单一 Natural Automate 菜单构建。
 
