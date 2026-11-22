@@ -12,7 +12,7 @@ def load(relative):
 
 
 class NaturalAutomateSharedNoiseFieldsTest(unittest.TestCase):
-    def test_shared_fields_are_exact_horizontal_memos(self):
+    def test_shared_fields_are_exact_horizontal_cache_2d_nodes(self):
         expected = {
             "density_function/shared/raw_erosion_selector.json": {
                 "noise": "minecraft:erosion",
