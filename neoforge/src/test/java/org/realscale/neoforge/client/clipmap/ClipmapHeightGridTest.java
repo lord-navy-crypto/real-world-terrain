@@ -64,7 +64,12 @@ final class ClipmapHeightGridTest {
         assertEquals(second.newlySampledVertexCount(), secondCalls.get());
         assertTrue(secondCalls.get() < firstCalls.get());
         assertTrue(second.sampledVertexCount() > second.newlySampledVertexCount());
-        assertEquals(first.heightAt(114, 114), second.heightAt(82, 82), 0.0f);
+        // (400, 400) moves into the finer level's covered interior after recentering.
+        assertTrue(first.isSampledAt(114, 114));
+        assertFalse(second.isSampledAt(82, 82));
+
+        // (-128, 400) remains in both visible rings and must be reused without resampling.
+        assertEquals(first.heightAt(48, 114), second.heightAt(16, 82), 0.0f);
     }
 
     @Test
