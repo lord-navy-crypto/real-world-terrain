@@ -89,6 +89,23 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertNotIn("BufferUtils.createFloatBuffer", draw)
         self.assertNotIn("glGetUniformLocation", draw)
         self.assertIn("UniformLocations.lookup(program)", proxy)
+        self.assertIn("farRadiusSquared", draw)
+        self.assertNotIn("new ArrayList", draw)
+        self.assertNotIn("new Matrix4f", draw)
+
+    def test_terrain_and_proxy_draws_reuse_matrix_objects(self):
+        terrain = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        proxy = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/VisibleSurfaceProxyRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        terrain_draw = terrain.split("private static void draw(", 1)[1].split("private static int linkProgram(", 1)[0]
+        proxy_draw = proxy.split("static void draw(", 1)[1].split("static void dispose(", 1)[0]
+        self.assertIn("VIEW_PROJECTION.set(event.getProjectionMatrix())", terrain_draw)
+        self.assertIn("VIEW_PROJECTION.set(event.getProjectionMatrix())", proxy_draw)
+        self.assertNotIn("new Matrix4f", terrain_draw)
+        self.assertNotIn("new Matrix4f", proxy_draw)
 
     def test_server_clipmap_jobs_are_generation_guarded_and_backed_off(self):
         server = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java").read_text(

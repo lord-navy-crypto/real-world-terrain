@@ -297,3 +297,16 @@ Visual verification is still needed to characterize remaining artifacts.
   time. Terrain matrix uploads also reuse a render-thread scratch buffer.
 * These changes reduce avoidable Java/native allocation and harden asynchronous
   lifecycle handling. Performance impact still needs in-game profiling.
+
+
+## 2026-11-22 render-loop allocation and proxy horizon culling
+
+* Both terrain and proxy renderers now reuse their JOML model-view and
+  view-projection matrices instead of allocating two matrix objects every
+  frame. Direct matrix upload buffers were already reused and remain so.
+* Proxy visibility now rejects objects wholly beyond the configured fog horizon
+  (with a 64-block silhouette allowance) before allocating an AABB or issuing
+  an instanced draw. This avoids processing proxies that the fragment shader
+  would render entirely as fog.
+* Proxy instance and matrix buffers plus the visibility scratch list remain
+  bounded by the 4096-proxy network contract.

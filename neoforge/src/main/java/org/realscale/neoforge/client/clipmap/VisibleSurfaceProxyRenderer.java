@@ -105,6 +105,8 @@ final class VisibleSurfaceProxyRenderer {
     private static final FloatBuffer INSTANCE_UPLOAD =
             BufferUtils.createFloatBuffer(MAX_PROXIES * INSTANCE_FLOATS);
     private static final FloatBuffer MATRIX_UPLOAD = BufferUtils.createFloatBuffer(16);
+    private static final Matrix4f MODEL_VIEW = new Matrix4f();
+    private static final Matrix4f VIEW_PROJECTION = new Matrix4f();
 
     private static int program;
     private static UniformLocations uniforms;
@@ -124,10 +126,16 @@ final class VisibleSurfaceProxyRenderer {
         visible.clear();
         double nearRadius = Math.max(0.0, nearChunks * 16.0 - 16.0);
         double nearRadiusSquared = nearRadius * nearRadius;
+        // Proxies are fully fogged beyond this horizon. A small allowance
+        // preserves the near edge of tall/wide silhouettes at the fade boundary.
+        double farRadius = fogEnd + 64.0;
+        double farRadiusSquared = farRadius * farRadius;
         for (VisibleSurfaceProxy proxy : proxies) {
             double dx = proxy.x() - camera.x;
             double dz = proxy.z() - camera.z;
-            if (dx * dx + dz * dz < nearRadiusSquared) continue;
+            double distanceSquared = dx * dx + dz * dz;
+            if (distanceSquared < nearRadiusSquared
+                    || distanceSquared > farRadiusSquared) continue;
             double radius = proxy.radius();
             AABB bounds = new AABB(
                     proxy.x() - radius, proxy.y(),
@@ -153,9 +161,10 @@ final class VisibleSurfaceProxyRenderer {
         }
         instances.flip();
 
-        Matrix4f modelView = new Matrix4f(event.getModelViewMatrix());
+        Matrix4f modelView = MODEL_VIEW.set(event.getModelViewMatrix());
         modelView.setTranslation(0.0f, 0.0f, 0.0f);
-        Matrix4f viewProjection = new Matrix4f(event.getProjectionMatrix()).mul(modelView);
+        Matrix4f viewProjection = VIEW_PROJECTION.set(event.getProjectionMatrix())
+                .mul(modelView);
         FloatBuffer matrix = MATRIX_UPLOAD;
         matrix.clear();
         viewProjection.get(matrix);

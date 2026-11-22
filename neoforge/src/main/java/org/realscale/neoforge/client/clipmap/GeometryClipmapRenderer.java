@@ -181,6 +181,8 @@ final class GeometryClipmapRenderer {
             """;
 
     private static final FloatBuffer MATRIX_UPLOAD = BufferUtils.createFloatBuffer(16);
+    private static final Matrix4f MODEL_VIEW = new Matrix4f();
+    private static final Matrix4f VIEW_PROJECTION = new Matrix4f();
     private static int program;
     private static UniformLocations uniforms;
     private static ClipmapFogRange fogRange;
@@ -353,9 +355,10 @@ final class GeometryClipmapRenderer {
         RenderSystem.disableCull();
 
         GL20.glUseProgram(program);
-        Matrix4f modelView = new Matrix4f(event.getModelViewMatrix());
+        Matrix4f modelView = MODEL_VIEW.set(event.getModelViewMatrix());
         modelView.setTranslation(0.0f, 0.0f, 0.0f);
-        Matrix4f viewProjection = new Matrix4f(event.getProjectionMatrix()).mul(modelView);
+        Matrix4f viewProjection = VIEW_PROJECTION.set(event.getProjectionMatrix())
+                .mul(modelView);
         FloatBuffer matrix = MATRIX_UPLOAD;
         matrix.clear();
         viewProjection.get(matrix);
