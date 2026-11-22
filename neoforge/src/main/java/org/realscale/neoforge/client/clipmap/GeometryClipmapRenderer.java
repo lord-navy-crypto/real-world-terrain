@@ -151,7 +151,7 @@ final class GeometryClipmapRenderer {
             }
         }
 
-        draw(event, tiles);
+        draw(event, tiles, proxies);
     }
 
     static void dispose() {
@@ -274,7 +274,8 @@ final class GeometryClipmapRenderer {
     }
 
     private static void draw(RenderLevelStageEvent event,
-            Map<Integer, org.realscale.neoforge.network.ClipmapHeightTilePayload> tiles) {
+            Map<Integer, org.realscale.neoforge.network.ClipmapHeightTilePayload> tiles,
+            List<VisibleSurfaceProxy> proxies) {
         State state = State.capture();
         try {
             RenderSystem.enableDepthTest();
