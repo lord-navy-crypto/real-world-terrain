@@ -130,6 +130,19 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertNotIn("new Matrix4f", terrain_draw)
         self.assertNotIn("new Matrix4f", proxy_draw)
 
+    def test_optional_clipmap_debug_metrics_are_gated_and_distinguish_cpu_submission(self):
+        server = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java").read_text(
+            encoding="utf-8"
+        )
+        renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('realscale.experimental.geometryclipmap.debug', server)
+        self.assertIn('realscale.experimental.geometryclipmap.debug', renderer)
+        self.assertIn('queueWait=%.1fms sample=%.1fms', server)
+        self.assertIn('cpuSubmitAvg=%.2fms', renderer)
+        self.assertNotIn("glFinish", renderer)
+
     def test_server_clipmap_jobs_are_generation_guarded_and_backed_off(self):
         server = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java").read_text(
             encoding="utf-8"

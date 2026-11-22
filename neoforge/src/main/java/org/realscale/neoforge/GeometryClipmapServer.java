@@ -45,6 +45,8 @@ public final class GeometryClipmapServer {
     private static final int MAX_HEIGHT = 2032;
     private static final int SAMPLE_Y = 63;
     private static final int MAX_LEVELS = 6;
+    private static final boolean DEBUG =
+            Boolean.getBoolean("realscale.experimental.geometryclipmap.debug");
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
     private static int cleanupTicks;
     private static long serverTickCounter;
@@ -135,10 +137,13 @@ public final class GeometryClipmapServer {
         UUID playerId = player.getUUID();
         long requestEpoch = session.requestEpoch.current();
         session.inFlight = true;
+        long enqueuedNanos = DEBUG ? System.nanoTime() : 0L;
 
         try {
             SAMPLER.execute(() -> {
                 try {
+                    long workerStartedNanos = DEBUG ? System.nanoTime() : 0L;
+                    long newlySampledVertices = 0L;
                     ClipmapHeightGrid.SurfaceHeightSampler heightSampler = (x, z) -> {
                         // Natural Automate terrain_density is height_signal plus
                         // a Y-clamped gradient whose value is exactly zero at Y=63.
@@ -168,6 +173,7 @@ public final class GeometryClipmapServer {
                                 nextLayout.levels().get(i), nextLayout.gridCells(),
                                 heightSampler, previous);
                         nextGrids.add(grid);
+                        if (DEBUG) newlySampledVertices += grid.newlySampledVertexCount();
                         payloads.add(toPayload(targetDimension, session.nearChunks,
                                 nextLayout, i, grid));
                     }
@@ -180,6 +186,14 @@ public final class GeometryClipmapServer {
                             new ClipmapSurfaceProxyPayload(targetDimension,
                                     nextLayout.levels().get(0).centerX(),
                                     nextLayout.levels().get(0).centerZ(), proxies);
+                    long queueWaitNanos = DEBUG
+                            ? workerStartedNanos - enqueuedNanos : 0L;
+                    long samplingNanos = DEBUG
+                            ? System.nanoTime() - workerStartedNanos : 0L;
+                    long sampleCountForLog = newlySampledVertices;
+                    int proxyCountForLog = proxies.size();
+                    long centerXForLog = nextLayout.levels().get(0).centerX();
+                    long centerZForLog = nextLayout.levels().get(0).centerZ();
                     server.execute(() -> {
                         // A respawn can replace the ServerPlayer instance while
                         // retaining the UUID and session. Resolve the live player
@@ -225,6 +239,17 @@ public final class GeometryClipmapServer {
                             PacketDistributor.sendToPlayer(currentPlayer, payload);
                         }
                         PacketDistributor.sendToPlayer(currentPlayer, proxyPayload);
+                        if (DEBUG) {
+                            System.out.printf(java.util.Locale.ROOT,
+                                    "[RealScale Geometry Clipmap] sample accepted dim=%s center=(%d,%d) "
+                                            + "newVertices=%d proxies=%d queueWait=%.1fms sample=%.1fms "
+                                            + "queueDepth=%d%n",
+                                    targetDimension, centerXForLog, centerZForLog,
+                                    sampleCountForLog, proxyCountForLog,
+                                    queueWaitNanos / 1_000_000.0,
+                                    samplingNanos / 1_000_000.0,
+                                    SAMPLER.getQueue().size());
+                        }
                     });
                 } catch (RuntimeException failure) {
                     if (!session.requestEpoch.isCurrent(requestEpoch)) return;

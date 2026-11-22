@@ -343,3 +343,17 @@ render distance, resetting its world, or cleaning up a disconnected player
 advances the generation. The single bounded sampler can therefore abandon
 obsolete work instead of spending the remaining sampling budget on a player
 or world that no longer needs that snapshot.
+
+
+## 2026-11-22 optional profiling telemetry
+
+Enable with
+\`-Drealscale.experimental.geometryclipmap.debug=true\` alongside the existing
+\`-Drealscale.experimental.geometryclipmap=true\`.
+
+The server reports accepted snapshot centre, newly sampled vertices, proxy
+count, worker queue wait and sample time. The client reports a five-second
+window of average frame rate while the clipmap is active, average/maximum CPU
+render-submission time, uploaded height bytes and maximum proxy-set size.
+The client metric intentionally does not call \`glFinish\`: it measures CPU
+submission overhead, not GPU execution time, and does not force a GPU stall.

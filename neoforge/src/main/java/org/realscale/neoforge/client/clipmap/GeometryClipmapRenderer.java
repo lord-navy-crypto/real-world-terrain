@@ -17,6 +17,7 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Map;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * OpenGL 4.1 Geometry Clipmap with procedural exterior shading.
@@ -27,6 +28,14 @@ import java.util.List;
  */
 final class GeometryClipmapRenderer {
     private static final int LEVEL_COUNT = 6;
+    private static final boolean DEBUG =
+            Boolean.getBoolean("realscale.experimental.geometryclipmap.debug");
+    private static long debugWindowStartNanos;
+    private static long debugFrameCount;
+    private static long debugTotalRenderNanos;
+    private static long debugMaxRenderNanos;
+    private static long debugUploadedBytes;
+    private static long debugProxyCount;
     private static final int MIN_HEIGHT = -64;
     private static final int MAX_HEIGHT = 2032;
     private static final String VERTEX_SHADER = """
@@ -224,6 +233,9 @@ final class GeometryClipmapRenderer {
 
         // Capture BEFORE initialization/texture uploads. Otherwise Minecraft's
         // previous VAO, texture unit, binding and pixel-store state may leak.
+        long renderStartedNanos = DEBUG ? System.nanoTime() : 0L;
+        long uploadedBytesThisFrame = 0L;
+        boolean completedFrame = false;
         State state = State.capture();
         try {
             if (program == 0 || gridCells != nextGridCells
@@ -244,13 +256,56 @@ final class GeometryClipmapRenderer {
                 if (uploaded[i] != tile) {
                     upload(i, tile);
                     uploaded[i] = tile;
+                    if (DEBUG) {
+                        long side = (long) tile.gridCells() + 1L;
+                        uploadedBytesThisFrame += side * side * Short.BYTES;
+                    }
                 }
             }
 
             draw(event, tiles, proxies);
+            completedFrame = true;
         } finally {
             state.restore();
+            if (DEBUG && completedFrame) {
+                recordDebugFrame(System.nanoTime() - renderStartedNanos,
+                        uploadedBytesThisFrame, proxies.size());
+            }
         }
+    }
+
+
+    /**
+     * Optional CPU-side submission telemetry. This deliberately does not use
+     * glFinish, so it never stalls the GPU and is not a GPU-time measurement.
+     */
+    private static void recordDebugFrame(long elapsedNanos,
+            long uploadedBytes, int proxyCount) {
+        long now = System.nanoTime();
+        if (debugWindowStartNanos == 0L) debugWindowStartNanos = now;
+        debugFrameCount++;
+        debugTotalRenderNanos += elapsedNanos;
+        debugMaxRenderNanos = Math.max(debugMaxRenderNanos, elapsedNanos);
+        debugUploadedBytes += uploadedBytes;
+        debugProxyCount = Math.max(debugProxyCount, proxyCount);
+
+        long windowNanos = now - debugWindowStartNanos;
+        if (windowNanos < 5_000_000_000L) return;
+        double seconds = windowNanos / 1_000_000_000.0;
+        double averageMs = debugTotalRenderNanos / (double) debugFrameCount / 1_000_000.0;
+        double maxMs = debugMaxRenderNanos / 1_000_000.0;
+        double fps = debugFrameCount / seconds;
+        double uploadKiB = debugUploadedBytes / 1024.0;
+        System.out.printf(Locale.ROOT,
+                "[RealScale Geometry Clipmap] client avgFPS=%.1f cpuSubmitAvg=%.2fms "
+                        + "cpuSubmitMax=%.2fms upload=%.1fKiB/5s maxProxySet=%d%n",
+                fps, averageMs, maxMs, uploadKiB, debugProxyCount);
+        debugWindowStartNanos = now;
+        debugFrameCount = 0L;
+        debugTotalRenderNanos = 0L;
+        debugMaxRenderNanos = 0L;
+        debugUploadedBytes = 0L;
+        debugProxyCount = 0L;
     }
 
     static void dispose() {
