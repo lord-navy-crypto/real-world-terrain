@@ -278,3 +278,22 @@ share the SAME fog range, with the outermost ring fading by 98% of
 its radius. Tree and building proxies are also suppressed within the
 vanilla nearby chunk radius, reducing duplicate near-field silhouettes.
 Visual verification is still needed to characterize remaining artifacts.
+
+
+## 2026-11-22 asynchronous session safety and render-thread allocation reduction
+
+* Each server clipmap session now carries a world-generation epoch. Worker
+  completions and failure callbacks must match that epoch before mutating the
+  session, preventing stale work from an earlier dimension/seed/settings
+  generation from clearing or replacing a newer request.
+* Completion resolves the current \`ServerPlayer\` by UUID, so respawn/player
+  object replacement no longer strands a session in \`inFlight\`. It also
+  recomputes the current snapped layout and discards a snapshot if the player
+  crossed a snap boundary while sampling.
+* Queue rejection and transient sample failures now defer retry for 20 server
+  ticks, avoiding per-tick queue hammering and repeated log spam.
+* Proxy rendering reuses a bounded 4096-entry visibility list and direct
+  instance/matrix buffers. Its shader uniform locations are cached at link
+  time. Terrain matrix uploads also reuse a render-thread scratch buffer.
+* These changes reduce avoidable Java/native allocation and harden asynchronous
+  lifecycle handling. Performance impact still needs in-game profiling.

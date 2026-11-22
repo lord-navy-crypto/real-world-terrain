@@ -78,6 +78,28 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
                          renderer.split("private static void draw(", 1)[1].split("private static int linkProgram(", 1)[0])
 
 
+    def test_proxy_renderer_reuses_frame_buffers_and_cached_uniforms(self):
+        proxy = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/VisibleSurfaceProxyRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        draw = proxy.split("static void draw(", 1)[1].split("static void dispose(", 1)[0]
+        self.assertIn("VISIBLE_SCRATCH", draw)
+        self.assertIn("INSTANCE_UPLOAD", draw)
+        self.assertIn("MATRIX_UPLOAD", draw)
+        self.assertNotIn("BufferUtils.createFloatBuffer", draw)
+        self.assertNotIn("glGetUniformLocation", draw)
+        self.assertIn("UniformLocations.lookup(program)", proxy)
+
+    def test_server_clipmap_jobs_are_generation_guarded_and_backed_off(self):
+        server = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("session.requestEpoch.current()", server)
+        self.assertIn("session.requestEpoch.isCurrent(requestEpoch)", server)
+        self.assertIn("server.getPlayerList().getPlayer(playerId)", server)
+        self.assertIn("RETRY_BACKOFF_TICKS", server)
+        self.assertIn("sameCentre(nextLayout, currentLayout)", server)
+
     def test_geomorph_uses_existing_height_grid_and_cached_uniform(self):
         renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
             encoding="utf-8"

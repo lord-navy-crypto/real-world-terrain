@@ -98,7 +98,16 @@ final class VisibleSurfaceProxyRenderer {
             }
             """;
 
+    private static final int MAX_PROXIES = 4096;
+    private static final int INSTANCE_FLOATS = 9;
+    private static final List<VisibleSurfaceProxy> VISIBLE_SCRATCH =
+            new ArrayList<>(MAX_PROXIES);
+    private static final FloatBuffer INSTANCE_UPLOAD =
+            BufferUtils.createFloatBuffer(MAX_PROXIES * INSTANCE_FLOATS);
+    private static final FloatBuffer MATRIX_UPLOAD = BufferUtils.createFloatBuffer(16);
+
     private static int program;
+    private static UniformLocations uniforms;
     private static int vao;
     private static int cornerBuffer;
     private static int instanceBuffer;
@@ -111,7 +120,8 @@ final class VisibleSurfaceProxyRenderer {
         RenderSystem.assertOnRenderThread();
 
         var camera = event.getCamera().getPosition();
-        List<VisibleSurfaceProxy> visible = new ArrayList<>(proxies.size());
+        List<VisibleSurfaceProxy> visible = VISIBLE_SCRATCH;
+        visible.clear();
         double nearRadius = Math.max(0.0, nearChunks * 16.0 - 16.0);
         double nearRadiusSquared = nearRadius * nearRadius;
         for (VisibleSurfaceProxy proxy : proxies) {
@@ -128,7 +138,8 @@ final class VisibleSurfaceProxyRenderer {
         if (visible.isEmpty()) return;
 
         ensureResources();
-        FloatBuffer instances = BufferUtils.createFloatBuffer(visible.size() * 9);
+        FloatBuffer instances = INSTANCE_UPLOAD;
+        instances.clear();
         for (VisibleSurfaceProxy proxy : visible) {
             instances.put((float) (proxy.x() - camera.x));
             instances.put((float) (proxy.y() - camera.y));
@@ -145,22 +156,21 @@ final class VisibleSurfaceProxyRenderer {
         Matrix4f modelView = new Matrix4f(event.getModelViewMatrix());
         modelView.setTranslation(0.0f, 0.0f, 0.0f);
         Matrix4f viewProjection = new Matrix4f(event.getProjectionMatrix()).mul(modelView);
-        FloatBuffer matrix = BufferUtils.createFloatBuffer(16);
+        FloatBuffer matrix = MATRIX_UPLOAD;
+        matrix.clear();
         viewProjection.get(matrix);
         matrix.flip();
 
         GL20.glUseProgram(program);
-        GL20.glUniformMatrix4fv(
-                GL20.glGetUniformLocation(program, "uViewProjection"), false, matrix);
-        GL20.glUniform1f(GL20.glGetUniformLocation(program, "uFogStart"), fogStart);
-        GL20.glUniform1f(GL20.glGetUniformLocation(program, "uFogEnd"), fogEnd);
-        GL20.glUniform3f(GL20.glGetUniformLocation(program, "uFogColor"),
-                0.58f, 0.69f, 0.80f);
+        GL20.glUniformMatrix4fv(uniforms.viewProjection(), false, matrix);
+        GL20.glUniform1f(uniforms.fogStart(), fogStart);
+        GL20.glUniform1f(uniforms.fogEnd(), fogEnd);
+        GL20.glUniform3f(uniforms.fogColor(), 0.58f, 0.69f, 0.80f);
 
         GL30.glBindVertexArray(vao);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, instanceBuffer);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, instances, GL15.GL_STREAM_DRAW);
-        int axisLocation = GL20.glGetUniformLocation(program, "uAxis");
+        int axisLocation = uniforms.axis();
         GL20.glUniform3f(axisLocation, 1.0f, 0.0f, 0.0f);
         GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 6, visible.size());
         GL20.glUniform3f(axisLocation, 0.0f, 0.0f, 1.0f);
@@ -181,11 +191,14 @@ final class VisibleSurfaceProxyRenderer {
         cornerBuffer = 0;
         instanceBuffer = 0;
         program = 0;
+        uniforms = null;
+        VISIBLE_SCRATCH.clear();
     }
 
     private static void ensureResources() {
         if (program != 0) return;
         program = link(VERTEX, FRAGMENT);
+        uniforms = UniformLocations.lookup(program);
         vao = GL30.glGenVertexArrays();
         cornerBuffer = GL15.glGenBuffers();
         instanceBuffer = GL15.glGenBuffers();
@@ -222,6 +235,19 @@ final class VisibleSurfaceProxyRenderer {
         GL33.glVertexAttribDivisor(4, 1);
         GL30.glBindVertexArray(0);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
+
+
+    private record UniformLocations(int viewProjection, int axis,
+            int fogStart, int fogEnd, int fogColor) {
+        private static UniformLocations lookup(int program) {
+            return new UniformLocations(
+                    GL20.glGetUniformLocation(program, "uViewProjection"),
+                    GL20.glGetUniformLocation(program, "uAxis"),
+                    GL20.glGetUniformLocation(program, "uFogStart"),
+                    GL20.glGetUniformLocation(program, "uFogEnd"),
+                    GL20.glGetUniformLocation(program, "uFogColor"));
+        }
     }
 
     private static int link(String vertexSource, String fragmentSource) {

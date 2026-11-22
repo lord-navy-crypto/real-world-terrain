@@ -47,6 +47,8 @@ public final class GeometryClipmapServer {
     private static final int MAX_LEVELS = 6;
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
     private static int cleanupTicks;
+    private static long serverTickCounter;
+    private static final long RETRY_BACKOFF_TICKS = 20L;
 
     private static final ThreadPoolExecutor SAMPLER = new ThreadPoolExecutor(
             1, 1, 0L, TimeUnit.MILLISECONDS,
@@ -75,6 +77,7 @@ public final class GeometryClipmapServer {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
+        serverTickCounter++;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             Session session = SESSIONS.get(player.getUUID());
             if (session != null) updatePlayer(server, player, session);
@@ -107,7 +110,7 @@ public final class GeometryClipmapServer {
                 || !Objects.equals(session.settingsId, settingsId.toString())) {
             session.resetWorld(dimensionKey, seed, settingsId);
         }
-        if (session.inFlight) return;
+        if (session.inFlight || !session.requestEpoch.mayStart(serverTickCounter)) return;
 
         GeometryClipmapLayout planner =
                 GeometryClipmapLayout.forRenderDistanceChunks(session.nearChunks);
@@ -122,7 +125,10 @@ public final class GeometryClipmapServer {
         DensityFunction terrainDensity = randomState.router().depth();
         List<ClipmapHeightGrid> previousGrids = session.grids;
         String targetDimension = dimensionKey;
+        String targetSettings = settingsId.toString();
         long targetSeed = seed;
+        UUID playerId = player.getUUID();
+        long requestEpoch = session.requestEpoch.current();
         session.inFlight = true;
 
         try {
@@ -165,25 +171,58 @@ public final class GeometryClipmapServer {
                                     nextLayout.levels().get(0).centerX(),
                                     nextLayout.levels().get(0).centerZ(), proxies);
                     server.execute(() -> {
-                        if (SESSIONS.get(player.getUUID()) != session
-                                || server.getPlayerList().getPlayer(player.getUUID()) != player
-                                || !player.serverLevel().dimension().location().toString()
-                                        .equals(targetDimension)
-                                || player.serverLevel().getSeed() != targetSeed) {
+                        // A respawn can replace the ServerPlayer instance while
+                        // retaining the UUID and session. Resolve the live player
+                        // instead of comparing against the worker's captured object.
+                        if (SESSIONS.get(playerId) != session
+                                || !session.requestEpoch.isCurrent(requestEpoch)) {
                             return;
                         }
+                        ServerPlayer currentPlayer =
+                                server.getPlayerList().getPlayer(playerId);
+                        if (currentPlayer == null) {
+                            session.inFlight = false;
+                            return;
+                        }
+                        ServerLevel currentLevel = currentPlayer.serverLevel();
+                        if (!currentLevel.dimension().location().toString()
+                                    .equals(targetDimension)
+                                || currentLevel.getSeed() != targetSeed
+                                || !(currentLevel.getChunkSource().getGenerator()
+                                        instanceof NoiseBasedChunkGenerator currentGenerator)
+                                || !currentGenerator.generatorSettings().unwrapKey()
+                                        .map(ResourceKey::location)
+                                        .map(ResourceLocation::toString)
+                                        .filter(targetSettings::equals)
+                                        .isPresent()) {
+                            session.inFlight = false;
+                            return;
+                        }
+
+                        // Do not publish a completed but already-obsolete window
+                        // if the player crossed a snap boundary during sampling.
+                        GeometryClipmapLayout.Layout currentLayout = planner.compute(
+                                currentPlayer.getX(), currentPlayer.getZ(), session.layout);
+                        if (!sameCentre(nextLayout, currentLayout)) {
+                            session.inFlight = false;
+                            return;
+                        }
+
                         session.layout = nextLayout;
                         session.grids = List.copyOf(nextGrids);
                         session.inFlight = false;
                         for (ClipmapHeightTilePayload payload : payloads) {
-                            PacketDistributor.sendToPlayer(player, payload);
+                            PacketDistributor.sendToPlayer(currentPlayer, payload);
                         }
-                        PacketDistributor.sendToPlayer(player, proxyPayload);
+                        PacketDistributor.sendToPlayer(currentPlayer, proxyPayload);
                     });
                 } catch (RuntimeException failure) {
                     server.execute(() -> {
-                        if (SESSIONS.get(player.getUUID()) == session) {
+                        if (SESSIONS.get(playerId) == session
+                                && session.requestEpoch.isCurrent(requestEpoch)) {
                             session.inFlight = false;
+                            session.requestEpoch.defer(serverTickCounter,
+                                    RETRY_BACKOFF_TICKS);
                         }
                         System.err.println("[RealScale Geometry Clipmap] sample failed: "
                                 + failure.getClass().getSimpleName() + ": "
@@ -193,8 +232,10 @@ public final class GeometryClipmapServer {
             });
         } catch (RuntimeException rejected) {
             session.inFlight = false;
+            session.requestEpoch.defer(serverTickCounter, RETRY_BACKOFF_TICKS);
             System.err.println("[RealScale Geometry Clipmap] sampler queue is full; "
-                    + "deferring this player update");
+                    + "deferring this player update for " + RETRY_BACKOFF_TICKS
+                    + " ticks");
         }
     }
 
@@ -239,6 +280,7 @@ public final class GeometryClipmapServer {
         private GeometryClipmapLayout.Layout layout;
         private List<ClipmapHeightGrid> grids;
         private boolean inFlight;
+        private final ClipmapRequestEpoch requestEpoch = new ClipmapRequestEpoch();
 
         private Session(int nearChunks) {
             this.nearChunks = nearChunks;
@@ -249,6 +291,7 @@ public final class GeometryClipmapServer {
             dimensionKey = dimension;
             seed = worldSeed;
             settingsId = settings.toString();
+            requestEpoch.advance();
             layout = null;
             grids = null;
             inFlight = false;
