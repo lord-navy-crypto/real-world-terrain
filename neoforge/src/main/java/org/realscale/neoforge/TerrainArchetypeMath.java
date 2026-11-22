@@ -208,24 +208,33 @@ final class TerrainArchetypeMath {
         double moisture=unitNoise(humidity);
 
         // Allocation-free: density is sampled repeatedly during chunk generation.
-        // All six families consume the same climate fields. Derive these four
-        // smooth climate factors once per horizontal sample instead of once
-        // per family (24 repeated smoothstep evaluations in the old path).
+        // Evaluate the six regional gates first. If no fitted family can
+        // contribute, preserve the baseline without calculating climate
+        // factors. Otherwise derive the four shared climate terms exactly once.
+        double a0=naturalFamilyRegionalAffinity(0,region);
+        double a1=naturalFamilyRegionalAffinity(1,region);
+        double a2=naturalFamilyRegionalAffinity(2,region);
+        double a3=naturalFamilyRegionalAffinity(3,region);
+        double a4=naturalFamilyRegionalAffinity(4,region);
+        double a5=naturalFamilyRegionalAffinity(5,region);
+        if(a0<=0.0 && a1<=0.0 && a2<=0.0
+                && a3<=0.0 && a4<=0.0 && a5<=0.0)return original;
+
         double warmth=smoothstep(-0.45,0.45,temp);
         double coldness=1.0-smoothstep(-0.45,0.35,temp);
         double wetness=smoothstep(-0.50,0.45,moisture);
         double dryness=1.0-smoothstep(-0.15,0.55,moisture);
-        double s0=naturalFamilySuitabilityWithClimate(0,original,region,
+        double s0=naturalFamilySuitabilityWithClimate(0,original,a0,
                 warmth,coldness,wetness,dryness);
-        double s1=naturalFamilySuitabilityWithClimate(1,original,region,
+        double s1=naturalFamilySuitabilityWithClimate(1,original,a1,
                 warmth,coldness,wetness,dryness);
-        double s2=naturalFamilySuitabilityWithClimate(2,original,region,
+        double s2=naturalFamilySuitabilityWithClimate(2,original,a2,
                 warmth,coldness,wetness,dryness);
-        double s3=naturalFamilySuitabilityWithClimate(3,original,region,
+        double s3=naturalFamilySuitabilityWithClimate(3,original,a3,
                 warmth,coldness,wetness,dryness);
-        double s4=naturalFamilySuitabilityWithClimate(4,original,region,
+        double s4=naturalFamilySuitabilityWithClimate(4,original,a4,
                 warmth,coldness,wetness,dryness);
-        double s5=naturalFamilySuitabilityWithClimate(5,original,region,
+        double s5=naturalFamilySuitabilityWithClimate(5,original,a5,
                 warmth,coldness,wetness,dryness);
         double total=s0+s1+s2+s3+s4+s5;
         if(total<=1.0e-12)return original;
@@ -285,25 +294,29 @@ final class TerrainArchetypeMath {
     /** Inputs are already normalized to [-1,1]; no per-family re-normalization. */
     private static double naturalFamilySuitabilityNormalized(int familyIndex,
             double original,double temp,double moisture,double region) {
-        // Preserve the standalone helper contract while sharing the same
-        // precomputed-climate implementation used by Natural Automate.
+        if(familyIndex<0 || familyIndex>=6)return 0.0;
+        double regionalAffinity=naturalFamilyRegionalAffinity(familyIndex,region);
+        if(regionalAffinity<=0.0)return 0.0;
+
         double warmth=smoothstep(-0.45,0.45,temp);
         double coldness=1.0-smoothstep(-0.45,0.35,temp);
         double wetness=smoothstep(-0.50,0.45,moisture);
         double dryness=1.0-smoothstep(-0.15,0.55,moisture);
-        return naturalFamilySuitabilityWithClimate(familyIndex,original,region,
-                warmth,coldness,wetness,dryness);
+        return naturalFamilySuitabilityWithClimate(familyIndex,original,
+                regionalAffinity,warmth,coldness,wetness,dryness);
     }
 
-    /** Inputs are normalized; shared climate factors are computed only once per X/Z. */
-    private static double naturalFamilySuitabilityWithClimate(int familyIndex,
-            double original,double region,double warmth,double coldness,
-            double wetness,double dryness) {
+    private static double naturalFamilyRegionalAffinity(int familyIndex,double region) {
         if(familyIndex<0 || familyIndex>=6)return 0.0;
         double center=-5.0/6.0+familyIndex/3.0;
-        double regionalAffinity=1.0-smoothstep(0.18,0.62,
-                Math.abs(region-center));
-        if(regionalAffinity<=0.0)return 0.0;
+        return 1.0-smoothstep(0.18,0.62,Math.abs(region-center));
+    }
+
+    /** Inputs are normalized; the regional gate and climate terms are precomputed. */
+    private static double naturalFamilySuitabilityWithClimate(int familyIndex,
+            double original,double regionalAffinity,double warmth,double coldness,
+            double wetness,double dryness) {
+        if(familyIndex<0 || familyIndex>=6 || regionalAffinity<=0.0)return 0.0;
 
         double topographicSuitability;
         double climateSuitability;
