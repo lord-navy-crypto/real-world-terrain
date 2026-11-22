@@ -93,6 +93,11 @@ public final class GeometryClipmapLayout {
         while (chunks > 2L * spacing) {
             spacing <<= 1;
         }
+        // A 32-block grid cannot align every chunk radius (e.g. 33*16).
+        // Prefer a smaller aligned grid to an invalid or cracked hole.
+        while (nearRadius % spacing != 0L) {
+            spacing >>= 1;
+        }
         return new GeometryClipmapLayout(DEFAULT_GRID_CELLS,
                 DEFAULT_LEVEL_COUNT, spacing, chunks);
     }

@@ -97,6 +97,8 @@ final class GeometryClipmapLayoutTest {
         GeometryClipmapLayout twenty = GeometryClipmapLayout.forRenderDistanceChunks(20);
         assertEquals(8, ten.compute(0, 0).baseCellSpacingBlocks());
         assertEquals(16, twenty.compute(0, 0).baseCellSpacingBlocks());
+        assertEquals(16, GeometryClipmapLayout.forRenderDistanceChunks(33)
+                .compute(0, 0).baseCellSpacingBlocks());
         assertTrue(twenty.compute(0, 0).effectiveInnerRadiusBlocks()
                 < twenty.compute(0, 0).levels().get(0).outerBounds().widthX() / 2);
     }
