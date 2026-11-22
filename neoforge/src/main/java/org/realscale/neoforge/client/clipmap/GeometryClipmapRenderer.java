@@ -34,7 +34,6 @@ final class GeometryClipmapRenderer {
             uniform mat4 uViewProjection;
             uniform sampler2D uHeightMap;
             uniform vec2 uOrigin;
-            uniform vec2 uCameraXZ;
             uniform float uCameraY;
             uniform float uSpacing;
             uniform float uGridCells;
