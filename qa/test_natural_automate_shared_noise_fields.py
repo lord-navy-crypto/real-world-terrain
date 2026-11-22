@@ -14,12 +14,12 @@ def load(relative):
 class NaturalAutomateSharedNoiseFieldsTest(unittest.TestCase):
     def test_shared_fields_are_exact_horizontal_memos(self):
         expected = {
-            "shared/raw_erosion_selector.json": {
+            "density_function/shared/raw_erosion_selector.json": {
                 "noise": "minecraft:erosion",
                 "xz_scale": 0.006,
                 "y_scale": 0.0,
             },
-            "shared/raw_temperature_noise.json": {
+            "density_function/shared/raw_temperature_noise.json": {
                 "noise": "minecraft:temperature",
                 "shift_x": "minecraft:shift_x",
                 "shift_y": 0.0,
@@ -27,7 +27,7 @@ class NaturalAutomateSharedNoiseFieldsTest(unittest.TestCase):
                 "xz_scale": 0.15,
                 "y_scale": 0.0,
             },
-            "shared/raw_vegetation_noise.json": {
+            "density_function/shared/raw_vegetation_noise.json": {
                 "noise": "minecraft:vegetation",
                 "shift_x": "minecraft:shift_x",
                 "shift_y": 0.0,
