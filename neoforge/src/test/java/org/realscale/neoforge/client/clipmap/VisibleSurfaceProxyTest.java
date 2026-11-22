@@ -10,12 +10,12 @@ final class VisibleSurfaceProxyTest {
                 100, 64, -200, 5.0f, 12.0f, 0xFF123456,
                 VisibleSurfaceProxy.TREE_CANOPY);
         assertSame(proxy.bounds(), proxy.bounds());
-        assertEquals(95.0, proxy.bounds().minX());
-        assertEquals(64.0, proxy.bounds().minY());
-        assertEquals(-205.0, proxy.bounds().minZ());
-        assertEquals(105.0, proxy.bounds().maxX());
-        assertEquals(76.0, proxy.bounds().maxY());
-        assertEquals(-195.0, proxy.bounds().maxZ());
+        assertEquals(95.0, proxy.bounds().minX);
+        assertEquals(64.0, proxy.bounds().minY);
+        assertEquals(-205.0, proxy.bounds().minZ);
+        assertEquals(105.0, proxy.bounds().maxX);
+        assertEquals(76.0, proxy.bounds().maxY);
+        assertEquals(-195.0, proxy.bounds().maxZ);
     }
 
     @Test

@@ -357,3 +357,12 @@ window of average frame rate while the clipmap is active, average/maximum CPU
 render-submission time, uploaded height bytes and maximum proxy-set size.
 The client metric intentionally does not call \`glFinish\`: it measures CPU
 submission overhead, not GPU execution time, and does not force a GPU stall.
+
+
+## 2026-11-22 CI follow-up
+
+* Corrected the proxy-bounds unit test to use Minecraft 1.21.1's public AABB
+  coordinate fields rather than nonexistent accessor methods.
+* Added a group-scoped Google-hosted Maven Central mirror for Gson in plugin
+  management, ahead of Maven Central, to reduce transient HTTP 429 failures
+  when multiple independent CI workflows resolve the same plugin dependency.
