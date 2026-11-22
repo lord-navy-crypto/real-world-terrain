@@ -40,9 +40,7 @@ class NaturalAutomateSharedNoiseFieldsTest(unittest.TestCase):
             with self.subTest(relative=relative):
                 node = load(relative)
                 self.assertEqual("realscale:measured_horizontal_memo", node["type"])
-                self.assertEqual(expected_input, node["input"] | {
-                    key: node["input"].get(key) for key in ()
-                })
+                self.assertEqual(expected_input, node["input"])
                 self.assertEqual(0.0, node["input"].get("y_scale", 0.0))
                 self.assertEqual(0.0, node["input"].get("shift_y", 0.0))
 
