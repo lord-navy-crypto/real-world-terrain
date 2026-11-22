@@ -10,6 +10,8 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.realscale.neoforge.network.ClipmapHeightTilePayload;
 import org.realscale.neoforge.network.ClipmapRequestPayload;
+import org.realscale.neoforge.network.ClipmapSurfaceProxyPayload;
+import java.util.List;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +27,7 @@ public final class GeometryClipmapClient {
     private static final boolean ENABLED =
             Boolean.getBoolean("realscale.experimental.geometryclipmap");
     private static final Map<Integer, ClipmapHeightTilePayload> TILES = new HashMap<>();
+    private static List<VisibleSurfaceProxy> PROXIES = List.of();
     private static ClientLevel lastLevel;
     private static int lastNearChunks = -1;
 
@@ -39,6 +42,15 @@ public final class GeometryClipmapClient {
             return;
         }
         TILES.put(payload.levelIndex(), payload);
+    }
+
+    public static void accept(ClipmapSurfaceProxyPayload payload) {
+        if (!ENABLED) return;
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null
+                || !minecraft.level.dimension().location().toString()
+                        .equals(payload.dimensionKey())) return;
+        PROXIES = payload.proxies();
     }
 
     @SubscribeEvent
@@ -68,11 +80,12 @@ public final class GeometryClipmapClient {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || TILES.size() < 6) return;
         GeometryClipmapRenderer.render(event, TILES,
-                minecraft.level.dimension().location().toString());
+                minecraft.level.dimension().location().toString(), PROXIES);
     }
 
     private static void clear() {
         TILES.clear();
+        PROXIES = List.of();
         if (Minecraft.getInstance().isSameThread()) {
             GeometryClipmapRenderer.dispose();
         }

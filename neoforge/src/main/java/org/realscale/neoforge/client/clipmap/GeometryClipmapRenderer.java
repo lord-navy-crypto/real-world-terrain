@@ -16,6 +16,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Map;
+import java.util.List;
 
 /**
  * OpenGL 4.1 terrain-only Geometry Clipmap renderer.
@@ -116,7 +117,7 @@ final class GeometryClipmapRenderer {
 
     static void render(RenderLevelStageEvent event,
             Map<Integer, org.realscale.neoforge.network.ClipmapHeightTilePayload> tiles,
-            String dimensionKey) {
+            String dimensionKey, List<VisibleSurfaceProxy> proxies) {
         RenderSystem.assertOnRenderThread();
         if (tiles.size() < LEVEL_COUNT) return;
 
@@ -160,6 +161,7 @@ final class GeometryClipmapRenderer {
         for (int buffer : elementBuffers) if (buffer != 0) GL15.glDeleteBuffers(buffer);
         for (int texture : textures) if (texture != 0) GL11.glDeleteTextures(texture);
         if (program != 0) GL20.glDeleteProgram(program);
+        VisibleSurfaceProxyRenderer.dispose();
         program = 0;
         vao = 0;
         vertexBuffer = 0;
@@ -326,6 +328,7 @@ final class GeometryClipmapRenderer {
                         GL11.GL_UNSIGNED_INT, 0L);
             }
             GL30.glBindVertexArray(0);
+            VisibleSurfaceProxyRenderer.draw(event, proxies);
         } finally {
             state.restore();
         }

@@ -18,6 +18,7 @@ import org.realscale.neoforge.client.clipmap.ClipmapHeightQuantizer;
 import org.realscale.neoforge.client.clipmap.GeometryClipmapLayout;
 import org.realscale.neoforge.client.clipmap.NaturalAutomateHeightMapping;
 import org.realscale.neoforge.network.ClipmapHeightTilePayload;
+import org.realscale.neoforge.network.ClipmapSurfaceProxyPayload;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -156,6 +157,11 @@ public final class GeometryClipmapServer {
                                 nextLayout, i, grid));
                     }
 
+                    List<org.realscale.neoforge.client.clipmap.VisibleSurfaceProxy> proxies =
+                            VisibleSurfaceProxyGenerator.collect(generator, randomState,
+                                    nextLayout, targetSeed);
+                    ClipmapSurfaceProxyPayload proxyPayload =
+                            new ClipmapSurfaceProxyPayload(targetDimension, proxies);
                     server.execute(() -> {
                         if (SESSIONS.get(player.getUUID()) != session
                                 || server.getPlayerList().getPlayer(player.getUUID()) != player
@@ -170,6 +176,7 @@ public final class GeometryClipmapServer {
                         for (ClipmapHeightTilePayload payload : payloads) {
                             PacketDistributor.sendToPlayer(player, payload);
                         }
+                        PacketDistributor.sendToPlayer(player, proxyPayload);
                     });
                 } catch (RuntimeException failure) {
                     server.execute(() -> {
