@@ -4,11 +4,12 @@ package org.realscale.neoforge;
  * Server-thread-only generation and retry gate for asynchronous clipmap jobs.
  *
  * <p>A world/session reset invalidates every in-flight callback from the old
- * world. Queue pressure and transient sampling errors use a bounded tick
- * backoff instead of retrying and logging on every server tick.
+ * world. The generation value is volatile so the sampler worker can stop
+ * obsolete work between LOD levels. Queue pressure and transient sampling
+ * errors use a bounded server-tick backoff.
  */
 final class ClipmapRequestEpoch {
-    private long generation;
+    private volatile long generation;
     private long retryAfterTick;
 
     long advance() {

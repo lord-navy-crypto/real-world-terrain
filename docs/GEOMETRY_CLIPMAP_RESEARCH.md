@@ -333,3 +333,13 @@ The R16 uploader now normalizes and restores not only unpack alignment but
 also row length, skipped rows/pixels and byte swapping. This prevents another
 renderer/mod from leaving non-default pixel-store values that would corrupt
 the clipmap texture rows even when alignment is set correctly.
+
+
+## 2026-11-22 cancellation of obsolete server sampling work
+
+The session generation is now volatile and checked between each LOD ring and
+before proxy generation. Replacing a session because the player changes
+render distance, resetting its world, or cleaning up a disconnected player
+advances the generation. The single bounded sampler can therefore abandon
+obsolete work instead of spending the remaining sampling budget on a player
+or world that no longer needs that snapshot.

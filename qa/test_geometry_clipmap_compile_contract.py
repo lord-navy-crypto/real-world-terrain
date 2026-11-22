@@ -139,6 +139,11 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("server.getPlayerList().getPlayer(playerId)", server)
         self.assertIn("RETRY_BACKOFF_TICKS", server)
         self.assertIn("sameCentre(nextLayout, currentLayout)", server)
+        self.assertIn("if (!session.requestEpoch.isCurrent(requestEpoch)) return;", server)
+        epoch = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/ClipmapRequestEpoch.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("private volatile long generation;", epoch)
 
     def test_geomorph_uses_existing_height_grid_and_cached_uniform(self):
         renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(

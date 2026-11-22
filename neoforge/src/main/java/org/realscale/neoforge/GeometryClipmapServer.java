@@ -70,6 +70,7 @@ public final class GeometryClipmapServer {
         UUID id = player.getUUID();
         Session current = SESSIONS.get(id);
         if (current == null || current.nearChunks != nearRenderDistanceChunks) {
+            if (current != null) current.requestEpoch.advance();
             SESSIONS.put(id, new Session(nearRenderDistanceChunks));
         }
     }
@@ -84,7 +85,11 @@ public final class GeometryClipmapServer {
         }
         if (++cleanupTicks >= 200) {
             cleanupTicks = 0;
-            SESSIONS.keySet().removeIf(id -> server.getPlayerList().getPlayer(id) == null);
+            SESSIONS.entrySet().removeIf(entry -> {
+                if (server.getPlayerList().getPlayer(entry.getKey()) != null) return false;
+                entry.getValue().requestEpoch.advance();
+                return true;
+            });
         }
     }
 
@@ -153,6 +158,10 @@ public final class GeometryClipmapServer {
                     List<ClipmapHeightGrid> nextGrids = new ArrayList<>(MAX_LEVELS);
                     List<ClipmapHeightTilePayload> payloads = new ArrayList<>(MAX_LEVELS);
                     for (int i = 0; i < nextLayout.levels().size(); i++) {
+                        // The sole sampler thread can be reused immediately
+                        // after a world/session change instead of finishing
+                        // all six rings for a player who has already left.
+                        if (!session.requestEpoch.isCurrent(requestEpoch)) return;
                         ClipmapHeightGrid previous = previousGrids == null
                                 ? null : previousGrids.get(i);
                         ClipmapHeightGrid grid = ClipmapHeightGrid.sample(
@@ -163,6 +172,7 @@ public final class GeometryClipmapServer {
                                 nextLayout, i, grid));
                     }
 
+                    if (!session.requestEpoch.isCurrent(requestEpoch)) return;
                     List<org.realscale.neoforge.client.clipmap.VisibleSurfaceProxy> proxies =
                             VisibleSurfaceProxyGenerator.collect(generator, randomState,
                                     nextLayout, targetSeed);
@@ -217,6 +227,7 @@ public final class GeometryClipmapServer {
                         PacketDistributor.sendToPlayer(currentPlayer, proxyPayload);
                     });
                 } catch (RuntimeException failure) {
+                    if (!session.requestEpoch.isCurrent(requestEpoch)) return;
                     server.execute(() -> {
                         if (SESSIONS.get(playerId) == session
                                 && session.requestEpoch.isCurrent(requestEpoch)) {
