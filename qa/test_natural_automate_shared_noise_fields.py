@@ -39,10 +39,10 @@ class NaturalAutomateSharedNoiseFieldsTest(unittest.TestCase):
         for relative, expected_input in expected.items():
             with self.subTest(relative=relative):
                 node = load(relative)
-                self.assertEqual("realscale:measured_horizontal_memo", node["type"])
-                self.assertEqual(expected_input, node["input"])
-                self.assertEqual(0.0, node["input"].get("y_scale", 0.0))
-                self.assertEqual(0.0, node["input"].get("shift_y", 0.0))
+                self.assertEqual("minecraft:cache_2d", node["type"])
+                self.assertEqual(expected_input, node["argument"])
+                self.assertEqual(0.0, node["argument"].get("y_scale", 0.0))
+                self.assertEqual(0.0, node["argument"].get("shift_y", 0.0))
 
     def test_both_natural_automate_presets_reuse_the_same_noise_nodes(self):
         for name in ("natural_automate.json", "natural_automate_v2.json"):
