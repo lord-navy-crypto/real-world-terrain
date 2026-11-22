@@ -22,7 +22,7 @@ final class ClipmapHeightGridTest {
 
         assertEquals(calls.get(), grid.sampledVertexCount());
         assertEquals(grid.sampledVertexCount(), grid.newlySampledVertexCount());
-        assertEquals(11_600, grid.sampledVertexCount());
+        assertEquals(16_592, grid.sampledVertexCount());
         assertTrue(grid.sampledVertexCount() < 129 * 129);
         assertEquals(-512L, grid.originX());
         assertEquals(-512L, grid.originZ());
@@ -64,9 +64,9 @@ final class ClipmapHeightGridTest {
         assertEquals(second.newlySampledVertexCount(), secondCalls.get());
         assertTrue(secondCalls.get() < firstCalls.get());
         assertTrue(second.sampledVertexCount() > second.newlySampledVertexCount());
-        // (400, 144) moves into the finer level's covered interior after recentering.
-        assertTrue(first.isSampledAt(114, 82));
-        assertFalse(second.isSampledAt(82, 82));
+        // (256, 0) enters the new inner hole when the shared centre moves.
+        assertTrue(first.isSampledAt(96, 64));
+        assertFalse(second.isSampledAt(64, 64));
 
         // (-128, 400) remains in both visible rings and must be reused without resampling.
         assertEquals(-128L, first.originX() + 48L * first.cellSpacingBlocks());

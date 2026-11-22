@@ -12,7 +12,7 @@ final class GeometryClipmapLayoutTest {
         GeometryClipmapLayout.Layout layout = planner.compute(0.0, 0.0);
 
         assertEquals(160L, layout.nearRadiusBlocks());
-        assertEquals(288L, layout.effectiveInnerRadiusBlocks());
+        assertEquals(32L, layout.effectiveInnerRadiusBlocks());
         assertEquals(6, layout.levels().size());
         long[] expectedSpacing = {8, 16, 32, 64, 128, 256};
         long[] expectedHalfExtent = {512, 1024, 2048, 4096, 8192, 16384};
@@ -99,6 +99,27 @@ final class GeometryClipmapLayoutTest {
         assertEquals(16, twenty.compute(0, 0).baseCellSpacingBlocks());
         assertTrue(twenty.compute(0, 0).effectiveInnerRadiusBlocks()
                 < twenty.compute(0, 0).levels().get(0).outerBounds().widthX() / 2);
+    }
+
+    @Test
+    void everyNearViewDistanceKeepsTheClipmapHoleInsideVanillaRange() {
+        for (int chunks = 2; chunks <= 64; chunks++) {
+            GeometryClipmapLayout candidate =
+                    GeometryClipmapLayout.forRenderDistanceChunks(chunks);
+            GeometryClipmapLayout.Layout initial = candidate.compute(0.0, 0.0);
+            long snap = initial.levels().get(initial.levels().size() - 1)
+                    .cellSpacingBlocks();
+            assertTrue(initial.effectiveInnerRadiusBlocks() > 0L);
+            assertTrue(initial.effectiveInnerRadiusBlocks() + snap / 2L
+                            <= initial.nearRadiusBlocks(),
+                    "Blank near/far gap possible at " + chunks + " chunks");
+            GeometryClipmapLayout.Layout moved =
+                    candidate.compute(snap / 2.0 - 0.1, 0.0, initial);
+            assertEquals(initial.levels().get(0).centerX(),
+                    moved.levels().get(0).centerX());
+        }
+        assertThrows(IllegalArgumentException.class,
+                () -> new GeometryClipmapLayout(128, 6, 8, 8));
     }
 
     @Test

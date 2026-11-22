@@ -51,7 +51,13 @@ public final class GeometryClipmapLayout {
         long nearRadius = nearRenderDistanceChunks * 16L;
         long centreSnapSpacing = (long) baseCellSpacingBlocks << (levelCount - 1);
         long cameraOffsetAllowance = centreSnapSpacing / 2L;
-        long protectedInnerRadius = nearRadius + cameraOffsetAllowance;
+        // Reserve an inner hole that remains inside vanilla's near field
+        // even when the common snapped centre lags behind the camera.
+        if (nearRadius <= cameraOffsetAllowance) {
+            throw new IllegalArgumentException(
+                    "near view distance must exceed half the clipmap snap spacing");
+        }
+        long protectedInnerRadius = nearRadius - cameraOffsetAllowance;
         long finestHalfExtent = (long) (gridCells / 2) * baseCellSpacingBlocks;
         if (nearRadius % baseCellSpacingBlocks != 0) {
             throw new IllegalArgumentException(
@@ -59,7 +65,7 @@ public final class GeometryClipmapLayout {
         }
         if (protectedInnerRadius >= finestHalfExtent) {
             throw new IllegalArgumentException(
-                    "finest clipmap window must extend beyond the protected vanilla render area");
+                    "finest clipmap window must extend beyond its camera-safe inner radius");
         }
 
         this.gridCells = gridCells;
@@ -78,6 +84,12 @@ public final class GeometryClipmapLayout {
             throw new IllegalArgumentException("render distance must be between 2 and 64 chunks");
         }
         int spacing = DEFAULT_BASE_CELL_SPACING_BLOCKS;
+        long nearRadius = chunks * 16L;
+        // At short view distances, shrink the snap cell instead of leaving
+        // an unsampled clipmap hole outside the loaded vanilla terrain.
+        while (((long) spacing << (DEFAULT_LEVEL_COUNT - 2)) >= nearRadius) {
+            spacing >>= 1;
+        }
         while (chunks > 2L * spacing) {
             spacing <<= 1;
         }
