@@ -28,6 +28,52 @@ final class NaturalAutomateSharedClimateParityTest {
         };
     }
 
+    private static double referenceSuitability(int familyIndex,double original,
+            double temp,double moisture,double region) {
+        double center=-5.0/6.0+familyIndex/3.0;
+        double regionalAffinity=1.0-smoothstep(0.18,0.62,
+                Math.abs(region-center));
+        if(regionalAffinity<=0.0)return 0.0;
+
+        double warmth=smoothstep(-0.45,0.45,temp);
+        double coldness=1.0-smoothstep(-0.45,0.35,temp);
+        double wetness=smoothstep(-0.50,0.45,moisture);
+        double dryness=1.0-smoothstep(-0.15,0.55,moisture);
+        double topographicSuitability;
+        double climateSuitability;
+        switch(familyIndex) {
+            case 0 -> {
+                topographicSuitability=smoothstep(0.65,1.7,original);
+                climateSuitability=0.15+0.85*coldness;
+            }
+            case 1 -> {
+                topographicSuitability=smoothstep(0.18,0.62,original);
+                climateSuitability=coldness*(0.40+0.60*wetness);
+            }
+            case 2 -> {
+                topographicSuitability=0.45+0.55*smoothstep(-0.10,0.28,original);
+                climateSuitability=0.18+0.82*dryness;
+            }
+            case 3 -> {
+                topographicSuitability=smoothstep(0.05,0.42,original);
+                climateSuitability=0.60+0.40*warmth;
+            }
+            case 4 -> {
+                topographicSuitability=smoothstep(-0.12,0.22,original)
+                        *(1.0-smoothstep(0.72,1.05,original));
+                climateSuitability=(0.30+0.70*wetness)
+                        *(0.40+0.60*warmth);
+            }
+            case 5 -> {
+                topographicSuitability=1.0-smoothstep(0.12,0.58,original);
+                climateSuitability=warmth*dryness;
+            }
+            default -> { return 0.0; }
+        }
+        return Math.max(0.0,Math.min(1.0,
+                regionalAffinity*topographicSuitability*climateSuitability));
+    }
+
     private static double reference(double original,double continent,
             double rawSignal,double rawRegion,double rawTemperature,
             double rawHumidity,int x,int z,TerrainArchetypeMath[] kernels) {
@@ -41,18 +87,12 @@ final class NaturalAutomateSharedClimateParityTest {
 
         // Former implementation: each family recomputed the same four
         // climate factors inside naturalFamilySuitabilityNormalized().
-        double s0=TerrainArchetypeMath.naturalFamilySuitability(
-                0,original,temperature,humidity,region);
-        double s1=TerrainArchetypeMath.naturalFamilySuitability(
-                1,original,temperature,humidity,region);
-        double s2=TerrainArchetypeMath.naturalFamilySuitability(
-                2,original,temperature,humidity,region);
-        double s3=TerrainArchetypeMath.naturalFamilySuitability(
-                3,original,temperature,humidity,region);
-        double s4=TerrainArchetypeMath.naturalFamilySuitability(
-                4,original,temperature,humidity,region);
-        double s5=TerrainArchetypeMath.naturalFamilySuitability(
-                5,original,temperature,humidity,region);
+        double s0=referenceSuitability(0,original,temperature,humidity,region);
+        double s1=referenceSuitability(1,original,temperature,humidity,region);
+        double s2=referenceSuitability(2,original,temperature,humidity,region);
+        double s3=referenceSuitability(3,original,temperature,humidity,region);
+        double s4=referenceSuitability(4,original,temperature,humidity,region);
+        double s5=referenceSuitability(5,original,temperature,humidity,region);
         double total=s0+s1+s2+s3+s4+s5;
         if(total<=1.0e-12)return original;
 
