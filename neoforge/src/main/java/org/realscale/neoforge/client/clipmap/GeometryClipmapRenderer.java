@@ -182,6 +182,7 @@ final class GeometryClipmapRenderer {
 
     private static int program;
     private static UniformLocations uniforms;
+    private static ClipmapFogRange fogRange;
     private static ShortBuffer reusableHeightUpload;
     private static int vao;
     private static int vertexBuffer;
@@ -255,6 +256,7 @@ final class GeometryClipmapRenderer {
         VisibleSurfaceProxyRenderer.dispose();
         program = 0;
         uniforms = null;
+        fogRange = null;
         reusableHeightUpload = null;
         vao = 0;
         vertexBuffer = 0;
@@ -273,6 +275,7 @@ final class GeometryClipmapRenderer {
         baseSpacing = spacing;
         program = linkProgram(VERTEX_SHADER, FRAGMENT_SHADER);
         uniforms = UniformLocations.lookup(program);
+        fogRange = ClipmapFogRange.forGrid(cells, spacing, LEVEL_COUNT);
         reusableHeightUpload = BufferUtils.createShortBuffer((cells + 1) * (cells + 1));
         vao = GL30.glGenVertexArrays();
         vertexBuffer = GL15.glGenBuffers();
@@ -371,8 +374,8 @@ final class GeometryClipmapRenderer {
         GL20.glUniform1f(uniforms.heightMax(),
                 MAX_HEIGHT);
         GL20.glUniform1f(uniforms.seaLevel(), 63.0f);
-        GL20.glUniform1f(uniforms.fogStart(), 6500.0f);
-        GL20.glUniform1f(uniforms.fogEnd(), 19000.0f);
+        GL20.glUniform1f(uniforms.fogStart(), fogRange.startBlocks());
+        GL20.glUniform1f(uniforms.fogEnd(), fogRange.endBlocks());
         GL20.glUniform3f(uniforms.fogColor(),
                 0.58f, 0.69f, 0.80f);
         GL20.glUniform1i(uniforms.heightMap(), 0);
@@ -403,7 +406,8 @@ final class GeometryClipmapRenderer {
                     GL11.GL_UNSIGNED_INT, 0L);
         }
         GL30.glBindVertexArray(0);
-        VisibleSurfaceProxyRenderer.draw(event, proxies);
+        VisibleSurfaceProxyRenderer.draw(event, proxies,
+                nearChunks, fogRange.startBlocks(), fogRange.endBlocks());
     }
 
     private static int linkProgram(String vertexSource, String fragmentSource) {

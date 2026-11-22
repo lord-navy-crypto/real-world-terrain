@@ -105,13 +105,19 @@ final class VisibleSurfaceProxyRenderer {
 
     private VisibleSurfaceProxyRenderer() {}
 
-    static void draw(RenderLevelStageEvent event, List<VisibleSurfaceProxy> proxies) {
+    static void draw(RenderLevelStageEvent event, List<VisibleSurfaceProxy> proxies,
+            int nearChunks, float fogStart, float fogEnd) {
         if (proxies == null || proxies.isEmpty()) return;
         RenderSystem.assertOnRenderThread();
 
         var camera = event.getCamera().getPosition();
         List<VisibleSurfaceProxy> visible = new ArrayList<>(proxies.size());
+        double nearRadius = Math.max(0.0, nearChunks * 16.0 - 16.0);
+        double nearRadiusSquared = nearRadius * nearRadius;
         for (VisibleSurfaceProxy proxy : proxies) {
+            double dx = proxy.x() - camera.x;
+            double dz = proxy.z() - camera.z;
+            if (dx * dx + dz * dz < nearRadiusSquared) continue;
             double radius = proxy.radius();
             AABB bounds = new AABB(
                     proxy.x() - radius, proxy.y(),
@@ -146,8 +152,8 @@ final class VisibleSurfaceProxyRenderer {
         GL20.glUseProgram(program);
         GL20.glUniformMatrix4fv(
                 GL20.glGetUniformLocation(program, "uViewProjection"), false, matrix);
-        GL20.glUniform1f(GL20.glGetUniformLocation(program, "uFogStart"), 5500.0f);
-        GL20.glUniform1f(GL20.glGetUniformLocation(program, "uFogEnd"), 18000.0f);
+        GL20.glUniform1f(GL20.glGetUniformLocation(program, "uFogStart"), fogStart);
+        GL20.glUniform1f(GL20.glGetUniformLocation(program, "uFogEnd"), fogEnd);
         GL20.glUniform3f(GL20.glGetUniformLocation(program, "uFogColor"),
                 0.58f, 0.69f, 0.80f);
 

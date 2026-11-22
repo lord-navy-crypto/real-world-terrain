@@ -265,3 +265,16 @@ A pure CPU reference with JUnit parity checks tests border interpolation
 and weight falloff. The fragment shader adds a subtle shallow-ocean
 coastline colour. Client GPU seams, FPS and macOS shader behavior still
 require in-game evidence.
+
+
+## 2026-11-22 view-scaled fog and exterior near-region suppression
+
+A pure Java, JUnit-tested \`ClipmapFogRange\` now derives the fog fade
+band from the actual outermost half-extent of the six-level clipmap.
+The previous fixed 6500–19000-block interval could leave hard square
+horizon boundaries at small render distances, while excessive fog at
+large distances hid generated terrain. Terrain and exterior proxies
+share the SAME fog range, with the outermost ring fading by 98% of
+its radius. Tree and building proxies are also suppressed within the
+vanilla nearby chunk radius, reducing duplicate near-field silhouettes.
+Visual verification is still needed to characterize remaining artifacts.
