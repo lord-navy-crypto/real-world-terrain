@@ -64,7 +64,7 @@ final class ClipmapHeightGridTest {
         assertEquals(second.newlySampledVertexCount(), secondCalls.get());
         assertTrue(secondCalls.get() < firstCalls.get());
         assertTrue(second.sampledVertexCount() > second.newlySampledVertexCount());
-        assertEquals(first.heightAt(64, 64), second.heightAt(32, 32), 0.0f);
+        assertEquals(first.heightAt(114, 114), second.heightAt(82, 82), 0.0f);
     }
 
     @Test
