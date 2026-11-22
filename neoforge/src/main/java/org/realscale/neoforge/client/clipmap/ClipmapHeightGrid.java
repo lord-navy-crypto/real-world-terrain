@@ -6,9 +6,10 @@ import java.util.Objects;
 /**
  * Sparse CPU-side height samples for one Geometry Clipmap ring.
  *
- * <p>Only grid vertices outside the finer level's inner window are sampled.
- * This intentionally consumes a height sampler, not Minecraft chunks or
- * block states. GPU upload and toroidal partial updates are later stages.
+ * <p>Only vertices outside the finer level's inner window are sampled.
+ * When a previous grid is supplied, samples whose world coordinates remain
+ * in the new window are copied; only newly exposed rows/columns invoke the
+ * sampler. No Minecraft chunks or block states are requested.
  */
 public final class ClipmapHeightGrid {
     private final int gridCells;
@@ -18,9 +19,11 @@ public final class ClipmapHeightGrid {
     private final long originZ;
     private final float[] heights;
     private final BitSet sampled;
+    private final int newlySampledVertexCount;
 
     private ClipmapHeightGrid(int gridCells, int cellSpacingBlocks,
-            long originX, long originZ, float[] heights, BitSet sampled) {
+            long originX, long originZ, float[] heights, BitSet sampled,
+            int newlySampledVertexCount) {
         this.gridCells = gridCells;
         this.gridSide = gridCells + 1;
         this.cellSpacingBlocks = cellSpacingBlocks;
@@ -28,12 +31,21 @@ public final class ClipmapHeightGrid {
         this.originZ = originZ;
         this.heights = heights;
         this.sampled = sampled;
+        this.newlySampledVertexCount = newlySampledVertexCount;
     }
 
     public static ClipmapHeightGrid sample(
             GeometryClipmapLayout.Level level,
             int gridCells,
             SurfaceHeightSampler sampler) {
+        return sample(level, gridCells, sampler, null);
+    }
+
+    public static ClipmapHeightGrid sample(
+            GeometryClipmapLayout.Level level,
+            int gridCells,
+            SurfaceHeightSampler sampler,
+            ClipmapHeightGrid previous) {
         Objects.requireNonNull(level, "level");
         Objects.requireNonNull(sampler, "sampler");
         if (gridCells < 1) {
@@ -47,11 +59,17 @@ public final class ClipmapHeightGrid {
             throw new IllegalArgumentException(
                     "outer bounds do not match the requested grid dimensions");
         }
+        if (previous != null && (previous.gridCells != gridCells
+                || previous.cellSpacingBlocks != spacing)) {
+            throw new IllegalArgumentException(
+                    "previous grid has incompatible resolution or cell spacing");
+        }
 
         int side = gridCells + 1;
         float[] heights = new float[Math.multiplyExact(side, side)];
         BitSet sampled = new BitSet(heights.length);
         GeometryClipmapLayout.Bounds hole = level.innerBounds();
+        int newlySampled = 0;
 
         for (int gridZ = 0; gridZ < side; gridZ++) {
             long worldZ = outer.minZ() + (long) gridZ * spacing;
@@ -64,46 +82,51 @@ public final class ClipmapHeightGrid {
                     continue;
                 }
 
-                float height = sampler.sampleHeight(
-                        Math.toIntExact(worldX), Math.toIntExact(worldZ));
-                if (!Float.isFinite(height)) {
-                    throw new IllegalArgumentException(
-                            "height sampler returned a non-finite value at "
-                                    + worldX + "," + worldZ);
+                int oldX = -1;
+                int oldZ = -1;
+                if (previous != null) {
+                    long dx = worldX - previous.originX;
+                    long dz = worldZ - previous.originZ;
+                    if (dx % spacing == 0L && dz % spacing == 0L) {
+                        long candidateX = dx / spacing;
+                        long candidateZ = dz / spacing;
+                        if (candidateX >= 0 && candidateX < previous.gridSide
+                                && candidateZ >= 0 && candidateZ < previous.gridSide) {
+                            oldX = (int) candidateX;
+                            oldZ = (int) candidateZ;
+                        }
+                    }
                 }
-                heights[index] = height;
+
+                if (oldX >= 0 && previous.isSampledAt(oldX, oldZ)) {
+                    heights[index] = previous.heightAt(oldX, oldZ);
+                } else {
+                    float height = sampler.sampleHeight(
+                            Math.toIntExact(worldX), Math.toIntExact(worldZ));
+                    if (!Float.isFinite(height)) {
+                        throw new IllegalArgumentException(
+                                "height sampler returned a non-finite value at "
+                                        + worldX + "," + worldZ);
+                    }
+                    heights[index] = height;
+                    newlySampled++;
+                }
                 sampled.set(index);
             }
         }
 
         return new ClipmapHeightGrid(gridCells,
                 Math.toIntExact(spacing), outer.minX(), outer.minZ(),
-                heights, sampled);
+                heights, sampled, newlySampled);
     }
 
-    public int gridCells() {
-        return gridCells;
-    }
-
-    public int gridSide() {
-        return gridSide;
-    }
-
-    public int cellSpacingBlocks() {
-        return cellSpacingBlocks;
-    }
-
-    public long originX() {
-        return originX;
-    }
-
-    public long originZ() {
-        return originZ;
-    }
-
-    public int sampledVertexCount() {
-        return sampled.cardinality();
-    }
+    public int gridCells() { return gridCells; }
+    public int gridSide() { return gridSide; }
+    public int cellSpacingBlocks() { return cellSpacingBlocks; }
+    public long originX() { return originX; }
+    public long originZ() { return originZ; }
+    public int sampledVertexCount() { return sampled.cardinality(); }
+    public int newlySampledVertexCount() { return newlySampledVertexCount; }
 
     public boolean isSampledAt(int gridX, int gridZ) {
         return sampled.get(index(gridX, gridZ));

@@ -10,7 +10,7 @@ final class ClipmapHeightGridTest {
     private final GeometryClipmapLayout planner = new GeometryClipmapLayout();
 
     @Test
-    void samplesRingVerticesDirectlyWithoutCreatingChunks() {
+    void samplesOnlyVerticesOutsideTheFinerWindow() {
         GeometryClipmapLayout.Level level = planner.compute(0.0, 0.0).levels().get(0);
         AtomicInteger calls = new AtomicInteger();
 
@@ -21,7 +21,8 @@ final class ClipmapHeightGridTest {
                 });
 
         assertEquals(calls.get(), grid.sampledVertexCount());
-        assertEquals(10_400, grid.sampledVertexCount());
+        assertEquals(grid.sampledVertexCount(), grid.newlySampledVertexCount());
+        assertEquals(7_200, grid.sampledVertexCount());
         assertTrue(grid.sampledVertexCount() < 129 * 129);
         assertEquals(-256L, grid.originX());
         assertEquals(-256L, grid.originZ());
@@ -36,25 +37,41 @@ final class ClipmapHeightGridTest {
         ClipmapHeightGrid grid = ClipmapHeightGrid.sample(level, 128,
                 (x, z) -> 123.0f);
 
-        // Grid coordinate (64,64) is at the camera and belongs to the
-        // vanilla near field, so this ring intentionally has no sample there.
         assertFalse(grid.isSampledAt(64, 64));
         assertTrue(Float.isNaN(grid.copyHeights()[64 * 129 + 64]));
-        assertThrows(IllegalStateException.class,
-                () -> grid.heightAt(64, 64));
+        assertThrows(IllegalStateException.class, () -> grid.heightAt(64, 64));
         assertTrue(grid.isSampledAt(0, 0));
     }
 
     @Test
-    void rejectsNonFiniteHeightSamples() {
-        GeometryClipmapLayout.Level level = planner.compute(0.0, 0.0).levels().get(0);
-        assertThrows(IllegalArgumentException.class,
-                () -> ClipmapHeightGrid.sample(level, 128, (x, z) -> Float.NaN));
+    void reusesUnchangedWorldVerticesAfterClipmapRecenters() {
+        GeometryClipmapLayout.Layout before = planner.compute(0.0, 0.0);
+        AtomicInteger firstCalls = new AtomicInteger();
+        ClipmapHeightGrid first = ClipmapHeightGrid.sample(before.levels().get(0),
+                128, (x, z) -> {
+                    firstCalls.incrementAndGet();
+                    return x * 0.01f + z * 0.02f;
+                });
+
+        GeometryClipmapLayout.Layout after = planner.compute(64.1, 0.0, before);
+        AtomicInteger secondCalls = new AtomicInteger();
+        ClipmapHeightGrid second = ClipmapHeightGrid.sample(after.levels().get(0),
+                128, (x, z) -> {
+                    secondCalls.incrementAndGet();
+                    return x * 0.01f + z * 0.02f;
+                }, first);
+
+        assertEquals(second.newlySampledVertexCount(), secondCalls.get());
+        assertTrue(secondCalls.get() < firstCalls.get());
+        assertTrue(second.sampledVertexCount() > second.newlySampledVertexCount());
+        assertEquals(first.heightAt(80, 20), second.heightAt(64, 20), 0.0f);
     }
 
     @Test
-    void rejectsMismatchedGridDimensions() {
+    void rejectsNonFiniteHeightSamplesAndMismatchedGridDimensions() {
         GeometryClipmapLayout.Level level = planner.compute(0.0, 0.0).levels().get(0);
+        assertThrows(IllegalArgumentException.class,
+                () -> ClipmapHeightGrid.sample(level, 128, (x, z) -> Float.NaN));
         assertThrows(IllegalArgumentException.class,
                 () -> ClipmapHeightGrid.sample(level, 64, (x, z) -> 0.0f));
     }
