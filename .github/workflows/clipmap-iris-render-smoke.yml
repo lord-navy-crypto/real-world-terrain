@@ -68,10 +68,12 @@ jobs:
             -o Acquire::Retries=3 \
             -o Acquire::http::Timeout=30 \
             -o Acquire::https::Timeout=30 \
-            install -y xvfb x11-apps imagemagick mesa-utils libgl1-mesa-dri libglx-mesa0
+            install -y xvfb x11-apps xdotool tesseract-ocr imagemagick mesa-utils libgl1-mesa-dri libglx-mesa0
           command -v xvfb-run
           command -v glxinfo
           command -v xwd
+          command -v xdotool
+          command -v tesseract
           command -v identify
 
       - name: Verify Mesa OpenGL under Xvfb
