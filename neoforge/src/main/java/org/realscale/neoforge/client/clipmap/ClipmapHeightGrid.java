@@ -4,6 +4,7 @@ import java.util.BitSet;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntConsumer;
 
 /**
  * Sparse CPU-side height samples for one Geometry Clipmap ring.
@@ -62,9 +63,24 @@ public final class ClipmapHeightGrid {
             SurfaceHeightSampler sampler,
             ClipmapHeightGrid previous,
             BooleanSupplier stillCurrent) {
+        return sample(level, gridCells, sampler, previous, stillCurrent, ignored -> { });
+    }
+
+    /**
+     * Reports monotonic grid-scan progress while retaining cancellation checks.
+     * Progress callbacks run on the sampler thread and should remain lightweight.
+     */
+    public static ClipmapHeightGrid sample(
+            GeometryClipmapLayout.Level level,
+            int gridCells,
+            SurfaceHeightSampler sampler,
+            ClipmapHeightGrid previous,
+            BooleanSupplier stillCurrent,
+            IntConsumer progress) {
         Objects.requireNonNull(level, "level");
         Objects.requireNonNull(sampler, "sampler");
         Objects.requireNonNull(stillCurrent, "stillCurrent");
+        Objects.requireNonNull(progress, "progress");
         if (gridCells < 1) {
             throw new IllegalArgumentException("gridCells must be positive");
         }
@@ -95,6 +111,9 @@ public final class ClipmapHeightGrid {
                 int index = gridZ * side + gridX;
                 if ((index & 31) == 0 && !stillCurrent.getAsBoolean()) {
                     throw new CancellationException("Obsolete RealScale clipmap sampling");
+                }
+                if ((index & 1023) == 0) {
+                    progress.accept((int) (index * 100L / heights.length));
                 }
 
                 if (hole.containsStrict(worldX, worldZ)) {
@@ -135,6 +154,7 @@ public final class ClipmapHeightGrid {
             }
         }
 
+        progress.accept(100);
         return new ClipmapHeightGrid(gridCells,
                 Math.toIntExact(spacing), outer.minX(), outer.minZ(),
                 heights, sampled, newlySampled);

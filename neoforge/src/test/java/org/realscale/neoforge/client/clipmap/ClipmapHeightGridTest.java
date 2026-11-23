@@ -107,4 +107,24 @@ final class ClipmapHeightGridTest {
         assertThrows(IllegalArgumentException.class,
                 () -> ClipmapHeightGrid.sample(level, 64, (x, z) -> 0.0f));
     }
+    @Test
+    void reportsMonotonicProgressThroughTheWholeRing() {
+        GeometryClipmapLayout.Level level = planner.compute(0.0, 0.0).levels().get(0);
+        AtomicInteger previous = new AtomicInteger(-1);
+        AtomicInteger callbackCount = new AtomicInteger();
+        AtomicInteger finalPercent = new AtomicInteger(-1);
+        ClipmapHeightGrid.sample(level, 128, (x, z) -> 42.0f, null,
+                () -> true, percent -> {
+                    assertTrue(percent >= previous.get(),
+                            "progress must never move backwards");
+                    assertTrue(percent >= 0 && percent <= 100);
+                    previous.set(percent);
+                    finalPercent.set(percent);
+                    callbackCount.incrementAndGet();
+                });
+        assertTrue(callbackCount.get() >= 10,
+                "the first LOD ring should report multiple in-ring progress updates");
+        assertEquals(100, finalPercent.get());
+    }
+
 }
