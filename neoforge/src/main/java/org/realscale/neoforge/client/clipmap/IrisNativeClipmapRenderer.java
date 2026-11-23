@@ -101,11 +101,16 @@ final class IrisNativeClipmapRenderer {
                 : renderType == RenderType.cutout() ? cutoutBuffer : waterBuffer;
         if (target == null) return false;
 
+        // Sodium unbinds its GL program before dispatching NeoForge's
+        // AFTER_* terrain-stage event. Re-enter the matching RenderType state
+        // here so Iris selects its ShaderMap terrain ShaderInstance for this phase.
+        renderType.setupRenderState();
         ShaderInstance shader = RenderSystem.getShader();
         if (shader == null || shader.CHUNK_OFFSET == null) {
+            renderType.clearRenderState();
             if (!missingChunkOffsetReported) {
                 missingChunkOffsetReported = true;
-                System.err.println("[RealScale Iris Clipmap] Active terrain shader has no ChunkOffset uniform; native draw skipped safely");
+                System.err.println("[RealScale Iris Clipmap] Active Iris terrain shader has no ChunkOffset uniform; native draw skipped safely");
             }
             return false;
         }
@@ -133,6 +138,7 @@ final class IrisNativeClipmapRenderer {
             VertexBuffer.unbind();
             chunkOffset.set(0.0f, 0.0f, 0.0f);
             chunkOffset.upload();
+            renderType.clearRenderState();
         }
     }
 
@@ -198,16 +204,20 @@ final class IrisNativeClipmapRenderer {
                 snapshot.add(tile);
             }
 
+            VertexFormat irisTerrainFormat = IrisRenderCompatibility.terrainVertexFormat();
+            if (irisTerrainFormat == null) {
+                throw new IllegalStateException("Iris terrain vertex format is unavailable");
+            }
             Sprites sprites = Sprites.load(Minecraft.getInstance());
             try (ByteBufferBuilder solidBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES);
                  ByteBufferBuilder cutoutBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES);
                  ByteBufferBuilder waterBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES)) {
                 BufferBuilder solidBuilder = new BufferBuilder(
-                        solidBytes, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+                        solidBytes, VertexFormat.Mode.QUADS, irisTerrainFormat);
                 BufferBuilder cutoutBuilder = new BufferBuilder(
-                        cutoutBytes, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+                        cutoutBytes, VertexFormat.Mode.QUADS, irisTerrainFormat);
                 BufferBuilder waterBuilder = new BufferBuilder(
-                        waterBytes, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+                        waterBytes, VertexFormat.Mode.QUADS, irisTerrainFormat);
 
                 for (int level = 0; level < LEVEL_COUNT; level++) {
                     appendTerrain(snapshot.get(level), level, nearChunks, seaLevel,
@@ -593,7 +603,6 @@ final class IrisNativeClipmapRenderer {
                 .setColor((rgb >>> 16) & 0xFF, (rgb >>> 8) & 0xFF,
                         rgb & 0xFF, alpha)
                 .setUv(sprite.getU(u), sprite.getV(v))
-                .setOverlay(NO_OVERLAY)
                 .setLight(SURFACE_SKY_LIGHT)
                 .setNormal(normal[0], normal[1], normal[2]);
     }
