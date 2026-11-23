@@ -30,6 +30,6 @@ public abstract class IrisGeometryClipmapMixin {
             Matrix4f frustumMatrix, Matrix4f projectionMatrix,
             CallbackInfo callbackInfo) {
         GeometryClipmapClient.renderIrisNativeLayer(renderType,
-                cameraX, cameraY, cameraZ, frustumMatrix, projectionMatrix);
+                cameraX, cameraY, cameraZ);
     }
 }
