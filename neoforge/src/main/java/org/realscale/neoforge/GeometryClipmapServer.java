@@ -189,7 +189,8 @@ public final class GeometryClipmapServer {
                                 ? null : previousGrids.get(i);
                         ClipmapHeightGrid grid = ClipmapHeightGrid.sample(
                                 nextLayout.levels().get(i), nextLayout.gridCells(),
-                                heightSampler, previous);
+                                heightSampler, previous,
+                                () -> session.requestEpoch.isCurrent(requestEpoch));
                         nextGrids.add(grid);
                         if (DEBUG) newlySampledVertices += grid.newlySampledVertexCount();
                         payloads.add(toPayload(targetDimension, targetRequestId,

@@ -2,6 +2,7 @@ package org.realscale.neoforge.client.clipmap;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -79,6 +80,23 @@ final class ClipmapHeightGridTest {
         assertEquals(expectedHeight, actualHeight, 0.0f,
                 () -> "The same world vertex must retain its exact sampled height: expected "
                         + expectedHeight + ", actual " + actualHeight);
+    }
+
+    @Test
+    void cancelsDuringAHeavyRingInsteadOfWaitingForTheNextLevel() {
+        GeometryClipmapLayout.Level level = planner.compute(0.0, 0.0).levels().get(0);
+        AtomicInteger checks = new AtomicInteger();
+        AtomicInteger samples = new AtomicInteger();
+        assertThrows(CancellationException.class,
+                () -> ClipmapHeightGrid.sample(level, 128,
+                        (x, z) -> {
+                            samples.incrementAndGet();
+                            return 40.0f;
+                        }, null, () -> checks.incrementAndGet() < 4));
+        assertEquals(4, checks.get());
+        assertTrue(samples.get() > 0);
+        assertTrue(samples.get() < 129 * 129,
+                "A superseded request must not finish a full obsolete ring");
     }
 
     @Test

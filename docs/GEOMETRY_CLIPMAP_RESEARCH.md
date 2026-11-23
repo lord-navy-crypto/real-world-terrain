@@ -467,3 +467,26 @@ can reuse an unsampled old-hole texel. The renderer also avoids per-frame plan,
 record, and texture-bind work for immutable unchanged packet objects.
 This establishes CPU-side correctness tests only, not actual GPU screenshot
 or frame-time measurements.
+
+
+## 2026-11-23 final client hardening: packet order, cancellation, and first-frame telemetry
+
+The Geometry Clipmap client now keeps a bounded, one-snapshot staging area for
+exterior proxies. It no longer assumes the proxy packet must arrive after the
+sixth height tile: proxies are attached only when their request ID, dimension
+and snapped centre match a fully assembled height snapshot. This avoids a
+missing-canopy frame when packets arrive out of order and prevents feature
+impostors leaking across dimension/teleport boundaries.
+
+The server passes its active sampling epoch into the height grid sampler.
+Every 32 grid vertices the worker checks whether the request is still
+current and throws a cancellation exception if it was invalidated. The server
+already ignores failures from superseded epochs, so normal travel/world
+transitions no longer need to finish an obsolete full ring before work for
+another player can proceed.
+
+Debug mode now reports `firstSnapshotReady` and
+`firstEligibleRenderSubmission` milliseconds relative to the client's
+request. These measure client-observed state changes and CPU render submission;
+they do not prove the first displayed GPU frame or GPU execution duration.
+The default remains opt-in/off. The network protocol remains version 3.

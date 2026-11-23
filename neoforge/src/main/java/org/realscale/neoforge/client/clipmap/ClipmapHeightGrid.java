@@ -2,6 +2,8 @@ package org.realscale.neoforge.client.clipmap;
 
 import java.util.BitSet;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
+import java.util.function.BooleanSupplier;
 
 /**
  * Sparse CPU-side height samples for one Geometry Clipmap ring.
@@ -46,8 +48,23 @@ public final class ClipmapHeightGrid {
             int gridCells,
             SurfaceHeightSampler sampler,
             ClipmapHeightGrid previous) {
+        return sample(level, gridCells, sampler, previous, () -> true);
+    }
+
+    /**
+     * Tests cancellation once every 32 grid vertices. This is critical when
+     * density sampling is expensive: changing worlds or teleporting should
+     * release the only sampler thread before it finishes an obsolete ring.
+     */
+    public static ClipmapHeightGrid sample(
+            GeometryClipmapLayout.Level level,
+            int gridCells,
+            SurfaceHeightSampler sampler,
+            ClipmapHeightGrid previous,
+            BooleanSupplier stillCurrent) {
         Objects.requireNonNull(level, "level");
         Objects.requireNonNull(sampler, "sampler");
+        Objects.requireNonNull(stillCurrent, "stillCurrent");
         if (gridCells < 1) {
             throw new IllegalArgumentException("gridCells must be positive");
         }
@@ -76,6 +93,9 @@ public final class ClipmapHeightGrid {
             for (int gridX = 0; gridX < side; gridX++) {
                 long worldX = outer.minX() + (long) gridX * spacing;
                 int index = gridZ * side + gridX;
+                if ((index & 31) == 0 && !stillCurrent.getAsBoolean()) {
+                    throw new CancellationException("Obsolete RealScale clipmap sampling");
+                }
 
                 if (hole.containsStrict(worldX, worldZ)) {
                     heights[index] = Float.NaN;

@@ -26,13 +26,17 @@ public final class GeometryClipmapClient {
             Boolean.getBoolean("realscale.experimental.geometryclipmap");
     private static final ClipmapSnapshotAssembler<ClipmapHeightTilePayload> TILES =
             new ClipmapSnapshotAssembler<>(6);
-    private static List<VisibleSurfaceProxy> PROXIES = List.of();
+    private static final ClipmapProxySnapshotBuffer<List<VisibleSurfaceProxy>> PROXY_BUFFER =
+            new ClipmapProxySnapshotBuffer<>();
+    private static final boolean DEBUG =
+            Boolean.getBoolean("realscale.experimental.geometryclipmap.debug");
     private static ClientLevel lastLevel;
     private static int lastNearChunks = -1;
-    private static long proxyCenterX = Long.MIN_VALUE;
-    private static long proxyCenterZ = Long.MIN_VALUE;
     private static long requestSequence;
     private static long activeRequestId;
+    private static long requestStartedNanos;
+    private static boolean firstSnapshotRecorded;
+    private static boolean firstRenderSubmitted;
 
     private GeometryClipmapClient() {}
 
@@ -49,10 +53,14 @@ public final class GeometryClipmapClient {
                 payload.cellSpacingBlocks(), payload.originX(), payload.originZ(),
                 payload.nearRenderDistanceChunks(), payload.dimensionKey(), payload)) {
             var key = TILES.activeKey();
-            if (key != null
-                    && (proxyCenterX != key.centerX()
-                        || proxyCenterZ != key.centerZ())) {
-                PROXIES = List.of();
+            PROXY_BUFFER.onHeightSnapshot(key);
+            if (DEBUG && !firstSnapshotRecorded && requestStartedNanos != 0L) {
+                firstSnapshotRecorded = true;
+                System.out.printf(java.util.Locale.ROOT,
+                        "[RealScale Geometry Clipmap] firstSnapshotReady=%.1fms " +
+                                "dimension=%s center=(%d,%d)%n",
+                        (System.nanoTime() - requestStartedNanos) / 1_000_000.0,
+                        key.dimension(), key.centerX(), key.centerZ());
             }
         }
     }
@@ -64,15 +72,11 @@ public final class GeometryClipmapClient {
                 || payload.requestId() != activeRequestId
                 || !minecraft.level.dimension().location().toString()
                         .equals(payload.dimensionKey())) return;
-        var key = TILES.activeKey();
-        if (key == null || key.requestId() != activeRequestId
-                || key.centerX() != payload.centerX()
-                || key.centerZ() != payload.centerZ()) {
-            return;
-        }
-        PROXIES = payload.proxies();
-        proxyCenterX = payload.centerX();
-        proxyCenterZ = payload.centerZ();
+        // Staging one unmatched snapshot prevents losing proxies if a valid
+        // proxy packet is processed before the last height tile arrives.
+        PROXY_BUFFER.accept(payload.requestId(), payload.dimensionKey(),
+                payload.centerX(), payload.centerZ(), payload.proxies(),
+                TILES.activeKey());
     }
 
     @SubscribeEvent
@@ -93,6 +97,9 @@ public final class GeometryClipmapClient {
             lastLevel = level;
             lastNearChunks = nearChunks;
             activeRequestId = nextRequestId();
+            requestStartedNanos = DEBUG ? System.nanoTime() : 0L;
+            firstSnapshotRecorded = false;
+            firstRenderSubmitted = false;
             PacketDistributor.sendToServer(
                     new ClipmapRequestPayload(nearChunks, activeRequestId));
         }
@@ -112,8 +119,16 @@ public final class GeometryClipmapClient {
         double safeX = key.gridCells() * (double) key.baseSpacing() / 2.0;
         if (Math.abs(cameraX - key.centerX()) > safeX
                 || Math.abs(cameraZ - key.centerZ()) > safeX) return;
+        List<VisibleSurfaceProxy> proxies = PROXY_BUFFER.activeFor(key);
         GeometryClipmapRenderer.render(event, TILES.activeTiles(),
-                minecraft.level.dimension().location().toString(), PROXIES);
+                minecraft.level.dimension().location().toString(),
+                proxies == null ? List.of() : proxies);
+        if (DEBUG && !firstRenderSubmitted && requestStartedNanos != 0L) {
+            firstRenderSubmitted = true;
+            System.out.printf(java.util.Locale.ROOT,
+                    "[RealScale Geometry Clipmap] firstEligibleRenderSubmission=%.1fms%n",
+                    (System.nanoTime() - requestStartedNanos) / 1_000_000.0);
+        }
     }
 
     private static long nextRequestId() {
@@ -124,9 +139,10 @@ public final class GeometryClipmapClient {
     private static void clear() {
         activeRequestId = 0L;
         TILES.clear();
-        PROXIES = List.of();
-        proxyCenterX = Long.MIN_VALUE;
-        proxyCenterZ = Long.MIN_VALUE;
+        PROXY_BUFFER.clear();
+        requestStartedNanos = 0L;
+        firstSnapshotRecorded = false;
+        firstRenderSubmitted = false;
         if (Minecraft.getInstance().isSameThread()) {
             GeometryClipmapRenderer.dispose();
         }

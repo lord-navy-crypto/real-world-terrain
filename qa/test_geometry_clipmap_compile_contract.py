@@ -178,6 +178,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("RETRY_BACKOFF_TICKS", server)
         self.assertIn("sameCentre(nextLayout, currentLayout)", server)
         self.assertIn("if (!session.requestEpoch.isCurrent(requestEpoch)) return;", server)
+        self.assertIn("() -> session.requestEpoch.isCurrent(requestEpoch)", server)
         epoch = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/ClipmapRequestEpoch.java").read_text(
             encoding="utf-8"
         )
@@ -193,10 +194,27 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         )
         self.assertIn("payload.requestId() != activeRequestId", client)
         self.assertIn("key.requestId() != activeRequestId", client)
+        self.assertIn("PROXY_BUFFER.onHeightSnapshot(key)", client)
+        self.assertIn("PROXY_BUFFER.accept(", client)
+        self.assertIn("firstSnapshotReady=%.1fms", client)
+        self.assertIn("firstEligibleRenderSubmission=%.1fms", client)
         network = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/network/GeometryClipmapNetwork.java").read_text(
             encoding="utf-8"
         )
         self.assertIn('event.registrar("3")', network)
+
+    def test_abort_sampling_within_one_ring_and_bounded_proxy_staging(self):
+        grid = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapHeightGrid.java").read_text(
+            encoding="utf-8"
+        )
+        buffer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapProxySnapshotBuffer.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("CancellationException", grid)
+        self.assertIn("(index & 31) == 0", grid)
+        self.assertIn("BooleanSupplier stillCurrent", grid)
+        self.assertIn("private Slot<T> staged;", buffer)
+        self.assertIn("private Slot<T> active;", buffer)
 
     def test_geomorph_uses_existing_height_grid_and_cached_uniform(self):
         renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
