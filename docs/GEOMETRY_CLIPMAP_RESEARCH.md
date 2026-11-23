@@ -371,3 +371,30 @@ submission overhead, not GPU execution time, and does not force a GPU stall.
 The telemetry source-contract test checks for an actual \`glFinish(...)\` call,
 not for the word in the explanatory comment. This keeps the guard focused on
 blocking a synchronous GPU stall rather than blocking its documentation.
+
+
+## 2026-11-23 client request-generation fencing and immediate session retirement
+
+The experimental payload protocol is now version 3. Every client request receives
+a monotonically increasing positive request ID. The server echoes that ID in
+each of the six height tiles and the matching visible-feature proxy payload.
+The client rejects packets whose ID does not match its active request, and the
+snapshot assembler includes the ID in its immutable snapshot key. This prevents
+late packets from a prior dimension or render-distance request from completing
+or replacing a newer client snapshot.
+
+A newer request invalidates the previous server sampling epoch even when the
+render distance is unchanged. The previous grids may be retained as a sampling
+reuse candidate, but no previous-generation result can be published. Unsupported
+generators/settings and disconnected players now advance the epoch before
+their sessions are removed; disconnected sessions are retired on the next
+server tick rather than waiting for the former 200-tick cleanup interval.
+
+The terrain renderer now also captures, unbinds, and restores
+GL_PIXEL_UNPACK_BUFFER_BINDING around its texture transaction. This is
+required because a nonzero unpack PBO changes a client-memory upload pointer
+into a byte offset and can corrupt or reject the R16 texture upload.
+
+These changes harden request identity, task retirement, and OpenGL state
+isolation. They do not by themselves establish client-side frame-time gains;
+the version-3 protocol requires both client and server to use the same build.

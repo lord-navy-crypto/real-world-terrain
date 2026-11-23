@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 final class ClipmapHeightTilePayloadTest {
     private static ClipmapHeightTilePayload payload(short[] samples) {
         return new ClipmapHeightTilePayload(
-                "minecraft:overworld", 10, 16, 0, 8,
+                "minecraft:overworld", 1L, 10, 16, 0, 8,
                 -64, -64, -64, 2032, samples);
     }
 
@@ -17,6 +17,7 @@ final class ClipmapHeightTilePayloadTest {
         source[0] = 1234;
         ClipmapHeightTilePayload payload = payload(source);
         source[0] = 7;
+        assertEquals(1L, payload.requestId());
         assertEquals(1234, payload.heights()[0]);
 
         short[] copy = payload.heights();
@@ -33,6 +34,14 @@ final class ClipmapHeightTilePayloadTest {
         payload.copyHeightsTo(destination);
         destination.flip();
         for (short expected : source) assertEquals(expected, destination.get());
+    }
+
+    @Test
+    void rejectsNonPositiveRequestGeneration() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new ClipmapHeightTilePayload("minecraft:overworld", 0L,
+                        10, 16, 0, 8, -64, -64, -64, 2032,
+                        new short[17 * 17]));
     }
 
     @Test

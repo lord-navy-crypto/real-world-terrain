@@ -76,6 +76,9 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("GL11.glGetInteger(GL11.GL_UNPACK_SKIP_PIXELS)", renderer)
         self.assertIn("GL11.glGetInteger(GL11.GL_UNPACK_SKIP_ROWS)", renderer)
         self.assertIn("GL11.glGetInteger(GL11.GL_UNPACK_SWAP_BYTES)", renderer)
+        self.assertIn("GL21.GL_PIXEL_UNPACK_BUFFER_BINDING", renderer)
+        self.assertIn("GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, 0)", render)
+        self.assertIn("GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, pixelUnpackBuffer)", renderer)
         self.assertIn("reusableHeightUpload.clear()", renderer.replace("buffer.clear()", "reusableHeightUpload.clear()"))
         self.assertIn("UniformLocations.lookup(program)", renderer)
         self.assertNotIn('glGetUniformLocation(program, "uOrigin")',
@@ -157,6 +160,18 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("private volatile long generation;", epoch)
+        self.assertIn("requestId", server)
+        self.assertIn("entry.getValue().invalidate()", server)
+        self.assertIn("removeSession(player.getUUID(), session)", server)
+        client = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapClient.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("payload.requestId() != activeRequestId", client)
+        self.assertIn("key.requestId() != activeRequestId", client)
+        network = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/network/GeometryClipmapNetwork.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('event.registrar("3")', network)
 
     def test_geomorph_uses_existing_height_grid_and_cached_uniform(self):
         renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
