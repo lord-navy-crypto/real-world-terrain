@@ -3,6 +3,7 @@ package org.realscale.neoforge.client.clipmap;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Objects;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 import net.neoforged.fml.ModList;
@@ -81,6 +82,23 @@ public final class IrisRenderCompatibility {
      */
     public static boolean hasNativeProjectionBridge() {
         return PROJECTION.available();
+    }
+
+    /**
+     * Iris compiles its vanilla terrain ShaderInstances against this extended
+     * format even when Sodium is installed. The clipmap's Iris-native VBOs must
+     * use the same format so UV2/lightmap and Iris terrain attributes line up.
+     */
+    public static VertexFormat terrainVertexFormat() {
+        try {
+            Class<?> formats = loadIrisClass("net.irisshaders.iris.vertices.IrisVertexFormats");
+            Object format = formats.getField("TERRAIN").get(null);
+            return format instanceof VertexFormat vertexFormat ? vertexFormat : null;
+        } catch (ClassNotFoundException absent) {
+            return null;
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError unavailable) {
+            return null;
+        }
     }
 
     public static ProjectionScope overrideGbufferProjection(Matrix4f projection) {
