@@ -435,10 +435,7 @@ def prepare_open_rendering_view(
             "render-thread telemetry marker was not observed"
         )
 
-    subprocess.run(
-        ["xdotool", "mousemove_relative", "--sync", "0", "200"],
-        check=True, timeout=10,
-    )
+    # The CI-only Java camera hook applies a deterministic downward pitch.
     time.sleep(2)
     print(
         "CLIENT_CAMERA_VANTAGE_READY_FOR_CAPTURE: "
@@ -551,6 +548,7 @@ def main() -> int:
         env.get("JAVA_TOOL_OPTIONS", "") +
         " -Drealscale.experimental.geometryclipmap=true"
         " -Drealscale.experimental.geometryclipmap.debug=true"
+        " -Drealscale.experimental.geometryclipmap.smokeCamera=true"
     ).strip()
     # The temporary dedicated server must not see client-only Iris/Sodium mods.
     # Generate the world in the server run directory, then copy it into the
