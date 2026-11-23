@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
+import org.joml.Matrix4f;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -302,7 +303,8 @@ public final class GeometryClipmapClient {
      * G-buffer phase and the current RenderType state is still active.
      */
     public static void renderIrisNativeLayer(RenderType renderType,
-            double cameraX, double cameraY, double cameraZ) {
+            double cameraX, double cameraY, double cameraZ,
+            Matrix4f frustumMatrix, Matrix4f projectionMatrix) {
         if (!ENABLED || lastNearChunks < 2) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
@@ -326,7 +328,8 @@ public final class GeometryClipmapClient {
                 minecraft.level.dimension().location().toString(),
                 key.requestId(), key.centerX(), key.centerZ(), lastNearChunks,
                 proxies == null ? List.of() : proxies, minecraft.level,
-                cameraX, cameraY, cameraZ, iris.shadowPass());
+                cameraX, cameraY, cameraZ, frustumMatrix, projectionMatrix,
+                iris.shadowPass());
         if (submitted && !firstIrisRenderSubmitted) {
             firstIrisRenderSubmitted = true;
             reportStatus(minecraft,
