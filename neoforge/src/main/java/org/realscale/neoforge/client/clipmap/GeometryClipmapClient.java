@@ -63,6 +63,7 @@ public final class GeometryClipmapClient {
     private static int retryCount;
     private static boolean unsupportedWorld;
     private static boolean irisCompatibilityNoticeShown;
+    private static boolean cameraVantageReported;
     // Iris's main G-buffer projection must match the projection used to write
     // every depth value for the whole frame, not just the clipmap draw call.
     private static IrisRenderCompatibility.ProjectionScope activeIrisProjectionScope;
@@ -254,6 +255,21 @@ public final class GeometryClipmapClient {
 
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
+        // The CI harness verifies camera height from this render-thread telemetry,
+        // not OCR of the debug overlay. Emit it once after the spectator reaches
+        // the high-altitude vantage so the screenshot is taken from a known view.
+        if (DEBUG && !cameraVantageReported
+                && event.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY) {
+            var cameraPosition = event.getCamera().getPosition();
+            if (cameraPosition.y >= 1100.0) {
+                cameraVantageReported = true;
+                System.out.printf(java.util.Locale.ROOT,
+                        "[RealScale Geometry Clipmap] CLIENT_CAMERA_VANTAGE_READY: "
+                                + "x=%.1f y=%.1f z=%.1f%n",
+                        cameraPosition.x, cameraPosition.y, cameraPosition.z);
+            }
+        }
+
         // AFTER_LEVEL runs after Iris has completed its final G-buffer/composite work.
         if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
             restoreIrisProjectionFrame();
@@ -324,6 +340,7 @@ public final class GeometryClipmapClient {
             return;
         }
         irisCompatibilityNoticeShown = false;
+        cameraVantageReported = false;
 
         var key = TILES.activeKey();
         if (key == null || key.requestId() != activeRequestId) return;
