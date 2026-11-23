@@ -64,8 +64,14 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("def prepare_open_rendering_view", SMOKE)
         self.assertIn("Loaded 2 advancements", SMOKE)
         self.assertIn("CLIENT_CAMERA_VANTAGE_READY", SMOKE)
+        self.assertIn('rcon.send("forceload add 0 0")', SMOKE)
         self.assertIn('rcon.send("setblock 0 1199 0 minecraft:glass")', SMOKE)
+        self.assertLess(
+            SMOKE.index('rcon.send("forceload add 0 0")'),
+            SMOKE.index('rcon.send("setblock 0 1199 0 minecraft:glass")'),
+        )
         self.assertIn('rcon.send("setworldspawn 0 1200 0")', SMOKE)
+        self.assertIn('rcon.send("forceload remove 0 0")', SMOKE)
         self.assertIn('"gamemode=spectator\\n"', SMOKE)
         self.assertIn('"force-gamemode=true\\n"', SMOKE)
         self.assertIn("spawn_y < 1100", SMOKE)
