@@ -756,7 +756,7 @@ final class GeometryClipmapRenderer {
                     GL20.glGetUniformLocation(program, "uFogColor"),
                     GL20.glGetUniformLocation(program, "uHeightMap"),
                     GL20.glGetUniformLocation(program, "uNearClipBlocks"),
-                    GL20.glGetUniformLocation(program, "uOrigin"),
+                    GL20.glGetUniformLocation(program, "uOrigin[0]"),
                     GL20.glGetUniformLocation(program, "uSpacing[0]"),
                     GL20.glGetUniformLocation(program, "uTextureOffset[0]"),
                     GL20.glGetUniformLocation(program, "uNoiseOrigin[0]"),
