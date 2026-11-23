@@ -47,6 +47,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("RenderLevelStageEvent.Stage.AFTER_CUTOUT_BLOCKS", GEOMETRY_CLIENT)
         self.assertIn("RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS", GEOMETRY_CLIENT)
         self.assertIn("event.getModelViewMatrix(), event.getProjectionMatrix()", GEOMETRY_CLIENT)
+        self.assertIn("submitted && !iris.shadowPass() && !firstIrisRenderSubmitted", GEOMETRY_CLIENT)
 
     def test_iris_native_draw_rebinds_iris_shader_and_vertex_format(self):
         self.assertIn("terrainVertexFormat()", IRIS_COMPAT)
