@@ -6,6 +6,9 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/VisibleSurfaceProxyGenerator.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/client/clipmap/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/mixin/IrisGeometryClipmapMixin.java'
+      - 'neoforge/src/main/resources/realscale.geometryclipmap.mixins.json'
+      - 'neoforge/src/main/resources/META-INF/neoforge.mods.toml'
       - 'neoforge/src/main/java/org/realscale/neoforge/network/**'
       - 'neoforge/src/test/java/org/realscale/neoforge/client/clipmap/**'
       - 'neoforge/src/test/java/org/realscale/neoforge/network/**'
@@ -73,6 +76,7 @@ jobs:
           assert len(jar) == 1, jar
           required = [
               "META-INF/neoforge.mods.toml",
+              "realscale.geometryclipmap.mixins.json",
               "org/realscale/neoforge/GeometryClipmapServer.class",
               "org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.class",
               "org/realscale/neoforge/client/clipmap/ClipmapHeightGrid.class",
@@ -80,6 +84,8 @@ jobs:
               "org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.class",
               "org/realscale/neoforge/client/clipmap/ClipmapProjectionMath.class",
               "org/realscale/neoforge/client/clipmap/IrisRenderCompatibility.class",
+              "org/realscale/neoforge/client/clipmap/IrisNativeClipmapRenderer.class",
+              "org/realscale/neoforge/mixin/IrisGeometryClipmapMixin.class",
               "org/realscale/neoforge/client/clipmap/ClipmapFogColor.class",
               "org/realscale/neoforge/network/ClipmapRequestPayload.class",
               "org/realscale/neoforge/network/ClipmapStatusPayload.class",
@@ -94,7 +100,7 @@ jobs:
           PY
 
           git cat-file -e "${BASE_COMMIT}^{commit}"
-          git diff --binary --no-ext-diff "${BASE_COMMIT}" HEAD --               neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java               neoforge/src/main/java/org/realscale/neoforge/VisibleSurfaceProxyGenerator.java               neoforge/src/main/java/org/realscale/neoforge/client/clipmap               neoforge/src/main/java/org/realscale/neoforge/network               neoforge/src/test/java/org/realscale/neoforge/client/clipmap               neoforge/src/test/java/org/realscale/neoforge/network               qa/test_geometry_clipmap_compile_contract.py               > build/clipmap-test-package/geometry-clipmap-java.patch
+          git diff --binary --no-ext-diff "${BASE_COMMIT}" HEAD --               neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java               neoforge/src/main/java/org/realscale/neoforge/VisibleSurfaceProxyGenerator.java               neoforge/src/main/java/org/realscale/neoforge/client/clipmap               neoforge/src/main/java/org/realscale/neoforge/mixin/IrisGeometryClipmapMixin.java               neoforge/src/main/resources/realscale.geometryclipmap.mixins.json               neoforge/src/main/resources/META-INF/neoforge.mods.toml               neoforge/src/main/java/org/realscale/neoforge/network               neoforge/src/test/java/org/realscale/neoforge/client/clipmap               neoforge/src/test/java/org/realscale/neoforge/network               qa/test_geometry_clipmap_compile_contract.py               > build/clipmap-test-package/geometry-clipmap-java.patch
           if [[ ! -s build/clipmap-test-package/geometry-clipmap-java.patch ]]; then
             echo "Geometry Clipmap patch unexpectedly empty" >&2
             exit 1
@@ -143,13 +149,18 @@ jobs:
           directly to an arbitrary old release.
 
           Shader-pack behavior:
-            When Iris reports an active shader pack, this build pauses the
-            standalone OpenGL clipmap draw rather than writing incompatible
-            outputs into the shader-pack G-buffer. Iris shadow passes are skipped.
-            Vanilla rendering and Iris with shader packs disabled use the normal
-            clipmap path. A shader-pack-native terrain fallback is still pending.
+            When Iris reports an active shader pack, the standalone OpenGL
+            renderer remains disabled. A client-only LevelRenderer hook submits
+            the six-level surface mesh through the active vanilla/Iris terrain
+            solid, cutout and translucent passes using the BLOCK vertex format.
+            Solid and cutout geometry also enters Iris shadow terrain passes.
+            The native path reuses the current terrain shader and ChunkOffset;
+            it does not bind a private framebuffer or install a private shader.
+            The no-shader path continues to use the standalone OpenGL renderer.
 
-          Not yet certified: macOS OpenGL 4.1 real client visuals or frame time.
+          Still requires real-client visual verification with Iris and a shader
+          pack enabled: horizon continuity, G-buffer output, shadow maps,
+          water appearance, tree/building proxies, FPS and frame-time impact.
           EOF
           (cd build/clipmap-test-package && sha256sum *.jar geometry-clipmap-java.patch > SHA256SUMS)
           echo "REALSCALE_CLIPMAP_TEST_JAR_AND_PATCH_READY"
