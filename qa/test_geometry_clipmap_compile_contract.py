@@ -331,6 +331,45 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("dot(normal, uSunDirection)", fragment_shader)
 
 
+    def test_iris_native_clipmap_uses_vanilla_gbuffer_and_shadow_terrain_passes(self):
+        native = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/IrisNativeClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        mixin = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/mixin/IrisGeometryClipmapMixin.java").read_text(
+            encoding="utf-8"
+        )
+        client = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapClient.java").read_text(
+            encoding="utf-8"
+        )
+        iris = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/IrisRenderCompatibility.java").read_text(
+            encoding="utf-8"
+        )
+        mods = (ROOT / "neoforge/src/main/resources/META-INF/neoforge.mods.toml").read_text(
+            encoding="utf-8"
+        )
+        config = (ROOT / "neoforge/src/main/resources/realscale.geometryclipmap.mixins.json").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("RenderType.solid()", native)
+        self.assertIn("RenderType.cutout()", native)
+        self.assertIn("RenderType.translucent()", native)
+        self.assertIn("DefaultVertexFormat.BLOCK", native)
+        self.assertIn("shader.CHUNK_OFFSET", native)
+        self.assertIn("chunkOffset.upload()", native)
+        self.assertIn("target.draw()", native)
+        self.assertIn("shadowPass", native)
+        self.assertIn("ClipmapRingMesh.indices(cells, holeRadius)", native)
+        self.assertIn("morphedHeight(", native)
+        self.assertNotIn("glUseProgram", native)
+        self.assertNotIn("glBindFramebuffer", native)
+        self.assertIn('target = "Lnet/minecraft/client/renderer/ShaderInstance;clear()V"', mixin)
+        self.assertIn("GeometryClipmapClient.renderIrisNativeLayer", mixin)
+        self.assertIn("renderIrisNativeLayer(RenderType", client)
+        self.assertIn("IrisNativeClipmapRenderer.renderLayer", client)
+        self.assertIn("allowsIrisNativeRenderer()", iris)
+        self.assertIn('config="realscale.geometryclipmap.mixins.json"', mods)
+        self.assertIn('"IrisGeometryClipmapMixin"', config)
+
     def test_toroidal_texture_update_plan_has_unit_coverage(self):
         planner = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.java").read_text(
             encoding="utf-8"
