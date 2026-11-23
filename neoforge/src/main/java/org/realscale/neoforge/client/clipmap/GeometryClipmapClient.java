@@ -43,6 +43,10 @@ public final class GeometryClipmapClient {
     private static final boolean DEBUG =
             Boolean.parseBoolean(System.getProperty(
                     "realscale.experimental.geometryclipmap.debug", "true"));
+    // CI-only camera aiming for reproducible visual captures. Disabled for normal users.
+    private static final boolean SMOKE_CAMERA =
+            Boolean.parseBoolean(System.getProperty(
+                    "realscale.experimental.geometryclipmap.smokeCamera", "false"));
     private static ClientLevel lastLevel;
     private static int lastNearChunks = -1;
     private static long requestSequence;
@@ -263,10 +267,20 @@ public final class GeometryClipmapClient {
             var cameraPosition = event.getCamera().getPosition();
             if (cameraPosition.y >= 1100.0) {
                 cameraVantageReported = true;
+                Minecraft minecraft = Minecraft.getInstance();
+                if (SMOKE_CAMERA && minecraft.player != null) {
+                    // Face down toward the generated surface. This is strictly
+                    // opt-in for the automated screenshot harness, never normal gameplay.
+                    minecraft.player.setYRot(0.0f);
+                    minecraft.player.setXRot(42.0f);
+                    minecraft.player.setYHeadRot(0.0f);
+                }
+                float pitch = minecraft.player == null ? 0.0f : minecraft.player.getXRot();
+                float yaw = minecraft.player == null ? 0.0f : minecraft.player.getYRot();
                 System.out.printf(java.util.Locale.ROOT,
                         "[RealScale Geometry Clipmap] CLIENT_CAMERA_VANTAGE_READY: "
-                                + "x=%.1f y=%.1f z=%.1f%n",
-                        cameraPosition.x, cameraPosition.y, cameraPosition.z);
+                                + "x=%.1f y=%.1f z=%.1f pitch=%.1f yaw=%.1f%n",
+                        cameraPosition.x, cameraPosition.y, cameraPosition.z, pitch, yaw);
             }
         }
 
