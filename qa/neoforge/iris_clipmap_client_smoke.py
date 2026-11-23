@@ -229,22 +229,11 @@ def prepare_saved_world(env: dict[str, str]) -> None:
         rcon.send("time set day")
         rcon.send("weather clear")
         rcon.send("gamerule doDaylightCycle false")
-        # A world spawn in open air is relocated by Minecraft's safe-spawn
-        # search to the terrain surface. Glass is not accepted as a safe
-        # spawn floor in this path, so use a full stone platform. Force-load
-        # the chunk first because RCON setblock/fill cannot edit unloaded chunks.
-        rcon.send("forceload add 0 0")
-        platform_result = rcon.send(
-            "fill -2 1199 -2 2 1199 2 minecraft:stone"
-        )
-        platform_reply = platform_result.lower()
-        if "successfully filled" not in platform_reply and "changed" not in platform_reply:
-            raise RuntimeError(
-                "High-altitude stone spawn platform was not placed: " + platform_result
-            )
+        # Keep the test spawn centered. The camera is raised after joining
+        # through spectator flight, because Minecraft's safe-spawn search can
+        # relocate the local player to the terrain surface regardless of Y.
         rcon.send("setworldspawn 0 1200 0")
         rcon.send("save-all flush")
-        rcon.send("forceload remove 0 0")
         rcon.send("stop")
         proc.wait(timeout=120)
     finally:
@@ -387,16 +376,51 @@ def validate_screenshot(path: pathlib.Path | None) -> None:
         )
 
 
+def read_debug_camera_y() -> float:
+    """Read the live XYZ height from Minecraft's F3 overlay using OCR."""
+    xwd = BUILD / "camera-position.xwd"
+    png = BUILD / "camera-position.png"
+    overlay_open = False
+    try:
+        subprocess.run(["xdotool", "key", "F3"], check=True, timeout=10)
+        overlay_open = True
+        time.sleep(1)
+        subprocess.run(
+            ["xwd", "-root", "-silent", "-out", str(xwd)],
+            check=True, capture_output=True, timeout=20,
+        )
+        subprocess.run(
+            ["convert", str(xwd), "-resize", "200%", str(png)],
+            check=True, capture_output=True, timeout=30,
+        )
+        result = subprocess.run(
+            ["tesseract", str(png), "stdout", "--psm", "6"],
+            check=True, capture_output=True, text=True, timeout=20,
+        )
+        match = re.search(
+            r"XYZ:\\s*[-+0-9.]+\\s*/\\s*([-+0-9.]+)\\s*/\\s*[-+0-9.]+",
+            result.stdout,
+            re.IGNORECASE,
+        )
+        if not match:
+            raise RuntimeError("Could not OCR the F3 XYZ line: " + result.stdout[:500])
+        return float(match.group(1))
+    finally:
+        if overlay_open:
+            subprocess.run(["xdotool", "key", "F3"], check=False, timeout=10)
+        xwd.unlink(missing_ok=True)
+        png.unlink(missing_ok=True)
+
+
 def prepare_open_rendering_view(client_latest: pathlib.Path) -> None:
-    """Place the spectator camera above Natural Automate's high-relief terrain."""
+    """Join the world, fly the spectator camera above terrain, and verify Y via F3."""
     deadline = time.monotonic() + 180
-    log_text = ""
     spawn_y = None
     while time.monotonic() < deadline:
         if client_latest.exists():
             log_text = client_latest.read_text(encoding="utf-8", errors="replace")
             match = re.search(
-                r"logged in with entity id \d+ at \([-+0-9.]+,\s*([-+0-9.]+),\s*[-+0-9.]+\)",
+                r"logged in with entity id \\d+ at \\([-+0-9.]+,\\s*([-+0-9.]+),\\s*[-+0-9.]+\\)",
                 log_text,
             )
             if "Loaded 2 advancements" in log_text and match:
@@ -406,20 +430,41 @@ def prepare_open_rendering_view(client_latest: pathlib.Path) -> None:
     else:
         raise RuntimeError("Singleplayer world did not finish joining or report its spawn position")
 
-    if spawn_y is None or spawn_y < 1100:
+    camera_y = read_debug_camera_y()
+    print(f"CLIENT_CAMERA_INITIAL_Y: {camera_y:.1f} (spawn log y={spawn_y})", flush=True)
+    for attempt in range(1, 4):
+        # In spectator mode, the mouse wheel raises flight speed. Hold Ctrl+Space
+        # to ascend without changing the horizontal clipmap center.
+        subprocess.run(
+            ["xdotool", "click", "--repeat", "24", "--delay", "20", "4"],
+            check=True, timeout=15,
+        )
+        subprocess.run(["xdotool", "keydown", "Control_L"], check=True, timeout=10)
+        subprocess.run(["xdotool", "keydown", "space"], check=True, timeout=10)
+        try:
+            time.sleep(25)
+        finally:
+            subprocess.run(["xdotool", "keyup", "space"], check=False, timeout=10)
+            subprocess.run(["xdotool", "keyup", "Control_L"], check=False, timeout=10)
+        camera_y = read_debug_camera_y()
+        print(
+            f"CLIENT_CAMERA_ASCENT: attempt={attempt} y={camera_y:.1f}",
+            flush=True,
+        )
+        if camera_y >= 1100.0:
+            break
+    if camera_y < 1100.0:
         raise RuntimeError(
-            f"Spectator test camera did not spawn at the high-altitude vantage: y={spawn_y}"
+            f"Spectator flight did not reach the high-altitude vantage: y={camera_y:.1f}"
         )
 
-    # The camera is already in spectator mode at Y=1200. Pitch down toward
-    # the terrain so the screenshot includes both the horizon and the surface.
     subprocess.run(
         ["xdotool", "mousemove_relative", "--sync", "0", "200"],
         check=True, timeout=10,
     )
     time.sleep(2)
     print(
-        f"CLIENT_CAMERA_VANTAGE_READY: spectator spawn y={spawn_y:.1f}, "
+        f"CLIENT_CAMERA_VANTAGE_READY: spectator flight y={camera_y:.1f}, "
         "looking toward distant terrain",
         flush=True,
     )
