@@ -264,12 +264,14 @@ public final class GeometryClipmapClient {
         // these events after their matching terrain layer. This avoids relying
         // on a vanilla-only ShaderInstance.clear bytecode instruction that
         // Sodium replaces when it overwrites LevelRenderer.renderSectionLayer.
-        RenderType irisLayer = switch (event.getStage().toString()) {
-            case "after_solid_blocks" -> RenderType.solid();
-            case "after_cutout_blocks" -> RenderType.cutout();
-            case "after_translucent_blocks" -> RenderType.translucent();
-            default -> null;
-        };
+        RenderType irisLayer = null;
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_SOLID_BLOCKS) {
+            irisLayer = RenderType.solid();
+        } else if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_CUTOUT_BLOCKS) {
+            irisLayer = RenderType.cutout();
+        } else if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
+            irisLayer = RenderType.translucent();
+        }
         if (irisLayer != null) {
             var camera = event.getCamera().getPosition();
             renderIrisNativeLayer(irisLayer, camera.x, camera.y, camera.z,
