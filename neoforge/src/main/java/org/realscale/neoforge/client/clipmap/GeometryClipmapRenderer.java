@@ -116,6 +116,9 @@ final class GeometryClipmapRenderer {
             uniform float uFogEnd;
             uniform float uNearClipBlocks;
             uniform float uSeaLevel;
+            uniform vec3 uSunDirection;
+            uniform float uAmbientLight;
+            uniform float uDirectLight;
             uniform vec3 uFogColor;
             out vec4 fragColor;
 
@@ -184,8 +187,8 @@ final class GeometryClipmapRenderer {
                     (1.0 - smoothstep(0.0, 5.0, uSeaLevel - vHeight));
                 color = mix(color, vec3(0.52, 0.64, 0.61),
                     shallowShore * 0.23);
-                vec3 sun = normalize(vec3(0.38, 0.83, 0.40));
-                color *= 0.60 + 0.40 * max(dot(normal, sun), 0.0);
+                float diffuse = max(dot(normal, normalize(uSunDirection)), 0.0);
+                color *= uAmbientLight + uDirectLight * diffuse;
 
                 float fog = smoothstep(uFogStart, uFogEnd, vDistance);
                 fragColor = vec4(mix(color, uFogColor, fog), 1.0);
@@ -216,9 +219,11 @@ final class GeometryClipmapRenderer {
 
     static boolean render(RenderLevelStageEvent event,
             Map<Integer, org.realscale.neoforge.network.ClipmapHeightTilePayload> tiles,
-            String dimensionKey, List<VisibleSurfaceProxy> proxies) {
+            String dimensionKey, List<VisibleSurfaceProxy> proxies,
+            ClipmapEnvironment.State environment) {
         RenderSystem.assertOnRenderThread();
-        if (tiles == null || tiles.size() < LEVEL_COUNT || proxies == null) return false;
+        if (tiles == null || tiles.size() < LEVEL_COUNT || proxies == null
+                || environment == null) return false;
 
         var first = tiles.get(0);
         if (first == null || !first.dimensionKey().equals(dimensionKey)) return false;
@@ -271,7 +276,7 @@ final class GeometryClipmapRenderer {
                 if (DEBUG) uploadedBytesThisFrame += bytes;
             }
 
-            draw(event, tiles, proxies);
+            draw(event, tiles, proxies, environment);
             completedFrame = true;
             return true;
         } finally {
@@ -519,7 +524,7 @@ final class GeometryClipmapRenderer {
 
     private static void draw(RenderLevelStageEvent event,
         Map<Integer, org.realscale.neoforge.network.ClipmapHeightTilePayload> tiles,
-        List<VisibleSurfaceProxy> proxies) {
+        List<VisibleSurfaceProxy> proxies, ClipmapEnvironment.State environment) {
         RenderSystem.enableDepthTest();
         RenderSystem.depthFunc(GL11.GL_LEQUAL);
         RenderSystem.depthMask(true);
@@ -567,7 +572,11 @@ final class GeometryClipmapRenderer {
         var heightRange = tiles.get(0);
         GL20.glUniform1f(uniforms.heightMin(), heightRange.minHeight());
         GL20.glUniform1f(uniforms.heightMax(), heightRange.maxHeight());
-        GL20.glUniform1f(uniforms.seaLevel(), 63.0f);
+        GL20.glUniform1f(uniforms.seaLevel(), environment.seaLevel());
+        GL20.glUniform3f(uniforms.sunDirection(),
+                environment.sunX(), environment.sunY(), environment.sunZ());
+        GL20.glUniform1f(uniforms.ambientLight(), environment.ambientLight());
+        GL20.glUniform1f(uniforms.directLight(), environment.directLight());
         GL20.glUniform1f(uniforms.fogStart(), fogRange.startBlocks());
         GL20.glUniform1f(uniforms.fogEnd(), fogRange.endBlocks());
         ClipmapFogColor.upload(uniforms.fogColor());
@@ -608,7 +617,8 @@ final class GeometryClipmapRenderer {
         long centreZ = centreTile.originZ()
                 + (long) (centreTile.gridCells() / 2) * centreTile.cellSpacingBlocks();
         VisibleSurfaceProxyRenderer.draw(event, projection, proxies, centreX, centreZ,
-                nearChunks, fogRange.startBlocks(), fogRange.endBlocks());
+                nearChunks, fogRange.startBlocks(), fogRange.endBlocks(),
+                environment.ambientLight() + environment.directLight() * 0.65f);
     }
 
     private static int linkProgram(String vertexSource, String fragmentSource) {
@@ -678,6 +688,7 @@ final class GeometryClipmapRenderer {
     private record UniformLocations(
             int viewProjection, int cameraY, int gridCells,
             int heightMin, int heightMax, int seaLevel,
+            int sunDirection, int ambientLight, int directLight,
             int fogStart, int fogEnd, int fogColor,
             int heightMap, int nearClipBlocks, int origin,
             int spacing, int textureOffset, int noiseOrigin, int skirtDepth,
@@ -690,6 +701,9 @@ final class GeometryClipmapRenderer {
                     GL20.glGetUniformLocation(program, "uHeightMin"),
                     GL20.glGetUniformLocation(program, "uHeightMax"),
                     GL20.glGetUniformLocation(program, "uSeaLevel"),
+                    GL20.glGetUniformLocation(program, "uSunDirection"),
+                    GL20.glGetUniformLocation(program, "uAmbientLight"),
+                    GL20.glGetUniformLocation(program, "uDirectLight"),
                     GL20.glGetUniformLocation(program, "uFogStart"),
                     GL20.glGetUniformLocation(program, "uFogEnd"),
                     GL20.glGetUniformLocation(program, "uFogColor"),
