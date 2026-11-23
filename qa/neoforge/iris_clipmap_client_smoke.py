@@ -229,9 +229,11 @@ def prepare_saved_world(env: dict[str, str]) -> None:
         rcon.send("time set day")
         rcon.send("weather clear")
         rcon.send("gamerule doDaylightCycle false")
-        # Natural Automate has a 2096-block-tall overworld. Spawn the
-        # spectator camera well above the tallest local terrain so the smoke
-        # screenshot can inspect the horizon instead of a spawn ravine.
+        # A world spawn in open air is relocated by Minecraft's safe-spawn
+        # search to the terrain surface (Run #21 landed at Y=813). Put a
+        # harmless solid marker below the requested spawn first so the
+        # high-altitude spectator camera is preserved at Y=1200.
+        rcon.send("setblock 0 1199 0 minecraft:glass")
         rcon.send("setworldspawn 0 1200 0")
         rcon.send("save-all flush")
         rcon.send("stop")
