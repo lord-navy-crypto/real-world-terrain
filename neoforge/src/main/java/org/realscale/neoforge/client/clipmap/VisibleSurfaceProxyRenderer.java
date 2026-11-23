@@ -66,6 +66,7 @@ final class VisibleSurfaceProxyRenderer {
             uniform float uFogStart;
             uniform float uFogEnd;
             uniform vec3 uFogColor;
+            uniform float uLightLevel;
             out vec4 fragColor;
             void main() {
                 float x = abs(vUv.x - 0.5);
@@ -105,6 +106,7 @@ final class VisibleSurfaceProxyRenderer {
                     if (!rim && !opening) discard;
                     color = opening ? vec3(0.035, 0.035, 0.04) : vColor;
                 }
+                color *= uLightLevel;
                 float fog = smoothstep(uFogStart, uFogEnd, vDistance);
                 color = mix(color, uFogColor, fog);
                 fragColor = vec4(color, 1.0);
@@ -133,7 +135,7 @@ final class VisibleSurfaceProxyRenderer {
 
     static void draw(RenderLevelStageEvent event, Matrix4f extendedProjection,
             List<VisibleSurfaceProxy> proxies, long centerX, long centerZ,
-            int nearChunks, float fogStart, float fogEnd) {
+            int nearChunks, float fogStart, float fogEnd, float lightLevel) {
         RenderSystem.assertOnRenderThread();
         if (proxies == null || proxies.isEmpty()) {
             uploadedProxies = null;
@@ -174,6 +176,7 @@ final class VisibleSurfaceProxyRenderer {
                 (float) (farRadius * farRadius));
         GL20.glUniform1f(uniforms.fogStart(), fogStart);
         GL20.glUniform1f(uniforms.fogEnd(), fogEnd);
+        GL20.glUniform1f(uniforms.lightLevel(), lightLevel);
         ClipmapFogColor.upload(uniforms.fogColor());
 
         GL30.glBindVertexArray(vao);
@@ -289,7 +292,7 @@ final class VisibleSurfaceProxyRenderer {
 
     private record UniformLocations(int viewProjection, int axis,
             int cameraOffset, int nearRadiusSquared, int farRadiusSquared,
-            int fogStart, int fogEnd, int fogColor) {
+            int fogStart, int fogEnd, int fogColor, int lightLevel) {
         private static UniformLocations lookup(int program) {
             return new UniformLocations(
                     GL20.glGetUniformLocation(program, "uViewProjection"),
@@ -299,7 +302,8 @@ final class VisibleSurfaceProxyRenderer {
                     GL20.glGetUniformLocation(program, "uFarRadiusSquared"),
                     GL20.glGetUniformLocation(program, "uFogStart"),
                     GL20.glGetUniformLocation(program, "uFogEnd"),
-                    GL20.glGetUniformLocation(program, "uFogColor"));
+                    GL20.glGetUniformLocation(program, "uFogColor"),
+                    GL20.glGetUniformLocation(program, "uLightLevel"));
         }
     }
 
