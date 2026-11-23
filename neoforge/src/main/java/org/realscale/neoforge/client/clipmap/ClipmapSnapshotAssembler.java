@@ -68,6 +68,16 @@ public final class ClipmapSnapshotAssembler<T> {
     public Map<Integer, T> activeTiles() { return active; }
     public SnapshotKey activeKey() { return activeKey; }
 
+    /** Number of distinct LOD levels received for the pending snapshot. */
+    public int pendingLevelCount() { return pending.size(); }
+
+    /** Bit mask of pending LOD levels for packet-delivery diagnostics. */
+    public int pendingLevelMask() {
+        int mask = 0;
+        for (int level : pending.keySet()) mask |= 1 << level;
+        return mask;
+    }
+
     public void clear() {
         pending.clear();
         pendingKey = null;

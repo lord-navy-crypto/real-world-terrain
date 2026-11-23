@@ -2,6 +2,7 @@ package org.realscale.neoforge.client.clipmap;
 
 import org.realscale.neoforge.network.ClipmapHeightTilePayload;
 import org.realscale.neoforge.network.ClipmapSurfaceProxyPayload;
+import org.realscale.neoforge.network.ClipmapStatusPayload;
 
 /**
  * Client-only delivery target. Payload CODECS are registered on the common
@@ -18,6 +19,10 @@ public final class GeometryClipmapClientPayloads {
     }
 
     public static void acceptProxies(ClipmapSurfaceProxyPayload payload) {
+        GeometryClipmapClient.accept(payload);
+    }
+
+    public static void acceptStatus(ClipmapStatusPayload payload) {
         GeometryClipmapClient.accept(payload);
     }
 }

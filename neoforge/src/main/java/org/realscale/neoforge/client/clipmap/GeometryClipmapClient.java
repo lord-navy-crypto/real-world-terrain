@@ -12,6 +12,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.realscale.neoforge.network.ClipmapHeightTilePayload;
 import org.realscale.neoforge.network.ClipmapRequestPayload;
 import org.realscale.neoforge.network.ClipmapSurfaceProxyPayload;
+import org.realscale.neoforge.network.ClipmapStatusPayload;
 import java.util.List;
 
 
@@ -45,8 +46,16 @@ public final class GeometryClipmapClient {
     private static long requestStartedNanos;
     private static boolean firstSnapshotRecorded;
     private static boolean firstRenderSubmitted;
-    private static int ticksWaitingForFirstSnapshot;
-    private static boolean waitNoticeShown;
+    private static long lastRequestSentNanos;
+    private static long lastServerStatusNanos;
+    private static int serverStatus = -1;
+    private static int serverCompletedLevels;
+    private static int serverQueueDepth;
+    private static String serverDetail = "";
+    private static int lastReportedTileCount = -1;
+    private static int retryCount;
+    private static boolean unsupportedWorld;
+    private static final long HEARTBEAT_INTERVAL_NANOS = 8_000_000_000L;
 
     private GeometryClipmapClient() {}
 
@@ -64,10 +73,11 @@ public final class GeometryClipmapClient {
                 payload.nearRenderDistanceChunks(), payload.dimensionKey(), payload)) {
             var key = TILES.activeKey();
             PROXY_BUFFER.onHeightSnapshot(key);
+            lastReportedTileCount = ClipmapStatusPayload.LEVEL_COUNT;
             if (!firstSnapshotRecorded) {
                 firstSnapshotRecorded = true;
                 reportStatus(minecraft,
-                        "[RealScale] Clipmap: SNAPSHOT READY (6 height levels)");
+                        "[RealScale] Clipmap: SNAPSHOT READY (6/6 height levels)");
                 if (DEBUG && requestStartedNanos != 0L) {
                     System.out.printf(java.util.Locale.ROOT,
                             "[RealScale Geometry Clipmap] firstSnapshotReady=%.1fms " +
@@ -76,6 +86,52 @@ public final class GeometryClipmapClient {
                             key.dimension(), key.centerX(), key.centerZ());
                 }
             }
+        } else {
+            int received = TILES.pendingLevelCount();
+            if (received != lastReportedTileCount && received > 0) {
+                lastReportedTileCount = received;
+                reportStatus(minecraft, "[RealScale] Clipmap: RECEIVING HEIGHT TILES ("
+                        + received + "/6)");
+            }
+        }
+    }
+
+    public static void accept(ClipmapStatusPayload payload) {
+        if (!ENABLED) return;
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null || activeRequestId <= 0L
+                || payload.requestId() != activeRequestId
+                || !minecraft.level.dimension().location().toString()
+                        .equals(payload.dimensionKey())) return;
+        lastServerStatusNanos = System.nanoTime();
+        serverStatus = payload.state();
+        serverCompletedLevels = payload.completedLevels();
+        serverQueueDepth = payload.queueDepth();
+        serverDetail = payload.detail();
+        switch (payload.state()) {
+            case ClipmapStatusPayload.REQUEST_ACCEPTED ->
+                    reportStatus(minecraft, "[RealScale] Clipmap: SERVER ACKNOWLEDGED REQUEST");
+            case ClipmapStatusPayload.UNSUPPORTED_WORLD -> {
+                unsupportedWorld = true;
+                reportStatus(minecraft, "[RealScale] Clipmap: UNSUPPORTED WORLD - "
+                        + payload.detail());
+            }
+            case ClipmapStatusPayload.QUEUED ->
+                    reportStatus(minecraft, "[RealScale] Clipmap: QUEUED - " + payload.detail());
+            case ClipmapStatusPayload.SAMPLING ->
+                    reportStatus(minecraft, "[RealScale] Clipmap: SAMPLING "
+                            + payload.completedLevels() + "/6");
+            case ClipmapStatusPayload.SNAPSHOT_SENT ->
+                    reportStatus(minecraft, "[RealScale] Clipmap: SERVER SENT 6/6 TILES");
+            case ClipmapStatusPayload.BUSY ->
+                    reportStatus(minecraft, "[RealScale] Clipmap: SERVER BUSY - " + payload.detail());
+            case ClipmapStatusPayload.FAILED ->
+                    reportStatus(minecraft, "[RealScale] Clipmap: SAMPLING FAILED - "
+                            + payload.detail());
+            case ClipmapStatusPayload.STALLED ->
+                    reportStatus(minecraft, "[RealScale] Clipmap: SAMPLER STALLED - "
+                            + payload.detail());
+            default -> { }
         }
     }
 
@@ -114,18 +170,37 @@ public final class GeometryClipmapClient {
             requestStartedNanos = System.nanoTime();
             firstSnapshotRecorded = false;
             firstRenderSubmitted = false;
-            ticksWaitingForFirstSnapshot = 0;
-            waitNoticeShown = false;
+            lastRequestSentNanos = requestStartedNanos;
+            lastServerStatusNanos = 0L;
+            serverStatus = -1;
+            serverCompletedLevels = 0;
+            serverQueueDepth = 0;
+            serverDetail = "";
+            lastReportedTileCount = 0;
+            retryCount = 0;
+            unsupportedWorld = false;
             reportStatus(minecraft,
-                    "[RealScale] Clipmap: ON / WAITING (Natural Automate only)");
+                    "[RealScale] Clipmap: REQUEST SENT - awaiting server acknowledgement");
             PacketDistributor.sendToServer(
                     new ClipmapRequestPayload(nearChunks, activeRequestId));
         }
-        if (!firstSnapshotRecorded && !waitNoticeShown
-                && ++ticksWaitingForFirstSnapshot >= 20 * 15) {
-            waitNoticeShown = true;
-            reportStatus(minecraft,
-                    "[RealScale] Clipmap: STILL WAITING - check Natural Automate world and server");
+
+        long now = System.nanoTime();
+        if (!firstSnapshotRecorded && !unsupportedWorld && activeRequestId > 0L
+                && now - lastRequestSentNanos >= HEARTBEAT_INTERVAL_NANOS) {
+            PacketDistributor.sendToServer(
+                    new ClipmapRequestPayload(nearChunks, activeRequestId));
+            lastRequestSentNanos = now;
+            retryCount++;
+            if (lastServerStatusNanos == 0L
+                    || now - lastServerStatusNanos > HEARTBEAT_INTERVAL_NANOS * 2L) {
+                reportStatus(minecraft, "[RealScale] Clipmap: NO RECENT SERVER RESPONSE - "
+                        + "resending request #" + retryCount);
+            } else if (serverStatus == ClipmapStatusPayload.SNAPSHOT_SENT
+                    && TILES.pendingLevelCount() < ClipmapStatusPayload.LEVEL_COUNT) {
+                reportStatus(minecraft, "[RealScale] Clipmap: SERVER SENT SNAPSHOT; client has "
+                        + TILES.pendingLevelCount() + "/6 pending levels; requesting resend");
+            }
         }
     }
 
@@ -150,7 +225,7 @@ public final class GeometryClipmapClient {
         if (!firstRenderSubmitted) {
             firstRenderSubmitted = true;
             reportStatus(minecraft,
-                    "[RealScale] Clipmap: DRAW SUBMITTED - check visible horizon");
+                    "[RealScale] Clipmap: GPU DRAW SUBMITTED (visual visibility not yet verified)");
             if (DEBUG && requestStartedNanos != 0L) {
                 System.out.printf(java.util.Locale.ROOT,
                         "[RealScale Geometry Clipmap] firstEligibleRenderSubmission=%.1fms%n",
@@ -180,8 +255,15 @@ public final class GeometryClipmapClient {
         requestStartedNanos = 0L;
         firstSnapshotRecorded = false;
         firstRenderSubmitted = false;
-        ticksWaitingForFirstSnapshot = 0;
-        waitNoticeShown = false;
+        lastRequestSentNanos = 0L;
+        lastServerStatusNanos = 0L;
+        serverStatus = -1;
+        serverCompletedLevels = 0;
+        serverQueueDepth = 0;
+        serverDetail = "";
+        lastReportedTileCount = -1;
+        retryCount = 0;
+        unsupportedWorld = false;
         if (Minecraft.getInstance().isSameThread()) {
             GeometryClipmapRenderer.dispose();
         }
