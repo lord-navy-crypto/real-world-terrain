@@ -237,7 +237,8 @@ def prepare_saved_world(env: dict[str, str]) -> None:
         platform_result = rcon.send(
             "fill -2 1199 -2 2 1199 2 minecraft:stone"
         )
-        if "changed" not in platform_result.lower():
+        platform_reply = platform_result.lower()
+        if "successfully filled" not in platform_reply and "changed" not in platform_reply:
             raise RuntimeError(
                 "High-altitude stone spawn platform was not placed: " + platform_result
             )
