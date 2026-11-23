@@ -18,6 +18,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
+import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ final class IrisNativeClipmapRenderer {
     private static final int FULL_BRIGHT = LightTexture.FULL_BRIGHT;
     private static final int NO_OVERLAY = OverlayTexture.NO_OVERLAY;
     private static final int INITIAL_BUFFER_BYTES = 1 << 20;
+    private static final Matrix4f EXTENDED_PROJECTION = new Matrix4f();
 
     private static VertexBuffer solidBuffer;
     private static VertexBuffer cutoutBuffer;
@@ -63,6 +65,7 @@ final class IrisNativeClipmapRenderer {
             String dimension, long requestId, long centerX, long centerZ,
             int nearChunks, List<VisibleSurfaceProxy> proxies, Level level,
             double cameraX, double cameraY, double cameraZ,
+            Matrix4f frustumMatrix, Matrix4f projectionMatrix,
             boolean shadowPass) {
         if (renderType != RenderType.solid()
                 && renderType != RenderType.cutout()
@@ -74,7 +77,8 @@ final class IrisNativeClipmapRenderer {
             return false;
         }
         if (tiles == null || tiles.size() < LEVEL_COUNT || level == null
-                || dimension == null || dimension.isBlank() || requestId <= 0L) {
+                || dimension == null || dimension.isBlank() || requestId <= 0L
+                || frustumMatrix == null || projectionMatrix == null) {
             return false;
         }
 
@@ -103,11 +107,27 @@ final class IrisNativeClipmapRenderer {
             return false;
         }
 
-        // Vanilla has already applied the current terrain RenderType and
-        // populated its view/projection uniforms. Its section loop resets
-        // ChunkOffset to zero immediately before ShaderInstance.clear().
-        // Reuse that exact path, translating our centre-relative mesh into
-        // the current main-camera or Iris shadow-camera coordinate frame.
+        // The vanilla section pass has already selected its RenderType. Reapply
+        // its default uniforms with an extended far plane for the main camera,
+        // then let Iris's ShaderInstance mixin bind the G-buffer program for the
+        // current terrain phase. Shadow projections are left untouched because
+        // Iris uses a separate shadow-camera projection and distance budget.
+        Minecraft minecraft = Minecraft.getInstance();
+        boolean restoreProjection = !shadowPass;
+        if (restoreProjection) {
+            ClipmapFogRange fogRange = ClipmapFogRange.forGrid(
+                    cachedGridCells, cachedBaseSpacing, LEVEL_COUNT);
+            EXTENDED_PROJECTION.set(projectionMatrix);
+            ClipmapProjectionMath.extendFarPlane(
+                    EXTENDED_PROJECTION, fogRange.endBlocks() * 1.5f);
+            shader.setDefaultUniforms(VertexFormat.Mode.QUADS,
+                    frustumMatrix, EXTENDED_PROJECTION, minecraft.getWindow());
+            shader.apply();
+        }
+
+        // Vanilla resets CHUNK_OFFSET before ShaderInstance.clear(). Reuse the
+        // same uniform for our centre-relative cached VBO, then restore zero
+        // before returning to the caller's normal terrain cleanup.
         Uniform chunkOffset = shader.CHUNK_OFFSET;
         chunkOffset.set((float) (centerX - cameraX),
                 (float) -cameraY, (float) (centerZ - cameraZ));
@@ -120,6 +140,11 @@ final class IrisNativeClipmapRenderer {
             VertexBuffer.unbind();
             chunkOffset.set(0.0f, 0.0f, 0.0f);
             chunkOffset.upload();
+            if (restoreProjection) {
+                shader.setDefaultUniforms(VertexFormat.Mode.QUADS,
+                        frustumMatrix, projectionMatrix, minecraft.getWindow());
+                shader.apply();
+            }
         }
     }
 
