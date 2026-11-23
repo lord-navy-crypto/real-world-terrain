@@ -49,6 +49,10 @@ public final class IrisRenderCompatibility {
      *
      * <p>Returns null when the pinned Iris 1.21.1 bridge is unavailable.
      */
+    public static boolean hasNativeProjectionBridge() {
+        return PROJECTION.available();
+    }
+
     public static ProjectionScope overrideGbufferProjection(Matrix4f projection) {
         if (projection == null || !PROJECTION.available()) return null;
         try {
@@ -104,12 +108,8 @@ public final class IrisRenderCompatibility {
          * active shader pack. It intentionally remains available during Iris
          * shadow rendering so distant terrain can cast and receive shadows.
          */
-        public boolean hasNativeProjectionBridge() {
-            return PROJECTION.available();
-        }
-
         public boolean allowsIrisNativeRenderer() {
-            return mode == Mode.SHADERPACK_ACTIVE && hasNativeProjectionBridge();
+            return mode == Mode.SHADERPACK_ACTIVE;
         }
 
         /**
