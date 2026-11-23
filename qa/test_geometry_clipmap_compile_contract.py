@@ -281,7 +281,9 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("parentGrid = floor(grid * 0.5) * 2.0", renderer)
         self.assertIn("h = mix(h, parentHeight, morph);", renderer)
         self.assertIn("uniforms.morphBandCells()", renderer)
-        self.assertIn('GL20.glGetUniformLocation(program, "uMorphBandCells")', renderer)
+        self.assertIn('GL20.glGetUniformLocation(program, "uMorphBandCells[0]")', renderer)
+        self.assertIn("GL20.glUniform1fv(uniforms.spacing()", renderer)
+        self.assertIn("GL20.glUniform2fv(uniforms.origin()", renderer)
 
 
     def test_dynamic_environment_tracks_dimension_sun_and_weather(self):
@@ -302,6 +304,9 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("level.getRainLevel(partialTick)", environment)
         self.assertIn("level.getThunderLevel(partialTick)", environment)
         self.assertIn("environment.seaLevel()", renderer)
+        self.assertIn("uSeaLevel + 2.0", renderer)
+        self.assertIn("uSeaLevel + 197.0", renderer)
+        self.assertIn("uSeaLevel + 677.0", renderer)
         self.assertIn('"uSunDirection"', renderer)
         self.assertNotIn("vec3 sun = normalize(vec3(0.38", renderer)
         self.assertIn('"uLightLevel"', proxy)
