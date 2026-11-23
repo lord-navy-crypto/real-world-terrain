@@ -1,4 +1,5 @@
 from pathlib import Path
+import ast
 import re
 import unittest
 
@@ -14,6 +15,9 @@ IRIS_COMPAT = (ROOT / "neoforge" / "src" / "main" / "java" / "org" / "realscale"
 
 
 class IrisClipmapSmokeHarnessTest(unittest.TestCase):
+    def test_client_smoke_script_is_valid_python(self):
+        ast.parse(SMOKE, filename="iris_clipmap_client_smoke.py")
+
     def test_moddev_run_owns_quick_play_arguments(self):
         match = re.search(r"irisClipmapSmoke\s*\{(.*?)\n\s*\}", BUILD_GRADLE, re.S)
         self.assertIsNotNone(match, "Dedicated irisClipmapSmoke run configuration is missing")
