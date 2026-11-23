@@ -335,7 +335,12 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         script = (ROOT / "qa/neoforge/iris_clipmap_client_smoke.py").read_text(
             encoding="utf-8"
         )
-        main = script.split("def main():", 1)[1].split("if __name__")[0]
+        main_match = re.search(
+            r"(?ms)^def main\\([^)]*\\)(?:\\s*->\\s*[^:]+)?\\s*:\\s*(.*?)(?=^if __name__)",
+            script,
+        )
+        self.assertIsNotNone(main_match, "Iris smoke harness must expose main()")
+        main = main_match.group(1)
         self.assertLess(main.index("prepare_saved_world(env)"),
                         main.index("install_iris_stack()"))
         self.assertLess(main.index("install_iris_stack()"),
@@ -364,7 +369,9 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("RenderType.solid()", native)
         self.assertIn("RenderType.cutout()", native)
         self.assertIn("RenderType.translucent()", native)
-        self.assertIn("DefaultVertexFormat.BLOCK", native)
+        self.assertIn("IrisRenderCompatibility.terrainVertexFormat()", native)
+        self.assertIn("IrisVertexFormats", iris)
+        self.assertIn('formats.getField("TERRAIN")', iris)
         self.assertIn("LightTexture.FULL_SKY", native)
         self.assertIn("shader.CHUNK_OFFSET", native)
         self.assertIn("chunkOffset.upload()", native)
@@ -389,8 +396,9 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn('ModList.get().isLoaded("iris")', iris)
         self.assertIn("Mode.API_UNAVAILABLE", iris)
         self.assertIn("CapturedRenderingState", iris)
+        self.assertIn('method = "renderSectionLayer"', mixin)
         self.assertIn('@At("HEAD")', mixin)
-        self.assertIn('target = "Lnet/minecraft/client/renderer/ShaderInstance;clear()V"', mixin)
+        self.assertNotIn('target = "Lnet/minecraft/client/renderer/ShaderInstance;clear()V"', mixin)
         self.assertIn("GeometryClipmapClient.prepareIrisFrameFog()", mixin)
         self.assertIn("GeometryClipmapClient.renderIrisNativeLayer", mixin)
         self.assertIn("renderIrisNativeLayer(RenderType", client)
