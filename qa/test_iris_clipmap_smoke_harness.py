@@ -60,6 +60,13 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertNotIn(".setOverlay(NO_OVERLAY)", IRIS_RENDERER)
         self.assertIn("GL_INVALID_OPERATION in glUniform(program not linked)", SMOKE)
 
+    def test_client_moves_camera_above_spawn_terrain_before_visual_capture(self):
+        self.assertIn("def prepare_open_rendering_view", SMOKE)
+        self.assertIn("Loaded 2 advancements", SMOKE)
+        self.assertIn("CLIENT_CAMERA_VANTAGE_READY", SMOKE)
+        self.assertIn('["xdotool", "keydown", "space"]', SMOKE)
+        self.assertIn("time.sleep(40)", SMOKE)
+
     def test_client_dismisses_experimental_world_warning_before_draw_gate(self):
         self.assertIn("def experimental_warning_visible()", SMOKE)
         self.assertIn("def dismiss_experimental_warning()", SMOKE)
