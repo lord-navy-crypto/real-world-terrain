@@ -101,7 +101,7 @@ final class ClipmapTextureUpdatePlanTest {
         assertFalse(plan.fullRefresh());
         assertEquals(25, plan.offsetX());
         assertEquals(93, plan.offsetZ());
-        assertTrue(covers(plan, 33, CELLS / 2),
+        assertTrue(covers(plan, 30, CELLS / 2),
                 "old hole texel must not become a fake terrain trench");
         assertTrue(covers(plan, CELLS, CELLS / 2));
         assertTrue(plan.uploadedSamples() < (long) SIDE * SIDE);
