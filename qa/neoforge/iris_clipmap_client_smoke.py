@@ -11,6 +11,7 @@ import gzip
 import json
 import os
 import pathlib
+import re
 import shutil
 import signal
 import subprocess
@@ -24,7 +25,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 MODULE = ROOT / "neoforge"
 RUN = MODULE / "run"
 SERVER = RUN  # runServer uses the module run directory as --gameDir .
-CLIENT_SAVES = RUN / "saves"
+CLIENT_RUN = RUN / "iris-clipmap-client"
+CLIENT_SAVES = CLIENT_RUN / "saves"
 WORLD_NAME = "iris-clipmap-smoke"
 BUILD = MODULE / "build" / "iris-clipmap-smoke"
 USER_AGENT = "RealScale-GeometryClipmap-Iris-Smoke/1.0 (https://github.com/lord-navy-crypto/real-world-terrain)"
@@ -67,9 +69,10 @@ def latest_version(project: str, loaders: list[str] | None = None) -> dict:
 
 
 def install_iris_stack() -> str:
-    mods = RUN / "mods"
-    shaders = RUN / "shaderpacks"
-    config = RUN / "config"
+    CLIENT_RUN.mkdir(parents=True, exist_ok=True)
+    mods = CLIENT_RUN / "mods"
+    shaders = CLIENT_RUN / "shaderpacks"
+    config = CLIENT_RUN / "config"
     mods.mkdir(parents=True, exist_ok=True)
     shaders.mkdir(parents=True, exist_ok=True)
     config.mkdir(parents=True, exist_ok=True)
@@ -103,7 +106,7 @@ def install_iris_stack() -> str:
         "colorSpace=SRGB\n",
         encoding="utf-8",
     )
-    (RUN / "options.txt").write_text(
+    (CLIENT_RUN / "options.txt").write_text(
         "renderDistance:10\n"
         "simulationDistance:6\n"
         "guiScale:2\n"
@@ -121,7 +124,7 @@ def install_iris_stack() -> str:
 
 def drain_process(proc: subprocess.Popen, log_path: pathlib.Path,
                   ready: threading.Event | None = None,
-                  draw: threading.Event | None = None) -> list[str]:
+                  draw: threading.Event | None = None) -> tuple[list[str], threading.Thread]:
     lines: list[str] = []
 
     def reader() -> None:
@@ -136,8 +139,9 @@ def drain_process(proc: subprocess.Popen, log_path: pathlib.Path,
                 if draw is not None and "firstIrisNativeDraw=" in line:
                     draw.set()
 
-    threading.Thread(target=reader, daemon=True).start()
-    return lines
+    reader_thread = threading.Thread(target=reader, daemon=True)
+    reader_thread.start()
+    return lines, reader_thread
 
 
 def stop_process(proc: subprocess.Popen, timeout: int = 25) -> None:
@@ -161,6 +165,12 @@ def prepare_saved_world(env: dict[str, str]) -> None:
     from rcon_worldgen_smoke import Rcon
 
     SERVER.mkdir(parents=True, exist_ok=True)
+    old_world = SERVER / "world"
+    if old_world.exists():
+        shutil.rmtree(old_world)
+    server_latest = SERVER / "logs" / "latest.log"
+    if server_latest.exists():
+        server_latest.unlink()
     (SERVER / "eula.txt").write_text("eula=true\n", encoding="utf-8")
     properties = (
         "level-name=world\n"
@@ -192,7 +202,7 @@ def prepare_saved_world(env: dict[str, str]) -> None:
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         text=True, bufsize=1, start_new_session=True,
     )
-    lines = drain_process(proc, log_path, ready=ready)
+    lines, reader_thread = drain_process(proc, log_path, ready=ready)
     rcon = None
     try:
         deadline = time.monotonic() + 570
@@ -214,6 +224,9 @@ def prepare_saved_world(env: dict[str, str]) -> None:
         if rcon is None:
             raise RuntimeError("Could not connect to local test-server RCON: " + repr(last_error))
 
+        rcon.send("time set day")
+        rcon.send("weather clear")
+        rcon.send("gamerule doDaylightCycle false")
         rcon.send("save-all flush")
         rcon.send("stop")
         proc.wait(timeout=120)
@@ -221,7 +234,10 @@ def prepare_saved_world(env: dict[str, str]) -> None:
         if rcon is not None:
             rcon.close()
         stop_process(proc)
+        reader_thread.join(timeout=10)
         (BUILD / "server.log").write_text("".join(lines), encoding="utf-8", errors="replace")
+        if server_latest.exists():
+            shutil.copy2(server_latest, BUILD / "server-latest.log")
 
     source_world = SERVER / "world"
     level_dat = source_world / "level.dat"
@@ -234,6 +250,10 @@ def prepare_saved_world(env: dict[str, str]) -> None:
     except Exception as exc:
         raise RuntimeError("Could not inspect saved world level.dat: " + repr(exc)) from exc
 
+    CLIENT_RUN.mkdir(parents=True, exist_ok=True)
+    client_latest = CLIENT_RUN / "logs" / "latest.log"
+    if client_latest.exists():
+        client_latest.unlink()
     destination = CLIENT_SAVES / WORLD_NAME
     if destination.exists():
         shutil.rmtree(destination)
@@ -258,46 +278,88 @@ def capture_screenshot(name: str) -> pathlib.Path | None:
         return None
 
 
+def validate_screenshot(path: pathlib.Path | None) -> None:
+    if path is None or not path.is_file():
+        raise RuntimeError("Minecraft screenshot was not captured")
+    if path.stat().st_size < 5_000:
+        raise RuntimeError(
+            f"Screenshot is too small to prove a rendered game frame: {path.stat().st_size} bytes"
+        )
+    result = subprocess.run(
+        ["identify", "-format", "%w %h %[fx:mean] %[fx:standard_deviation]", str(path)],
+        check=True, capture_output=True, text=True, timeout=30,
+    )
+    fields = result.stdout.strip().split()
+    if len(fields) != 4:
+        raise RuntimeError("ImageMagick returned incomplete screenshot statistics: " + result.stdout)
+    width, height = int(fields[0]), int(fields[1])
+    mean, deviation = float(fields[2]), float(fields[3])
+    print(
+        f"SCREENSHOT_STATS: {path.name} {width}x{height} "
+        f"mean={mean:.5f} stddev={deviation:.5f} bytes={path.stat().st_size}",
+        flush=True,
+    )
+    if width < 1280 or height < 720 or mean < 0.005 or deviation < 0.005:
+        raise RuntimeError(
+            "Screenshot appears blank, incomplete, or below the expected display size: "
+            f"{width}x{height}, mean={mean:.5f}, stddev={deviation:.5f}"
+        )
+
+
 def run_client(env: dict[str, str]) -> None:
     if not env.get("DISPLAY"):
         raise RuntimeError("A virtual X display is required for the client render smoke")
+    CLIENT_RUN.mkdir(parents=True, exist_ok=True)
+    client_latest = CLIENT_RUN / "logs" / "latest.log"
+    if client_latest.exists():
+        client_latest.unlink()
     log_path = BUILD / "client-stdout.log"
     draw = threading.Event()
     proc = subprocess.Popen(
-        ["gradle", "--no-daemon", "--console=plain", "runClient",
-         "--args=--quickPlaySingleplayer " + WORLD_NAME],
+        ["gradle", "--no-daemon", "--console=plain", "--stacktrace", "runIrisClipmapSmoke"],
         cwd=MODULE, env=env, stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         text=True, bufsize=1, start_new_session=True,
     )
-    lines = drain_process(proc, log_path, draw=draw)
+    lines, reader_thread = drain_process(proc, log_path, draw=draw)
     try:
         deadline = time.monotonic() + 480
         while not draw.is_set() and proc.poll() is None and time.monotonic() < deadline:
             time.sleep(1)
-        capture_screenshot("iris-clipmap-native")
         if not draw.is_set():
             raise RuntimeError(
-                "Client did not submit an Iris-native clipmap draw within the test window"
+                "Client did not submit an Iris-native clipmap draw within the test window; "
+                f"Gradle exit code={proc.poll()}"
             )
+
+        # The marker is emitted only after six-level native mesh submission.
+        stdout_text = "".join(lines)
+        if not re.search(r"nativeMeshesBuilt=.*\\blevels=6\\b", stdout_text):
+            raise RuntimeError("Iris native meshes were not built for all six LOD levels")
+        if "firstIrisNativeDraw=" not in stdout_text:
+            raise RuntimeError("The Iris-native terrain draw marker is missing from client output")
+
+        first = capture_screenshot("iris-clipmap-native")
+        validate_screenshot(first)
         time.sleep(8)
-        capture_screenshot("iris-clipmap-native-after-stable-frames")
+        stable = capture_screenshot("iris-clipmap-native-after-stable-frames")
+        validate_screenshot(stable)
         print("IRIS_NATIVE_RENDER_SMOKE_PASS", flush=True)
     finally:
         stop_process(proc, timeout=35)
+        reader_thread.join(timeout=10)
         (BUILD / "client-stdout.log").write_text(
             "".join(lines), encoding="utf-8", errors="replace")
-        latest = RUN / "logs" / "latest.log"
-        if latest.exists():
-            shutil.copy2(latest, BUILD / "client-latest.log")
+        if client_latest.exists():
+            shutil.copy2(client_latest, BUILD / "client-latest.log")
         if proc.poll() is None:
             stop_process(proc, timeout=10)
 
 
 def main() -> int:
     BUILD.mkdir(parents=True, exist_ok=True)
-    if not shutil.which("xwd") or not shutil.which("convert"):
-        raise RuntimeError("xwd and ImageMagick convert are required for screenshots")
+    if not all(shutil.which(tool) for tool in ("xwd", "convert", "identify")):
+        raise RuntimeError("xwd and ImageMagick convert/identify are required for screenshots")
     env = os.environ.copy()
     env["JAVA_TOOL_OPTIONS"] = (
         env.get("JAVA_TOOL_OPTIONS", "") +
@@ -305,7 +367,8 @@ def main() -> int:
         " -Drealscale.experimental.geometryclipmap.debug=true"
     ).strip()
     # The temporary dedicated server must not see client-only Iris/Sodium mods.
-    # Generate and save the world first; install the shader stack only for runClient.
+    # Generate the world in the server run directory, then copy it into the
+    # isolated ModDevGradle Iris client run directory before launching the client.
     prepare_saved_world(env)
     install_iris_stack()
     run_client(env)
