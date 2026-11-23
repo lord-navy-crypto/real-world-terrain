@@ -11,6 +11,7 @@ import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.realscale.neoforge.client.clipmap.ClipmapHeightGrid;
@@ -82,6 +83,18 @@ public final class GeometryClipmapServer {
         current.requestId = requestId;
         current.layout = null;
         current.inFlight = false;
+    }
+
+    @SubscribeEvent
+    public static void onServerStopping(ServerStoppingEvent event) {
+        // The worker and session map are static so they can survive an
+        // integrated-server world transition. Explicitly invalidate every
+        // outstanding epoch before clearing queued work; otherwise a task
+        // from the previous world could retain its generator graph or a
+        // UUID session could be mistaken for a new server's request.
+        for (Session session : SESSIONS.values()) session.invalidate();
+        SESSIONS.clear();
+        SAMPLER.getQueue().clear();
     }
 
     @SubscribeEvent

@@ -398,3 +398,13 @@ into a byte offset and can corrupt or reject the R16 texture upload.
 These changes harden request identity, task retirement, and OpenGL state
 isolation. They do not by themselves establish client-side frame-time gains;
 the version-3 protocol requires both client and server to use the same build.
+
+
+## 2026-11-23 integrated-server shutdown cleanup
+
+The server now handles NeoForge's ServerStoppingEvent. It advances every active
+session epoch, clears the session map, and clears queued sampler work. This is
+important because the sampler executor and session map are static and can
+survive an integrated-server world transition in the same client process.
+It prevents a previous world's density graph or player UUID session from being
+reused after the next world starts.

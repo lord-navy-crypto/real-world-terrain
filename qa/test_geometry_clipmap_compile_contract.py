@@ -163,6 +163,9 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("requestId", server)
         self.assertIn("entry.getValue().invalidate()", server)
         self.assertIn("removeSession(player.getUUID(), session)", server)
+        self.assertIn("onServerStopping(ServerStoppingEvent event)", server)
+        self.assertIn("SESSIONS.clear()", server)
+        self.assertIn("SAMPLER.getQueue().clear()", server)
         client = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapClient.java").read_text(
             encoding="utf-8"
         )
