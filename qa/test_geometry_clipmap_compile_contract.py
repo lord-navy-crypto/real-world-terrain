@@ -110,6 +110,10 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertNotIn("new ArrayList", proxy)
         self.assertNotIn("new Matrix4f", draw)
         self.assertNotIn("VISIBLE_SCRATCH", proxy)
+        self.assertNotIn("event.getFrustum()", proxy)
+        self.assertIn("centreX", (
+            ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java"
+        ).read_text(encoding="utf-8"))
 
     def test_proxy_renderer_uses_gpu_frustum_and_distance_clipping(self):
         proxy = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/VisibleSurfaceProxyRenderer.java").read_text(

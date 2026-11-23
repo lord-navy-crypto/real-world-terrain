@@ -433,3 +433,19 @@ This reduces GPU texture-upload volume for normal snapped recentering. It does
 height tiles, and the client still receives and validates the full snapshot.
 It also does not claim GPU-time improvement; the existing CPU submission
 telemetry remains distinct from GPU execution time.
+
+
+## 2026-11-23 snapshot-cached exterior proxy instances
+
+The proxy renderer now uploads compact instance data only when the immutable
+proxy snapshot or its snapped clipmap centre changes. Instance positions are
+stored relative to that centre, and the per-frame camera displacement is sent
+as one uniform; this avoids rebuilding and streaming every proxy's
+camera-relative position on every frame.
+
+Near-field and fully fogged proxies are rejected in the vertex shader, while
+the OpenGL clipper handles view-frustum clipping. This removes the per-frame
+Java list filtering and the per-proxy AABB objects. The renderer still draws
+the existing three crossed billboard planes and keeps the existing exterior
+silhouette materials. This is a CPU submission/allocation optimization; no
+GPU-time or visual-quality gain is claimed without an in-game client capture.

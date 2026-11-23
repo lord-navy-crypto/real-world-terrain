@@ -5,17 +5,17 @@ import static org.junit.jupiter.api.Assertions.*;
 
 final class VisibleSurfaceProxyTest {
     @Test
-    void computesAndRetainsImmutableWorldBoundsOnce() {
+    void retainsCompactPrimitiveExteriorProxyData() {
         VisibleSurfaceProxy proxy = new VisibleSurfaceProxy(
                 100, 64, -200, 5.0f, 12.0f, 0xFF123456,
                 VisibleSurfaceProxy.TREE_CANOPY);
-        assertSame(proxy.bounds(), proxy.bounds());
-        assertEquals(95.0, proxy.bounds().minX);
-        assertEquals(64.0, proxy.bounds().minY);
-        assertEquals(-205.0, proxy.bounds().minZ);
-        assertEquals(105.0, proxy.bounds().maxX);
-        assertEquals(76.0, proxy.bounds().maxY);
-        assertEquals(-195.0, proxy.bounds().maxZ);
+        assertEquals(100, proxy.x());
+        assertEquals(64, proxy.y());
+        assertEquals(-200, proxy.z());
+        assertEquals(5.0f, proxy.radius());
+        assertEquals(12.0f, proxy.height());
+        assertEquals(0x00123456, proxy.rgb());
+        assertEquals(VisibleSurfaceProxy.TREE_CANOPY, proxy.type());
     }
 
     @Test
