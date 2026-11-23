@@ -420,7 +420,7 @@ def prepare_open_rendering_view(client_latest: pathlib.Path) -> None:
         if client_latest.exists():
             log_text = client_latest.read_text(encoding="utf-8", errors="replace")
             match = re.search(
-                r"logged in with entity id \d+ at \([-+0-9.]+,\s*([-+0-9.]+),\s*[-+0-9.]+\)"
+                r"logged in with entity id \d+ at \([-+0-9.]+,\s*([-+0-9.]+),\s*[-+0-9.]+\)",
                 log_text,
             )
             if "Loaded 2 advancements" in log_text and match:
