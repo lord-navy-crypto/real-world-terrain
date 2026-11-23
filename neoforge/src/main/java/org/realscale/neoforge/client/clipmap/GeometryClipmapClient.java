@@ -492,7 +492,9 @@ public final class GeometryClipmapClient {
                 proxies == null ? List.of() : proxies, minecraft.level,
                 cameraX, cameraY, cameraZ, frustumMatrix, projectionMatrix,
                 iris.shadowPass());
-        if (submitted && !firstIrisRenderSubmitted) {
+        // The smoke-test success marker must represent the main G-buffer
+        // terrain pass, not an earlier Iris shadow-map submission.
+        if (submitted && !iris.shadowPass() && !firstIrisRenderSubmitted) {
             firstIrisRenderSubmitted = true;
             reportStatus(minecraft,
                     "[RealScale] Clipmap: IRIS NATIVE TERRAIN DRAW SUBMITTED (visual visibility not yet verified)");
