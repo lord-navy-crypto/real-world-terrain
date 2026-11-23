@@ -52,6 +52,10 @@ jobs:
           sudo apt-get install -y xvfb x11-apps imagemagick mesa-utils libgl1-mesa-dri libglx-mesa0
           xvfb-run -a -s "-screen 0 1280x720x24 +extension GLX +render -noreset" glxinfo -B
 
+      - name: Verify the dedicated Iris client run task exists
+        working-directory: neoforge
+        run: gradle --no-daemon --console=plain tasks --all | grep -F runIrisClipmapSmoke
+
       - name: Build the complete NeoForge project
         working-directory: neoforge
         run: gradle --no-daemon --console=plain build
@@ -71,6 +75,6 @@ jobs:
           path: |
             neoforge/build/iris-clipmap-smoke/**
             neoforge/run/logs/latest.log
-            neoforge/run/server/logs/latest.log
+            neoforge/run/iris-clipmap-client/logs/latest.log
           if-no-files-found: warn
           retention-days: 7
