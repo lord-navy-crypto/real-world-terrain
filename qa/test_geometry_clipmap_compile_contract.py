@@ -150,7 +150,8 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         )
         terrain_draw = terrain.split("private static void draw(", 1)[1].split("private static int linkProgram(", 1)[0]
         proxy_draw = proxy.split("static void draw(", 1)[1].split("static void dispose(", 1)[0]
-        self.assertIn("VIEW_PROJECTION.set(event.getProjectionMatrix())", terrain_draw)
+        self.assertIn("EXTENDED_PROJECTION.set(event.getProjectionMatrix())", terrain_draw)
+        self.assertIn("VIEW_PROJECTION.set(projection).mul(modelView)", terrain_draw)
         self.assertIn("VIEW_PROJECTION.set(event.getProjectionMatrix())", proxy_draw)
         self.assertNotIn("new Matrix4f", terrain_draw)
         self.assertNotIn("new Matrix4f", proxy_draw)
