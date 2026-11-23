@@ -50,11 +50,39 @@ jobs:
       - name: Verify Iris client smoke harness contracts
         run: python3 -m unittest discover -s qa -p 'test_iris_clipmap_smoke_harness.py' -v
 
-      - name: Install software OpenGL and virtual display
+      - name: Update Ubuntu package indexes
+        timeout-minutes: 10
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb x11-apps imagemagick mesa-utils libgl1-mesa-dri libglx-mesa0
-          xvfb-run -a -s "-screen 0 1280x720x24 +extension GLX +render -noreset" glxinfo -B
+          set -euxo pipefail
+          sudo timeout 8m apt-get \
+            -o Acquire::Retries=3 \
+            -o Acquire::http::Timeout=30 \
+            -o Acquire::https::Timeout=30 \
+            update
+
+      - name: Install virtual display and software OpenGL packages
+        timeout-minutes: 10
+        run: |
+          set -euxo pipefail
+          sudo timeout 8m apt-get \
+            -o Acquire::Retries=3 \
+            -o Acquire::http::Timeout=30 \
+            -o Acquire::https::Timeout=30 \
+            install -y xvfb x11-apps imagemagick mesa-utils libgl1-mesa-dri libglx-mesa0
+          command -v xvfb-run
+          command -v glxinfo
+          command -v xwd
+          command -v identify
+
+      - name: Verify Mesa OpenGL under Xvfb
+        timeout-minutes: 5
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          MESA_DEBUG: '1'
+        run: |
+          set -euxo pipefail
+          timeout 120s xvfb-run -a -s "-screen 0 1280x720x24 +extension GLX +render -noreset" \
+            sh -lc 'glxinfo -B'
 
       - name: Verify the dedicated Iris client run task exists
         working-directory: neoforge
