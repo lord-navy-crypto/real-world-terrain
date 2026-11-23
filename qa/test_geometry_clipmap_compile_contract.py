@@ -308,6 +308,23 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("ClipmapEnvironment.from(minecraft.level, partialTick)", client)
 
 
+    def test_horizon_material_noise_is_evaluated_per_vertex(self):
+        renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        vertex_shader = renderer.split("private static final String VERTEX_SHADER", 1)[1].split(
+            "private static final String FRAGMENT_SHADER", 1
+        )[0]
+        fragment_shader = renderer.split("private static final String FRAGMENT_SHADER", 1)[1].split(
+            "private static final FloatBuffer MATRIX_UPLOAD", 1
+        )[0]
+        self.assertIn("vMacro = valueNoise", vertex_shader)
+        self.assertIn("vRegional = valueNoise", vertex_shader)
+        self.assertIn("vMicro = vertexDetailFade > 0.0", vertex_shader)
+        self.assertNotIn("valueNoise(", fragment_shader)
+        self.assertIn("dot(normal, uSunDirection)", fragment_shader)
+
+
     def test_toroidal_texture_update_plan_has_unit_coverage(self):
         planner = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.java").read_text(
             encoding="utf-8"
