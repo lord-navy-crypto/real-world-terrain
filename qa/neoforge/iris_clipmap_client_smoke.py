@@ -437,6 +437,8 @@ def prepare_open_rendering_view(
 
     # The CI-only Java camera hook applies a deterministic downward pitch.
     time.sleep(2)
+    subprocess.run(["xdotool", "key", "F1"], check=True, timeout=10)
+    time.sleep(1)
     print(
         "CLIENT_CAMERA_VANTAGE_READY_FOR_CAPTURE: "
         f"y={float(camera_match.group(2)):.1f}, looking toward distant terrain",
