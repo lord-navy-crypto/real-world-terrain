@@ -204,7 +204,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("displayClientMessage(Component.literal(message), false)", client)
         self.assertIn("Clipmap: REQUEST SENT", client)
         self.assertIn("Clipmap: SNAPSHOT READY", client)
-        self.assertIn("Clipmap: DRAW SUBMITTED", client)
+        self.assertIn("Clipmap: GPU DRAW SUBMITTED", client)
         self.assertIn("Clipmap: NO RECENT SERVER RESPONSE", client)
         self.assertIn("HEARTBEAT_INTERVAL_NANOS", client)
         self.assertIn("pendingLevelCount()", client)
