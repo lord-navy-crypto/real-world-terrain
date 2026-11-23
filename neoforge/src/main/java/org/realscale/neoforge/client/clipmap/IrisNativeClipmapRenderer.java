@@ -260,10 +260,11 @@ final class IrisNativeClipmapRenderer {
 
             if (Boolean.getBoolean("realscale.experimental.geometryclipmap.debug")) {
                 System.out.printf(java.util.Locale.ROOT,
-                        "[RealScale Iris Clipmap] nativeMeshesBuilt=%.1fms levels=%d proxies=%d solid=%s cutout=%s water=%s%n",
+                        "[RealScale Iris Clipmap] nativeMeshesBuilt=%.1fms levels=%d proxies=%d solid=%s cutout=%s water=%s heightRanges=%s%n",
                         (System.nanoTime() - started) / 1_000_000.0,
                         LEVEL_COUNT, proxies.size(), solidBuffer != null,
-                        cutoutBuffer != null, waterBuffer != null);
+                        cutoutBuffer != null, waterBuffer != null,
+                        heightRangeSummary(snapshot));
             }
             return solidBuffer != null || cutoutBuffer != null || waterBuffer != null;
         } catch (RuntimeException failure) {
@@ -275,6 +276,35 @@ final class IrisNativeClipmapRenderer {
                     + failure.getClass().getSimpleName() + ": " + failure.getMessage());
             return false;
         }
+    }
+
+    private static String heightRangeSummary(List<ClipmapHeightTilePayload> tiles) {
+        StringBuilder summary = new StringBuilder();
+        for (ClipmapHeightTilePayload tile : tiles) {
+            short[] samples = tile.heights();
+            int sampleMin = 0xFFFF;
+            int sampleMax = 0;
+            long sum = 0L;
+            long sumSquares = 0L;
+            for (short raw : samples) {
+                int sample = Short.toUnsignedInt(raw);
+                sampleMin = Math.min(sampleMin, sample);
+                sampleMax = Math.max(sampleMax, sample);
+                sum += sample;
+                sumSquares += (long) sample * sample;
+            }
+            double mean = sum / (double) samples.length;
+            double variance = Math.max(0.0,
+                    sumSquares / (double) samples.length - mean * mean);
+            if (summary.length() > 0) summary.append(',');
+            summary.append('L').append(tile.levelIndex()).append('[')
+                    .append(tile.minHeight()).append("..").append(tile.maxHeight())
+                    .append(";u16=").append(sampleMin).append("..").append(sampleMax)
+                    .append(";sd=").append(String.format(java.util.Locale.ROOT, "%.0f",
+                            Math.sqrt(variance)))
+                    .append(']');
+        }
+        return summary.toString();
     }
 
     private static VertexBuffer upload(BufferBuilder builder) {
