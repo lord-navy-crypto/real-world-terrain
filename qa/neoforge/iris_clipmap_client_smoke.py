@@ -23,7 +23,7 @@ import urllib.request
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 MODULE = ROOT / "neoforge"
 RUN = MODULE / "run"
-SERVER = RUN / "server"
+SERVER = RUN  # runServer uses the module run directory as --gameDir .
 CLIENT_SAVES = RUN / "saves"
 WORLD_NAME = "iris-clipmap-smoke"
 BUILD = MODULE / "build" / "iris-clipmap-smoke"

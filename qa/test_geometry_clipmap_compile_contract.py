@@ -341,6 +341,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertLess(main.index("install_iris_stack()"),
                         main.index("run_client(env)"))
 
+        self.assertIn('SERVER = RUN  # runServer uses the module run directory as --gameDir .', script)
     def test_iris_native_clipmap_uses_vanilla_gbuffer_and_shadow_terrain_passes(self):
         native = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/IrisNativeClipmapRenderer.java").read_text(
             encoding="utf-8"
