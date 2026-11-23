@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.util.Objects;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
+import net.neoforged.fml.ModList;
 
 /**
  * Optional Iris bridge that deliberately has no compile-time Iris dependency.
@@ -22,6 +23,35 @@ public final class IrisRenderCompatibility {
     private static final ProjectionAccess PROJECTION = ProjectionAccess.discover();
 
     private IrisRenderCompatibility() {}
+
+    /**
+     * Resolve optional Iris classes through the active mod-launcher context first.
+     * The defining class loader may not see another mod's isolated class space.
+     */
+    private static Class<?> loadIrisClass(String name) throws ClassNotFoundException {
+        ClassLoader context = Thread.currentThread().getContextClassLoader();
+        if (context != null) {
+            try {
+                return Class.forName(name, false, context);
+            } catch (ClassNotFoundException ignored) {
+                // Try RealScale's mod class loader below.
+            }
+        }
+        return Class.forName(name, false, IrisRenderCompatibility.class.getClassLoader());
+    }
+
+    /**
+     * If Iris is installed but its API is not visible, treat that as unknown
+     * rather than as no Iris; unknown state must never enable raw GL drawing.
+     */
+    private static boolean irisModLoaded() {
+        try {
+            return ModList.get().isLoaded("iris");
+        } catch (RuntimeException | LinkageError unavailable) {
+            // During an unusually early class-load, prefer the safe disabled path.
+            return true;
+        }
+    }
 
     public static State current() {
         if (!API.present()) {
@@ -129,9 +159,8 @@ public final class IrisRenderCompatibility {
 
         private static ProjectionAccess discover() {
             try {
-                ClassLoader loader = IrisRenderCompatibility.class.getClassLoader();
-                Class<?> captured = Class.forName(
-                        "net.irisshaders.iris.uniforms.CapturedRenderingState", false, loader);
+                Class<?> captured = loadIrisClass(
+                        "net.irisshaders.iris.uniforms.CapturedRenderingState");
                 Field instanceField = captured.getField("INSTANCE");
                 Object instance = instanceField.get(null);
                 Method getter = captured.getMethod("getGbufferProjection");
@@ -153,14 +182,13 @@ public final class IrisRenderCompatibility {
 
         private static ApiAccess discover() {
             try {
-                ClassLoader loader = IrisRenderCompatibility.class.getClassLoader();
-                Class<?> api = Class.forName(IRIS_API, false, loader);
+                Class<?> api = loadIrisClass(IRIS_API);
                 Object instance = api.getMethod("getInstance").invoke(null);
                 Method shaderPackInUse = api.getMethod("isShaderPackInUse");
                 Method renderingShadowPass = api.getMethod("isRenderingShadowPass");
                 return new ApiAccess(true, instance, shaderPackInUse, renderingShadowPass);
             } catch (ClassNotFoundException absent) {
-                return new ApiAccess(false, null, null, null);
+                return new ApiAccess(irisModLoaded(), null, null, null);
             } catch (ReflectiveOperationException | RuntimeException | LinkageError unavailable) {
                 return new ApiAccess(true, null, null, null);
             }
