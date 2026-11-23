@@ -590,3 +590,11 @@ The test-package instructions and JAR class-integrity check were updated for
 the status packet and the new actionable chat messages. The experimental
 artifact is still not visually certified until the user verifies distant
 terrain in a real Minecraft client.
+
+
+### Progress presentation
+
+Frequent LOD percentage updates and partial tile counts are shown in the
+Minecraft action bar rather than chat. Chat is reserved for major state
+transitions and actionable errors, preventing a slow first sample from
+flooding the player's chat history.
