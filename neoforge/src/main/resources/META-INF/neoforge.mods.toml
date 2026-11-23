@@ -70,3 +70,9 @@ config="realscale.aquifer.audit.mixins.json"
 
 [[mixins]]
 config="realscale.client.experiment.mixins.json"
+
+# Shader-pack-native Geometry Clipmap draw inside vanilla terrain layers.
+# The client-only hook is harmless without Iris and activates only when its
+# optional IrisApi reports an active shader pack.
+[[mixins]]
+config="realscale.geometryclipmap.mixins.json"
