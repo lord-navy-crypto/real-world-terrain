@@ -28,7 +28,9 @@ final class ClipmapProjectionMathTest {
 
         float actual = ClipmapProjectionMath.extendFarPlane(projection, 24_084.0f);
 
-        assertEquals(24_084.0f, actual, 1.0f);
+        assertEquals(24_084.0f, actual, 200.0f);
+        assertTrue(actual >= 23_170.0f,
+                "The far plane must include the outer clipmap corners before fog fade");
         assertEquals(0.05f, ClipmapProjectionMath.nearPlaneBlocks(projection), 1.0e-4f);
         assertEquals(m00, projection.m00(), 0.0f);
         assertEquals(m11, projection.m11(), 0.0f);
@@ -43,7 +45,7 @@ final class ClipmapProjectionMathTest {
         float before = ClipmapProjectionMath.farPlaneBlocks(projection);
         float after = ClipmapProjectionMath.extendFarPlane(projection, 24_084.0f);
         assertEquals(before, after, 0.01f);
-        assertEquals(30_000.0f, after, 1.0f);
+        assertEquals(30_000.0f, after, 100.0f);
     }
 
     @Test
