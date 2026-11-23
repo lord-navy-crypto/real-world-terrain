@@ -48,6 +48,8 @@ public final class GeometryClipmapClient {
     private static boolean firstRenderSubmitted;
     private static long lastRequestSentNanos;
     private static long lastServerStatusNanos;
+    private static long serverStateSinceNanos;
+    private static boolean waitingDiagnosticShown;
     private static int serverStatus = -1;
     private static int serverCompletedLevels;
     private static int serverQueueDepth;
@@ -90,6 +92,7 @@ public final class GeometryClipmapClient {
             int received = TILES.pendingLevelCount();
             if (received != lastReportedTileCount && received > 0) {
                 lastReportedTileCount = received;
+                waitingDiagnosticShown = false;
                 reportStatus(minecraft, "[RealScale] Clipmap: RECEIVING HEIGHT TILES ("
                         + received + "/6)");
             }
@@ -103,11 +106,19 @@ public final class GeometryClipmapClient {
                 || payload.requestId() != activeRequestId
                 || !minecraft.level.dimension().location().toString()
                         .equals(payload.dimensionKey())) return;
-        lastServerStatusNanos = System.nanoTime();
+        long now = System.nanoTime();
+        boolean stateChanged = payload.state() != serverStatus
+                || payload.completedLevels() != serverCompletedLevels;
+        lastServerStatusNanos = now;
+        if (stateChanged) {
+            serverStateSinceNanos = now;
+            waitingDiagnosticShown = false;
+        }
         serverStatus = payload.state();
         serverCompletedLevels = payload.completedLevels();
         serverQueueDepth = payload.queueDepth();
         serverDetail = payload.detail();
+        if (!stateChanged) return;
         switch (payload.state()) {
             case ClipmapStatusPayload.REQUEST_ACCEPTED ->
                     reportStatus(minecraft, "[RealScale] Clipmap: SERVER ACKNOWLEDGED REQUEST");
@@ -172,6 +183,8 @@ public final class GeometryClipmapClient {
             firstRenderSubmitted = false;
             lastRequestSentNanos = requestStartedNanos;
             lastServerStatusNanos = 0L;
+            serverStateSinceNanos = requestStartedNanos;
+            waitingDiagnosticShown = false;
             serverStatus = -1;
             serverCompletedLevels = 0;
             serverQueueDepth = 0;
@@ -192,14 +205,33 @@ public final class GeometryClipmapClient {
                     new ClipmapRequestPayload(nearChunks, activeRequestId));
             lastRequestSentNanos = now;
             retryCount++;
-            if (lastServerStatusNanos == 0L
-                    || now - lastServerStatusNanos > HEARTBEAT_INTERVAL_NANOS * 2L) {
-                reportStatus(minecraft, "[RealScale] Clipmap: NO RECENT SERVER RESPONSE - "
+            if (!waitingDiagnosticShown
+                    && (lastServerStatusNanos == 0L
+                        || now - lastServerStatusNanos > HEARTBEAT_INTERVAL_NANOS * 2L)) {
+                waitingDiagnosticShown = true;
+                reportStatus(minecraft, "[RealScale] Clipmap: NO SERVER ACKNOWLEDGEMENT - "
                         + "resending request #" + retryCount);
-            } else if (serverStatus == ClipmapStatusPayload.SNAPSHOT_SENT
-                    && TILES.pendingLevelCount() < ClipmapStatusPayload.LEVEL_COUNT) {
-                reportStatus(minecraft, "[RealScale] Clipmap: SERVER SENT SNAPSHOT; client has "
-                        + TILES.pendingLevelCount() + "/6 pending levels; requesting resend");
+            } else if (!waitingDiagnosticShown && serverStateSinceNanos != 0L
+                    && now - serverStateSinceNanos > HEARTBEAT_INTERVAL_NANOS * 2L) {
+                waitingDiagnosticShown = true;
+                String stalledState = switch (serverStatus) {
+                    case ClipmapStatusPayload.REQUEST_ACCEPTED ->
+                            "server acknowledged request but sampler has not started";
+                    case ClipmapStatusPayload.QUEUED ->
+                            "still queued; sampler queue depth " + serverQueueDepth;
+                    case ClipmapStatusPayload.SAMPLING ->
+                            "sampler has not advanced beyond LOD " + serverCompletedLevels + "/6";
+                    case ClipmapStatusPayload.SNAPSHOT_SENT ->
+                            "server sent snapshot but client has " + TILES.pendingLevelCount() + "/6 tiles";
+                    case ClipmapStatusPayload.BUSY ->
+                            "server is busy: " + serverDetail;
+                    case ClipmapStatusPayload.FAILED ->
+                            "server sampling failed: " + serverDetail;
+                    case ClipmapStatusPayload.STALLED ->
+                            "sampler watchdog fired: " + serverDetail;
+                    default -> "server state is unknown";
+                };
+                reportStatus(minecraft, "[RealScale] Clipmap: NO PROGRESS - " + stalledState);
             }
         }
     }
@@ -257,6 +289,8 @@ public final class GeometryClipmapClient {
         firstRenderSubmitted = false;
         lastRequestSentNanos = 0L;
         lastServerStatusNanos = 0L;
+        serverStateSinceNanos = 0L;
+        waitingDiagnosticShown = false;
         serverStatus = -1;
         serverCompletedLevels = 0;
         serverQueueDepth = 0;
