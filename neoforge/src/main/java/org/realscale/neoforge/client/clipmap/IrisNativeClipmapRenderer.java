@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
 import org.joml.Matrix4f;
+import org.realscale.neoforge.network.ClipmapHeightTilePayload;
 
 import java.util.ArrayList;
 import java.util.List;
