@@ -65,15 +65,15 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("GL_INVALID_OPERATION in glUniform(program not linked)", SMOKE)
 
     def test_client_moves_camera_above_spawn_terrain_before_visual_capture(self):
-        self.assertIn("def read_debug_camera_y()", SMOKE)
         self.assertIn("def prepare_open_rendering_view", SMOKE)
+        self.assertNotIn("def read_debug_camera_y()", SMOKE)
         self.assertIn("Loaded 2 advancements", SMOKE)
         self.assertIn("CLIENT_CAMERA_VANTAGE_READY", SMOKE)
+        self.assertIn("CLIENT_CAMERA_VERIFIED", SMOKE)
         self.assertIn('["xdotool", "click", "--repeat", "24", "--delay", "20", "4"]', SMOKE)
         self.assertIn('["xdotool", "keydown", "space"]', SMOKE)
         self.assertIn('["xdotool", "keydown", "Control_L"]', SMOKE)
-        self.assertIn("camera_y >= 1100.0", SMOKE)
-        self.assertIn("F3 XYZ line", SMOKE)
+        self.assertIn("cameraPosition.y >= 1100.0", GEOMETRY_CLIENT)
         self.assertIn('rcon.send("setworldspawn 0 1200 0")', SMOKE)
         self.assertIn('"gamemode=spectator\\n"', SMOKE)
         self.assertIn('"force-gamemode=true\\n"', SMOKE)
