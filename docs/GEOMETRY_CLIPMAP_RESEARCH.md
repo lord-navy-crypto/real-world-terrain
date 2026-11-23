@@ -602,25 +602,39 @@ flooding the player's chat history.
 
 ## Iris / shader-pack compatibility audit (2026-11-23)
 
-The current Geometry Clipmap terrain and proxy renderers compile their own
-standalone GLSL 4.1 programs and issue direct OpenGL draw calls. Iris 1.21.1
-provides a public API for detecting an active shader pack and the shadow pass,
-but does not expose the later render-pipeline assignment API in this target
-branch. Iris also documents that arbitrary mod-owned custom shaders cannot
-generally be merged into shader-pack G-buffer programs.
+The standalone OpenGL 4.1 renderer remains the no-shader fallback.
+For Iris 1.21.1 with an active shader pack, the native path now uses a
+client-only mixin at the end of `LevelRenderer.renderSectionLayer`, immediately
+before the active `ShaderInstance.clear()` call. This point is deliberately
+inside the vanilla/Iris terrain phase: Iris has selected the current G-buffer
+program and the current RenderType state is still active.
 
-A reflective, optional Iris bridge now:
-- detects Iris without adding a hard dependency;
-- skips all Geometry Clipmap draws during Iris shadow-map rendering;
-- suspends the standalone GLSL path when a shader pack is active or Iris API
-  state cannot be queried, avoiding writes to an incompatible G-buffer;
-- resumes the existing renderer when Iris is installed but no shader pack is
-  active, or when Iris is absent.
+The native path:
+- uses the vanilla `BLOCK` vertex format and GPU-resident `VertexBuffer` meshes;
+- draws opaque terrain/buildings/islands with `RenderType.solid()`;
+- draws tree canopy cutouts with `RenderType.cutout()`;
+- draws ocean surface with `RenderType.translucent()` in the main pass;
+- writes the same six-level ring geometry, edge morphing and skirts from the
+  immutable height-tile snapshot, rather than generating distant chunks;
+- sets and restores the active shader's `CHUNK_OFFSET` so the cached mesh is
+  centred on the clipmap snapshot but rendered relative to the current main or
+  Iris shadow camera;
+- participates in Iris solid/cutout shadow terrain passes, while translucent
+  water is intentionally omitted from shadow maps;
+- does not create a private shader program, bind a private framebuffer, or
+  bypass the active Iris terrain shader.
 
-The client only reports `GPU DRAW SUBMITTED` when the renderer validates the
-six-level snapshot and actually issues the draw path. A shader-pack-native
-terrain fallback using Minecraft/Iris-managed render types is the next
-compatibility milestone; shader-pack visual support is not claimed yet.
+Iris is detected reflectively through IrisApi v0, so it remains an optional
+runtime integration and adds no compile-time Iris dependency. When no shader
+pack is active, the existing standalone OpenGL renderer remains in use. If the
+Iris API cannot be queried, both custom paths fail closed.
+
+This establishes the native submission architecture, not visual certification.
+A real client run with Iris and a shader pack is still required to verify
+G-buffer output, terrain visibility, water appearance, shadow-map participation,
+LOD seams, proxy silhouettes, and frame-time impact. The client reports
+`IRIS NATIVE TERRAIN DRAW SUBMITTED` only after a matching active snapshot is
+uploaded and drawn; this is not proof that visible pixels were produced.
 
 
 ## Camera-matched fog color
