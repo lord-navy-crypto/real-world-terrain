@@ -120,7 +120,15 @@ final class IrisNativeClipmapRenderer {
         // AFTER_LEVEL. Never change projection per layer: the depth written here
         // must be interpreted with the same matrix during Iris's later composites.
         Uniform chunkOffset = shader.CHUNK_OFFSET;
+        boolean shaderApplied = false;
         try {
+            // RenderType.setupRenderState selects the Iris ShaderInstance but,
+            // unlike BufferUploader.drawWithShader, does not call apply().
+            // Direct VertexBuffer draws must bind the program explicitly before
+            // any Uniform upload or GL_INVALID_OPERATION (program not linked)
+            // is raised by the driver.
+            shader.apply();
+            shaderApplied = true;
             chunkOffset.set((float) (centerX - cameraX),
                     (float) -cameraY, (float) (centerZ - cameraZ));
             chunkOffset.upload();
@@ -136,9 +144,15 @@ final class IrisNativeClipmapRenderer {
             return false;
         } finally {
             VertexBuffer.unbind();
-            chunkOffset.set(0.0f, 0.0f, 0.0f);
-            chunkOffset.upload();
-            renderType.clearRenderState();
+            try {
+                if (shaderApplied) {
+                    chunkOffset.set(0.0f, 0.0f, 0.0f);
+                    chunkOffset.upload();
+                    shader.clear();
+                }
+            } finally {
+                renderType.clearRenderState();
+            }
         }
     }
 
