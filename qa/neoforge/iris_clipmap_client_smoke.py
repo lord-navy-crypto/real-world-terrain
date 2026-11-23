@@ -431,6 +431,12 @@ def run_client(env: dict[str, str]) -> None:
         time.sleep(8)
         stable = capture_screenshot("iris-clipmap-native-after-stable-frames")
         validate_screenshot(stable)
+        final_stdout = "".join(lines)
+        if "GL_INVALID_OPERATION in glUniform(program not linked)" in final_stdout:
+            raise RuntimeError(
+                "Iris-native draw emitted GL_INVALID_OPERATION while uploading "
+                "ChunkOffset; the shader program was not bound/linked"
+            )
         print("IRIS_NATIVE_RENDER_SMOKE_PASS", flush=True)
     finally:
         stop_process(proc, timeout=35)
