@@ -370,6 +370,41 @@ def validate_screenshot(path: pathlib.Path | None) -> None:
         )
 
 
+def prepare_open_rendering_view(client_latest: pathlib.Path) -> None:
+    """Move the creative-mode test camera above the spawn terrain bowl.
+
+    The fixed Natural Automate smoke seed can place the player in a steep
+    terrain depression. A ground-level screenshot then proves the client is
+    alive but cannot show whether the distant clipmap reaches the horizon.
+    Wait until the singleplayer world is actually joined, toggle creative
+    flight, and rise vertically while keeping the horizontal clipmap center
+    unchanged.
+    """
+    deadline = time.monotonic() + 180
+    while time.monotonic() < deadline:
+        if client_latest.exists():
+            log_text = client_latest.read_text(encoding="utf-8", errors="replace")
+            if "Loaded 2 advancements" in log_text:
+                break
+        time.sleep(1)
+    else:
+        raise RuntimeError("Singleplayer world did not finish joining before camera positioning")
+
+    subprocess.run(["xdotool", "key", "space"], check=True, timeout=10)
+    time.sleep(0.18)
+    subprocess.run(["xdotool", "key", "space"], check=True, timeout=10)
+    time.sleep(0.25)
+    subprocess.run(["xdotool", "keydown", "space"], check=True, timeout=10)
+    try:
+        # Creative flight speed is intentionally left at the user's default;
+        # a sustained ascent clears the local terrain bowl without changing X/Z.
+        time.sleep(40)
+    finally:
+        subprocess.run(["xdotool", "keyup", "space"], check=True, timeout=10)
+    time.sleep(1)
+    print("CLIENT_CAMERA_VANTAGE_READY: creative flight ascent complete", flush=True)
+
+
 def run_client(env: dict[str, str]) -> None:
     if not env.get("DISPLAY"):
         raise RuntimeError("A virtual X display is required for the client render smoke")
@@ -389,7 +424,9 @@ def run_client(env: dict[str, str]) -> None:
     try:
         deadline = time.monotonic() + 480
         warning_check_deadline = time.monotonic() + 120
+        world_ready_deadline = time.monotonic() + 180
         warning_checked = False
+        camera_prepared = False
         while not draw.is_set() and proc.poll() is None and time.monotonic() < deadline:
             if not warning_checked and time.monotonic() < warning_check_deadline:
                 if experimental_warning_visible():
@@ -397,8 +434,16 @@ def run_client(env: dict[str, str]) -> None:
                     warning_checked = True
                 else:
                     time.sleep(2)
+            elif not camera_prepared:
+                if client_latest.exists() and "Loaded 2 advancements" in client_latest.read_text(
+                        encoding="utf-8", errors="replace"):
+                    prepare_open_rendering_view(client_latest)
+                    camera_prepared = True
+                elif time.monotonic() >= world_ready_deadline:
+                    raise RuntimeError("Singleplayer world did not become ready for camera positioning")
+                else:
+                    time.sleep(1)
             else:
-                warning_checked = True
                 time.sleep(1)
         if not draw.is_set():
             try:
