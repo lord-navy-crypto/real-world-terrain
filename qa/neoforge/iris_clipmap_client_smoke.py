@@ -230,12 +230,16 @@ def prepare_saved_world(env: dict[str, str]) -> None:
         rcon.send("weather clear")
         rcon.send("gamerule doDaylightCycle false")
         # A world spawn in open air is relocated by Minecraft's safe-spawn
-        # search to the terrain surface (Run #21 landed at Y=813). Put a
-        # harmless solid marker below the requested spawn first so the
-        # high-altitude spectator camera is preserved at Y=1200.
-        rcon.send("setblock 0 1199 0 minecraft:glass")
+        # search to the terrain surface. Force-load the spawn chunk before
+        # placing the glass floor; otherwise RCON setblock reports "position
+        # is not loaded" and the player is relocated back to the terrain.
+        rcon.send("forceload add 0 0")
+        platform_result = rcon.send("setblock 0 1199 0 minecraft:glass")
+        if "not loaded" in platform_result.lower():
+            raise RuntimeError("High-altitude spawn chunk was not loaded for the glass platform")
         rcon.send("setworldspawn 0 1200 0")
         rcon.send("save-all flush")
+        rcon.send("forceload remove 0 0")
         rcon.send("stop")
         proc.wait(timeout=120)
     finally:
