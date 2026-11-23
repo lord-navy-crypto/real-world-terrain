@@ -7,6 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 BUILD_GRADLE = (ROOT / "neoforge" / "build.gradle").read_text(encoding="utf-8")
 SMOKE = (ROOT / "qa" / "neoforge" / "iris_clipmap_client_smoke.py").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "clipmap-iris-render-smoke.yml").read_text(encoding="utf-8")
+IRIS_MIXIN = (ROOT / "neoforge" / "src" / "main" / "java" / "org" / "realscale" / "neoforge" / "mixin" / "IrisGeometryClipmapMixin.java").read_text(encoding="utf-8")
+GEOMETRY_CLIENT = (ROOT / "neoforge" / "src" / "main" / "java" / "org" / "realscale" / "neoforge" / "client" / "clipmap" / "GeometryClipmapClient.java").read_text(encoding="utf-8")
 
 
 class IrisClipmapSmokeHarnessTest(unittest.TestCase):
@@ -35,6 +37,14 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn('["identify", "-format"', SMOKE)
         self.assertIn("validate_screenshot(first)", SMOKE)
         self.assertIn("validate_screenshot(stable)", SMOKE)
+
+    def test_iris_native_draw_uses_portable_terrain_stage_events(self):
+        self.assertIn("prepareIrisFrameFog", IRIS_MIXIN)
+        self.assertNotIn("ShaderInstance;clear()V", IRIS_MIXIN)
+        self.assertIn('case "after_solid_blocks" -> RenderType.solid()', GEOMETRY_CLIENT)
+        self.assertIn('case "after_cutout_blocks" -> RenderType.cutout()', GEOMETRY_CLIENT)
+        self.assertIn('case "after_translucent_blocks" -> RenderType.translucent()', GEOMETRY_CLIENT)
+        self.assertIn("event.getModelViewMatrix(), event.getProjectionMatrix()", GEOMETRY_CLIENT)
 
     def test_workflow_archives_client_and_server_logs(self):
         self.assertIn("neoforge/run/logs/latest.log", WORKFLOW)
