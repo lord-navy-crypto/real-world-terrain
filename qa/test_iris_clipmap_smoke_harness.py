@@ -39,6 +39,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
 
     def test_render_gate_requires_six_levels_and_nonblank_screenshot(self):
         self.assertIn("nativeMeshesBuilt=", SMOKE)
+        self.assertIn("heightRanges=", IRIS_RENDERER)
         self.assertIn(r"levels=6", SMOKE)
         self.assertIn('["identify", "-format"', SMOKE)
         self.assertIn("validate_screenshot(first)", SMOKE)
