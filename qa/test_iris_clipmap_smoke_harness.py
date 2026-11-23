@@ -61,22 +61,18 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("GL_INVALID_OPERATION in glUniform(program not linked)", SMOKE)
 
     def test_client_moves_camera_above_spawn_terrain_before_visual_capture(self):
+        self.assertIn("def read_debug_camera_y()", SMOKE)
         self.assertIn("def prepare_open_rendering_view", SMOKE)
         self.assertIn("Loaded 2 advancements", SMOKE)
         self.assertIn("CLIENT_CAMERA_VANTAGE_READY", SMOKE)
-        self.assertIn('rcon.send("forceload add 0 0")', SMOKE)
-        self.assertIn('"fill -2 1199 -2 2 1199 2 minecraft:stone"', SMOKE)
-        self.assertIn('"successfully filled" not in platform_reply', SMOKE)
-        self.assertLess(
-            SMOKE.index('rcon.send("forceload add 0 0")'),
-            SMOKE.index('"fill -2 1199 -2 2 1199 2 minecraft:stone"'),
-        )
+        self.assertIn('["xdotool", "click", "--repeat", "24", "--delay", "20", "4"]', SMOKE)
+        self.assertIn('["xdotool", "keydown", "space"]', SMOKE)
+        self.assertIn('["xdotool", "keydown", "Control_L"]', SMOKE)
+        self.assertIn("camera_y >= 1100.0", SMOKE)
+        self.assertIn("F3 XYZ line", SMOKE)
         self.assertIn('rcon.send("setworldspawn 0 1200 0")', SMOKE)
-        self.assertIn('rcon.send("forceload remove 0 0")', SMOKE)
         self.assertIn('"gamemode=spectator\\n"', SMOKE)
         self.assertIn('"force-gamemode=true\\n"', SMOKE)
-        self.assertIn("spawn_y < 1100", SMOKE)
-        self.assertIn('["xdotool", "mousemove_relative", "--sync", "0", "200"]', SMOKE)
 
     def test_client_dismisses_experimental_world_warning_before_draw_gate(self):
         self.assertIn("def experimental_warning_visible()", SMOKE)
