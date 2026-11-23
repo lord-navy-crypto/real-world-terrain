@@ -80,6 +80,7 @@ jobs:
               "org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.class",
               "org/realscale/neoforge/client/clipmap/ClipmapProjectionMath.class",
               "org/realscale/neoforge/network/ClipmapRequestPayload.class",
+              "org/realscale/neoforge/network/ClipmapStatusPayload.class",
           ]
           with ZipFile(jar[0]) as file:
               names = set(file.namelist())
@@ -106,12 +107,20 @@ jobs:
 
           TEST ONLY. DO NOT MERGE TO MAIN OR REPLACE THE OFFICIAL RELEASE.
           Keep exactly one RealScale mod JAR in your mods directory.
-          Geometry Clipmap remains OFF unless explicitly enabled.
+          Geometry Clipmap is AUTOMATICALLY ENABLED in this experimental test JAR.
+          No JVM arguments are needed to turn it on.
 
-          AUTOMATICALLY ENABLED IN THIS EXPERIMENTAL TEST JAR.
-          No JVM arguments are needed to turn Geometry Clipmap on.
-          The game chat shows ON / WAITING, SNAPSHOT READY, DRAW SUBMITTED,
-          or STILL WAITING (after ~15 seconds without the first snapshot).
+          The game chat now reports the actual handshake and data pipeline:
+            REQUEST SENT / SERVER ACKNOWLEDGED
+            QUEUED / SAMPLING LOD x/6: 25%, 50%, 75%, 100%
+            RECEIVING HEIGHT TILES x/6 / SNAPSHOT READY
+            SERVER SENT SNAPSHOT / GPU DRAW SUBMITTED
+            NO SERVER ACKNOWLEDGEMENT / NO PROGRESS
+            UNSUPPORTED WORLD / SAMPLING FAILED / SAMPLER STALLED
+          The client retries the same request every 8 seconds until all six
+          height tiles arrive. The server resends a cached snapshot instead
+          of recomputing it. A 90-second no-progress watchdog cancels and retries
+          a stalled sampling task. GPU draw submission is not proof of visible pixels.
 
           Troubleshooting only (optional JVM arguments):
             -Drealscale.experimental.geometryclipmap=false (disable)

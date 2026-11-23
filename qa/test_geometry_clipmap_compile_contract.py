@@ -208,9 +208,17 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("Clipmap: NO SERVER ACKNOWLEDGEMENT", client)
         self.assertIn("Clipmap: NO PROGRESS", client)
         self.assertIn("serverStateSinceNanos", client)
+        self.assertIn("serverDetail", client)
+        self.assertIn("serverStateSinceNanos", client)
         self.assertIn("HEARTBEAT_INTERVAL_NANOS", client)
+        self.assertIn("connectionToken != player.connection", server)
+        self.assertIn("current.statusDetail", server)
+        self.assertIn("nextProgressThreshold", server)
         self.assertIn("pendingLevelCount()", client)
         self.assertIn("ClipmapStatusPayload.UNSUPPORTED_WORLD", client)
+        grid = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapHeightGrid.java").read_text(encoding="utf-8")
+        self.assertIn("IntConsumer progress", grid)
+        self.assertIn("progress.accept(100)", grid)
         renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
             encoding="utf-8"
         )

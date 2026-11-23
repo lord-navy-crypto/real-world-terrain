@@ -571,3 +571,22 @@ The snapshot assembler exposes pending-level count and bitmask for QA.
 The client now labels the first renderer event as GPU draw submission, not
 proof of visible pixels. A real in-game horizon screenshot remains the
 visual acceptance criterion.
+
+
+## 2026-11-23 live sampling progress and reconnect hardening
+
+The waiting protocol now reports progress inside each individual LOD ring,
+not only after an entire ring completes. The sparse grid sampler emits
+monotonic scan progress; the server sends bounded 25/50/75/100% milestones
+and refreshes the sampler watchdog on each scan callback. A long first ring
+therefore no longer looks like an unexplained zero-of-six wait.
+
+The server also binds each per-player clipmap session to the active network
+connection identity. If a client restarts and its local request counter begins
+again at a low value while an old UUID session still exists, the new connection
+replaces that stale session instead of having its request silently discarded.
+
+The test-package instructions and JAR class-integrity check were updated for
+the status packet and the new actionable chat messages. The experimental
+artifact is still not visually certified until the user verifies distant
+terrain in a real Minecraft client.
