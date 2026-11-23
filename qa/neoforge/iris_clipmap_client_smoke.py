@@ -327,6 +327,19 @@ def run_client(env: dict[str, str]) -> None:
         while not draw.is_set() and proc.poll() is None and time.monotonic() < deadline:
             time.sleep(1)
         if not draw.is_set():
+            try:
+                diagnostic = capture_screenshot("iris-client-before-native-draw")
+                print(
+                    "CLIENT_DIAGNOSTIC_SCREENSHOT_CAPTURED:",
+                    diagnostic,
+                    flush=True,
+                )
+            except Exception as screenshot_error:
+                print(
+                    "CLIENT_DIAGNOSTIC_SCREENSHOT_FAILED:",
+                    repr(screenshot_error),
+                    flush=True,
+                )
             raise RuntimeError(
                 "Client did not submit an Iris-native clipmap draw within the test window; "
                 f"Gradle exit code={proc.poll()}"
@@ -352,6 +365,13 @@ def run_client(env: dict[str, str]) -> None:
             "".join(lines), encoding="utf-8", errors="replace")
         if client_latest.exists():
             shutil.copy2(client_latest, BUILD / "client-latest.log")
+        crash_reports = CLIENT_RUN / "crash-reports"
+        if crash_reports.exists():
+            shutil.copytree(
+                crash_reports, BUILD / "client-crash-reports", dirs_exist_ok=True
+            )
+        for fatal_log in CLIENT_RUN.glob("hs_err_pid*.log"):
+            shutil.copy2(fatal_log, BUILD / fatal_log.name)
         if proc.poll() is None:
             stop_process(proc, timeout=10)
 
