@@ -66,6 +66,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("CLIENT_CAMERA_VANTAGE_READY", SMOKE)
         self.assertIn('rcon.send("forceload add 0 0")', SMOKE)
         self.assertIn('"fill -2 1199 -2 2 1199 2 minecraft:stone"', SMOKE)
+        self.assertIn('"successfully filled" not in platform_reply', SMOKE)
         self.assertLess(
             SMOKE.index('rcon.send("forceload add 0 0")'),
             SMOKE.index('"fill -2 1199 -2 2 1199 2 minecraft:stone"'),
