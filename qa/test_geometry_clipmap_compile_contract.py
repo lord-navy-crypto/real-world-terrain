@@ -281,6 +281,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("parentGrid = floor(grid * 0.5) * 2.0", renderer)
         self.assertIn("h = mix(h, parentHeight, morph);", renderer)
         self.assertIn("uniforms.morphBandCells()", renderer)
+        self.assertIn('GL20.glGetUniformLocation(program, "uOrigin[0]")', renderer)
         self.assertIn('GL20.glGetUniformLocation(program, "uMorphBandCells[0]")', renderer)
         self.assertIn("GL20.glUniform1fv(uniforms.spacing()", renderer)
         self.assertIn("GL20.glUniform2fv(uniforms.origin()", renderer)
