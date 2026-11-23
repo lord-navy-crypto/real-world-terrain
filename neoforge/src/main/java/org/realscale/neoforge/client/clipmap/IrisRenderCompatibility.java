@@ -6,9 +6,11 @@ import java.util.Objects;
 /**
  * Optional Iris bridge that deliberately has no compile-time Iris dependency.
  *
- * <p>Iris 1.21.1 exposes isShaderPackInUse() and isRenderingShadowPass() in
- * IrisApi v0. The clipmap currently owns standalone OpenGL programs, so it
- * cannot safely write those outputs into an Iris shader-pack G-buffer.
+ * <p>Iris 1.21.1 exposes shader-pack and shadow-pass state through IrisApi v0.
+ * The clipmap uses that small optional bridge only for routing: with a shader
+ * pack active, geometry is submitted through vanilla RenderType passes while
+ * Iris's G-buffer program is already selected. No Iris classes are linked at
+ * compile time.
  */
 public final class IrisRenderCompatibility {
     private static final String IRIS_API =
@@ -48,8 +50,17 @@ public final class IrisRenderCompatibility {
         }
 
         /**
-         * The current custom GLSL path is safe only without an active Iris pack
-         * and outside the Iris shadow pass. Unknown API state fails closed.
+         * The native terrain-stage path is enabled only when Iris confirms an
+         * active shader pack. It intentionally remains available during Iris
+         * shadow rendering so distant terrain can cast and receive shadows.
+         */
+        public boolean allowsIrisNativeRenderer() {
+            return mode == Mode.SHADERPACK_ACTIVE;
+        }
+
+        /**
+         * Standalone GLSL is safe only without an active Iris pack and outside
+         * the shadow pass. Unknown API state fails closed.
          */
         public boolean allowsRawOpenGlRenderer() {
             return !shadowPass
