@@ -93,7 +93,7 @@ public final class GeometryClipmapClient {
             if (received != lastReportedTileCount && received > 0) {
                 lastReportedTileCount = received;
                 waitingDiagnosticShown = false;
-                reportStatus(minecraft, "[RealScale] Clipmap: RECEIVING HEIGHT TILES ("
+                reportProgress(minecraft, "[RealScale] Clipmap: RECEIVING HEIGHT TILES ("
                         + received + "/6)");
             }
         }
@@ -131,7 +131,7 @@ public final class GeometryClipmapClient {
             case ClipmapStatusPayload.QUEUED ->
                     reportStatus(minecraft, "[RealScale] Clipmap: QUEUED - " + payload.detail());
             case ClipmapStatusPayload.SAMPLING ->
-                    reportStatus(minecraft, "[RealScale] Clipmap: " + payload.detail());
+                    reportProgress(minecraft, "[RealScale] Clipmap: " + payload.detail());
             case ClipmapStatusPayload.SNAPSHOT_SENT ->
                     reportStatus(minecraft, "[RealScale] Clipmap: SERVER SENT 6/6 TILES");
             case ClipmapStatusPayload.BUSY ->
@@ -266,9 +266,17 @@ public final class GeometryClipmapClient {
         }
     }
 
+    private static void reportProgress(Minecraft minecraft, String message) {
+        // High-frequency sampling and packet progress belongs in the action bar,
+        // not chat, so a slow first load cannot flood the user's chat history.
+        if (minecraft.player != null) {
+            minecraft.player.displayClientMessage(Component.literal(message), true);
+        }
+        System.out.println("[RealScale Geometry Clipmap] " + message);
+    }
+
     private static void reportStatus(Minecraft minecraft, String message) {
-        // Client-only chat notice: visible without the launcher console, and
-        // only once for each status transition (no per-frame chat spam).
+        // Major state transitions and actionable errors are shown in chat.
         if (minecraft.player != null) {
             minecraft.player.displayClientMessage(Component.literal(message), false);
         }

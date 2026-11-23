@@ -208,6 +208,8 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("Clipmap: NO SERVER ACKNOWLEDGEMENT", client)
         self.assertIn("Clipmap: NO PROGRESS", client)
         self.assertIn("serverStateSinceNanos", client)
+        self.assertIn("reportProgress(minecraft", client)
+        self.assertIn("displayClientMessage(Component.literal(message), true)", client)
         self.assertIn("serverDetail", client)
         self.assertIn("serverStateSinceNanos", client)
         self.assertIn("HEARTBEAT_INTERVAL_NANOS", client)

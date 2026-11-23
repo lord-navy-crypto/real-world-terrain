@@ -110,13 +110,13 @@ jobs:
           Geometry Clipmap is AUTOMATICALLY ENABLED in this experimental test JAR.
           No JVM arguments are needed to turn it on.
 
-          The game chat now reports the actual handshake and data pipeline:
-            REQUEST SENT / SERVER ACKNOWLEDGED
-            QUEUED / SAMPLING LOD x/6: 25%, 50%, 75%, 100%
-            RECEIVING HEIGHT TILES x/6 / SNAPSHOT READY
-            SERVER SENT SNAPSHOT / GPU DRAW SUBMITTED
+          Chat reports major handshake and error states:
+            REQUEST SENT / SERVER ACKNOWLEDGED / QUEUED
+            SNAPSHOT READY / SERVER SENT SNAPSHOT / GPU DRAW SUBMITTED
             NO SERVER ACKNOWLEDGEMENT / NO PROGRESS
             UNSUPPORTED WORLD / SAMPLING FAILED / SAMPLER STALLED
+          The action bar reports in-ring sampling milestones (25/50/75/100%)
+          and partial height-tile receipt, avoiding chat spam.
           The client retries the same request every 8 seconds until all six
           height tiles arrive. The server resends a cached snapshot instead
           of recomputing it. A 90-second no-progress watchdog cancels and retries
