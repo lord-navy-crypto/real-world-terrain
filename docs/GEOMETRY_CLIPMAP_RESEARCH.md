@@ -631,3 +631,13 @@ value, with finite/range validation and a conservative fallback. This keeps
 the custom vanilla renderer's horizon fade aligned with the active camera's
 biome fog, weather, time-of-day and dimension fog instead of showing a bright
 blue band at night or in non-overworld environments.
+
+
+## Shared far-plane projection for exterior proxies
+
+The proxy renderer previously rebuilt its view-projection matrix from the
+vanilla event projection, while the terrain renderer used the extended
+clipmap projection. As a result, distant trees/buildings could be clipped at
+the original Minecraft far plane even when the ground mesh remained visible.
+The terrain draw now passes its already-extended projection matrix to the
+proxy renderer, keeping both systems on the same horizon and fog range.

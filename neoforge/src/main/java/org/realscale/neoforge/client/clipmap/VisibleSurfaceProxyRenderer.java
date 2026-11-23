@@ -131,7 +131,7 @@ final class VisibleSurfaceProxyRenderer {
 
     private VisibleSurfaceProxyRenderer() {}
 
-    static void draw(RenderLevelStageEvent event,
+    static void draw(RenderLevelStageEvent event, Matrix4f extendedProjection,
             List<VisibleSurfaceProxy> proxies, long centerX, long centerZ,
             int nearChunks, float fogStart, float fogEnd) {
         RenderSystem.assertOnRenderThread();
@@ -151,7 +151,10 @@ final class VisibleSurfaceProxyRenderer {
         var camera = event.getCamera().getPosition();
         Matrix4f modelView = MODEL_VIEW.set(event.getModelViewMatrix());
         modelView.setTranslation(0.0f, 0.0f, 0.0f);
-        Matrix4f viewProjection = VIEW_PROJECTION.set(event.getProjectionMatrix())
+        // Proxies must share the same far-plane extension as the terrain mesh;
+        // using the vanilla projection here clipped trees/buildings at the
+        // original view distance even while the distant ground remained visible.
+        Matrix4f viewProjection = VIEW_PROJECTION.set(extendedProjection)
                 .mul(modelView);
         FloatBuffer matrix = MATRIX_UPLOAD;
         matrix.clear();

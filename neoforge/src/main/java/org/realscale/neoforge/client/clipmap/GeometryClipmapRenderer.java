@@ -607,7 +607,7 @@ final class GeometryClipmapRenderer {
                 + (long) (centreTile.gridCells() / 2) * centreTile.cellSpacingBlocks();
         long centreZ = centreTile.originZ()
                 + (long) (centreTile.gridCells() / 2) * centreTile.cellSpacingBlocks();
-        VisibleSurfaceProxyRenderer.draw(event, proxies, centreX, centreZ,
+        VisibleSurfaceProxyRenderer.draw(event, projection, proxies, centreX, centreZ,
                 nearChunks, fogRange.startBlocks(), fogRange.endBlocks());
     }
 
