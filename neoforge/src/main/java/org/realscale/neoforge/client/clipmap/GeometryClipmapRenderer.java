@@ -343,6 +343,7 @@ final class GeometryClipmapRenderer {
     }
 
     private static void initialize(int cells, int near, int spacing) {
+        try {
         gridCells = cells;
         nearChunks = near;
         baseSpacing = spacing;
@@ -352,6 +353,9 @@ final class GeometryClipmapRenderer {
         reusableHeightUpload = BufferUtils.createShortBuffer((cells + 1) * (cells + 1));
         vao = GL30.glGenVertexArrays();
         vertexBuffer = GL15.glGenBuffers();
+        if (vao == 0 || vertexBuffer == 0) {
+            throw new IllegalStateException("OpenGL failed to allocate Geometry Clipmap vertex resources");
+        }
         elementBuffers = new int[LEVEL_COUNT];
         textures = new int[LEVEL_COUNT];
         indexCounts = new int[LEVEL_COUNT];
@@ -381,11 +385,17 @@ final class GeometryClipmapRenderer {
             IntBuffer indexBuffer = BufferUtils.createIntBuffer(indices.length);
             indexBuffer.put(indices).flip();
             elementBuffers[level] = GL15.glGenBuffers();
+            if (elementBuffers[level] == 0) {
+                throw new IllegalStateException("OpenGL failed to allocate clipmap index buffer " + level);
+            }
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, elementBuffers[level]);
             GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER,
                     indexBuffer, GL15.GL_STATIC_DRAW);
 
             textures[level] = GL11.glGenTextures();
+            if (textures[level] == 0) {
+                throw new IllegalStateException("OpenGL failed to allocate clipmap height texture " + level);
+            }
             GL13.glActiveTexture(GL13.GL_TEXTURE0);
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, textures[level]);
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D,
@@ -402,6 +412,12 @@ final class GeometryClipmapRenderer {
         }
         GL30.glBindVertexArray(0);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        } catch (RuntimeException | Error failure) {
+            // A partial GL allocation must never look initialized on the next
+            // frame. Release every object created so far and allow a clean retry.
+            dispose();
+            throw failure;
+        }
     }
 
     /**
@@ -597,36 +613,62 @@ final class GeometryClipmapRenderer {
     }
 
     private static int linkProgram(String vertexSource, String fragmentSource) {
-        int vertex = compileShader(GL20.GL_VERTEX_SHADER, vertexSource);
-        int fragment = compileShader(GL20.GL_FRAGMENT_SHADER, fragmentSource);
-        int linked = GL20.glCreateProgram();
-        GL20.glAttachShader(linked, vertex);
-        GL20.glAttachShader(linked, fragment);
-        GL20.glLinkProgram(linked);
-        if (GL20.glGetProgrami(linked, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
-            String log = GL20.glGetProgramInfoLog(linked);
-            GL20.glDeleteProgram(linked);
-            GL20.glDeleteShader(vertex);
-            GL20.glDeleteShader(fragment);
-            throw new IllegalStateException("Geometry Clipmap shader link failed: " + log);
+        int vertex = 0;
+        int fragment = 0;
+        int linked = 0;
+        boolean vertexAttached = false;
+        boolean fragmentAttached = false;
+        try {
+            vertex = compileShader(GL20.GL_VERTEX_SHADER, vertexSource);
+            fragment = compileShader(GL20.GL_FRAGMENT_SHADER, fragmentSource);
+            linked = GL20.glCreateProgram();
+            if (linked == 0) {
+                throw new IllegalStateException("OpenGL failed to allocate Geometry Clipmap shader program");
+            }
+            GL20.glAttachShader(linked, vertex);
+            vertexAttached = true;
+            GL20.glAttachShader(linked, fragment);
+            fragmentAttached = true;
+            GL20.glLinkProgram(linked);
+            if (GL20.glGetProgrami(linked, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
+                throw new IllegalStateException("Geometry Clipmap shader link failed: "
+                        + GL20.glGetProgramInfoLog(linked));
+            }
+            GL20.glDetachShader(linked, vertex);
+            vertexAttached = false;
+            GL20.glDetachShader(linked, fragment);
+            fragmentAttached = false;
+            int result = linked;
+            linked = 0;
+            return result;
+        } finally {
+            if (linked != 0) {
+                if (vertexAttached && vertex != 0) GL20.glDetachShader(linked, vertex);
+                if (fragmentAttached && fragment != 0) GL20.glDetachShader(linked, fragment);
+                GL20.glDeleteProgram(linked);
+            }
+            if (vertex != 0) GL20.glDeleteShader(vertex);
+            if (fragment != 0) GL20.glDeleteShader(fragment);
         }
-        GL20.glDetachShader(linked, vertex);
-        GL20.glDetachShader(linked, fragment);
-        GL20.glDeleteShader(vertex);
-        GL20.glDeleteShader(fragment);
-        return linked;
     }
 
     private static int compileShader(int type, String source) {
         int shader = GL20.glCreateShader(type);
-        GL20.glShaderSource(shader, source);
-        GL20.glCompileShader(shader);
-        if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
-            String log = GL20.glGetShaderInfoLog(shader);
-            GL20.glDeleteShader(shader);
-            throw new IllegalStateException("Geometry Clipmap shader compile failed: " + log);
+        if (shader == 0) {
+            throw new IllegalStateException("OpenGL failed to allocate Geometry Clipmap shader object");
         }
-        return shader;
+        try {
+            GL20.glShaderSource(shader, source);
+            GL20.glCompileShader(shader);
+            if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
+                throw new IllegalStateException("Geometry Clipmap shader compile failed: "
+                        + GL20.glGetShaderInfoLog(shader));
+            }
+            return shader;
+        } catch (RuntimeException | Error failure) {
+            GL20.glDeleteShader(shader);
+            throw failure;
+        }
     }
 
 

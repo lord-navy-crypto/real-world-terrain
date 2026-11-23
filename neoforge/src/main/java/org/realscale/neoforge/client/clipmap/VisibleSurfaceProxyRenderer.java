@@ -235,11 +235,15 @@ final class VisibleSurfaceProxyRenderer {
 
     private static void ensureResources() {
         if (program != 0) return;
+        try {
         program = link(VERTEX, FRAGMENT);
         uniforms = UniformLocations.lookup(program);
         vao = GL30.glGenVertexArrays();
         cornerBuffer = GL15.glGenBuffers();
         instanceBuffer = GL15.glGenBuffers();
+        if (vao == 0 || cornerBuffer == 0 || instanceBuffer == 0) {
+            throw new IllegalStateException("OpenGL failed to allocate surface-proxy buffers");
+        }
 
         FloatBuffer corners = BufferUtils.createFloatBuffer(12);
         corners.put(new float[]{
@@ -273,6 +277,10 @@ final class VisibleSurfaceProxyRenderer {
         GL33.glVertexAttribDivisor(4, 1);
         GL30.glBindVertexArray(0);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        } catch (RuntimeException | Error failure) {
+            dispose();
+            throw failure;
+        }
     }
 
 
@@ -293,35 +301,61 @@ final class VisibleSurfaceProxyRenderer {
     }
 
     private static int link(String vertexSource, String fragmentSource) {
-        int vertex = compile(GL20.GL_VERTEX_SHADER, vertexSource);
-        int fragment = compile(GL20.GL_FRAGMENT_SHADER, fragmentSource);
-        int linked = GL20.glCreateProgram();
-        GL20.glAttachShader(linked, vertex);
-        GL20.glAttachShader(linked, fragment);
-        GL20.glLinkProgram(linked);
-        if (GL20.glGetProgrami(linked, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
-            String log = GL20.glGetProgramInfoLog(linked);
-            GL20.glDeleteProgram(linked);
-            GL20.glDeleteShader(vertex);
-            GL20.glDeleteShader(fragment);
-            throw new IllegalStateException("Visible proxy shader link failed: " + log);
+        int vertex = 0;
+        int fragment = 0;
+        int linked = 0;
+        boolean vertexAttached = false;
+        boolean fragmentAttached = false;
+        try {
+            vertex = compile(GL20.GL_VERTEX_SHADER, vertexSource);
+            fragment = compile(GL20.GL_FRAGMENT_SHADER, fragmentSource);
+            linked = GL20.glCreateProgram();
+            if (linked == 0) {
+                throw new IllegalStateException("OpenGL failed to allocate surface-proxy shader program");
+            }
+            GL20.glAttachShader(linked, vertex);
+            vertexAttached = true;
+            GL20.glAttachShader(linked, fragment);
+            fragmentAttached = true;
+            GL20.glLinkProgram(linked);
+            if (GL20.glGetProgrami(linked, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
+                throw new IllegalStateException("Visible proxy shader link failed: "
+                        + GL20.glGetProgramInfoLog(linked));
+            }
+            GL20.glDetachShader(linked, vertex);
+            vertexAttached = false;
+            GL20.glDetachShader(linked, fragment);
+            fragmentAttached = false;
+            int result = linked;
+            linked = 0;
+            return result;
+        } finally {
+            if (linked != 0) {
+                if (vertexAttached && vertex != 0) GL20.glDetachShader(linked, vertex);
+                if (fragmentAttached && fragment != 0) GL20.glDetachShader(linked, fragment);
+                GL20.glDeleteProgram(linked);
+            }
+            if (vertex != 0) GL20.glDeleteShader(vertex);
+            if (fragment != 0) GL20.glDeleteShader(fragment);
         }
-        GL20.glDetachShader(linked, vertex);
-        GL20.glDetachShader(linked, fragment);
-        GL20.glDeleteShader(vertex);
-        GL20.glDeleteShader(fragment);
-        return linked;
     }
 
     private static int compile(int type, String source) {
         int shader = GL20.glCreateShader(type);
-        GL20.glShaderSource(shader, source);
-        GL20.glCompileShader(shader);
-        if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
-            String log = GL20.glGetShaderInfoLog(shader);
-            GL20.glDeleteShader(shader);
-            throw new IllegalStateException("Visible proxy shader compile failed: " + log);
+        if (shader == 0) {
+            throw new IllegalStateException("OpenGL failed to allocate surface-proxy shader object");
         }
-        return shader;
+        try {
+            GL20.glShaderSource(shader, source);
+            GL20.glCompileShader(shader);
+            if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
+                throw new IllegalStateException("Visible proxy shader compile failed: "
+                        + GL20.glGetShaderInfoLog(shader));
+            }
+            return shader;
+        } catch (RuntimeException | Error failure) {
+            GL20.glDeleteShader(shader);
+            throw failure;
+        }
     }
 }
