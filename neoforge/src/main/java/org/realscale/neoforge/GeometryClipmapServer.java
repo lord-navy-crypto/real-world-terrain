@@ -75,6 +75,14 @@ public final class GeometryClipmapServer {
                 || requestId <= 0L) return;
         UUID id = player.getUUID();
         Session current = SESSIONS.get(id);
+        // A restarted client can reset its local request counter. A new network
+        // connection is a new session, so an old UUID session must not reject
+        // the first request from that connection as stale.
+        if (current != null && current.connectionToken != player.connection) {
+            current.invalidate();
+            SESSIONS.remove(id, current);
+            current = null;
+        }
         if (current != null && requestId < current.requestId) return;
         // Same-ID requests are client heartbeats. Resend cached data instead
         // of ignoring a retry or recomputing the complete six-ring snapshot.
@@ -84,13 +92,13 @@ public final class GeometryClipmapServer {
                 sendSnapshot(player, current);
             } else {
                 sendStatus(player, current, current.status, current.completedLevels,
-                        "request is active; awaiting sampler");
+                        current.statusDetail);
             }
             return;
         }
         if (current == null || current.nearChunks != nearRenderDistanceChunks) {
             if (current != null) current.invalidate();
-            current = new Session(nearRenderDistanceChunks, requestId);
+            current = new Session(nearRenderDistanceChunks, requestId, player.connection);
             SESSIONS.put(id, current);
         } else {
             current.invalidate();
@@ -239,10 +247,31 @@ public final class GeometryClipmapServer {
                         if (!session.requestEpoch.isCurrent(requestEpoch)) return;
                         ClipmapHeightGrid previous = previousGrids == null
                                 ? null : previousGrids.get(i);
+                        final int levelIndex = i;
+                        int[] nextProgressThreshold = {25};
+                        session.completedLevels = levelIndex;
                         ClipmapHeightGrid grid = ClipmapHeightGrid.sample(
                                 nextLayout.levels().get(i), nextLayout.gridCells(),
                                 heightSampler, previous,
-                                () -> session.requestEpoch.isCurrent(requestEpoch));
+                                () -> session.requestEpoch.isCurrent(requestEpoch),
+                                percent -> {
+                                    session.lastProgressNanos = System.nanoTime();
+                                    if (percent >= nextProgressThreshold[0]) {
+                                        int reportedPercent = Math.min(100, (percent / 25) * 25);
+                                        nextProgressThreshold[0] = reportedPercent + 25;
+                                        server.execute(() -> {
+                                            if (SESSIONS.get(playerId) == session
+                                                    && session.requestId == targetRequestId
+                                                    && session.requestEpoch.isCurrent(requestEpoch)) {
+                                                ServerPlayer live = server.getPlayerList().getPlayer(playerId);
+                                                if (live != null) sendStatus(live, session,
+                                                        ClipmapStatusPayload.SAMPLING, levelIndex,
+                                                        "sampling LOD " + (levelIndex + 1) + "/6: "
+                                                                + reportedPercent + "%");
+                                            }
+                                        });
+                                    }
+                                });
                         nextGrids.add(grid);
                         if (DEBUG) newlySampledVertices += grid.newlySampledVertexCount();
                         payloads.add(toPayload(targetDimension, targetRequestId,
@@ -398,6 +427,9 @@ public final class GeometryClipmapServer {
         String dimension = player.serverLevel().dimension().location().toString();
         String safeDetail = detail == null ? "" : detail;
         if (safeDetail.length() > 256) safeDetail = safeDetail.substring(0, 256);
+        session.status = state;
+        session.completedLevels = Math.max(0, Math.min(MAX_LEVELS, completedLevels));
+        session.statusDetail = safeDetail;
         PacketDistributor.sendToPlayer(player, new ClipmapStatusPayload(
                 dimension, session.requestId, state,
                 Math.max(0, Math.min(MAX_LEVELS, completedLevels)),
@@ -438,6 +470,7 @@ public final class GeometryClipmapServer {
 
     private static final class Session {
         private final int nearChunks;
+        private final Object connectionToken;
         private long requestId;
         private String dimensionKey;
         private String settingsId;
@@ -448,13 +481,15 @@ public final class GeometryClipmapServer {
         private volatile long lastProgressNanos;
         private volatile int status = ClipmapStatusPayload.REQUEST_ACCEPTED;
         private volatile int completedLevels;
+        private volatile String statusDetail = "request accepted";
         private List<ClipmapHeightTilePayload> cachedHeightPayloads;
         private ClipmapSurfaceProxyPayload cachedProxyPayload;
         private final ClipmapRequestEpoch requestEpoch = new ClipmapRequestEpoch();
 
-        private Session(int nearChunks, long requestId) {
+        private Session(int nearChunks, long requestId, Object connectionToken) {
             this.nearChunks = nearChunks;
             this.requestId = requestId;
+            this.connectionToken = connectionToken;
         }
 
         private void invalidate() {
@@ -466,6 +501,7 @@ public final class GeometryClipmapServer {
             cachedProxyPayload = null;
             completedLevels = 0;
             status = ClipmapStatusPayload.REQUEST_ACCEPTED;
+            statusDetail = "request invalidated";
             lastProgressNanos = 0L;
         }
 
@@ -482,6 +518,7 @@ public final class GeometryClipmapServer {
             cachedProxyPayload = null;
             completedLevels = 0;
             status = ClipmapStatusPayload.REQUEST_ACCEPTED;
+            statusDetail = "world reset";
             lastProgressNanos = 0L;
         }
     }

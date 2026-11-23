@@ -108,7 +108,8 @@ public final class GeometryClipmapClient {
                         .equals(payload.dimensionKey())) return;
         long now = System.nanoTime();
         boolean stateChanged = payload.state() != serverStatus
-                || payload.completedLevels() != serverCompletedLevels;
+                || payload.completedLevels() != serverCompletedLevels
+                || !payload.detail().equals(serverDetail);
         lastServerStatusNanos = now;
         if (stateChanged) {
             serverStateSinceNanos = now;
@@ -130,8 +131,7 @@ public final class GeometryClipmapClient {
             case ClipmapStatusPayload.QUEUED ->
                     reportStatus(minecraft, "[RealScale] Clipmap: QUEUED - " + payload.detail());
             case ClipmapStatusPayload.SAMPLING ->
-                    reportStatus(minecraft, "[RealScale] Clipmap: SAMPLING "
-                            + payload.completedLevels() + "/6");
+                    reportStatus(minecraft, "[RealScale] Clipmap: " + payload.detail());
             case ClipmapStatusPayload.SNAPSHOT_SENT ->
                     reportStatus(minecraft, "[RealScale] Clipmap: SERVER SENT 6/6 TILES");
             case ClipmapStatusPayload.BUSY ->
@@ -220,7 +220,7 @@ public final class GeometryClipmapClient {
                     case ClipmapStatusPayload.QUEUED ->
                             "still queued; sampler queue depth " + serverQueueDepth;
                     case ClipmapStatusPayload.SAMPLING ->
-                            "sampler has not advanced beyond LOD " + serverCompletedLevels + "/6";
+                            "sampler has not advanced; last progress: " + serverDetail;
                     case ClipmapStatusPayload.SNAPSHOT_SENT ->
                             "server sent snapshot but client has " + TILES.pendingLevelCount() + "/6 tiles";
                     case ClipmapStatusPayload.BUSY ->
