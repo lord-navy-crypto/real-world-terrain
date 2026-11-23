@@ -64,7 +64,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
             encoding="utf-8"
         )
-        render = renderer.split("static void render(", 1)[1].split("static void dispose(", 1)[0]
+        render = renderer.split("static boolean render(", 1)[1].split("static void dispose(", 1)[0]
         self.assertLess(render.index("State state = State.capture()"),
                         render.index("initialize(nextGridCells"))
         self.assertLess(render.index("State state = State.capture()"),
