@@ -217,6 +217,12 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         )
         self.assertIn("dirtySamples * 10L >= fullSamples * 7L", planner)
         self.assertIn("Math.floorMod", planner)
+        self.assertIn("appendFormerHoleExposures(", planner)
+        renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("innerHalfCells[level]", renderer)
+        self.assertIn("previous.sourceTile() == tile", renderer)
         self.assertIn("public void copyHeightsRegionTo(", payload)
 
 

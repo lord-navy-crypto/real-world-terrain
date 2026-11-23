@@ -204,6 +204,7 @@ final class GeometryClipmapRenderer {
     private static int[] elementBuffers = new int[0];
     private static int[] textures = new int[0];
     private static int[] indexCounts = new int[0];
+    private static int[] innerHalfCells = new int[0];
     private static int gridCells = -1;
     private static int nearChunks = -1;
     private static int baseSpacing = -1;
@@ -330,6 +331,7 @@ final class GeometryClipmapRenderer {
         elementBuffers = new int[0];
         textures = new int[0];
         indexCounts = new int[0];
+        innerHalfCells = new int[0];
         gridCells = -1;
         nearChunks = -1;
         baseSpacing = -1;
@@ -349,6 +351,7 @@ final class GeometryClipmapRenderer {
         elementBuffers = new int[LEVEL_COUNT];
         textures = new int[LEVEL_COUNT];
         indexCounts = new int[LEVEL_COUNT];
+        innerHalfCells = new int[LEVEL_COUNT];
 
         int side = cells + 1;
         float[] meshVertices = ClipmapRingMesh.vertices(cells);
@@ -363,12 +366,13 @@ final class GeometryClipmapRenderer {
 
         for (int level = 0; level < LEVEL_COUNT; level++) {
             long levelSpacing = (long) spacing << level;
-            int innerHalfCells = level == 0
+            int holeRadius = level == 0
                     ? Math.toIntExact((near * 16L
                             - ((long) spacing << (LEVEL_COUNT - 1)) / 2L)
                             / levelSpacing)
                     : cells / 4;
-            int[] indices = ClipmapRingMesh.indices(cells, innerHalfCells);
+            innerHalfCells[level] = holeRadius;
+            int[] indices = ClipmapRingMesh.indices(cells, holeRadius);
             indexCounts[level] = indices.length;
             IntBuffer indexBuffer = BufferUtils.createIntBuffer(indices.length);
             indexBuffer.put(indices).flip();
@@ -398,28 +402,34 @@ final class GeometryClipmapRenderer {
 
     /**
      * Updates a toroidal R16 texture. Small snapped camera moves preserve the
-     * old world-space overlap in-place and upload only the newly exposed strips.
+     * old world-space overlap in-place, uploading newly exposed outer strips
+     * and the part of the former inner hole that is now exposed.
      * A full upload is used after teleports, incompatible snapshots, or large
      * jumps where many tiny transfers would cost more than one transfer.
      */
     private static long updateTexture(int level,
             org.realscale.neoforge.network.ClipmapHeightTilePayload tile) {
         TextureWindow previous = textureWindows[level];
+        // Snapshots are immutable. Most frames have the SAME tile instance:
+        // don't allocate a plan/record or bind the texture again.
+        if (previous != null && previous.sourceTile() == tile) return 0L;
         boolean compatible = previous != null && previous.matches(tile);
         ClipmapTextureUpdatePlan.Plan plan = compatible
                 ? ClipmapTextureUpdatePlan.between(tile.gridCells(),
                         tile.cellSpacingBlocks(),
                         previous.originX(), previous.originZ(),
                         previous.offsetX(), previous.offsetZ(),
-                        tile.originX(), tile.originZ())
+                        tile.originX(), tile.originZ(), innerHalfCells[level])
                 : ClipmapTextureUpdatePlan.fullUpload(tile.gridCells());
 
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, textures[level]);
-        for (ClipmapTextureUpdatePlan.Rect rectangle : plan.rectangles()) {
-            uploadGridRectangle(tile, rectangle, plan.offsetX(), plan.offsetZ());
+        if (!plan.rectangles().isEmpty()) {
+            GL13.glActiveTexture(GL13.GL_TEXTURE0);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, textures[level]);
+            for (ClipmapTextureUpdatePlan.Rect rectangle : plan.rectangles()) {
+                uploadGridRectangle(tile, rectangle, plan.offsetX(), plan.offsetZ());
+            }
         }
-        textureWindows[level] = new TextureWindow(tile.requestId(),
+        textureWindows[level] = new TextureWindow(tile, tile.requestId(),
                 tile.dimensionKey(), tile.nearRenderDistanceChunks(),
                 tile.gridCells(), tile.cellSpacingBlocks(),
                 tile.originX(), tile.originZ(),
@@ -469,7 +479,9 @@ final class GeometryClipmapRenderer {
         }
     }
 
-    private record TextureWindow(long requestId, String dimensionKey,
+    private record TextureWindow(
+            org.realscale.neoforge.network.ClipmapHeightTilePayload sourceTile,
+            long requestId, String dimensionKey,
             int nearChunks, int gridCells, int spacing,
             long originX, long originZ, int minHeight, int maxHeight,
             int offsetX, int offsetZ) {

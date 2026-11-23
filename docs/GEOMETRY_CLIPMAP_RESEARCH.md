@@ -449,3 +449,21 @@ Java list filtering and the per-proxy AABB objects. The renderer still draws
 the existing three crossed billboard planes and keeps the existing exterior
 silhouette materials. This is a CPU submission/allocation optimization; no
 GPU-time or visual-quality gain is claimed without an in-game client capture.
+
+
+## 2026-11-23 recentering correction: formerly unsampled inner holes
+
+The initial toroidal planner copied overlapping texels without considering the
+previous nested ring's **strictly interior unsampled hole**, which encodes as
+minimum-height values. A camera recenter could expose this old hole and show a
+false trench. The updated plan now adds up to four disjoint rectangles covering
+the difference between the projected old inner hole and the new inner hole,
+alongside ordinary newly exposed outer strips. The exact inner-hole radius is
+taken from the corresponding ClipmapRingMesh topology, not guessed.
+
+JUnit coverage checks all cardinal and diagonal snapped movements, including
+negative displacements and wrapped offsets, to ensure no newly visible vertex
+can reuse an unsampled old-hole texel. The renderer also avoids per-frame plan,
+record, and texture-bind work for immutable unchanged packet objects.
+This establishes CPU-side correctness tests only, not actual GPU screenshot
+or frame-time measurements.
