@@ -270,14 +270,15 @@ final class IrisNativeClipmapRenderer {
         short[] heights = tile.heights();
         float skirtDepth = Math.min(32.0f, Math.max(4.0f, spacing * 0.125f));
 
+        int[] gridX = new int[3];
+        int[] gridZ = new int[3];
+        int[] layer = new int[3];
+        float[] topHeight = new float[3];
+        float[] x = new float[3];
+        float[] y = new float[3];
+        float[] z = new float[3];
+        float[] normal = new float[3];
         for (int p = 0; p < indices.length; p += 3) {
-            int[] gridX = new int[3];
-            int[] gridZ = new int[3];
-            int[] layer = new int[3];
-            float[] topHeight = new float[3];
-            float[] x = new float[3];
-            float[] y = new float[3];
-            float[] z = new float[3];
             boolean skirt = false;
             float averageHeight = 0.0f;
 
@@ -300,17 +301,32 @@ final class IrisNativeClipmapRenderer {
                 for (int vertex = 0; vertex < 3; vertex++) {
                     y[vertex] = seaLevel + 0.025f;
                 }
+                triangleNormalInto(x, y, z, normal);
                 emitTriangle(water, sprites.water(), 0xAFC6D8, 190,
-                        x, y, z, gridX, gridZ, layer);
+                        x, y, z, gridX, gridZ, layer, normal);
             } else if (averageHeight > seaLevel) {
                 for (int vertex = 0; vertex < 3; vertex++) {
                     y[vertex] = Math.max(topHeight[vertex], seaLevel)
                             - layer[vertex] * skirtDepth;
                 }
-                float[] normal = triangleNormal(x, y, z);
-                Material material = materialFor(averageHeight, normal[1], seaLevel, sprites);
-                emitTriangle(solid, material.sprite(), material.rgb(), 255,
-                        x, y, z, gridX, gridZ, layer);
+                triangleNormalInto(x, y, z, normal);
+                TextureAtlasSprite materialSprite;
+                int materialRgb;
+                if (averageHeight >= seaLevel + 677.0f) {
+                    materialSprite = sprites.snow();
+                    materialRgb = 0xF1F4F6;
+                } else if (averageHeight >= seaLevel + 197.0f || normal[1] < 0.90f) {
+                    materialSprite = sprites.stone();
+                    materialRgb = 0xD0D0CC;
+                } else if (averageHeight <= seaLevel + 25.0f && normal[1] > 0.94f) {
+                    materialSprite = sprites.sand();
+                    materialRgb = 0xE8D9B0;
+                } else {
+                    materialSprite = sprites.grass();
+                    materialRgb = 0xB5D39D;
+                }
+                emitTriangle(solid, materialSprite, materialRgb, 255,
+                        x, y, z, gridX, gridZ, layer, normal);
             }
         }
     }
@@ -346,24 +362,9 @@ final class IrisNativeClipmapRenderer {
         return minHeight + normalized * (maxHeight - minHeight);
     }
 
-    private static Material materialFor(float height, float normalY,
-            int seaLevel, Sprites sprites) {
-        if (height >= seaLevel + 677.0f) {
-            return new Material(sprites.snow(), 0xF1F4F6);
-        }
-        if (height >= seaLevel + 197.0f || normalY < 0.90f) {
-            return new Material(sprites.stone(), 0xD0D0CC);
-        }
-        if (height <= seaLevel + 25.0f && normalY > 0.94f) {
-            return new Material(sprites.sand(), 0xE8D9B0);
-        }
-        return new Material(sprites.grass(), 0xB5D39D);
-    }
-
     private static void emitTriangle(BufferBuilder builder, TextureAtlasSprite sprite,
             int rgb, int alpha, float[] x, float[] y, float[] z,
-            int[] gridX, int[] gridZ, int[] layer) {
-        float[] normal = triangleNormal(x, y, z);
+            int[] gridX, int[] gridZ, int[] layer, float[] normal) {
         int minX = Math.min(gridX[0], Math.min(gridX[1], gridX[2]));
         int maxX = Math.max(gridX[0], Math.max(gridX[1], gridX[2]));
         int minZ = Math.min(gridZ[0], Math.min(gridZ[1], gridZ[2]));
@@ -383,7 +384,8 @@ final class IrisNativeClipmapRenderer {
         putVertex(builder, sprite, rgb, alpha, x[2], y[2], z[2], u, v, normal);
     }
 
-    private static float[] triangleNormal(float[] x, float[] y, float[] z) {
+    private static void triangleNormalInto(float[] x, float[] y, float[] z,
+            float[] destination) {
         float ax = x[1] - x[0];
         float ay = y[1] - y[0];
         float az = z[1] - z[0];
@@ -395,9 +397,20 @@ final class IrisNativeClipmapRenderer {
         float nz = ax * by - ay * bx;
         float length = (float) Math.sqrt(nx * nx + ny * ny + nz * nz);
         if (length < 1.0e-6f || !Float.isFinite(length)) {
-            return new float[]{0.0f, 1.0f, 0.0f};
+            destination[0] = 0.0f;
+            destination[1] = 1.0f;
+            destination[2] = 0.0f;
+            return;
         }
-        return new float[]{nx / length, ny / length, nz / length};
+        destination[0] = nx / length;
+        destination[1] = ny / length;
+        destination[2] = nz / length;
+    }
+
+    private static float[] triangleNormal(float[] x, float[] y, float[] z) {
+        float[] normal = new float[3];
+        triangleNormalInto(x, y, z, normal);
+        return normal;
     }
 
     private static void appendProxy(VisibleSurfaceProxy proxy,
@@ -592,8 +605,6 @@ final class IrisNativeClipmapRenderer {
     private static void close(VertexBuffer buffer) {
         if (buffer != null) buffer.close();
     }
-
-    private record Material(TextureAtlasSprite sprite, int rgb) {}
 
     private record Sprites(TextureAtlasSprite grass, TextureAtlasSprite stone,
             TextureAtlasSprite sand, TextureAtlasSprite snow,
