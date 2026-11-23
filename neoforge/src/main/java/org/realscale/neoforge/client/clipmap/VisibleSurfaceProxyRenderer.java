@@ -33,23 +33,26 @@ final class VisibleSurfaceProxyRenderer {
             out float vType;
             out float vDistance;
             void main() {
-                vec3 relative = iPositionRelative - uCameraOffset
-                    + vec3(aCorner.x * iShape.x * uAxis.x,
-                           aCorner.y * iShape.y,
-                           aCorner.x * iShape.x * uAxis.z);
+                vec3 centerRelative = iPositionRelative - uCameraOffset;
+                float centerDistanceSquared = dot(centerRelative.xz, centerRelative.xz);
                 vUv = vec2(aCorner.x * 0.5 + 0.5, aCorner.y);
                 vColor = iColor;
                 vType = iType;
-                float distanceSquared = dot(relative.xz, relative.xz);
-                vDistance = sqrt(distanceSquared);
-                // Cull near-field and fully fogged proxies on the GPU. The
-                // hardware clipper handles the view frustum, so instance data
-                // does not need a camera-relative CPU rebuild every frame.
-                if (distanceSquared < uNearRadiusSquared
-                        || distanceSquared > uFarRadiusSquared) {
+                // Cull each complete proxy by its centre to avoid slicing a
+                // billboard when only one of its vertices crosses a radius.
+                if (centerDistanceSquared < uNearRadiusSquared
+                        || centerDistanceSquared > uFarRadiusSquared) {
+                    vDistance = sqrt(centerDistanceSquared);
                     gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
                     return;
                 }
+                vec3 relative = centerRelative
+                    + vec3(aCorner.x * iShape.x * uAxis.x,
+                           aCorner.y * iShape.y,
+                           aCorner.x * iShape.x * uAxis.z);
+                vDistance = length(relative.xz);
+                // The hardware clipper handles the view frustum; instance
+                // data stays centre-relative and is not rebuilt each frame.
                 gl_Position = uViewProjection * vec4(relative, 1.0);
             }
             """;

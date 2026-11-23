@@ -124,6 +124,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         )
         self.assertIn("uNearRadiusSquared", proxy)
         self.assertIn("uFarRadiusSquared", proxy)
+        self.assertIn("centerDistanceSquared = dot(centerRelative.xz, centerRelative.xz)", proxy)
         self.assertIn("uViewProjection * vec4(relative, 1.0)", proxy)
         self.assertNotIn("proxy.bounds()", proxy)
         self.assertNotIn("new AABB", feature)
