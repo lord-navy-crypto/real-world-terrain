@@ -53,8 +53,11 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn('IrisVertexFormats', IRIS_COMPAT)
         self.assertIn("IrisRenderCompatibility.terrainVertexFormat()", IRIS_RENDERER)
         self.assertIn("renderType.setupRenderState()", IRIS_RENDERER)
+        self.assertIn("shader.apply()", IRIS_RENDERER)
+        self.assertIn("shader.clear()", IRIS_RENDERER)
         self.assertIn("renderType.clearRenderState()", IRIS_RENDERER)
         self.assertNotIn(".setOverlay(NO_OVERLAY)", IRIS_RENDERER)
+        self.assertIn("GL_INVALID_OPERATION in glUniform(program not linked)", SMOKE)
 
     def test_client_dismisses_experimental_world_warning_before_draw_gate(self):
         self.assertIn("def experimental_warning_visible()", SMOKE)
