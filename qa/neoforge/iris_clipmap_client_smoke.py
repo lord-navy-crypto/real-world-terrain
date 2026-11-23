@@ -230,13 +230,17 @@ def prepare_saved_world(env: dict[str, str]) -> None:
         rcon.send("weather clear")
         rcon.send("gamerule doDaylightCycle false")
         # A world spawn in open air is relocated by Minecraft's safe-spawn
-        # search to the terrain surface. Force-load the spawn chunk before
-        # placing the glass floor; otherwise RCON setblock reports "position
-        # is not loaded" and the player is relocated back to the terrain.
+        # search to the terrain surface. Glass is not accepted as a safe
+        # spawn floor in this path, so use a full stone platform. Force-load
+        # the chunk first because RCON setblock/fill cannot edit unloaded chunks.
         rcon.send("forceload add 0 0")
-        platform_result = rcon.send("setblock 0 1199 0 minecraft:glass")
-        if "not loaded" in platform_result.lower():
-            raise RuntimeError("High-altitude spawn chunk was not loaded for the glass platform")
+        platform_result = rcon.send(
+            "fill -2 1199 -2 2 1199 2 minecraft:stone"
+        )
+        if "changed" not in platform_result.lower():
+            raise RuntimeError(
+                "High-altitude stone spawn platform was not placed: " + platform_result
+            )
         rcon.send("setworldspawn 0 1200 0")
         rcon.send("save-all flush")
         rcon.send("forceload remove 0 0")
