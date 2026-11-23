@@ -619,6 +619,9 @@ The native path:
 - sets and restores the active shader's `CHUNK_OFFSET` so the cached mesh is
   centred on the clipmap snapshot but rendered relative to the current main or
   Iris shadow camera;
+- extends the main-camera projection to the clipmap fog horizon and restores
+  the original projection after each draw; Iris shadow projections retain their
+  own shadow-distance and orthographic settings;
 - participates in Iris solid/cutout shadow terrain passes, while translucent
   water is intentionally omitted from shadow maps;
 - does not create a private shader program, bind a private framebuffer, or
