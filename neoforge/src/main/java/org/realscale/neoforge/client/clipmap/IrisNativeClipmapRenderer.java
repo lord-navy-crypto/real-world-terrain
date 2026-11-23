@@ -114,36 +114,49 @@ final class IrisNativeClipmapRenderer {
         // Iris uses a separate shadow-camera projection and distance budget.
         Minecraft minecraft = Minecraft.getInstance();
         boolean restoreProjection = !shadowPass;
-        if (restoreProjection) {
-            ClipmapFogRange fogRange = ClipmapFogRange.forGrid(
-                    cachedGridCells, cachedBaseSpacing, LEVEL_COUNT);
-            EXTENDED_PROJECTION.set(projectionMatrix);
-            ClipmapProjectionMath.extendFarPlane(
-                    EXTENDED_PROJECTION, fogRange.endBlocks() * 1.5f);
-            shader.setDefaultUniforms(VertexFormat.Mode.QUADS,
-                    frustumMatrix, EXTENDED_PROJECTION, minecraft.getWindow());
-            shader.apply();
-        }
-
-        // Vanilla resets CHUNK_OFFSET before ShaderInstance.clear(). Reuse the
-        // same uniform for our centre-relative cached VBO, then restore zero
-        // before returning to the caller's normal terrain cleanup.
-        Uniform chunkOffset = shader.CHUNK_OFFSET;
-        chunkOffset.set((float) (centerX - cameraX),
-                (float) -cameraY, (float) (centerZ - cameraZ));
-        chunkOffset.upload();
+        IrisRenderCompatibility.ProjectionScope projectionScope = null;
         try {
-            target.bind();
-            target.draw();
-            return true;
-        } finally {
-            VertexBuffer.unbind();
-            chunkOffset.set(0.0f, 0.0f, 0.0f);
-            chunkOffset.upload();
             if (restoreProjection) {
+                ClipmapFogRange fogRange = ClipmapFogRange.forGrid(
+                        cachedGridCells, cachedBaseSpacing, LEVEL_COUNT);
+                EXTENDED_PROJECTION.set(projectionMatrix);
+                ClipmapProjectionMath.extendFarPlane(
+                        EXTENDED_PROJECTION, fogRange.endBlocks() * 1.5f);
+                projectionScope = IrisRenderCompatibility.overrideGbufferProjection(
+                        EXTENDED_PROJECTION);
+                if (projectionScope == null) return false;
                 shader.setDefaultUniforms(VertexFormat.Mode.QUADS,
-                        frustumMatrix, projectionMatrix, minecraft.getWindow());
+                        frustumMatrix, EXTENDED_PROJECTION, minecraft.getWindow());
                 shader.apply();
+            }
+
+            // Vanilla resets CHUNK_OFFSET before ShaderInstance.clear(). Reuse
+            // the same uniform for our centre-relative cached VBO, then restore
+            // zero before returning to the caller's normal terrain cleanup.
+            Uniform chunkOffset = shader.CHUNK_OFFSET;
+            chunkOffset.set((float) (centerX - cameraX),
+                    (float) -cameraY, (float) (centerZ - cameraZ));
+            chunkOffset.upload();
+            try {
+                target.bind();
+                target.draw();
+                return true;
+            } finally {
+                VertexBuffer.unbind();
+                chunkOffset.set(0.0f, 0.0f, 0.0f);
+                chunkOffset.upload();
+            }
+        } finally {
+            if (projectionScope != null) {
+                projectionScope.close();
+                try {
+                    shader.setDefaultUniforms(VertexFormat.Mode.QUADS,
+                            frustumMatrix, projectionMatrix, minecraft.getWindow());
+                    shader.apply();
+                } catch (RuntimeException | LinkageError restoreFailure) {
+                    System.err.println("[RealScale Iris Clipmap] failed to restore terrain projection: "
+                            + restoreFailure.getClass().getSimpleName());
+                }
             }
         }
     }
