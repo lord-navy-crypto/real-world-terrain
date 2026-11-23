@@ -44,6 +44,14 @@ public final class GeometryClipmapNetwork {
                         clientProxies(payload);
                     }
                 }));
+        registrar.playToClient(
+                ClipmapStatusPayload.TYPE,
+                ClipmapStatusPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        clientStatus(payload);
+                    }
+                }));
     }
 
     private static void clientHeight(ClipmapHeightTilePayload payload) {
@@ -54,5 +62,10 @@ public final class GeometryClipmapNetwork {
     private static void clientProxies(ClipmapSurfaceProxyPayload payload) {
         org.realscale.neoforge.client.clipmap.GeometryClipmapClientPayloads
                 .acceptProxies(payload);
+    }
+
+    private static void clientStatus(ClipmapStatusPayload payload) {
+        org.realscale.neoforge.client.clipmap.GeometryClipmapClientPayloads
+                .acceptStatus(payload);
     }
 }
