@@ -619,18 +619,22 @@ The native path:
 - sets and restores the active shader's `CHUNK_OFFSET` so the cached mesh is
   centred on the clipmap snapshot but rendered relative to the current main or
   Iris shadow camera;
-- extends the main-camera projection to the clipmap fog horizon and restores
-  the original projection after each draw; Iris shadow projections retain their
-  own shadow-distance and orthographic settings;
+- extends both the active vanilla shader projection and Iris's captured
+  `gbufferProjection` to the clipmap fog horizon, then restores both after each
+  draw; Iris shadow projections retain their own shadow-distance and
+  orthographic settings;
 - participates in Iris solid/cutout shadow terrain passes, while translucent
   water is intentionally omitted from shadow maps;
 - does not create a private shader program, bind a private framebuffer, or
   bypass the active Iris terrain shader.
 
-Iris is detected reflectively through IrisApi v0, so it remains an optional
-runtime integration and adds no compile-time Iris dependency. When no shader
+Iris is detected reflectively through IrisApi v0. The native path also
+uses a narrow, version-pinned reflective bridge to
+`CapturedRenderingState.setGbufferProjection`; without that projection bridge,
+the native path fails closed rather than submitting geometry with inconsistent
+depth reconstruction. No compile-time Iris dependency is added. When no shader
 pack is active, the existing standalone OpenGL renderer remains in use. If the
-Iris API cannot be queried, both custom paths fail closed.
+Iris API or projection bridge cannot be queried, custom rendering fails closed.
 
 This establishes the native submission architecture, not visual certification.
 A real client run with Iris and a shader pack is still required to verify
