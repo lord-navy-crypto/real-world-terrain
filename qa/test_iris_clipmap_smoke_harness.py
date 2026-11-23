@@ -56,6 +56,15 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("renderType.clearRenderState()", IRIS_RENDERER)
         self.assertNotIn(".setOverlay(NO_OVERLAY)", IRIS_RENDERER)
 
+    def test_client_dismisses_experimental_world_warning_before_draw_gate(self):
+        self.assertIn("def experimental_warning_visible()", SMOKE)
+        self.assertIn("def dismiss_experimental_warning()", SMOKE)
+        self.assertIn('"tesseract"', SMOKE)
+        self.assertIn('"xdotool"', SMOKE)
+        self.assertIn("EXPERIMENTAL_SETTINGS_WARNING_DISMISSED", SMOKE)
+        self.assertIn("xdotool", WORKFLOW)
+        self.assertIn("tesseract-ocr", WORKFLOW)
+
     def test_workflow_archives_client_and_server_logs(self):
         self.assertIn("neoforge/run/logs/latest.log", WORKFLOW)
         self.assertIn("neoforge/run/iris-clipmap-client/logs/latest.log", WORKFLOW)
