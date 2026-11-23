@@ -12,6 +12,14 @@ neoForge {
         client {
             client()
         }
+        // Dedicated client smoke run: keep quick-play args inside ModDevGradle's
+        // generated program-argument file and isolate its game directory.
+        irisClipmapSmoke {
+            client()
+            gameDirectory = project.file('run/iris-clipmap-client')
+            programArgument '--quickPlaySingleplayer'
+            programArgument 'iris-clipmap-smoke'
+        }
         server {
             server()
             programArgument '--nogui'
