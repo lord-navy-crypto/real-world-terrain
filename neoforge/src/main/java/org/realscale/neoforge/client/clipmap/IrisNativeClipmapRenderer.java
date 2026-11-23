@@ -142,12 +142,14 @@ final class IrisNativeClipmapRenderer {
     private static boolean cacheMatches(Map<Integer, ClipmapHeightTilePayload> tiles,
             String dimension, long requestId, long centerX, long centerZ,
             int nearChunks, int seaLevel, List<VisibleSurfaceProxy> proxies) {
+        ClipmapHeightTilePayload first = tiles.get(0);
+        if (first == null) return false;
         if (!dimension.equals(cachedDimension) || requestId != cachedRequestId
                 || centerX != cachedCenterX || centerZ != cachedCenterZ
                 || nearChunks != cachedNearChunks || seaLevel != cachedSeaLevel
                 || proxies != cachedProxies || cachedTiles.size() != LEVEL_COUNT
-                || cachedGridCells != tiles.get(0).gridCells()
-                || cachedBaseSpacing != tiles.get(0).cellSpacingBlocks()) {
+                || cachedGridCells != first.gridCells()
+                || cachedBaseSpacing != first.cellSpacingBlocks()) {
             return false;
         }
         for (int level = 0; level < LEVEL_COUNT; level++) {
