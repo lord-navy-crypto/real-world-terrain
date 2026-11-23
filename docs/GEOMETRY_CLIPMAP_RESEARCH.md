@@ -544,3 +544,30 @@ already-longer far plane is never shortened.
 This fixes a confirmed mathematical clipping defect in the source. A real
 client screenshot and measured visible horizon are still required to certify
 the final result on the user's GPU/driver and with optional shaders/DH.
+
+
+## 2026-11-23 waiting-state and delivery-recovery upgrade
+
+The previous client emitted `STILL WAITING` after 15 seconds but had no
+server acknowledgement, no partial-tile visibility, no heartbeat, and no
+recovery if a completed server snapshot was not fully assembled client-side.
+The server also ignored duplicate request IDs, so the client had no safe way
+to ask for a resend without forcing a full resample.
+
+The new protocol adds a bounded `clipmap_status` server-to-client payload.
+It reports request acknowledgement, unsupported generator/settings, queue
+state, sampling progress (LOD 1/6 through 6/6), snapshot sent, busy, failure,
+and a stalled-worker watchdog. The client replaces the ambiguous
+`STILL WAITING` message with actionable states and counts the height-tile
+levels received so far.
+
+While the first complete snapshot is absent, the client repeats the same
+request ID every eight seconds. Same-ID requests are idempotent: the server
+reports in-flight progress or resends the cached six height tiles and proxy
+snapshot, avoiding duplicate terrain sampling. A 90-second no-progress
+watchdog invalidates a stalled sampling epoch and allows a bounded retry.
+The snapshot assembler exposes pending-level count and bitmask for QA.
+
+The client now labels the first renderer event as GPU draw submission, not
+proof of visible pixels. A real in-game horizon screenshot remains the
+visual acceptance criterion.
