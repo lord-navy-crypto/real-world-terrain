@@ -278,6 +278,70 @@ def capture_screenshot(name: str) -> pathlib.Path | None:
         return None
 
 
+def experimental_warning_visible() -> bool:
+    """OCR the virtual display for Minecraft's experimental-world confirmation."""
+    xwd = BUILD / ".experimental-warning-probe.xwd"
+    png = BUILD / ".experimental-warning-probe.png"
+    try:
+        subprocess.run(
+            ["xwd", "-root", "-silent", "-out", str(xwd)],
+            check=True, capture_output=True, timeout=20,
+        )
+        subprocess.run(
+            ["convert", str(xwd), str(png)],
+            check=True, capture_output=True, timeout=30,
+        )
+        result = subprocess.run(
+            ["tesseract", str(png), "stdout", "--psm", "6"],
+            check=True, capture_output=True, text=True, timeout=20,
+        )
+        recognized = re.sub(r"[^a-z]+", " ", result.stdout.lower())
+        return (
+            "experimental settings" in recognized
+            and "this world uses" in recognized
+        )
+    finally:
+        xwd.unlink(missing_ok=True)
+        png.unlink(missing_ok=True)
+
+
+def dismiss_experimental_warning() -> bool:
+    """Click Minecraft's explicit 'I know what I'm doing!' confirmation.
+
+    The CI display is fixed at 1280x720 with GUI scale 2. The confirmation
+    button is centered at (800, 430) in the captured display. OCR gates the
+    click so we never send it blindly to an unrelated screen.
+    """
+    deadline = time.monotonic() + 120
+    while time.monotonic() < deadline:
+        if experimental_warning_visible():
+            print("EXPERIMENTAL_SETTINGS_WARNING_DETECTED", flush=True)
+            for attempt in range(1, 4):
+                subprocess.run(
+                    ["xdotool", "mousemove", "--sync", "800", "430", "click", "1"],
+                    check=True, capture_output=True, timeout=10,
+                )
+                time.sleep(1.5)
+                if not experimental_warning_visible():
+                    print(
+                        "EXPERIMENTAL_SETTINGS_WARNING_DISMISSED: "
+                        "clicked 'I know what I'm doing!'",
+                        flush=True,
+                    )
+                    return True
+                print(
+                    f"EXPERIMENTAL_SETTINGS_WARNING_STILL_VISIBLE: attempt={attempt}",
+                    flush=True,
+                )
+            raise RuntimeError(
+                "Minecraft experimental-world warning remained visible after "
+                "three confirmation clicks"
+            )
+        time.sleep(2)
+    print("EXPERIMENTAL_SETTINGS_WARNING_NOT_PRESENT", flush=True)
+    return False
+
+
 def validate_screenshot(path: pathlib.Path | None) -> None:
     if path is None or not path.is_file():
         raise RuntimeError("Minecraft screenshot was not captured")
@@ -324,8 +388,18 @@ def run_client(env: dict[str, str]) -> None:
     lines, reader_thread = drain_process(proc, log_path, draw=draw)
     try:
         deadline = time.monotonic() + 480
+        warning_check_deadline = time.monotonic() + 120
+        warning_checked = False
         while not draw.is_set() and proc.poll() is None and time.monotonic() < deadline:
-            time.sleep(1)
+            if not warning_checked and time.monotonic() < warning_check_deadline:
+                if experimental_warning_visible():
+                    dismiss_experimental_warning()
+                    warning_checked = True
+                else:
+                    time.sleep(2)
+            else:
+                warning_checked = True
+                time.sleep(1)
         if not draw.is_set():
             try:
                 diagnostic = capture_screenshot("iris-client-before-native-draw")
