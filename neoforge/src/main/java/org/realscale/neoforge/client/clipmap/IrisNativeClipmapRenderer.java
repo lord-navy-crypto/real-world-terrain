@@ -38,7 +38,9 @@ import java.util.Map;
 final class IrisNativeClipmapRenderer {
     private static final int LEVEL_COUNT = 6;
     private static final int MORPH_BAND_CELLS = 8;
-    private static final int FULL_BRIGHT = LightTexture.FULL_BRIGHT;
+    // Distant exterior surfaces have sky exposure but no reliable block-light sample.
+    // FULL_SKY preserves the active day/night lightmap instead of forcing full-bright.
+    private static final int SURFACE_SKY_LIGHT = LightTexture.FULL_SKY;
     private static final int NO_OVERLAY = OverlayTexture.NO_OVERLAY;
     private static final int INITIAL_BUFFER_BYTES = 1 << 20;
     private static final Matrix4f EXTENDED_PROJECTION = new Matrix4f();
@@ -628,7 +630,7 @@ final class IrisNativeClipmapRenderer {
                         rgb & 0xFF, alpha)
                 .setUv(sprite.getU(u), sprite.getV(v))
                 .setOverlay(NO_OVERLAY)
-                .setLight(FULL_BRIGHT)
+                .setLight(SURFACE_SKY_LIGHT)
                 .setNormal(normal[0], normal[1], normal[2]);
     }
 
