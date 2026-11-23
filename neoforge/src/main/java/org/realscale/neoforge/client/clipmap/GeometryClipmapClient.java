@@ -1,8 +1,10 @@
 package org.realscale.neoforge.client.clipmap;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.world.level.material.FogType;
 import net.minecraft.network.chat.Component;
 import org.joml.Matrix4f;
 import net.neoforged.api.distmarker.Dist;
@@ -66,6 +68,9 @@ public final class GeometryClipmapClient {
     private static IrisRenderCompatibility.ProjectionScope activeIrisProjectionScope;
     private static Matrix4f activeIrisProjectionTarget;
     private static Matrix4f activeIrisOriginalProjection;
+    private static boolean activeIrisFogCaptured;
+    private static float activeIrisOriginalFogStart;
+    private static float activeIrisOriginalFogEnd;
     private static final long HEARTBEAT_INTERVAL_NANOS = 8_000_000_000L;
 
     private GeometryClipmapClient() {}
@@ -365,17 +370,72 @@ public final class GeometryClipmapClient {
         }
     }
 
+    /**
+     * Called at renderSectionLayer HEAD after FogRenderer has installed the
+     * main-camera fog parameters but before the terrain shader uploads them.
+     * Keep the extended fog range for the whole G-buffer frame so later Iris
+     * composites interpret distant depth and fog with the same horizon.
+     */
+    public static void prepareIrisFrameFog() {
+        if (!ENABLED || activeIrisProjectionScope == null || activeIrisFogCaptured
+                || lastNearChunks < 2) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null
+                || minecraft.gameRenderer.getMainCamera().getFluidInCamera() != FogType.NONE) {
+            return;
+        }
+        var key = TILES.activeKey();
+        if (key == null || key.requestId() != activeRequestId) return;
+
+        float originalStart = RenderSystem.getShaderFogStart();
+        float originalEnd = RenderSystem.getShaderFogEnd();
+        float minimumNormalFogEnd = Math.max(16.0f, lastNearChunks * 16.0f * 0.55f);
+        if (!Float.isFinite(originalStart) || !Float.isFinite(originalEnd)
+                || originalEnd <= originalStart || originalEnd < minimumNormalFogEnd) {
+            // Preserve short environmental fog (for example, dense biome fog).
+            return;
+        }
+
+        ClipmapFogRange fogRange = ClipmapFogRange.forGrid(
+                key.gridCells(), key.baseSpacing(), 6);
+        float extendedStart = Math.max(originalStart, fogRange.startBlocks());
+        float extendedEnd = Math.max(originalEnd, fogRange.endBlocks() * 1.5f);
+        if (!Float.isFinite(extendedStart) || !Float.isFinite(extendedEnd)
+                || extendedEnd <= extendedStart) {
+            return;
+        }
+
+        activeIrisOriginalFogStart = originalStart;
+        activeIrisOriginalFogEnd = originalEnd;
+        activeIrisFogCaptured = true;
+        RenderSystem.setShaderFogStart(extendedStart);
+        RenderSystem.setShaderFogEnd(extendedEnd);
+    }
+
     private static void restoreIrisProjectionFrame() {
         Matrix4f target = activeIrisProjectionTarget;
         Matrix4f original = activeIrisOriginalProjection;
         IrisRenderCompatibility.ProjectionScope scope = activeIrisProjectionScope;
+        boolean restoreFog = activeIrisFogCaptured;
+        float originalFogStart = activeIrisOriginalFogStart;
+        float originalFogEnd = activeIrisOriginalFogEnd;
         activeIrisProjectionTarget = null;
         activeIrisOriginalProjection = null;
         activeIrisProjectionScope = null;
+        activeIrisFogCaptured = false;
         try {
             if (target != null && original != null) target.set(original);
         } finally {
-            if (scope != null) scope.close();
+            try {
+                if (restoreFog) {
+                    RenderSystem.setShaderFogStart(originalFogStart);
+                    RenderSystem.setShaderFogEnd(originalFogEnd);
+                }
+            } finally {
+                if (scope != null) scope.close();
+            }
         }
     }
 

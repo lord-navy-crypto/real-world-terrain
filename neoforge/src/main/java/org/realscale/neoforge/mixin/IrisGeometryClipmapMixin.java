@@ -18,6 +18,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class IrisGeometryClipmapMixin {
     @Inject(
             method = "renderSectionLayer",
+            at = @At("HEAD"),
+            require = 1
+    )
+    private void realscale$prepareIrisFrameFog(RenderType renderType,
+            double cameraX, double cameraY, double cameraZ,
+            Matrix4f frustumMatrix, Matrix4f projectionMatrix,
+            CallbackInfo callbackInfo) {
+        GeometryClipmapClient.prepareIrisFrameFog();
+    }
+
+    @Inject(
+            method = "renderSectionLayer",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/ShaderInstance;clear()V",
