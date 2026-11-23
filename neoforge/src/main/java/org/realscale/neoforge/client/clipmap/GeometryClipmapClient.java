@@ -271,9 +271,11 @@ public final class GeometryClipmapClient {
         if (Math.abs(cameraX - key.centerX()) > safeX
                 || Math.abs(cameraZ - key.centerZ()) > safeX) return;
         List<VisibleSurfaceProxy> proxies = PROXY_BUFFER.activeFor(key);
+        float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        ClipmapEnvironment.State environment = ClipmapEnvironment.from(minecraft.level, partialTick);
         boolean drawSubmitted = GeometryClipmapRenderer.render(event, TILES.activeTiles(),
                 minecraft.level.dimension().location().toString(),
-                proxies == null ? List.of() : proxies);
+                proxies == null ? List.of() : proxies, environment);
         if (!drawSubmitted) return;
         if (!firstRenderSubmitted) {
             firstRenderSubmitted = true;
