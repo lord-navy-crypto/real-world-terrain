@@ -221,7 +221,7 @@ final class GeometryClipmapRenderer {
         if (tiles == null || tiles.size() < LEVEL_COUNT || proxies == null) return false;
 
         var first = tiles.get(0);
-        if (first == null || !first.dimensionKey().equals(dimensionKey)) return;
+        if (first == null || !first.dimensionKey().equals(dimensionKey)) return false;
         int nextGridCells = first.gridCells();
         int nextNearChunks = first.nearRenderDistanceChunks();
         int nextBaseSpacing = first.cellSpacingBlocks();
