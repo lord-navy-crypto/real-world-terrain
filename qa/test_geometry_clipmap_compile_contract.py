@@ -80,6 +80,12 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, 0)", render)
         self.assertIn("GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, pixelUnpackBuffer)", renderer)
         self.assertIn("reusableHeightUpload.clear()", renderer.replace("buffer.clear()", "reusableHeightUpload.clear()"))
+        self.assertIn("GL11.GL_REPEAT", renderer)
+        self.assertIn("uTextureOffset", renderer)
+        self.assertIn("ClipmapTextureUpdatePlan.between(", renderer)
+        self.assertIn("tile.copyHeightsRegionTo(", renderer)
+        self.assertIn("long bytes = updateTexture(i, tile);", render)
+        self.assertNotIn("uploaded[i] != tile", render)
         self.assertIn("UniformLocations.lookup(program)", renderer)
         self.assertNotIn('glGetUniformLocation(program, "uOrigin")',
                          renderer.split("private static void draw(", 1)[1].split("private static int linkProgram(", 1)[0])
@@ -188,3 +194,15 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+    def test_toroidal_texture_update_plan_has_unit_coverage(self):
+        planner = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.java").read_text(
+            encoding="utf-8"
+        )
+        payload = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/network/ClipmapHeightTilePayload.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("dirtySamples * 10L >= fullSamples * 7L", planner)
+        self.assertIn("Math.floorMod", planner)
+        self.assertIn("public void copyHeightsRegionTo(", payload)

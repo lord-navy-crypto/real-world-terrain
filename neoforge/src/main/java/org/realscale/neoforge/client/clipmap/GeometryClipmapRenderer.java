@@ -54,6 +54,7 @@ final class GeometryClipmapRenderer {
             uniform float uSeaLevel;
             uniform float uSkirtDepth;
             uniform float uMorphBandCells;
+            uniform vec2 uTextureOffset;
             out float vHeight;
             out float vOcean;
             out float vDistance;
@@ -62,7 +63,8 @@ final class GeometryClipmapRenderer {
             void main() {
                 vec2 grid = aGridAndSkirt.xy;
                 float side = uGridCells + 1.0;
-                vec2 uv = (grid + vec2(0.5)) / side;
+                vec2 textureGrid = mod(grid + uTextureOffset, side);
+                vec2 uv = (textureGrid + vec2(0.5)) / side;
                 float h = mix(uHeightMin, uHeightMax, texture(uHeightMap, uv).r);
                 // A fine outer boundary must converge on the 2x parent grid.
                 // These parent heights are sampled at even vertices of this
@@ -71,7 +73,8 @@ final class GeometryClipmapRenderer {
                     min(uGridCells - grid.x, uGridCells - grid.y));
                 if (uMorphBandCells > 0.0 && edgeCells < uMorphBandCells) {
                     vec2 parentGrid = floor(grid * 0.5) * 2.0;
-                    vec2 parentUV = (parentGrid + vec2(0.5)) / side;
+                    vec2 parentTextureGrid = mod(parentGrid + uTextureOffset, side);
+                    vec2 parentUV = (parentTextureGrid + vec2(0.5)) / side;
                     float pixelStep = 2.0 / side;
                     vec2 blend = (grid - parentGrid) * 0.5;
                     float h00 = texture(uHeightMap, parentUV).r;
@@ -205,8 +208,7 @@ final class GeometryClipmapRenderer {
     private static int gridCells = -1;
     private static int nearChunks = -1;
     private static int baseSpacing = -1;
-    private static final org.realscale.neoforge.network.ClipmapHeightTilePayload[] uploaded =
-            new org.realscale.neoforge.network.ClipmapHeightTilePayload[LEVEL_COUNT];
+    private static final TextureWindow[] textureWindows = new TextureWindow[LEVEL_COUNT];
 
     private GeometryClipmapRenderer() {}
 
@@ -255,14 +257,8 @@ final class GeometryClipmapRenderer {
             GL11.glPixelStorei(GL11.GL_UNPACK_SWAP_BYTES, 0);
             for (int i = 0; i < LEVEL_COUNT; i++) {
                 var tile = tiles.get(i);
-                if (uploaded[i] != tile) {
-                    upload(i, tile);
-                    uploaded[i] = tile;
-                    if (DEBUG) {
-                        long side = (long) tile.gridCells() + 1L;
-                        uploadedBytesThisFrame += side * side * Short.BYTES;
-                    }
-                }
+                long bytes = updateTexture(i, tile);
+                if (DEBUG) uploadedBytesThisFrame += bytes;
             }
 
             draw(event, tiles, proxies);
@@ -330,7 +326,7 @@ final class GeometryClipmapRenderer {
         gridCells = -1;
         nearChunks = -1;
         baseSpacing = -1;
-        for (int i = 0; i < uploaded.length; i++) uploaded[i] = null;
+        for (int i = 0; i < textureWindows.length; i++) textureWindows[i] = null;
     }
 
     private static void initialize(int cells, int near, int spacing) {
@@ -382,9 +378,9 @@ final class GeometryClipmapRenderer {
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D,
                     GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D,
-                    GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
+                    GL11.GL_TEXTURE_WRAP_S, GL11.GL_REPEAT);
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D,
-                    GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
+                    GL11.GL_TEXTURE_WRAP_T, GL11.GL_REPEAT);
             GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL30.GL_R16,
                     side, side, 0, GL11.GL_RED, GL11.GL_UNSIGNED_SHORT,
                     (ShortBuffer) null);
@@ -393,17 +389,93 @@ final class GeometryClipmapRenderer {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
-    private static void upload(int level,
+    /**
+     * Updates a toroidal R16 texture. Small snapped camera moves preserve the
+     * old world-space overlap in-place and upload only the newly exposed strips.
+     * A full upload is used after teleports, incompatible snapshots, or large
+     * jumps where many tiny transfers would cost more than one transfer.
+     */
+    private static long updateTexture(int level,
             org.realscale.neoforge.network.ClipmapHeightTilePayload tile) {
-        int side = tile.gridCells() + 1;
-        ShortBuffer buffer = reusableHeightUpload;
-        buffer.clear();
-        tile.copyHeightsTo(buffer);
-        buffer.flip();
+        TextureWindow previous = textureWindows[level];
+        boolean compatible = previous != null && previous.matches(tile);
+        ClipmapTextureUpdatePlan.Plan plan = compatible
+                ? ClipmapTextureUpdatePlan.between(tile.gridCells(),
+                        tile.cellSpacingBlocks(),
+                        previous.originX(), previous.originZ(),
+                        previous.offsetX(), previous.offsetZ(),
+                        tile.originX(), tile.originZ())
+                : ClipmapTextureUpdatePlan.fullUpload(tile.gridCells());
+
         GL13.glActiveTexture(GL13.GL_TEXTURE0);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, textures[level]);
-        GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0,
-                side, side, GL11.GL_RED, GL11.GL_UNSIGNED_SHORT, buffer);
+        for (ClipmapTextureUpdatePlan.Rect rectangle : plan.rectangles()) {
+            uploadGridRectangle(tile, rectangle, plan.offsetX(), plan.offsetZ());
+        }
+        textureWindows[level] = new TextureWindow(tile.requestId(),
+                tile.dimensionKey(), tile.nearRenderDistanceChunks(),
+                tile.gridCells(), tile.cellSpacingBlocks(),
+                tile.originX(), tile.originZ(),
+                tile.minHeight(), tile.maxHeight(),
+                plan.offsetX(), plan.offsetZ());
+        return plan.uploadedSamples() * Short.BYTES;
+    }
+
+    /**
+     * Copies a logical tile rectangle into its wrapped physical texture
+     * rectangle. A rectangle can cross either ring seam, so it is split into
+     * at most four tightly packed uploads.
+     */
+    private static void uploadGridRectangle(
+            org.realscale.neoforge.network.ClipmapHeightTilePayload tile,
+            ClipmapTextureUpdatePlan.Rect rectangle,
+            int offsetX, int offsetZ) {
+        int side = tile.gridCells() + 1;
+        int destinationX = Math.floorMod(rectangle.x() + offsetX, side);
+        int destinationZ = Math.floorMod(rectangle.z() + offsetZ, side);
+        int firstWidth = Math.min(rectangle.width(), side - destinationX);
+        int secondWidth = rectangle.width() - firstWidth;
+        int firstHeight = Math.min(rectangle.height(), side - destinationZ);
+        int secondHeight = rectangle.height() - firstHeight;
+
+        int[] widths = {firstWidth, secondWidth};
+        int[] heights = {firstHeight, secondHeight};
+        int[] sourceX = {rectangle.x(), rectangle.x() + firstWidth};
+        int[] sourceZ = {rectangle.z(), rectangle.z() + firstHeight};
+        int[] targetX = {destinationX, 0};
+        int[] targetZ = {destinationZ, 0};
+
+        ShortBuffer buffer = reusableHeightUpload;
+        for (int zPart = 0; zPart < 2; zPart++) {
+            if (heights[zPart] == 0) continue;
+            for (int xPart = 0; xPart < 2; xPart++) {
+                if (widths[xPart] == 0) continue;
+                buffer.clear();
+                tile.copyHeightsRegionTo(sourceX[xPart], sourceZ[zPart],
+                        widths[xPart], heights[zPart], buffer);
+                buffer.flip();
+                GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0,
+                        targetX[xPart], targetZ[zPart],
+                        widths[xPart], heights[zPart],
+                        GL11.GL_RED, GL11.GL_UNSIGNED_SHORT, buffer);
+            }
+        }
+    }
+
+    private record TextureWindow(long requestId, String dimensionKey,
+            int nearChunks, int gridCells, int spacing,
+            long originX, long originZ, int minHeight, int maxHeight,
+            int offsetX, int offsetZ) {
+        private boolean matches(
+                org.realscale.neoforge.network.ClipmapHeightTilePayload tile) {
+            return requestId == tile.requestId()
+                    && dimensionKey.equals(tile.dimensionKey())
+                    && nearChunks == tile.nearRenderDistanceChunks()
+                    && gridCells == tile.gridCells()
+                    && spacing == tile.cellSpacingBlocks()
+                    && minHeight == tile.minHeight()
+                    && maxHeight == tile.maxHeight();
+        }
     }
 
     private static void draw(RenderLevelStageEvent event,
@@ -456,6 +528,9 @@ final class GeometryClipmapRenderer {
                     (float) (tile.originZ() - cameraZ));
             GL20.glUniform1f(uniforms.spacing(),
                     tile.cellSpacingBlocks());
+            TextureWindow textureWindow = textureWindows[level];
+            GL20.glUniform2f(uniforms.textureOffset(),
+                    textureWindow.offsetX(), textureWindow.offsetZ());
             GL20.glUniform2f(uniforms.noiseOrigin(),
                     (float) Math.floorMod(tile.originX(), 65536L),
                     (float) Math.floorMod(tile.originZ(), 65536L));
@@ -519,7 +594,7 @@ final class GeometryClipmapRenderer {
             int heightMin, int heightMax, int seaLevel,
             int fogStart, int fogEnd, int fogColor,
             int heightMap, int nearClipBlocks, int origin,
-            int spacing, int noiseOrigin, int skirtDepth,
+            int spacing, int textureOffset, int noiseOrigin, int skirtDepth,
             int morphBandCells) {
         private static UniformLocations lookup(int program) {
             return new UniformLocations(
@@ -536,6 +611,7 @@ final class GeometryClipmapRenderer {
                     GL20.glGetUniformLocation(program, "uNearClipBlocks"),
                     GL20.glGetUniformLocation(program, "uOrigin"),
                     GL20.glGetUniformLocation(program, "uSpacing"),
+                    GL20.glGetUniformLocation(program, "uTextureOffset"),
                     GL20.glGetUniformLocation(program, "uNoiseOrigin"),
                     GL20.glGetUniformLocation(program, "uSkirtDepth"),
                     GL20.glGetUniformLocation(program, "uMorphBandCells"));

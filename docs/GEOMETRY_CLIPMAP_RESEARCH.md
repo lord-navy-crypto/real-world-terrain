@@ -408,3 +408,28 @@ important because the sampler executor and session map are static and can
 survive an integrated-server world transition in the same client process.
 It prevents a previous world's density graph or player UUID session from being
 reused after the next world starts.
+
+
+## 2026-11-23 toroidal GPU height-texture updates
+
+The client no longer uploads all six 129x129 R16 height textures whenever a
+new snapped snapshot arrives. Each LOD now keeps a toroidal texture window:
+the shader maps logical grid coordinates through a per-level texture offset,
+and the texture uses repeat addressing. When the new tile origin moves by an
+integer number of sample cells, the client advances that offset and uploads
+only the newly exposed edge strips with bounded rectangular
+`glTexSubImage2D` calls. Diagonal shifts upload the union of the two strips
+without uploading their shared corner twice.
+
+A pure `ClipmapTextureUpdatePlan` computes the offset and dirty rectangles.
+It falls back to one full upload when metadata is incompatible, the origin
+shift is not sample-aligned, or at least 70% of the texture would be dirty.
+The packet exposes a bounded region-copy method so the renderer can pack each
+rectangle into its existing reusable upload buffer without exposing or cloning
+the backing height array.
+
+This reduces GPU texture-upload volume for normal snapped recentering. It does
+**not yet reduce network payload size**: the server still sends complete
+height tiles, and the client still receives and validates the full snapshot.
+It also does not claim GPU-time improvement; the existing CPU submission
+telemetry remains distinct from GPU execution time.

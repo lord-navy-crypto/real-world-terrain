@@ -101,6 +101,27 @@ public record ClipmapHeightTilePayload(
         destination.put(heights);
     }
 
+    /**
+     * Copies one tightly packed row-major rectangle without exposing the
+     * packet's backing array. The destination receives {@code width * height}
+     * samples and can be passed directly to glTexSubImage2D.
+     */
+    public void copyHeightsRegionTo(int x, int z, int width, int height,
+            ShortBuffer destination) {
+        int side = gridCells + 1;
+        if (x < 0 || z < 0 || width < 1 || height < 1
+                || x + width > side || z + height > side) {
+            throw new IllegalArgumentException("height region is outside the tile");
+        }
+        int required = Math.multiplyExact(width, height);
+        if (destination == null || destination.remaining() < required) {
+            throw new IllegalArgumentException("destination buffer is too small for height region");
+        }
+        for (int row = 0; row < height; row++) {
+            destination.put(heights, (z + row) * side + x, width);
+        }
+    }
+
     private static void validate(String dimension, long requestId, int near, int cells,
             int level, int spacing, int min, int max, int count) {
         if (requestId <= 0L) {
