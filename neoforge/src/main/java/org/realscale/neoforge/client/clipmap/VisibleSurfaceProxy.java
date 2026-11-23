@@ -1,15 +1,13 @@
 package org.realscale.neoforge.client.clipmap;
 
-import net.minecraft.world.phys.AABB;
 import java.util.Objects;
 
 /**
  * Compact exterior-only proxy for a distant visible feature.
  * Coordinates are world-space block coordinates; no interior block data is kept.
  *
- * <p>The immutable world-space bounds are computed once when the proxy is
- * decoded/generated, rather than allocating an AABB for every visible proxy
- * on every rendered frame.
+ * <p>Only compact primitive instance data is retained. Frustum and distance
+ * clipping are performed by the GPU proxy vertex shader.
  */
 public final class VisibleSurfaceProxy {
     public static final int TREE_CANOPY = 1;
@@ -24,7 +22,6 @@ public final class VisibleSurfaceProxy {
     private final float height;
     private final int rgb;
     private final int type;
-    private final AABB bounds;
 
     public VisibleSurfaceProxy(int x, int y, int z,
             float radius, float height, int rgb, int type) {
@@ -42,9 +39,6 @@ public final class VisibleSurfaceProxy {
         this.height = height;
         this.rgb = rgb & 0x00FFFFFF;
         this.type = type;
-        this.bounds = new AABB(
-                x - (double) radius, y, z - (double) radius,
-                x + (double) radius, y + (double) height, z + (double) radius);
     }
 
     public int x() { return x; }
@@ -54,7 +48,6 @@ public final class VisibleSurfaceProxy {
     public float height() { return height; }
     public int rgb() { return rgb; }
     public int type() { return type; }
-    public AABB bounds() { return bounds; }
 
     @Override
     public boolean equals(Object other) {

@@ -96,23 +96,33 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
             encoding="utf-8"
         )
         draw = proxy.split("static void draw(", 1)[1].split("static void dispose(", 1)[0]
-        self.assertIn("VISIBLE_SCRATCH", draw)
-        self.assertIn("INSTANCE_UPLOAD", draw)
+        self.assertIn("INSTANCE_UPLOAD", proxy)
         self.assertIn("MATRIX_UPLOAD", draw)
+        self.assertIn("uploadedProxies != proxies", draw)
+        self.assertIn("uploadInstances(proxies, centerX, centerZ)", draw)
+        self.assertIn("GL15.GL_STATIC_DRAW", proxy)
+        self.assertIn("uCameraOffset", proxy)
+        self.assertIn("uNearRadiusSquared", proxy)
+        self.assertIn("uFarRadiusSquared", proxy)
         self.assertNotIn("BufferUtils.createFloatBuffer", draw)
         self.assertNotIn("glGetUniformLocation", draw)
         self.assertIn("UniformLocations.lookup(program)", proxy)
-        self.assertIn("farRadiusSquared", draw)
-        self.assertNotIn("new ArrayList", draw)
+        self.assertNotIn("new ArrayList", proxy)
         self.assertNotIn("new Matrix4f", draw)
+        self.assertNotIn("VISIBLE_SCRATCH", proxy)
 
-    def test_proxy_renderer_uses_precomputed_bounds_without_per_frame_aabb_creation(self):
+    def test_proxy_renderer_uses_gpu_frustum_and_distance_clipping(self):
         proxy = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/VisibleSurfaceProxyRenderer.java").read_text(
             encoding="utf-8"
         )
-        draw = proxy.split("static void draw(", 1)[1].split("static void dispose(", 1)[0]
-        self.assertIn("proxy.bounds()", draw)
-        self.assertNotIn("new AABB", draw)
+        feature = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/VisibleSurfaceProxy.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("uNearRadiusSquared", proxy)
+        self.assertIn("uFarRadiusSquared", proxy)
+        self.assertIn("uViewProjection * vec4(relative, 1.0)", proxy)
+        self.assertNotIn("proxy.bounds()", proxy)
+        self.assertNotIn("new AABB", feature)
 
     def test_height_payload_can_copy_without_exposing_or_cloning_samples(self):
         payload = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/network/ClipmapHeightTilePayload.java").read_text(

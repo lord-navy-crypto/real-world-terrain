@@ -553,7 +553,12 @@ final class GeometryClipmapRenderer {
                     GL11.GL_UNSIGNED_INT, 0L);
         }
         GL30.glBindVertexArray(0);
-        VisibleSurfaceProxyRenderer.draw(event, proxies,
+        var centreTile = tiles.get(0);
+        long centreX = centreTile.originX()
+                + (long) (centreTile.gridCells() / 2) * centreTile.cellSpacingBlocks();
+        long centreZ = centreTile.originZ()
+                + (long) (centreTile.gridCells() / 2) * centreTile.cellSpacingBlocks();
+        VisibleSurfaceProxyRenderer.draw(event, proxies, centreX, centreZ,
                 nearChunks, fogRange.startBlocks(), fogRange.endBlocks());
     }
 

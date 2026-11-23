@@ -12,7 +12,6 @@ import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL33;
 
 import java.nio.FloatBuffer;
-import java.util.ArrayList;
 import java.util.List;
 
 /** Exterior-only crossed-billboard renderer for distant feature proxies. */
@@ -26,19 +25,31 @@ final class VisibleSurfaceProxyRenderer {
             layout(location=4) in float iType;
             uniform mat4 uViewProjection;
             uniform vec3 uAxis;
+            uniform vec3 uCameraOffset;
+            uniform float uNearRadiusSquared;
+            uniform float uFarRadiusSquared;
             out vec2 vUv;
             out vec3 vColor;
             out float vType;
             out float vDistance;
             void main() {
-                vec3 relative = iPositionRelative
+                vec3 relative = iPositionRelative - uCameraOffset
                     + vec3(aCorner.x * iShape.x * uAxis.x,
                            aCorner.y * iShape.y,
                            aCorner.x * iShape.x * uAxis.z);
                 vUv = vec2(aCorner.x * 0.5 + 0.5, aCorner.y);
                 vColor = iColor;
                 vType = iType;
-                vDistance = length(relative.xz);
+                float distanceSquared = dot(relative.xz, relative.xz);
+                vDistance = sqrt(distanceSquared);
+                // Cull near-field and fully fogged proxies on the GPU. The
+                // hardware clipper handles the view frustum, so instance data
+                // does not need a camera-relative CPU rebuild every frame.
+                if (distanceSquared < uNearRadiusSquared
+                        || distanceSquared > uFarRadiusSquared) {
+                    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                    return;
+                }
                 gl_Position = uViewProjection * vec4(relative, 1.0);
             }
             """;
@@ -99,8 +110,6 @@ final class VisibleSurfaceProxyRenderer {
 
     private static final int MAX_PROXIES = 4096;
     private static final int INSTANCE_FLOATS = 9;
-    private static final List<VisibleSurfaceProxy> VISIBLE_SCRATCH =
-            new ArrayList<>(MAX_PROXIES);
     private static final FloatBuffer INSTANCE_UPLOAD =
             BufferUtils.createFloatBuffer(MAX_PROXIES * INSTANCE_FLOATS);
     private static final FloatBuffer MATRIX_UPLOAD = BufferUtils.createFloatBuffer(16);
@@ -112,49 +121,31 @@ final class VisibleSurfaceProxyRenderer {
     private static int vao;
     private static int cornerBuffer;
     private static int instanceBuffer;
+    private static List<VisibleSurfaceProxy> uploadedProxies;
+    private static long uploadedCenterX = Long.MIN_VALUE;
+    private static long uploadedCenterZ = Long.MIN_VALUE;
+    private static int uploadedCount;
 
     private VisibleSurfaceProxyRenderer() {}
 
-    static void draw(RenderLevelStageEvent event, List<VisibleSurfaceProxy> proxies,
+    static void draw(RenderLevelStageEvent event,
+            List<VisibleSurfaceProxy> proxies, long centerX, long centerZ,
             int nearChunks, float fogStart, float fogEnd) {
-        if (proxies == null || proxies.isEmpty()) return;
         RenderSystem.assertOnRenderThread();
-
-        var camera = event.getCamera().getPosition();
-        List<VisibleSurfaceProxy> visible = VISIBLE_SCRATCH;
-        visible.clear();
-        double nearRadius = Math.max(0.0, nearChunks * 16.0 - 16.0);
-        double nearRadiusSquared = nearRadius * nearRadius;
-        // Proxies are fully fogged beyond this horizon. A small allowance
-        // preserves the near edge of tall/wide silhouettes at the fade boundary.
-        double farRadius = fogEnd + 64.0;
-        double farRadiusSquared = farRadius * farRadius;
-        for (VisibleSurfaceProxy proxy : proxies) {
-            double dx = proxy.x() - camera.x;
-            double dz = proxy.z() - camera.z;
-            double distanceSquared = dx * dx + dz * dz;
-            if (distanceSquared < nearRadiusSquared
-                    || distanceSquared > farRadiusSquared) continue;
-            if (event.getFrustum().isVisible(proxy.bounds())) visible.add(proxy);
+        if (proxies == null || proxies.isEmpty()) {
+            uploadedProxies = null;
+            uploadedCount = 0;
+            return;
         }
-        if (visible.isEmpty()) return;
 
         ensureResources();
-        FloatBuffer instances = INSTANCE_UPLOAD;
-        instances.clear();
-        for (VisibleSurfaceProxy proxy : visible) {
-            instances.put((float) (proxy.x() - camera.x));
-            instances.put((float) (proxy.y() - camera.y));
-            instances.put((float) (proxy.z() - camera.z));
-            instances.put(proxy.radius());
-            instances.put(proxy.height());
-            instances.put(((proxy.rgb() >>> 16) & 0xFF) / 255.0f);
-            instances.put(((proxy.rgb() >>> 8) & 0xFF) / 255.0f);
-            instances.put((proxy.rgb() & 0xFF) / 255.0f);
-            instances.put(proxy.type());
+        if (uploadedProxies != proxies || uploadedCenterX != centerX
+                || uploadedCenterZ != centerZ) {
+            uploadInstances(proxies, centerX, centerZ);
         }
-        instances.flip();
+        if (uploadedCount == 0) return;
 
+        var camera = event.getCamera().getPosition();
         Matrix4f modelView = MODEL_VIEW.set(event.getModelViewMatrix());
         modelView.setTranslation(0.0f, 0.0f, 0.0f);
         Matrix4f viewProjection = VIEW_PROJECTION.set(event.getProjectionMatrix())
@@ -164,24 +155,62 @@ final class VisibleSurfaceProxyRenderer {
         viewProjection.get(matrix);
         matrix.flip();
 
+        double nearRadius = Math.max(0.0, nearChunks * 16.0 - 16.0);
+        double farRadius = fogEnd + 64.0;
         GL20.glUseProgram(program);
         GL20.glUniformMatrix4fv(uniforms.viewProjection(), false, matrix);
+        GL20.glUniform3f(uniforms.cameraOffset(),
+                (float) (camera.x - centerX), (float) camera.y,
+                (float) (camera.z - centerZ));
+        GL20.glUniform1f(uniforms.nearRadiusSquared(),
+                (float) (nearRadius * nearRadius));
+        GL20.glUniform1f(uniforms.farRadiusSquared(),
+                (float) (farRadius * farRadius));
         GL20.glUniform1f(uniforms.fogStart(), fogStart);
         GL20.glUniform1f(uniforms.fogEnd(), fogEnd);
         GL20.glUniform3f(uniforms.fogColor(), 0.58f, 0.69f, 0.80f);
 
         GL30.glBindVertexArray(vao);
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, instanceBuffer);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, instances, GL15.GL_STREAM_DRAW);
         int axisLocation = uniforms.axis();
         GL20.glUniform3f(axisLocation, 1.0f, 0.0f, 0.0f);
-        GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 6, visible.size());
+        GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 6, uploadedCount);
         GL20.glUniform3f(axisLocation, 0.0f, 0.0f, 1.0f);
-        GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 6, visible.size());
+        GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 6, uploadedCount);
         // Third view plane limits edge-on disappearance without full meshes.
         GL20.glUniform3f(axisLocation, 0.70710677f, 0.0f, 0.70710677f);
-        GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 6, visible.size());
+        GL31.glDrawArraysInstanced(GL11.GL_TRIANGLES, 0, 6, uploadedCount);
         GL30.glBindVertexArray(0);
+    }
+
+    /**
+     * Instance positions are stored relative to the snapped clipmap centre.
+     * They are uploaded once per immutable proxy snapshot, not once per frame.
+     */
+    private static void uploadInstances(List<VisibleSurfaceProxy> proxies,
+            long centerX, long centerZ) {
+        FloatBuffer instances = INSTANCE_UPLOAD;
+        instances.clear();
+        int count = 0;
+        for (VisibleSurfaceProxy proxy : proxies) {
+            if (count >= MAX_PROXIES) break;
+            instances.put((float) ((long) proxy.x() - centerX));
+            instances.put(proxy.y());
+            instances.put((float) ((long) proxy.z() - centerZ));
+            instances.put(proxy.radius());
+            instances.put(proxy.height());
+            instances.put(((proxy.rgb() >>> 16) & 0xFF) / 255.0f);
+            instances.put(((proxy.rgb() >>> 8) & 0xFF) / 255.0f);
+            instances.put((proxy.rgb() & 0xFF) / 255.0f);
+            instances.put(proxy.type());
+            count++;
+        }
+        instances.flip();
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, instanceBuffer);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, instances, GL15.GL_STATIC_DRAW);
+        uploadedProxies = proxies;
+        uploadedCenterX = centerX;
+        uploadedCenterZ = centerZ;
+        uploadedCount = count;
     }
 
     static void dispose() {
@@ -195,7 +224,10 @@ final class VisibleSurfaceProxyRenderer {
         instanceBuffer = 0;
         program = 0;
         uniforms = null;
-        VISIBLE_SCRATCH.clear();
+        uploadedProxies = null;
+        uploadedCenterX = Long.MIN_VALUE;
+        uploadedCenterZ = Long.MIN_VALUE;
+        uploadedCount = 0;
     }
 
     private static void ensureResources() {
@@ -242,11 +274,15 @@ final class VisibleSurfaceProxyRenderer {
 
 
     private record UniformLocations(int viewProjection, int axis,
+            int cameraOffset, int nearRadiusSquared, int farRadiusSquared,
             int fogStart, int fogEnd, int fogColor) {
         private static UniformLocations lookup(int program) {
             return new UniformLocations(
                     GL20.glGetUniformLocation(program, "uViewProjection"),
                     GL20.glGetUniformLocation(program, "uAxis"),
+                    GL20.glGetUniformLocation(program, "uCameraOffset"),
+                    GL20.glGetUniformLocation(program, "uNearRadiusSquared"),
+                    GL20.glGetUniformLocation(program, "uFarRadiusSquared"),
                     GL20.glGetUniformLocation(program, "uFogStart"),
                     GL20.glGetUniformLocation(program, "uFogEnd"),
                     GL20.glGetUniformLocation(program, "uFogColor"));
