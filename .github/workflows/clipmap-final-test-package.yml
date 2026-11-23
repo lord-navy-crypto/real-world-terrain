@@ -78,6 +78,7 @@ jobs:
               "org/realscale/neoforge/client/clipmap/ClipmapHeightGrid.class",
               "org/realscale/neoforge/client/clipmap/ClipmapProxySnapshotBuffer.class",
               "org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.class",
+              "org/realscale/neoforge/client/clipmap/ClipmapProjectionMath.class",
               "org/realscale/neoforge/network/ClipmapRequestPayload.class",
           ]
           with ZipFile(jar[0]) as file:

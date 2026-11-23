@@ -194,7 +194,9 @@ final class GeometryClipmapRenderer {
 
     private static final FloatBuffer MATRIX_UPLOAD = BufferUtils.createFloatBuffer(16);
     private static final Matrix4f MODEL_VIEW = new Matrix4f();
+    private static final Matrix4f EXTENDED_PROJECTION = new Matrix4f();
     private static final Matrix4f VIEW_PROJECTION = new Matrix4f();
+    private static boolean farPlaneDiagnosticLogged;
     private static int program;
     private static UniformLocations uniforms;
     private static ClipmapFogRange fogRange;
@@ -326,6 +328,7 @@ final class GeometryClipmapRenderer {
         uniforms = null;
         fogRange = null;
         reusableHeightUpload = null;
+        farPlaneDiagnosticLogged = false;
         vao = 0;
         vertexBuffer = 0;
         elementBuffers = new int[0];
@@ -509,8 +512,26 @@ final class GeometryClipmapRenderer {
         GL20.glUseProgram(program);
         Matrix4f modelView = MODEL_VIEW.set(event.getModelViewMatrix());
         modelView.setTranslation(0.0f, 0.0f, 0.0f);
-        Matrix4f viewProjection = VIEW_PROJECTION.set(event.getProjectionMatrix())
-                .mul(modelView);
+        // Minecraft's projection far plane is tied to vanilla view distance
+        // (normally 4x render-distance blocks). Reusing it silently clips the
+        // clipmap's 10-16 km rings. Preserve the vanilla FOV/aspect/near plane,
+        // but extend only the depth range far enough to include the fogged LOD
+        // horizon. Without this, the sampler and GL draw calls can succeed
+        // while every genuinely distant triangle is rejected by clip space.
+        Matrix4f projection = EXTENDED_PROJECTION.set(event.getProjectionMatrix());
+        float vanillaFarPlane = ClipmapProjectionMath.farPlaneBlocks(projection);
+        float requiredFarPlane = Math.max(vanillaFarPlane,
+                fogRange.endBlocks() * 1.5f);
+        float actualFarPlane = ClipmapProjectionMath.extendFarPlane(
+                projection, requiredFarPlane);
+        if (DEBUG && !farPlaneDiagnosticLogged) {
+            farPlaneDiagnosticLogged = true;
+            System.out.printf(Locale.ROOT,
+                    "[RealScale Geometry Clipmap] projectionFar vanilla=%.1f " +
+                            "clipmap=%.1f fogEnd=%.1f blocks%n",
+                    vanillaFarPlane, actualFarPlane, fogRange.endBlocks());
+        }
+        Matrix4f viewProjection = VIEW_PROJECTION.set(projection).mul(modelView);
         FloatBuffer matrix = MATRIX_UPLOAD;
         matrix.clear();
         viewProjection.get(matrix);

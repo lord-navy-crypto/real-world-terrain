@@ -205,6 +205,17 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("Clipmap: SNAPSHOT READY", client)
         self.assertIn("Clipmap: DRAW SUBMITTED", client)
         self.assertIn("Clipmap: STILL WAITING", client)
+        renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        projection_math = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapProjectionMath.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("ClipmapProjectionMath.extendFarPlane", renderer)
+        self.assertIn("fogRange.endBlocks() * 1.5f", renderer)
+        self.assertIn("projectionFar vanilla=", renderer)
+        self.assertIn("projection.m22(", projection_math)
+        self.assertIn("projection.m32(", projection_math)
         network = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/network/GeometryClipmapNetwork.java").read_text(
             encoding="utf-8"
         )

@@ -514,3 +514,33 @@ Optional JVM overrides can disable the feature
 (`-Drealscale.experimental.geometryclipmap=false`) or silence client
 timing output (`-Drealscale.experimental.geometryclipmap.debug=false`).
 No automatic-enablement change is merged into `main` or a stable release.
+
+
+## 2026-11-23 critical horizon visibility fix: extend the projection far plane
+
+A source audit found the main reason the experimental renderer could report
+successful sampling and draw submission without producing a genuine distant
+horizon. `GeometryClipmapRenderer.draw` reused the projection matrix supplied
+by Minecraft's normal camera. In vanilla, the perspective far plane is tied
+to the ordinary render distance (normally four times that distance in blocks).
+At 10 chunks this is about 640 blocks, while this clipmap's fogged horizon
+ends at about 16,056 blocks. Thus the outer LOD rings were outside clip space
+and were clipped before rasterization. The visible mesh could never reach its
+advertised range.
+
+The renderer now copies the event projection and changes only the perspective
+depth coefficients, preserving the original FOV, aspect ratio, and near plane.
+It extends the far plane to at least 1.5 times the configured clipmap fog-end
+distance. At the standard 10-chunk/8-block finest spacing layout, that is
+approximately 24,084 blocks, enough to include the full outer square (including
+its corners) before the clipmap fog fades it into the sky. The shader fog still
+ends before the hard mesh boundary.
+
+Debug output now records both the vanilla and extended projection far planes.
+JUnit tests verify extraction of near/far values, extension from a 640-block
+vanilla projection, preservation of FOV/aspect coefficients, and that an
+already-longer far plane is never shortened.
+
+This fixes a confirmed mathematical clipping defect in the source. A real
+client screenshot and measured visible horizon are still required to certify
+the final result on the user's GPU/driver and with optional shaders/DH.
