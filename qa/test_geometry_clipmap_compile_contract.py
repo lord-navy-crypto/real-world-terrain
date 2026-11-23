@@ -335,12 +335,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         script = (ROOT / "qa/neoforge/iris_clipmap_client_smoke.py").read_text(
             encoding="utf-8"
         )
-        main_match = re.search(
-            r"(?ms)^def main\\([^)]*\\)(?:\\s*->\\s*[^:]+)?\\s*:\\s*(.*?)(?=^if __name__)",
-            script,
-        )
-        self.assertIsNotNone(main_match, "Iris smoke harness must expose main()")
-        main = main_match.group(1)
+        main = script.split("def main() -> int:", 1)[1].split("if __name__")[0]
         self.assertLess(main.index("prepare_saved_world(env)"),
                         main.index("install_iris_stack()"))
         self.assertLess(main.index("install_iris_stack()"),
