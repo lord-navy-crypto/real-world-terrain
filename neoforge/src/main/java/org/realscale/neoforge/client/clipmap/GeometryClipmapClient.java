@@ -2,7 +2,9 @@ package org.realscale.neoforge.client.clipmap;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
+import org.joml.Matrix4f;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -46,6 +48,7 @@ public final class GeometryClipmapClient {
     private static long requestStartedNanos;
     private static boolean firstSnapshotRecorded;
     private static boolean firstRenderSubmitted;
+    private static boolean firstIrisRenderSubmitted;
     private static long lastRequestSentNanos;
     private static long lastServerStatusNanos;
     private static long serverStateSinceNanos;
@@ -243,19 +246,24 @@ public final class GeometryClipmapClient {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || TILES.activeKey() == null) return;
 
-        // Iris can invoke level-stage rendering from its shadow pipeline as well
-        // as the main camera pass. Never submit the custom clipmap into a shadow
-        // map, and never write our standalone GLSL output into an Iris G-buffer.
+        // The standalone OpenGL program remains the no-shader fallback. With
+        // an active Iris pack, the mixin submits terrain from inside the exact
+        // vanilla solid/cutout/translucent section-layer passes instead.
         IrisRenderCompatibility.State iris = IrisRenderCompatibility.current();
         if (iris.shadowPass()) return;
+        if (iris.allowsIrisNativeRenderer()) {
+            if (!irisCompatibilityNoticeShown) {
+                irisCompatibilityNoticeShown = true;
+                reportStatus(minecraft,
+                        "[RealScale] Clipmap: IRIS NATIVE TERRAIN PATH ACTIVE - waiting for solid/cutout/water passes");
+            }
+            return;
+        }
         if (!iris.allowsRawOpenGlRenderer()) {
             if (!irisCompatibilityNoticeShown) {
                 irisCompatibilityNoticeShown = true;
-                String reason = iris.mode() == IrisRenderCompatibility.Mode.SHADERPACK_ACTIVE
-                        ? "Iris shader pack active; standalone clipmap GLSL bypasses the shader-pack G-buffer"
-                        : "Iris is present but its compatibility API could not be queried";
-                reportStatus(minecraft, "[RealScale] Clipmap: SHADER COMPATIBILITY GUARD - "
-                        + reason + "; custom draw paused to protect shader rendering");
+                reportStatus(minecraft,
+                        "[RealScale] Clipmap: IRIS API UNAVAILABLE - custom draw paused safely");
             }
             return;
         }
@@ -289,6 +297,50 @@ public final class GeometryClipmapClient {
         }
     }
 
+    /**
+     * Called by IrisGeometryClipmapMixin immediately before vanilla clears the
+     * active terrain shader. At this point Iris has selected the matching
+     * G-buffer phase and the current RenderType state is still active.
+     */
+    public static void renderIrisNativeLayer(RenderType renderType,
+            double cameraX, double cameraY, double cameraZ) {
+        if (!ENABLED || lastNearChunks < 2) return;
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) return;
+
+        IrisRenderCompatibility.State iris = IrisRenderCompatibility.current();
+        if (!iris.allowsIrisNativeRenderer()) return;
+        var key = TILES.activeKey();
+        if (key == null || key.requestId() != activeRequestId) return;
+
+        if (!iris.shadowPass()) {
+            // Never draw a stale snapshot after a teleport while the server
+            // is preparing a new set of six height tiles.
+            double safeHalfExtent = key.gridCells() * (double) key.baseSpacing() / 2.0;
+            if (Math.abs(cameraX - key.centerX()) > safeHalfExtent
+                    || Math.abs(cameraZ - key.centerZ()) > safeHalfExtent) return;
+        }
+
+        List<VisibleSurfaceProxy> proxies = PROXY_BUFFER.activeFor(key);
+        boolean submitted = IrisNativeClipmapRenderer.renderLayer(renderType,
+                TILES.activeTiles(),
+                minecraft.level.dimension().location().toString(),
+                key.requestId(), key.centerX(), key.centerZ(), lastNearChunks,
+                proxies == null ? List.of() : proxies, minecraft.level,
+                cameraX, cameraY, cameraZ, iris.shadowPass());
+        if (submitted && !firstIrisRenderSubmitted) {
+            firstIrisRenderSubmitted = true;
+            reportStatus(minecraft,
+                    "[RealScale] Clipmap: IRIS NATIVE TERRAIN DRAW SUBMITTED (visual visibility not yet verified)");
+            if (DEBUG && requestStartedNanos != 0L) {
+                System.out.printf(java.util.Locale.ROOT,
+                        "[RealScale Geometry Clipmap] firstIrisNativeDraw=%.1fms shadowPass=%s%n",
+                        (System.nanoTime() - requestStartedNanos) / 1_000_000.0,
+                        iris.shadowPass());
+            }
+        }
+    }
+
     private static void reportProgress(Minecraft minecraft, String message) {
         // High-frequency sampling and packet progress belongs in the action bar,
         // not chat, so a slow first load cannot flood the user's chat history.
@@ -318,6 +370,7 @@ public final class GeometryClipmapClient {
         requestStartedNanos = 0L;
         firstSnapshotRecorded = false;
         firstRenderSubmitted = false;
+        firstIrisRenderSubmitted = false;
         lastRequestSentNanos = 0L;
         lastServerStatusNanos = 0L;
         serverStateSinceNanos = 0L;
@@ -332,6 +385,7 @@ public final class GeometryClipmapClient {
         irisCompatibilityNoticeShown = false;
         if (Minecraft.getInstance().isSameThread()) {
             GeometryClipmapRenderer.dispose();
+            IrisNativeClipmapRenderer.dispose();
         }
     }
 }
