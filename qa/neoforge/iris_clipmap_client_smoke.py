@@ -227,6 +227,10 @@ def prepare_saved_world(env: dict[str, str]) -> None:
         rcon.send("time set day")
         rcon.send("weather clear")
         rcon.send("gamerule doDaylightCycle false")
+        # Natural Automate has a 2096-block-tall overworld. Spawn the
+        # spectator camera well above the tallest local terrain so the smoke
+        # screenshot can inspect the horizon instead of a spawn ravine.
+        rcon.send("setworldspawn 0 1200 0")
         rcon.send("save-all flush")
         rcon.send("stop")
         proc.wait(timeout=120)
@@ -371,38 +375,41 @@ def validate_screenshot(path: pathlib.Path | None) -> None:
 
 
 def prepare_open_rendering_view(client_latest: pathlib.Path) -> None:
-    """Move the creative-mode test camera above the spawn terrain bowl.
-
-    The fixed Natural Automate smoke seed can place the player in a steep
-    terrain depression. A ground-level screenshot then proves the client is
-    alive but cannot show whether the distant clipmap reaches the horizon.
-    Wait until the singleplayer world is actually joined, toggle creative
-    flight, and rise vertically while keeping the horizontal clipmap center
-    unchanged.
-    """
+    """Place the spectator camera above Natural Automate's high-relief terrain."""
     deadline = time.monotonic() + 180
+    log_text = ""
+    spawn_y = None
     while time.monotonic() < deadline:
         if client_latest.exists():
             log_text = client_latest.read_text(encoding="utf-8", errors="replace")
-            if "Loaded 2 advancements" in log_text:
+            match = re.search(
+                r"logged in with entity id \\d+ at \\([-+0-9.]+,\\s*([-+0-9.]+),\\s*[-+0-9.]+\\)",
+                log_text,
+            )
+            if "Loaded 2 advancements" in log_text and match:
+                spawn_y = float(match.group(1))
                 break
         time.sleep(1)
     else:
-        raise RuntimeError("Singleplayer world did not finish joining before camera positioning")
+        raise RuntimeError("Singleplayer world did not finish joining or report its spawn position")
 
-    subprocess.run(["xdotool", "key", "space"], check=True, timeout=10)
-    time.sleep(0.18)
-    subprocess.run(["xdotool", "key", "space"], check=True, timeout=10)
-    time.sleep(0.25)
-    subprocess.run(["xdotool", "keydown", "space"], check=True, timeout=10)
-    try:
-        # Creative flight speed is intentionally left at the user's default;
-        # a sustained ascent clears the local terrain bowl without changing X/Z.
-        time.sleep(40)
-    finally:
-        subprocess.run(["xdotool", "keyup", "space"], check=True, timeout=10)
-    time.sleep(1)
-    print("CLIENT_CAMERA_VANTAGE_READY: creative flight ascent complete", flush=True)
+    if spawn_y is None or spawn_y < 1100:
+        raise RuntimeError(
+            f"Spectator test camera did not spawn at the high-altitude vantage: y={spawn_y}"
+        )
+
+    # The camera is already in spectator mode at Y=1200. Pitch down toward
+    # the terrain so the screenshot includes both the horizon and the surface.
+    subprocess.run(
+        ["xdotool", "mousemove_relative", "--sync", "0", "200"],
+        check=True, timeout=10,
+    )
+    time.sleep(2)
+    print(
+        f"CLIENT_CAMERA_VANTAGE_READY: spectator spawn y={spawn_y:.1f}, "
+        "looking toward distant terrain",
+        flush=True,
+    )
 
 
 def run_client(env: dict[str, str]) -> None:
