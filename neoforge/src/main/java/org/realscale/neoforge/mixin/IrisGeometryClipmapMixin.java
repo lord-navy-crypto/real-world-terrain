@@ -10,9 +10,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Adds RealScale's distant surface mesh while the active vanilla/Iris terrain
- * shader and G-buffer are still bound. Iris selects its solid/cutout/translucent
- * phase at renderSectionLayer HEAD and resets it only after this method returns.
+ * Prepares the extended Iris fog range at the start of each terrain layer.
+ * Native clipmap submission is dispatched from NeoForge's render-stage events:
+ * Sodium overwrites renderSectionLayer and does not retain vanilla's
+ * ShaderInstance.clear invocation, so that bytecode location is not portable.
  */
 @Mixin(LevelRenderer.class)
 public abstract class IrisGeometryClipmapMixin {
@@ -28,20 +29,4 @@ public abstract class IrisGeometryClipmapMixin {
         GeometryClipmapClient.prepareIrisFrameFog();
     }
 
-    @Inject(
-            method = "renderSectionLayer",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/ShaderInstance;clear()V",
-                    shift = At.Shift.BEFORE
-            ),
-            require = 1
-    )
-    private void realscale$drawIrisNativeClipmap(RenderType renderType,
-            double cameraX, double cameraY, double cameraZ,
-            Matrix4f frustumMatrix, Matrix4f projectionMatrix,
-            CallbackInfo callbackInfo) {
-        GeometryClipmapClient.renderIrisNativeLayer(renderType,
-                cameraX, cameraY, cameraZ, frustumMatrix, projectionMatrix);
-    }
 }
