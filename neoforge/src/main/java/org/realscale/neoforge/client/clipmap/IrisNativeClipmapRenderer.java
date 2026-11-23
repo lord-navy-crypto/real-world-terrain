@@ -4,7 +4,6 @@ import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -31,7 +30,8 @@ import java.util.Map;
  * <p>This path deliberately does not create an OpenGL program or bind a custom
  * framebuffer. It is invoked from inside LevelRenderer.renderSectionLayer,
  * while Iris has selected the current terrain phase and G-buffer target. The
- * mesh is uploaded with Minecraft's BLOCK vertex format and drawn with the
+ * mesh is uploaded with Iris's TERRAIN vertex format (the block-terrain format
+ * extended with Iris-specific attributes) and drawn with the
  * already-active vanilla/Iris terrain shader, so depth, normals, lightmap,
  * material routing, and shadow-map passes follow the normal terrain path.
  */
