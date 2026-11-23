@@ -206,7 +206,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("if (!drawSubmitted) return;", client)
         renderer_source = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(encoding="utf-8")
         self.assertIn("static boolean render(", renderer_source)
-        self.assertNotRegex(renderer_source.split("static boolean render(", 1)[1].split("static void dispose(", 1)[0], r"\\breturn\\s*;")
+        self.assertNotIn("return;", renderer_source.split("static boolean render(", 1)[1].split("static void dispose(", 1)[0])
         self.assertIn('"realscale.experimental.geometryclipmap", "true"', client)
         self.assertIn('"realscale.experimental.geometryclipmap.debug", "true"', client)
         self.assertIn("displayClientMessage(Component.literal(message), false)", client)
