@@ -570,8 +570,7 @@ final class GeometryClipmapRenderer {
         GL20.glUniform1f(uniforms.seaLevel(), 63.0f);
         GL20.glUniform1f(uniforms.fogStart(), fogRange.startBlocks());
         GL20.glUniform1f(uniforms.fogEnd(), fogRange.endBlocks());
-        GL20.glUniform3f(uniforms.fogColor(),
-                0.58f, 0.69f, 0.80f);
+        ClipmapFogColor.upload(uniforms.fogColor());
         GL20.glUniform1i(uniforms.heightMap(), 0);
         GL20.glUniform1f(uniforms.nearClipBlocks(),
                 Math.max(0.0f, nearChunks * 16.0f - 16.0f));

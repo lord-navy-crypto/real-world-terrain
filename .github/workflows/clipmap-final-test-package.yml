@@ -80,6 +80,7 @@ jobs:
               "org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.class",
               "org/realscale/neoforge/client/clipmap/ClipmapProjectionMath.class",
               "org/realscale/neoforge/client/clipmap/IrisRenderCompatibility.class",
+              "org/realscale/neoforge/client/clipmap/ClipmapFogColor.class",
               "org/realscale/neoforge/network/ClipmapRequestPayload.class",
               "org/realscale/neoforge/network/ClipmapStatusPayload.class",
           ]

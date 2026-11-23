@@ -171,7 +171,7 @@ final class VisibleSurfaceProxyRenderer {
                 (float) (farRadius * farRadius));
         GL20.glUniform1f(uniforms.fogStart(), fogStart);
         GL20.glUniform1f(uniforms.fogEnd(), fogEnd);
-        GL20.glUniform3f(uniforms.fogColor(), 0.58f, 0.69f, 0.80f);
+        ClipmapFogColor.upload(uniforms.fogColor());
 
         GL30.glBindVertexArray(vao);
         int axisLocation = uniforms.axis();

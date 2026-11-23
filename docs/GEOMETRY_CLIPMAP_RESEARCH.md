@@ -621,3 +621,13 @@ The client only reports `GPU DRAW SUBMITTED` when the renderer validates the
 six-level snapshot and actually issues the draw path. A shader-pack-native
 terrain fallback using Minecraft/Iris-managed render types is the next
 compatibility milestone; shader-pack visual support is not claimed yet.
+
+
+## Camera-matched fog color
+
+The terrain and exterior-proxy shaders no longer use a permanently hard-coded
+blue fog. Both now upload Minecraft's current `RenderSystem.getShaderFogColor()`
+value, with finite/range validation and a conservative fallback. This keeps
+the custom vanilla renderer's horizon fade aligned with the active camera's
+biome fog, weather, time-of-day and dimension fog instead of showing a bright
+blue band at night or in non-overworld environments.
