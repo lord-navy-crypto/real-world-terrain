@@ -15,11 +15,9 @@ import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.block.BlockModelShaper;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
-import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -147,7 +145,9 @@ final class IrisNativeClipmapRenderer {
         if (!dimension.equals(cachedDimension) || requestId != cachedRequestId
                 || centerX != cachedCenterX || centerZ != cachedCenterZ
                 || nearChunks != cachedNearChunks || seaLevel != cachedSeaLevel
-                || proxies != cachedProxies || cachedTiles.size() != LEVEL_COUNT) {
+                || proxies != cachedProxies || cachedTiles.size() != LEVEL_COUNT
+                || cachedGridCells != tiles.get(0).gridCells()
+                || cachedBaseSpacing != tiles.get(0).cellSpacingBlocks()) {
             return false;
         }
         for (int level = 0; level < LEVEL_COUNT; level++) {
@@ -266,7 +266,6 @@ final class IrisNativeClipmapRenderer {
                         / spacing)
                 : cells / 4;
         int[] indices = ClipmapRingMesh.indices(cells, holeRadius);
-        float[] vertices = ClipmapRingMesh.vertices(cells);
         short[] heights = tile.heights();
         float skirtDepth = Math.min(32.0f, Math.max(4.0f, spacing * 0.125f));
 
@@ -491,8 +490,8 @@ final class IrisNativeClipmapRenderer {
             emitTriangleAsQuad(builder, sprites.grass(), 0xB5D39D,
                     new float[][]{
                             {centerX, y + height + 0.01f, centerZ},
-                            {topX0, y + height + 0.01f, topZ0},
-                            {topX1, y + height + 0.01f, topZ1}
+                            {topX1, y + height + 0.01f, topZ1},
+                            {topX0, y + height + 0.01f, topZ0}
                     });
         }
     }
