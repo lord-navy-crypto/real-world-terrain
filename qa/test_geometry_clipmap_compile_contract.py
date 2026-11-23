@@ -198,6 +198,13 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("PROXY_BUFFER.accept(", client)
         self.assertIn("firstSnapshotReady=%.1fms", client)
         self.assertIn("firstEligibleRenderSubmission=%.1fms", client)
+        self.assertIn('"realscale.experimental.geometryclipmap", "true"', client)
+        self.assertIn('"realscale.experimental.geometryclipmap.debug", "true"', client)
+        self.assertIn("displayClientMessage(Component.literal(message), false)", client)
+        self.assertIn("Clipmap: ON / WAITING", client)
+        self.assertIn("Clipmap: SNAPSHOT READY", client)
+        self.assertIn("Clipmap: DRAW SUBMITTED", client)
+        self.assertIn("Clipmap: STILL WAITING", client)
         network = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/network/GeometryClipmapNetwork.java").read_text(
             encoding="utf-8"
         )

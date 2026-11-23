@@ -490,3 +490,27 @@ Debug mode now reports `firstSnapshotReady` and
 request. These measure client-observed state changes and CPU render submission;
 they do not prove the first displayed GPU frame or GPU execution duration.
 The default remains opt-in/off. The network protocol remains version 3.
+
+
+## 2026-11-23 test-candidate usability: automatically enabled + visible status
+
+**Only in this Draft PR's experimental TEST JAR**, the client now enables
+Geometry Clipmap by default. The user installs one complete RealScale JAR and
+does not need to edit launcher JVM parameters. It remains restricted on the
+server to Natural Automate's supported noise settings and the matching
+experimental client/server protocol; installing the JAR into a vanilla-only
+world does not cause distant sampling.
+
+The client writes distinct Minecraft **chat notices**, as well as diagnostic
+log lines, on state transitions: `ON / WAITING` after world entry and a
+request; `SNAPSHOT READY` after all six height tiles arrive; and
+`DRAW SUBMITTED` after the renderer receives a valid frame. If no snapshot
+arrives within about 15 seconds, it prints `STILL WAITING` once, explaining
+that Natural Automate and the server must be checked. These are intentionally
+not claims that a GPU image was displayed. They are also not permanent
+HUD lights or commands; chat messages remain available in the in-game log.
+
+Optional JVM overrides can disable the feature
+(`-Drealscale.experimental.geometryclipmap=false`) or silence client
+timing output (`-Drealscale.experimental.geometryclipmap.debug=false`).
+No automatic-enablement change is merged into `main` or a stable release.

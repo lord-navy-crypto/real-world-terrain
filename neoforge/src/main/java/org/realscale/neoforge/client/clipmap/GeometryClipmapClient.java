@@ -2,6 +2,7 @@ package org.realscale.neoforge.client.clipmap;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -15,21 +16,28 @@ import java.util.List;
 
 
 /**
- * Opt-in client entry point for the Geometry Clipmap renderer.
+ * Diagnostic test-build client entry point for the Geometry Clipmap renderer.
  *
- * <p>Enable with JVM argument:
- * {@code -Drealscale.experimental.geometryclipmap=true}
+ * <p>The experimental TEST JAR enables Geometry Clipmap automatically.
+ * No launcher arguments are required. To disable it for troubleshooting,
+ * use {@code -Drealscale.experimental.geometryclipmap=false}.
  */
 @EventBusSubscriber(modid = "realscale", value = Dist.CLIENT)
 public final class GeometryClipmapClient {
+    // TEST-CANDIDATE DEFAULT: automatic ON. This lives only on the Draft
+    // research branch, not in main or any public stable release.
     private static final boolean ENABLED =
-            Boolean.getBoolean("realscale.experimental.geometryclipmap");
+            Boolean.parseBoolean(System.getProperty(
+                    "realscale.experimental.geometryclipmap", "true"));
     private static final ClipmapSnapshotAssembler<ClipmapHeightTilePayload> TILES =
             new ClipmapSnapshotAssembler<>(6);
     private static final ClipmapProxySnapshotBuffer<List<VisibleSurfaceProxy>> PROXY_BUFFER =
             new ClipmapProxySnapshotBuffer<>();
+    // The diagnostic candidate logs snapshot and draw-submission timings
+    // without requiring the user to edit launch arguments.
     private static final boolean DEBUG =
-            Boolean.getBoolean("realscale.experimental.geometryclipmap.debug");
+            Boolean.parseBoolean(System.getProperty(
+                    "realscale.experimental.geometryclipmap.debug", "true"));
     private static ClientLevel lastLevel;
     private static int lastNearChunks = -1;
     private static long requestSequence;
@@ -37,6 +45,8 @@ public final class GeometryClipmapClient {
     private static long requestStartedNanos;
     private static boolean firstSnapshotRecorded;
     private static boolean firstRenderSubmitted;
+    private static int ticksWaitingForFirstSnapshot;
+    private static boolean waitNoticeShown;
 
     private GeometryClipmapClient() {}
 
@@ -54,13 +64,17 @@ public final class GeometryClipmapClient {
                 payload.nearRenderDistanceChunks(), payload.dimensionKey(), payload)) {
             var key = TILES.activeKey();
             PROXY_BUFFER.onHeightSnapshot(key);
-            if (DEBUG && !firstSnapshotRecorded && requestStartedNanos != 0L) {
+            if (!firstSnapshotRecorded) {
                 firstSnapshotRecorded = true;
-                System.out.printf(java.util.Locale.ROOT,
-                        "[RealScale Geometry Clipmap] firstSnapshotReady=%.1fms " +
-                                "dimension=%s center=(%d,%d)%n",
-                        (System.nanoTime() - requestStartedNanos) / 1_000_000.0,
-                        key.dimension(), key.centerX(), key.centerZ());
+                reportStatus(minecraft,
+                        "[RealScale] Clipmap: SNAPSHOT READY (6 height levels)");
+                if (DEBUG && requestStartedNanos != 0L) {
+                    System.out.printf(java.util.Locale.ROOT,
+                            "[RealScale Geometry Clipmap] firstSnapshotReady=%.1fms " +
+                                    "dimension=%s center=(%d,%d)%n",
+                            (System.nanoTime() - requestStartedNanos) / 1_000_000.0,
+                            key.dimension(), key.centerX(), key.centerZ());
+                }
             }
         }
     }
@@ -97,11 +111,21 @@ public final class GeometryClipmapClient {
             lastLevel = level;
             lastNearChunks = nearChunks;
             activeRequestId = nextRequestId();
-            requestStartedNanos = DEBUG ? System.nanoTime() : 0L;
+            requestStartedNanos = System.nanoTime();
             firstSnapshotRecorded = false;
             firstRenderSubmitted = false;
+            ticksWaitingForFirstSnapshot = 0;
+            waitNoticeShown = false;
+            reportStatus(minecraft,
+                    "[RealScale] Clipmap: ON / WAITING (Natural Automate only)");
             PacketDistributor.sendToServer(
                     new ClipmapRequestPayload(nearChunks, activeRequestId));
+        }
+        if (!firstSnapshotRecorded && !waitNoticeShown
+                && ++ticksWaitingForFirstSnapshot >= 20 * 15) {
+            waitNoticeShown = true;
+            reportStatus(minecraft,
+                    "[RealScale] Clipmap: STILL WAITING - check Natural Automate world and server");
         }
     }
 
@@ -123,12 +147,25 @@ public final class GeometryClipmapClient {
         GeometryClipmapRenderer.render(event, TILES.activeTiles(),
                 minecraft.level.dimension().location().toString(),
                 proxies == null ? List.of() : proxies);
-        if (DEBUG && !firstRenderSubmitted && requestStartedNanos != 0L) {
+        if (!firstRenderSubmitted) {
             firstRenderSubmitted = true;
-            System.out.printf(java.util.Locale.ROOT,
-                    "[RealScale Geometry Clipmap] firstEligibleRenderSubmission=%.1fms%n",
-                    (System.nanoTime() - requestStartedNanos) / 1_000_000.0);
+            reportStatus(minecraft,
+                    "[RealScale] Clipmap: DRAW SUBMITTED - check visible horizon");
+            if (DEBUG && requestStartedNanos != 0L) {
+                System.out.printf(java.util.Locale.ROOT,
+                        "[RealScale Geometry Clipmap] firstEligibleRenderSubmission=%.1fms%n",
+                        (System.nanoTime() - requestStartedNanos) / 1_000_000.0);
+            }
         }
+    }
+
+    private static void reportStatus(Minecraft minecraft, String message) {
+        // Client-only chat notice: visible without the launcher console, and
+        // only once for each status transition (no per-frame chat spam).
+        if (minecraft.player != null) {
+            minecraft.player.displayClientMessage(Component.literal(message), false);
+        }
+        System.out.println("[RealScale Geometry Clipmap] " + message);
     }
 
     private static long nextRequestId() {
@@ -143,6 +180,8 @@ public final class GeometryClipmapClient {
         requestStartedNanos = 0L;
         firstSnapshotRecorded = false;
         firstRenderSubmitted = false;
+        ticksWaitingForFirstSnapshot = 0;
+        waitNoticeShown = false;
         if (Minecraft.getInstance().isSameThread()) {
             GeometryClipmapRenderer.dispose();
         }

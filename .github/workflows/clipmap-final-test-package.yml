@@ -107,9 +107,14 @@ jobs:
           Keep exactly one RealScale mod JAR in your mods directory.
           Geometry Clipmap remains OFF unless explicitly enabled.
 
-          JVM arguments:
-            -Drealscale.experimental.geometryclipmap=true
-            -Drealscale.experimental.geometryclipmap.debug=true
+          AUTOMATICALLY ENABLED IN THIS EXPERIMENTAL TEST JAR.
+          No JVM arguments are needed to turn Geometry Clipmap on.
+          The game chat shows ON / WAITING, SNAPSHOT READY, DRAW SUBMITTED,
+          or STILL WAITING (after ~15 seconds without the first snapshot).
+
+          Troubleshooting only (optional JVM arguments):
+            -Drealscale.experimental.geometryclipmap=false (disable)
+            -Drealscale.experimental.geometryclipmap.debug=false (silence timings)
 
           Suggested reproducible run:
             Natural Automate preset, seed 42, vanilla render distance 10 chunks.
