@@ -254,12 +254,29 @@ public final class GeometryClipmapClient {
 
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
-        // NeoForge posts AFTER_LEVEL only after LevelRenderer.renderLevel returns;
-        // Iris has already completed its final G-buffer/composite work at this point.
+        // AFTER_LEVEL runs after Iris has completed its final G-buffer/composite work.
         if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
             restoreIrisProjectionFrame();
             return;
         }
+
+        // Vanilla NeoForge and Sodium's PlatformLevelRenderHooks both dispatch
+        // these events after their matching terrain layer. This avoids relying
+        // on a vanilla-only ShaderInstance.clear bytecode instruction that
+        // Sodium replaces when it overwrites LevelRenderer.renderSectionLayer.
+        RenderType irisLayer = switch (event.getStage().toString()) {
+            case "after_solid_blocks" -> RenderType.solid();
+            case "after_cutout_blocks" -> RenderType.cutout();
+            case "after_translucent_blocks" -> RenderType.translucent();
+            default -> null;
+        };
+        if (irisLayer != null) {
+            var camera = event.getCamera().getPosition();
+            renderIrisNativeLayer(irisLayer, camera.x, camera.y, camera.z,
+                    event.getModelViewMatrix(), event.getProjectionMatrix());
+            return;
+        }
+
         if (!ENABLED || event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || TILES.activeKey() == null) return;
@@ -440,9 +457,9 @@ public final class GeometryClipmapClient {
     }
 
     /**
-     * Called by IrisGeometryClipmapMixin immediately before vanilla clears the
-     * active terrain shader. At this point Iris has selected the matching
-     * G-buffer phase and the current RenderType state is still active.
+     * Called from the matching NeoForge terrain-stage event. With Sodium,
+     * PlatformLevelRenderHooks dispatches this event before renderSectionLayer
+     * returns, while Iris's matching terrain phase is still active.
      */
     public static void renderIrisNativeLayer(RenderType renderType,
             double cameraX, double cameraY, double cameraZ,
