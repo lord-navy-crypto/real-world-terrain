@@ -9,6 +9,8 @@ SMOKE = (ROOT / "qa" / "neoforge" / "iris_clipmap_client_smoke.py").read_text(en
 WORKFLOW = (ROOT / ".github" / "workflows" / "clipmap-iris-render-smoke.yml").read_text(encoding="utf-8")
 IRIS_MIXIN = (ROOT / "neoforge" / "src" / "main" / "java" / "org" / "realscale" / "neoforge" / "mixin" / "IrisGeometryClipmapMixin.java").read_text(encoding="utf-8")
 GEOMETRY_CLIENT = (ROOT / "neoforge" / "src" / "main" / "java" / "org" / "realscale" / "neoforge" / "client" / "clipmap" / "GeometryClipmapClient.java").read_text(encoding="utf-8")
+IRIS_RENDERER = (ROOT / "neoforge" / "src" / "main" / "java" / "org" / "realscale" / "neoforge" / "client" / "clipmap" / "IrisNativeClipmapRenderer.java").read_text(encoding="utf-8")
+IRIS_COMPAT = (ROOT / "neoforge" / "src" / "main" / "java" / "org" / "realscale" / "neoforge" / "client" / "clipmap" / "IrisRenderCompatibility.java").read_text(encoding="utf-8")
 
 
 class IrisClipmapSmokeHarnessTest(unittest.TestCase):
@@ -45,6 +47,14 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("RenderLevelStageEvent.Stage.AFTER_CUTOUT_BLOCKS", GEOMETRY_CLIENT)
         self.assertIn("RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS", GEOMETRY_CLIENT)
         self.assertIn("event.getModelViewMatrix(), event.getProjectionMatrix()", GEOMETRY_CLIENT)
+
+    def test_iris_native_draw_rebinds_iris_shader_and_vertex_format(self):
+        self.assertIn("terrainVertexFormat()", IRIS_COMPAT)
+        self.assertIn('IrisVertexFormats', IRIS_COMPAT)
+        self.assertIn("IrisRenderCompatibility.terrainVertexFormat()", IRIS_RENDERER)
+        self.assertIn("renderType.setupRenderState()", IRIS_RENDERER)
+        self.assertIn("renderType.clearRenderState()", IRIS_RENDERER)
+        self.assertNotIn(".setOverlay(NO_OVERLAY)", IRIS_RENDERER)
 
     def test_workflow_archives_client_and_server_logs(self):
         self.assertIn("neoforge/run/logs/latest.log", WORKFLOW)
