@@ -43,7 +43,6 @@ final class IrisNativeClipmapRenderer {
     private static final int SURFACE_SKY_LIGHT = LightTexture.FULL_SKY;
     private static final int NO_OVERLAY = OverlayTexture.NO_OVERLAY;
     private static final int INITIAL_BUFFER_BYTES = 1 << 20;
-    private static final Matrix4f EXTENDED_PROJECTION = new Matrix4f();
 
     private static VertexBuffer solidBuffer;
     private static VertexBuffer cutoutBuffer;
@@ -111,45 +110,18 @@ final class IrisNativeClipmapRenderer {
             return false;
         }
 
-        // The vanilla section pass has already selected its RenderType. Reapply
-        // its default uniforms with an extended far plane for the main camera,
-        // then let Iris's ShaderInstance mixin bind the G-buffer program for the
-        // current terrain phase. Shadow projections are left untouched because
-        // Iris uses a separate shadow-camera projection and distance budget.
-        Minecraft minecraft = Minecraft.getInstance();
-        boolean restoreProjection = !shadowPass;
-        IrisRenderCompatibility.ProjectionScope projectionScope = null;
+        // GeometryClipmapClient extends the shared main-frame projection at
+        // AFTER_SKY and keeps Iris's captured G-buffer matrix synchronized until
+        // AFTER_LEVEL. Never change projection per layer: the depth written here
+        // must be interpreted with the same matrix during Iris's later composites.
+        Uniform chunkOffset = shader.CHUNK_OFFSET;
         try {
-            if (restoreProjection) {
-                ClipmapFogRange fogRange = ClipmapFogRange.forGrid(
-                        cachedGridCells, cachedBaseSpacing, LEVEL_COUNT);
-                EXTENDED_PROJECTION.set(projectionMatrix);
-                ClipmapProjectionMath.extendFarPlane(
-                        EXTENDED_PROJECTION, fogRange.endBlocks() * 1.5f);
-                projectionScope = IrisRenderCompatibility.overrideGbufferProjection(
-                        EXTENDED_PROJECTION);
-                if (projectionScope == null) return false;
-                shader.setDefaultUniforms(VertexFormat.Mode.QUADS,
-                        frustumMatrix, EXTENDED_PROJECTION, minecraft.getWindow());
-                shader.apply();
-            }
-
-            // Vanilla resets CHUNK_OFFSET before ShaderInstance.clear(). Reuse
-            // the same uniform for our centre-relative cached VBO, then restore
-            // zero before returning to the caller's normal terrain cleanup.
-            Uniform chunkOffset = shader.CHUNK_OFFSET;
-            try {
-                chunkOffset.set((float) (centerX - cameraX),
-                        (float) -cameraY, (float) (centerZ - cameraZ));
-                chunkOffset.upload();
-                target.bind();
-                target.draw();
-                return true;
-            } finally {
-                VertexBuffer.unbind();
-                chunkOffset.set(0.0f, 0.0f, 0.0f);
-                chunkOffset.upload();
-            }
+            chunkOffset.set((float) (centerX - cameraX),
+                    (float) -cameraY, (float) (centerZ - cameraZ));
+            chunkOffset.upload();
+            target.bind();
+            target.draw();
+            return true;
         } catch (RuntimeException | LinkageError failure) {
             if (!nativeDrawFailureReported) {
                 nativeDrawFailureReported = true;
@@ -158,17 +130,9 @@ final class IrisNativeClipmapRenderer {
             }
             return false;
         } finally {
-            if (projectionScope != null) {
-                projectionScope.close();
-                try {
-                    shader.setDefaultUniforms(VertexFormat.Mode.QUADS,
-                            frustumMatrix, projectionMatrix, minecraft.getWindow());
-                    shader.apply();
-                } catch (RuntimeException | LinkageError restoreFailure) {
-                    System.err.println("[RealScale Iris Clipmap] failed to restore terrain projection: "
-                            + restoreFailure.getClass().getSimpleName());
-                }
-            }
+            VertexBuffer.unbind();
+            chunkOffset.set(0.0f, 0.0f, 0.0f);
+            chunkOffset.upload();
         }
     }
 

@@ -61,6 +61,11 @@ public final class GeometryClipmapClient {
     private static int retryCount;
     private static boolean unsupportedWorld;
     private static boolean irisCompatibilityNoticeShown;
+    // Iris's main G-buffer projection must match the projection used to write
+    // every depth value for the whole frame, not just the clipmap draw call.
+    private static IrisRenderCompatibility.ProjectionScope activeIrisProjectionScope;
+    private static Matrix4f activeIrisProjectionTarget;
+    private static Matrix4f activeIrisOriginalProjection;
     private static final long HEARTBEAT_INTERVAL_NANOS = 8_000_000_000L;
 
     private GeometryClipmapClient() {}
@@ -167,6 +172,8 @@ public final class GeometryClipmapClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
+        // Recover safely if a previous frame aborted before AFTER_LEVEL was posted.
+        restoreIrisProjectionFrame();
         if (!ENABLED || minecraft.level == null || minecraft.player == null) {
             if (lastLevel != null || activeRequestId != 0L) clear();
             lastLevel = null;
@@ -242,21 +249,36 @@ public final class GeometryClipmapClient {
 
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
+        // NeoForge posts AFTER_LEVEL only after LevelRenderer.renderLevel returns;
+        // Iris has already completed its final G-buffer/composite work at this point.
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
+            restoreIrisProjectionFrame();
+            return;
+        }
         if (!ENABLED || event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || TILES.activeKey() == null) return;
 
         // The standalone OpenGL program remains the no-shader fallback. With
-        // an active Iris pack, the mixin submits terrain from inside the exact
-        // vanilla solid/cutout/translucent section-layer passes instead.
+        // an active Iris pack, extend the shared frame projection before vanilla
+        // terrain starts so vanilla geometry, clipmap geometry, and G-buffer
+        // depth reconstruction all use the same projection.
         IrisRenderCompatibility.State iris = IrisRenderCompatibility.current();
         if (iris.shadowPass()) return;
         if (iris.allowsIrisNativeRenderer()
                 && IrisRenderCompatibility.hasNativeProjectionBridge()) {
+            if (!beginIrisProjectionFrame(event)) {
+                if (!irisCompatibilityNoticeShown) {
+                    irisCompatibilityNoticeShown = true;
+                    reportStatus(minecraft,
+                            "[RealScale] Clipmap: FAILED TO EXTEND SHARED IRIS/G-BUFFER PROJECTION - native draw paused safely");
+                }
+                return;
+            }
             if (!irisCompatibilityNoticeShown) {
                 irisCompatibilityNoticeShown = true;
                 reportStatus(minecraft,
-                        "[RealScale] Clipmap: IRIS NATIVE TERRAIN PATH ACTIVE - waiting for solid/cutout/water passes");
+                        "[RealScale] Clipmap: IRIS NATIVE TERRAIN PATH ACTIVE - shared frame projection extended; waiting for solid/cutout/water passes");
             }
             return;
         }
@@ -304,6 +326,56 @@ public final class GeometryClipmapClient {
                         "[RealScale Geometry Clipmap] firstEligibleRenderSubmission=%.1fms%n",
                         (System.nanoTime() - requestStartedNanos) / 1_000_000.0);
             }
+        }
+    }
+
+    /**
+     * Extend the exact projection object shared by the remainder of the main
+     * LevelRenderer frame, and keep Iris's captured G-buffer matrix in sync
+     * until AFTER_LEVEL, after Iris has completed depth-dependent composites.
+     */
+    private static boolean beginIrisProjectionFrame(RenderLevelStageEvent event) {
+        restoreIrisProjectionFrame();
+        var key = TILES.activeKey();
+        Matrix4f target = event.getProjectionMatrix();
+        if (key == null || target == null) return false;
+
+        Matrix4f original = new Matrix4f(target);
+        IrisRenderCompatibility.ProjectionScope scope = null;
+        try {
+            ClipmapFogRange fogRange = ClipmapFogRange.forGrid(
+                    key.gridCells(), key.baseSpacing(), 6);
+            Matrix4f extended = new Matrix4f(target);
+            ClipmapProjectionMath.extendFarPlane(
+                    extended, fogRange.endBlocks() * 1.5f);
+            scope = IrisRenderCompatibility.overrideGbufferProjection(extended);
+            if (scope == null) return false;
+
+            target.set(extended);
+            activeIrisProjectionTarget = target;
+            activeIrisOriginalProjection = original;
+            activeIrisProjectionScope = scope;
+            return true;
+        } catch (RuntimeException | LinkageError failure) {
+            if (scope != null) scope.close();
+            target.set(original);
+            System.err.println("[RealScale Iris Clipmap] frame projection extension failed safely: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
+            return false;
+        }
+    }
+
+    private static void restoreIrisProjectionFrame() {
+        Matrix4f target = activeIrisProjectionTarget;
+        Matrix4f original = activeIrisOriginalProjection;
+        IrisRenderCompatibility.ProjectionScope scope = activeIrisProjectionScope;
+        activeIrisProjectionTarget = null;
+        activeIrisOriginalProjection = null;
+        activeIrisProjectionScope = null;
+        try {
+            if (target != null && original != null) target.set(original);
+        } finally {
+            if (scope != null) scope.close();
         }
     }
 
@@ -397,6 +469,7 @@ public final class GeometryClipmapClient {
         unsupportedWorld = false;
         irisCompatibilityNoticeShown = false;
         if (Minecraft.getInstance().isSameThread()) {
+            restoreIrisProjectionFrame();
             GeometryClipmapRenderer.dispose();
             IrisNativeClipmapRenderer.dispose();
         }
