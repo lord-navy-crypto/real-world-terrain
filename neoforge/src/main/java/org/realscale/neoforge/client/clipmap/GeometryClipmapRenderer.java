@@ -24,8 +24,9 @@ import java.util.Locale;
  * OpenGL 4.1 Geometry Clipmap with procedural exterior shading.
  *
  * <p>It draws six nested surface rings from compact R16 height textures.
- * The mesh is static; height textures are replaced when the server sends a
- * new snapped window. All GL work is restricted to the render thread.
+ * The mesh is static; toroidal height textures receive only newly exposed
+ * strips when the server sends a snapped window. All GL work is restricted
+ * to the render thread.
  */
 final class GeometryClipmapRenderer {
     private static final int LEVEL_COUNT = 6;
@@ -37,8 +38,6 @@ final class GeometryClipmapRenderer {
     private static long debugMaxRenderNanos;
     private static long debugUploadedBytes;
     private static long debugProxyCount;
-    private static final int MIN_HEIGHT = -64;
-    private static final int MAX_HEIGHT = 2032;
     private static final String VERTEX_SHADER = """
             #version 410 core
             layout(location = 0) in vec3 aGridAndSkirt;
@@ -223,12 +222,20 @@ final class GeometryClipmapRenderer {
         int nextGridCells = first.gridCells();
         int nextNearChunks = first.nearRenderDistanceChunks();
         int nextBaseSpacing = first.cellSpacingBlocks();
+        long nextRequestId = first.requestId();
+        int nextMinHeight = first.minHeight();
+        int nextMaxHeight = first.maxHeight();
 
         for (int i = 0; i < LEVEL_COUNT; i++) {
             var tile = tiles.get(i);
+            long expectedSpacing = (long) nextBaseSpacing << i;
             if (tile == null || !dimensionKey.equals(tile.dimensionKey())
+                    || tile.requestId() != nextRequestId
                     || tile.gridCells() != nextGridCells
                     || tile.nearRenderDistanceChunks() != nextNearChunks
+                    || tile.cellSpacingBlocks() != expectedSpacing
+                    || tile.minHeight() != nextMinHeight
+                    || tile.maxHeight() != nextMaxHeight
                     || tile.levelIndex() != i) {
                 return;
             }
@@ -507,10 +514,9 @@ final class GeometryClipmapRenderer {
                 (float) cameraY);
         GL20.glUniform1f(uniforms.gridCells(),
                 gridCells);
-        GL20.glUniform1f(uniforms.heightMin(),
-                MIN_HEIGHT);
-        GL20.glUniform1f(uniforms.heightMax(),
-                MAX_HEIGHT);
+        var heightRange = tiles.get(0);
+        GL20.glUniform1f(uniforms.heightMin(), heightRange.minHeight());
+        GL20.glUniform1f(uniforms.heightMax(), heightRange.maxHeight());
         GL20.glUniform1f(uniforms.seaLevel(), 63.0f);
         GL20.glUniform1f(uniforms.fogStart(), fogRange.startBlocks());
         GL20.glUniform1f(uniforms.fogEnd(), fogRange.endBlocks());

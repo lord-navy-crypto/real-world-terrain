@@ -37,6 +37,37 @@ final class ClipmapHeightTilePayloadTest {
     }
 
     @Test
+    void copiesOnlyTheRequestedRowMajorRegion() {
+        short[] source = new short[17 * 17];
+        for (int i = 0; i < source.length; i++) source[i] = (short) i;
+        ClipmapHeightTilePayload payload = payload(source);
+        ShortBuffer destination = ShortBuffer.allocate(5 * 4);
+        payload.copyHeightsRegionTo(3, 6, 5, 4, destination);
+        destination.flip();
+        for (int z = 6; z < 10; z++) {
+            for (int x = 3; x < 8; x++) {
+                assertEquals(source[z * 17 + x], destination.get());
+            }
+        }
+    }
+
+    @Test
+    void rejectsOutOfBoundsRegionsAndInsufficientRegionBuffers() {
+        ClipmapHeightTilePayload payload = payload(new short[17 * 17]);
+        assertThrows(IllegalArgumentException.class,
+                () -> payload.copyHeightsRegionTo(-1, 0, 1, 1,
+                        ShortBuffer.allocate(1)));
+        assertThrows(IllegalArgumentException.class,
+                () -> payload.copyHeightsRegionTo(16, 0, 2, 1,
+                        ShortBuffer.allocate(2)));
+        assertThrows(IllegalArgumentException.class,
+                () -> payload.copyHeightsRegionTo(0, 0, 2, 2,
+                        ShortBuffer.allocate(3)));
+        assertThrows(IllegalArgumentException.class,
+                () -> payload.copyHeightsRegionTo(0, 0, 1, 1, null));
+    }
+
+    @Test
     void rejectsNonPositiveRequestGeneration() {
         assertThrows(IllegalArgumentException.class, () ->
                 new ClipmapHeightTilePayload("minecraft:overworld", 0L,

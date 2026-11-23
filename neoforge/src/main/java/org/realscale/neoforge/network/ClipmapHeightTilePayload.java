@@ -110,7 +110,8 @@ public record ClipmapHeightTilePayload(
             ShortBuffer destination) {
         int side = gridCells + 1;
         if (x < 0 || z < 0 || width < 1 || height < 1
-                || x + width > side || z + height > side) {
+                || width > side || height > side
+                || x > side - width || z > side - height) {
             throw new IllegalArgumentException("height region is outside the tile");
         }
         int required = Math.multiplyExact(width, height);

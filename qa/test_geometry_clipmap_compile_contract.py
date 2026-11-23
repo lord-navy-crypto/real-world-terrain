@@ -68,7 +68,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertLess(render.index("State state = State.capture()"),
                         render.index("initialize(nextGridCells"))
         self.assertLess(render.index("State state = State.capture()"),
-                        render.index("upload(i, tile)"))
+                        render.index("updateTexture(i, tile)"))
         self.assertIn("GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1);", render)
         self.assertIn("GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, unpackAlignment);", renderer)
         self.assertIn("GL11.glGetInteger(GL11.GL_UNPACK_ALIGNMENT)", renderer)
@@ -122,7 +122,8 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("public void copyHeightsTo(ShortBuffer destination)", payload)
-        self.assertIn("tile.copyHeightsTo(buffer)", renderer)
+        self.assertIn("public void copyHeightsRegionTo(", payload)
+        self.assertIn("tile.copyHeightsRegionTo(", renderer)
         self.assertIn("short[] values = value.heights;", payload)
 
     def test_terrain_and_proxy_draws_reuse_matrix_objects(self):
@@ -192,10 +193,6 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn('GL20.glGetUniformLocation(program, "uMorphBandCells")', renderer)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
     def test_toroidal_texture_update_plan_has_unit_coverage(self):
         planner = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.java").read_text(
             encoding="utf-8"
@@ -206,3 +203,7 @@ if __name__ == "__main__":
         self.assertIn("dirtySamples * 10L >= fullSamples * 7L", planner)
         self.assertIn("Math.floorMod", planner)
         self.assertIn("public void copyHeightsRegionTo(", payload)
+
+
+if __name__ == "__main__":
+    unittest.main()
