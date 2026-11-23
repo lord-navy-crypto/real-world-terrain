@@ -53,7 +53,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         client = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapClientPayloads.java").read_text(
             encoding="utf-8"
         )
-        self.assertEqual(2, network.count("registrar.playToClient("))
+        self.assertEqual(3, network.count("registrar.playToClient("))
         self.assertNotIn("@EventBusSubscriber", client)
         self.assertIn("ClipmapSnapshotAssembler<ClipmapHeightTilePayload>", (
             ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapClient.java"
@@ -202,10 +202,14 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn('"realscale.experimental.geometryclipmap", "true"', client)
         self.assertIn('"realscale.experimental.geometryclipmap.debug", "true"', client)
         self.assertIn("displayClientMessage(Component.literal(message), false)", client)
-        self.assertIn("Clipmap: ON / WAITING", client)
+        self.assertIn("Clipmap: REQUEST SENT", client)
         self.assertIn("Clipmap: SNAPSHOT READY", client)
         self.assertIn("Clipmap: DRAW SUBMITTED", client)
-        self.assertIn("Clipmap: STILL WAITING", client)
+        self.assertIn("Clipmap: NO RECENT SERVER RESPONSE", client)
+        self.assertIn("HEARTBEAT_INTERVAL_NANOS", client)
+        self.assertIn("pendingLevelCount()", client)
+        self.assertIn("ClipmapStatusPayload.UNSUPPORTED_WORLD", client)
+        self.assertIn("ClipmapStatusPayload.TYPE", network)
         renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
             encoding="utf-8"
         )

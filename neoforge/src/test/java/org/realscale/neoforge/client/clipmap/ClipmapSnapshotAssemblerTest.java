@@ -89,4 +89,21 @@ final class ClipmapSnapshotAssemblerTest {
         assertThrows(NullPointerException.class,
                 () -> a.accept(1L, 0, 128, 8, 0, 0, 10, "a", null));
     }
+    @Test
+    void exposesPartialPacketProgressForWaitingDiagnostics() {
+        var a = new ClipmapSnapshotAssembler<String>(6);
+        add(a, 1L, 0, 0, 0, "zero");
+        add(a, 1L, 2, 0, 0, "two");
+        assertEquals(2, a.pendingLevelCount());
+        assertEquals((1 << 0) | (1 << 2), a.pendingLevelMask());
+        add(a, 1L, 1, 0, 0, "one");
+        add(a, 1L, 3, 0, 0, "three");
+        add(a, 1L, 4, 0, 0, "four");
+        assertEquals(5, a.pendingLevelCount());
+        add(a, 1L, 5, 0, 0, "five");
+        assertEquals(0, a.pendingLevelCount());
+        assertEquals(0, a.pendingLevelMask());
+        assertEquals(6, a.activeTiles().size());
+    }
+
 }
