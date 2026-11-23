@@ -334,7 +334,7 @@ def run_client(env: dict[str, str]) -> None:
 
         # The marker is emitted only after six-level native mesh submission.
         stdout_text = "".join(lines)
-        if not re.search(r"nativeMeshesBuilt=.*\\blevels=6\\b", stdout_text):
+        if not re.search(r"nativeMeshesBuilt=.*\blevels=6\b", stdout_text):
             raise RuntimeError("Iris native meshes were not built for all six LOD levels")
         if "firstIrisNativeDraw=" not in stdout_text:
             raise RuntimeError("The Iris-native terrain draw marker is missing from client output")
