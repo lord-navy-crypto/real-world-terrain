@@ -376,51 +376,16 @@ def validate_screenshot(path: pathlib.Path | None) -> None:
         )
 
 
-def read_debug_camera_y() -> float:
-    """Read the live XYZ height from Minecraft's F3 overlay using OCR."""
-    xwd = BUILD / "camera-position.xwd"
-    png = BUILD / "camera-position.png"
-    overlay_open = False
-    try:
-        subprocess.run(["xdotool", "key", "F3"], check=True, timeout=10)
-        overlay_open = True
-        time.sleep(1)
-        subprocess.run(
-            ["xwd", "-root", "-silent", "-out", str(xwd)],
-            check=True, capture_output=True, timeout=20,
-        )
-        subprocess.run(
-            ["convert", str(xwd), "-resize", "200%", str(png)],
-            check=True, capture_output=True, timeout=30,
-        )
-        result = subprocess.run(
-            ["tesseract", str(png), "stdout", "--psm", "6"],
-            check=True, capture_output=True, text=True, timeout=20,
-        )
-        match = re.search(
-            r"XYZ:\s*[-+0-9.]+\s*/\s*([-+0-9.]+)\s*/\s*[-+0-9.]+",
-            result.stdout,
-            re.IGNORECASE,
-        )
-        if not match:
-            raise RuntimeError("Could not OCR the F3 XYZ line: " + result.stdout[:500])
-        return float(match.group(1))
-    finally:
-        if overlay_open:
-            subprocess.run(["xdotool", "key", "F3"], check=False, timeout=10)
-        xwd.unlink(missing_ok=True)
-        png.unlink(missing_ok=True)
-
-
-def prepare_open_rendering_view(client_latest: pathlib.Path) -> None:
-    """Join the world, fly the spectator camera above terrain, and verify Y via F3."""
+def prepare_open_rendering_view(
+        client_latest: pathlib.Path, client_stdout_lines: list[str]) -> None:
+    """Use spectator flight and render-thread telemetry to verify the camera height."""
     deadline = time.monotonic() + 180
     spawn_y = None
     while time.monotonic() < deadline:
         if client_latest.exists():
             log_text = client_latest.read_text(encoding="utf-8", errors="replace")
             match = re.search(
-                r"logged in with entity id \d+ at \([-+0-9.]+,\s*([-+0-9.]+),\s*[-+0-9.]+\)",
+                r"logged in with entity id \\d+ at \\([-+0-9.]+,\\s*([-+0-9.]+),\\s*[-+0-9.]+\\)",
                 log_text,
             )
             if "Loaded 2 advancements" in log_text and match:
@@ -430,11 +395,10 @@ def prepare_open_rendering_view(client_latest: pathlib.Path) -> None:
     else:
         raise RuntimeError("Singleplayer world did not finish joining or report its spawn position")
 
-    camera_y = read_debug_camera_y()
-    print(f"CLIENT_CAMERA_INITIAL_Y: {camera_y:.1f} (spawn log y={spawn_y})", flush=True)
+    camera_match = None
     for attempt in range(1, 4):
-        # In spectator mode, the mouse wheel raises flight speed. Hold Ctrl+Space
-        # to ascend without changing the horizontal clipmap center.
+        # The client is forced into spectator mode. Raise flight speed with the
+        # wheel, then ascend while keeping the horizontal clipmap center fixed.
         subprocess.run(
             ["xdotool", "click", "--repeat", "24", "--delay", "20", "4"],
             check=True, timeout=15,
@@ -446,16 +410,29 @@ def prepare_open_rendering_view(client_latest: pathlib.Path) -> None:
         finally:
             subprocess.run(["xdotool", "keyup", "space"], check=False, timeout=10)
             subprocess.run(["xdotool", "keyup", "Control_L"], check=False, timeout=10)
-        camera_y = read_debug_camera_y()
+
+        output = "".join(client_stdout_lines)
+        camera_match = re.search(
+            r"CLIENT_CAMERA_VANTAGE_READY:\\s*x=([-+0-9.]+)\\s+y=([-+0-9.]+)\\s+z=([-+0-9.]+)",
+            output,
+        )
+        if camera_match and float(camera_match.group(2)) >= 1100.0:
+            print(
+                f"CLIENT_CAMERA_VERIFIED: spawn_y={spawn_y:.1f}, "
+                f"camera_y={float(camera_match.group(2)):.1f}",
+                flush=True,
+            )
+            break
         print(
-            f"CLIENT_CAMERA_ASCENT: attempt={attempt} y={camera_y:.1f}",
+            f"CLIENT_CAMERA_ASCENT: attempt={attempt}, "
+            f"vantage_marker={'seen' if camera_match else 'not yet seen'}",
             flush=True,
         )
-        if camera_y >= 1100.0:
-            break
-    if camera_y < 1100.0:
+
+    if not camera_match or float(camera_match.group(2)) < 1100.0:
         raise RuntimeError(
-            f"Spectator flight did not reach the high-altitude vantage: y={camera_y:.1f}"
+            "Spectator flight did not reach the verified high-altitude camera; "
+            "render-thread telemetry marker was not observed"
         )
 
     subprocess.run(
@@ -464,11 +441,10 @@ def prepare_open_rendering_view(client_latest: pathlib.Path) -> None:
     )
     time.sleep(2)
     print(
-        f"CLIENT_CAMERA_VANTAGE_READY: spectator flight y={camera_y:.1f}, "
-        "looking toward distant terrain",
+        "CLIENT_CAMERA_VANTAGE_READY_FOR_CAPTURE: "
+        f"y={float(camera_match.group(2)):.1f}, looking toward distant terrain",
         flush=True,
     )
-
 
 def run_client(env: dict[str, str]) -> None:
     if not env.get("DISPLAY"):
@@ -502,7 +478,7 @@ def run_client(env: dict[str, str]) -> None:
             elif not camera_prepared:
                 if client_latest.exists() and "Loaded 2 advancements" in client_latest.read_text(
                         encoding="utf-8", errors="replace"):
-                    prepare_open_rendering_view(client_latest)
+                    prepare_open_rendering_view(client_latest, lines)
                     camera_prepared = True
                 elif time.monotonic() >= world_ready_deadline:
                     raise RuntimeError("Singleplayer world did not become ready for camera positioning")
