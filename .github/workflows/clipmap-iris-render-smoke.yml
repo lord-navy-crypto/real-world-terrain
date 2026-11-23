@@ -9,6 +9,7 @@ on:
       - 'neoforge/src/main/resources/META-INF/neoforge.mods.toml'
       - 'qa/neoforge/iris_clipmap_client_smoke.py'
       - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'qa/test_iris_clipmap_smoke_harness.py'
       - 'neoforge/build.gradle'
       - '.github/workflows/clipmap-iris-render-smoke.yml'
   workflow_dispatch:
@@ -45,6 +46,9 @@ jobs:
         with:
           gradle-version: '9.8.0'
           cache-read-only: false
+
+      - name: Verify Iris client smoke harness contracts
+        run: python3 -m unittest discover -s qa -p 'test_iris_clipmap_smoke_harness.py' -v
 
       - name: Install software OpenGL and virtual display
         run: |
