@@ -304,8 +304,10 @@ def main() -> int:
         " -Drealscale.experimental.geometryclipmap=true"
         " -Drealscale.experimental.geometryclipmap.debug=true"
     ).strip()
-    install_iris_stack()
+    # The temporary dedicated server must not see client-only Iris/Sodium mods.
+    # Generate and save the world first; install the shader stack only for runClient.
     prepare_saved_world(env)
+    install_iris_stack()
     run_client(env)
     return 0
 

@@ -331,11 +331,15 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("dot(normal, uSunDirection)", fragment_shader)
 
 
-    def test_headless_iris_smoke_server_has_lwjgl_bootstrap_runtime(self):
-        build = (ROOT / "neoforge/build.gradle").read_text(encoding="utf-8")
-        self.assertIn("filter { includeGroup 'org.lwjgl' }", build)
-        self.assertIn("runtimeOnly 'org.lwjgl:lwjgl:3.3.3'", build)
-        self.assertIn("serverdev bootstrap", build)
+    def test_iris_smoke_installs_client_mods_after_server_world_creation(self):
+        script = (ROOT / "qa/neoforge/iris_clipmap_client_smoke.py").read_text(
+            encoding="utf-8"
+        )
+        main = script.split("def main():", 1)[1].split("if __name__")[0]
+        self.assertLess(main.index("prepare_saved_world(env)"),
+                        main.index("install_iris_stack()"))
+        self.assertLess(main.index("install_iris_stack()"),
+                        main.index("run_client(env)"))
 
     def test_iris_native_clipmap_uses_vanilla_gbuffer_and_shadow_terrain_passes(self):
         native = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/IrisNativeClipmapRenderer.java").read_text(

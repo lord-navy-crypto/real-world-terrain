@@ -61,15 +61,6 @@ repositories {
         }
         filter { includeGroupByRegex 'com\\.twelvemonkeys(\\..*)?' }
     }
-    // NeoForge's serverdev bootstrap still resolves org.lwjgl.Version through
-    // ImmediateWindowHandler even with --nogui. Restrict this dev-runtime-only
-    // dependency to Maven Central; it is not shaded into the published mod JAR.
-    exclusiveContent {
-        forRepository {
-            mavenCentral()
-        }
-        filter { includeGroup 'org.lwjgl' }
-    }
     exclusiveContent {
         forRepository {
             maven {
@@ -83,7 +74,6 @@ repositories {
 dependencies {
     implementation 'dev.isxander:yet-another-config-lib:3.8.1+1.21.1-neoforge' // YACL 3.8.1, official upstream Maven
     compileOnly 'maven.modrinth:XaDC71GB:sPmtDq1X' // OPTIONAL Terrain Lab-only codec: do not load global jigsaw redirect in baseline RealScale
-    runtimeOnly 'org.lwjgl:lwjgl:3.3.3' // LWJGL core for NeoForge's headless runServer bootstrap; not bundled in the mod JAR
     testImplementation(platform('org.junit:junit-bom:5.14.1'))
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
