@@ -598,3 +598,26 @@ Frequent LOD percentage updates and partial tile counts are shown in the
 Minecraft action bar rather than chat. Chat is reserved for major state
 transitions and actionable errors, preventing a slow first sample from
 flooding the player's chat history.
+
+
+## Iris / shader-pack compatibility audit (2026-11-23)
+
+The current Geometry Clipmap terrain and proxy renderers compile their own
+standalone GLSL 4.1 programs and issue direct OpenGL draw calls. Iris 1.21.1
+provides a public API for detecting an active shader pack and the shadow pass,
+but does not expose the later render-pipeline assignment API in this target
+branch. Iris also documents that arbitrary mod-owned custom shaders cannot
+generally be merged into shader-pack G-buffer programs.
+
+A reflective, optional Iris bridge now:
+- detects Iris without adding a hard dependency;
+- skips all Geometry Clipmap draws during Iris shadow-map rendering;
+- suspends the standalone GLSL path when a shader pack is active or Iris API
+  state cannot be queried, avoiding writes to an incompatible G-buffer;
+- resumes the existing renderer when Iris is installed but no shader pack is
+  active, or when Iris is absent.
+
+The client only reports `GPU DRAW SUBMITTED` when the renderer validates the
+six-level snapshot and actually issues the draw path. A shader-pack-native
+terrain fallback using Minecraft/Iris-managed render types is the next
+compatibility milestone; shader-pack visual support is not claimed yet.

@@ -79,6 +79,7 @@ jobs:
               "org/realscale/neoforge/client/clipmap/ClipmapProxySnapshotBuffer.class",
               "org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.class",
               "org/realscale/neoforge/client/clipmap/ClipmapProjectionMath.class",
+              "org/realscale/neoforge/client/clipmap/IrisRenderCompatibility.class",
               "org/realscale/neoforge/network/ClipmapRequestPayload.class",
               "org/realscale/neoforge/network/ClipmapStatusPayload.class",
           ]
@@ -139,6 +140,13 @@ jobs:
           Java patch is a source diff relative to the PR base revision;
           it is NOT a substitute for the built JAR and cannot be applied
           directly to an arbitrary old release.
+
+          Shader-pack behavior:
+            When Iris reports an active shader pack, this build pauses the
+            standalone OpenGL clipmap draw rather than writing incompatible
+            outputs into the shader-pack G-buffer. Iris shadow passes are skipped.
+            Vanilla rendering and Iris with shader packs disabled use the normal
+            clipmap path. A shader-pack-native terrain fallback is still pending.
 
           Not yet certified: macOS OpenGL 4.1 real client visuals or frame time.
           EOF

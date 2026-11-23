@@ -57,6 +57,7 @@ public final class GeometryClipmapClient {
     private static int lastReportedTileCount = -1;
     private static int retryCount;
     private static boolean unsupportedWorld;
+    private static boolean irisCompatibilityNoticeShown;
     private static final long HEARTBEAT_INTERVAL_NANOS = 8_000_000_000L;
 
     private GeometryClipmapClient() {}
@@ -241,6 +242,25 @@ public final class GeometryClipmapClient {
         if (!ENABLED || event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || TILES.activeKey() == null) return;
+
+        // Iris can invoke level-stage rendering from its shadow pipeline as well
+        // as the main camera pass. Never submit the custom clipmap into a shadow
+        // map, and never write our standalone GLSL output into an Iris G-buffer.
+        IrisRenderCompatibility.State iris = IrisRenderCompatibility.current();
+        if (iris.shadowPass()) return;
+        if (!iris.allowsRawOpenGlRenderer()) {
+            if (!irisCompatibilityNoticeShown) {
+                irisCompatibilityNoticeShown = true;
+                String reason = iris.mode() == IrisRenderCompatibility.Mode.SHADERPACK_ACTIVE
+                        ? "Iris shader pack active; standalone clipmap GLSL bypasses the shader-pack G-buffer"
+                        : "Iris is present but its compatibility API could not be queried";
+                reportStatus(minecraft, "[RealScale] Clipmap: SHADER COMPATIBILITY GUARD - "
+                        + reason + "; custom draw paused to protect shader rendering");
+            }
+            return;
+        }
+        irisCompatibilityNoticeShown = false;
+
         var key = TILES.activeKey();
         if (key == null || key.requestId() != activeRequestId) return;
         // Do not show the old region's terrain after a teleport while
@@ -251,9 +271,10 @@ public final class GeometryClipmapClient {
         if (Math.abs(cameraX - key.centerX()) > safeX
                 || Math.abs(cameraZ - key.centerZ()) > safeX) return;
         List<VisibleSurfaceProxy> proxies = PROXY_BUFFER.activeFor(key);
-        GeometryClipmapRenderer.render(event, TILES.activeTiles(),
+        boolean drawSubmitted = GeometryClipmapRenderer.render(event, TILES.activeTiles(),
                 minecraft.level.dimension().location().toString(),
                 proxies == null ? List.of() : proxies);
+        if (!drawSubmitted) return;
         if (!firstRenderSubmitted) {
             firstRenderSubmitted = true;
             reportStatus(minecraft,
@@ -306,6 +327,7 @@ public final class GeometryClipmapClient {
         lastReportedTileCount = -1;
         retryCount = 0;
         unsupportedWorld = false;
+        irisCompatibilityNoticeShown = false;
         if (Minecraft.getInstance().isSameThread()) {
             GeometryClipmapRenderer.dispose();
         }

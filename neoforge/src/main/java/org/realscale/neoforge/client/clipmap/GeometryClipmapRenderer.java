@@ -214,11 +214,11 @@ final class GeometryClipmapRenderer {
 
     private GeometryClipmapRenderer() {}
 
-    static void render(RenderLevelStageEvent event,
+    static boolean render(RenderLevelStageEvent event,
             Map<Integer, org.realscale.neoforge.network.ClipmapHeightTilePayload> tiles,
             String dimensionKey, List<VisibleSurfaceProxy> proxies) {
         RenderSystem.assertOnRenderThread();
-        if (tiles.size() < LEVEL_COUNT) return;
+        if (tiles == null || tiles.size() < LEVEL_COUNT || proxies == null) return false;
 
         var first = tiles.get(0);
         if (first == null || !first.dimensionKey().equals(dimensionKey)) return;
@@ -240,7 +240,7 @@ final class GeometryClipmapRenderer {
                     || tile.minHeight() != nextMinHeight
                     || tile.maxHeight() != nextMaxHeight
                     || tile.levelIndex() != i) {
-                return;
+                return false;
             }
         }
 
@@ -273,6 +273,7 @@ final class GeometryClipmapRenderer {
 
             draw(event, tiles, proxies);
             completedFrame = true;
+            return true;
         } finally {
             state.restore();
             if (DEBUG && completedFrame) {
