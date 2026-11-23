@@ -14,6 +14,7 @@ import java.util.List;
 /** Bounded exterior-only feature proxies; never contains hidden interiors or block arrays. */
 public record ClipmapSurfaceProxyPayload(
         String dimensionKey,
+        long requestId,
         long centerX,
         long centerZ,
         List<VisibleSurfaceProxy> proxies) implements CustomPacketPayload {
@@ -29,6 +30,10 @@ public record ClipmapSurfaceProxyPayload(
                 @Override
                 public ClipmapSurfaceProxyPayload decode(RegistryFriendlyByteBuf buffer) {
                     String dimension = buffer.readUtf(MAX_DIMENSION_KEY_LENGTH);
+                    long requestId = buffer.readLong();
+                    if (requestId <= 0L) {
+                        throw new DecoderException("Invalid clipmap request ID");
+                    }
                     long centerX = buffer.readLong();
                     long centerZ = buffer.readLong();
                     int count = buffer.readVarInt();
@@ -52,16 +57,20 @@ public record ClipmapSurfaceProxyPayload(
                         }
                     }
                     return new ClipmapSurfaceProxyPayload(
-                            dimension, centerX, centerZ, values);
+                            dimension, requestId, centerX, centerZ, values);
                 }
 
                 @Override
                 public void encode(RegistryFriendlyByteBuf buffer,
                         ClipmapSurfaceProxyPayload value) {
+                    if (value.requestId() <= 0L) {
+                        throw new EncoderException("Invalid clipmap request ID");
+                    }
                     if (value.proxies().size() > MAX_PROXIES) {
                         throw new EncoderException("Too many clipmap surface proxies");
                     }
                     buffer.writeUtf(value.dimensionKey(), MAX_DIMENSION_KEY_LENGTH);
+                    buffer.writeLong(value.requestId());
                     buffer.writeLong(value.centerX());
                     buffer.writeLong(value.centerZ());
                     buffer.writeVarInt(value.proxies().size());
@@ -78,6 +87,9 @@ public record ClipmapSurfaceProxyPayload(
             };
 
     public ClipmapSurfaceProxyPayload {
+        if (requestId <= 0L) {
+            throw new IllegalArgumentException("Clipmap request ID must be positive");
+        }
         if (dimensionKey == null || dimensionKey.isBlank()
                 || dimensionKey.length() > MAX_DIMENSION_KEY_LENGTH) {
             throw new IllegalArgumentException("Invalid clipmap dimension key");

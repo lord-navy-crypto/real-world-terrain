@@ -48,7 +48,6 @@ public final class GeometryClipmapServer {
     private static final boolean DEBUG =
             Boolean.getBoolean("realscale.experimental.geometryclipmap.debug");
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
-    private static int cleanupTicks;
     private static long serverTickCounter;
     private static final long RETRY_BACKOFF_TICKS = 20L;
 
@@ -67,14 +66,22 @@ public final class GeometryClipmapServer {
 
     private GeometryClipmapServer() {}
 
-    public static void request(ServerPlayer player, int nearRenderDistanceChunks) {
-        if (nearRenderDistanceChunks < 2 || nearRenderDistanceChunks > 64) return;
+    public static void request(ServerPlayer player, int nearRenderDistanceChunks,
+            long requestId) {
+        if (nearRenderDistanceChunks < 2 || nearRenderDistanceChunks > 64
+                || requestId <= 0L) return;
         UUID id = player.getUUID();
         Session current = SESSIONS.get(id);
+        if (current != null && requestId <= current.requestId) return;
         if (current == null || current.nearChunks != nearRenderDistanceChunks) {
-            if (current != null) current.requestEpoch.advance();
-            SESSIONS.put(id, new Session(nearRenderDistanceChunks));
+            if (current != null) current.invalidate();
+            SESSIONS.put(id, new Session(nearRenderDistanceChunks, requestId));
+            return;
         }
+        current.requestEpoch.advance();
+        current.requestId = requestId;
+        current.layout = null;
+        current.inFlight = false;
     }
 
     @SubscribeEvent
@@ -85,28 +92,25 @@ public final class GeometryClipmapServer {
             Session session = SESSIONS.get(player.getUUID());
             if (session != null) updatePlayer(server, player, session);
         }
-        if (++cleanupTicks >= 200) {
-            cleanupTicks = 0;
-            SESSIONS.entrySet().removeIf(entry -> {
-                if (server.getPlayerList().getPlayer(entry.getKey()) != null) return false;
-                entry.getValue().requestEpoch.advance();
-                return true;
-            });
-        }
+        SESSIONS.entrySet().removeIf(entry -> {
+            if (server.getPlayerList().getPlayer(entry.getKey()) != null) return false;
+            entry.getValue().invalidate();
+            return true;
+        });
     }
 
     private static void updatePlayer(MinecraftServer server,
             ServerPlayer player, Session session) {
         ServerLevel level = player.serverLevel();
         if (!(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator generator)) {
-            SESSIONS.remove(player.getUUID(), session);
+            removeSession(player.getUUID(), session);
             return;
         }
 
         ResourceLocation settingsId = generator.generatorSettings().unwrapKey()
                 .map(ResourceKey::location).orElse(null);
         if (!isNaturalAutomateSettings(settingsId)) {
-            SESSIONS.remove(player.getUUID(), session);
+            removeSession(player.getUUID(), session);
             return;
         }
 
@@ -136,6 +140,7 @@ public final class GeometryClipmapServer {
         long targetSeed = seed;
         UUID playerId = player.getUUID();
         long requestEpoch = session.requestEpoch.current();
+        long targetRequestId = session.requestId;
         session.inFlight = true;
         long enqueuedNanos = DEBUG ? System.nanoTime() : 0L;
 
@@ -174,8 +179,8 @@ public final class GeometryClipmapServer {
                                 heightSampler, previous);
                         nextGrids.add(grid);
                         if (DEBUG) newlySampledVertices += grid.newlySampledVertexCount();
-                        payloads.add(toPayload(targetDimension, session.nearChunks,
-                                nextLayout, i, grid));
+                        payloads.add(toPayload(targetDimension, targetRequestId,
+                                session.nearChunks, nextLayout, i, grid));
                     }
 
                     if (!session.requestEpoch.isCurrent(requestEpoch)) return;
@@ -183,7 +188,7 @@ public final class GeometryClipmapServer {
                             VisibleSurfaceProxyGenerator.collect(generator, randomState,
                                     nextLayout, targetSeed);
                     ClipmapSurfaceProxyPayload proxyPayload =
-                            new ClipmapSurfaceProxyPayload(targetDimension,
+                            new ClipmapSurfaceProxyPayload(targetDimension, targetRequestId,
                                     nextLayout.levels().get(0).centerX(),
                                     nextLayout.levels().get(0).centerZ(), proxies);
                     long queueWaitNanos = DEBUG
@@ -199,6 +204,7 @@ public final class GeometryClipmapServer {
                         // retaining the UUID and session. Resolve the live player
                         // instead of comparing against the worker's captured object.
                         if (SESSIONS.get(playerId) != session
+                                || session.requestId != targetRequestId
                                 || !session.requestEpoch.isCurrent(requestEpoch)) {
                             return;
                         }
@@ -276,7 +282,7 @@ public final class GeometryClipmapServer {
     }
 
     private static ClipmapHeightTilePayload toPayload(String dimension,
-            int nearChunks, GeometryClipmapLayout.Layout layout,
+            long requestId, int nearChunks, GeometryClipmapLayout.Layout layout,
             int levelIndex, ClipmapHeightGrid grid) {
         int side = grid.gridSide();
         float[] heights = grid.copyHeights();
@@ -290,10 +296,15 @@ public final class GeometryClipmapServer {
                         height, MIN_HEIGHT, MAX_HEIGHT);
             }
         }
-        return new ClipmapHeightTilePayload(dimension, nearChunks,
+        return new ClipmapHeightTilePayload(dimension, requestId, nearChunks,
                 layout.gridCells(), levelIndex,
                 grid.cellSpacingBlocks(), grid.originX(), grid.originZ(),
                 MIN_HEIGHT, MAX_HEIGHT, encoded);
+    }
+
+    private static void removeSession(UUID playerId, Session session) {
+        session.invalidate();
+        SESSIONS.remove(playerId, session);
     }
 
     private static boolean isNaturalAutomateSettings(ResourceLocation id) {
@@ -310,6 +321,7 @@ public final class GeometryClipmapServer {
 
     private static final class Session {
         private final int nearChunks;
+        private long requestId;
         private String dimensionKey;
         private String settingsId;
         private long seed;
@@ -318,8 +330,16 @@ public final class GeometryClipmapServer {
         private boolean inFlight;
         private final ClipmapRequestEpoch requestEpoch = new ClipmapRequestEpoch();
 
-        private Session(int nearChunks) {
+        private Session(int nearChunks, long requestId) {
             this.nearChunks = nearChunks;
+            this.requestId = requestId;
+        }
+
+        private void invalidate() {
+            requestEpoch.advance();
+            layout = null;
+            grids = null;
+            inFlight = false;
         }
 
         private void resetWorld(String dimension, long worldSeed,

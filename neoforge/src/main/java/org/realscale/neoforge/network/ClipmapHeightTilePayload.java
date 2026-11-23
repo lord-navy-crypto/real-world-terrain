@@ -14,6 +14,7 @@ import java.nio.ShortBuffer;
  */
 public record ClipmapHeightTilePayload(
         String dimensionKey,
+        long requestId,
         int nearRenderDistanceChunks,
         int gridCells,
         int levelIndex,
@@ -36,6 +37,7 @@ public record ClipmapHeightTilePayload(
                 @Override
                 public ClipmapHeightTilePayload decode(RegistryFriendlyByteBuf buffer) {
                     String dimension = buffer.readUtf(MAX_DIMENSION_KEY_LENGTH);
+                    long requestId = buffer.readLong();
                     int near = buffer.readVarInt();
                     int cells = buffer.readVarInt();
                     int level = buffer.readVarInt();
@@ -45,12 +47,12 @@ public record ClipmapHeightTilePayload(
                     int min = buffer.readInt();
                     int max = buffer.readInt();
                     int count = buffer.readVarInt();
-                    validate(dimension, near, cells, level, spacing, min, max, count);
+                    validate(dimension, requestId, near, cells, level, spacing, min, max, count);
                     short[] values = new short[count];
                     for (int i = 0; i < count; i++) {
                         values[i] = buffer.readShort();
                     }
-                    return new ClipmapHeightTilePayload(dimension, near, cells,
+                    return new ClipmapHeightTilePayload(dimension, requestId, near, cells,
                             level, spacing, originX, originZ, min, max, values);
                 }
 
@@ -58,11 +60,12 @@ public record ClipmapHeightTilePayload(
                 public void encode(RegistryFriendlyByteBuf buffer,
                         ClipmapHeightTilePayload value) {
                     short[] values = value.heights;
-                    validate(value.dimensionKey(), value.nearRenderDistanceChunks(),
-                            value.gridCells(), value.levelIndex(),
-                            value.cellSpacingBlocks(), value.minHeight(),
-                            value.maxHeight(), values.length);
+                    validate(value.dimensionKey(), value.requestId(),
+                            value.nearRenderDistanceChunks(), value.gridCells(),
+                            value.levelIndex(), value.cellSpacingBlocks(),
+                            value.minHeight(), value.maxHeight(), values.length);
                     buffer.writeUtf(value.dimensionKey(), MAX_DIMENSION_KEY_LENGTH);
+                    buffer.writeLong(value.requestId());
                     buffer.writeVarInt(value.nearRenderDistanceChunks());
                     buffer.writeVarInt(value.gridCells());
                     buffer.writeVarInt(value.levelIndex());
@@ -78,8 +81,8 @@ public record ClipmapHeightTilePayload(
 
     public ClipmapHeightTilePayload {
         heights = heights.clone();
-        validate(dimensionKey, nearRenderDistanceChunks, gridCells, levelIndex,
-                cellSpacingBlocks, minHeight, maxHeight, heights.length);
+        validate(dimensionKey, requestId, nearRenderDistanceChunks, gridCells,
+                levelIndex, cellSpacingBlocks, minHeight, maxHeight, heights.length);
     }
 
     @Override
@@ -98,8 +101,11 @@ public record ClipmapHeightTilePayload(
         destination.put(heights);
     }
 
-    private static void validate(String dimension, int near, int cells,
+    private static void validate(String dimension, long requestId, int near, int cells,
             int level, int spacing, int min, int max, int count) {
+        if (requestId <= 0L) {
+            throw new IllegalArgumentException("Clipmap request ID must be positive");
+        }
         if (dimension == null || dimension.isBlank()
                 || dimension.length() > MAX_DIMENSION_KEY_LENGTH) {
             throw new IllegalArgumentException("Invalid clipmap dimension key");

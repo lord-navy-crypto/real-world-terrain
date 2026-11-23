@@ -10,6 +10,7 @@ import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL21;
 import org.lwjgl.opengl.GL30;
 
 import java.nio.FloatBuffer;
@@ -238,6 +239,7 @@ final class GeometryClipmapRenderer {
         boolean completedFrame = false;
         State state = State.capture();
         try {
+            GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, 0);
             if (program == 0 || gridCells != nextGridCells
                     || nearChunks != nextNearChunks || baseSpacing != nextBaseSpacing) {
                 dispose();
@@ -541,7 +543,7 @@ final class GeometryClipmapRenderer {
     }
 
     private record State(int program, int vao, int arrayBuffer,
-            int activeTexture, int texture0, int unpackAlignment,
+            int pixelUnpackBuffer, int activeTexture, int texture0, int unpackAlignment,
             int unpackRowLength, int unpackSkipPixels, int unpackSkipRows,
             int unpackSwapBytes, int depthFunc,
             boolean depthTest, boolean blend, boolean cull,
@@ -555,6 +557,7 @@ final class GeometryClipmapRenderer {
                     GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM),
                     GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING),
                     GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING),
+                    GL11.glGetInteger(GL21.GL_PIXEL_UNPACK_BUFFER_BINDING),
                     active, texture0,
                     GL11.glGetInteger(GL11.GL_UNPACK_ALIGNMENT),
                     GL11.glGetInteger(GL11.GL_UNPACK_ROW_LENGTH),
@@ -572,6 +575,7 @@ final class GeometryClipmapRenderer {
             GL20.glUseProgram(program);
             GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, arrayBuffer);
+            GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, pixelUnpackBuffer);
             // Restore raw bindings via raw GL. RenderSystem may cache
             // texture state, while our texture upload uses direct LWJGL.
             GL13.glActiveTexture(GL13.GL_TEXTURE0);
