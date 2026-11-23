@@ -385,7 +385,7 @@ def prepare_open_rendering_view(
         if client_latest.exists():
             log_text = client_latest.read_text(encoding="utf-8", errors="replace")
             match = re.search(
-                r"logged in with entity id \\d+ at \\([-+0-9.]+,\\s*([-+0-9.]+),\\s*[-+0-9.]+\\)",
+                r"logged in with entity id \d+ at \([-+0-9.]+,\s*([-+0-9.]+),\s*[-+0-9.]+\)",
                 log_text,
             )
             if "Loaded 2 advancements" in log_text and match:
@@ -413,7 +413,7 @@ def prepare_open_rendering_view(
 
         output = "".join(client_stdout_lines)
         camera_match = re.search(
-            r"CLIENT_CAMERA_VANTAGE_READY:\\s*x=([-+0-9.]+)\\s+y=([-+0-9.]+)\\s+z=([-+0-9.]+)",
+            r"CLIENT_CAMERA_VANTAGE_READY:\s*x=([-+0-9.]+)\s+y=([-+0-9.]+)\s+z=([-+0-9.]+)",
             output,
         )
         if camera_match and float(camera_match.group(2)) >= 1100.0:
