@@ -211,7 +211,6 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("HEARTBEAT_INTERVAL_NANOS", client)
         self.assertIn("pendingLevelCount()", client)
         self.assertIn("ClipmapStatusPayload.UNSUPPORTED_WORLD", client)
-        self.assertIn("ClipmapStatusPayload.TYPE", network)
         renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
             encoding="utf-8"
         )
@@ -227,6 +226,8 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn('event.registrar("3")', network)
+        self.assertIn("ClipmapStatusPayload.TYPE", network)
+        self.assertNotIn("STILL WAITING", client)
 
     def test_abort_sampling_within_one_ring_and_bounded_proxy_staging(self):
         grid = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapHeightGrid.java").read_text(
