@@ -58,7 +58,29 @@ final class GeometryClipmapRenderer {
             out float vOcean;
             out float vDistance;
             out vec3 vPosition;
-            out vec2 vNoiseXZ;
+            out float vMacro;
+            out float vRegional;
+            out float vMicro;
+
+            // Evaluate world-aligned material noise per vertex instead of per
+            // fragment. The low-frequency fields interpolate smoothly across
+            // the clipmap triangles; high-frequency detail fades with distance.
+            float hashCell(vec2 p) {
+                vec3 p3 = fract(vec3(p.x, p.y, p.x) * 0.1031);
+                p3 += dot(p3, p3.yzx + 33.33);
+                return fract((p3.x + p3.y) * p3.z);
+            }
+            float valueNoise(vec2 p, float period) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                float a = hashCell(mod(i, period));
+                float b = hashCell(mod(i + vec2(1.0, 0.0), period));
+                float c = hashCell(mod(i + vec2(0.0, 1.0), period));
+                float d = hashCell(mod(i + vec2(1.0, 1.0), period));
+                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+            }
+
             void main() {
                 vec2 grid = aGridAndSkirt.xy;
                 float side = uGridCells + 1.0;
@@ -100,7 +122,12 @@ final class GeometryClipmapRenderer {
                 vOcean = ocean;
                 vPosition = relative;
                 vDistance = length(relative.xz);
-                vNoiseXZ = uNoiseOrigin + grid * uSpacing;
+                vec2 noiseXZ = uNoiseOrigin + grid * uSpacing;
+                vMacro = valueNoise(noiseXZ / 512.0, 128.0);
+                vRegional = valueNoise(noiseXZ / 128.0, 512.0);
+                float vertexDetailFade = 1.0 - smoothstep(700.0, 4500.0, vDistance);
+                vMicro = vertexDetailFade > 0.0
+                    ? valueNoise(noiseXZ / 32.0, 2048.0) : 0.5;
                 gl_Position = uViewProjection * vec4(relative, 1.0);
             }
             """;
@@ -111,7 +138,9 @@ final class GeometryClipmapRenderer {
             in float vOcean;
             in float vDistance;
             in vec3 vPosition;
-            in vec2 vNoiseXZ;
+            in float vMacro;
+            in float vRegional;
+            in float vMicro;
             uniform float uFogStart;
             uniform float uFogEnd;
             uniform float uNearClipBlocks;
@@ -121,24 +150,6 @@ final class GeometryClipmapRenderer {
             uniform float uDirectLight;
             uniform vec3 uFogColor;
             out vec4 fragColor;
-
-            // World-aligned, periodic detail. Each octave wraps at exactly
-            // 65536 blocks to avoid float precision collapse at far coords.
-            float hashCell(vec2 p) {
-                vec3 p3 = fract(vec3(p.x, p.y, p.x) * 0.1031);
-                p3 += dot(p3, p3.yzx + 33.33);
-                return fract((p3.x + p3.y) * p3.z);
-            }
-            float valueNoise(vec2 p, float period) {
-                vec2 i = floor(p);
-                vec2 f = fract(p);
-                f = f * f * (3.0 - 2.0 * f);
-                float a = hashCell(mod(i, period));
-                float b = hashCell(mod(i + vec2(1.0, 0.0), period));
-                float c = hashCell(mod(i + vec2(0.0, 1.0), period));
-                float d = hashCell(mod(i + vec2(1.0, 1.0), period));
-                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-            }
 
             void main() {
                 // Leave almost all real near chunks to the vanilla renderer,
@@ -154,11 +165,10 @@ final class GeometryClipmapRenderer {
                 if (normal.y < 0.0) normal = -normal;
                 float slope = 1.0 - clamp(normal.y, 0.0, 1.0);
 
-                float macro = valueNoise(vNoiseXZ / 512.0, 128.0);
-                float regional = valueNoise(vNoiseXZ / 128.0, 512.0);
+                float macro = vMacro;
+                float regional = vRegional;
                 float detailFade = 1.0 - smoothstep(700.0, 4500.0, vDistance);
-                float micro = detailFade > 0.0
-                    ? valueNoise(vNoiseXZ / 32.0, 2048.0) : 0.5;
+                float micro = vMicro;
                 float moisture = clamp(0.6 * macro + 0.4 * regional, 0.0, 1.0);
 
                 vec3 dryGrass = vec3(0.37, 0.34, 0.22);
@@ -187,7 +197,7 @@ final class GeometryClipmapRenderer {
                     (1.0 - smoothstep(0.0, 5.0, uSeaLevel - vHeight));
                 color = mix(color, vec3(0.52, 0.64, 0.61),
                     shallowShore * 0.23);
-                float diffuse = max(dot(normal, normalize(uSunDirection)), 0.0);
+                float diffuse = max(dot(normal, uSunDirection), 0.0);
                 color *= uAmbientLight + uDirectLight * diffuse;
 
                 float fog = smoothstep(uFogStart, uFogEnd, vDistance);
