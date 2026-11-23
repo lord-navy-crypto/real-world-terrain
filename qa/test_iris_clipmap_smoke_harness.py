@@ -41,9 +41,9 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
     def test_iris_native_draw_uses_portable_terrain_stage_events(self):
         self.assertIn("prepareIrisFrameFog", IRIS_MIXIN)
         self.assertNotIn("ShaderInstance;clear()V", IRIS_MIXIN)
-        self.assertIn('case "after_solid_blocks" -> RenderType.solid()', GEOMETRY_CLIENT)
-        self.assertIn('case "after_cutout_blocks" -> RenderType.cutout()', GEOMETRY_CLIENT)
-        self.assertIn('case "after_translucent_blocks" -> RenderType.translucent()', GEOMETRY_CLIENT)
+        self.assertIn("RenderLevelStageEvent.Stage.AFTER_SOLID_BLOCKS", GEOMETRY_CLIENT)
+        self.assertIn("RenderLevelStageEvent.Stage.AFTER_CUTOUT_BLOCKS", GEOMETRY_CLIENT)
+        self.assertIn("RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS", GEOMETRY_CLIENT)
         self.assertIn("event.getModelViewMatrix(), event.getProjectionMatrix()", GEOMETRY_CLIENT)
 
     def test_workflow_archives_client_and_server_logs(self):
