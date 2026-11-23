@@ -150,7 +150,7 @@ public final class GeometryClipmapServer {
         if (!isNaturalAutomateSettings(settingsId)) {
             sendStatus(player, session, ClipmapStatusPayload.UNSUPPORTED_WORLD, 0,
                     "active noise settings are " + String.valueOf(settingsId)
-                            + "; expected realscale:natural_automate_v2");
+                            + "; expected realscale:natural_automate or realscale:natural_automate_v2");
             removeSession(player.getUUID(), session);
             return;
         }
@@ -249,7 +249,6 @@ public final class GeometryClipmapServer {
                                 ? null : previousGrids.get(i);
                         final int levelIndex = i;
                         int[] nextProgressThreshold = {25};
-                        session.completedLevels = levelIndex;
                         ClipmapHeightGrid grid = ClipmapHeightGrid.sample(
                                 nextLayout.levels().get(i), nextLayout.gridCells(),
                                 heightSampler, previous,
