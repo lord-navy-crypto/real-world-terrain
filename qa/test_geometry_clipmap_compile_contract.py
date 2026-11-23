@@ -284,6 +284,30 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn('GL20.glGetUniformLocation(program, "uMorphBandCells")', renderer)
 
 
+    def test_dynamic_environment_tracks_dimension_sun_and_weather(self):
+        environment = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapEnvironment.java").read_text(
+            encoding="utf-8"
+        )
+        renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        proxy = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/VisibleSurfaceProxyRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        client = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapClient.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("level.getSeaLevel()", environment)
+        self.assertIn("level.getSunAngle(partialTick)", environment)
+        self.assertIn("level.getRainLevel(partialTick)", environment)
+        self.assertIn("level.getThunderLevel(partialTick)", environment)
+        self.assertIn("environment.seaLevel()", renderer)
+        self.assertIn('"uSunDirection"', renderer)
+        self.assertNotIn("vec3 sun = normalize(vec3(0.38", renderer)
+        self.assertIn('"uLightLevel"', proxy)
+        self.assertIn("ClipmapEnvironment.from(minecraft.level, partialTick)", client)
+
+
     def test_toroidal_texture_update_plan_has_unit_coverage(self):
         planner = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.java").read_text(
             encoding="utf-8"
