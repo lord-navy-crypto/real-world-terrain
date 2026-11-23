@@ -57,6 +57,7 @@ final class IrisNativeClipmapRenderer {
     private static List<ClipmapHeightTilePayload> cachedTiles = List.of();
     private static List<VisibleSurfaceProxy> cachedProxies = List.of();
     private static boolean missingChunkOffsetReported;
+    private static boolean nativeDrawFailureReported;
 
     private IrisNativeClipmapRenderer() {}
 
@@ -134,10 +135,10 @@ final class IrisNativeClipmapRenderer {
             // the same uniform for our centre-relative cached VBO, then restore
             // zero before returning to the caller's normal terrain cleanup.
             Uniform chunkOffset = shader.CHUNK_OFFSET;
-            chunkOffset.set((float) (centerX - cameraX),
-                    (float) -cameraY, (float) (centerZ - cameraZ));
-            chunkOffset.upload();
             try {
+                chunkOffset.set((float) (centerX - cameraX),
+                        (float) -cameraY, (float) (centerZ - cameraZ));
+                chunkOffset.upload();
                 target.bind();
                 target.draw();
                 return true;
@@ -146,6 +147,13 @@ final class IrisNativeClipmapRenderer {
                 chunkOffset.set(0.0f, 0.0f, 0.0f);
                 chunkOffset.upload();
             }
+        } catch (RuntimeException | LinkageError failure) {
+            if (!nativeDrawFailureReported) {
+                nativeDrawFailureReported = true;
+                System.err.println("[RealScale Iris Clipmap] native terrain draw failed safely: "
+                        + failure.getClass().getSimpleName() + ": " + failure.getMessage());
+            }
+            return false;
         } finally {
             if (projectionScope != null) {
                 projectionScope.close();
@@ -175,6 +183,7 @@ final class IrisNativeClipmapRenderer {
         cachedTiles = List.of();
         cachedProxies = List.of();
         missingChunkOffsetReported = false;
+        nativeDrawFailureReported = false;
     }
 
     private static boolean cacheMatches(Map<Integer, ClipmapHeightTilePayload> tiles,
