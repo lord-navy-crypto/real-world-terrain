@@ -251,11 +251,21 @@ public final class GeometryClipmapClient {
         // vanilla solid/cutout/translucent section-layer passes instead.
         IrisRenderCompatibility.State iris = IrisRenderCompatibility.current();
         if (iris.shadowPass()) return;
-        if (iris.allowsIrisNativeRenderer()) {
+        if (iris.allowsIrisNativeRenderer()
+                && IrisRenderCompatibility.hasNativeProjectionBridge()) {
             if (!irisCompatibilityNoticeShown) {
                 irisCompatibilityNoticeShown = true;
                 reportStatus(minecraft,
                         "[RealScale] Clipmap: IRIS NATIVE TERRAIN PATH ACTIVE - waiting for solid/cutout/water passes");
+            }
+            return;
+        }
+        if (iris.allowsIrisNativeRenderer()
+                && !IrisRenderCompatibility.hasNativeProjectionBridge()) {
+            if (!irisCompatibilityNoticeShown) {
+                irisCompatibilityNoticeShown = true;
+                reportStatus(minecraft,
+                        "[RealScale] Clipmap: this Iris build lacks the required G-buffer projection bridge; native draw paused safely");
             }
             return;
         }
@@ -310,7 +320,8 @@ public final class GeometryClipmapClient {
         if (minecraft.level == null) return;
 
         IrisRenderCompatibility.State iris = IrisRenderCompatibility.current();
-        if (!iris.allowsIrisNativeRenderer()) return;
+        if (!iris.allowsIrisNativeRenderer()
+                || !IrisRenderCompatibility.hasNativeProjectionBridge()) return;
         var key = TILES.activeKey();
         if (key == null || key.requestId() != activeRequestId) return;
 
