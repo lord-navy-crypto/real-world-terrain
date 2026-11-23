@@ -398,7 +398,7 @@ def read_debug_camera_y() -> float:
             check=True, capture_output=True, text=True, timeout=20,
         )
         match = re.search(
-            r"XYZ:\s*[-+0-9.]+\s*/\s*([-+0-9.]+)\s*/\s*[-+0-9.]+"
+            r"XYZ:\s*[-+0-9.]+\s*/\s*([-+0-9.]+)\s*/\s*[-+0-9.]+",
             result.stdout,
             re.IGNORECASE,
         )
