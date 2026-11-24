@@ -474,7 +474,6 @@ final class IrisNativeClipmapRenderer {
         for (int p = 0; p < indices.length; p += 3) {
             boolean skirt = false;
             float averageHeight = 0.0f;
-            float averageNormalY = 0.0f;
 
             for (int vertex = 0; vertex < 3; vertex++) {
                 int index = indices[p + vertex];
@@ -486,7 +485,6 @@ final class IrisNativeClipmapRenderer {
                 int heightIndex = gridZ[vertex] * side + gridX[vertex];
                 topHeight[vertex] = surfaceHeights[heightIndex];
                 averageHeight += topHeight[vertex] / 3.0f;
-                averageNormalY += smoothNormals[heightIndex * 3 + 1] / 3.0f;
                 x[vertex] = (gridX[vertex] - cells * 0.5f) * spacing;
                 z[vertex] = (gridZ[vertex] - cells * 0.5f) * spacing;
             }

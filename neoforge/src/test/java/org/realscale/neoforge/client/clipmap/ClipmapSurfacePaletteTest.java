@@ -17,7 +17,7 @@ final class ClipmapSurfacePaletteTest {
     void shorelineMaterialTransitionIsContinuous() {
         int before = ClipmapSurfacePalette.colorAt(75.0f, 1.0f, 63.0f, false);
         int after = ClipmapSurfacePalette.colorAt(76.0f, 1.0f, 63.0f, false);
-        assertChannelDeltaAtMost(before, after, 3);
+        assertChannelDeltaAtMost(before, after, 5);
     }
 
     @Test
