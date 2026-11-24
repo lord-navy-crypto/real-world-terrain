@@ -577,8 +577,14 @@ final class IrisNativeClipmapRenderer {
                     int normalIndex = (gridZ[vertex] * side + gridX[vertex]) * 3;
                     averageNormalY += smoothNormals[normalIndex + 1] / 3.0f;
                 }
-                TextureAtlasSprite materialSprite = sprites.forMaterial(
-                        ClipmapSurfacePalette.materialAt(averageHeight, averageNormalY, seaLevel));
+                // Keep authored block textures where they can resolve on screen.
+                // At coarse LODs, one 16x16 tile per 32-128 block cell aliases
+                // into visible speckle. Use a neutral atlas texel there and let
+                // the world-anchored macro palette carry broad biome variation.
+                TextureAtlasSprite materialSprite = level >= 3
+                        ? sprites.neutral()
+                        : sprites.forMaterial(ClipmapSurfacePalette.materialAt(
+                                averageHeight, averageNormalY, seaLevel));
                 emitTriangle(solid, materialSprite, vertexColors, 255,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         true, false, faceNormalScratch);
@@ -905,7 +911,7 @@ final class IrisNativeClipmapRenderer {
             TextureAtlasSprite sand, TextureAtlasSprite snow,
             TextureAtlasSprite water, TextureAtlasSprite leaves,
             TextureAtlasSprite wood, TextureAtlasSprite bricks,
-            TextureAtlasSprite black,
+            TextureAtlasSprite black, TextureAtlasSprite neutral,
             TextureAtlasSprite grassTop, TextureAtlasSprite stoneTop,
             TextureAtlasSprite sandTop, TextureAtlasSprite snowTop) {
         private static Sprites load(Minecraft minecraft) {
@@ -924,10 +930,15 @@ final class IrisNativeClipmapRenderer {
                     particle(shaper, Blocks.OAK_LOG.defaultBlockState()),
                     particle(shaper, Blocks.STONE_BRICKS.defaultBlockState()),
                     particle(shaper, Blocks.BLACK_CONCRETE.defaultBlockState()),
+                    particle(shaper, Blocks.WHITE_CONCRETE.defaultBlockState()),
                     topFace(shaper, grassState),
                     topFace(shaper, stoneState),
                     topFace(shaper, sandState),
                     topFace(shaper, snowState));
+        }
+
+        private TextureAtlasSprite neutral() {
+            return neutral;
         }
 
         private TextureAtlasSprite forMaterial(int material) {
