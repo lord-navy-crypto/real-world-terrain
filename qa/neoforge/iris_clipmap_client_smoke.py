@@ -399,7 +399,7 @@ def prepare_open_rendering_view(
     for attempt in range(1, 4):
         # Increase spectator speed, then release as soon as render-thread
         # telemetry confirms the target altitude. Holding ascent for a fixed
-        # duration used to overshoot 1100 by more than 500 blocks.
+        # duration used to overshoot the intended high-altitude view by more than 500 blocks.
         subprocess.run(
             ["xdotool", "click", "--repeat", "24", "--delay", "20", "4"],
             check=True, timeout=15,
@@ -407,14 +407,14 @@ def prepare_open_rendering_view(
         subprocess.run(["xdotool", "keydown", "Control_L"], check=True, timeout=10)
         subprocess.run(["xdotool", "keydown", "space"], check=True, timeout=10)
         try:
-            ascent_deadline = time.monotonic() + 25
+            ascent_deadline = time.monotonic() + 120
             while time.monotonic() < ascent_deadline:
                 output = "".join(client_stdout_lines)
                 camera_match = re.search(
                     r"CLIENT_CAMERA_VANTAGE_READY:\s*x=([-+0-9.]+)\s+y=([-+0-9.]+)\s+z=([-+0-9.]+)",
                     output,
                 )
-                if camera_match and float(camera_match.group(2)) >= 1100.0:
+                if camera_match and float(camera_match.group(2)) >= 2300.0:
                     print(
                         f"CLIENT_CAMERA_TARGET_REACHED: y={float(camera_match.group(2)):.1f}; "
                         "releasing ascent controls",
@@ -426,7 +426,7 @@ def prepare_open_rendering_view(
             subprocess.run(["xdotool", "keyup", "space"], check=False, timeout=10)
             subprocess.run(["xdotool", "keyup", "Control_L"], check=False, timeout=10)
 
-        if camera_match and float(camera_match.group(2)) >= 1100.0:
+        if camera_match and float(camera_match.group(2)) >= 2300.0:
             print(
                 f"CLIENT_CAMERA_VERIFIED: spawn_y={spawn_y:.1f}, "
                 f"camera_y={float(camera_match.group(2)):.1f}",
@@ -439,7 +439,7 @@ def prepare_open_rendering_view(
             flush=True,
         )
 
-    if not camera_match or float(camera_match.group(2)) < 1100.0:
+    if not camera_match or float(camera_match.group(2)) < 2300.0:
         raise RuntimeError(
             "Spectator flight did not reach the verified high-altitude camera; "
             "render-thread telemetry marker was not observed"
@@ -480,7 +480,7 @@ def run_client(env: dict[str, str]) -> None:
         def visible_samples_ready() -> bool:
             output = "".join(lines)
             return any(
-                int(m.group(1)) > 0 and 1000.0 <= float(m.group(2)) <= 1250.0
+                int(m.group(1)) > 0 and 2200.0 <= float(m.group(2)) <= 2500.0
                 for m in re.finditer(
                     r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*?cameraY=([-+0-9.]+)", output)
             )
@@ -488,7 +488,7 @@ def run_client(env: dict[str, str]) -> None:
         def full_visible_ready() -> bool:
             output = "".join(lines)
             return bool(re.search(r"nativeMeshesBuilt=.*\blevels=6\b", output)) and any(
-                int(m.group(1)) > 0 and 1000.0 <= float(m.group(2)) <= 1250.0
+                int(m.group(1)) > 0 and 2200.0 <= float(m.group(2)) <= 2500.0
                 for m in re.finditer(
                     r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*?cameraY=([-+0-9.]+).*?\blevels=6\b",
                     output,
