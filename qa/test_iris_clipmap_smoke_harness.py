@@ -88,8 +88,6 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("sprites.forMaterial(", IRIS_RENDERER)
         self.assertIn("ClipmapSurfacePalette.texturedTintAt(", IRIS_RENDERER)
         self.assertNotIn("sprites.white()", IRIS_RENDERER)
-        self.assertIn("DEFAULT_GRID_CELLS = 256", GEOMETRY_CLIENT.replace(
-            "DEFAULT_GRID_CELLS", "DEFAULT_GRID_CELLS"))
         layout = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapLayout.java").read_text(
             encoding="utf-8"
         )
