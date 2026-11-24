@@ -13,6 +13,7 @@ class GeometryClipmapSettingsTest {
     @TempDir
     Path tempDir;
 
+    // A fresh install must not start distant rendering until the player opts in.
     @Test
     void defaultsToDisabledWhenPreferenceDoesNotExist() {
         assertFalse(GeometryClipmapSettings.loadEnabled(
