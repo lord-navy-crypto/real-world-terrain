@@ -398,7 +398,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("chunkOffset.upload()", native)
         self.assertIn("target.draw()", native)
         self.assertIn("shadowPass", native)
-        self.assertIn("ClipmapRingMesh.indices(cells, holeRadius)", native)
+        self.assertIn("ClipmapRingMesh.surfaceIndices(cells, holeRadius)", native)
         self.assertIn("morphedHeight(", native)
         self.assertNotIn("glUseProgram", native)
         self.assertNotIn("glBindFramebuffer", native)
@@ -431,9 +431,9 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn('config="realscale.geometryclipmap.mixins.json"', mods)
         self.assertIn('"IrisGeometryClipmapMixin"', config)
         self.assertIn("ClipmapSurfaceNormals.compute(", native)
-        self.assertIn("Blocks.WHITE_CONCRETE", native)
-        self.assertIn("sprites.white()", native)
-        self.assertIn("ClipmapTriangleUv.computeWorldAlignedInto(", native)
+        self.assertNotIn("Blocks.WHITE_CONCRETE", native)
+        self.assertNotIn("sprites.white()", native)
+        self.assertIn("ClipmapTriangleUv.computeCellAlignedInto(", native)
         self.assertNotIn("ClipmapTriangleUv.computeInto(", native)
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
@@ -445,29 +445,33 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("triangle UV projection is degenerate", uv)
         self.assertIn("Math.max(0, Math.min(cells, x))", native)
         self.assertNotIn("int minX = Math.min(gridX", native)
-        self.assertIn("ClipmapSurfacePalette.colorAt(", native)
+        self.assertIn("ClipmapSurfacePalette.texturedTintAt(", native)
+        self.assertIn("ClipmapSurfacePalette.materialAt(", native)
         self.assertIn("vertexColors[vertex]", native)
         self.assertNotIn("int materialRgb", native)
         self.assertIn("ClipmapTriangleUv.computeWorldAlignedInto(", native)
         self.assertNotIn("8.0f, 8.0f, nx", native)
 
-    def test_iris_native_surface_materials_do_not_repeat_atlas_textures_per_triangle(self):
+    def test_iris_native_surface_materials_restore_cell_scale_atlas_detail(self):
         native = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/IrisNativeClipmapRenderer.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", native)
+        self.assertIn("topFace(shaper, grassState)", native)
+        self.assertIn("sprites.forMaterial(", native)
+        self.assertIn("getQuads(state, Direction.UP", native)
         self.assertIn("sprite.getU(u), sprite.getV(v)", native)
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
         self.assertIn("horizontal, -worldHalfExtent, worldHalfExtent", uv)
+        self.assertIn("computeCellAlignedInto", uv)
         self.assertIn("mapToSprite(vertical, minWorldY, maxWorldY)", uv)
         self.assertIn("adjacent triangles and LOD", uv)
         self.assertIn("ClipmapSurfaceNormals.compute(", native)
         self.assertIn("float[] smoothNormals", native)
         self.assertNotIn("ClipmapTriangleUv.computeInto(", native)
         self.assertIn("triangleUvs[vertex * 2]", native)
-        self.assertIn("ClipmapSurfacePalette.colorAt(", native)
+        self.assertIn("ClipmapSurfacePalette.texturedTintAt(", native)
         palette = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapSurfacePalette.java").read_text(
             encoding="utf-8"
         )
