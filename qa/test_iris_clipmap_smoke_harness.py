@@ -82,6 +82,18 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("TERRAIN_VIEWPORT_COLOR_COUNT", SMOKE)
         self.assertIn("minimum_seconds=60", SMOKE)
 
+    def test_far_lods_prefilter_atlas_detail_without_browning_near_textures(self):
+        self.assertIn("level >= 3", IRIS_RENDERER)
+        self.assertIn("sprites.neutral()", IRIS_RENDERER)
+        self.assertIn("sprites.forMaterial(", IRIS_RENDERER)
+        self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", IRIS_RENDERER)
+        palette = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapSurfacePalette.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("near-neutral multipliers", palette)
+        self.assertIn("0.91f, 1.00f", palette)
+        self.assertIn("0.98f, 0.94f", palette)
+
     def test_native_terrain_restores_real_textures_and_doubles_grid_density(self):
         self.assertIn("ClipmapRingMesh.surfaceIndices(cells, holeRadius)", IRIS_RENDERER)
         self.assertIn("ClipmapTriangleUv.computeCellAlignedInto", IRIS_RENDERER)
