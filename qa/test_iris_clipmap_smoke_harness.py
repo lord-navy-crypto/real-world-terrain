@@ -71,6 +71,31 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("sprites.water()", IRIS_RENDERER)
         self.assertIn("activeIrisExtendedFogStart", GEOMETRY_CLIENT)
 
+    def test_eye_level_capture_waits_for_complete_lods_and_proxies(self):
+        self.assertIn("capture_natural_surface_view(proc, lines)", SMOKE)
+        self.assertIn("iris-clipmap-natural-eye-level", SMOKE)
+        self.assertIn("wait_for_complete_surface_assets", SMOKE)
+        self.assertIn("NATURAL_VIEW_ASSETS_SETTLED", SMOKE)
+        self.assertIn("nativeProxyMeshesBuilt", SMOKE)
+        self.assertIn("terrain_color_count", SMOKE)
+        self.assertIn("TERRAIN_VIEWPORT_COLOR_COUNT", SMOKE)
+        self.assertIn("minimum_seconds=60", SMOKE)
+
+    def test_native_terrain_restores_real_textures_and_doubles_grid_density(self):
+        self.assertIn("ClipmapRingMesh.surfaceIndices(cells, holeRadius)", IRIS_RENDERER)
+        self.assertIn("ClipmapTriangleUv.computeCellAlignedInto", IRIS_RENDERER)
+        self.assertIn("topFace(shaper, grassState)", IRIS_RENDERER)
+        self.assertIn("sprites.forMaterial(", IRIS_RENDERER)
+        self.assertIn("ClipmapSurfacePalette.texturedTintAt(", IRIS_RENDERER)
+        self.assertNotIn("sprites.white()", IRIS_RENDERER)
+        self.assertIn("DEFAULT_GRID_CELLS = 256", GEOMETRY_CLIENT.replace(
+            "DEFAULT_GRID_CELLS", "DEFAULT_GRID_CELLS"))
+        layout = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapLayout.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("DEFAULT_GRID_CELLS = 256", layout)
+        self.assertIn("DEFAULT_BASE_CELL_SPACING_BLOCKS = 4", layout)
+
     def test_iris_native_draw_uses_portable_terrain_stage_events(self):
         self.assertIn("prepareIrisFrameFog", IRIS_MIXIN)
         self.assertNotIn("ShaderInstance;clear()V", IRIS_MIXIN)
