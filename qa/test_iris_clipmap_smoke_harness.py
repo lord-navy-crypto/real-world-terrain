@@ -62,12 +62,13 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("Persistent post-motion terrain contrast collapse", SMOKE)
         self.assertIn("IRIS_TERRAIN_CONTRAST_GATE_PASS", SMOKE)
 
-    def test_native_proxy_meshes_are_independent_and_seams_use_parent_tile(self):
+    def test_native_proxy_meshes_are_independent_and_seams_use_valid_fine_samples(self):
         self.assertIn("proxySolidBuffer", IRIS_RENDERER)
         self.assertIn("rebuildProxies(safeProxies, centerX, centerZ)", IRIS_RENDERER)
         self.assertNotIn("proxies != cachedProxies || cachedTiles", IRIS_RENDERER)
-        self.assertIn("parentTile.heights()", IRIS_RENDERER)
-        self.assertIn("float parent = fx + fz <= 1.0f", IRIS_RENDERER)
+        self.assertIn("parentX = (x / 2) * 2", IRIS_RENDERER)
+        self.assertIn("ClipmapMorphMath.parentHeight(x, z, h00, h10, h01, h11)", IRIS_RENDERER)
+        self.assertNotIn("parentTile.heights()", IRIS_RENDERER)
         self.assertIn("sprites.water()", IRIS_RENDERER)
         self.assertIn("activeIrisExtendedFogStart", GEOMETRY_CLIENT)
 
