@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * Diagnostic test-build client entry point for the Geometry Clipmap renderer.
  *
- * <p>Geometry Clipmap is enabled by default and can be toggled at runtime
+ * <p>Geometry Clipmap is disabled by default and can be enabled at runtime
  * from the in-game pause menu. The preference persists in the config folder.
  */
 @EventBusSubscriber(modid = "realscale", value = Dist.CLIENT)
