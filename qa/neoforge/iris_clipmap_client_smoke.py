@@ -396,7 +396,7 @@ def ocr_game_window(name: str) -> str:
         )
     result = subprocess.run(
         ["tesseract", str(crop), "stdout", "--psm", "6"],
-        check=True, capture_output=True, text=True, timeout=20,
+        check=True, capture_output=True, text=True, timeout=60,
     )
     return re.sub(r"[^a-z0-9]+", " ", result.stdout.lower()).strip()
 
@@ -449,9 +449,19 @@ def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
     focus_minecraft_window()
     subprocess.run(["xdotool", "key", "Escape"], check=True, timeout=10)
     time.sleep(1)
-    initial = read_pause_menu_toggle_text("iris-clipmap-pause-menu-on")
-    if "geometry clipmap on" not in initial:
-        raise RuntimeError("Pause menu did not display Geometry Clipmap: ON: " + initial)
+    initial = read_pause_menu_toggle_text("iris-clipmap-pause-menu-default-off")
+    if "geometry clipmap off" not in initial:
+        raise RuntimeError("Geometry Clipmap must default to OFF: " + initial)
+
+    before_on = len(lines)
+    subprocess.run(
+        ["xdotool", "mousemove", "--sync", str(click_x), str(click_y), "click", "1"],
+        check=True, timeout=10,
+    )
+    wait_for_toggle_status(lines, "[RealScale] Clipmap: ON", before_on)
+    on_text = read_pause_menu_toggle_text("iris-clipmap-pause-menu-on")
+    if "geometry clipmap on" not in on_text:
+        raise RuntimeError("Pause-menu toggle did not enable Geometry Clipmap: " + on_text)
 
     before_off = len(lines)
     subprocess.run(
@@ -461,17 +471,17 @@ def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
     wait_for_toggle_status(lines, "[RealScale] Clipmap: OFF", before_off)
     off_text = read_pause_menu_toggle_text("iris-clipmap-pause-menu-off")
     if "geometry clipmap off" not in off_text:
-        raise RuntimeError("Pause-menu toggle did not display OFF after click: " + off_text)
+        raise RuntimeError("Pause-menu toggle did not disable Geometry Clipmap: " + off_text)
 
-    before_on = len(lines)
+    before_on_again = len(lines)
     subprocess.run(
         ["xdotool", "mousemove", "--sync", str(click_x), str(click_y), "click", "1"],
         check=True, timeout=10,
     )
-    wait_for_toggle_status(lines, "[RealScale] Clipmap: ON", before_on)
-    on_text = read_pause_menu_toggle_text("iris-clipmap-pause-menu-on-again")
-    if "geometry clipmap on" not in on_text:
-        raise RuntimeError("Pause-menu toggle did not return to ON after click: " + on_text)
+    wait_for_toggle_status(lines, "[RealScale] Clipmap: ON", before_on_again)
+    on_again_text = read_pause_menu_toggle_text("iris-clipmap-pause-menu-on-again")
+    if "geometry clipmap on" not in on_again_text:
+        raise RuntimeError("Pause-menu toggle did not re-enable Geometry Clipmap: " + on_again_text)
 
     subprocess.run(["xdotool", "key", "Escape"], check=True, timeout=10)
     time.sleep(1)
