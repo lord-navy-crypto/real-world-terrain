@@ -285,6 +285,63 @@ def capture_screenshot(name: str) -> pathlib.Path | None:
         return None
 
 
+def read_pause_menu_toggle_text(name: str) -> str:
+    image = capture_screenshot(name)
+    if image is None:
+        raise RuntimeError("Could not capture the Minecraft pause menu for toggle verification")
+    result = subprocess.run(
+        ["tesseract", str(image), "stdout", "--psm", "6"],
+        check=True, capture_output=True, text=True, timeout=20,
+    )
+    return re.sub(r"[^a-z0-9]+", " ", result.stdout.lower()).strip()
+
+
+def wait_for_toggle_status(lines, marker: str, start: int, timeout: float = 12.0) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if marker in "".join(lines[start:]):
+            print("CLIPMAP_TOGGLE_STATUS_CONFIRMED:", marker, flush=True)
+            return
+        time.sleep(0.25)
+    raise RuntimeError("Client did not report the pause-menu toggle: " + marker)
+
+
+def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
+    """Exercise ON -> OFF -> ON through the actual Minecraft pause-menu button."""
+    # The CI virtual display is 1280x720 and Minecraft's GUI scale is 2.
+    # The toggle button is the right-hand button in the bottom custom row.
+    click_x, click_y = 798, 684
+    subprocess.run(["xdotool", "key", "Escape"], check=True, timeout=10)
+    time.sleep(1)
+    initial = read_pause_menu_toggle_text("iris-clipmap-pause-menu-on")
+    if "geometry clipmap on" not in initial:
+        raise RuntimeError("Pause menu did not display Geometry Clipmap: ON: " + initial)
+
+    before_off = len(lines)
+    subprocess.run(
+        ["xdotool", "mousemove", "--sync", str(click_x), str(click_y), "click", "1"],
+        check=True, timeout=10,
+    )
+    wait_for_toggle_status(lines, "[RealScale] Clipmap: OFF", before_off)
+    off_text = read_pause_menu_toggle_text("iris-clipmap-pause-menu-off")
+    if "geometry clipmap off" not in off_text:
+        raise RuntimeError("Pause-menu toggle did not display OFF after click: " + off_text)
+
+    before_on = len(lines)
+    subprocess.run(
+        ["xdotool", "mousemove", "--sync", str(click_x), str(click_y), "click", "1"],
+        check=True, timeout=10,
+    )
+    wait_for_toggle_status(lines, "[RealScale] Clipmap: ON", before_on)
+    on_text = read_pause_menu_toggle_text("iris-clipmap-pause-menu-on-again")
+    if "geometry clipmap on" not in on_text:
+        raise RuntimeError("Pause-menu toggle did not return to ON after click: " + on_text)
+
+    subprocess.run(["xdotool", "key", "Escape"], check=True, timeout=10)
+    time.sleep(1)
+    print("CLIPMAP_PAUSE_MENU_TOGGLE_PASS", flush=True)
+
+
 def experimental_warning_visible() -> bool:
     """OCR the virtual display for Minecraft's experimental-world confirmation."""
     xwd = BUILD / ".experimental-warning-probe.xwd"
@@ -494,7 +551,9 @@ def wait_for_complete_surface_assets(proc, lines, start: int,
 
 
 def capture_natural_surface_view(proc, lines) -> None:
-    wait_for_complete_surface_assets(proc, lines, 0, minimum_seconds=60)
+    # Ignore snapshots from before the OFF -> ON test; the toggle clears them.
+    start = len(lines)
+    wait_for_complete_surface_assets(proc, lines, start, minimum_seconds=60)
     subprocess.run(["xdotool", "key", "F1"], check=True, timeout=10)
     time.sleep(2)
     image = capture_screenshot("iris-clipmap-natural-eye-level")
@@ -641,6 +700,7 @@ def run_client(env: dict[str, str]) -> None:
             elif not camera_prepared:
                 if client_latest.exists() and "Loaded 2 advancements" in client_latest.read_text(
                         encoding="utf-8", errors="replace"):
+                    test_pause_menu_geometry_clipmap_toggle(lines)
                     capture_natural_surface_view(proc, lines)
                     prepare_open_rendering_view(client_latest, lines)
                     camera_prepared = True
@@ -780,7 +840,6 @@ def main() -> int:
     env = os.environ.copy()
     env["JAVA_TOOL_OPTIONS"] = (
         env.get("JAVA_TOOL_OPTIONS", "") +
-        " -Drealscale.experimental.geometryclipmap=true"
         " -Drealscale.experimental.geometryclipmap.debug=true"
         " -Drealscale.experimental.geometryclipmap.smokeCamera=true"
     ).strip()
