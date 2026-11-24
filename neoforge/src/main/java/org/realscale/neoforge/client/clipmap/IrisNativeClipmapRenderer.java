@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL15;
 import org.realscale.neoforge.network.ClipmapHeightTilePayload;
 
 import java.util.ArrayList;
@@ -60,6 +61,13 @@ final class IrisNativeClipmapRenderer {
     private static List<VisibleSurfaceProxy> cachedProxies = List.of();
     private static boolean missingChunkOffsetReported;
     private static boolean nativeDrawFailureReported;
+    // A draw call alone proves nothing about visible fragments. Probe only
+    // in the opt-in CI camera mode; never introduce a synchronous GPU query
+    // or an associated frame stall during normal gameplay.
+    private static final boolean SMOKE_VISIBILITY_PROBE =
+            Boolean.getBoolean("realscale.experimental.geometryclipmap.smokeCamera");
+    private static boolean smokeVisibilityPassed;
+    private static long lastSmokeProbeNanos;
 
     private IrisNativeClipmapRenderer() {}
 
@@ -138,7 +146,7 @@ final class IrisNativeClipmapRenderer {
                     (float) -cameraY, (float) (centerZ - cameraZ));
             chunkOffset.upload();
             target.bind();
-            target.draw();
+            drawWithVisibilityProbe(target, renderType, shadowPass, cameraY);
             return true;
         } catch (RuntimeException | LinkageError failure) {
             if (!nativeDrawFailureReported) {
@@ -161,6 +169,35 @@ final class IrisNativeClipmapRenderer {
         }
     }
 
+    private static void drawWithVisibilityProbe(VertexBuffer target,
+            RenderType renderType, boolean shadowPass, double cameraY) {
+        long now = System.nanoTime();
+        if (!SMOKE_VISIBILITY_PROBE || smokeVisibilityPassed || shadowPass
+                || renderType != RenderType.solid() || cameraY < 1100.0
+                || (lastSmokeProbeNanos != 0L && now - lastSmokeProbeNanos < 2_000_000_000L)
+                || GL15.glGetQueryi(GL15.GL_SAMPLES_PASSED, GL15.GL_CURRENT_QUERY) != 0) {
+            target.draw();
+            return;
+        }
+        lastSmokeProbeNanos = now;
+        int query = GL15.glGenQueries();
+        try {
+            GL15.glBeginQuery(GL15.GL_SAMPLES_PASSED, query);
+            try {
+                target.draw();
+            } finally {
+                GL15.glEndQuery(GL15.GL_SAMPLES_PASSED);
+            }
+            int samples = GL15.glGetQueryObjecti(query, GL15.GL_QUERY_RESULT);
+            smokeVisibilityPassed = samples > 0;
+            System.out.printf(java.util.Locale.ROOT,
+                    "[RealScale Iris Clipmap] MAIN_SOLID_VISIBLE_SAMPLES=%d cameraY=%.1f%n",
+                    samples, cameraY);
+        } finally {
+            GL15.glDeleteQueries(query);
+        }
+    }
+
     static void dispose() {
         RenderSystem.assertOnRenderThread();
         disposeBuffers();
@@ -176,6 +213,8 @@ final class IrisNativeClipmapRenderer {
         cachedProxies = List.of();
         missingChunkOffsetReported = false;
         nativeDrawFailureReported = false;
+        smokeVisibilityPassed = false;
+        lastSmokeProbeNanos = 0L;
     }
 
     private static boolean cacheMatches(Map<Integer, ClipmapHeightTilePayload> tiles,
