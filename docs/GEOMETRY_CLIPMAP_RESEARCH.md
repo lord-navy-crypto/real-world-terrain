@@ -67,7 +67,7 @@ The CPU layout prototype currently uses:
 | Clipmap levels | 6 |
 | Camera-safe finest ring inner radius | 96 blocks (10-chunk near view) |
 | Finest ring outer half-extent | 512 blocks |
-| Coarsest ring outer half-extent | 8,192 blocks |
+| Coarsest ring outer half-extent | 16,384 blocks |
 
 Each level is a nested regular grid. The finest region is left to Minecraft's real chunks; coarser levels render only the surrounding ring. Camera positions are snapped independently to each level's cell spacing. The layout planner calculates newly exposed L-shaped sample strips so future updates can avoid rebuilding the entire height texture after small player movements.
 
