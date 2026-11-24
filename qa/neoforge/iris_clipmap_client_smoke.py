@@ -397,8 +397,9 @@ def prepare_open_rendering_view(
 
     camera_match = None
     for attempt in range(1, 4):
-        # The client is forced into spectator mode. Raise flight speed with the
-        # wheel, then ascend while keeping the horizontal clipmap center fixed.
+        # Increase spectator speed, then release as soon as render-thread
+        # telemetry confirms the target altitude. Holding ascent for a fixed
+        # duration used to overshoot 1100 by more than 500 blocks.
         subprocess.run(
             ["xdotool", "click", "--repeat", "24", "--delay", "20", "4"],
             check=True, timeout=15,
@@ -406,16 +407,25 @@ def prepare_open_rendering_view(
         subprocess.run(["xdotool", "keydown", "Control_L"], check=True, timeout=10)
         subprocess.run(["xdotool", "keydown", "space"], check=True, timeout=10)
         try:
-            time.sleep(25)
+            ascent_deadline = time.monotonic() + 25
+            while time.monotonic() < ascent_deadline:
+                output = "".join(client_stdout_lines)
+                camera_match = re.search(
+                    r"CLIENT_CAMERA_VANTAGE_READY:\s*x=([-+0-9.]+)\s+y=([-+0-9.]+)\s+z=([-+0-9.]+)",
+                    output,
+                )
+                if camera_match and float(camera_match.group(2)) >= 1100.0:
+                    print(
+                        f"CLIENT_CAMERA_TARGET_REACHED: y={float(camera_match.group(2)):.1f}; "
+                        "releasing ascent controls",
+                        flush=True,
+                    )
+                    break
+                time.sleep(0.1)
         finally:
             subprocess.run(["xdotool", "keyup", "space"], check=False, timeout=10)
             subprocess.run(["xdotool", "keyup", "Control_L"], check=False, timeout=10)
 
-        output = "".join(client_stdout_lines)
-        camera_match = re.search(
-            r"CLIENT_CAMERA_VANTAGE_READY:\s*x=([-+0-9.]+)\s+y=([-+0-9.]+)\s+z=([-+0-9.]+)",
-            output,
-        )
         if camera_match and float(camera_match.group(2)) >= 1100.0:
             print(
                 f"CLIENT_CAMERA_VERIFIED: spawn_y={spawn_y:.1f}, "
