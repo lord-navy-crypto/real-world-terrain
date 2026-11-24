@@ -118,8 +118,11 @@ jobs:
 
           TEST ONLY. DO NOT MERGE TO MAIN OR REPLACE THE OFFICIAL RELEASE.
           Keep exactly one RealScale mod JAR in your mods directory.
-          Geometry Clipmap is AUTOMATICALLY ENABLED in this experimental test JAR.
-          No JVM arguments are needed to turn it on.
+          Geometry Clipmap is enabled by default in this experimental test JAR.
+          In-game switch: press Esc and click "Geometry Clipmap: ON/OFF".
+          The selected state is saved to config/realscale-geometry-clipmap.properties.
+          Turning it OFF stops new requests, clears active snapshots and releases
+          client renderer resources. Turning it ON requests a fresh six-LOD snapshot.
 
           Chat reports major handshake and error states:
             REQUEST SENT / SERVER ACKNOWLEDGED / QUEUED
@@ -133,8 +136,7 @@ jobs:
           of recomputing it. A 90-second no-progress watchdog cancels and retries
           a stalled sampling task. GPU draw submission is not proof of visible pixels.
 
-          Troubleshooting only (optional JVM arguments):
-            -Drealscale.experimental.geometryclipmap=false (disable)
+          Optional diagnostic JVM argument:
             -Drealscale.experimental.geometryclipmap.debug=false (silence timings)
 
           Suggested reproducible run:
