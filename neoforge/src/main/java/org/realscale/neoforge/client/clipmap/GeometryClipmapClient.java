@@ -302,7 +302,8 @@ public final class GeometryClipmapClient {
         if (DEBUG && !cameraVantageReported
                 && event.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY) {
             var cameraPosition = event.getCamera().getPosition();
-            if (cameraPosition.y >= 1100.0) {
+            double cameraVantageThreshold = SMOKE_CAMERA ? 2300.0 : 1100.0;
+            if (cameraPosition.y >= cameraVantageThreshold) {
                 cameraVantageReported = true;
                 Minecraft minecraft = Minecraft.getInstance();
                 if (SMOKE_CAMERA && minecraft.player != null) {
