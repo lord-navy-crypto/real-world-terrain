@@ -88,7 +88,7 @@ final class ClipmapHeightGridTest {
         AtomicInteger checks = new AtomicInteger();
         AtomicInteger samples = new AtomicInteger();
         assertThrows(CancellationException.class,
-                () -> ClipmapHeightGrid.sample(level, 128,
+                () -> ClipmapHeightGrid.sample(level, 256,
                         (x, z) -> {
                             samples.incrementAndGet();
                             return 40.0f;
