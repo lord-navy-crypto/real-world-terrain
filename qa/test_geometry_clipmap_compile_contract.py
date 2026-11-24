@@ -326,7 +326,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("ClipmapEnvironment.from(minecraft.level, partialTick)", client)
 
 
-    def test_horizon_material_noise_is_evaluated_per_vertex(self):
+    def test_horizon_material_noise_is_fragment_filtered_to_prevent_lod_aliasing(self):
         renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.java").read_text(
             encoding="utf-8"
         )
@@ -336,10 +336,13 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         fragment_shader = renderer.split("private static final String FRAGMENT_SHADER", 1)[1].split(
             "private static final FloatBuffer MATRIX_UPLOAD", 1
         )[0]
-        self.assertIn("vMacro = valueNoise", vertex_shader)
-        self.assertIn("vRegional = valueNoise", vertex_shader)
-        self.assertIn("vMicro = vertexDetailFade > 0.0", vertex_shader)
-        self.assertNotIn("valueNoise(", fragment_shader)
+        self.assertIn("vNoisePosition = levelNoiseOrigin + grid * levelSpacing", vertex_shader)
+        self.assertNotIn("valueNoise(", vertex_shader)
+        self.assertIn("filteredValueNoise", fragment_shader)
+        self.assertIn("dFdx(p)", fragment_shader)
+        self.assertIn("dFdy(p)", fragment_shader)
+        self.assertIn("smoothstep(0.20, 0.65, footprint)", fragment_shader)
+        self.assertIn("mix(0.97, 1.03, regional)", fragment_shader)
         self.assertIn("dot(normal, uSunDirection)", fragment_shader)
 
 
