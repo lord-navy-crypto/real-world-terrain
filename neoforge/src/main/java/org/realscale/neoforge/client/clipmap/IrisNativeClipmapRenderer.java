@@ -18,7 +18,10 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
 import org.realscale.neoforge.network.ClipmapHeightTilePayload;
 
 import java.util.ArrayList;
@@ -61,13 +64,19 @@ final class IrisNativeClipmapRenderer {
     private static List<VisibleSurfaceProxy> cachedProxies = List.of();
     private static boolean missingChunkOffsetReported;
     private static boolean nativeDrawFailureReported;
-    // A draw call alone proves nothing about visible fragments. Probe only
-    // in the opt-in CI camera mode; never introduce a synchronous GPU query
-    // or an associated frame stall during normal gameplay.
+    // The diagnostic test JAR reports real depth-passing samples on the
+    // user's GPU as well as CI. Poll asynchronously; never wait on the GPU.
+    private static final boolean DEBUG = Boolean.parseBoolean(System.getProperty(
+            "realscale.experimental.geometryclipmap.debug", "true"));
     private static final boolean SMOKE_VISIBILITY_PROBE =
             Boolean.getBoolean("realscale.experimental.geometryclipmap.smokeCamera");
     private static boolean smokeVisibilityPassed;
     private static long lastSmokeProbeNanos;
+    private static int pendingVisibilityQuery;
+    private static int visibilityAttempts;
+    private static double visibilityCameraY;
+    private static int visibilityProgram;
+    private static int visibilityFramebuffer;
 
     private IrisNativeClipmapRenderer() {}
 
@@ -171,15 +180,42 @@ final class IrisNativeClipmapRenderer {
 
     private static void drawWithVisibilityProbe(VertexBuffer target,
             RenderType renderType, boolean shadowPass, double cameraY) {
+        if (shadowPass || renderType != RenderType.solid()
+                || (!DEBUG && !SMOKE_VISIBILITY_PROBE)) {
+            target.draw();
+            return;
+        }
+        // Retrieve only completed queries. This is supported on OpenGL 4.1
+        // (including Apple Silicon), and cannot block on an unfinished draw.
+        if (pendingVisibilityQuery != 0
+                && GL15.glGetQueryObjecti(pendingVisibilityQuery,
+                        GL15.GL_QUERY_RESULT_AVAILABLE) != 0) {
+            int samples = GL15.glGetQueryObjecti(pendingVisibilityQuery,
+                    GL15.GL_QUERY_RESULT);
+            GL15.glDeleteQueries(pendingVisibilityQuery);
+            pendingVisibilityQuery = 0;
+            smokeVisibilityPassed = samples > 0;
+            System.out.printf(java.util.Locale.ROOT,
+                    "[RealScale Iris Clipmap] MAIN_SOLID_VISIBLE_SAMPLES=%d "
+                            + "cameraY=%.1f program=%d drawFramebuffer=%d attempt=%d%n",
+                    samples, visibilityCameraY, visibilityProgram,
+                    visibilityFramebuffer, visibilityAttempts);
+        }
+
         long now = System.nanoTime();
-        if (!SMOKE_VISIBILITY_PROBE || smokeVisibilityPassed || shadowPass
-                || renderType != RenderType.solid() || cameraY < 1100.0
+        if (pendingVisibilityQuery != 0 || smokeVisibilityPassed
+                || (SMOKE_VISIBILITY_PROBE && cameraY < 1100.0)
+                || (!SMOKE_VISIBILITY_PROBE && visibilityAttempts >= 4)
                 || (lastSmokeProbeNanos != 0L && now - lastSmokeProbeNanos < 2_000_000_000L)
                 || GL15.glGetQueryi(GL15.GL_SAMPLES_PASSED, GL15.GL_CURRENT_QUERY) != 0) {
             target.draw();
             return;
         }
         lastSmokeProbeNanos = now;
+        visibilityAttempts++;
+        visibilityCameraY = cameraY;
+        visibilityProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+        visibilityFramebuffer = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
         int query = GL15.glGenQueries();
         try {
             GL15.glBeginQuery(GL15.GL_SAMPLES_PASSED, query);
@@ -188,14 +224,21 @@ final class IrisNativeClipmapRenderer {
             } finally {
                 GL15.glEndQuery(GL15.GL_SAMPLES_PASSED);
             }
-            int samples = GL15.glGetQueryObjecti(query, GL15.GL_QUERY_RESULT);
-            smokeVisibilityPassed = samples > 0;
-            System.out.printf(java.util.Locale.ROOT,
-                    "[RealScale Iris Clipmap] MAIN_SOLID_VISIBLE_SAMPLES=%d cameraY=%.1f%n",
-                    samples, cameraY);
+            pendingVisibilityQuery = query;
+            query = 0;
         } finally {
-            GL15.glDeleteQueries(query);
+            if (query != 0) GL15.glDeleteQueries(query);
         }
+    }
+
+    private static void resetVisibilityProbe() {
+        if (pendingVisibilityQuery != 0) {
+            GL15.glDeleteQueries(pendingVisibilityQuery);
+            pendingVisibilityQuery = 0;
+        }
+        smokeVisibilityPassed = false;
+        lastSmokeProbeNanos = 0L;
+        visibilityAttempts = 0;
     }
 
     static void dispose() {
@@ -213,8 +256,7 @@ final class IrisNativeClipmapRenderer {
         cachedProxies = List.of();
         missingChunkOffsetReported = false;
         nativeDrawFailureReported = false;
-        smokeVisibilityPassed = false;
-        lastSmokeProbeNanos = 0L;
+        resetVisibilityProbe();
     }
 
     private static boolean cacheMatches(Map<Integer, ClipmapHeightTilePayload> tiles,
@@ -240,6 +282,7 @@ final class IrisNativeClipmapRenderer {
             String dimension, long requestId, long centerX, long centerZ,
             int nearChunks, int seaLevel, List<VisibleSurfaceProxy> proxies) {
         long started = System.nanoTime();
+        resetVisibilityProbe();
         disposeBuffers();
         try {
             List<ClipmapHeightTilePayload> snapshot = new ArrayList<>(LEVEL_COUNT);
@@ -302,7 +345,7 @@ final class IrisNativeClipmapRenderer {
             cachedTiles = List.copyOf(snapshot);
             cachedProxies = proxies;
 
-            if (Boolean.getBoolean("realscale.experimental.geometryclipmap.debug")) {
+            if (DEBUG) {
                 System.out.printf(java.util.Locale.ROOT,
                         "[RealScale Iris Clipmap] nativeMeshesBuilt=%.1fms levels=%d proxies=%d solid=%s cutout=%s water=%s heightRanges=%s%n",
                         (System.nanoTime() - started) / 1_000_000.0,
