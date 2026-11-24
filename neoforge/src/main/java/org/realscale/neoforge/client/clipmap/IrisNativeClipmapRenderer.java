@@ -567,7 +567,6 @@ final class IrisNativeClipmapRenderer {
                             Math.max(topHeight[vertex], seaLevel),
                             smoothNormals[normalIndex + 1], seaLevel, false, worldX, worldZ);
                 }
-                ClipmapTriangleUv.computeCellAlignedInto(gridX, gridZ, triangleUvs);
                 // Never paint the terrain with block/item-atlas art. The Iris
                 // terrain shader requires sampler0, so sample one fixed texel from
                 // the neutral white block sprite and carry the actual procedural
