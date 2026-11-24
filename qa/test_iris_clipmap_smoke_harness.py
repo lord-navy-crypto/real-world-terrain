@@ -79,6 +79,14 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("max(settled_high_frequency, final_high_frequency) > 0.28", SMOKE)
         self.assertIn('"-blur", "0x2"', SMOKE)
 
+    def test_pause_menu_toggle_uses_real_window_geometry_and_upscaled_ocr(self):
+        self.assertIn("def active_game_window_geometry(", SMOKE)
+        self.assertIn("getactivewindow", SMOKE)
+        self.assertIn("def ocr_game_window(", SMOKE)
+        self.assertIn('"-resize", "200%"', SMOKE)
+        self.assertIn("logical_width = window_width // gui_scale", SMOKE)
+        self.assertIn("click_y = window_y + (button_y + 10) * gui_scale", SMOKE)
+
     def test_pause_menu_toggle_waits_for_actual_world_render(self):
         self.assertIn("def wait_until_world_rendered(", SMOKE)
         self.assertIn("CLIENT_WORLD_RENDER_READY", SMOKE)
