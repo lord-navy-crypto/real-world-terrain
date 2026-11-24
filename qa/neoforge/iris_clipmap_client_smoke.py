@@ -303,21 +303,7 @@ def _read_window_geometry(window_id: str):
         return None
 
 
-def active_game_window_geometry():
-    # Xvfb may not assign an active window when no window manager is running.
-    # Prefer the active window when it is a plausible Minecraft viewport.
-    active = subprocess.run(
-        ["xdotool", "getactivewindow"],
-        check=False, capture_output=True, text=True, timeout=10,
-    )
-    if active.returncode == 0 and active.stdout.strip():
-        geometry = _read_window_geometry(active.stdout.strip())
-        if geometry is not None and geometry[2] >= 640 and geometry[3] >= 360:
-            print("CLIENT_WINDOW_GEOMETRY:", geometry, flush=True)
-            return geometry
-
-    # Fall back to locating the mapped Minecraft window by title/class instead
-    # of failing the render test just because the virtual display has no focus.
+def _visible_minecraft_windows():
     candidates = []
     seen = set()
     selectors = (
@@ -338,15 +324,53 @@ def active_game_window_geometry():
             seen.add(window_id)
             geometry = _read_window_geometry(window_id)
             if geometry is not None and geometry[2] >= 640 and geometry[3] >= 360:
-                candidates.append(geometry)
+                candidates.append((geometry[2] * geometry[3], window_id, geometry))
+    return sorted(candidates, reverse=True)
 
+
+def active_game_window_geometry():
+    # Xvfb may not assign an active window when no window manager is running.
+    # Prefer a visible Minecraft window over the root window or a stale focus.
+    candidates = _visible_minecraft_windows()
     if candidates:
-        geometry = max(candidates, key=lambda item: item[2] * item[3])
+        _, window_id, geometry = candidates[0]
         print("CLIENT_WINDOW_GEOMETRY_FALLBACK:", geometry, flush=True)
         return geometry
 
+    active = subprocess.run(
+        ["xdotool", "getactivewindow"],
+        check=False, capture_output=True, text=True, timeout=10,
+    )
+    if active.returncode == 0 and active.stdout.strip():
+        geometry = _read_window_geometry(active.stdout.strip())
+        if geometry is not None and geometry[2] >= 640 and geometry[3] >= 360:
+            print("CLIENT_WINDOW_GEOMETRY:", geometry, flush=True)
+            return geometry
+
     print("CLIENT_WINDOW_GEOMETRY_UNAVAILABLE: no active or visible Minecraft window", flush=True)
     return None
+
+
+def focus_minecraft_window():
+    candidates = _visible_minecraft_windows()
+    if not candidates:
+        raise RuntimeError("Could not find a visible Minecraft window to receive input")
+    _, window_id, geometry = candidates[0]
+    subprocess.run(
+        ["xdotool", "windowfocus", "--sync", window_id],
+        check=True, timeout=10,
+    )
+    focused = subprocess.run(
+        ["xdotool", "getwindowfocus"],
+        check=False, capture_output=True, text=True, timeout=10,
+    )
+    if focused.returncode == 0 and focused.stdout.strip() != window_id:
+        raise RuntimeError(
+            "Xvfb focus did not move to Minecraft: "
+            f"expected={window_id}, actual={focused.stdout.strip()}"
+        )
+    print("CLIENT_WINDOW_FOCUSED:", window_id, geometry, flush=True)
+    return window_id
 
 
 def ocr_game_window(name: str) -> str:
@@ -422,6 +446,7 @@ def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
     click_x = window_x + (button_x + button_width // 2) * gui_scale
     click_y = window_y + (button_y + 10) * gui_scale
     print("CLIPMAP_TOGGLE_CLICK_POINT:", (click_x, click_y), flush=True)
+    focus_minecraft_window()
     subprocess.run(["xdotool", "key", "Escape"], check=True, timeout=10)
     time.sleep(1)
     initial = read_pause_menu_toggle_text("iris-clipmap-pause-menu-on")
