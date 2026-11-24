@@ -87,19 +87,23 @@ public final class ClipmapSurfacePalette {
         // These are texture multipliers, not flat material colors. The actual
         // grass/stone/sand/snow atlas texels now provide the surface detail.
         float dry = smoothstep(0.15f, 0.85f, moisture);
-        float red = mix(0.76f, 0.70f, dry);
-        float green = mix(0.69f, 0.78f, dry);
-        float blue = mix(0.52f, 0.58f, dry);
-        red = mix(red, 0.76f, rockCover);
-        green = mix(green, 0.75f, rockCover);
-        blue = mix(blue, 0.72f, rockCover);
-        red = mix(red, 0.93f, beach);
-        green = mix(green, 0.86f, beach);
-        blue = mix(blue, 0.70f, beach);
-        red = mix(red, 1.0f, snowCover);
-        green = mix(green, 1.0f, snowCover);
-        blue = mix(blue, 1.0f, snowCover);
-        float variation = 0.96f + 0.08f * local;
+        // Block top-face sprites already contain their authored material
+        // colors. Use near-neutral multipliers so grass stays green, sand
+        // stays warm, and snow stays bright instead of tinting every biome
+        // brown/orange as the previous aggressive multipliers did.
+        float red = mix(0.91f, 1.00f, dry);
+        float green = mix(0.98f, 0.94f, dry);
+        float blue = mix(0.93f, 0.86f, dry);
+        red = mix(red, 0.96f, rockCover);
+        green = mix(green, 0.97f, rockCover);
+        blue = mix(blue, 0.98f, rockCover);
+        red = mix(red, 1.00f, beach);
+        green = mix(green, 0.98f, beach);
+        blue = mix(blue, 0.93f, beach);
+        red = mix(red, 1.00f, snowCover);
+        green = mix(green, 1.00f, snowCover);
+        blue = mix(blue, 1.00f, snowCover);
+        float variation = 0.985f + 0.03f * local;
         return pack(red * variation * 255.0f,
                 green * variation * 255.0f,
                 blue * variation * 255.0f);
