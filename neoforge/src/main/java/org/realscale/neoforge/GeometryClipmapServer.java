@@ -173,7 +173,8 @@ public final class GeometryClipmapServer {
         }
         if (session.inFlight) {
             long stalledFor = System.nanoTime() - session.lastProgressNanos;
-            if (session.lastProgressNanos != 0L && stalledFor > STALL_TIMEOUT_NANOS) {
+            if (session.lastProgressNanos != 0L && stalledFor > STALL_TIMEOUT_NANOS
+                    && (session.ringTask == null || !SAMPLER.getQueue().contains(session.ringTask))) {
                 session.cancelTasks();
                 session.requestEpoch.advance();
                 session.inFlight = false;
@@ -284,7 +285,7 @@ public final class GeometryClipmapServer {
                                     randomState, nextLayout);
                         }
                     });
-                    if (completedLevels < MAX_LEVELS) {
+                    if (completedLevels < MAX_LEVELS && session.requestEpoch.isCurrent(requestEpoch)) {
                         session.lastProgressNanos = System.nanoTime();
                         SAMPLER.execute(this);
                     }

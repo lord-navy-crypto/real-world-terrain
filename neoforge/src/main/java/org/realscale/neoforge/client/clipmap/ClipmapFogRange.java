@@ -11,7 +11,7 @@ public record ClipmapFogRange(float startBlocks, float endBlocks) {
         if (gridCells < 16 || (gridCells & (gridCells - 1)) != 0
                 || finestSpacingBlocks < 1
                 || (finestSpacingBlocks & (finestSpacingBlocks - 1)) != 0
-                || levelCount < 2 || levelCount > 8) {
+                || levelCount < 1 || levelCount > 8) {
             throw new IllegalArgumentException("invalid clipmap fog layout");
         }
         double farHalfExtent = (gridCells / 2.0)

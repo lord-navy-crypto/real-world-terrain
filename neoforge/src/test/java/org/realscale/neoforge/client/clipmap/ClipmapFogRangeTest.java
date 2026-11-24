@@ -22,13 +22,18 @@ final class ClipmapFogRangeTest {
     }
 
     @Test
+    void partialFirstRingHasItsOwnFogRange() {
+        assertEquals(512.0f * 0.98f, ClipmapFogRange.forGrid(128, 8, 1).endBlocks(), 0.001f);
+    }
+
+    @Test
     void rejectsInvalidDimensionsAndNonFiniteRanges() {
         assertThrows(IllegalArgumentException.class,
                 () -> ClipmapFogRange.forGrid(127, 8, 6));
         assertThrows(IllegalArgumentException.class,
                 () -> ClipmapFogRange.forGrid(128, 3, 6));
         assertThrows(IllegalArgumentException.class,
-                () -> ClipmapFogRange.forGrid(128, 8, 1));
+                () -> ClipmapFogRange.forGrid(128, 8, 0));
         assertThrows(IllegalArgumentException.class,
                 () -> new ClipmapFogRange(Float.NaN, 123.0f));
         assertThrows(IllegalArgumentException.class,

@@ -76,6 +76,20 @@ final class ClipmapSnapshotAssemblerTest {
     }
 
     @Test
+    void movingCameraCanPromoteReplacementBeforeAllSixLevels() {
+        var a = new ClipmapSnapshotAssembler<String>(6);
+        for (int i = 0; i < 6; i++) add(a, 1L, i, 0, 0, "old-" + i);
+        add(a, 1L, 0, 768, 0, "new-0");
+        assertEquals(6, a.activeTiles().size());
+        assertFalse(a.promotePendingForCamera(300, 0));
+        assertTrue(a.promotePendingForCamera(700, 0));
+        assertEquals(1, a.activeTiles().size());
+        assertEquals(768, a.activeKey().centerX());
+        for (int i = 1; i < 6; i++) add(a, 1L, i, 768, 0, "new-" + i);
+        assertEquals(6, a.activeTiles().size());
+    }
+
+    @Test
     void rejectsMalformedSpacingAndInvalidLevel() {
         var a = new ClipmapSnapshotAssembler<String>(6);
         assertThrows(IllegalArgumentException.class,

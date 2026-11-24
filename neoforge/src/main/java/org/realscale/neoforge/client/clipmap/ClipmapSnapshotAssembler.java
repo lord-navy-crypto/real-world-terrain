@@ -76,6 +76,29 @@ public final class ClipmapSnapshotAssembler<T> {
         return true;
     }
 
+    /**
+     * Keep the old complete window while it covers the camera, but promote an
+     * available replacement prefix when moving out of that window. Never mix
+     * origins: a partial replacement must itself cover the camera.
+     */
+    public boolean promotePendingForCamera(double x, double z) {
+        if (pendingKey == null || activeKey == null || pendingKey.equals(activeKey)
+                || covers(activeKey, x, z) || !covers(pendingKey, x, z)) return false;
+        int prefix = 0;
+        while (pending.containsKey(prefix)) prefix++;
+        if (prefix == 0) return false;
+        Map<Integer, T> ready = new HashMap<>();
+        for (int i = 0; i < prefix; i++) ready.put(i, pending.get(i));
+        active = Map.copyOf(ready);
+        activeKey = pendingKey;
+        return true;
+    }
+
+    private static boolean covers(SnapshotKey key, double x, double z) {
+        double half = key.gridCells() * (double) key.baseSpacing() / 2.0;
+        return Math.abs(x - key.centerX()) <= half && Math.abs(z - key.centerZ()) <= half;
+    }
+
     public Map<Integer, T> activeTiles() { return active; }
     public SnapshotKey activeKey() { return activeKey; }
 

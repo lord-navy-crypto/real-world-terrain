@@ -471,7 +471,13 @@ def run_client(env: dict[str, str]) -> None:
             return any(int(m.group(1)) > 0 for m in re.finditer(
                 r"FAR_SOLID_VISIBLE_SAMPLES=(\d+)", "".join(lines)))
 
-        while (not draw.is_set() or not camera_prepared or not visible_samples_ready()) \
+        def full_visible_ready() -> bool:
+            output = "".join(lines)
+            return bool(re.search(r"nativeMeshesBuilt=.*\blevels=6\b", output)) and any(
+                int(m.group(1)) > 0 for m in re.finditer(
+                    r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*\blevels=6\b", output))
+
+        while (not draw.is_set() or not camera_prepared or not full_visible_ready()) \
                 and proc.poll() is None and time.monotonic() < deadline:
             if not warning_checked and time.monotonic() < warning_check_deadline:
                 if experimental_warning_visible():
@@ -509,7 +515,7 @@ def run_client(env: dict[str, str]) -> None:
                 f"Gradle exit code={proc.poll()}"
             )
 
-        if not camera_prepared or not visible_samples_ready():
+        if not camera_prepared or not visible_samples_ready() or not full_visible_ready():
             capture_screenshot("iris-client-no-visible-clipmap-samples")
             raise RuntimeError("No verified depth-passing solid clipmap samples at the high-altitude camera")
 
@@ -525,6 +531,36 @@ def run_client(env: dict[str, str]) -> None:
         time.sleep(8)
         stable = capture_screenshot("iris-clipmap-native-after-stable-frames")
         validate_screenshot(stable)
+        # Real horizontal spectator flight, not a synthetic scheduler unit test.
+        # Require a fresh complete window during motion and another visible
+        # window after release. The initial stationary result cannot satisfy it.
+        motion_start = len(lines)
+        old_centres = set(re.findall(r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", "".join(lines)))
+        subprocess.run(["xdotool", "keydown", "w"], check=True, timeout=10)
+        try:
+            time.sleep(30)
+            moving_output = "".join(lines[motion_start:])
+        finally:
+            subprocess.run(["xdotool", "keyup", "w"], check=False, timeout=10)
+        moving_centres = set(re.findall(r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", moving_output)) - old_centres
+        if not moving_centres:
+            capture_screenshot("iris-clipmap-moving-no-window")
+            raise RuntimeError("No new complete clipmap centre published during 30s continuous movement")
+        move_deadline = time.monotonic() + 150
+        while proc.poll() is None and time.monotonic() < move_deadline:
+            output = "".join(lines[motion_start:])
+            centres = set(re.findall(r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", output)) - old_centres
+            positive = any(int(m.group(1)) > 0 for m in re.finditer(
+                r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*\blevels=6\b", output))
+            if len(centres) >= 2 and positive:
+                break
+            time.sleep(1)
+        else:
+            capture_screenshot("iris-clipmap-moving-failed")
+            raise RuntimeError("Continuous movement did not produce two fresh complete centres and visible samples")
+        moving = capture_screenshot("iris-clipmap-after-motion")
+        validate_screenshot(moving)
+        print("IRIS_CLIPMAP_CONTINUOUS_MOVEMENT_PASS", sorted(centres), flush=True)
         final_stdout = "".join(lines)
         if "GL_INVALID_OPERATION in glUniform(program not linked)" in final_stdout:
             raise RuntimeError(

@@ -211,9 +211,9 @@ final class IrisNativeClipmapRenderer {
             smokeVisibilityPassed = samples > 0;
             System.out.printf(java.util.Locale.ROOT,
                     "[RealScale Iris Clipmap] FAR_SOLID_VISIBLE_SAMPLES=%d "
-                            + "cameraY=%.1f program=%d drawFramebuffer=%d attempt=%d%n",
+                            + "cameraY=%.1f program=%d drawFramebuffer=%d attempt=%d levels=%d center=(%d,%d)%n",
                     samples, visibilityCameraY, visibilityProgram,
-                    visibilityFramebuffer, visibilityAttempts);
+                    visibilityFramebuffer, visibilityAttempts, cachedTiles.size(), cachedCenterX, cachedCenterZ);
         }
 
         long now = System.nanoTime();

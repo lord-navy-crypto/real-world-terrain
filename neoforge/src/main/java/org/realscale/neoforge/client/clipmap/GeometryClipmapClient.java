@@ -92,7 +92,7 @@ public final class GeometryClipmapClient {
                 || !IrisRenderCompatibility.current().allowsIrisNativeRenderer()) {
             return vanillaFar;
         }
-        long radius = (long) key.gridCells() / 2L * key.baseSpacing() * (1L << 5);
+        long radius = (long) key.gridCells() / 2L * key.baseSpacing() * (1L << (TILES.activeTiles().size() - 1));
         int far = (int) Math.max(vanillaFar, Math.min(Integer.MAX_VALUE, radius));
         if (DEBUG && far != lastReportedIrisFar) {
             lastReportedIrisFar = far;
@@ -126,6 +126,9 @@ public final class GeometryClipmapClient {
             if (received < ClipmapStatusPayload.LEVEL_COUNT) {
                 reportProgress(minecraft, "[RealScale] Clipmap: RENDERABLE LOD PREFIX (" + received + "/6)");
             }
+            if (DEBUG) System.out.printf(java.util.Locale.ROOT,
+                    "[RealScale Geometry Clipmap] CLIENT_LOD_ACTIVE levels=%d center=(%d,%d)%n",
+                    received, key.centerX(), key.centerZ());
             if (!firstSnapshotRecorded && received == ClipmapStatusPayload.LEVEL_COUNT) {
                 firstSnapshotRecorded = true;
                 reportStatus(minecraft,
@@ -250,6 +253,9 @@ public final class GeometryClipmapClient {
                     new ClipmapRequestPayload(nearChunks, activeRequestId));
         }
 
+        if (TILES.promotePendingForCamera(minecraft.player.getX(), minecraft.player.getZ())) {
+            PROXY_BUFFER.onHeightSnapshot(TILES.activeKey());
+        }
         long now = System.nanoTime();
         if (!firstSnapshotRecorded && !unsupportedWorld && activeRequestId > 0L
                 && now - lastRequestSentNanos >= HEARTBEAT_INTERVAL_NANOS) {
@@ -430,7 +436,7 @@ public final class GeometryClipmapClient {
         IrisRenderCompatibility.ProjectionScope scope = null;
         try {
             ClipmapFogRange fogRange = ClipmapFogRange.forGrid(
-                    key.gridCells(), key.baseSpacing(), 6);
+                    key.gridCells(), key.baseSpacing(), TILES.activeTiles().size());
             Matrix4f extended = new Matrix4f(target);
             ClipmapProjectionMath.extendFarPlane(
                     extended, fogRange.endBlocks() * 1.5f);
@@ -480,7 +486,7 @@ public final class GeometryClipmapClient {
         }
 
         ClipmapFogRange fogRange = ClipmapFogRange.forGrid(
-                key.gridCells(), key.baseSpacing(), 6);
+                key.gridCells(), key.baseSpacing(), TILES.activeTiles().size());
         float extendedStart = Math.max(originalStart, fogRange.startBlocks());
         float extendedEnd = Math.max(originalEnd, fogRange.endBlocks() * 1.5f);
         if (!Float.isFinite(extendedStart) || !Float.isFinite(extendedEnd)

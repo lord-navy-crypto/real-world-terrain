@@ -300,6 +300,7 @@ final class GeometryClipmapRenderer {
                 if (DEBUG) uploadedBytesThisFrame += bytes;
             }
 
+            fogRange = ClipmapFogRange.forGrid(nextGridCells, nextBaseSpacing, tiles.size());
             draw(event, tiles, proxies, environment);
             completedFrame = true;
             return true;
