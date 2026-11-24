@@ -75,7 +75,9 @@ final class IrisNativeClipmapRenderer {
     private static long lastSmokeProbeNanos;
     private static int pendingVisibilityQuery;
     private static int visibilityAttempts;
+    private static double visibilityCameraX;
     private static double visibilityCameraY;
+    private static double visibilityCameraZ;
     private static int visibilityProgram;
     private static int visibilityFramebuffer;
 
@@ -164,7 +166,7 @@ final class IrisNativeClipmapRenderer {
                 }
                 if (farSolidBuffer != null) {
                     farSolidBuffer.bind();
-                    drawWithVisibilityProbe(farSolidBuffer, renderType, shadowPass, cameraY);
+                    drawWithVisibilityProbe(farSolidBuffer, renderType, shadowPass, cameraX, cameraY, cameraZ);
                 }
             } else {
                 target.bind();
@@ -193,7 +195,8 @@ final class IrisNativeClipmapRenderer {
     }
 
     private static void drawWithVisibilityProbe(VertexBuffer target,
-            RenderType renderType, boolean shadowPass, double cameraY) {
+            RenderType renderType, boolean shadowPass,
+            double cameraX, double cameraY, double cameraZ) {
         if (shadowPass || renderType != RenderType.solid()
                 || (!DEBUG && !SMOKE_VISIBILITY_PROBE)) {
             target.draw();
@@ -211,9 +214,10 @@ final class IrisNativeClipmapRenderer {
             smokeVisibilityPassed = samples > 0;
             System.out.printf(java.util.Locale.ROOT,
                     "[RealScale Iris Clipmap] FAR_SOLID_VISIBLE_SAMPLES=%d "
-                            + "cameraY=%.1f program=%d drawFramebuffer=%d attempt=%d levels=%d center=(%d,%d)%n",
-                    samples, visibilityCameraY, visibilityProgram,
-                    visibilityFramebuffer, visibilityAttempts, cachedTiles.size(), cachedCenterX, cachedCenterZ);
+                            + "cameraY=%.1f cameraX=%.1f cameraZ=%.1f program=%d drawFramebuffer=%d attempt=%d levels=%d center=(%d,%d)%n",
+                    samples, visibilityCameraY, visibilityCameraX, visibilityCameraZ,
+                    visibilityProgram, visibilityFramebuffer, visibilityAttempts,
+                    cachedTiles.size(), cachedCenterX, cachedCenterZ);
         }
 
         long now = System.nanoTime();
@@ -227,7 +231,9 @@ final class IrisNativeClipmapRenderer {
         }
         lastSmokeProbeNanos = now;
         visibilityAttempts++;
+        visibilityCameraX = cameraX;
         visibilityCameraY = cameraY;
+        visibilityCameraZ = cameraZ;
         visibilityProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
         visibilityFramebuffer = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
         int query = GL15.glGenQueries();
@@ -435,6 +441,16 @@ final class IrisNativeClipmapRenderer {
         int side = cells + 1;
         int baseCount = side * side;
         int spacing = tile.cellSpacingBlocks();
+        int baseSpacing = spacing >> level;
+        if (baseSpacing <= 0) {
+            throw new IllegalStateException("clipmap LOD has an invalid base spacing");
+        }
+        float worldHalfExtent = (float) (cells * (double) baseSpacing
+                * (1L << (LEVEL_COUNT - 1)) * 0.5);
+        float globalSkirtDepth = Math.min(32.0f, Math.max(4.0f,
+                baseSpacing * (1 << (LEVEL_COUNT - 1)) * 0.125f));
+        float uvMinHeight = tile.minHeight() - globalSkirtDepth;
+        float uvMaxHeight = tile.maxHeight();
         int holeRadius = level == 0
                 ? Math.toIntExact((nearChunks * 16L
                         - ((long) tile.cellSpacingBlocks() << (LEVEL_COUNT - 1)) / 2L)
@@ -497,8 +513,8 @@ final class IrisNativeClipmapRenderer {
                 for (int vertex = 0; vertex < 3; vertex++) {
                     vertexColors[vertex] = ClipmapSurfacePalette.waterColor();
                 }
-                ClipmapTriangleUv.computeInto(x, y, z, gridX, gridZ,
-                        false, triangleUvs);
+                ClipmapTriangleUv.computeWorldAlignedInto(x, y, z, gridX, gridZ,
+                        false, worldHalfExtent, uvMinHeight, uvMaxHeight, triangleUvs);
                 emitTriangle(water, sprites.white(), vertexColors, 190,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         false, true, faceNormalScratch);
@@ -519,8 +535,8 @@ final class IrisNativeClipmapRenderer {
                 // A single white atlas texel lets Iris retain its normal
                 // terrain/G-buffer path while interpolated vertex colors provide
                 // stable material transitions without block-texture speckle.
-                ClipmapTriangleUv.computeInto(x, y, z, gridX, gridZ,
-                        skirt, triangleUvs);
+                ClipmapTriangleUv.computeWorldAlignedInto(x, y, z, gridX, gridZ,
+                        skirt, worldHalfExtent, uvMinHeight, uvMaxHeight, triangleUvs);
                 emitTriangle(solid, sprites.white(), vertexColors, 255,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         !skirt, false, faceNormalScratch);
