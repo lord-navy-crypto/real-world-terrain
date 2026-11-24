@@ -74,6 +74,9 @@ public final class GeometryClipmapClient {
     private static Matrix4f activeIrisProjectionTarget;
     private static Matrix4f activeIrisOriginalProjection;
     private static boolean activeIrisFogCaptured;
+    private static boolean irisFogHookReported;
+    private static boolean irisFogRangeReported;
+    private static boolean irisFogSkipReported;
     private static float activeIrisOriginalFogStart;
     private static float activeIrisOriginalFogEnd;
     private static final long HEARTBEAT_INTERVAL_NANOS = 8_000_000_000L;
@@ -465,6 +468,12 @@ public final class GeometryClipmapClient {
      * composites interpret distant depth and fog with the same horizon.
      */
     public static void prepareIrisFrameFog() {
+        if (SMOKE_CAMERA && !irisFogHookReported) {
+            irisFogHookReported = true;
+            System.out.printf(java.util.Locale.ROOT,
+                    "[RealScale Iris Clipmap] IRIS_FOG_PREPARE_HOOK_HIT scope=%s nearChunks=%d%n",
+                    activeIrisProjectionScope != null, lastNearChunks);
+        }
         if (!ENABLED || activeIrisProjectionScope == null || activeIrisFogCaptured
                 || lastNearChunks < 2) {
             return;
@@ -483,6 +492,12 @@ public final class GeometryClipmapClient {
         if (!Float.isFinite(originalStart) || !Float.isFinite(originalEnd)
                 || originalEnd <= originalStart || originalEnd < minimumNormalFogEnd) {
             // Preserve short environmental fog (for example, dense biome fog).
+            if (SMOKE_CAMERA && !irisFogSkipReported) {
+                irisFogSkipReported = true;
+                System.out.printf(java.util.Locale.ROOT,
+                        "[RealScale Iris Clipmap] IRIS_FOG_RANGE_SKIPPED originalStart=%.1f originalEnd=%.1f minimumEnd=%.1f%n",
+                        originalStart, originalEnd, minimumNormalFogEnd);
+            }
             return;
         }
 
@@ -500,6 +515,12 @@ public final class GeometryClipmapClient {
         activeIrisFogCaptured = true;
         RenderSystem.setShaderFogStart(extendedStart);
         RenderSystem.setShaderFogEnd(extendedEnd);
+        if (SMOKE_CAMERA && !irisFogRangeReported) {
+            irisFogRangeReported = true;
+            System.out.printf(java.util.Locale.ROOT,
+                    "[RealScale Iris Clipmap] IRIS_FOG_RANGE original=(%.1f,%.1f) extended=(%.1f,%.1f)%n",
+                    originalStart, originalEnd, extendedStart, extendedEnd);
+        }
     }
 
     private static void restoreIrisProjectionFrame() {
