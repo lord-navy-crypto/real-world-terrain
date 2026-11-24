@@ -433,7 +433,8 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("ClipmapSurfaceNormals.compute(", native)
         self.assertIn("Blocks.WHITE_CONCRETE", native)
         self.assertIn("sprites.white()", native)
-        self.assertIn("ClipmapTriangleUv.computeInto(", native)
+        self.assertIn("ClipmapTriangleUv.computeWorldAlignedInto(", native)
+        self.assertNotIn("ClipmapTriangleUv.computeInto(", native)
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
@@ -459,8 +460,9 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn("UV_MIN + (uAxis - minUAxis) / uSpan * UV_RANGE", uv)
-        self.assertIn("UV_MIN + (vAxis - minVAxis) / vSpan * UV_RANGE", uv)
+        self.assertIn("mapToSprite(horizontal, -worldHalfExtent, worldHalfExtent)", uv)
+        self.assertIn("mapToSprite(vertical, minWorldY, maxWorldY)", uv)
+        self.assertIn("adjacent triangles and LOD", uv)
         self.assertIn("ClipmapSurfaceNormals.compute(", native)
         self.assertIn("float[] smoothNormals", native)
         self.assertIn("ClipmapTriangleUv.computeInto(", native)
