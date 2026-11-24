@@ -530,7 +530,8 @@ final class IrisNativeClipmapRenderer {
         int[] vertexColors = new int[3];
         for (int p = 0; p < indices.length; p += 3) {
             boolean skirt = false;
-            float averageHeight = 0.0f;
+            float minimumHeight = Float.POSITIVE_INFINITY;
+            float maximumHeight = Float.NEGATIVE_INFINITY;
 
             for (int vertex = 0; vertex < 3; vertex++) {
                 int index = indices[p + vertex];
@@ -541,12 +542,16 @@ final class IrisNativeClipmapRenderer {
                 skirt |= layer[vertex] != 0;
                 int heightIndex = gridZ[vertex] * side + gridX[vertex];
                 topHeight[vertex] = surfaceHeights[heightIndex];
-                averageHeight += topHeight[vertex] / 3.0f;
+                minimumHeight = Math.min(minimumHeight, topHeight[vertex]);
+                maximumHeight = Math.max(maximumHeight, topHeight[vertex]);
                 x[vertex] = (gridX[vertex] - cells * 0.5f) * spacing;
                 z[vertex] = (gridZ[vertex] - cells * 0.5f) * spacing;
             }
 
-            if (!skirt && averageHeight <= seaLevel) {
+            // Shoreline triangles may straddle sea level. Draw a water plane
+            // over the submerged portion, and preserve the actual terrain
+            // heights so the depth buffer clips water against dry land.
+            if (!skirt && minimumHeight < seaLevel) {
                 for (int vertex = 0; vertex < 3; vertex++) {
                     y[vertex] = seaLevel + 0.025f;
                 }
@@ -556,13 +561,13 @@ final class IrisNativeClipmapRenderer {
                 }
                 ClipmapTriangleUv.computeWorldAlignedInto(x, y, z, gridX, gridZ,
                         false, worldHalfExtent, uvMinHeight, uvMaxHeight, triangleUvs);
-                emitTriangle(water, sprites.white(), vertexColors, 190,
+                emitTriangle(water, sprites.water(), vertexColors, 190,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         false, true, faceNormalScratch);
-            } else if (averageHeight > seaLevel) {
+            }
+            if (maximumHeight >= seaLevel) {
                 for (int vertex = 0; vertex < 3; vertex++) {
-                    y[vertex] = Math.max(topHeight[vertex], seaLevel)
-                            - layer[vertex] * skirtDepth;
+                    y[vertex] = topHeight[vertex] - layer[vertex] * skirtDepth;
                 }
                 // Blend material classes per vertex rather than assigning one
                 // hard material to the whole triangle. This removes visible
