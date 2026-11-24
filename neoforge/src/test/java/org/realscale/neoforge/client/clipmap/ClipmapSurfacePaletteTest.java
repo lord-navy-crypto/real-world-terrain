@@ -58,6 +58,18 @@ final class ClipmapSurfacePaletteTest {
     }
 
     @Test
+    void textureTintPreservesTheAuthoredBlockPalette() {
+        int tint = ClipmapSurfacePalette.texturedTintAt(
+                100.0f, 1.0f, 63.0f, false, 128L, 256L);
+        assertTrue(((tint >>> 16) & 0xFF) >= 210,
+                "red multiplier must not brown out authored block textures");
+        assertTrue(((tint >>> 8) & 0xFF) >= 210,
+                "green multiplier must preserve vegetation colors");
+        assertTrue((tint & 0xFF) >= 210,
+                "blue multiplier must preserve cool materials");
+    }
+
+    @Test
     void textureMaterialSelectionFollowsSlopeBeachAndSnowRegions() {
         assertEquals(ClipmapSurfacePalette.MATERIAL_GRASS,
                 ClipmapSurfacePalette.materialAt(100.0f, 1.0f, 63.0f));
