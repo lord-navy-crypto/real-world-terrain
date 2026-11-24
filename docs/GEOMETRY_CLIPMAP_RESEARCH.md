@@ -155,7 +155,7 @@ These are intentional exclusions, not missing features.
 ### M2 — OpenGL 4.1 terrain renderer spike
 - Static ring patch mesh and R16/R32F vertex texture.
 - Draw one terrain clipmap ring with correct camera-relative transforms, fog, depth, and GL-state restoration.
-- No menu/config integration yet; opt-in JVM/config flag only.
+- The in-game pause-menu switch controls automatic rendering; the persistent client preference is stored in config/realscale-geometry-clipmap.properties.
 
 ### M3 — Incremental clipmap updates and transitions
 - Toroidal height texture addressing.
