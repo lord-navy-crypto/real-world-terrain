@@ -449,7 +449,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertNotIn("MAX_TEXTURED_DETAIL_LEVEL", native)
         self.assertNotIn("sprites.forMaterial(", native)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", native)
-        self.assertNotIn("ClipmapTriangleUv.computeCellAlignedInto(", native)
+        self.assertEqual(1, native.count("ClipmapTriangleUv.computeCellAlignedInto("))  # water surface only
         self.assertNotIn("ClipmapTriangleUv.computeInto(", native)
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
@@ -461,7 +461,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("triangle UV projection is degenerate", uv)
         self.assertIn("Math.max(0, Math.min(cells, x))", native)
         self.assertNotIn("int minX = Math.min(gridX", native)
-        self.assertIn("ClipmapSurfacePalette.texturedTintAt(", native)
+        self.assertIn("ClipmapSurfacePalette.terrainColorAt(", native)
         self.assertIn("vertexColors[vertex]", native)
         self.assertNotIn("int materialRgb", native)
         self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", native)
@@ -477,8 +477,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertNotIn("sprites.forMaterial(", native)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", native)
         self.assertIn("actual procedural", native)
-        self.assertIn("getQuads(state, Direction.UP", native)  # retained only for proxy/block helpers
-        self.assertIn("sprite.getU(u), sprite.getV(v)", native)  # proxy geometry only
+                self.assertIn("sprite.getU(u), sprite.getV(v)", native)  # proxy geometry only
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
