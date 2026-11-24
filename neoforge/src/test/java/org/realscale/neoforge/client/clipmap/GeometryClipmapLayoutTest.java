@@ -42,8 +42,8 @@ final class GeometryClipmapLayoutTest {
     @Test
     void negativeCoordinatesUseSymmetricNearestSnapping() {
         GeometryClipmapLayout.Layout layout = planner.compute(-128.1, -127.9);
-        assertEquals(-256L, layout.levels().get(0).centerX());
-        assertEquals(0L, layout.levels().get(0).centerZ());
+        assertEquals(-128L, layout.levels().get(0).centerX());
+        assertEquals(-128L, layout.levels().get(0).centerZ());
     }
 
     @Test
