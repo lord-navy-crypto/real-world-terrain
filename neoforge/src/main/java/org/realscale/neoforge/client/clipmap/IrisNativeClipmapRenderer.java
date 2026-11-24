@@ -516,7 +516,6 @@ final class IrisNativeClipmapRenderer {
 
         int[] gridX = new int[3];
         int[] gridZ = new int[3];
-        int[] layer = new int[3];
         float[] topHeight = new float[3];
         float[] x = new float[3];
         float[] y = new float[3];
@@ -525,17 +524,14 @@ final class IrisNativeClipmapRenderer {
         float[] triangleUvs = new float[6];
         int[] vertexColors = new int[3];
         for (int p = 0; p < indices.length; p += 3) {
-            boolean skirt = false;
             float minimumHeight = Float.POSITIVE_INFINITY;
             float maximumHeight = Float.NEGATIVE_INFINITY;
 
             for (int vertex = 0; vertex < 3; vertex++) {
                 int index = indices[p + vertex];
-                layer[vertex] = index / baseCount;
-                int gridIndex = index % baseCount;
+                int gridIndex = index;
                 gridX[vertex] = gridIndex % side;
                 gridZ[vertex] = gridIndex / side;
-                skirt |= layer[vertex] != 0;
                 int heightIndex = gridZ[vertex] * side + gridX[vertex];
                 topHeight[vertex] = surfaceHeights[heightIndex];
                 minimumHeight = Math.min(minimumHeight, topHeight[vertex]);
@@ -547,7 +543,7 @@ final class IrisNativeClipmapRenderer {
             // Shoreline triangles may straddle sea level. Draw a water plane
             // over the submerged portion, and preserve the actual terrain
             // heights so the depth buffer clips water against dry land.
-            if (!skirt && minimumHeight < seaLevel) {
+            if (minimumHeight < seaLevel) {
                 for (int vertex = 0; vertex < 3; vertex++) {
                     y[vertex] = seaLevel + 0.025f;
                 }
@@ -575,9 +571,6 @@ final class IrisNativeClipmapRenderer {
                             Math.max(topHeight[vertex], seaLevel),
                             smoothNormals[normalIndex + 1], seaLevel, false, worldX, worldZ);
                 }
-                // A single white atlas texel lets Iris retain its normal
-                // terrain/G-buffer path while interpolated vertex colors provide
-                // stable material transitions without block-texture speckle.
                 ClipmapTriangleUv.computeCellAlignedInto(gridX, gridZ, triangleUvs);
                 float averageHeight = (topHeight[0] + topHeight[1] + topHeight[2]) / 3.0f;
                 float averageNormalY = 0.0f;
@@ -589,7 +582,7 @@ final class IrisNativeClipmapRenderer {
                         ClipmapSurfacePalette.materialAt(averageHeight, averageNormalY, seaLevel));
                 emitTriangle(solid, materialSprite, vertexColors, 255,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
-                        !skirt, false, faceNormalScratch);
+                        true, false, faceNormalScratch);
             }
         }
     }
@@ -918,7 +911,7 @@ final class IrisNativeClipmapRenderer {
             TextureAtlasSprite sand, TextureAtlasSprite snow,
             TextureAtlasSprite water, TextureAtlasSprite leaves,
             TextureAtlasSprite wood, TextureAtlasSprite bricks,
-            TextureAtlasSprite black, TextureAtlasSprite white,
+            TextureAtlasSprite black,
             TextureAtlasSprite grassTop, TextureAtlasSprite stoneTop,
             TextureAtlasSprite sandTop, TextureAtlasSprite snowTop) {
         private static Sprites load(Minecraft minecraft) {
@@ -937,7 +930,6 @@ final class IrisNativeClipmapRenderer {
                     particle(shaper, Blocks.OAK_LOG.defaultBlockState()),
                     particle(shaper, Blocks.STONE_BRICKS.defaultBlockState()),
                     particle(shaper, Blocks.BLACK_CONCRETE.defaultBlockState()),
-                    particle(shaper, Blocks.WHITE_CONCRETE.defaultBlockState()),
                     topFace(shaper, grassState),
                     topFace(shaper, stoneState),
                     topFace(shaper, sandState),
