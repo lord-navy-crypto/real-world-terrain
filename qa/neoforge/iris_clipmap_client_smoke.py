@@ -229,6 +229,7 @@ def prepare_saved_world(env: dict[str, str]) -> None:
         rcon.send("time set day")
         rcon.send("weather clear")
         rcon.send("gamerule doDaylightCycle false")
+        rcon.send("gamerule doWeatherCycle false")
         # Keep the test spawn centered. The camera is raised after joining
         # through spectator flight, because Minecraft's safe-spawn search can
         # relocate the local player to the terrain surface regardless of Y.
@@ -374,6 +375,52 @@ def validate_screenshot(path: pathlib.Path | None) -> None:
             "Screenshot appears blank, incomplete, or below the expected display size: "
             f"{width}x{height}, mean={mean:.5f}, stddev={deviation:.5f}"
         )
+
+
+def terrain_contrast(path: pathlib.Path) -> float:
+    # Fixed 854x480 centered client viewport in the 1280x720 CI display.
+    # Exclude desktop margins and upper sky; neither proves visible terrain.
+    result = subprocess.run(
+        ["convert", str(path), "-gravity", "center", "-crop", "854x480+0+0", "+repage",
+         "-gravity", "south", "-crop", "854x240+0+0", "+repage", "-colorspace", "Gray",
+         "-format", "%[fx:standard_deviation]", "info:"],
+        check=True, capture_output=True, text=True, timeout=30,
+    )
+    contrast = float(result.stdout.strip())
+    print(f"TERRAIN_VIEWPORT_CONTRAST: {path.name} {contrast:.5f}", flush=True)
+    return contrast
+
+
+def wait_for_settled_window(proc, lines, start: int, minimum_seconds: float = 30.0) -> str:
+    """Wait for the latest complete height and proxy snapshot and stable draw evidence."""
+    started = time.monotonic()
+    deadline = started + 240
+    stable_since = None
+    last_state = None
+    while proc.poll() is None and time.monotonic() < deadline:
+        output = "".join(lines[start:])
+        centres = re.findall(r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", output)
+        if centres:
+            centre = centres[-1]
+            escaped = re.escape(centre)
+            proxy_counts = re.findall(r"CLIENT_PROXY_RECEIVED center=\(" + escaped + r"\) count=(\d+)", output)
+            mesh = re.findall(r"nativeMeshesBuilt=.*?levels=6.*?center=\(" + escaped + r"\)", output)
+            samples = re.findall(r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*?levels=6 center=\(" + escaped + r"\)", output)
+            proxy_ready = bool(proxy_counts) and (int(proxy_counts[-1]) == 0 or bool(re.search(
+                r"nativeProxyMeshesBuilt=.*?proxies=" + proxy_counts[-1] + r" center=\(" + escaped + r"\)", output)))
+            state = (centre, len(mesh), len(proxy_counts), proxy_counts[-1] if proxy_counts else None)
+            ready = bool(mesh) and any(int(value) > 0 for value in samples) and proxy_ready
+            if state != last_state or not ready:
+                stable_since = time.monotonic() if ready else None
+                last_state = state
+            if (ready and stable_since is not None and time.monotonic() - stable_since >= 15
+                    and time.monotonic() - started >= minimum_seconds):
+                print(f"CLIENT_RENDER_SETTLED center=({centre}) proxies={proxy_counts[-1]} "
+                      f"elapsed={time.monotonic()-started:.1f}s", flush=True)
+                return centre
+        time.sleep(1)
+    capture_screenshot("iris-client-settle-timeout")
+    raise RuntimeError("Latest complete height/proxy window did not settle within 240s: " + repr(last_state))
 
 
 def prepare_open_rendering_view(
@@ -552,9 +599,10 @@ def run_client(env: dict[str, str]) -> None:
 
         first = capture_screenshot("iris-clipmap-native")
         validate_screenshot(first)
-        time.sleep(8)
+        wait_for_settled_window(proc, lines, 0, minimum_seconds=30)
         stable = capture_screenshot("iris-clipmap-native-after-stable-frames")
         validate_screenshot(stable)
+        initial_contrast = terrain_contrast(stable)
         # Real horizontal spectator flight, not a synthetic scheduler unit test.
         # Require a fresh complete window during motion and another visible
         # window after release. The initial stationary result cannot satisfy it.
@@ -585,10 +633,27 @@ def run_client(env: dict[str, str]) -> None:
             time.sleep(1)
         else:
             capture_screenshot("iris-clipmap-moving-failed")
-            raise RuntimeError("Continuous movement did not produce two fresh complete centres and visible samples")
+            raise RuntimeError("Continuous movement did not produce a fresh complete centre and visible samples")
+        early = capture_screenshot("iris-clipmap-after-motion-early")
+        validate_screenshot(early)
+        terrain_contrast(early)
+        settled_centre = wait_for_settled_window(proc, lines, motion_start, minimum_seconds=90)
         moving = capture_screenshot("iris-clipmap-after-motion")
         validate_screenshot(moving)
-        print("IRIS_CLIPMAP_MOVEMENT_REFRESH_PASS", sorted(centres), flush=True)
+        settled_contrast = terrain_contrast(moving)
+        time.sleep(30)
+        final_frame = capture_screenshot("iris-clipmap-after-motion-final")
+        validate_screenshot(final_frame)
+        final_contrast = terrain_contrast(final_frame)
+        print("IRIS_CLIPMAP_MOVEMENT_REFRESH_PASS", sorted(centres), settled_centre, flush=True)
+        # A depth query does not prove final color visibility. Flag persistent
+        # contrast collapse only after the complete window has had time to settle.
+        if initial_contrast < 0.055:
+            raise RuntimeError(f"Initial terrain viewport has insufficient contrast: {initial_contrast:.5f}")
+        if max(settled_contrast, final_contrast) < max(0.055, initial_contrast * 0.4):
+            raise RuntimeError("Persistent post-motion terrain contrast collapse after complete proxy/LOD settlement: "
+                               f"initial={initial_contrast:.5f}, settled={settled_contrast:.5f}, final={final_contrast:.5f}")
+        print("IRIS_TERRAIN_CONTRAST_GATE_PASS", flush=True)
         final_stdout = "".join(lines)
         if "SAMPLER STALLED" in final_stdout:
             raise RuntimeError(
