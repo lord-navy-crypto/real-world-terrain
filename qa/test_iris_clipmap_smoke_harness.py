@@ -79,6 +79,16 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("max(settled_high_frequency, final_high_frequency) > 0.28", SMOKE)
         self.assertIn('"-blur", "0x2"', SMOKE)
 
+    def test_real_client_exercises_pause_menu_geometry_clipmap_toggle(self):
+        self.assertIn("def read_pause_menu_toggle_text(", SMOKE)
+        self.assertIn("def test_pause_menu_geometry_clipmap_toggle(", SMOKE)
+        self.assertIn("CLIPMAP_PAUSE_MENU_TOGGLE_PASS", SMOKE)
+        self.assertIn("geometry clipmap on", SMOKE)
+        self.assertIn("geometry clipmap off", SMOKE)
+        self.assertIn("[RealScale] Clipmap: OFF", SMOKE)
+        self.assertIn("[RealScale] Clipmap: ON", SMOKE)
+        self.assertIn('["tesseract", str(image), "stdout", "--psm", "6"]', SMOKE)
+
     def test_eye_level_capture_waits_for_complete_lods_and_proxies(self):
         self.assertIn("capture_natural_surface_view(proc, lines)", SMOKE)
         self.assertIn("iris-clipmap-natural-eye-level", SMOKE)
