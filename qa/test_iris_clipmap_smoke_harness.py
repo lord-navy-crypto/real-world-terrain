@@ -49,7 +49,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn('["xdotool", "keydown", "w"]', SMOKE)
         self.assertIn("moving_centres", SMOKE)
         self.assertIn("len(centres) >= 1 and positive", SMOKE)
-        self.assertIn("IRIS_CLIPMAP_CONTINUOUS_MOVEMENT_PASS", SMOKE)
+        self.assertIn("IRIS_CLIPMAP_MOVEMENT_REFRESH_PASS", SMOKE)
 
     def test_iris_native_draw_uses_portable_terrain_stage_events(self):
         self.assertIn("prepareIrisFrameFog", IRIS_MIXIN)
