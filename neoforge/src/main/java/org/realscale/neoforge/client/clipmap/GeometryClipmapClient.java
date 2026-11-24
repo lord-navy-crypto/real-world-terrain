@@ -23,17 +23,11 @@ import java.util.List;
 /**
  * Diagnostic test-build client entry point for the Geometry Clipmap renderer.
  *
- * <p>The experimental TEST JAR enables Geometry Clipmap automatically.
- * No launcher arguments are required. To disable it for troubleshooting,
- * use {@code -Drealscale.experimental.geometryclipmap=false}.
+ * <p>Geometry Clipmap is enabled by default and can be toggled at runtime
+ * from the in-game pause menu. The preference persists in the config folder.
  */
 @EventBusSubscriber(modid = "realscale", value = Dist.CLIENT)
 public final class GeometryClipmapClient {
-    // TEST-CANDIDATE DEFAULT: automatic ON. This lives only on the Draft
-    // research branch, not in main or any public stable release.
-    private static final boolean ENABLED =
-            Boolean.parseBoolean(System.getProperty(
-                    "realscale.experimental.geometryclipmap", "true"));
     private static final ClipmapSnapshotAssembler<ClipmapHeightTilePayload> TILES =
             new ClipmapSnapshotAssembler<>(6);
     private static final ClipmapProxySnapshotBuffer<List<VisibleSurfaceProxy>> PROXY_BUFFER =
@@ -89,7 +83,7 @@ public final class GeometryClipmapClient {
 
     /** Shader-pack distance only: never modifies the vanilla chunk-loading option. */
     public static int irisFarDistanceBlocks(int vanillaFar) {
-        if (!ENABLED || !EXTEND_IRIS_FAR || lastLevel == null) return vanillaFar;
+        if (!GeometryClipmapSettings.isEnabled() || !EXTEND_IRIS_FAR || lastLevel == null) return vanillaFar;
         var key = TILES.activeKey();
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level != lastLevel || key == null || key.requestId() != activeRequestId
@@ -111,8 +105,41 @@ public final class GeometryClipmapClient {
 
     private GeometryClipmapClient() {}
 
+    public static boolean isEnabled() {
+        return GeometryClipmapSettings.isEnabled();
+    }
+
+    /** Toggle the client renderer and persist the choice immediately. */
+    public static void toggleEnabled() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!minecraft.isSameThread()) {
+            minecraft.execute(GeometryClipmapClient::toggleEnabled);
+            return;
+        }
+
+        boolean next = !GeometryClipmapSettings.isEnabled();
+        try {
+            GeometryClipmapSettings.setEnabled(next);
+        } catch (IllegalStateException failure) {
+            reportStatus(minecraft,
+                    "[RealScale] Clipmap: COULD NOT SAVE THE ON/OFF SETTING - "
+                            + failure.getMessage());
+            return;
+        }
+
+        // Clear the active snapshot and GPU resources on disable. On re-enable,
+        // the next client tick requests a fresh six-LOD set.
+        clear();
+        lastLevel = null;
+        lastNearChunks = -1;
+        cameraVantageReported = false;
+        reportStatus(minecraft, next
+                ? "[RealScale] Clipmap: ON - automatic terrain rendering will initialize"
+                : "[RealScale] Clipmap: OFF - automatic terrain rendering stopped");
+    }
+
     public static void accept(ClipmapHeightTilePayload payload) {
-        if (!ENABLED) return;
+        if (!GeometryClipmapSettings.isEnabled()) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || activeRequestId <= 0L
                 || payload.requestId() != activeRequestId
@@ -159,7 +186,7 @@ public final class GeometryClipmapClient {
     }
 
     public static void accept(ClipmapStatusPayload payload) {
-        if (!ENABLED) return;
+        if (!GeometryClipmapSettings.isEnabled()) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || activeRequestId <= 0L
                 || payload.requestId() != activeRequestId
@@ -206,7 +233,7 @@ public final class GeometryClipmapClient {
     }
 
     public static void accept(ClipmapSurfaceProxyPayload payload) {
-        if (!ENABLED) return;
+        if (!GeometryClipmapSettings.isEnabled()) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || activeRequestId <= 0L
                 || payload.requestId() != activeRequestId
@@ -227,7 +254,7 @@ public final class GeometryClipmapClient {
         Minecraft minecraft = Minecraft.getInstance();
         // Recover safely if a previous frame aborted before AFTER_LEVEL was posted.
         restoreIrisProjectionFrame();
-        if (!ENABLED || minecraft.level == null || minecraft.player == null) {
+        if (!GeometryClipmapSettings.isEnabled() || minecraft.level == null || minecraft.player == null) {
             if (lastLevel != null || activeRequestId != 0L) clear();
             lastLevel = null;
             lastNearChunks = -1;
@@ -356,7 +383,7 @@ public final class GeometryClipmapClient {
             return;
         }
 
-        if (!ENABLED || event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
+        if (!GeometryClipmapSettings.isEnabled() || event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || TILES.activeKey() == null) return;
 
@@ -480,7 +507,7 @@ public final class GeometryClipmapClient {
                     "[RealScale Iris Clipmap] IRIS_FOG_PREPARE_HOOK_HIT scope=%s nearChunks=%d%n",
                     activeIrisProjectionScope != null, lastNearChunks);
         }
-        if (!ENABLED || activeIrisProjectionScope == null || lastNearChunks < 2) {
+        if (!GeometryClipmapSettings.isEnabled() || activeIrisProjectionScope == null || lastNearChunks < 2) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
@@ -570,7 +597,7 @@ public final class GeometryClipmapClient {
     public static void renderIrisNativeLayer(RenderType renderType,
             double cameraX, double cameraY, double cameraZ,
             Matrix4f frustumMatrix, Matrix4f projectionMatrix) {
-        if (!ENABLED || lastNearChunks < 2) return;
+        if (!GeometryClipmapSettings.isEnabled() || lastNearChunks < 2) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
 
