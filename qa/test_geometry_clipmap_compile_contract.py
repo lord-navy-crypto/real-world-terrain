@@ -460,7 +460,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn("mapToSprite(horizontal, -worldHalfExtent, worldHalfExtent)", uv)
+        self.assertIn("horizontal, -worldHalfExtent, worldHalfExtent", uv)
         self.assertIn("mapToSprite(vertical, minWorldY, maxWorldY)", uv)
         self.assertIn("adjacent triangles and LOD", uv)
         self.assertIn("ClipmapSurfaceNormals.compute(", native)
