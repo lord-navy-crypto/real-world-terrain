@@ -35,12 +35,12 @@ final class ClipmapHeightGridTest {
     @Test
     void skipsInteriorAlreadyCoveredByTheFinerLevel() {
         GeometryClipmapLayout.Level level = planner.compute(0.0, 0.0).levels().get(0);
-        ClipmapHeightGrid grid = ClipmapHeightGrid.sample(level, 128,
+        ClipmapHeightGrid grid = ClipmapHeightGrid.sample(level, 256,
                 (x, z) -> 123.0f);
 
         assertFalse(grid.isSampledAt(128, 128));
         assertTrue(Float.isNaN(grid.copyHeights()[128 * 257 + 128]));
-        assertThrows(IllegalStateException.class, () -> grid.heightAt(64, 64));
+        assertThrows(IllegalStateException.class, () -> grid.heightAt(128, 128));
         assertTrue(grid.isSampledAt(0, 0));
     }
 
@@ -65,7 +65,7 @@ final class ClipmapHeightGridTest {
         assertEquals(second.newlySampledVertexCount(), secondCalls.get());
         assertTrue(secondCalls.get() < firstCalls.get());
         assertTrue(second.sampledVertexCount() > second.newlySampledVertexCount());
-        // (256, 0) enters the new inner hole when the shared centre moves.
+        // (128, 0) enters the new inner hole when the shared centre moves.
         assertTrue(first.isSampledAt(160, 128));
         assertFalse(second.isSampledAt(128, 128));
 
