@@ -478,7 +478,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertNotIn("8.0f, 8.0f, nx", native)
         self.assertNotIn("int minX = Math.min(gridX", native)
         self.assertNotIn("Math.floorMod(x, side)", native)
-        self.assertEqual(4, native.count("VertexFormat.Mode.TRIANGLES, irisTerrainFormat"))
+        self.assertEqual(5, native.count("VertexFormat.Mode.TRIANGLES, irisTerrainFormat"))
         self.assertIn("shader.setDefaultUniforms(VertexFormat.Mode.TRIANGLES", native)
         self.assertNotIn("VertexFormat.Mode.QUADS, irisTerrainFormat", native)
         triangle = native.split("private static void emitTriangle(BufferBuilder", 1)[1].split(
