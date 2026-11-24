@@ -285,32 +285,91 @@ def capture_screenshot(name: str) -> pathlib.Path | None:
         return None
 
 
-def active_game_window_geometry():
+def _read_window_geometry(window_id: str):
     result = subprocess.run(
-        ["xdotool", "getactivewindow", "getwindowgeometry", "--shell"],
-        check=True, capture_output=True, text=True, timeout=10,
+        ["xdotool", "getwindowgeometry", "--shell", window_id],
+        check=False, capture_output=True, text=True, timeout=10,
     )
+    if result.returncode != 0:
+        return None
     values = {}
     for line in result.stdout.splitlines():
         if "=" in line:
             key, value = line.split("=", 1)
             values[key.strip()] = value.strip()
-    geometry = tuple(int(values[key]) for key in ("X", "Y", "WIDTH", "HEIGHT"))
-    print("CLIENT_WINDOW_GEOMETRY:", geometry, flush=True)
-    return geometry
+    try:
+        return tuple(int(values[key]) for key in ("X", "Y", "WIDTH", "HEIGHT"))
+    except (KeyError, ValueError):
+        return None
+
+
+def active_game_window_geometry():
+    # Xvfb may not assign an active window when no window manager is running.
+    # Prefer the active window when it is a plausible Minecraft viewport.
+    active = subprocess.run(
+        ["xdotool", "getactivewindow"],
+        check=False, capture_output=True, text=True, timeout=10,
+    )
+    if active.returncode == 0 and active.stdout.strip():
+        geometry = _read_window_geometry(active.stdout.strip())
+        if geometry is not None and geometry[2] >= 640 and geometry[3] >= 360:
+            print("CLIENT_WINDOW_GEOMETRY:", geometry, flush=True)
+            return geometry
+
+    # Fall back to locating the mapped Minecraft window by title/class instead
+    # of failing the render test just because the virtual display has no focus.
+    candidates = []
+    seen = set()
+    selectors = (
+        ["--name", "Minecraft"],
+        ["--class", "Minecraft"],
+        ["--class", "net.minecraft.client.main.Main"],
+    )
+    for selector in selectors:
+        search = subprocess.run(
+            ["xdotool", "search", "--onlyvisible", *selector],
+            check=False, capture_output=True, text=True, timeout=10,
+        )
+        if search.returncode != 0:
+            continue
+        for window_id in search.stdout.splitlines():
+            if not window_id or window_id in seen:
+                continue
+            seen.add(window_id)
+            geometry = _read_window_geometry(window_id)
+            if geometry is not None and geometry[2] >= 640 and geometry[3] >= 360:
+                candidates.append(geometry)
+
+    if candidates:
+        geometry = max(candidates, key=lambda item: item[2] * item[3])
+        print("CLIENT_WINDOW_GEOMETRY_FALLBACK:", geometry, flush=True)
+        return geometry
+
+    print("CLIENT_WINDOW_GEOMETRY_UNAVAILABLE: no active or visible Minecraft window", flush=True)
+    return None
 
 
 def ocr_game_window(name: str) -> str:
     image = capture_screenshot(name)
     if image is None:
         raise RuntimeError("Could not capture the Minecraft window for OCR")
-    x, y, width, height = active_game_window_geometry()
+    geometry = active_game_window_geometry()
     crop = BUILD / (name + "-game-window-upscaled.png")
-    subprocess.run(
-        ["convert", str(image), "-crop", f"{width}x{height}+{x}+{y}",
-         "+repage", "-resize", "200%", str(crop)],
-        check=True, timeout=30,
-    )
+    if geometry is None:
+        # OCR the captured desktop rather than crashing before the world-ready
+        # gate can determine whether Minecraft is still loading terrain.
+        print("OCR_USING_FULL_DISPLAY_FALLBACK:", name, flush=True)
+        subprocess.run(
+            ["convert", str(image), "-resize", "200%", str(crop)],
+            check=True, timeout=30,
+        )
+    else:
+        x, y, width, height = geometry
+        subprocess.run(
+            ["convert", str(image), "-crop", f"{width}x{height}+{x}+{y}",
+             "+repage", "-resize", "200%", str(crop)],
+            check=True, timeout=30,
+        )
     result = subprocess.run(
         ["tesseract", str(crop), "stdout", "--psm", "6"],
         check=True, capture_output=True, text=True, timeout=20,
@@ -348,7 +407,10 @@ def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
     """Exercise ON -> OFF -> ON through the actual Minecraft pause-menu button."""
     # Derive the click point from the actual game window. The CI options set
     # GUI scale 2; the custom pause-menu row is 154px + 4px + 154px wide.
-    window_x, window_y, window_width, window_height = active_game_window_geometry()
+    window_geometry = active_game_window_geometry()
+    if window_geometry is None:
+        raise RuntimeError("Could not locate the visible Minecraft window for pause-menu clicking")
+    window_x, window_y, window_width, window_height = window_geometry
     gui_scale = 2
     button_width = 154
     gap = 4
