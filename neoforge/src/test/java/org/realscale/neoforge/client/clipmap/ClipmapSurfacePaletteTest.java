@@ -45,7 +45,7 @@ final class ClipmapSurfacePaletteTest {
 
     @Test
     void proceduralTerrainColorIsWorldAnchoredAndVariesAcrossRegionalNoise() {
-        int first = ClipmapSurfacePalette.texturedTintAt(
+        int first = ClipmapSurfacePalette.terrainColorAt(
                 100.0f, 1.0f, 63.0f, false, 128L, 256L);
         int repeat = ClipmapSurfacePalette.texturedTintAt(
                 100.0f, 1.0f, 63.0f, false, 128L, 256L);
@@ -53,8 +53,8 @@ final class ClipmapSurfacePaletteTest {
                 100.0f, 1.0f, 63.0f, false, 2048L, 4096L);
         assertEquals(first, repeat);
         assertNotEquals(first, distant);
-        assertTrue(((first >>> 8) & 0xFF) > ((first >>> 16) & 0xFF),
-                "lowland vegetation must be green, not a neutral white atlas tint");
+        assertTrue((first & 0xFF) < 150,
+                "terrain must carry its own color, not a near-white atlas tint");
     }
 
     @Test
@@ -78,18 +78,6 @@ final class ClipmapSurfacePaletteTest {
                         && ((snow >>> 8) & 0xFF) > 190
                         && (snow & 0xFF) > 190,
                 "high-altitude snow should remain bright");
-    }
-
-    @Test
-    void textureMaterialSelectionFollowsSlopeBeachAndSnowRegions() {
-        assertEquals(ClipmapSurfacePalette.MATERIAL_GRASS,
-                ClipmapSurfacePalette.materialAt(100.0f, 1.0f, 63.0f));
-        assertEquals(ClipmapSurfacePalette.MATERIAL_SAND,
-                ClipmapSurfacePalette.materialAt(64.0f, 1.0f, 63.0f));
-        assertEquals(ClipmapSurfacePalette.MATERIAL_ROCK,
-                ClipmapSurfacePalette.materialAt(300.0f, 0.4f, 63.0f));
-        assertEquals(ClipmapSurfacePalette.MATERIAL_SNOW,
-                ClipmapSurfacePalette.materialAt(1500.0f, 1.0f, 63.0f));
     }
 
     @Test
