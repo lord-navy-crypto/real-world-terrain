@@ -306,6 +306,24 @@ def wait_for_toggle_status(lines, marker: str, start: int, timeout: float = 12.0
     raise RuntimeError("Client did not report the pause-menu toggle: " + marker)
 
 
+def wait_until_world_rendered(timeout: float = 120.0) -> None:
+    """Do not interact with the pause menu while the client is still on Loading terrain."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        image = capture_screenshot("iris-client-world-ready-probe")
+        if image is not None:
+            result = subprocess.run(
+                ["tesseract", str(image), "stdout", "--psm", "6"],
+                check=True, capture_output=True, text=True, timeout=20,
+            )
+            normalized = re.sub(r"[^a-z0-9]+", " ", result.stdout.lower()).strip()
+            if "loading terrain" not in normalized:
+                print("CLIENT_WORLD_RENDER_READY", flush=True)
+                return
+        time.sleep(2)
+    raise RuntimeError("Minecraft remained on the Loading terrain screen; pause-menu toggle was not attempted")
+
+
 def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
     """Exercise ON -> OFF -> ON through the actual Minecraft pause-menu button."""
     # The CI virtual display is 1280x720 and Minecraft's GUI scale is 2.
@@ -700,6 +718,7 @@ def run_client(env: dict[str, str]) -> None:
             elif not camera_prepared:
                 if client_latest.exists() and "Loaded 2 advancements" in client_latest.read_text(
                         encoding="utf-8", errors="replace"):
+                    wait_until_world_rendered()
                     test_pause_menu_geometry_clipmap_toggle(lines)
                     capture_natural_surface_view(proc, lines)
                     prepare_open_rendering_view(client_latest, lines)
