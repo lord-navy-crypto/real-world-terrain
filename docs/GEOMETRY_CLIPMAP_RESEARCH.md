@@ -205,6 +205,11 @@ These are intentional exclusions, not missing features.
   dependent grass, dry ground, rock, beach, snow and ocean colours.
 - Directional diffuse light using fragment derivatives of the rendered mesh
   replaces four extra vertex texture neighbour reads.
+- Iris-native terrain surfaces use a single neutral white atlas sample
+  only to satisfy the active terrain shader's sampler requirement; all visible
+  terrain materials are supplied by procedural vertex colors. Grass, dry
+  ground, rock, sand and snow never sample block/item artwork. The block atlas
+  remains available only to separate feature proxies such as trees and buildings.
 - Exterior impostors: three crossed planes, lobed tree silhouettes and
   simple stylized building facade variation. These are not real full 3D
   buildings, nor Minecraft block textures.
