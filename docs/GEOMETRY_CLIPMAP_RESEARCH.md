@@ -209,12 +209,7 @@ These are intentional exclusions, not missing features.
   simple stylized building facade variation. These are not real full 3D
   buildings, nor Minecraft block textures.
 
-The experimental renderer still requires the opt-in JVM flag
-\`-Drealscale.experimental.geometryclipmap=true\`.
-Shader compilation under OpenGL 4.1, frame pacing, seam visibility and actual
-client screenshots have not been established by dedicated server tests.
-Do not claim parity or superiority to Distant Horizons until those are
-measured in-game.
+The renderer is enabled by default and can be switched OFF or ON directly from the Minecraft pause menu using the `Geometry Clipmap: ON/OFF` button. The choice persists in `config/realscale-geometry-clipmap.properties`. OFF stops new client requests, clears active snapshots and releases client render resources; ON requests a fresh six-level snapshot without restarting the game. Shader compilation under OpenGL 4.1, frame pacing, seam visibility and actual client screenshots still require dedicated client-side acceptance. Do not claim parity or superiority to Distant Horizons until those are measured in-game.
 
 ## 2026-11-22: actual multiplayer packet delivery and atomic snapshots
 
@@ -347,11 +342,7 @@ or world that no longer needs that snapshot.
 
 ## 2026-11-22 optional profiling telemetry
 
-Enable with
-\`-Drealscale.experimental.geometryclipmap.debug=true\` alongside the existing
-\`-Drealscale.experimental.geometryclipmap=true\`.
-
-The server reports accepted snapshot centre, newly sampled vertices, proxy
+Enable timing telemetry with `-Drealscale.experimental.geometryclipmap.debug=true`. This flag only controls diagnostic output; the pause-menu switch controls whether the renderer runs.\n\nThe server reports accepted snapshot centre, newly sampled vertices, proxy
 count, worker queue wait and sample time. The client reports a five-second
 window of average frame rate while the clipmap is active, average/maximum CPU
 render-submission time, uploaded height bytes and maximum proxy-set size.
@@ -510,10 +501,7 @@ that Natural Automate and the server must be checked. These are intentionally
 not claims that a GPU image was displayed. They are also not permanent
 HUD lights or commands; chat messages remain available in the in-game log.
 
-Optional JVM overrides can disable the feature
-(`-Drealscale.experimental.geometryclipmap=false`) or silence client
-timing output (`-Drealscale.experimental.geometryclipmap.debug=false`).
-No automatic-enablement change is merged into `main` or a stable release.
+Use the pause-menu `Geometry Clipmap: ON/OFF` button to disable or re-enable the renderer at runtime. The choice persists across game restarts. The optional `-Drealscale.experimental.geometryclipmap.debug=false` argument only silences client timing output; it does not change the ON/OFF state.
 
 
 ## 2026-11-23 critical horizon visibility fix: extend the projection far plane
