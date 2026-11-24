@@ -478,14 +478,22 @@ def run_client(env: dict[str, str]) -> None:
         warning_checked = False
         camera_prepared = False
         def visible_samples_ready() -> bool:
-            return any(int(m.group(1)) > 0 for m in re.finditer(
-                r"FAR_SOLID_VISIBLE_SAMPLES=(\d+)", "".join(lines)))
+            output = "".join(lines)
+            return any(
+                int(m.group(1)) > 0 and 1000.0 <= float(m.group(2)) <= 1250.0
+                for m in re.finditer(
+                    r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*?cameraY=([-+0-9.]+)", output)
+            )
 
         def full_visible_ready() -> bool:
             output = "".join(lines)
             return bool(re.search(r"nativeMeshesBuilt=.*\blevels=6\b", output)) and any(
-                int(m.group(1)) > 0 for m in re.finditer(
-                    r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*\blevels=6\b", output))
+                int(m.group(1)) > 0 and 1000.0 <= float(m.group(2)) <= 1250.0
+                for m in re.finditer(
+                    r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*?cameraY=([-+0-9.]+).*?\blevels=6\b",
+                    output,
+                )
+            )
 
         while (not draw.is_set() or not camera_prepared or not full_visible_ready()) \
                 and proc.poll() is None and time.monotonic() < deadline:
