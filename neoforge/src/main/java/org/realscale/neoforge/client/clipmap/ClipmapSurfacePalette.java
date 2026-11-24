@@ -51,81 +51,64 @@ public final class ClipmapSurfacePalette {
         return pack(red, green, blue);
     }
 
-    public static final int MATERIAL_GRASS = 0;
-    public static final int MATERIAL_ROCK = 1;
-    public static final int MATERIAL_SAND = 2;
-    public static final int MATERIAL_SNOW = 3;
-
     /**
-     * World-anchored texture tint for the Iris terrain atlas path. The legacy
-     * palette above remains useful to CPU tests; this overload restores the
-     * moisture/regional variation used by the procedural renderer without
-     * restarting noise at each LOD cell.
+     * World-anchored procedural terrain color for the Iris-native path.
+     *
+     * <p>These are complete terrain colors, not tint multipliers for Minecraft's
+     * block/item atlas. The Iris terrain shader still requires a texture
+     * coordinate, so the renderer samples one neutral white texel and carries
+     * the actual grass, dry-ground, rock, sand and snow material through vertex
+     * color. This keeps the terrain independent of inventory and mod-item art.
      */
-    public static int texturedTintAt(float height, float normalY, float seaLevel,
+    public static int terrainColorAt(float height, float normalY, float seaLevel,
             boolean verticalSkirt, long worldX, long worldZ) {
         if (!Float.isFinite(height) || !Float.isFinite(normalY)
                 || !Float.isFinite(seaLevel)) {
             throw new IllegalArgumentException("surface palette inputs must be finite");
         }
-        if (verticalSkirt) return 0xB8B5AE;
+        if (verticalSkirt) return 0x6B665E;
 
         float macro = valueNoise(worldX, worldZ, 2048);
         float regional = valueNoise(worldX, worldZ, 512);
         float local = valueNoise(worldX, worldZ, 256);
         float moisture = clamp(0.72f * macro + 0.28f * regional, 0.0f, 1.0f);
         float slope = 1.0f - clamp(normalY, 0.0f, 1.0f);
+
+        // Broad vegetation palette. Climate sampling can replace this
+        // world-anchored proxy once the server sends biome/climate attributes.
+        float dry = smoothstep(0.15f, 0.85f, moisture);
+        float red = mix(0.37f, 0.18f, dry);
+        float green = mix(0.34f, 0.34f, dry);
+        float blue = mix(0.22f, 0.16f, dry);
+
         float rockCover = Math.max(
                 smoothstep(0.16f, 0.55f, slope),
                 smoothstep(seaLevel + 197.0f, seaLevel + 737.0f, height) * 0.6f);
+        red = mix(red, 0.42f, rockCover);
+        green = mix(green, 0.40f, rockCover);
+        blue = mix(blue, 0.37f, rockCover);
+
         float beach = (1.0f - smoothstep(seaLevel + 2.0f,
                 seaLevel + 25.0f, height))
-                * (1.0f - smoothstep(0.10f, 0.34f, slope)) * 0.85f;
+                * (1.0f - smoothstep(0.10f, 0.34f, slope));
+        red = mix(red, 0.61f, 0.85f * beach);
+        green = mix(green, 0.55f, 0.85f * beach);
+        blue = mix(blue, 0.38f, 0.85f * beach);
+
         float snowCover = smoothstep(seaLevel + 677.0f, seaLevel + 1157.0f,
                 height + (macro - 0.5f) * 130.0f);
+        red = mix(red, 0.84f, snowCover);
+        green = mix(green, 0.88f, snowCover);
+        blue = mix(blue, 0.91f, snowCover);
 
-        // These are texture multipliers, not flat material colors. The actual
-        // grass/stone/sand/snow atlas texels now provide the surface detail.
-        float dry = smoothstep(0.15f, 0.85f, moisture);
-        // Block top-face sprites already contain their authored material
-        // colors. Use near-neutral multipliers so grass stays green, sand
-        // stays warm, and snow stays bright instead of tinting every biome
-        // brown/orange as the previous aggressive multipliers did.
-        float red = mix(0.91f, 1.00f, dry);
-        float green = mix(0.98f, 0.94f, dry);
-        float blue = mix(0.93f, 0.86f, dry);
-        red = mix(red, 0.96f, rockCover);
-        green = mix(green, 0.97f, rockCover);
-        blue = mix(blue, 0.98f, rockCover);
-        red = mix(red, 1.00f, beach);
-        green = mix(green, 0.98f, beach);
-        blue = mix(blue, 0.93f, beach);
-        red = mix(red, 1.00f, snowCover);
-        green = mix(green, 1.00f, snowCover);
-        blue = mix(blue, 1.00f, snowCover);
-        float variation = 0.985f + 0.03f * local;
-        return pack(red * variation * 255.0f,
-                green * variation * 255.0f,
-                blue * variation * 255.0f);
-    }
-
-    public static int materialAt(float height, float normalY, float seaLevel) {
-        if (!Float.isFinite(height) || !Float.isFinite(normalY)
-                || !Float.isFinite(seaLevel)) {
-            throw new IllegalArgumentException("surface material inputs must be finite");
-        }
-        float slope = 1.0f - clamp(normalY, 0.0f, 1.0f);
-        float rockCover = Math.max(smoothstep(0.16f, 0.55f, slope),
-                smoothstep(seaLevel + 197.0f, seaLevel + 737.0f, height) * 0.6f);
-        float beach = (1.0f - smoothstep(seaLevel + 2.0f,
-                seaLevel + 25.0f, height))
-                * (1.0f - smoothstep(0.10f, 0.34f, slope)) * 0.85f;
-        float snow = smoothstep(seaLevel + 677.0f,
-                seaLevel + 1157.0f, height);
-        if (snow >= 0.5f) return MATERIAL_SNOW;
-        if (beach >= 0.45f) return MATERIAL_SAND;
-        if (rockCover >= 0.45f) return MATERIAL_ROCK;
-        return MATERIAL_GRASS;
+        // Low-amplitude world-anchored variation prevents a flat painted look
+        // without reintroducing cell-sized texture repetition at coarse LODs.
+        float variation = 0.97f + 0.06f * regional;
+        float mottling = 0.985f + 0.03f * local;
+        float lightness = variation * mottling;
+        return pack(red * lightness * 255.0f,
+                green * lightness * 255.0f,
+                blue * lightness * 255.0f);
     }
 
     private static float valueNoise(long worldX, long worldZ, int cellSize) {
