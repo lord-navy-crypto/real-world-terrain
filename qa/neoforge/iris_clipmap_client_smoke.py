@@ -391,6 +391,25 @@ def terrain_contrast(path: pathlib.Path) -> float:
     return contrast
 
 
+def terrain_high_frequency_ratio(path: pathlib.Path) -> float:
+    # Compare the terrain viewport with a 2px low-pass copy. Excessive
+    # high-frequency energy is the visible signature of atlas aliasing and
+    # per-LOD texture speckle in the distant rings.
+    args = [
+        "convert", str(path), "-gravity", "center", "-crop", "854x480+0+0", "+repage",
+        "-gravity", "south", "-crop", "854x240+0+0", "+repage", "-colorspace", "Gray",
+        "(", "+clone", "-blur", "0x2", ")", "-compose", "difference", "-composite",
+        "-format", "%[fx:standard_deviation]", "info:",
+    ]
+    high = float(subprocess.run(
+        args, check=True, capture_output=True, text=True, timeout=30
+    ).stdout.strip())
+    contrast = terrain_contrast(path)
+    ratio = high / max(contrast, 1.0e-6)
+    print(f"TERRAIN_HIGH_FREQUENCY_RATIO: {path.name} {ratio:.5f}", flush=True)
+    return ratio
+
+
 def wait_for_settled_window(proc, lines, start: int, minimum_seconds: float = 30.0) -> str:
     """Wait for the latest complete height and proxy snapshot and stable draw evidence."""
     started = time.monotonic()
@@ -705,13 +724,19 @@ def run_client(env: dict[str, str]) -> None:
         moving = capture_screenshot("iris-clipmap-after-motion")
         validate_screenshot(moving)
         settled_contrast = terrain_contrast(moving)
+        settled_high_frequency = terrain_high_frequency_ratio(moving)
         time.sleep(30)
         final_frame = capture_screenshot("iris-clipmap-after-motion-final")
         validate_screenshot(final_frame)
         final_contrast = terrain_contrast(final_frame)
+        final_high_frequency = terrain_high_frequency_ratio(final_frame)
         print("IRIS_CLIPMAP_MOVEMENT_REFRESH_PASS", sorted(centres), settled_centre, flush=True)
         # A depth query does not prove final color visibility. Flag persistent
         # contrast collapse only after the complete window has had time to settle.
+        if max(settled_high_frequency, final_high_frequency) > 0.28:
+            raise RuntimeError("Distant terrain still has excessive high-frequency texture aliasing: "
+                               f"settled={settled_high_frequency:.5f}, final={final_high_frequency:.5f}")
+        print("IRIS_TERRAIN_TEXTURE_ALIASING_GATE_PASS", flush=True)
         if initial_contrast < 0.055:
             raise RuntimeError(f"Initial terrain viewport has insufficient contrast: {initial_contrast:.5f}")
         if max(settled_contrast, final_contrast) < max(0.055, initial_contrast * 0.4):
