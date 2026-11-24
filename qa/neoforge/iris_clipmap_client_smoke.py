@@ -285,15 +285,41 @@ def capture_screenshot(name: str) -> pathlib.Path | None:
         return None
 
 
-def read_pause_menu_toggle_text(name: str) -> str:
+def active_game_window_geometry():
+    result = subprocess.run(
+        ["xdotool", "getactivewindow", "getwindowgeometry", "--shell"],
+        check=True, capture_output=True, text=True, timeout=10,
+    )
+    values = {}
+    for line in result.stdout.splitlines():
+        if "=" in line:
+            key, value = line.split("=", 1)
+            values[key.strip()] = value.strip()
+    geometry = tuple(int(values[key]) for key in ("X", "Y", "WIDTH", "HEIGHT"))
+    print("CLIENT_WINDOW_GEOMETRY:", geometry, flush=True)
+    return geometry
+
+
+def ocr_game_window(name: str) -> str:
     image = capture_screenshot(name)
     if image is None:
-        raise RuntimeError("Could not capture the Minecraft pause menu for toggle verification")
+        raise RuntimeError("Could not capture the Minecraft window for OCR")
+    x, y, width, height = active_game_window_geometry()
+    crop = BUILD / (name + "-game-window-upscaled.png")
+    subprocess.run(
+        ["convert", str(image), "-crop", f"{width}x{height}+{x}+{y}",
+         "+repage", "-resize", "200%", str(crop)],
+        check=True, timeout=30,
+    )
     result = subprocess.run(
-        ["tesseract", str(image), "stdout", "--psm", "6"],
+        ["tesseract", str(crop), "stdout", "--psm", "6"],
         check=True, capture_output=True, text=True, timeout=20,
     )
     return re.sub(r"[^a-z0-9]+", " ", result.stdout.lower()).strip()
+
+
+def read_pause_menu_toggle_text(name: str) -> str:
+    return ocr_game_window(name)
 
 
 def wait_for_toggle_status(lines, marker: str, start: int, timeout: float = 12.0) -> None:
@@ -310,25 +336,30 @@ def wait_until_world_rendered(timeout: float = 120.0) -> None:
     """Do not interact with the pause menu while the client is still on Loading terrain."""
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        image = capture_screenshot("iris-client-world-ready-probe")
-        if image is not None:
-            result = subprocess.run(
-                ["tesseract", str(image), "stdout", "--psm", "6"],
-                check=True, capture_output=True, text=True, timeout=20,
-            )
-            normalized = re.sub(r"[^a-z0-9]+", " ", result.stdout.lower()).strip()
-            if "loading terrain" not in normalized:
-                print("CLIENT_WORLD_RENDER_READY", flush=True)
-                return
+        normalized = ocr_game_window("iris-client-world-ready-probe")
+        if "loading terrain" not in normalized:
+            print("CLIENT_WORLD_RENDER_READY", flush=True)
+            return
         time.sleep(2)
     raise RuntimeError("Minecraft remained on the Loading terrain screen; pause-menu toggle was not attempted")
 
 
 def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
     """Exercise ON -> OFF -> ON through the actual Minecraft pause-menu button."""
-    # The CI virtual display is 1280x720 and Minecraft's GUI scale is 2.
-    # The toggle button is the right-hand button in the bottom custom row.
-    click_x, click_y = 798, 684
+    # Derive the click point from the actual game window. The CI options set
+    # GUI scale 2; the custom pause-menu row is 154px + 4px + 154px wide.
+    window_x, window_y, window_width, window_height = active_game_window_geometry()
+    gui_scale = 2
+    button_width = 154
+    gap = 4
+    logical_width = window_width // gui_scale
+    logical_height = window_height // gui_scale
+    row_width = button_width * 2 + gap
+    button_x = (logical_width - row_width) // 2 + button_width + gap
+    button_y = max(4, logical_height - 28)
+    click_x = window_x + (button_x + button_width // 2) * gui_scale
+    click_y = window_y + (button_y + 10) * gui_scale
+    print("CLIPMAP_TOGGLE_CLICK_POINT:", (click_x, click_y), flush=True)
     subprocess.run(["xdotool", "key", "Escape"], check=True, timeout=10)
     time.sleep(1)
     initial = read_pause_menu_toggle_text("iris-clipmap-pause-menu-on")
