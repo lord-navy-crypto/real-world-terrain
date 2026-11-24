@@ -467,7 +467,12 @@ def run_client(env: dict[str, str]) -> None:
         world_ready_deadline = time.monotonic() + 180
         warning_checked = False
         camera_prepared = False
-        while not draw.is_set() and proc.poll() is None and time.monotonic() < deadline:
+        def visible_samples_ready() -> bool:
+            return any(int(m.group(1)) > 0 for m in re.finditer(
+                r"MAIN_SOLID_VISIBLE_SAMPLES=(\d+)", "".join(lines)))
+
+        while (not draw.is_set() or not camera_prepared or not visible_samples_ready()) \
+                and proc.poll() is None and time.monotonic() < deadline:
             if not warning_checked and time.monotonic() < warning_check_deadline:
                 if experimental_warning_visible():
                     dismiss_experimental_warning()
@@ -503,6 +508,10 @@ def run_client(env: dict[str, str]) -> None:
                 "Client did not submit an Iris-native clipmap draw within the test window; "
                 f"Gradle exit code={proc.poll()}"
             )
+
+        if not camera_prepared or not visible_samples_ready():
+            capture_screenshot("iris-client-no-visible-clipmap-samples")
+            raise RuntimeError("No verified depth-passing solid clipmap samples at the high-altitude camera")
 
         # The marker is emitted only after six-level native mesh submission.
         stdout_text = "".join(lines)
