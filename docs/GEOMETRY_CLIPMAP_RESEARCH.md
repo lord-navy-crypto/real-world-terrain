@@ -214,7 +214,7 @@ These are intentional exclusions, not missing features.
   simple stylized building facade variation. These are not real full 3D
   buildings, nor Minecraft block textures.
 
-The renderer is enabled by default and can be switched OFF or ON directly from the Minecraft pause menu using the `Geometry Clipmap: ON/OFF` button. The choice persists in `config/realscale-geometry-clipmap.properties`. OFF stops new client requests, clears active snapshots and releases client render resources; ON requests a fresh six-level snapshot without restarting the game. Shader compilation under OpenGL 4.1, frame pacing, seam visibility and actual client screenshots still require dedicated client-side acceptance. Do not claim parity or superiority to Distant Horizons until those are measured in-game.
+The renderer is disabled by default and can be switched ON or OFF directly from the Minecraft pause menu using the `Geometry Clipmap: ON/OFF` button. A new installation starts with `enabled=false`; an explicitly saved preference is preserved in `config/realscale-geometry-clipmap.properties`. OFF stops new client requests, clears active snapshots and releases client render resources; ON requests a fresh six-level snapshot without restarting the game. Shader compilation under OpenGL 4.1, frame pacing, seam visibility and actual client screenshots still require dedicated client-side acceptance. Do not claim parity or superiority to Distant Horizons until those are measured in-game.
 
 ## 2026-11-22: actual multiplayer packet delivery and atomic snapshots
 
@@ -488,23 +488,26 @@ they do not prove the first displayed GPU frame or GPU execution duration.
 The default remains opt-in/off. The network protocol remains version 3.
 
 
-## 2026-11-23 test-candidate usability: automatically enabled + visible status
+## 2026-11-23 test-candidate usability: opt-in by default + visible status
 
-**Only in this Draft PR's experimental TEST JAR**, the client now enables
-Geometry Clipmap by default. The user installs one complete RealScale JAR and
-does not need to edit launcher JVM parameters. It remains restricted on the
-server to Natural Automate's supported noise settings and the matching
-experimental client/server protocol; installing the JAR into a vanilla-only
-world does not cause distant sampling.
+**Only in this Draft PR's experimental TEST JAR**, Geometry Clipmap is now
+disabled by default. A new installation starts with the renderer OFF; the
+player explicitly enables it using the pause-menu button. The user installs
+one complete RealScale JAR and does not need to edit launcher JVM parameters.
+An explicitly saved `enabled=true` preference remains enabled across launches.
+The feature remains restricted on the server to Natural Automate's supported
+noise settings and the matching experimental client/server protocol;
+installing the JAR into a vanilla-only world does not cause distant sampling.
 
 The client writes distinct Minecraft **chat notices**, as well as diagnostic
-log lines, on state transitions: `ON / WAITING` after world entry and a
-request; `SNAPSHOT READY` after all six height tiles arrive; and
-`DRAW SUBMITTED` after the renderer receives a valid frame. If no snapshot
-arrives within about 15 seconds, it prints `STILL WAITING` once, explaining
-that Natural Automate and the server must be checked. These are intentionally
-not claims that a GPU image was displayed. They are also not permanent
-HUD lights or commands; chat messages remain available in the in-game log.
+log lines, on state transitions after the player enables the feature:
+`ON / WAITING` after the request; `SNAPSHOT READY` after all six height
+tiles arrive; and `DRAW SUBMITTED` after the renderer receives a valid frame.
+If no snapshot arrives within about 15 seconds, it prints `STILL WAITING` once,
+explaining that Natural Automate and the server must be checked. These are
+intentionally not claims that a GPU image was displayed. They are also not
+permanent HUD lights or commands; chat messages remain available in the
+in-game log.
 
 Use the pause-menu `Geometry Clipmap: ON/OFF` button to disable or re-enable the renderer at runtime. The choice persists across game restarts. The optional `-Drealscale.experimental.geometryclipmap.debug=false` argument only silences client timing output; it does not change the ON/OFF state.
 
