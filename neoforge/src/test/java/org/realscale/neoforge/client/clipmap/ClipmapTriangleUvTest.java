@@ -89,6 +89,25 @@ final class ClipmapTriangleUvTest {
     }
 
     @Test
+    void cellAlignedAtlasUvsTileOneSpriteAcrossBothTrianglesOfEachQuad() {
+        float[] first = new float[6];
+        float[] second = new float[6];
+        ClipmapTriangleUv.computeCellAlignedInto(
+                new int[]{12, 12, 13}, new int[]{20, 21, 20}, first);
+        ClipmapTriangleUv.computeCellAlignedInto(
+                new int[]{13, 12, 13}, new int[]{20, 21, 21}, second);
+
+        assertEquals(0.5f, first[0], 1.0e-6f);
+        assertEquals(0.5f, first[1], 1.0e-6f);
+        assertEquals(15.5f, first[4], 1.0e-6f);
+        assertEquals(0.5f, first[5], 1.0e-6f);
+        assertEquals(first[4], second[0], 1.0e-6f);
+        assertEquals(first[5], second[1], 1.0e-6f);
+        assertEquals(15.5f, second[3], 1.0e-6f);
+        assertEquals(15.5f, second[5], 1.0e-6f);
+    }
+
+    @Test
     void rejectsInvalidWorldBoundsAndDegenerateProjection() {
         float[] uv = new float[6];
         assertThrows(IllegalArgumentException.class, () ->
