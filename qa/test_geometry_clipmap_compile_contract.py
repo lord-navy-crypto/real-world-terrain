@@ -467,7 +467,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", native)
         self.assertNotIn("8.0f, 8.0f, nx", native)
 
-    def test_iris_native_terrain_never_samples_item_or_block_material_art(self):
+    def test_iris_native_terrain_uses_procedural_colors_not_atlas_materials(self):
         native = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/IrisNativeClipmapRenderer.java").read_text(
             encoding="utf-8"
         )
@@ -477,7 +477,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertNotIn("sprites.forMaterial(", native)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", native)
         self.assertIn("actual procedural", native)
-                self.assertIn("sprite.getU(u), sprite.getV(v)", native)  # proxy geometry only
+        self.assertIn("sprite.getU(u), sprite.getV(v)", native)  # proxy geometry only
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
