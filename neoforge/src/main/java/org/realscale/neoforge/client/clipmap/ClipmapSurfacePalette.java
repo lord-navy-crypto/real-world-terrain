@@ -51,11 +51,6 @@ public final class ClipmapSurfacePalette {
         return pack(red, green, blue);
     }
 
-    public static final int MATERIAL_GRASS = 0;
-    public static final int MATERIAL_ROCK = 1;
-    public static final int MATERIAL_SAND = 2;
-    public static final int MATERIAL_SNOW = 3;
-
     /**
      * World-anchored procedural terrain color for the Iris-native path.
      *
@@ -65,7 +60,7 @@ public final class ClipmapSurfacePalette {
      * the actual grass, dry-ground, rock, sand and snow material through vertex
      * color. This keeps the terrain independent of inventory and mod-item art.
      */
-    public static int texturedTintAt(float height, float normalY, float seaLevel,
+    public static int terrainColorAt(float height, float normalY, float seaLevel,
             boolean verticalSkirt, long worldX, long worldZ) {
         if (!Float.isFinite(height) || !Float.isFinite(normalY)
                 || !Float.isFinite(seaLevel)) {
@@ -114,25 +109,6 @@ public final class ClipmapSurfacePalette {
         return pack(red * lightness * 255.0f,
                 green * lightness * 255.0f,
                 blue * lightness * 255.0f);
-    }
-
-    public static int materialAt(float height, float normalY, float seaLevel) {
-        if (!Float.isFinite(height) || !Float.isFinite(normalY)
-                || !Float.isFinite(seaLevel)) {
-            throw new IllegalArgumentException("surface material inputs must be finite");
-        }
-        float slope = 1.0f - clamp(normalY, 0.0f, 1.0f);
-        float rockCover = Math.max(smoothstep(0.16f, 0.55f, slope),
-                smoothstep(seaLevel + 197.0f, seaLevel + 737.0f, height) * 0.6f);
-        float beach = (1.0f - smoothstep(seaLevel + 2.0f,
-                seaLevel + 25.0f, height))
-                * (1.0f - smoothstep(0.10f, 0.34f, slope)) * 0.85f;
-        float snow = smoothstep(seaLevel + 677.0f,
-                seaLevel + 1157.0f, height);
-        if (snow >= 0.5f) return MATERIAL_SNOW;
-        if (beach >= 0.45f) return MATERIAL_SAND;
-        if (rockCover >= 0.45f) return MATERIAL_ROCK;
-        return MATERIAL_GRASS;
     }
 
     private static float valueNoise(long worldX, long worldZ, int cellSize) {
