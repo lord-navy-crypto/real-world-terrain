@@ -22,10 +22,17 @@ final class ClipmapMorphMathTest {
         assertEquals(10.0, ClipmapMorphMath.parentHeight(0, 0, 10, 25, 30, 55));
         assertEquals(25.0, ClipmapMorphMath.parentHeight(1, 0, 10, 25, 30, 55) * 2 - 10);
         assertEquals(30.0, ClipmapMorphMath.parentHeight(0, 1, 10, 25, 30, 55) * 2 - 10);
-        assertEquals(30.0, ClipmapMorphMath.parentHeight(1, 1, 10, 25, 30, 55));
+        assertEquals(27.5, ClipmapMorphMath.parentHeight(1, 1, 10, 25, 30, 55));
         assertEquals(0.5, ClipmapMorphMath.edgeWeight(4, 64, 128, 8));
         assertEquals(0.0, ClipmapMorphMath.edgeWeight(8, 64, 128, 8));
         assertEquals(15.0, ClipmapMorphMath.morphHeight(10, 20, 0.5));
+    }
+
+    @Test
+    void parentInterpolationMatchesTheRingMeshDiagonal() {
+        assertEquals(27.5, ClipmapMorphMath.parentHeight(1, 1, 10, 25, 30, 55));
+        assertEquals(20.0, ClipmapMorphMath.parentHeight(0, 1, 10, 25, 30, 55));
+        assertEquals(17.5, ClipmapMorphMath.parentHeight(1, 0, 10, 25, 30, 55));
     }
 
     @Test
