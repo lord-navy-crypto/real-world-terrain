@@ -470,6 +470,7 @@ final class IrisNativeClipmapRenderer {
         float[] z = new float[3];
         float[] faceNormalScratch = new float[3];
         float[] triangleUvs = new float[6];
+        int[] vertexColors = new int[3];
         for (int p = 0; p < indices.length; p += 3) {
             boolean skirt = false;
             float averageHeight = 0.0f;
@@ -494,11 +495,13 @@ final class IrisNativeClipmapRenderer {
                 for (int vertex = 0; vertex < 3; vertex++) {
                     y[vertex] = seaLevel + 0.025f;
                 }
-                // Water is deliberately flat-shaded and uses a uniform atlas
-                // texel; no block texture is tiled independently per triangle.
+                // Water is deliberately flat-shaded and uses one stable color.
+                for (int vertex = 0; vertex < 3; vertex++) {
+                    vertexColors[vertex] = ClipmapSurfacePalette.waterColor();
+                }
                 ClipmapTriangleUv.computeInto(x, y, z, gridX, gridZ,
                         false, triangleUvs);
-                emitTriangle(water, sprites.white(), 0x64869A, 190,
+                emitTriangle(water, sprites.white(), vertexColors, 190,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         false, true, faceNormalScratch);
             } else if (averageHeight > seaLevel) {
@@ -506,24 +509,21 @@ final class IrisNativeClipmapRenderer {
                     y[vertex] = Math.max(topHeight[vertex], seaLevel)
                             - layer[vertex] * skirtDepth;
                 }
-                int materialRgb;
-                if (averageHeight >= seaLevel + 677.0f) {
-                    materialRgb = 0xE1E7EA;
-                } else if (skirt || averageHeight >= seaLevel + 197.0f
-                        || averageNormalY < 0.90f) {
-                    materialRgb = 0x85857F;
-                } else if (averageHeight <= seaLevel + 25.0f && averageNormalY > 0.94f) {
-                    materialRgb = 0xC1AC7F;
-                } else {
-                    materialRgb = 0x789052;
+                // Blend material classes per vertex rather than assigning one
+                // hard material to the whole triangle. This removes visible
+                // color facets at LOD scale while preserving broad landforms.
+                for (int vertex = 0; vertex < 3; vertex++) {
+                    int normalIndex = (gridZ[vertex] * side + gridX[vertex]) * 3;
+                    vertexColors[vertex] = ClipmapSurfacePalette.colorAt(
+                            Math.max(topHeight[vertex], seaLevel),
+                            smoothNormals[normalIndex + 1], seaLevel, skirt);
                 }
                 // A single white atlas texel lets Iris retain its normal
-                // terrain/G-buffer path while vertex colors provide stable,
-                // low-noise material colors. Sampling a full block sprite per
-                // tiny clipmap triangle created the colorful surface mosaic.
+                // terrain/G-buffer path while interpolated vertex colors provide
+                // stable material transitions without block-texture speckle.
                 ClipmapTriangleUv.computeInto(x, y, z, gridX, gridZ,
                         skirt, triangleUvs);
-                emitTriangle(solid, sprites.white(), materialRgb, 255,
+                emitTriangle(solid, sprites.white(), vertexColors, 255,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         !skirt, false, faceNormalScratch);
             }
@@ -572,7 +572,7 @@ final class IrisNativeClipmapRenderer {
     }
 
     private static void emitTriangle(BufferBuilder builder, TextureAtlasSprite sprite,
-            int rgb, int alpha, float[] x, float[] y, float[] z,
+            int[] rgb, int alpha, float[] x, float[] y, float[] z,
             int[] gridX, int[] gridZ, int side, float[] triangleUvs,
             float[] smoothNormals, boolean useSmoothNormals,
             boolean flatUp, float[] faceNormalScratch) {
@@ -600,7 +600,7 @@ final class IrisNativeClipmapRenderer {
             // The uniform white-concrete sprite uses a small inset UV patch.
             // Coordinates vary across the triangle so Iris can build a valid
             // tangent frame for PBR shaders without reintroducing texture grain.
-            putVertex(builder, sprite, rgb, alpha,
+            putVertex(builder, sprite, rgb[vertex], alpha,
                     x[vertex], y[vertex], z[vertex],
                     triangleUvs[vertex * 2], triangleUvs[vertex * 2 + 1], nx, ny, nz);
         }

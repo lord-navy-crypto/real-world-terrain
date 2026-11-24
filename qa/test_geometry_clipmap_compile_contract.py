@@ -444,7 +444,9 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("triangle UV projection is degenerate", uv)
         self.assertIn("Math.max(0, Math.min(cells, x))", native)
         self.assertNotIn("int minX = Math.min(gridX", native)
-        self.assertIn("averageNormalY", native)
+        self.assertIn("ClipmapSurfacePalette.colorAt(", native)
+        self.assertIn("vertexColors[vertex]", native)
+        self.assertNotIn("int materialRgb", native)
         self.assertIn("ClipmapTriangleUv.computeInto(", native)
         self.assertNotIn("8.0f, 8.0f, nx", native)
 
@@ -463,6 +465,14 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("float[] smoothNormals", native)
         self.assertIn("ClipmapTriangleUv.computeInto(", native)
         self.assertIn("triangleUvs[vertex * 2]", native)
+        self.assertIn("ClipmapSurfacePalette.colorAt(", native)
+        palette = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapSurfacePalette.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("rockCover", palette)
+        self.assertIn("beach", palette)
+        self.assertIn("snowCover", palette)
+        self.assertNotIn("int materialRgb", native)
         self.assertNotIn("8.0f, 8.0f, nx", native)
         self.assertNotIn("int minX = Math.min(gridX", native)
         self.assertNotIn("Math.floorMod(x, side)", native)
