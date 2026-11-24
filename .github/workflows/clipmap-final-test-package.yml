@@ -119,7 +119,8 @@ jobs:
 
           TEST ONLY. DO NOT MERGE TO MAIN OR REPLACE THE OFFICIAL RELEASE.
           Keep exactly one RealScale mod JAR in your mods directory.
-          Geometry Clipmap is enabled by default in this experimental test JAR.
+          Geometry Clipmap is disabled by default in this experimental test JAR.
+          A fresh install starts OFF. An explicitly saved enabled=true preference is preserved.
           In-game switch: press Esc and click "Geometry Clipmap: ON/OFF".
           The selected state is saved to config/realscale-geometry-clipmap.properties.
           Turning it OFF stops new requests, clears active snapshots and releases
