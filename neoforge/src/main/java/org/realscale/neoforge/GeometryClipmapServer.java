@@ -333,6 +333,7 @@ public final class GeometryClipmapServer {
             NoiseBasedChunkGenerator generator, RandomState randomState,
             GeometryClipmapLayout.Layout layout) {
         if (session.proxyTask != null) PROXY_SAMPLER.remove(session.proxyTask);
+        if (session.proxyTask != null) session.cancelledProxyTasks++;
         long token = ++session.proxyGeneration;
         java.util.function.BooleanSupplier current = () ->
                 session.requestEpoch.isCurrent(epoch) && session.proxyGeneration == token;
@@ -357,8 +358,10 @@ public final class GeometryClipmapServer {
                     if (!session.inFlight) session.cachedProxyPayload = packet;
                     PacketDistributor.sendToPlayer(live, packet);
                     if (DEBUG) System.out.printf(java.util.Locale.ROOT,
-                            "[RealScale Geometry Clipmap] proxies=%d sample=%.1fms%n",
-                            proxies.size(), (System.nanoTime() - started) / 1_000_000.0);
+                            "[RealScale Geometry Clipmap] proxies=%d sample=%.1fms cancelledProxyTasks=%d%n",
+                            proxies.size(), (System.nanoTime() - started) / 1_000_000.0,
+                            session.cancelledProxyTasks);
+                    session.proxyTask = null;
                 });
             } catch (RuntimeException failure) {
                 if (current.getAsBoolean()) System.err.println(
@@ -453,6 +456,7 @@ public final class GeometryClipmapServer {
         private Runnable proxyTask;
         private volatile long proxyGeneration;
         private long cancelledTasks;
+        private long cancelledProxyTasks;
         private volatile long lastProgressNanos;
         private volatile int status = ClipmapStatusPayload.REQUEST_ACCEPTED;
         private volatile int completedLevels;
@@ -469,7 +473,7 @@ public final class GeometryClipmapServer {
 
         private void cancelTasks() {
             if (ringTask != null) { SAMPLER.remove(ringTask); cancelledTasks++; ringTask = null; }
-            if (proxyTask != null) { PROXY_SAMPLER.remove(proxyTask); proxyTask = null; }
+            if (proxyTask != null) { PROXY_SAMPLER.remove(proxyTask); proxyTask = null; cancelledProxyTasks++; }
             proxyGeneration++;
         }
 

@@ -68,7 +68,7 @@ def dump_worldgen_jfr(root,pid):
         if not recording.is_file() or recording.stat().st_size < 68:
             return False
         with recording.open("rb") as stream:
-            return stream.read(4)==b"FLR\\x00"
+            return stream.read(4)==bytes.fromhex("464c5200")
     result=run_jfr(["JFR.dump","name=realscale_worldgen","filename="+str(recording)])
     if result.returncode!=0 or not valid():
         run_jfr(["JFR.check","name=realscale_worldgen","verbose=true"])
@@ -502,7 +502,7 @@ def main(root,expected_preset,profile):
                 try:
                     dump_worldgen_jfr(root,jfr_pid)
                     jfr_dumped=True
-                except (OSError,subprocess.SubprocessError) as diag_error:
+                except (OSError,subprocess.SubprocessError,RuntimeError) as diag_error:
                     print("REALSCALE_JFR_DUMP_FAILED:",
                           repr(diag_error),flush=True)
             if (not ready.is_set() or isinstance(exc,TimeoutError)) and not startup_dumps_captured:

@@ -112,7 +112,7 @@ public final class ClipmapHeightGrid {
                 if ((index & 31) == 0 && !stillCurrent.getAsBoolean()) {
                     throw new CancellationException("Obsolete RealScale clipmap sampling");
                 }
-                if ((index & 1023) == 0) {
+                if ((index & 31) == 0) {
                     progress.accept((int) (index * 100L / heights.length));
                 }
 

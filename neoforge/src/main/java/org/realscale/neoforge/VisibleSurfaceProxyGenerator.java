@@ -51,13 +51,20 @@ public final class VisibleSurfaceProxyGenerator {
         BiomeSource biomeSource = generator.getBiomeSource();
         SurfaceFeatureProxyProvider.Context context =
                 new SurfaceFeatureProxyProvider.Context(worldSeed, layout,
-                        terrainDensity, biomeSource, randomState.sampler());
+                        terrainDensity, biomeSource, randomState.sampler(), current);
         List<VisibleSurfaceProxy> output = new ArrayList<>();
+        boolean debug = Boolean.getBoolean("realscale.experimental.geometryclipmap.debug");
+        long started = System.nanoTime();
         collectCanopyProxies(context, output, current);
+        reportStage(debug, "canopies", started, output.size());
+        started = System.nanoTime();
         collectSkyIslandProxies(context, biomeSource, output, current);
+        reportStage(debug, "sky islands", started, output.size());
         checkCurrent(current);
+        started = System.nanoTime();
         SurfaceFeatureProxyRegistry.collect(context, output);
         checkCurrent(current);
+        reportStage(debug, "registered exterior providers", started, output.size());
         if (output.size() > MAX_PROXIES) {
             return List.copyOf(output.subList(0, MAX_PROXIES));
         }
@@ -143,6 +150,12 @@ public final class VisibleSurfaceProxyGenerator {
                 }
             }
         }
+    }
+
+    private static void reportStage(boolean debug, String stage, long started, int count) {
+        if (debug) System.out.printf(java.util.Locale.ROOT,
+                "[RealScale Geometry Clipmap] proxy stage=%s cumulative=%d elapsed=%.1fms%n",
+                stage, count, (System.nanoTime() - started) / 1_000_000.0);
     }
 
     private static void checkCurrent(java.util.function.BooleanSupplier current) {

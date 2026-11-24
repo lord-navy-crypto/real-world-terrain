@@ -23,8 +23,19 @@ public interface SurfaceFeatureProxyProvider {
             GeometryClipmapLayout.Layout layout,
             DensityFunction terrainDensity,
             BiomeSource biomeSource,
-            Climate.Sampler climateSampler) {
+            Climate.Sampler climateSampler,
+            java.util.function.BooleanSupplier stillCurrent) {
+        public Context(long worldSeed, GeometryClipmapLayout.Layout layout,
+                DensityFunction terrainDensity, BiomeSource biomeSource,
+                Climate.Sampler climateSampler) {
+            this(worldSeed, layout, terrainDensity, biomeSource, climateSampler, () -> true);
+        }
+
+        public void checkCurrent() {
+            if (!stillCurrent.getAsBoolean()) throw new java.util.concurrent.CancellationException();
+        }
         public float surfaceHeight(int blockX, int blockZ) {
+            checkCurrent();
             double signal = terrainDensity.compute(
                     new DensityFunction.SinglePointContext(blockX, 63, blockZ));
             return (float) Math.max(-64.0, Math.min(2032.0,
@@ -32,6 +43,7 @@ public interface SurfaceFeatureProxyProvider {
         }
 
         public Holder<Biome> biomeAt(int blockX, int blockY, int blockZ) {
+            checkCurrent();
             return biomeSource.getNoiseBiome(
                     QuartPos.fromBlock(blockX),
                     QuartPos.fromBlock(blockY),

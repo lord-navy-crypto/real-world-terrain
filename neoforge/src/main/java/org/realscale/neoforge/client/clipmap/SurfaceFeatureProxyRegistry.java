@@ -21,6 +21,7 @@ public final class SurfaceFeatureProxyRegistry {
     public static void collect(SurfaceFeatureProxyProvider.Context context,
             List<VisibleSurfaceProxy> output) {
         for (SurfaceFeatureProxyProvider provider : PROVIDERS) {
+            context.checkCurrent();
             if (output.size() >= ClipmapSurfaceProxyPayloadLimit.MAX_PROXIES) return;
             provider.collect(context, output);
         }
