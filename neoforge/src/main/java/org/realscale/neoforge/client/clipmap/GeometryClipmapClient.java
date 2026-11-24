@@ -119,8 +119,14 @@ public final class GeometryClipmapClient {
                 payload.nearRenderDistanceChunks(), payload.dimensionKey(), payload)) {
             var key = TILES.activeKey();
             PROXY_BUFFER.onHeightSnapshot(key);
-            lastReportedTileCount = ClipmapStatusPayload.LEVEL_COUNT;
-            if (!firstSnapshotRecorded) {
+            int received = TILES.activeTiles().size();
+            lastReportedTileCount = received;
+            serverStateSinceNanos = System.nanoTime();
+            waitingDiagnosticShown = false;
+            if (received < ClipmapStatusPayload.LEVEL_COUNT) {
+                reportProgress(minecraft, "[RealScale] Clipmap: RENDERABLE LOD PREFIX (" + received + "/6)");
+            }
+            if (!firstSnapshotRecorded && received == ClipmapStatusPayload.LEVEL_COUNT) {
                 firstSnapshotRecorded = true;
                 reportStatus(minecraft,
                         "[RealScale] Clipmap: SNAPSHOT READY (6/6 height levels)");
@@ -258,7 +264,7 @@ public final class GeometryClipmapClient {
                 reportStatus(minecraft, "[RealScale] Clipmap: NO SERVER ACKNOWLEDGEMENT - "
                         + "resending request #" + retryCount);
             } else if (!waitingDiagnosticShown && serverStateSinceNanos != 0L
-                    && now - serverStateSinceNanos > HEARTBEAT_INTERVAL_NANOS * 2L) {
+                    && now - serverStateSinceNanos > 90_000_000_000L) {
                 waitingDiagnosticShown = true;
                 String stalledState = switch (serverStatus) {
                     case ClipmapStatusPayload.REQUEST_ACCEPTED ->
@@ -268,7 +274,7 @@ public final class GeometryClipmapClient {
                     case ClipmapStatusPayload.SAMPLING ->
                             "sampler has not advanced; last progress: " + serverDetail;
                     case ClipmapStatusPayload.SNAPSHOT_SENT ->
-                            "server sent snapshot but client has " + TILES.pendingLevelCount() + "/6 tiles";
+                            "server sent snapshot but client has " + Math.max(TILES.activeTiles().size(), TILES.pendingLevelCount()) + "/6 tiles";
                     case ClipmapStatusPayload.BUSY ->
                             "server is busy: " + serverDetail;
                     case ClipmapStatusPayload.FAILED ->

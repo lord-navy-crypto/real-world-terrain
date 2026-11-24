@@ -97,7 +97,7 @@ final class IrisNativeClipmapRenderer {
             // Iris does not render water into the shadow terrain phase.
             return false;
         }
-        if (tiles == null || tiles.size() < LEVEL_COUNT || level == null
+        if (tiles == null || tiles.isEmpty() || level == null
                 || dimension == null || dimension.isBlank() || requestId <= 0L
                 || frustumMatrix == null || projectionMatrix == null) {
             return false;
@@ -281,12 +281,12 @@ final class IrisNativeClipmapRenderer {
         if (!dimension.equals(cachedDimension) || requestId != cachedRequestId
                 || centerX != cachedCenterX || centerZ != cachedCenterZ
                 || nearChunks != cachedNearChunks || seaLevel != cachedSeaLevel
-                || proxies != cachedProxies || cachedTiles.size() != LEVEL_COUNT
+                || proxies != cachedProxies || cachedTiles.size() != tiles.size()
                 || cachedGridCells != first.gridCells()
                 || cachedBaseSpacing != first.cellSpacingBlocks()) {
             return false;
         }
-        for (int level = 0; level < LEVEL_COUNT; level++) {
+        for (int level = 0; level < tiles.size(); level++) {
             if (cachedTiles.get(level) != tiles.get(level)) return false;
         }
         return true;
@@ -305,7 +305,7 @@ final class IrisNativeClipmapRenderer {
             int cells = first.gridCells();
             int baseSpacing = first.cellSpacingBlocks();
 
-            for (int level = 0; level < LEVEL_COUNT; level++) {
+            for (int level = 0; level < tiles.size(); level++) {
                 ClipmapHeightTilePayload tile = tiles.get(level);
                 if (tile == null || tile.levelIndex() != level
                         || tile.requestId() != requestId
@@ -337,7 +337,7 @@ final class IrisNativeClipmapRenderer {
                 BufferBuilder waterBuilder = new BufferBuilder(
                         waterBytes, VertexFormat.Mode.QUADS, irisTerrainFormat);
 
-                for (int level = 0; level < LEVEL_COUNT; level++) {
+                for (int level = 0; level < snapshot.size(); level++) {
                     appendTerrain(snapshot.get(level), level, nearChunks, seaLevel,
                             sprites, level == 0 ? solidBuilder : farSolidBuilder, waterBuilder);
                 }
@@ -367,7 +367,7 @@ final class IrisNativeClipmapRenderer {
                 System.out.printf(java.util.Locale.ROOT,
                         "[RealScale Iris Clipmap] nativeMeshesBuilt=%.1fms levels=%d proxies=%d solid=%s cutout=%s water=%s heightRanges=%s%n",
                         (System.nanoTime() - started) / 1_000_000.0,
-                        LEVEL_COUNT, proxies.size(), solidBuffer != null,
+                        snapshot.size(), proxies.size(), solidBuffer != null,
                         cutoutBuffer != null, waterBuffer != null,
                         heightRangeSummary(snapshot));
             }

@@ -167,7 +167,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         )
         self.assertIn('realscale.experimental.geometryclipmap.debug', server)
         self.assertIn('realscale.experimental.geometryclipmap.debug', renderer)
-        self.assertIn('queueWait=%.1fms sample=%.1fms', server)
+        self.assertIn('vertices/s; cancelled=', server)
         self.assertIn('cpuSubmitAvg=%.2fms', renderer)
         self.assertNotRegex(renderer, r"\bglFinish\s*\(")
 
@@ -179,7 +179,10 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("session.requestEpoch.isCurrent(requestEpoch)", server)
         self.assertIn("server.getPlayerList().getPlayer(playerId)", server)
         self.assertIn("RETRY_BACKOFF_TICKS", server)
-        self.assertIn("sameCentre(nextLayout, currentLayout)", server)
+        self.assertNotIn("sameCentre(nextLayout, currentLayout)", server)
+        self.assertIn("PacketDistributor.sendToPlayer(live, payload)", server)
+        self.assertIn("PROXY_SAMPLER.execute(task)", server)
+        self.assertIn("SAMPLER.execute(this)", server)
         self.assertIn("if (!session.requestEpoch.isCurrent(requestEpoch)) return;", server)
         self.assertIn("() -> session.requestEpoch.isCurrent(requestEpoch)", server)
         epoch = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/ClipmapRequestEpoch.java").read_text(

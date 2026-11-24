@@ -40,15 +40,24 @@ public final class VisibleSurfaceProxyGenerator {
             RandomState randomState,
             GeometryClipmapLayout.Layout layout,
             long worldSeed) {
+        return collect(generator, randomState, layout, worldSeed, () -> true);
+    }
+
+    public static List<VisibleSurfaceProxy> collect(NoiseBasedChunkGenerator generator,
+            RandomState randomState, GeometryClipmapLayout.Layout layout, long worldSeed,
+            java.util.function.BooleanSupplier current) {
+        checkCurrent(current);
         DensityFunction terrainDensity = randomState.router().depth();
         BiomeSource biomeSource = generator.getBiomeSource();
         SurfaceFeatureProxyProvider.Context context =
                 new SurfaceFeatureProxyProvider.Context(worldSeed, layout,
                         terrainDensity, biomeSource, randomState.sampler());
         List<VisibleSurfaceProxy> output = new ArrayList<>();
-        collectCanopyProxies(context, output);
-        collectSkyIslandProxies(context, biomeSource, output);
+        collectCanopyProxies(context, output, current);
+        collectSkyIslandProxies(context, biomeSource, output, current);
+        checkCurrent(current);
         SurfaceFeatureProxyRegistry.collect(context, output);
+        checkCurrent(current);
         if (output.size() > MAX_PROXIES) {
             return List.copyOf(output.subList(0, MAX_PROXIES));
         }
@@ -57,7 +66,7 @@ public final class VisibleSurfaceProxyGenerator {
 
     private static void collectCanopyProxies(
             SurfaceFeatureProxyProvider.Context context,
-            List<VisibleSurfaceProxy> output) {
+            List<VisibleSurfaceProxy> output, java.util.function.BooleanSupplier current) {
         for (GeometryClipmapLayout.Level level : context.layout().levels()) {
             long step = Math.max(64L, Math.multiplyExact(
                     level.cellSpacingBlocks(), 8L));
@@ -65,6 +74,7 @@ public final class VisibleSurfaceProxyGenerator {
             GeometryClipmapLayout.Bounds inner = level.innerBounds();
             for (long x = outer.minX(); x < outer.maxX(); x += step) {
                 for (long z = outer.minZ(); z < outer.maxZ(); z += step) {
+                    checkCurrent(current);
                     if (inner.containsStrict(x, z)) continue;
                     int blockX = Math.toIntExact(x + step / 2L);
                     int blockZ = Math.toIntExact(z + step / 2L);
@@ -94,7 +104,7 @@ public final class VisibleSurfaceProxyGenerator {
     private static void collectSkyIslandProxies(
             SurfaceFeatureProxyProvider.Context context,
             BiomeSource biomeSource,
-            List<VisibleSurfaceProxy> output) {
+            List<VisibleSurfaceProxy> output, java.util.function.BooleanSupplier current) {
         if (!(biomeSource instanceof SkyOceanBiomeSource)) return;
         GeometryClipmapLayout.Bounds bounds =
                 context.layout().levels().get(context.layout().levels().size() - 1)
@@ -108,6 +118,7 @@ public final class VisibleSurfaceProxyGenerator {
 
         for (long gx = minCellX; gx <= maxCellX; gx++) {
             for (long gz = minCellZ; gz <= maxCellZ; gz++) {
+                checkCurrent(current);
                 int referenceX = Math.toIntExact(gx * grid);
                 int referenceZ = Math.toIntExact(gz * grid);
                 SkyIslandLayout.Site base = SkyIslandLayout.at(referenceX, referenceZ);
@@ -132,6 +143,10 @@ public final class VisibleSurfaceProxyGenerator {
                 }
             }
         }
+    }
+
+    private static void checkCurrent(java.util.function.BooleanSupplier current) {
+        if (!current.getAsBoolean()) throw new java.util.concurrent.CancellationException();
     }
 
     private static float treeChance(String biome) {

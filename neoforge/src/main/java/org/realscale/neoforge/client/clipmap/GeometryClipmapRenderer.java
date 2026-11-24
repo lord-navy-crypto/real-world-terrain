@@ -246,7 +246,7 @@ final class GeometryClipmapRenderer {
             String dimensionKey, List<VisibleSurfaceProxy> proxies,
             ClipmapEnvironment.State environment) {
         RenderSystem.assertOnRenderThread();
-        if (tiles == null || tiles.size() < LEVEL_COUNT || proxies == null
+        if (tiles == null || tiles.isEmpty() || proxies == null
                 || environment == null) return false;
 
         var first = tiles.get(0);
@@ -258,7 +258,7 @@ final class GeometryClipmapRenderer {
         int nextMinHeight = first.minHeight();
         int nextMaxHeight = first.maxHeight();
 
-        for (int i = 0; i < LEVEL_COUNT; i++) {
+        for (int i = 0; i < tiles.size(); i++) {
             var tile = tiles.get(i);
             long expectedSpacing = (long) nextBaseSpacing << i;
             if (tile == null || !dimensionKey.equals(tile.dimensionKey())
@@ -294,7 +294,7 @@ final class GeometryClipmapRenderer {
             GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0);
             GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0);
             GL11.glPixelStorei(GL11.GL_UNPACK_SWAP_BYTES, 0);
-            for (int i = 0; i < LEVEL_COUNT; i++) {
+            for (int i = 0; i < tiles.size(); i++) {
                 var tile = tiles.get(i);
                 long bytes = updateTexture(i, tile);
                 if (DEBUG) uploadedBytesThisFrame += bytes;
@@ -622,6 +622,12 @@ final class GeometryClipmapRenderer {
         morphBandUpload.clear();
         for (int level = 0; level < LEVEL_COUNT; level++) {
             var tile = tiles.get(level);
+            if (tile == null) {
+                originUpload.put(0).put(0); noiseOriginUpload.put(0).put(0);
+                textureOffsetUpload.put(0).put(0); spacingUpload.put(1);
+                skirtDepthUpload.put(0); morphBandUpload.put(0);
+                continue;
+            }
             TextureWindow textureWindow = textureWindows[level];
             originUpload.put((float) (tile.originX() - cameraX))
                     .put((float) (tile.originZ() - cameraZ));
@@ -632,7 +638,7 @@ final class GeometryClipmapRenderer {
             spacingUpload.put(tile.cellSpacingBlocks());
             skirtDepthUpload.put(Math.min(32.0f, Math.max(4.0f,
                     tile.cellSpacingBlocks() * 0.125f)));
-            morphBandUpload.put(level == LEVEL_COUNT - 1 ? 0.0f : 8.0f);
+            morphBandUpload.put(level == tiles.size() - 1 ? 0.0f : 8.0f);
         }
         originUpload.flip();
         noiseOriginUpload.flip();
@@ -648,7 +654,7 @@ final class GeometryClipmapRenderer {
         GL20.glUniform1fv(uniforms.morphBandCells(), morphBandUpload);
 
         GL30.glBindVertexArray(vao);
-        for (int level = LEVEL_COUNT - 1; level >= 0; level--) {
+        for (int level = tiles.size() - 1; level >= 0; level--) {
             GL20.glUniform1i(uniforms.level(), level);
             GL13.glActiveTexture(GL13.GL_TEXTURE0);
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, textures[level]);

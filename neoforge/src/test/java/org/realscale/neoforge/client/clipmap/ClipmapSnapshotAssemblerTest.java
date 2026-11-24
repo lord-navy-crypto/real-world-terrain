@@ -13,11 +13,11 @@ final class ClipmapSnapshotAssemblerTest {
     }
 
     @Test
-    void neverPublishesAnIncompleteOrMixedOriginFrame() {
+    void progressivelyPublishesFirstWindowThenPreservesCompleteWindow() {
         var a = new ClipmapSnapshotAssembler<String>(6);
         for (int level = 0; level < 5; level++) {
             add(a, 1L, level, -256, 512, "old-" + level);
-            assertTrue(a.activeTiles().isEmpty());
+            assertEquals(level + 1, a.activeTiles().size());
         }
         add(a, 1L, 5, -256, 512, "old-5");
         assertEquals(6, a.activeTiles().size());
@@ -44,14 +44,14 @@ final class ClipmapSnapshotAssemblerTest {
         for (int level = 2; level < 6; level++) {
             add(a, 1L, level, 256, 0, "other");
         }
-        assertTrue(a.activeTiles().isEmpty());
+        assertEquals(1, a.activeTiles().size());
         add(a, 1L, 0, 256, 0, "other");
         assertEquals(6, a.activeTiles().size());
 
         a.clear();
         add(a, 1L, 0, 0, 0, "tile");
         a.accept(1L, 1, 128, 16, -1024, -1024, 11, "minecraft:overworld", "wrong-near");
-        assertTrue(a.activeTiles().isEmpty());
+        assertEquals(1, a.activeTiles().size());
         a.clear();
         assertNull(a.activeKey());
     }

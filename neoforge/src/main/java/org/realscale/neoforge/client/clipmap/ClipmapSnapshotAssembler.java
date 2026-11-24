@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Reassembles one complete multilevel height-tile snapshot before publishing.
+ * Publishes contiguous LOD prefixes without mixing snapshot centres.
  *
  * <p>Network packets for different request generations, snap centres,
  * distances, or dimensions must never be combined into one GPU frame.
@@ -27,8 +27,8 @@ public final class ClipmapSnapshotAssembler<T> {
     }
 
     /**
-     * Returns true exactly when a complete, internally consistent set is
-     * published. While incomplete the last complete snapshot is preserved.
+     * Returns true when an internally consistent renderable prefix is published.
+     * A complete previous window remains visible until a complete replacement.
      */
     public boolean accept(long requestId, int level, int gridCells, int cellSpacing,
             long originX, long originZ, int nearChunks, String dimension,
@@ -52,16 +52,27 @@ public final class ClipmapSnapshotAssembler<T> {
                 Math.addExact(originX, half),
                 Math.addExact(originZ, half));
 
+        if (activeKey != null && requestId < activeKey.requestId()) return false;
+        if (key.equals(activeKey) && active.size() == levelCount) return false;
         if (!key.equals(pendingKey)) {
             pending.clear();
             pendingKey = key;
         }
-        pending.put(level, tile);
-        if (pending.size() != levelCount) return false;
-        active = Map.copyOf(pending);
-        activeKey = pendingKey;
-        pending.clear();
-        pendingKey = null;
+        if (pending.putIfAbsent(level, tile) != null) return false;
+        int prefix = 0;
+        while (pending.containsKey(prefix)) prefix++;
+        if (prefix == 0) return false;
+        if (activeKey != null && !key.equals(activeKey) && active.size() == levelCount
+                && prefix != levelCount) return false;
+        if (key.equals(activeKey) && prefix <= active.size()) return false;
+        Map<Integer, T> ready = new HashMap<>();
+        for (int i = 0; i < prefix; i++) ready.put(i, pending.get(i));
+        active = Map.copyOf(ready);
+        activeKey = key;
+        if (prefix == levelCount) {
+            pending.clear();
+            pendingKey = null;
+        }
         return true;
     }
 
