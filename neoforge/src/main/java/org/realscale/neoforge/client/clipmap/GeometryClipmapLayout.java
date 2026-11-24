@@ -34,7 +34,7 @@ public final class GeometryClipmapLayout {
 
     public GeometryClipmapLayout(int gridCells, int levelCount,
             int baseCellSpacingBlocks, int nearRenderDistanceChunks) {
-        if (gridCells < 16 || (gridCells & (gridCells - 1)) != 0) {
+        if (gridCells < 16 || gridCells > 256 || (gridCells & (gridCells - 1)) != 0) {
             throw new IllegalArgumentException("gridCells must be a power of two >= 16");
         }
         if (levelCount < 2 || levelCount > 8) {
