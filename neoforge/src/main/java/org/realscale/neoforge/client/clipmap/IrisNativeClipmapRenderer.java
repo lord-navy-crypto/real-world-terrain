@@ -51,6 +51,7 @@ final class IrisNativeClipmapRenderer {
     private static VertexBuffer solidBuffer;
     private static VertexBuffer farSolidBuffer;
     private static VertexBuffer cutoutBuffer;
+    private static VertexBuffer proxySolidBuffer;
     private static VertexBuffer waterBuffer;
 
     private static String cachedDimension;
@@ -116,8 +117,12 @@ final class IrisNativeClipmapRenderer {
             }
         }
 
+        if (safeProxies != cachedProxies) {
+            rebuildProxies(safeProxies, centerX, centerZ);
+        }
+
         VertexBuffer target = renderType == RenderType.solid()
-                ? (solidBuffer != null ? solidBuffer : farSolidBuffer)
+                ? (solidBuffer != null ? solidBuffer : farSolidBuffer != null ? farSolidBuffer : proxySolidBuffer)
                 : renderType == RenderType.cutout() ? cutoutBuffer : waterBuffer;
         if (target == null) return false;
 
@@ -163,6 +168,10 @@ final class IrisNativeClipmapRenderer {
                 if (solidBuffer != null) {
                     solidBuffer.bind();
                     solidBuffer.draw();
+                }
+                if (proxySolidBuffer != null) {
+                    proxySolidBuffer.bind();
+                    proxySolidBuffer.draw();
                 }
                 if (farSolidBuffer != null) {
                     farSolidBuffer.bind();
@@ -287,7 +296,7 @@ final class IrisNativeClipmapRenderer {
         if (!dimension.equals(cachedDimension) || requestId != cachedRequestId
                 || centerX != cachedCenterX || centerZ != cachedCenterZ
                 || nearChunks != cachedNearChunks || seaLevel != cachedSeaLevel
-                || proxies != cachedProxies || cachedTiles.size() != tiles.size()
+                || cachedTiles.size() != tiles.size()
                 || cachedGridCells != first.gridCells()
                 || cachedBaseSpacing != first.cellSpacingBlocks()) {
             return false;
@@ -302,8 +311,7 @@ final class IrisNativeClipmapRenderer {
             String dimension, long requestId, long centerX, long centerZ,
             int nearChunks, int seaLevel, List<VisibleSurfaceProxy> proxies) {
         long started = System.nanoTime();
-        resetVisibilityProbe();
-        disposeBuffers();
+        VertexBuffer nextSolid = null, nextFar = null, nextWater = null;
         try {
             List<ClipmapHeightTilePayload> snapshot = new ArrayList<>(LEVEL_COUNT);
             ClipmapHeightTilePayload first = tiles.get(0);
@@ -332,32 +340,31 @@ final class IrisNativeClipmapRenderer {
             Sprites sprites = Sprites.load(Minecraft.getInstance());
             try (ByteBufferBuilder solidBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES);
                  ByteBufferBuilder farSolidBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES);
-                 ByteBufferBuilder cutoutBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES);
                  ByteBufferBuilder waterBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES)) {
                 BufferBuilder solidBuilder = new BufferBuilder(
                         solidBytes, VertexFormat.Mode.TRIANGLES, irisTerrainFormat);
                 BufferBuilder farSolidBuilder = new BufferBuilder(
                         farSolidBytes, VertexFormat.Mode.TRIANGLES, irisTerrainFormat);
-                BufferBuilder cutoutBuilder = new BufferBuilder(
-                        cutoutBytes, VertexFormat.Mode.TRIANGLES, irisTerrainFormat);
                 BufferBuilder waterBuilder = new BufferBuilder(
                         waterBytes, VertexFormat.Mode.TRIANGLES, irisTerrainFormat);
 
                 for (int level = 0; level < snapshot.size(); level++) {
-                    appendTerrain(snapshot.get(level), level, nearChunks, seaLevel,
-                            sprites, level == 0 ? solidBuilder : farSolidBuilder, waterBuilder);
+                    appendTerrain(snapshot.get(level), level + 1 < snapshot.size() ? snapshot.get(level + 1) : null,
+                            level, nearChunks, seaLevel, sprites,
+                            level == 0 ? solidBuilder : farSolidBuilder, waterBuilder);
                 }
-                for (VisibleSurfaceProxy proxy : proxies) {
-                    appendProxy(proxy, centerX, centerZ, sprites,
-                            solidBuilder, cutoutBuilder);
-                }
-
-                solidBuffer = upload(solidBuilder);
-                farSolidBuffer = upload(farSolidBuilder);
-                cutoutBuffer = upload(cutoutBuilder);
-                waterBuffer = upload(waterBuilder);
+                nextSolid = upload(solidBuilder);
+                nextFar = upload(farSolidBuilder);
+                nextWater = upload(waterBuilder);
             }
 
+            // Publish only a fully uploaded replacement; old buffers survive a failed build.
+            resetVisibilityProbe();
+            disposeBuffers();
+            solidBuffer = nextSolid;
+            farSolidBuffer = nextFar;
+            waterBuffer = nextWater;
+            nextSolid = nextFar = nextWater = null;
             cachedDimension = dimension;
             cachedRequestId = requestId;
             cachedCenterX = centerX;
@@ -367,22 +374,21 @@ final class IrisNativeClipmapRenderer {
             cachedBaseSpacing = baseSpacing;
             cachedSeaLevel = seaLevel;
             cachedTiles = List.copyOf(snapshot);
-            cachedProxies = proxies;
+            cachedProxies = List.of();
 
             if (DEBUG) {
                 System.out.printf(java.util.Locale.ROOT,
-                        "[RealScale Iris Clipmap] nativeMeshesBuilt=%.1fms levels=%d proxies=%d solid=%s cutout=%s water=%s heightRanges=%s%n",
+                        "[RealScale Iris Clipmap] nativeMeshesBuilt=%.1fms levels=%d proxies=%d solid=%s cutout=%s water=%s heightRanges=%s center=(%d,%d)%n",
                         (System.nanoTime() - started) / 1_000_000.0,
-                        snapshot.size(), proxies.size(), solidBuffer != null,
+                        snapshot.size(), 0, solidBuffer != null,
                         cutoutBuffer != null, waterBuffer != null,
-                        heightRangeSummary(snapshot));
+                        heightRangeSummary(snapshot), centerX, centerZ);
             }
             return solidBuffer != null || farSolidBuffer != null || cutoutBuffer != null || waterBuffer != null;
         } catch (RuntimeException failure) {
-            disposeBuffers();
-            cachedDimension = null;
-            cachedTiles = List.of();
-            cachedProxies = List.of();
+            close(nextSolid);
+            close(nextFar);
+            close(nextWater);
             System.err.println("[RealScale Iris Clipmap] native mesh build failed safely: "
                     + failure.getClass().getSimpleName() + ": " + failure.getMessage());
             return false;
@@ -434,7 +440,41 @@ final class IrisNativeClipmapRenderer {
         }
     }
 
-    private static void appendTerrain(ClipmapHeightTilePayload tile, int level,
+    private static void rebuildProxies(List<VisibleSurfaceProxy> proxies, long centerX, long centerZ) {
+        long started = System.nanoTime();
+        VertexBuffer nextSolid = null, nextCutout = null;
+        try {
+            if (!proxies.isEmpty()) {
+                VertexFormat irisTerrainFormat = IrisRenderCompatibility.terrainVertexFormat();
+                if (irisTerrainFormat == null) return;
+                Sprites sprites = Sprites.load(Minecraft.getInstance());
+                try (ByteBufferBuilder solidBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES);
+                     ByteBufferBuilder cutoutBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES)) {
+                    BufferBuilder solid = new BufferBuilder(solidBytes, VertexFormat.Mode.TRIANGLES, irisTerrainFormat);
+                    BufferBuilder cutout = new BufferBuilder(cutoutBytes, VertexFormat.Mode.TRIANGLES, irisTerrainFormat);
+                    for (VisibleSurfaceProxy proxy : proxies) {
+                        appendProxy(proxy, centerX, centerZ, sprites, solid, cutout);
+                    }
+                    nextSolid = upload(solid);
+                    nextCutout = upload(cutout);
+                }
+            }
+            close(proxySolidBuffer);
+            close(cutoutBuffer);
+            proxySolidBuffer = nextSolid;
+            cutoutBuffer = nextCutout;
+            cachedProxies = proxies;
+            if (DEBUG) System.out.printf(java.util.Locale.ROOT,
+                    "[RealScale Iris Clipmap] nativeProxyMeshesBuilt=%.1fms proxies=%d center=(%d,%d)%n",
+                    (System.nanoTime() - started) / 1_000_000.0, proxies.size(), centerX, centerZ);
+        } catch (RuntimeException failure) {
+            close(nextSolid);
+            close(nextCutout);
+            System.err.println("[RealScale Iris Clipmap] proxy mesh build failed safely: " + failure.getMessage());
+        }
+    }
+
+    private static void appendTerrain(ClipmapHeightTilePayload tile, ClipmapHeightTilePayload parentTile, int level,
             int nearChunks, int seaLevel, Sprites sprites,
             BufferBuilder solid, BufferBuilder water) {
         int cells = tile.gridCells();
@@ -458,6 +498,7 @@ final class IrisNativeClipmapRenderer {
                 : cells / 4;
         int[] indices = ClipmapRingMesh.indices(cells, holeRadius);
         short[] encodedHeights = tile.heights();
+        short[] parentHeights = parentTile == null ? null : parentTile.heights();
         float[] surfaceHeights = new float[baseCount];
         for (int gridZ = 0; gridZ <= cells; gridZ++) {
             for (int gridX = 0; gridX <= cells; gridX++) {
@@ -467,7 +508,7 @@ final class IrisNativeClipmapRenderer {
                         ? Float.NaN
                         : morphedHeight(encodedHeights, cells,
                                 tile.minHeight(), tile.maxHeight(),
-                                gridX, gridZ, level);
+                                gridX, gridZ, level, parentTile, parentHeights);
             }
         }
         // The native Iris path must shade the actual surface smoothly. A
@@ -552,23 +593,29 @@ final class IrisNativeClipmapRenderer {
     }
 
     private static float morphedHeight(short[] samples, int cells,
-            int minHeight, int maxHeight, int x, int z, int level) {
+            int minHeight, int maxHeight, int x, int z, int level,
+            ClipmapHeightTilePayload parentTile, short[] parentHeights) {
         float height = sampleHeight(samples, cells, minHeight, maxHeight, x, z);
-        if (level >= LEVEL_COUNT - 1) return height;
+        if (level >= LEVEL_COUNT - 1 || parentTile == null || parentHeights == null) return height;
 
         int edgeCells = Math.min(Math.min(x, z),
                 Math.min(cells - x, cells - z));
         if (edgeCells >= MORPH_BAND_CELLS) return height;
 
-        int parentX = (x / 2) * 2;
-        int parentZ = (z / 2) * 2;
-        float blendX = (x - parentX) * 0.5f;
-        float blendZ = (z - parentZ) * 0.5f;
-        float h00 = sampleHeight(samples, cells, minHeight, maxHeight, parentX, parentZ);
-        float h10 = sampleHeight(samples, cells, minHeight, maxHeight, parentX + 2, parentZ);
-        float h01 = sampleHeight(samples, cells, minHeight, maxHeight, parentX, parentZ + 2);
-        float h11 = sampleHeight(samples, cells, minHeight, maxHeight, parentX + 2, parentZ + 2);
-        float parent = lerp(lerp(h00, h10, blendX), lerp(h01, h11, blendX), blendZ);
+        // Sample the actual coarser ring, not a downsampled copy of the fine tile.
+        // Its inner edge uses the same triangle diagonal as ClipmapRingMesh.
+        float px = cells * 0.25f + x * 0.5f;
+        float pz = cells * 0.25f + z * 0.5f;
+        int ix = (int) Math.floor(px), iz = (int) Math.floor(pz);
+        float fx = px - ix, fz = pz - iz;
+        int pmin = parentTile.minHeight(), pmax = parentTile.maxHeight();
+        float h00 = sampleHeight(parentHeights, cells, pmin, pmax, ix, iz);
+        float h10 = sampleHeight(parentHeights, cells, pmin, pmax, ix + 1, iz);
+        float h01 = sampleHeight(parentHeights, cells, pmin, pmax, ix, iz + 1);
+        float h11 = sampleHeight(parentHeights, cells, pmin, pmax, ix + 1, iz + 1);
+        float parent = fx + fz <= 1.0f
+                ? h00 + fx * (h10 - h00) + fz * (h01 - h00)
+                : h11 + (1.0f - fx) * (h01 - h11) + (1.0f - fz) * (h10 - h11);
         float morph = 1.0f - smoothstep(0.0f, MORPH_BAND_CELLS, edgeCells);
         return lerp(height, parent, morph);
     }
@@ -845,10 +892,12 @@ final class IrisNativeClipmapRenderer {
         close(solidBuffer);
         close(farSolidBuffer);
         close(cutoutBuffer);
+        close(proxySolidBuffer);
         close(waterBuffer);
         solidBuffer = null;
         farSolidBuffer = null;
         cutoutBuffer = null;
+        proxySolidBuffer = null;
         waterBuffer = null;
     }
 
