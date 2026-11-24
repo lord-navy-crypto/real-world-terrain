@@ -496,7 +496,7 @@ final class IrisNativeClipmapRenderer {
                 // Water is deliberately flat-shaded and uses a uniform atlas
                 // texel; no block texture is tiled independently per triangle.
                 emitTriangle(water, sprites.white(), 0x64869A, 190,
-                        x, y, z, gridX, gridZ, smoothNormals,
+                        x, y, z, gridX, gridZ, side, smoothNormals,
                         false, true, faceNormalScratch);
             } else if (averageHeight > seaLevel) {
                 for (int vertex = 0; vertex < 3; vertex++) {
@@ -519,7 +519,7 @@ final class IrisNativeClipmapRenderer {
                 // low-noise material colors. Sampling a full block sprite per
                 // tiny clipmap triangle created the colorful surface mosaic.
                 emitTriangle(solid, sprites.white(), materialRgb, 255,
-                        x, y, z, gridX, gridZ, smoothNormals,
+                        x, y, z, gridX, gridZ, side, smoothNormals,
                         !skirt, false, faceNormalScratch);
             }
         }
@@ -568,12 +568,11 @@ final class IrisNativeClipmapRenderer {
 
     private static void emitTriangle(BufferBuilder builder, TextureAtlasSprite sprite,
             int rgb, int alpha, float[] x, float[] y, float[] z,
-            int[] gridX, int[] gridZ, float[] smoothNormals,
+            int[] gridX, int[] gridZ, int side, float[] smoothNormals,
             boolean useSmoothNormals, boolean flatUp, float[] faceNormalScratch) {
         if (!useSmoothNormals && !flatUp) {
             triangleNormalInto(x, y, z, faceNormalScratch);
         }
-        int side = (int) Math.round(Math.sqrt(smoothNormals.length / 3.0));
         for (int vertex = 0; vertex < 3; vertex++) {
             float nx;
             float ny;
