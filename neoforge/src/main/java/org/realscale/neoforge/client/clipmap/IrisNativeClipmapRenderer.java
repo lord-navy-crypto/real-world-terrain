@@ -44,7 +44,6 @@ import java.util.Map;
  */
 final class IrisNativeClipmapRenderer {
     private static final int LEVEL_COUNT = 6;
-    private static final int MAX_TEXTURED_DETAIL_LEVEL = 2;
     private static final int MORPH_BAND_CELLS = 8;
     // Distant exterior surfaces have sky exposure but no reliable block-light sample.
     // FULL_SKY preserves the active day/night lightmap instead of forcing full-bright.
@@ -572,21 +571,17 @@ final class IrisNativeClipmapRenderer {
                             smoothNormals[normalIndex + 1], seaLevel, false, worldX, worldZ);
                 }
                 ClipmapTriangleUv.computeCellAlignedInto(gridX, gridZ, triangleUvs);
-                float averageHeight = (topHeight[0] + topHeight[1] + topHeight[2]) / 3.0f;
-                float averageNormalY = 0.0f;
-                for (int vertex = 0; vertex < 3; vertex++) {
-                    int normalIndex = (gridZ[vertex] * side + gridX[vertex]) * 3;
-                    averageNormalY += smoothNormals[normalIndex + 1] / 3.0f;
-                }
-                // Keep authored block textures where they can resolve on screen.
-                // At coarse LODs, one 16x16 tile per 32-128 block cell aliases
-                // into visible speckle. Use a neutral atlas texel there and let
-                // the world-anchored macro palette carry broad biome variation.
-                TextureAtlasSprite materialSprite = level > MAX_TEXTURED_DETAIL_LEVEL
-                        ? sprites.neutral()
-                        : sprites.forMaterial(ClipmapSurfacePalette.materialAt(
-                                averageHeight, averageNormalY, seaLevel));
-                emitTriangle(solid, materialSprite, vertexColors, 255,
+                // Never paint the terrain with block/item-atlas art. The Iris
+                // terrain shader requires sampler0, so sample one fixed texel from
+                // the neutral white block sprite and carry the actual procedural
+                // terrain material entirely in per-vertex colors.
+                triangleUvs[0] = 8.0f;
+                triangleUvs[1] = 8.0f;
+                triangleUvs[2] = 8.0f;
+                triangleUvs[3] = 8.0f;
+                triangleUvs[4] = 8.0f;
+                triangleUvs[5] = 8.0f;
+                emitTriangle(solid, sprites.neutral(), vertexColors, 255,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         true, false, faceNormalScratch);
             }
