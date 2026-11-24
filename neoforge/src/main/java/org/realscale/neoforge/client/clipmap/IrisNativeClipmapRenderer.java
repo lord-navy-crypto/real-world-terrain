@@ -222,7 +222,7 @@ final class IrisNativeClipmapRenderer {
 
         long now = System.nanoTime();
         if (pendingVisibilityQuery != 0 || smokeVisibilityPassed
-                || (SMOKE_VISIBILITY_PROBE && cameraY < 1100.0)
+                || (SMOKE_VISIBILITY_PROBE && cameraY < 2300.0)
                 || (!SMOKE_VISIBILITY_PROBE && visibilityAttempts >= 4)
                 || (lastSmokeProbeNanos != 0L && now - lastSmokeProbeNanos < 2_000_000_000L)
                 || GL15.glGetQueryi(GL15.GL_SAMPLES_PASSED, GL15.GL_CURRENT_QUERY) != 0) {
