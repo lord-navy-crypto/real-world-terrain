@@ -79,6 +79,12 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("max(settled_high_frequency, final_high_frequency) > 0.28", SMOKE)
         self.assertIn('"-blur", "0x2"', SMOKE)
 
+    def test_pause_menu_toggle_waits_for_actual_world_render(self):
+        self.assertIn("def wait_until_world_rendered(", SMOKE)
+        self.assertIn("CLIENT_WORLD_RENDER_READY", SMOKE)
+        self.assertIn("Loading terrain", SMOKE)
+        self.assertIn("wait_until_world_rendered()", SMOKE)
+
     def test_real_client_exercises_pause_menu_geometry_clipmap_toggle(self):
         self.assertIn("def read_pause_menu_toggle_text(", SMOKE)
         self.assertIn("def test_pause_menu_geometry_clipmap_toggle(", SMOKE)
