@@ -240,7 +240,19 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("if (!drawSubmitted) return;", client)
         self.assertIn("static boolean render(", renderer_source)
         self.assertNotIn("return;", renderer_source.split("static boolean render(", 1)[1].split("private static void recordDebugFrame(", 1)[0])
-        self.assertIn('"realscale.experimental.geometryclipmap", "true"', client)
+        settings = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapSettings.java").read_text(
+            encoding="utf-8"
+        )
+        studio = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/RealScaleStudioClient.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('Path.of("config", "realscale-geometry-clipmap.properties")', settings)
+        self.assertIn("private static volatile boolean enabled = loadEnabled(CONFIG_FILE)", settings)
+        self.assertIn("return true;", settings)
+        self.assertIn("GeometryClipmapSettings.isEnabled()", client)
+        self.assertIn("public static void toggleEnabled()", client)
+        self.assertIn("GeometryClipmapClient.toggleEnabled()", studio)
+        self.assertIn("Geometry Clipmap: ", studio)
         self.assertIn('"realscale.experimental.geometryclipmap.debug", "true"', client)
         self.assertIn("displayClientMessage(Component.literal(message), false)", client)
         self.assertIn("Clipmap: REQUEST SENT", client)
