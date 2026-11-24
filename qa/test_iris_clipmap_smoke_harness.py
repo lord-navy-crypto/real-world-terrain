@@ -65,7 +65,9 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn('IrisVertexFormats', IRIS_COMPAT)
         self.assertIn("IrisRenderCompatibility.terrainVertexFormat()", IRIS_RENDERER)
         self.assertIn("renderType.setupRenderState()", IRIS_RENDERER)
-        self.assertIn("shader.setDefaultUniforms(VertexFormat.Mode.QUADS,", IRIS_RENDERER)
+        self.assertIn("shader.setDefaultUniforms(VertexFormat.Mode.TRIANGLES,", IRIS_RENDERER)
+        self.assertEqual(4, IRIS_RENDERER.count("VertexFormat.Mode.TRIANGLES, irisTerrainFormat"))
+        self.assertNotIn("VertexFormat.Mode.QUADS, irisTerrainFormat", IRIS_RENDERER)
         self.assertLess(IRIS_RENDERER.index("shader.setDefaultUniforms("),
                         IRIS_RENDERER.index("shader.apply()"))
         self.assertIn("drawProjection = activeIrisProjectionTarget;", GEOMETRY_CLIENT)
