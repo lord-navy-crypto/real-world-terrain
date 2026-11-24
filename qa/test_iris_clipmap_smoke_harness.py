@@ -103,10 +103,13 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("def read_pause_menu_toggle_text(", SMOKE)
         self.assertIn("def test_pause_menu_geometry_clipmap_toggle(", SMOKE)
         self.assertIn("CLIPMAP_PAUSE_MENU_TOGGLE_PASS", SMOKE)
+        self.assertIn('if "geometry clipmap off" not in initial:', SMOKE)
+        self.assertIn("Geometry Clipmap must default to OFF", SMOKE)
         self.assertIn("geometry clipmap on", SMOKE)
         self.assertIn("geometry clipmap off", SMOKE)
         self.assertIn("[RealScale] Clipmap: OFF", SMOKE)
         self.assertIn("[RealScale] Clipmap: ON", SMOKE)
+        self.assertGreaterEqual(SMOKE.count('["xdotool", "mousemove", "--sync"'), 3)
         self.assertIn('["tesseract", str(crop), "stdout", "--psm", "6"]', SMOKE)
 
     def test_eye_level_capture_waits_for_complete_lods_and_proxies(self):
