@@ -90,7 +90,8 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("minimum_seconds=60", SMOKE)
 
     def test_far_lods_prefilter_atlas_detail_without_browning_near_textures(self):
-        self.assertIn("level >= 3", IRIS_RENDERER)
+        self.assertIn("MAX_TEXTURED_DETAIL_LEVEL = 2", IRIS_RENDERER)
+        self.assertIn("level > MAX_TEXTURED_DETAIL_LEVEL", IRIS_RENDERER)
         self.assertIn("sprites.neutral()", IRIS_RENDERER)
         self.assertIn("sprites.forMaterial(", IRIS_RENDERER)
         self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", IRIS_RENDERER)
