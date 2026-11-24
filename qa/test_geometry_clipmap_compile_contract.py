@@ -433,7 +433,15 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("ClipmapSurfaceNormals.compute(", native)
         self.assertIn("Blocks.WHITE_CONCRETE", native)
         self.assertIn("sprites.white()", native)
-        self.assertIn("8.0f, 8.0f", native)
+        self.assertIn("ClipmapTriangleUv.computeInto(", native)
+        uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("UV_MIN = 2.0f", uv)
+        self.assertIn("UV_MAX = 14.0f", uv)
+        self.assertIn("float uSpan = maxUAxis - minUAxis", uv)
+        self.assertIn("float vSpan = maxVAxis - minVAxis", uv)
+        self.assertIn("triangle UV projection is degenerate", uv)
         self.assertIn("Math.max(0, Math.min(cells, x))", native)
         self.assertNotIn("int minX = Math.min(gridX", native)
         self.assertIn("averageNormalY", native)
@@ -446,7 +454,11 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         )
         self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", native)
         self.assertIn("sprite.getU(u), sprite.getV(v)", native)
-        self.assertIn("8.0f, 8.0f", native)
+        uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("UV_MIN + (uAxis - minUAxis) / uSpan * UV_RANGE", uv)
+        self.assertIn("UV_MIN + (vAxis - minVAxis) / vSpan * UV_RANGE", uv)
         self.assertIn("ClipmapSurfaceNormals.compute(", native)
         self.assertIn("float[] smoothNormals", native)
         self.assertIn("ClipmapTriangleUv.computeInto(", native)
