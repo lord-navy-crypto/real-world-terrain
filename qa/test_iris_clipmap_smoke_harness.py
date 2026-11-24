@@ -101,7 +101,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("geometry clipmap off", SMOKE)
         self.assertIn("[RealScale] Clipmap: OFF", SMOKE)
         self.assertIn("[RealScale] Clipmap: ON", SMOKE)
-        self.assertIn('["tesseract", str(image), "stdout", "--psm", "6"]', SMOKE)
+        self.assertIn('["tesseract", str(crop), "stdout", "--psm", "6"]', SMOKE)
 
     def test_eye_level_capture_waits_for_complete_lods_and_proxies(self):
         self.assertIn("capture_natural_surface_view(proc, lines)", SMOKE)
