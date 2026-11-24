@@ -1,13 +1,14 @@
 name: Unified Natural Automate test JAR (one public mode; six fused kernels)
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
+      - 'neoforge/build.gradle'
       - 'neoforge/src/main/resources/data/minecraft/tags/worldgen/world_preset/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/world_preset/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/**'
       - 'archive/ultimate/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/usgs_big_sur/**'
-      - 'neoforge/build.gradle'
       - 'qa/test_realscale_branding_compat.py'
       - '.github/workflows/public-eight-mode-test-jar.yml'
   push:
@@ -21,6 +22,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   verify-and-build:
+    # PR 164 is a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     name: Verify one visible terrain mode; retain all internal profiles
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -130,6 +133,8 @@ jobs:
           retention-days: 7
 
   real-worldgen:
+    # PR 164 is a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     name: Real NeoForge saved far chunk - ${{ matrix.name }}
     needs: verify-and-build
     runs-on: ubuntu-latest

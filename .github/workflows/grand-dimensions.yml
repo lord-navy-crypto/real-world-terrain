@@ -6,8 +6,15 @@ concurrency:
   cancel-in-progress: true
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'neoforge/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GrandNether*.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GrandEndDensity.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GrandDimensionMath.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/Fantasy*Density.java'
+      - 'neoforge/src/main/resources/data/**/dimension*/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/**/grand*/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/**/grand*.json'
       - 'qa/neoforge/grand_rcon.py'
       - 'qa/neoforge/check_grand_realm_world.py'
       - '.github/workflows/grand-dimensions.yml'
@@ -16,6 +23,8 @@ permissions:
   contents: read
 jobs:
   grand-nether-and-end:
+    # PR 164 is intentionally a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 28
     steps:

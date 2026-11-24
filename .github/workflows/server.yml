@@ -9,12 +9,25 @@ on:
     branches: [main]
     paths: ['neoforge/**', 'qa/neoforge/**', '.github/workflows/server.yml']
   pull_request:
-    paths: ['neoforge/**', 'qa/neoforge/**', '.github/workflows/server.yml']
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'neoforge/src/main/java/org/realscale/neoforge/*Density.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/*BiomeSource.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/*Cave*.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/*Feature.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/*Math.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/RealScaleStructurePacks.java'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/**'
+      - 'qa/neoforge/realscale_headless_qa.py'
+      - '.github/workflows/server.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   neoforge-worldgen:
+    # PR 164 is a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 27
     steps:

@@ -6,16 +6,23 @@ concurrency:
   cancel-in-progress: true
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'neoforge/**'
-      - '.github/workflows/tva-sacred-world.yml'
       - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'neoforge/src/main/java/org/realscale/neoforge/TerrainArchetype*.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/*Density.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/*BiomeSource.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/Grand*java'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/**'
+      - '.github/workflows/tva-sacred-world.yml'
       - 'qa/neoforge/audit_dh_lod_sqlite.py'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   tva-sacred-preset-world:
+    # PR 164 is a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

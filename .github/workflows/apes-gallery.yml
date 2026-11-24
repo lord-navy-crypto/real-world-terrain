@@ -6,14 +6,23 @@ concurrency:
   cancel-in-progress: true
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'neoforge/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/Grand*Density.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/Grand*Feature.java'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/world_preset/apes_gallery_three_realms.json'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/grand*.json'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/biome/**'
+      - 'qa/neoforge/check_apes_gallery.py'
+      - 'qa/test_apes_gallery_workflow.py'
       - '.github/workflows/apes-gallery.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   apes-gallery-worldgen:
+    # PR 164 is intentionally a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:

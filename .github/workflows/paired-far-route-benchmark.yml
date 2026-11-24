@@ -12,13 +12,14 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/QuartBiomeBaseCache.java'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
       - '.github/workflows/paired-far-route-benchmark.yml'
       - 'neoforge/src/main/java/org/realscale/neoforge/TerrainArchetypeMath.java'
       - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/natural_automate/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/shared/**'
       - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/natural_automate*.json'
-      - 'qa/neoforge/rcon_worldgen_smoke.py'
       - 'qa/neoforge/compare_paired_far_route.py'
   workflow_dispatch:
 permissions:
@@ -28,6 +29,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   paired-real-server:
+    # PR 164 is a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:

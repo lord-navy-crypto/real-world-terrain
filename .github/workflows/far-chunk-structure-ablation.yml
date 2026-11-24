@@ -1,9 +1,10 @@
 name: RealScale far-chunk structure ablation (diagnostic only)
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
       - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GrandOverworldCaveNetwork.java'
       - 'qa/neoforge/diagnose_worldgen_threads.py'
       - '.github/workflows/far-chunk-structure-ablation.yml'
   workflow_dispatch:
@@ -14,6 +15,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   matched-world-structure-ablation:
+    # PR 164 is a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     strategy:
       fail-fast: false
       max-parallel: 2

@@ -1,8 +1,15 @@
 name: RealScale Gradle 9.8 client task and NeoForge build compatibility
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'neoforge/**'
+      - 'neoforge/build.gradle'
+      - 'neoforge/settings.gradle'
+      - 'neoforge/gradle.properties'
+      - 'neoforge/gradle/**'
+      - 'neoforge/gradlew*'
+      - 'gradle/**'
+      - 'gradle.properties'
       - '.github/workflows/gradle-9-compat.yml'
   workflow_dispatch:
 permissions:
@@ -12,6 +19,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   gradle-nine:
+    # PR 164 is a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

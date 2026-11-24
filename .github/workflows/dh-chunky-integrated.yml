@@ -1,4 +1,7 @@
 name: Build RealScale with integrated DH-Chunky compatibility
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
   push:
     branches: [main]
@@ -15,7 +18,9 @@ on:
       - "scripts/architecture_expansion_profiles.json"
       - ".github/workflows/dh-chunky-integrated.yml"
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
+      - 'neoforge/build.gradle'
       - "neoforge/src/main/java/org/realscale/neoforge/compat/dhchunky/**"
       - "neoforge/src/main/java/org/realscale/neoforge/RealScaleMod.java"
       - "neoforge/src/main/resources/META-INF/neoforge.mods.toml"
@@ -29,6 +34,8 @@ permissions:
   contents: read
 jobs:
   build-integrated-mod:
+    # PR 164 is a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

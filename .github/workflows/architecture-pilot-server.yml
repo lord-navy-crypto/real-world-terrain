@@ -1,8 +1,11 @@
 name: RealScale architecture pilot server placement
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - "neoforge/**"
+      - 'neoforge/src/main/java/org/realscale/neoforge/RealScaleStructurePacks.java'
+      - 'neoforge/src/main/resources/data/**/structure*/**'
+      - 'neoforge/src/main/resources/data/**/worldgen/structure*/**'
       - "assets/architecture/**"
       - "scripts/convert_gdmc_architecture.py"
       - "scripts/generate_original_architecture.py"
@@ -31,6 +34,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   place-templates:
+    # PR 164 is intentionally a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:

@@ -2,7 +2,13 @@ name: Geometry Clipmap Iris client render smoke
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
+      - 'neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/VisibleSurfaceProxyGenerator.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/ClipmapRequestEpoch.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/network/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/mixin/IrisCameraFarUniformMixin.java'
       - 'neoforge/src/main/java/org/realscale/neoforge/client/clipmap/**'
       - 'neoforge/src/main/java/org/realscale/neoforge/mixin/IrisGeometryClipmapMixin.java'
       - 'neoforge/src/main/resources/realscale.geometryclipmap.mixins.json'

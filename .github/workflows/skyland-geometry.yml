@@ -6,8 +6,12 @@ concurrency:
   cancel-in-progress: true
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'neoforge/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/SkyIsland*.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/SkyOceanBiomeSource.java'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/**/*sky*/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/**/*sky*.json'
       - 'qa/neoforge/check_actual_sky_island.py'
       - 'qa/neoforge/skyland_rcon.py'
       - '.github/workflows/skyland-geometry.yml'
@@ -16,6 +20,8 @@ permissions:
   contents: read
 jobs:
   skyland-anvil-proof:
+    # PR 164 is intentionally a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

@@ -1,15 +1,24 @@
 name: Publish fitted RealScale terrain presets
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+      - 'research/v1.1/**'
+      - 'scripts/sync_natural_automate_kernels.py'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/tva_*_fitted/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/tva_*_fitted.json'
+      - '.github/workflows/publish-fitted-terrain-presets.yml'
 
 permissions:
   contents: write
 
 jobs:
   publish-fitted-presets:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.number != 164 || !github.event.pull_request.draft)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

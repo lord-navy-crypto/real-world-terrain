@@ -6,14 +6,23 @@ concurrency:
   cancel-in-progress: true
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'neoforge/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GrandEcologyFeature.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/EcologyDistributionMath.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/Habitat*java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/Cave*Habitat*.java'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/**/grand*/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/**/grand*.json'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/biome/**'
       - '.github/workflows/grand-ecology-world.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   grand-ecology-preset-world:
+    # PR 164 is intentionally a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

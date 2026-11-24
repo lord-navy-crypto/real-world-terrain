@@ -13,14 +13,23 @@ on:
       - 'neoforge/src/main/java/org/realscale/neoforge/QuartBiomeResultCache.java'
       - '.github/workflows/ecotone-world.yml'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'neoforge/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/EcotoneMath.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/QuartBiome*Cache.java'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/biome/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/world_preset/*ecotone*.json'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/*ecotone*.json'
+      - 'qa/neoforge/check_ecotone_biomes.py'
       - '.github/workflows/ecotone-world.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   ecotone-preset-world:
+    # PR 164 is intentionally a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

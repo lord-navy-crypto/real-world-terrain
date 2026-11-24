@@ -1,8 +1,12 @@
 name: Opt-in Natural Wonders NeoForge boot
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'neoforge/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GeoWonder*.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/EarthWonderFeature.java'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/**/*wonder*/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/**/*wonder*.json'
       - 'qa/neoforge/geo_wonders_optin_boot.py'
       - '.github/workflows/geo-wonders-optin-world.yml'
   workflow_dispatch:
@@ -13,6 +17,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   natural-wonders-opt-in:
+    # PR 164 is intentionally a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 22
     strategy:

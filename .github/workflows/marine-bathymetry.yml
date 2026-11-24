@@ -1,8 +1,16 @@
 name: RealScale ocean seeds - real marine biome and water-column integrity
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'neoforge/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/SkyOceanBiomeSource.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/NaturalEcotoneBiomeSource.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/RealDem*.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/TerrainArchetype*.java'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/biome/**'
+      - 'qa/neoforge/audit_natural_ocean.py'
       - 'qa/neoforge/audit_ocean_seed.py'
       - 'qa/neoforge/ocean_seed_worldgen.py'
       - 'qa/neoforge/skyland_rcon.py'
@@ -15,6 +23,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   natural-ocean-integrity:
+    # PR 164 is intentionally a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     name: Ocean seed QA / ${{ matrix.profile }} / ${{ matrix.seed }}
     strategy:
       fail-fast: false

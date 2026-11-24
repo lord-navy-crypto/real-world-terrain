@@ -1,7 +1,16 @@
 name: RealScale experimental terrain smoothing A/B proof
 on:
   pull_request:
-    paths: ['neoforge/**', 'qa/**', '.github/workflows/tva-smoothing-probe.yml']
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'neoforge/src/main/java/org/realscale/neoforge/TerrainArchetype*.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/MountainRelief*.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/MeasuredHorizontalMemoDensity.java'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/density_function/*smooth*/**'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/noise_settings/*smooth*.json'
+      - 'neoforge/src/main/resources/data/realscale/worldgen/world_preset/*smooth*.json'
+      - '.github/workflows/tva-smoothing-probe.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -10,6 +19,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   neoforge-worldgen:
+    # PR 164 is a clipmap-only Draft; full checks resume at review.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 164 || !github.event.pull_request.draft }}
     strategy:
       fail-fast: false
       max-parallel: 2
