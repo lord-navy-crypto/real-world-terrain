@@ -44,6 +44,7 @@ import java.util.Map;
  */
 final class IrisNativeClipmapRenderer {
     private static final int LEVEL_COUNT = 6;
+    private static final int MAX_TEXTURED_DETAIL_LEVEL = 2;
     private static final int MORPH_BAND_CELLS = 8;
     // Distant exterior surfaces have sky exposure but no reliable block-light sample.
     // FULL_SKY preserves the active day/night lightmap instead of forcing full-bright.
@@ -581,7 +582,7 @@ final class IrisNativeClipmapRenderer {
                 // At coarse LODs, one 16x16 tile per 32-128 block cell aliases
                 // into visible speckle. Use a neutral atlas texel there and let
                 // the world-anchored macro palette carry broad biome variation.
-                TextureAtlasSprite materialSprite = level >= 3
+                TextureAtlasSprite materialSprite = level > MAX_TEXTURED_DETAIL_LEVEL
                         ? sprites.neutral()
                         : sprites.forMaterial(ClipmapSurfacePalette.materialAt(
                                 averageHeight, averageNormalY, seaLevel));
