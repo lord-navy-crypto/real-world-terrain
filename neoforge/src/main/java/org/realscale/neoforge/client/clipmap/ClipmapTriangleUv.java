@@ -129,6 +129,37 @@ public final class ClipmapTriangleUv {
         }
     }
 
+    /**
+     * Maps both triangles of one grid quad onto the same full sprite tile.
+     * The caller emits the two triangles separately, but shared grid corners
+     * receive identical UVs. This keeps the atlas texture tiled at the LOD
+     * cell scale instead of stretching one white texel across the whole horizon.
+     */
+    public static void computeCellAlignedInto(int[] gridX, int[] gridZ,
+            float[] destination) {
+        Objects.requireNonNull(gridX, "gridX");
+        Objects.requireNonNull(gridZ, "gridZ");
+        Objects.requireNonNull(destination, "destination");
+        if (gridX.length < 3 || gridZ.length < 3 || destination.length < 6) {
+            throw new IllegalArgumentException("triangle grid and UV arrays must contain three vertices");
+        }
+        int minX = Math.min(gridX[0], Math.min(gridX[1], gridX[2]));
+        int minZ = Math.min(gridZ[0], Math.min(gridZ[1], gridZ[2]));
+        int maxX = Math.max(gridX[0], Math.max(gridX[1], gridX[2]));
+        int maxZ = Math.max(gridZ[0], Math.max(gridZ[1], gridZ[2]));
+        int spanX = maxX - minX;
+        int spanZ = maxZ - minZ;
+        if (spanX != 1 || spanZ != 1) {
+            throw new IllegalArgumentException("surface triangle must belong to one grid quad");
+        }
+        final float insetMin = 0.5f;
+        final float insetRange = 15.0f;
+        for (int vertex = 0; vertex < 3; vertex++) {
+            destination[vertex * 2] = insetMin + (gridX[vertex] - minX) * insetRange;
+            destination[vertex * 2 + 1] = insetMin + (gridZ[vertex] - minZ) * insetRange;
+        }
+    }
+
     private static float mapToSprite(float value, float minimum, float maximum) {
         float normalized = Math.max(0.0f, Math.min(1.0f,
                 (value - minimum) / (maximum - minimum)));
