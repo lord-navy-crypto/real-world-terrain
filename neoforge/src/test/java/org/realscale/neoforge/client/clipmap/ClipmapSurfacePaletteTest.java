@@ -44,7 +44,7 @@ final class ClipmapSurfacePaletteTest {
     }
 
     @Test
-    void texturedTintIsWorldAnchoredAndVariesAcrossRegionalNoise() {
+    void proceduralTerrainColorIsWorldAnchoredAndVariesAcrossRegionalNoise() {
         int first = ClipmapSurfacePalette.texturedTintAt(
                 100.0f, 1.0f, 63.0f, false, 128L, 256L);
         int repeat = ClipmapSurfacePalette.texturedTintAt(
@@ -53,20 +53,31 @@ final class ClipmapSurfacePaletteTest {
                 100.0f, 1.0f, 63.0f, false, 2048L, 4096L);
         assertEquals(first, repeat);
         assertNotEquals(first, distant);
-        assertTrue(((first >>> 16) & 0xFF) >= 150);
-        assertTrue(((first >>> 8) & 0xFF) >= 150);
+        assertTrue(((first >>> 8) & 0xFF) > ((first >>> 16) & 0xFF),
+                "lowland vegetation must be green, not a neutral white atlas tint");
     }
 
     @Test
-    void textureTintPreservesTheAuthoredBlockPalette() {
-        int tint = ClipmapSurfacePalette.texturedTintAt(
+    void proceduralTerrainPaletteSeparatesVegetationRockSandAndSnow() {
+        int grass = ClipmapSurfacePalette.texturedTintAt(
                 100.0f, 1.0f, 63.0f, false, 128L, 256L);
-        assertTrue(((tint >>> 16) & 0xFF) >= 210,
-                "red multiplier must not brown out authored block textures");
-        assertTrue(((tint >>> 8) & 0xFF) >= 210,
-                "green multiplier must preserve vegetation colors");
-        assertTrue((tint & 0xFF) >= 210,
-                "blue multiplier must preserve cool materials");
+        int rock = ClipmapSurfacePalette.texturedTintAt(
+                300.0f, 0.35f, 63.0f, false, 128L, 256L);
+        int sand = ClipmapSurfacePalette.texturedTintAt(
+                64.0f, 1.0f, 63.0f, false, 128L, 256L);
+        int snow = ClipmapSurfacePalette.texturedTintAt(
+                1500.0f, 1.0f, 63.0f, false, 128L, 256L);
+
+        assertTrue(((grass >>> 8) & 0xFF) > ((grass >>> 16) & 0xFF),
+                "vegetation must retain a green-dominant palette");
+        assertTrue(Math.abs(((rock >>> 16) & 0xFF) - ((rock >>> 8) & 0xFF)) < 20,
+                "steep rock should be neutral stone, not a grass/item texture");
+        assertTrue(((sand >>> 16) & 0xFF) > (sand & 0xFF),
+                "shoreline sand should retain a warm palette");
+        assertTrue(((snow >>> 16) & 0xFF) > 190
+                        && ((snow >>> 8) & 0xFF) > 190
+                        && (snow & 0xFF) > 190,
+                "high-altitude snow should remain bright");
     }
 
     @Test
