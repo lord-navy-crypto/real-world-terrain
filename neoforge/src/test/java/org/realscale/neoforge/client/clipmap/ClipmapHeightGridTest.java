@@ -113,7 +113,7 @@ final class ClipmapHeightGridTest {
         AtomicInteger previous = new AtomicInteger(-1);
         AtomicInteger callbackCount = new AtomicInteger();
         AtomicInteger finalPercent = new AtomicInteger(-1);
-        ClipmapHeightGrid.sample(level, 128, (x, z) -> 42.0f, null,
+        ClipmapHeightGrid.sample(level, 256, (x, z) -> 42.0f, null,
                 () -> true, percent -> {
                     assertTrue(percent >= previous.get(),
                             "progress must never move backwards");
