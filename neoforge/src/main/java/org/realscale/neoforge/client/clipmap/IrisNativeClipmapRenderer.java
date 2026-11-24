@@ -12,9 +12,6 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.block.BlockModelShaper;
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.core.Direction;
-import net.minecraft.util.RandomSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.world.level.block.Blocks;
@@ -44,7 +41,6 @@ import java.util.Map;
  */
 final class IrisNativeClipmapRenderer {
     private static final int LEVEL_COUNT = 6;
-    private static final int MAX_TEXTURED_DETAIL_LEVEL = 2;
     private static final int MORPH_BAND_CELLS = 8;
     // Distant exterior surfaces have sky exposure but no reliable block-light sample.
     // FULL_SKY preserves the active day/night lightmap instead of forcing full-bright.
@@ -567,26 +563,21 @@ final class IrisNativeClipmapRenderer {
                     int normalIndex = (gridZ[vertex] * side + gridX[vertex]) * 3;
                     long worldX = tile.originX() + (long) gridX[vertex] * spacing;
                     long worldZ = tile.originZ() + (long) gridZ[vertex] * spacing;
-                    vertexColors[vertex] = ClipmapSurfacePalette.texturedTintAt(
+                    vertexColors[vertex] = ClipmapSurfacePalette.terrainColorAt(
                             Math.max(topHeight[vertex], seaLevel),
                             smoothNormals[normalIndex + 1], seaLevel, false, worldX, worldZ);
                 }
-                ClipmapTriangleUv.computeCellAlignedInto(gridX, gridZ, triangleUvs);
-                float averageHeight = (topHeight[0] + topHeight[1] + topHeight[2]) / 3.0f;
-                float averageNormalY = 0.0f;
-                for (int vertex = 0; vertex < 3; vertex++) {
-                    int normalIndex = (gridZ[vertex] * side + gridX[vertex]) * 3;
-                    averageNormalY += smoothNormals[normalIndex + 1] / 3.0f;
-                }
-                // Keep authored block textures where they can resolve on screen.
-                // At coarse LODs, one 16x16 tile per 32-128 block cell aliases
-                // into visible speckle. Use a neutral atlas texel there and let
-                // the world-anchored macro palette carry broad biome variation.
-                TextureAtlasSprite materialSprite = level > MAX_TEXTURED_DETAIL_LEVEL
-                        ? sprites.neutral()
-                        : sprites.forMaterial(ClipmapSurfacePalette.materialAt(
-                                averageHeight, averageNormalY, seaLevel));
-                emitTriangle(solid, materialSprite, vertexColors, 255,
+                // Never paint terrain surfaces with block/item-atlas artwork.
+                // Iris requires sampler0, so all terrain vertices sample one fixed
+                // neutral texel; the actual surface material comes from the
+                // procedural per-vertex terrain palette above.
+                triangleUvs[0] = 8.0f;
+                triangleUvs[1] = 8.0f;
+                triangleUvs[2] = 8.0f;
+                triangleUvs[3] = 8.0f;
+                triangleUvs[4] = 8.0f;
+                triangleUvs[5] = 8.0f;
+                emitTriangle(solid, sprites.neutral(), vertexColors, 255,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         true, false, faceNormalScratch);
             }
@@ -909,56 +900,20 @@ final class IrisNativeClipmapRenderer {
     }
 
     private record Sprites(TextureAtlasSprite grass, TextureAtlasSprite stone,
-            TextureAtlasSprite sand, TextureAtlasSprite snow,
             TextureAtlasSprite water, TextureAtlasSprite leaves,
             TextureAtlasSprite wood, TextureAtlasSprite bricks,
-            TextureAtlasSprite black, TextureAtlasSprite neutral,
-            TextureAtlasSprite grassTop, TextureAtlasSprite stoneTop,
-            TextureAtlasSprite sandTop, TextureAtlasSprite snowTop) {
+            TextureAtlasSprite black, TextureAtlasSprite neutral) {
         private static Sprites load(Minecraft minecraft) {
             BlockModelShaper shaper = minecraft.getBlockRenderer().getBlockModelShaper();
-            BlockState grassState = Blocks.GRASS_BLOCK.defaultBlockState();
-            BlockState stoneState = Blocks.STONE.defaultBlockState();
-            BlockState sandState = Blocks.SAND.defaultBlockState();
-            BlockState snowState = Blocks.SNOW_BLOCK.defaultBlockState();
             return new Sprites(
-                    particle(shaper, grassState),
-                    particle(shaper, stoneState),
-                    particle(shaper, sandState),
-                    particle(shaper, snowState),
+                    particle(shaper, Blocks.GRASS_BLOCK.defaultBlockState()),
+                    particle(shaper, Blocks.STONE.defaultBlockState()),
                     particle(shaper, Blocks.WATER.defaultBlockState()),
                     particle(shaper, Blocks.OAK_LEAVES.defaultBlockState()),
                     particle(shaper, Blocks.OAK_LOG.defaultBlockState()),
                     particle(shaper, Blocks.STONE_BRICKS.defaultBlockState()),
                     particle(shaper, Blocks.BLACK_CONCRETE.defaultBlockState()),
-                    particle(shaper, Blocks.WHITE_CONCRETE.defaultBlockState()),
-                    topFace(shaper, grassState),
-                    topFace(shaper, stoneState),
-                    topFace(shaper, sandState),
-                    topFace(shaper, snowState));
-        }
-
-        private TextureAtlasSprite forMaterial(int material) {
-            return switch (material) {
-                case ClipmapSurfacePalette.MATERIAL_ROCK -> stoneTop;
-                case ClipmapSurfacePalette.MATERIAL_SAND -> sandTop;
-                case ClipmapSurfacePalette.MATERIAL_SNOW -> snowTop;
-                default -> grassTop;
-            };
-        }
-
-        private static TextureAtlasSprite topFace(BlockModelShaper shaper, BlockState state) {
-            try {
-                List<BakedQuad> quads = shaper.getBlockModel(state)
-                        .getQuads(state, Direction.UP, RandomSource.create(0L));
-                for (BakedQuad quad : quads) {
-                    if (quad.getDirection() == Direction.UP) return quad.getSprite();
-                }
-            } catch (RuntimeException ignored) {
-                // A resource pack may supply a custom model without a top quad;
-                // the stable particle sprite is a safe visual fallback.
-            }
-            return particle(shaper, state);
+                    particle(shaper, Blocks.WHITE_CONCRETE.defaultBlockState()));
         }
 
         private static TextureAtlasSprite particle(BlockModelShaper shaper, BlockState state) {
