@@ -448,7 +448,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("ClipmapSurfacePalette.colorAt(", native)
         self.assertIn("vertexColors[vertex]", native)
         self.assertNotIn("int materialRgb", native)
-        self.assertIn("ClipmapTriangleUv.computeInto(", native)
+        self.assertIn("ClipmapTriangleUv.computeWorldAlignedInto(", native)
         self.assertNotIn("8.0f, 8.0f, nx", native)
 
     def test_iris_native_surface_materials_do_not_repeat_atlas_textures_per_triangle(self):
@@ -465,7 +465,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("adjacent triangles and LOD", uv)
         self.assertIn("ClipmapSurfaceNormals.compute(", native)
         self.assertIn("float[] smoothNormals", native)
-        self.assertIn("ClipmapTriangleUv.computeInto(", native)
+        self.assertNotIn("ClipmapTriangleUv.computeInto(", native)
         self.assertIn("triangleUvs[vertex * 2]", native)
         self.assertIn("ClipmapSurfacePalette.colorAt(", native)
         palette = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapSurfacePalette.java").read_text(
