@@ -515,13 +515,22 @@ public final class GeometryClipmapClient {
                     || Math.abs(cameraZ - key.centerZ()) > safeHalfExtent) return;
         }
 
+        // Main-pass draw uniforms must use exactly the extended projection
+        // installed in Iris's captured G-buffer state, not a stale stage copy.
+        // Shadow rendering retains its own light-space projection.
+        Matrix4f drawProjection = projectionMatrix;
+        if (!iris.shadowPass()) {
+            if (activeIrisProjectionScope == null || activeIrisProjectionTarget == null) return;
+            drawProjection = activeIrisProjectionTarget;
+        }
+
         List<VisibleSurfaceProxy> proxies = PROXY_BUFFER.activeFor(key);
         boolean submitted = IrisNativeClipmapRenderer.renderLayer(renderType,
                 TILES.activeTiles(),
                 minecraft.level.dimension().location().toString(),
                 key.requestId(), key.centerX(), key.centerZ(), lastNearChunks,
                 proxies == null ? List.of() : proxies, minecraft.level,
-                cameraX, cameraY, cameraZ, frustumMatrix, projectionMatrix,
+                cameraX, cameraY, cameraZ, frustumMatrix, drawProjection,
                 iris.shadowPass());
         // The smoke-test success marker must represent the main G-buffer
         // terrain pass, not an earlier Iris shadow-map submission.
