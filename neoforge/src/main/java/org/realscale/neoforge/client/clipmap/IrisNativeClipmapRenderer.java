@@ -352,8 +352,8 @@ final class IrisNativeClipmapRenderer {
                         waterBytes, VertexFormat.Mode.TRIANGLES, irisTerrainFormat);
 
                 for (int level = 0; level < snapshot.size(); level++) {
-                    appendTerrain(snapshot.get(level), level + 1 < snapshot.size() ? snapshot.get(level + 1) : null,
-                            level, nearChunks, seaLevel, sprites,
+                    appendTerrain(snapshot.get(level), level,
+                            nearChunks, seaLevel, sprites,
                             level == 0 ? solidBuilder : farSolidBuilder, waterBuilder);
                 }
                 nextSolid = upload(solidBuilder);
@@ -477,7 +477,7 @@ final class IrisNativeClipmapRenderer {
         }
     }
 
-    private static void appendTerrain(ClipmapHeightTilePayload tile, ClipmapHeightTilePayload parentTile, int level,
+    private static void appendTerrain(ClipmapHeightTilePayload tile, int level,
             int nearChunks, int seaLevel, Sprites sprites,
             BufferBuilder solid, BufferBuilder water) {
         int cells = tile.gridCells();
@@ -495,7 +495,6 @@ final class IrisNativeClipmapRenderer {
                 : cells / 4;
         int[] indices = ClipmapRingMesh.surfaceIndices(cells, holeRadius);
         short[] encodedHeights = tile.heights();
-        short[] parentHeights = parentTile == null ? null : parentTile.heights();
         float[] surfaceHeights = new float[baseCount];
         for (int gridZ = 0; gridZ <= cells; gridZ++) {
             for (int gridX = 0; gridX <= cells; gridX++) {
@@ -505,7 +504,7 @@ final class IrisNativeClipmapRenderer {
                         ? Float.NaN
                         : morphedHeight(encodedHeights, cells,
                                 tile.minHeight(), tile.maxHeight(),
-                                gridX, gridZ, level, parentTile, parentHeights);
+                                gridX, gridZ, level);
             }
         }
         // The native Iris path must shade the actual surface smoothly. A
@@ -595,29 +594,24 @@ final class IrisNativeClipmapRenderer {
     }
 
     private static float morphedHeight(short[] samples, int cells,
-            int minHeight, int maxHeight, int x, int z, int level,
-            ClipmapHeightTilePayload parentTile, short[] parentHeights) {
+            int minHeight, int maxHeight, int x, int z, int level) {
         float height = sampleHeight(samples, cells, minHeight, maxHeight, x, z);
-        if (level >= LEVEL_COUNT - 1 || parentTile == null || parentHeights == null) return height;
+        if (level >= LEVEL_COUNT - 1) return height;
 
         int edgeCells = Math.min(Math.min(x, z),
                 Math.min(cells - x, cells - z));
         if (edgeCells >= MORPH_BAND_CELLS) return height;
 
-        // Sample the actual coarser ring, not a downsampled copy of the fine tile.
-        // Its inner edge uses the same triangle diagonal as ClipmapRingMesh.
-        float px = cells * 0.25f + x * 0.5f;
-        float pz = cells * 0.25f + z * 0.5f;
-        int ix = (int) Math.floor(px), iz = (int) Math.floor(pz);
-        float fx = px - ix, fz = pz - iz;
-        int pmin = parentTile.minHeight(), pmax = parentTile.maxHeight();
-        float h00 = sampleHeight(parentHeights, cells, pmin, pmax, ix, iz);
-        float h10 = sampleHeight(parentHeights, cells, pmin, pmax, ix + 1, iz);
-        float h01 = sampleHeight(parentHeights, cells, pmin, pmax, ix, iz + 1);
-        float h11 = sampleHeight(parentHeights, cells, pmin, pmax, ix + 1, iz + 1);
-        float parent = fx + fz <= 1.0f
-                ? h00 + fx * (h10 - h00) + fz * (h01 - h00)
-                : h11 + (1.0f - fx) * (h01 - h11) + (1.0f - fz) * (h10 - h11);
+        // The parent ring deliberately leaves its interior unsampled. Build
+        // the 2:1 parent surface from this tile's valid even-grid samples,
+        // which are aligned with the adjacent coarser ring at the outer edge.
+        int parentX = (x / 2) * 2;
+        int parentZ = (z / 2) * 2;
+        float h00 = sampleHeight(samples, cells, minHeight, maxHeight, parentX, parentZ);
+        float h10 = sampleHeight(samples, cells, minHeight, maxHeight, parentX + 2, parentZ);
+        float h01 = sampleHeight(samples, cells, minHeight, maxHeight, parentX, parentZ + 2);
+        float h11 = sampleHeight(samples, cells, minHeight, maxHeight, parentX + 2, parentZ + 2);
+        float parent = (float) ClipmapMorphMath.parentHeight(x, z, h00, h10, h01, h11);
         float morph = 1.0f - smoothstep(0.0f, MORPH_BAND_CELLS, edgeCells);
         return lerp(height, parent, morph);
     }
