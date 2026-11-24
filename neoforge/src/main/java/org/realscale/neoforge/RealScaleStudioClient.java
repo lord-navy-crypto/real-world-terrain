@@ -18,12 +18,25 @@ public final class RealScaleStudioClient {
     public static void onPauseMenuInit(ScreenEvent.Init.Post event) {
         if (!(event.getScreen() instanceof PauseScreen pause)) return;
         if (Minecraft.getInstance().level == null) return;
-        int width=196;
-        int x=(pause.width-width)/2;
+        int width=154;
+        int gap=4;
+        int x=(pause.width-(width*2+gap))/2;
         int y=Math.max(4,pause.height-28);
         event.addListener(Button.builder(Component.literal("RealScale Studio"),
                 button -> Minecraft.getInstance().setScreen(
                         new RealScaleStudioScreen(pause)))
                 .bounds(x,y,width,20).build());
+        event.addListener(Button.builder(clipmapToggleLabel(),
+                button -> {
+                    org.realscale.neoforge.client.clipmap.GeometryClipmapClient.toggleEnabled();
+                    button.setMessage(clipmapToggleLabel());
+                })
+                .bounds(x+width+gap,y,width,20).build());
+    }
+
+    private static Component clipmapToggleLabel() {
+        boolean enabled =
+                org.realscale.neoforge.client.clipmap.GeometryClipmapClient.isEnabled();
+        return Component.literal("Geometry Clipmap: " + (enabled ? "ON" : "OFF"));
     }
 }
