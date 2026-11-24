@@ -79,6 +79,8 @@ public final class GeometryClipmapClient {
     private static boolean irisFogSkipReported;
     private static float activeIrisOriginalFogStart;
     private static float activeIrisOriginalFogEnd;
+    private static float activeIrisExtendedFogStart;
+    private static float activeIrisExtendedFogEnd;
     private static final long HEARTBEAT_INTERVAL_NANOS = 8_000_000_000L;
 
     private static final boolean EXTEND_IRIS_FAR = Boolean.parseBoolean(
@@ -95,7 +97,8 @@ public final class GeometryClipmapClient {
                 || !IrisRenderCompatibility.current().allowsIrisNativeRenderer()) {
             return vanillaFar;
         }
-        long radius = (long) key.gridCells() / 2L * key.baseSpacing() * (1L << (TILES.activeTiles().size() - 1));
+        // Keep shader-pack horizon stable across partial snapshot publication.
+        long radius = (long) key.gridCells() / 2L * key.baseSpacing() * (1L << (ClipmapStatusPayload.LEVEL_COUNT - 1));
         int far = (int) Math.max(vanillaFar, Math.min(Integer.MAX_VALUE, radius));
         if (DEBUG && far != lastReportedIrisFar) {
             lastReportedIrisFar = far;
@@ -214,6 +217,9 @@ public final class GeometryClipmapClient {
         PROXY_BUFFER.accept(payload.requestId(), payload.dimensionKey(),
                 payload.centerX(), payload.centerZ(), payload.proxies(),
                 TILES.activeKey());
+        if (DEBUG) System.out.printf(java.util.Locale.ROOT,
+                "[RealScale Geometry Clipmap] CLIENT_PROXY_RECEIVED center=(%d,%d) count=%d%n",
+                payload.centerX(), payload.centerZ(), payload.proxies().size());
     }
 
     @SubscribeEvent
@@ -440,7 +446,7 @@ public final class GeometryClipmapClient {
         IrisRenderCompatibility.ProjectionScope scope = null;
         try {
             ClipmapFogRange fogRange = ClipmapFogRange.forGrid(
-                    key.gridCells(), key.baseSpacing(), TILES.activeTiles().size());
+                    key.gridCells(), key.baseSpacing(), ClipmapStatusPayload.LEVEL_COUNT);
             Matrix4f extended = new Matrix4f(target);
             ClipmapProjectionMath.extendFarPlane(
                     extended, fogRange.endBlocks() * 1.5f);
@@ -474,8 +480,7 @@ public final class GeometryClipmapClient {
                     "[RealScale Iris Clipmap] IRIS_FOG_PREPARE_HOOK_HIT scope=%s nearChunks=%d%n",
                     activeIrisProjectionScope != null, lastNearChunks);
         }
-        if (!ENABLED || activeIrisProjectionScope == null || activeIrisFogCaptured
-                || lastNearChunks < 2) {
+        if (!ENABLED || activeIrisProjectionScope == null || lastNearChunks < 2) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
@@ -486,6 +491,13 @@ public final class GeometryClipmapClient {
         var key = TILES.activeKey();
         if (key == null || key.requestId() != activeRequestId) return;
 
+        // Other terrain phases can reinstall vanilla fog during the same frame.
+        // Reassert our captured range without replacing the original restoration state.
+        if (activeIrisFogCaptured) {
+            RenderSystem.setShaderFogStart(activeIrisExtendedFogStart);
+            RenderSystem.setShaderFogEnd(activeIrisExtendedFogEnd);
+            return;
+        }
         float originalStart = RenderSystem.getShaderFogStart();
         float originalEnd = RenderSystem.getShaderFogEnd();
         float minimumNormalFogEnd = Math.max(16.0f, lastNearChunks * 16.0f * 0.55f);
@@ -502,7 +514,7 @@ public final class GeometryClipmapClient {
         }
 
         ClipmapFogRange fogRange = ClipmapFogRange.forGrid(
-                key.gridCells(), key.baseSpacing(), TILES.activeTiles().size());
+                key.gridCells(), key.baseSpacing(), ClipmapStatusPayload.LEVEL_COUNT);
         float extendedStart = Math.max(originalStart, fogRange.startBlocks());
         float extendedEnd = Math.max(originalEnd, fogRange.endBlocks() * 1.5f);
         if (!Float.isFinite(extendedStart) || !Float.isFinite(extendedEnd)
@@ -512,6 +524,8 @@ public final class GeometryClipmapClient {
 
         activeIrisOriginalFogStart = originalStart;
         activeIrisOriginalFogEnd = originalEnd;
+        activeIrisExtendedFogStart = extendedStart;
+        activeIrisExtendedFogEnd = extendedEnd;
         activeIrisFogCaptured = true;
         RenderSystem.setShaderFogStart(extendedStart);
         RenderSystem.setShaderFogEnd(extendedEnd);
@@ -581,6 +595,7 @@ public final class GeometryClipmapClient {
         if (!iris.shadowPass()) {
             if (activeIrisProjectionScope == null || activeIrisProjectionTarget == null) return;
             drawProjection = activeIrisProjectionTarget;
+            prepareIrisFrameFog();
         }
 
         List<VisibleSurfaceProxy> proxies = PROXY_BUFFER.activeFor(key);
