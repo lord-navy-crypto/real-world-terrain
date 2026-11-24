@@ -54,15 +54,32 @@ def start_worldgen_jfr(pid):
 def dump_worldgen_jfr(root,pid):
     recording=root/"build"/"realscale_worldgen_cpu.jfr"
     recording.parent.mkdir(parents=True,exist_ok=True)
-    result=subprocess.run(
-        ["jcmd",pid,"JFR.dump","name=realscale_worldgen",
-         "filename="+str(recording)],
-        capture_output=True,text=True,timeout=45,check=True)
+    # Capture jcmd's diagnostic output instead of losing the actual failure
+    # behind CalledProcessError. A stop-with-filename is a supported fallback
+    # which exports the same recording rather than manufacturing a pass.
+    recording.unlink(missing_ok=True)
+    def run_jfr(command):
+        result=subprocess.run(["jcmd",pid,*command],capture_output=True,
+                              text=True,timeout=45)
+        print("REALSCALE_JFR_COMMAND:",command,"exit=",result.returncode,
+              result.stdout.strip(),result.stderr.strip(),flush=True)
+        return result
+    def valid():
+        if not recording.is_file() or recording.stat().st_size < 68:
+            return False
+        with recording.open("rb") as stream:
+            return stream.read(4)==bytes.fromhex("464c5200")
+    result=run_jfr(["JFR.dump","name=realscale_worldgen","filename="+str(recording)])
+    if result.returncode!=0 or not valid():
+        run_jfr(["JFR.check","name=realscale_worldgen","verbose=true"])
+        recording.unlink(missing_ok=True)
+        result=run_jfr(["JFR.stop","name=realscale_worldgen","filename="+str(recording)])
+        if result.returncode!=0 or not valid():
+            raise RuntimeError("JFR.dump and JFR.stop failed to produce a valid recording")
+    else:
+        run_jfr(["JFR.stop","name=realscale_worldgen"])
     print("REALSCALE_JFR_DUMP:",recording,
           "bytes=",recording.stat().st_size,flush=True)
-    print("REALSCALE_JFR_CAPTURE_MESSAGE:",result.stdout.strip(),flush=True)
-    subprocess.run(["jcmd",pid,"JFR.stop","name=realscale_worldgen"],
-                   capture_output=True,text=True,timeout=30,check=True)
 
 
 def capture_worldgen_thread_diagnostics(root,profile,pid):
@@ -485,7 +502,7 @@ def main(root,expected_preset,profile):
                 try:
                     dump_worldgen_jfr(root,jfr_pid)
                     jfr_dumped=True
-                except (OSError,subprocess.SubprocessError) as diag_error:
+                except (OSError,subprocess.SubprocessError,RuntimeError) as diag_error:
                     print("REALSCALE_JFR_DUMP_FAILED:",
                           repr(diag_error),flush=True)
             if (not ready.is_set() or isinstance(exc,TimeoutError)) and not startup_dumps_captured:
