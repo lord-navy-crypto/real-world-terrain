@@ -127,6 +127,11 @@ final class IrisNativeClipmapRenderer {
             // Direct VertexBuffer draws must bind the program explicitly before
             // any Uniform upload or GL_INVALID_OPERATION (program not linked)
             // is raised by the driver.
+            // A selected ShaderInstance is not initialized by setupRenderState.
+            // Sodium's own chunk renderer uses a different shader program; the
+            // vanilla/Iris instance can therefore retain stale matrices/samplers.
+            shader.setDefaultUniforms(VertexFormat.Mode.QUADS,
+                    frustumMatrix, projectionMatrix, Minecraft.getInstance().getWindow());
             shader.apply();
             shaderApplied = true;
             chunkOffset.set((float) (centerX - cameraX),
