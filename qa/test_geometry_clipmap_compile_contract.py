@@ -449,7 +449,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("ClipmapSurfacePalette.materialAt(", native)
         self.assertIn("vertexColors[vertex]", native)
         self.assertNotIn("int materialRgb", native)
-        self.assertIn("ClipmapTriangleUv.computeWorldAlignedInto(", native)
+        self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", native)
         self.assertNotIn("8.0f, 8.0f, nx", native)
 
     def test_iris_native_surface_materials_restore_cell_scale_atlas_detail(self):
