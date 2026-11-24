@@ -937,10 +937,6 @@ final class IrisNativeClipmapRenderer {
                     topFace(shaper, snowState));
         }
 
-        private TextureAtlasSprite neutral() {
-            return neutral;
-        }
-
         private TextureAtlasSprite forMaterial(int material) {
             return switch (material) {
                 case ClipmapSurfacePalette.MATERIAL_ROCK -> stoneTop;
