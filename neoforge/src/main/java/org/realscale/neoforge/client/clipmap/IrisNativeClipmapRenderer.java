@@ -148,7 +148,7 @@ final class IrisNativeClipmapRenderer {
             // A selected ShaderInstance is not initialized by setupRenderState.
             // Sodium's own chunk renderer uses a different shader program; the
             // vanilla/Iris instance can therefore retain stale matrices/samplers.
-            shader.setDefaultUniforms(VertexFormat.Mode.QUADS,
+            shader.setDefaultUniforms(VertexFormat.Mode.TRIANGLES,
                     frustumMatrix, projectionMatrix, Minecraft.getInstance().getWindow());
             shader.apply();
             shaderApplied = true;
@@ -329,13 +329,13 @@ final class IrisNativeClipmapRenderer {
                  ByteBufferBuilder cutoutBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES);
                  ByteBufferBuilder waterBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES)) {
                 BufferBuilder solidBuilder = new BufferBuilder(
-                        solidBytes, VertexFormat.Mode.QUADS, irisTerrainFormat);
+                        solidBytes, VertexFormat.Mode.TRIANGLES, irisTerrainFormat);
                 BufferBuilder farSolidBuilder = new BufferBuilder(
-                        farSolidBytes, VertexFormat.Mode.QUADS, irisTerrainFormat);
+                        farSolidBytes, VertexFormat.Mode.TRIANGLES, irisTerrainFormat);
                 BufferBuilder cutoutBuilder = new BufferBuilder(
-                        cutoutBytes, VertexFormat.Mode.QUADS, irisTerrainFormat);
+                        cutoutBytes, VertexFormat.Mode.TRIANGLES, irisTerrainFormat);
                 BufferBuilder waterBuilder = new BufferBuilder(
-                        waterBytes, VertexFormat.Mode.QUADS, irisTerrainFormat);
+                        waterBytes, VertexFormat.Mode.TRIANGLES, irisTerrainFormat);
 
                 for (int level = 0; level < snapshot.size(); level++) {
                     appendTerrain(snapshot.get(level), level, nearChunks, seaLevel,
@@ -597,27 +597,9 @@ final class IrisNativeClipmapRenderer {
             putVertex(builder, sprite, rgb, alpha,
                     x[vertex], y[vertex], z[vertex], 8.0f, 8.0f, nx, ny, nz);
         }
-        // RenderType.solid/cutout/translucent use QUADS. A repeated final
-        // vertex represents one triangle without introducing a second face.
-        float nx;
-        float ny;
-        float nz;
-        if (flatUp) {
-            nx = 0.0f;
-            ny = 1.0f;
-            nz = 0.0f;
-        } else if (useSmoothNormals) {
-            int normalIndex = (gridZ[2] * side + gridX[2]) * 3;
-            nx = smoothNormals[normalIndex];
-            ny = smoothNormals[normalIndex + 1];
-            nz = smoothNormals[normalIndex + 2];
-        } else {
-            nx = faceNormalScratch[0];
-            ny = faceNormalScratch[1];
-            nz = faceNormalScratch[2];
-        }
-        putVertex(builder, sprite, rgb, alpha,
-                x[2], y[2], z[2], 8.0f, 8.0f, nx, ny, nz);
+        // TRIANGLES keeps Iris's per-vertex normals intact. Its QUADS
+        // extension path recalculates one face normal and would erase the
+        // smooth clipmap normals supplied above.
     }
 
     private static void triangleNormalInto(float[] x, float[] y, float[] z,
@@ -782,7 +764,6 @@ final class IrisNativeClipmapRenderer {
         putVertex(builder, sprite, rgb, 255, x[0], y[0], z[0], 0.0f, 0.0f, normal);
         putVertex(builder, sprite, rgb, 255, x[1], y[1], z[1], 16.0f, 0.0f, normal);
         putVertex(builder, sprite, rgb, 255, x[2], y[2], z[2], 16.0f, 16.0f, normal);
-        putVertex(builder, sprite, rgb, 255, x[2], y[2], z[2], 16.0f, 16.0f, normal);
     }
 
     private static void emitDoubleSidedQuad(BufferBuilder builder,
@@ -794,8 +775,12 @@ final class IrisNativeClipmapRenderer {
     private static void emitQuad(BufferBuilder builder, TextureAtlasSprite sprite,
             int rgb, float[] a, float[] b, float[] c, float[] d) {
         float[] normal = quadNormal(a, b, c);
+        // Split proxy quads into two real triangles so every buffer uses
+        // triangle topology and Iris preserves per-vertex normals.
         putVertex(builder, sprite, rgb, 255, a[0], a[1], a[2], 0.0f, 0.0f, normal);
         putVertex(builder, sprite, rgb, 255, b[0], b[1], b[2], 16.0f, 0.0f, normal);
+        putVertex(builder, sprite, rgb, 255, c[0], c[1], c[2], 16.0f, 16.0f, normal);
+        putVertex(builder, sprite, rgb, 255, a[0], a[1], a[2], 0.0f, 0.0f, normal);
         putVertex(builder, sprite, rgb, 255, c[0], c[1], c[2], 16.0f, 16.0f, normal);
         putVertex(builder, sprite, rgb, 255, d[0], d[1], d[2], 0.0f, 16.0f, normal);
     }

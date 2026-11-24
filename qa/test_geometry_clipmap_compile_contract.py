@@ -449,6 +449,16 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("float[] smoothNormals", native)
         self.assertNotIn("int minX = Math.min(gridX", native)
         self.assertNotIn("Math.floorMod(x, side)", native)
+        self.assertEqual(4, native.count("VertexFormat.Mode.TRIANGLES, irisTerrainFormat"))
+        self.assertIn("shader.setDefaultUniforms(VertexFormat.Mode.TRIANGLES", native)
+        self.assertNotIn("VertexFormat.Mode.QUADS, irisTerrainFormat", native)
+        triangle = native.split("private static void emitTriangle(BufferBuilder", 1)[1].split(
+            "private static void triangleNormalInto", 1
+        )[0]
+        self.assertIn("Iris's per-vertex normals intact", triangle)
+        self.assertNotIn("repeated final", triangle)
+        self.assertIn("putVertex(builder, sprite, rgb, 255, a[0]", native)
+        self.assertIn("putVertex(builder, sprite, rgb, 255, d[0]", native)
 
     def test_toroidal_texture_update_plan_has_unit_coverage(self):
         planner = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.java").read_text(
