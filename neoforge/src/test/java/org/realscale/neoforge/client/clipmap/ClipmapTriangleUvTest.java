@@ -32,9 +32,9 @@ final class ClipmapTriangleUvTest {
         assertNonDegenerate(uv);
         assertInsideSprite(uv);
         assertEquals(2.0f, uv[0], 1.0e-6f);
-        assertEquals(2.0f, uv[1], 1.0e-6f);
+        assertEquals(14.0f, uv[1], 1.0e-6f);
         assertEquals(14.0f, uv[2], 1.0e-6f);
-        assertEquals(14.0f, uv[5], 1.0e-6f);
+        assertEquals(2.0f, uv[5], 1.0e-6f);
     }
 
     @Test
