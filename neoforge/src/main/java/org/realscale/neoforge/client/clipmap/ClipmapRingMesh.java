@@ -25,6 +25,43 @@ public final class ClipmapRingMesh {
         return vertices;
     }
 
+    /**
+     * Surface-only ring topology. Adjacent LODs are stitched by parent-height
+     * morphing, so full-depth inner and outer skirts are not needed on the
+     * Iris terrain path. Avoiding those artificial walls keeps distant
+     * mountain silhouettes continuous.
+     */
+    public static int[] surfaceIndices(int cells, int innerHalfCells) {
+        validateCells(cells);
+        if (innerHalfCells < 0 || innerHalfCells >= cells / 2) {
+            throw new IllegalArgumentException("inner half cells must be 0..(cells/2-1)");
+        }
+        int side = cells + 1;
+        int min = cells / 2 - innerHalfCells;
+        int max = cells / 2 + innerHalfCells;
+        int holeWidth = max - min;
+        int quads = cells * cells - holeWidth * holeWidth;
+        int[] indices = new int[Math.multiplyExact(6, quads)];
+        int p = 0;
+        for (int z = 0; z < cells; z++) {
+            for (int x = 0; x < cells; x++) {
+                if (x >= min && x < max && z >= min && z < max) continue;
+                int a = z * side + x;
+                int b = (z + 1) * side + x;
+                int c = a + 1;
+                int d = b + 1;
+                indices[p++] = a;
+                indices[p++] = b;
+                indices[p++] = c;
+                indices[p++] = c;
+                indices[p++] = b;
+                indices[p++] = d;
+            }
+        }
+        if (p != indices.length) throw new IllegalStateException("surface index count mismatch");
+        return indices;
+    }
+
     public static int[] indices(int cells, int innerHalfCells) {
         validateCells(cells);
         if (innerHalfCells < 1 || innerHalfCells >= cells / 2) {
