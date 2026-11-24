@@ -428,7 +428,7 @@ def wait_until_world_rendered(timeout: float = 120.0) -> None:
 
 
 def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
-    """Exercise ON -> OFF -> ON through the actual Minecraft pause-menu button."""
+    """Verify default OFF, then exercise ON -> OFF -> ON through the pause-menu button."""
     # Derive the click point from the actual game window. The CI options set
     # GUI scale 2; the custom pause-menu row is 154px + 4px + 154px wide.
     window_geometry = active_game_window_geometry()
