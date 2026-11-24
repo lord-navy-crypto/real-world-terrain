@@ -13,9 +13,10 @@ import java.util.Properties;
 /**
  * Persistent client-side switch for the automatic Geometry Clipmap renderer.
  *
- * <p>The default is ON so existing test worlds retain their current automatic
- * rendering behavior. The in-game pause-menu button writes this preference
- * immediately; disabling it also releases the active render resources.
+ * <p>The default is OFF so distant terrain rendering starts only after the
+ * player explicitly enables it from the in-game pause menu. Explicit saved
+ * preferences are preserved across launches; disabling also releases the
+ * active render resources.
  */
 public final class GeometryClipmapSettings {
     private static final Path CONFIG_FILE =
@@ -45,22 +46,22 @@ public final class GeometryClipmapSettings {
 
     static boolean loadEnabled(Path path) {
         if (!Files.isRegularFile(path)) {
-            return true;
+            return false;
         }
         Properties properties = new Properties();
         try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             properties.load(reader);
-            String value = properties.getProperty("enabled", "true").trim();
+            String value = properties.getProperty("enabled", "false").trim();
             if ("false".equalsIgnoreCase(value)) {
                 return false;
             }
             if ("true".equalsIgnoreCase(value)) {
                 return true;
             }
-            return true;
+            return false;
         } catch (IOException | IllegalArgumentException failure) {
-            // A missing or damaged preference must never disable the mod at boot.
-            return true;
+            // A missing or damaged preference must never enable the renderer at boot.
+            return false;
         }
     }
 
