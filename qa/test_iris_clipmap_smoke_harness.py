@@ -73,6 +73,8 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("drawProjection = activeIrisProjectionTarget;", GEOMETRY_CLIENT)
         self.assertIn("GL15.GL_SAMPLES_PASSED", IRIS_RENDERER)
         self.assertIn("FAR_SOLID_VISIBLE_SAMPLES=", IRIS_RENDERER)
+        self.assertIn("cameraY=", IRIS_RENDERER)
+        self.assertIn("1000.0 <= float(m.group(2)) <= 1250.0", SMOKE)
         self.assertIn("drawWithVisibilityProbe(farSolidBuffer", IRIS_RENDERER)
         self.assertIn("level == 0 ? solidBuilder : farSolidBuilder", IRIS_RENDERER)
         self.assertIn("irisFarDistanceBlocks(int vanillaFar)", GEOMETRY_CLIENT)
