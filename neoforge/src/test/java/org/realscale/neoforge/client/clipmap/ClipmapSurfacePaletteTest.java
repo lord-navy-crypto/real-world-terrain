@@ -47,9 +47,9 @@ final class ClipmapSurfacePaletteTest {
     void proceduralTerrainColorIsWorldAnchoredAndVariesAcrossRegionalNoise() {
         int first = ClipmapSurfacePalette.terrainColorAt(
                 100.0f, 1.0f, 63.0f, false, 128L, 256L);
-        int repeat = ClipmapSurfacePalette.texturedTintAt(
+        int repeat = ClipmapSurfacePalette.terrainColorAt(
                 100.0f, 1.0f, 63.0f, false, 128L, 256L);
-        int distant = ClipmapSurfacePalette.texturedTintAt(
+        int distant = ClipmapSurfacePalette.terrainColorAt(
                 100.0f, 1.0f, 63.0f, false, 2048L, 4096L);
         assertEquals(first, repeat);
         assertNotEquals(first, distant);
@@ -59,13 +59,13 @@ final class ClipmapSurfacePaletteTest {
 
     @Test
     void proceduralTerrainPaletteSeparatesVegetationRockSandAndSnow() {
-        int grass = ClipmapSurfacePalette.texturedTintAt(
-                100.0f, 1.0f, 63.0f, false, 128L, 256L);
-        int rock = ClipmapSurfacePalette.texturedTintAt(
+        int grass = ClipmapSurfacePalette.terrainColorAt(
+                100.0f, 1.0f, 63.0f, false, 128L, 2944L);
+        int rock = ClipmapSurfacePalette.terrainColorAt(
                 300.0f, 0.35f, 63.0f, false, 128L, 256L);
-        int sand = ClipmapSurfacePalette.texturedTintAt(
+        int sand = ClipmapSurfacePalette.terrainColorAt(
                 64.0f, 1.0f, 63.0f, false, 128L, 256L);
-        int snow = ClipmapSurfacePalette.texturedTintAt(
+        int snow = ClipmapSurfacePalette.terrainColorAt(
                 1500.0f, 1.0f, 63.0f, false, 128L, 256L);
 
         assertTrue(((grass >>> 8) & 0xFF) > ((grass >>> 16) & 0xFF),
