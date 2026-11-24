@@ -183,8 +183,16 @@ public final class GeometryClipmapServer {
                 session.cachedHeightPayloads = null;
                 session.cachedProxyPayload = null;
                 session.requestEpoch.defer(serverTickCounter, RETRY_BACKOFF_TICKS);
-                sendStatus(player, session, ClipmapStatusPayload.STALLED, 0,
-                        "sampler made no progress for 90 seconds; cancelling and retrying");
+                String stalledDetail = session.sampleActive
+                        ? String.format(java.util.Locale.ROOT,
+                                "sampler made no progress for 90 seconds; density sample (%d,%d) active for %.1fs; cancelling and retrying",
+                                session.lastSampleX, session.lastSampleZ,
+                                (System.nanoTime() - session.lastSampleStartedNanos) / 1_000_000_000.0)
+                        : String.format(java.util.Locale.ROOT,
+                                "sampler made no progress for 90 seconds; last density sample (%d,%d) took %.1fms; cancelling and retrying",
+                                session.lastSampleX, session.lastSampleZ,
+                                session.lastSampleDurationNanos / 1_000_000.0);
+                sendStatus(player, session, ClipmapStatusPayload.STALLED, 0, stalledDetail);
             }
             return;
         }
@@ -199,6 +207,10 @@ public final class GeometryClipmapServer {
             return;
         }
 
+        // A proxy scan can perform thousands of climate queries against the
+        // same worldgen graph. Stop it before a new height window begins.
+        // This prevents proxy work from competing with the priority terrain sampler.
+        cancelProxyTasksForHeightSampling();
         RandomState randomState = level.getChunkSource().randomState();
         DensityFunction terrainDensity = randomState.router().depth();
         List<ClipmapHeightGrid> previousGrids = session.grids;
@@ -217,11 +229,31 @@ public final class GeometryClipmapServer {
                 "sampler queue depth " + SAMPLER.getQueue().size());
 
         ClipmapHeightGrid.SurfaceHeightSampler heightSampler = (x, z) -> {
-            double signal = terrainDensity.compute(
-                    new DensityFunction.SinglePointContext(x, SAMPLE_Y, z));
-            double surface = NaturalAutomateHeightMapping.surfaceY(signal);
-            if (!Double.isFinite(surface)) throw new IllegalStateException("non-finite surface");
-            return (float) Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, surface));
+            long sampleStarted = System.nanoTime();
+            session.lastSampleX = x;
+            session.lastSampleZ = z;
+            session.lastSampleStartedNanos = sampleStarted;
+            session.sampleActive = true;
+            session.lastProgressNanos = sampleStarted;
+            try {
+                double signal = terrainDensity.compute(
+                        new DensityFunction.SinglePointContext(x, SAMPLE_Y, z));
+                double surface = NaturalAutomateHeightMapping.surfaceY(signal);
+                if (!Double.isFinite(surface)) {
+                    throw new IllegalStateException("non-finite surface");
+                }
+                return (float) Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, surface));
+            } finally {
+                long elapsed = System.nanoTime() - sampleStarted;
+                session.lastSampleDurationNanos = elapsed;
+                session.sampleActive = false;
+                session.lastProgressNanos = System.nanoTime();
+                if (DEBUG && elapsed > TimeUnit.MILLISECONDS.toNanos(250L)) {
+                    System.out.printf(java.util.Locale.ROOT,
+                            "[RealScale Geometry Clipmap] slow density sample x=%d z=%d elapsed=%.1fms%n",
+                            x, z, elapsed / 1_000_000.0);
+                }
+            }
         };
 
         // One ring per queue turn: a second player need not wait for six rings.
@@ -328,13 +360,20 @@ public final class GeometryClipmapServer {
         }
     }
 
+    private static void cancelProxyTasksForHeightSampling() {
+        for (Session active : SESSIONS.values()) {
+            if (active.invalidateProxyTask() && DEBUG) {
+                System.out.println("[RealScale Geometry Clipmap] PROXY_TASK_CANCELLED reason=height-window");
+            }
+        }
+    }
+
     private static void scheduleProxies(MinecraftServer server, Session session, UUID playerId,
             String dimension, long requestId, long seed, long epoch,
             NoiseBasedChunkGenerator generator, RandomState randomState,
             GeometryClipmapLayout.Layout layout) {
-        if (session.proxyTask != null) PROXY_SAMPLER.remove(session.proxyTask);
-        if (session.proxyTask != null) session.cancelledProxyTasks++;
-        long token = ++session.proxyGeneration;
+        session.invalidateProxyTask();
+        long token = session.proxyGeneration;
         java.util.function.BooleanSupplier current = () ->
                 session.requestEpoch.isCurrent(epoch) && session.proxyGeneration == token;
         Runnable task = () -> {
@@ -458,6 +497,11 @@ public final class GeometryClipmapServer {
         private long cancelledTasks;
         private long cancelledProxyTasks;
         private volatile long lastProgressNanos;
+        private volatile long lastSampleStartedNanos;
+        private volatile long lastSampleDurationNanos;
+        private volatile boolean sampleActive;
+        private volatile int lastSampleX;
+        private volatile int lastSampleZ;
         private volatile int status = ClipmapStatusPayload.REQUEST_ACCEPTED;
         private volatile int completedLevels;
         private volatile String statusDetail = "request accepted";
@@ -471,10 +515,18 @@ public final class GeometryClipmapServer {
             this.connectionToken = connectionToken;
         }
 
+        private boolean invalidateProxyTask() {
+            proxyGeneration++;
+            if (proxyTask == null) return false;
+            PROXY_SAMPLER.remove(proxyTask);
+            proxyTask = null;
+            cancelledProxyTasks++;
+            return true;
+        }
+
         private void cancelTasks() {
             if (ringTask != null) { SAMPLER.remove(ringTask); cancelledTasks++; ringTask = null; }
-            if (proxyTask != null) { PROXY_SAMPLER.remove(proxyTask); proxyTask = null; cancelledProxyTasks++; }
-            proxyGeneration++;
+            invalidateProxyTask();
         }
 
         private void invalidate() {

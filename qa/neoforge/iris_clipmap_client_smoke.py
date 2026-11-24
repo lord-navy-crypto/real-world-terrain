@@ -562,6 +562,11 @@ def run_client(env: dict[str, str]) -> None:
         validate_screenshot(moving)
         print("IRIS_CLIPMAP_CONTINUOUS_MOVEMENT_PASS", sorted(centres), flush=True)
         final_stdout = "".join(lines)
+        if "SAMPLER STALLED" in final_stdout:
+            raise RuntimeError(
+                "The Geometry Clipmap sampler stalled during real client movement; "
+                "inspect the last-density-sample and proxy-cancellation diagnostics"
+            )
         if "GL_INVALID_OPERATION in glUniform(program not linked)" in final_stdout:
             raise RuntimeError(
                 "Iris-native draw emitted GL_INVALID_OPERATION while uploading "

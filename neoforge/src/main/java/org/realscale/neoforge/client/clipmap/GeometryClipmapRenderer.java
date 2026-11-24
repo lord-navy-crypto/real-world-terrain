@@ -59,28 +59,7 @@ final class GeometryClipmapRenderer {
             out float vOcean;
             out float vDistance;
             out vec3 vPosition;
-            out float vMacro;
-            out float vRegional;
-            out float vMicro;
-
-            // Evaluate world-aligned material noise per vertex instead of per
-            // fragment. The low-frequency fields interpolate smoothly across
-            // the clipmap triangles; high-frequency detail fades with distance.
-            float hashCell(vec2 p) {
-                vec3 p3 = fract(vec3(p.x, p.y, p.x) * 0.1031);
-                p3 += dot(p3, p3.yzx + 33.33);
-                return fract((p3.x + p3.y) * p3.z);
-            }
-            float valueNoise(vec2 p, float period) {
-                vec2 i = floor(p);
-                vec2 f = fract(p);
-                f = f * f * (3.0 - 2.0 * f);
-                float a = hashCell(mod(i, period));
-                float b = hashCell(mod(i + vec2(1.0, 0.0), period));
-                float c = hashCell(mod(i + vec2(0.0, 1.0), period));
-                float d = hashCell(mod(i + vec2(1.0, 1.0), period));
-                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-            }
+            out vec2 vNoisePosition;
 
             void main() {
                 vec2 grid = aGridAndSkirt.xy;
@@ -130,12 +109,10 @@ final class GeometryClipmapRenderer {
                 vOcean = ocean;
                 vPosition = relative;
                 vDistance = length(relative.xz);
-                vec2 noiseXZ = levelNoiseOrigin + grid * levelSpacing;
-                vMacro = valueNoise(noiseXZ / 512.0, 128.0);
-                vRegional = valueNoise(noiseXZ / 128.0, 512.0);
-                float vertexDetailFade = 1.0 - smoothstep(700.0, 4500.0, vDistance);
-                vMicro = vertexDetailFade > 0.0
-                    ? valueNoise(noiseXZ / 32.0, 2048.0) : 0.5;
+                // World-aligned coordinates are filtered in the fragment
+                // stage using screen-space derivatives, preventing coarse
+                // outer LOD vertices from aliasing into visible color speckle.
+                vNoisePosition = levelNoiseOrigin + grid * levelSpacing;
                 gl_Position = uViewProjection * vec4(relative, 1.0);
             }
             """;
@@ -146,9 +123,7 @@ final class GeometryClipmapRenderer {
             in float vOcean;
             in float vDistance;
             in vec3 vPosition;
-            in float vMacro;
-            in float vRegional;
-            in float vMicro;
+            in vec2 vNoisePosition;
             uniform float uFogStart;
             uniform float uFogEnd;
             uniform float uNearClipBlocks;
@@ -158,6 +133,32 @@ final class GeometryClipmapRenderer {
             uniform float uDirectLight;
             uniform vec3 uFogColor;
             out vec4 fragColor;
+
+            float hashCell(vec2 p) {
+                vec3 p3 = fract(vec3(p.x, p.y, p.x) * 0.1031);
+                p3 += dot(p3, p3.yzx + 33.33);
+                return fract((p3.x + p3.y) * p3.z);
+            }
+            float valueNoise(vec2 p, float period) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                float a = hashCell(mod(i, period));
+                float b = hashCell(mod(i + vec2(1.0, 0.0), period));
+                float c = hashCell(mod(i + vec2(0.0, 1.0), period));
+                float d = hashCell(mod(i + vec2(1.0, 1.0), period));
+                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+            }
+
+            // Fade noise to neutral before its world-space cells become
+            // sub-pixel. This suppresses aliasing, shimmer and distant grain.
+            float filteredValueNoise(vec2 worldXZ, float cellSize, float period) {
+                vec2 p = worldXZ / cellSize;
+                float footprint = max(length(dFdx(p)), length(dFdy(p)));
+                float weight = 1.0 - smoothstep(0.20, 0.65, footprint);
+                if (weight <= 0.001) return 0.5;
+                return mix(0.5, valueNoise(p, period), weight);
+            }
 
             void main() {
                 // Leave almost all real near chunks to the vanilla renderer,
@@ -173,11 +174,11 @@ final class GeometryClipmapRenderer {
                 if (normal.y < 0.0) normal = -normal;
                 float slope = 1.0 - clamp(normal.y, 0.0, 1.0);
 
-                float macro = vMacro;
-                float regional = vRegional;
-                float detailFade = 1.0 - smoothstep(700.0, 4500.0, vDistance);
-                float micro = vMicro;
-                float moisture = clamp(0.6 * macro + 0.4 * regional, 0.0, 1.0);
+                // Broad, derivative-filtered fields retain natural regional
+                // variation without high-frequency per-vertex material noise.
+                float macro = filteredValueNoise(vNoisePosition, 2048.0, 128.0);
+                float regional = filteredValueNoise(vNoisePosition, 512.0, 512.0);
+                float moisture = clamp(0.72 * macro + 0.28 * regional, 0.0, 1.0);
 
                 vec3 dryGrass = vec3(0.37, 0.34, 0.22);
                 vec3 grass = vec3(0.18, 0.34, 0.16);
@@ -194,13 +195,14 @@ final class GeometryClipmapRenderer {
                     * (1.0 - smoothstep(0.10, 0.34, slope));
                 land = mix(land, sand, 0.85 * beach);
                 float snowCover = smoothstep(uSeaLevel + 677.0, uSeaLevel + 1157.0,
-                    vHeight + (macro - 0.5) * 260.0);
+                    vHeight + (macro - 0.5) * 130.0);
                 land = mix(land, snow, snowCover);
 
-                float variation = mix(0.88, 1.12,
-                    mix(regional, micro, detailFade * 0.55));
+                // Terrain shape, slope and biome palette carry the scene;
+                // material noise remains subtle instead of dominating it.
+                float variation = mix(0.97, 1.03, regional);
                 land *= variation;
-                vec3 color = mix(land, water * mix(0.90, 1.10, macro), vOcean);
+                vec3 color = mix(land, water * mix(0.97, 1.03, macro), vOcean);
                 float shallowShore = vOcean *
                     (1.0 - smoothstep(0.0, 5.0, uSeaLevel - vHeight));
                 color = mix(color, vec3(0.52, 0.64, 0.61),

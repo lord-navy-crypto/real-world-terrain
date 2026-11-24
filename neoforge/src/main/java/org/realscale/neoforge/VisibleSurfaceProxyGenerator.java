@@ -130,6 +130,7 @@ public final class VisibleSurfaceProxyGenerator {
                 int referenceZ = Math.toIntExact(gz * grid);
                 SkyIslandLayout.Site base = SkyIslandLayout.at(referenceX, referenceZ);
                 for (int slot = 0; slot < SkyIslandLayout.SLOTS; slot++) {
+                    checkCurrent(current);
                     SkyIslandLayout.Site site = SkyIslandLayout.satellite(base, slot);
                     if (site.x() + site.radius() < bounds.minX()
                             || site.x() - site.radius() >= bounds.maxX()
@@ -139,6 +140,7 @@ public final class VisibleSurfaceProxyGenerator {
                     }
                     long key = (((long) site.x()) << 32) ^ (site.z() & 0xffffffffL);
                     if (!emitted.add(key)) continue;
+                    checkCurrent(current);
                     Holder<Biome> biome = context.biomeAt(
                             site.x(), site.topY(), site.z());
                     if (!biome.is(SKY_BLOSSOM_BIOME)) continue;
