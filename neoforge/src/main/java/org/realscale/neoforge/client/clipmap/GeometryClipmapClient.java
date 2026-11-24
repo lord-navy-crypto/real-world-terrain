@@ -78,6 +78,31 @@ public final class GeometryClipmapClient {
     private static float activeIrisOriginalFogEnd;
     private static final long HEARTBEAT_INTERVAL_NANOS = 8_000_000_000L;
 
+    private static final boolean EXTEND_IRIS_FAR = Boolean.parseBoolean(
+            System.getProperty("realscale.experimental.geometryclipmap.irisFarUniform", "true"));
+    private static int lastReportedIrisFar = -1;
+
+    /** Shader-pack distance only: never modifies the vanilla chunk-loading option. */
+    public static int irisFarDistanceBlocks(int vanillaFar) {
+        if (!ENABLED || !EXTEND_IRIS_FAR || lastLevel == null) return vanillaFar;
+        var key = TILES.activeKey();
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level != lastLevel || key == null || key.requestId() != activeRequestId
+                || !IrisRenderCompatibility.hasNativeProjectionBridge()
+                || !IrisRenderCompatibility.current().allowsIrisNativeRenderer()) {
+            return vanillaFar;
+        }
+        long radius = (long) key.gridCells() / 2L * key.baseSpacing() * (1L << 5);
+        int far = (int) Math.max(vanillaFar, Math.min(Integer.MAX_VALUE, radius));
+        if (DEBUG && far != lastReportedIrisFar) {
+            lastReportedIrisFar = far;
+            System.out.printf(java.util.Locale.ROOT,
+                    "[RealScale Iris Clipmap] IRIS_FAR_UNIFORM vanilla=%d clipmap=%d%n",
+                    vanillaFar, far);
+        }
+        return far;
+    }
+
     private GeometryClipmapClient() {}
 
     public static void accept(ClipmapHeightTilePayload payload) {
@@ -571,6 +596,7 @@ public final class GeometryClipmapClient {
 
     private static void clear() {
         activeRequestId = 0L;
+        lastReportedIrisFar = -1;
         TILES.clear();
         PROXY_BUFFER.clear();
         requestStartedNanos = 0L;

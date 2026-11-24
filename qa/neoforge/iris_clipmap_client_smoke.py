@@ -469,7 +469,7 @@ def run_client(env: dict[str, str]) -> None:
         camera_prepared = False
         def visible_samples_ready() -> bool:
             return any(int(m.group(1)) > 0 for m in re.finditer(
-                r"MAIN_SOLID_VISIBLE_SAMPLES=(\d+)", "".join(lines)))
+                r"FAR_SOLID_VISIBLE_SAMPLES=(\d+)", "".join(lines)))
 
         while (not draw.is_set() or not camera_prepared or not visible_samples_ready()) \
                 and proc.poll() is None and time.monotonic() < deadline:

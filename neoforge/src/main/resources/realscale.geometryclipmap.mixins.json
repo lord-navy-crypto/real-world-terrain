@@ -4,7 +4,8 @@
   "compatibilityLevel": "JAVA_21",
   "package": "org.realscale.neoforge.mixin",
   "client": [
-    "IrisGeometryClipmapMixin"
+    "IrisGeometryClipmapMixin",
+    "IrisCameraFarUniformMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -49,6 +49,7 @@ final class IrisNativeClipmapRenderer {
     private static final int INITIAL_BUFFER_BYTES = 1 << 20;
 
     private static VertexBuffer solidBuffer;
+    private static VertexBuffer farSolidBuffer;
     private static VertexBuffer cutoutBuffer;
     private static VertexBuffer waterBuffer;
 
@@ -114,7 +115,7 @@ final class IrisNativeClipmapRenderer {
         }
 
         VertexBuffer target = renderType == RenderType.solid()
-                ? solidBuffer
+                ? (solidBuffer != null ? solidBuffer : farSolidBuffer)
                 : renderType == RenderType.cutout() ? cutoutBuffer : waterBuffer;
         if (target == null) return false;
 
@@ -154,8 +155,21 @@ final class IrisNativeClipmapRenderer {
             chunkOffset.set((float) (centerX - cameraX),
                     (float) -cameraY, (float) (centerZ - cameraZ));
             chunkOffset.upload();
-            target.bind();
-            drawWithVisibilityProbe(target, renderType, shadowPass, cameraY);
+            // Keep far terrain separate from the inner overlap and proxies.
+            // A passing visibility query must come from LOD 2..6, not nearby blocks.
+            if (renderType == RenderType.solid()) {
+                if (solidBuffer != null) {
+                    solidBuffer.bind();
+                    solidBuffer.draw();
+                }
+                if (farSolidBuffer != null) {
+                    farSolidBuffer.bind();
+                    drawWithVisibilityProbe(farSolidBuffer, renderType, shadowPass, cameraY);
+                }
+            } else {
+                target.bind();
+                target.draw();
+            }
             return true;
         } catch (RuntimeException | LinkageError failure) {
             if (!nativeDrawFailureReported) {
@@ -196,7 +210,7 @@ final class IrisNativeClipmapRenderer {
             pendingVisibilityQuery = 0;
             smokeVisibilityPassed = samples > 0;
             System.out.printf(java.util.Locale.ROOT,
-                    "[RealScale Iris Clipmap] MAIN_SOLID_VISIBLE_SAMPLES=%d "
+                    "[RealScale Iris Clipmap] FAR_SOLID_VISIBLE_SAMPLES=%d "
                             + "cameraY=%.1f program=%d drawFramebuffer=%d attempt=%d%n",
                     samples, visibilityCameraY, visibilityProgram,
                     visibilityFramebuffer, visibilityAttempts);
@@ -311,10 +325,13 @@ final class IrisNativeClipmapRenderer {
             }
             Sprites sprites = Sprites.load(Minecraft.getInstance());
             try (ByteBufferBuilder solidBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES);
+                 ByteBufferBuilder farSolidBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES);
                  ByteBufferBuilder cutoutBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES);
                  ByteBufferBuilder waterBytes = new ByteBufferBuilder(INITIAL_BUFFER_BYTES)) {
                 BufferBuilder solidBuilder = new BufferBuilder(
                         solidBytes, VertexFormat.Mode.QUADS, irisTerrainFormat);
+                BufferBuilder farSolidBuilder = new BufferBuilder(
+                        farSolidBytes, VertexFormat.Mode.QUADS, irisTerrainFormat);
                 BufferBuilder cutoutBuilder = new BufferBuilder(
                         cutoutBytes, VertexFormat.Mode.QUADS, irisTerrainFormat);
                 BufferBuilder waterBuilder = new BufferBuilder(
@@ -322,7 +339,7 @@ final class IrisNativeClipmapRenderer {
 
                 for (int level = 0; level < LEVEL_COUNT; level++) {
                     appendTerrain(snapshot.get(level), level, nearChunks, seaLevel,
-                            sprites, solidBuilder, waterBuilder);
+                            sprites, level == 0 ? solidBuilder : farSolidBuilder, waterBuilder);
                 }
                 for (VisibleSurfaceProxy proxy : proxies) {
                     appendProxy(proxy, centerX, centerZ, sprites,
@@ -330,6 +347,7 @@ final class IrisNativeClipmapRenderer {
                 }
 
                 solidBuffer = upload(solidBuilder);
+                farSolidBuffer = upload(farSolidBuilder);
                 cutoutBuffer = upload(cutoutBuilder);
                 waterBuffer = upload(waterBuilder);
             }
@@ -353,7 +371,7 @@ final class IrisNativeClipmapRenderer {
                         cutoutBuffer != null, waterBuffer != null,
                         heightRangeSummary(snapshot));
             }
-            return solidBuffer != null || cutoutBuffer != null || waterBuffer != null;
+            return solidBuffer != null || farSolidBuffer != null || cutoutBuffer != null || waterBuffer != null;
         } catch (RuntimeException failure) {
             disposeBuffers();
             cachedDimension = null;
@@ -750,9 +768,11 @@ final class IrisNativeClipmapRenderer {
 
     private static void disposeBuffers() {
         close(solidBuffer);
+        close(farSolidBuffer);
         close(cutoutBuffer);
         close(waterBuffer);
         solidBuffer = null;
+        farSolidBuffer = null;
         cutoutBuffer = null;
         waterBuffer = null;
     }
