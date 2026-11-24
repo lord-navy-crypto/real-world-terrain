@@ -82,6 +82,9 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
     def test_pause_menu_toggle_uses_real_window_geometry_and_upscaled_ocr(self):
         self.assertIn("def active_game_window_geometry(", SMOKE)
         self.assertIn("getactivewindow", SMOKE)
+        self.assertIn('"--onlyvisible"', SMOKE)
+        self.assertIn("CLIENT_WINDOW_GEOMETRY_FALLBACK", SMOKE)
+        self.assertIn("OCR_USING_FULL_DISPLAY_FALLBACK", SMOKE)
         self.assertIn("def ocr_game_window(", SMOKE)
         self.assertIn('"-resize", "200%"', SMOKE)
         self.assertIn("logical_width = window_width // gui_scale", SMOKE)
@@ -113,25 +116,30 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("TERRAIN_VIEWPORT_COLOR_COUNT", SMOKE)
         self.assertIn("minimum_seconds=60", SMOKE)
 
-    def test_far_lods_prefilter_atlas_detail_without_browning_near_textures(self):
-        self.assertIn("MAX_TEXTURED_DETAIL_LEVEL = 2", IRIS_RENDERER)
-        self.assertIn("level > MAX_TEXTURED_DETAIL_LEVEL", IRIS_RENDERER)
+    def test_all_lods_use_atlas_independent_procedural_terrain_materials(self):
+        self.assertNotIn("MAX_TEXTURED_DETAIL_LEVEL", IRIS_RENDERER)
+        self.assertNotIn("sprites.forMaterial(", IRIS_RENDERER)
+        self.assertNotIn("ClipmapSurfacePalette.materialAt(", IRIS_RENDERER)
+        self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
         self.assertIn("sprites.neutral()", IRIS_RENDERER)
-        self.assertIn("sprites.forMaterial(", IRIS_RENDERER)
         self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", IRIS_RENDERER)
+        self.assertIn("triangleUvs[0] = 8.0f", IRIS_RENDERER)
+        self.assertIn("triangleUvs[5] = 8.0f", IRIS_RENDERER)
+        self.assertEqual(1, IRIS_RENDERER.count("ClipmapTriangleUv.computeCellAlignedInto("))
         palette = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapSurfacePalette.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn("near-neutral multipliers", palette)
-        self.assertIn("0.91f, 1.00f", palette)
-        self.assertIn("0.98f, 0.94f", palette)
+        self.assertIn("complete terrain colors", palette)
+        self.assertIn("actual grass, dry-ground, rock, sand and snow material", palette)
+        self.assertNotIn("near-neutral multipliers", palette)
 
-    def test_native_terrain_restores_real_textures_and_doubles_grid_density(self):
+    def test_native_terrain_uses_procedural_palette_and_doubles_grid_density(self):
         self.assertIn("ClipmapRingMesh.surfaceIndices(cells, holeRadius)", IRIS_RENDERER)
         self.assertIn("ClipmapTriangleUv.computeCellAlignedInto", IRIS_RENDERER)
-        self.assertIn("topFace(shaper, grassState)", IRIS_RENDERER)
-        self.assertIn("sprites.forMaterial(", IRIS_RENDERER)
-        self.assertIn("ClipmapSurfacePalette.texturedTintAt(", IRIS_RENDERER)
+        self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
+        self.assertIn("sprites.neutral()", IRIS_RENDERER)
+        self.assertNotIn("sprites.forMaterial(", IRIS_RENDERER)
+        self.assertNotIn("ClipmapSurfacePalette.materialAt(", IRIS_RENDERER)
         self.assertNotIn("sprites.white()", IRIS_RENDERER)
         layout = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapLayout.java").read_text(
             encoding="utf-8"
