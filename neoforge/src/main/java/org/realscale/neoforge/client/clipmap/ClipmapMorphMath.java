@@ -20,9 +20,11 @@ public final class ClipmapMorphMath {
         if (x < 0 || z < 0) throw new IllegalArgumentException("negative grid position");
         double fx = (x & 1) * 0.5;
         double fz = (z & 1) * 0.5;
-        return h00 * (1.0 - fx) * (1.0 - fz)
-                + h10 * fx * (1.0 - fz)
-                + h01 * (1.0 - fx) * fz + h11 * fx * fz;
+        if (fx + fz <= 1.0) {
+            return h00 + fx * (h10 - h00) + fz * (h01 - h00);
+        }
+        return h11 + (1.0 - fx) * (h01 - h11)
+                + (1.0 - fz) * (h10 - h11);
     }
 
     public static double morphHeight(double fine, double parent, double weight) {
