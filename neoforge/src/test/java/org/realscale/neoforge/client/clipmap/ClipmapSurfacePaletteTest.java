@@ -44,6 +44,32 @@ final class ClipmapSurfacePaletteTest {
     }
 
     @Test
+    void texturedTintIsWorldAnchoredAndVariesAcrossRegionalNoise() {
+        int first = ClipmapSurfacePalette.texturedTintAt(
+                100.0f, 1.0f, 63.0f, false, 128L, 256L);
+        int repeat = ClipmapSurfacePalette.texturedTintAt(
+                100.0f, 1.0f, 63.0f, false, 128L, 256L);
+        int distant = ClipmapSurfacePalette.texturedTintAt(
+                100.0f, 1.0f, 63.0f, false, 2048L, 4096L);
+        assertEquals(first, repeat);
+        assertNotEquals(first, distant);
+        assertTrue(((first >>> 16) & 0xFF) >= 150);
+        assertTrue(((first >>> 8) & 0xFF) >= 150);
+    }
+
+    @Test
+    void textureMaterialSelectionFollowsSlopeBeachAndSnowRegions() {
+        assertEquals(ClipmapSurfacePalette.MATERIAL_GRASS,
+                ClipmapSurfacePalette.materialAt(100.0f, 1.0f, 63.0f));
+        assertEquals(ClipmapSurfacePalette.MATERIAL_SAND,
+                ClipmapSurfacePalette.materialAt(64.0f, 1.0f, 63.0f));
+        assertEquals(ClipmapSurfacePalette.MATERIAL_ROCK,
+                ClipmapSurfacePalette.materialAt(300.0f, 0.4f, 63.0f));
+        assertEquals(ClipmapSurfacePalette.MATERIAL_SNOW,
+                ClipmapSurfacePalette.materialAt(1500.0f, 1.0f, 63.0f));
+    }
+
+    @Test
     void rejectsNonFinitePaletteInputs() {
         assertThrows(IllegalArgumentException.class, () ->
                 ClipmapSurfacePalette.colorAt(Float.NaN, 1.0f, 63.0f, false));
