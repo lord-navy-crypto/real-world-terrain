@@ -12,9 +12,9 @@ final class GeometryClipmapLayoutTest {
         GeometryClipmapLayout.Layout layout = planner.compute(0.0, 0.0);
 
         assertEquals(160L, layout.nearRadiusBlocks());
-        assertEquals(32L, layout.effectiveInnerRadiusBlocks());
+        assertEquals(96L, layout.effectiveInnerRadiusBlocks());
         assertEquals(6, layout.levels().size());
-        long[] expectedSpacing = {8, 16, 32, 64, 128, 256};
+        long[] expectedSpacing = {4, 8, 16, 32, 64, 128};
         long[] expectedHalfExtent = {512, 1024, 2048, 4096, 8192, 16384};
         for (int i = 0; i < expectedSpacing.length; i++) {
             GeometryClipmapLayout.Level level = layout.levels().get(i);
@@ -49,7 +49,7 @@ final class GeometryClipmapLayoutTest {
     @Test
     void movementInsideSharedSnapCellDoesNotRebuildAnyLevel() {
         GeometryClipmapLayout.Layout before = planner.compute(0.0, 0.0);
-        GeometryClipmapLayout.Layout after = planner.compute(127.9, -127.9, before);
+        GeometryClipmapLayout.Layout after = planner.compute(63.9, -63.9, before);
         for (GeometryClipmapLayout.Level level : after.levels()) {
             assertEquals(0L, level.updatePlan().newSampleVertices());
             assertFalse(level.updatePlan().fullRefresh());
@@ -59,7 +59,7 @@ final class GeometryClipmapLayoutTest {
     @Test
     void recenterProducesAlignedLShapedIncrementalUpdatesAtEveryLevel() {
         GeometryClipmapLayout.Layout before = planner.compute(0.0, 0.0);
-        GeometryClipmapLayout.Layout after = planner.compute(128.1, 0.0, before);
+        GeometryClipmapLayout.Layout after = planner.compute(64.1, 0.0, before);
 
         long[] expectedShifts = {32, 16, 8, 4, 2, 1};
         for (int i = 0; i < expectedShifts.length; i++) {
@@ -73,12 +73,12 @@ final class GeometryClipmapLayoutTest {
     @Test
     void diagonalMovementCountsSharedCornerOnlyOnce() {
         GeometryClipmapLayout.Layout before = planner.compute(0.0, 0.0);
-        GeometryClipmapLayout.Layout after = planner.compute(128.1, 128.1, before);
+        GeometryClipmapLayout.Layout after = planner.compute(64.1, 64.1, before);
         GeometryClipmapLayout.UpdatePlan update = after.levels().get(0).updatePlan();
 
         assertEquals(32, update.shiftCellsX());
         assertEquals(32, update.shiftCellsZ());
-        assertEquals(32L * 129L + 32L * 129L - 32L * 32L,
+        assertEquals(32L * 257L + 32L * 257L - 32L * 32L,
                 update.newSampleVertices());
     }
 
@@ -87,7 +87,7 @@ final class GeometryClipmapLayoutTest {
         GeometryClipmapLayout.Layout before = planner.compute(0.0, 0.0);
         GeometryClipmapLayout.Layout after = planner.compute(8192.0, 0.0, before);
         assertTrue(after.levels().get(0).updatePlan().fullRefresh());
-        assertEquals(129L * 129L,
+        assertEquals(257L * 257L,
                 after.levels().get(0).updatePlan().newSampleVertices());
     }
 
@@ -95,8 +95,8 @@ final class GeometryClipmapLayoutTest {
     void factoryChoosesSafeFinestSpacingForLargeRenderDistances() {
         GeometryClipmapLayout ten = GeometryClipmapLayout.forRenderDistanceChunks(10);
         GeometryClipmapLayout twenty = GeometryClipmapLayout.forRenderDistanceChunks(20);
-        assertEquals(8, ten.compute(0, 0).baseCellSpacingBlocks());
-        assertEquals(16, twenty.compute(0, 0).baseCellSpacingBlocks());
+        assertEquals(4, ten.compute(0, 0).baseCellSpacingBlocks());
+        assertEquals(8, twenty.compute(0, 0).baseCellSpacingBlocks());
         assertEquals(16, GeometryClipmapLayout.forRenderDistanceChunks(33)
                 .compute(0, 0).baseCellSpacingBlocks());
         assertTrue(twenty.compute(0, 0).effectiveInnerRadiusBlocks()
@@ -121,13 +121,13 @@ final class GeometryClipmapLayoutTest {
                     moved.levels().get(0).centerX());
         }
         assertThrows(IllegalArgumentException.class,
-                () -> new GeometryClipmapLayout(128, 6, 8, 8));
+                () -> new GeometryClipmapLayout(256, 6, 8, 8));
     }
 
     @Test
     void rejectsIncompatiblePreviousLayoutAndInvalidGrid() {
         GeometryClipmapLayout.Layout before = planner.compute(0.0, 0.0);
-        GeometryClipmapLayout other = new GeometryClipmapLayout(128, 5, 4, 10);
+        GeometryClipmapLayout other = new GeometryClipmapLayout(256, 5, 4, 10);
         assertThrows(IllegalArgumentException.class,
                 () -> other.compute(64.0, 0.0, before));
         assertThrows(IllegalArgumentException.class,
