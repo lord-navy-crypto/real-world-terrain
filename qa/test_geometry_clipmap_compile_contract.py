@@ -489,7 +489,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("float[] smoothNormals", native)
         self.assertNotIn("ClipmapTriangleUv.computeInto(", native)
         self.assertIn("triangleUvs[vertex * 2]", native)
-        self.assertIn("ClipmapSurfacePalette.texturedTintAt(", native)
+        self.assertIn("ClipmapSurfacePalette.terrainColorAt(", native)
         palette = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapSurfacePalette.java").read_text(
             encoding="utf-8"
         )
