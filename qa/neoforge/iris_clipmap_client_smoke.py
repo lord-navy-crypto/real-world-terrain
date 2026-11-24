@@ -423,6 +423,70 @@ def wait_for_settled_window(proc, lines, start: int, minimum_seconds: float = 30
     raise RuntimeError("Latest complete height/proxy window did not settle within 240s: " + repr(last_state))
 
 
+def terrain_color_count(path: pathlib.Path) -> int:
+    result = subprocess.run(
+        ["convert", str(path), "-gravity", "center", "-crop", "854x480+0+0", "+repage",
+         "-gravity", "south", "-crop", "854x240+0+0", "+repage", "-colors", "64",
+         "-format", "%k", "info:"],
+        check=True, capture_output=True, text=True, timeout=30,
+    )
+    count = int(result.stdout.strip())
+    print(f"TERRAIN_VIEWPORT_COLOR_COUNT: {path.name} {count}", flush=True)
+    return count
+
+
+def wait_for_complete_surface_assets(proc, lines, start: int,
+                                     minimum_seconds: float = 60.0) -> str:
+    """Wait for six height LODs and their matching proxy mesh before eye-level capture."""
+    started = time.monotonic()
+    deadline = started + 240
+    stable_since = None
+    last_state = None
+    while proc.poll() is None and time.monotonic() < deadline:
+        output = "".join(lines[start:])
+        active = re.findall(r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", output)
+        meshes = re.findall(r"nativeMeshesBuilt=.*?\blevels=6\b.*?center=\(([^)]+)\)", output)
+        if active and meshes and active[-1] == meshes[-1]:
+            centre = active[-1]
+            escaped = re.escape(centre)
+            proxy_counts = re.findall(
+                r"CLIENT_PROXY_RECEIVED center=\(" + escaped + r"\) count=(\d+)", output)
+            proxy_ready = True
+            count = 0
+            if proxy_counts:
+                count = int(proxy_counts[-1])
+                proxy_ready = count == 0 or bool(re.search(
+                    r"nativeProxyMeshesBuilt=.*?proxies=" + str(count)
+                    + r" center=\(" + escaped + r"\)", output))
+            state = (centre, len(meshes), count)
+            if state != last_state or not proxy_ready:
+                stable_since = time.monotonic() if proxy_ready else None
+                last_state = state
+            if (proxy_ready and stable_since is not None
+                    and time.monotonic() - stable_since >= 15
+                    and time.monotonic() - started >= minimum_seconds):
+                print(f"NATURAL_VIEW_ASSETS_SETTLED center=({centre}) proxies={count} "
+                      f"elapsed={time.monotonic()-started:.1f}s", flush=True)
+                return centre
+        time.sleep(1)
+    capture_screenshot("iris-clipmap-natural-view-settle-timeout")
+    raise RuntimeError("Natural eye-level view did not receive a complete six-LOD/proxy snapshot "
+                       "within 240 seconds: " + repr(last_state))
+
+
+def capture_natural_surface_view(proc, lines) -> None:
+    wait_for_complete_surface_assets(proc, lines, 0, minimum_seconds=60)
+    subprocess.run(["xdotool", "key", "F1"], check=True, timeout=10)
+    time.sleep(2)
+    image = capture_screenshot("iris-clipmap-natural-eye-level")
+    validate_screenshot(image)
+    contrast = terrain_contrast(image)
+    colors = terrain_color_count(image)
+    if contrast < 0.06 or colors < 16:
+        raise RuntimeError("Natural eye-level terrain lacks visible surface detail: "
+                           f"contrast={contrast:.5f}, colors={colors}")
+
+
 def prepare_open_rendering_view(
         client_latest: pathlib.Path, client_stdout_lines: list[str]) -> None:
     """Use spectator flight and render-thread telemetry to verify the camera height."""
@@ -494,7 +558,6 @@ def prepare_open_rendering_view(
 
     # The CI-only Java camera hook applies a deterministic downward pitch.
     time.sleep(2)
-    subprocess.run(["xdotool", "key", "F1"], check=True, timeout=10)
     time.sleep(1)
     print(
         "CLIENT_CAMERA_VANTAGE_READY_FOR_CAPTURE: "
@@ -559,6 +622,7 @@ def run_client(env: dict[str, str]) -> None:
             elif not camera_prepared:
                 if client_latest.exists() and "Loaded 2 advancements" in client_latest.read_text(
                         encoding="utf-8", errors="replace"):
+                    capture_natural_surface_view(proc, lines)
                     prepare_open_rendering_view(client_latest, lines)
                     camera_prepared = True
                 elif time.monotonic() >= world_ready_deadline:
