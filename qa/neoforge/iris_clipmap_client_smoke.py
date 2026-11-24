@@ -487,11 +487,17 @@ def run_client(env: dict[str, str]) -> None:
 
         def full_visible_ready() -> bool:
             output = "".join(lines)
-            return bool(re.search(r"nativeMeshesBuilt=.*\blevels=6\b", output)) and any(
-                int(m.group(1)) > 0 and 2200.0 <= float(m.group(2)) <= 2500.0
-                for m in re.finditer(
-                    r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*?cameraY=([-+0-9.]+).*?\blevels=6\b",
-                    output,
+            far_ready = "IRIS_CAMERA_FAR_EXTENDED" in output
+            fog_ready = "IRIS_FOG_RANGE original=" in output
+            return (
+                bool(re.search(r"nativeMeshesBuilt=.*\blevels=6\b", output))
+                and far_ready and fog_ready
+                and any(
+                    int(m.group(1)) > 0 and 2200.0 <= float(m.group(2)) <= 2500.0
+                    for m in re.finditer(
+                        r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*?cameraY=([-+0-9.]+).*?\blevels=6\b",
+                        output,
+                    )
                 )
             )
 
