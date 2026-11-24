@@ -51,6 +51,103 @@ public final class ClipmapSurfacePalette {
         return pack(red, green, blue);
     }
 
+    public static final int MATERIAL_GRASS = 0;
+    public static final int MATERIAL_ROCK = 1;
+    public static final int MATERIAL_SAND = 2;
+    public static final int MATERIAL_SNOW = 3;
+
+    /**
+     * World-anchored texture tint for the Iris terrain atlas path. The legacy
+     * palette above remains useful to CPU tests; this overload restores the
+     * moisture/regional variation used by the procedural renderer without
+     * restarting noise at each LOD cell.
+     */
+    public static int texturedTintAt(float height, float normalY, float seaLevel,
+            boolean verticalSkirt, long worldX, long worldZ) {
+        if (!Float.isFinite(height) || !Float.isFinite(normalY)
+                || !Float.isFinite(seaLevel)) {
+            throw new IllegalArgumentException("surface palette inputs must be finite");
+        }
+        if (verticalSkirt) return 0xB8B5AE;
+
+        float macro = valueNoise(worldX, worldZ, 2048);
+        float regional = valueNoise(worldX, worldZ, 512);
+        float local = valueNoise(worldX, worldZ, 256);
+        float moisture = clamp(0.72f * macro + 0.28f * regional, 0.0f, 1.0f);
+        float slope = 1.0f - clamp(normalY, 0.0f, 1.0f);
+        float rockCover = Math.max(
+                smoothstep(0.16f, 0.55f, slope),
+                smoothstep(seaLevel + 197.0f, seaLevel + 737.0f, height) * 0.6f);
+        float beach = (1.0f - smoothstep(seaLevel + 2.0f,
+                seaLevel + 25.0f, height))
+                * (1.0f - smoothstep(0.10f, 0.34f, slope)) * 0.85f;
+        float snowCover = smoothstep(seaLevel + 677.0f, seaLevel + 1157.0f,
+                height + (macro - 0.5f) * 130.0f);
+
+        // These are texture multipliers, not flat material colors. The actual
+        // grass/stone/sand/snow atlas texels now provide the surface detail.
+        float dry = smoothstep(0.15f, 0.85f, moisture);
+        float red = mix(0.76f, 0.70f, dry);
+        float green = mix(0.69f, 0.78f, dry);
+        float blue = mix(0.52f, 0.58f, dry);
+        red = mix(red, 0.76f, rockCover);
+        green = mix(green, 0.75f, rockCover);
+        blue = mix(blue, 0.72f, rockCover);
+        red = mix(red, 0.93f, beach);
+        green = mix(green, 0.86f, beach);
+        blue = mix(blue, 0.70f, beach);
+        red = mix(red, 1.0f, snowCover);
+        green = mix(green, 1.0f, snowCover);
+        blue = mix(blue, 1.0f, snowCover);
+        float variation = 0.96f + 0.08f * local;
+        return pack(red * variation * 255.0f,
+                green * variation * 255.0f,
+                blue * variation * 255.0f);
+    }
+
+    public static int materialAt(float height, float normalY, float seaLevel) {
+        if (!Float.isFinite(height) || !Float.isFinite(normalY)
+                || !Float.isFinite(seaLevel)) {
+            throw new IllegalArgumentException("surface material inputs must be finite");
+        }
+        float slope = 1.0f - clamp(normalY, 0.0f, 1.0f);
+        float rockCover = Math.max(smoothstep(0.16f, 0.55f, slope),
+                smoothstep(seaLevel + 197.0f, seaLevel + 737.0f, height) * 0.6f);
+        float beach = (1.0f - smoothstep(seaLevel + 2.0f,
+                seaLevel + 25.0f, height))
+                * (1.0f - smoothstep(0.10f, 0.34f, slope)) * 0.85f;
+        float snow = smoothstep(seaLevel + 677.0f,
+                seaLevel + 1157.0f, height);
+        if (snow >= 0.5f) return MATERIAL_SNOW;
+        if (beach >= 0.45f) return MATERIAL_SAND;
+        if (rockCover >= 0.45f) return MATERIAL_ROCK;
+        return MATERIAL_GRASS;
+    }
+
+    private static float valueNoise(long worldX, long worldZ, int cellSize) {
+        long x0 = Math.floorDiv(worldX, cellSize);
+        long z0 = Math.floorDiv(worldZ, cellSize);
+        float fx = Math.floorMod(worldX, cellSize) / (float) cellSize;
+        float fz = Math.floorMod(worldZ, cellSize) / (float) cellSize;
+        fx = fx * fx * (3.0f - 2.0f * fx);
+        fz = fz * fz * (3.0f - 2.0f * fz);
+        float a = hashCell(x0, z0);
+        float b = hashCell(x0 + 1L, z0);
+        float c = hashCell(x0, z0 + 1L);
+        float d = hashCell(x0 + 1L, z0 + 1L);
+        return mix(mix(a, b, fx), mix(c, d, fx), fz);
+    }
+
+    private static float hashCell(long x, long z) {
+        long value = x * 0x9E3779B97F4A7C15L ^ z * 0xC2B2AE3D27D4EB4FL;
+        value ^= value >>> 30;
+        value *= 0xBF58476D1CE4E5B9L;
+        value ^= value >>> 27;
+        value *= 0x94D049BB133111EBL;
+        value ^= value >>> 31;
+        return (value >>> 40) / 16777215.0f;
+    }
+
     public static int waterColor() {
         return WATER;
     }
