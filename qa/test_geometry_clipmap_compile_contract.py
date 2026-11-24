@@ -430,6 +430,25 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("allowsIrisNativeRenderer()", iris)
         self.assertIn('config="realscale.geometryclipmap.mixins.json"', mods)
         self.assertIn('"IrisGeometryClipmapMixin"', config)
+        self.assertIn("ClipmapSurfaceNormals.compute(", native)
+        self.assertIn("Blocks.WHITE_CONCRETE", native)
+        self.assertIn("sprites.white()", native)
+        self.assertIn("8.0f, 8.0f", native)
+        self.assertIn("Math.max(0, Math.min(cells, x))", native)
+        self.assertNotIn("int minX = Math.min(gridX", native)
+        self.assertIn("averageNormalY", native)
+
+    def test_iris_native_surface_materials_do_not_repeat_atlas_textures_per_triangle(self):
+        native = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/IrisNativeClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", native)
+        self.assertIn("sprite.getU(u), sprite.getV(v)", native)
+        self.assertIn("8.0f, 8.0f", native)
+        self.assertIn("ClipmapSurfaceNormals.compute(", native)
+        self.assertIn("float[] smoothNormals", native)
+        self.assertNotIn("int minX = Math.min(gridX", native)
+        self.assertNotIn("Math.floorMod(x, side)", native)
 
     def test_toroidal_texture_update_plan_has_unit_coverage(self):
         planner = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.java").read_text(

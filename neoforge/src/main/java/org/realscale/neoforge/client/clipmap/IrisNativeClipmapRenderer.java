@@ -441,7 +441,24 @@ final class IrisNativeClipmapRenderer {
                         / spacing)
                 : cells / 4;
         int[] indices = ClipmapRingMesh.indices(cells, holeRadius);
-        short[] heights = tile.heights();
+        short[] encodedHeights = tile.heights();
+        float[] surfaceHeights = new float[baseCount];
+        for (int gridZ = 0; gridZ <= cells; gridZ++) {
+            for (int gridX = 0; gridX <= cells; gridX++) {
+                int gridIndex = gridZ * side + gridX;
+                surfaceHeights[gridIndex] = isInsideHole(
+                        gridX, gridZ, cells, holeRadius)
+                        ? Float.NaN
+                        : morphedHeight(encodedHeights, cells,
+                                tile.minHeight(), tile.maxHeight(),
+                                gridX, gridZ, level);
+            }
+        }
+        // The native Iris path must shade the actual surface smoothly. A
+        // two-sample footprint suppresses cell-scale ridges without changing
+        // the sampled terrain heights or the distant silhouette.
+        float[] smoothNormals = ClipmapSurfaceNormals.compute(
+                surfaceHeights, cells, spacing, holeRadius, 2);
         float skirtDepth = Math.min(32.0f, Math.max(4.0f, spacing * 0.125f));
 
         int[] gridX = new int[3];
@@ -451,10 +468,11 @@ final class IrisNativeClipmapRenderer {
         float[] x = new float[3];
         float[] y = new float[3];
         float[] z = new float[3];
-        float[] normal = new float[3];
+        float[] faceNormalScratch = new float[3];
         for (int p = 0; p < indices.length; p += 3) {
             boolean skirt = false;
             float averageHeight = 0.0f;
+            float averageNormalY = 0.0f;
 
             for (int vertex = 0; vertex < 3; vertex++) {
                 int index = indices[p + vertex];
@@ -463,10 +481,10 @@ final class IrisNativeClipmapRenderer {
                 gridX[vertex] = gridIndex % side;
                 gridZ[vertex] = gridIndex / side;
                 skirt |= layer[vertex] != 0;
-                topHeight[vertex] = morphedHeight(heights, cells,
-                        tile.minHeight(), tile.maxHeight(),
-                        gridX[vertex], gridZ[vertex], level);
+                int heightIndex = gridZ[vertex] * side + gridX[vertex];
+                topHeight[vertex] = surfaceHeights[heightIndex];
                 averageHeight += topHeight[vertex] / 3.0f;
+                averageNormalY += smoothNormals[heightIndex * 3 + 1] / 3.0f;
                 x[vertex] = (gridX[vertex] - cells * 0.5f) * spacing;
                 z[vertex] = (gridZ[vertex] - cells * 0.5f) * spacing;
             }
@@ -475,34 +493,43 @@ final class IrisNativeClipmapRenderer {
                 for (int vertex = 0; vertex < 3; vertex++) {
                     y[vertex] = seaLevel + 0.025f;
                 }
-                triangleNormalInto(x, y, z, normal);
-                emitTriangle(water, sprites.water(), 0xAFC6D8, 190,
-                        x, y, z, gridX, gridZ, layer, normal);
+                // Water is deliberately flat-shaded and uses a uniform atlas
+                // texel; no block texture is tiled independently per triangle.
+                emitTriangle(water, sprites.white(), 0x64869A, 190,
+                        x, y, z, gridX, gridZ, smoothNormals,
+                        false, true, faceNormalScratch);
             } else if (averageHeight > seaLevel) {
                 for (int vertex = 0; vertex < 3; vertex++) {
                     y[vertex] = Math.max(topHeight[vertex], seaLevel)
                             - layer[vertex] * skirtDepth;
                 }
-                triangleNormalInto(x, y, z, normal);
-                TextureAtlasSprite materialSprite;
                 int materialRgb;
                 if (averageHeight >= seaLevel + 677.0f) {
-                    materialSprite = sprites.snow();
-                    materialRgb = 0xF1F4F6;
-                } else if (averageHeight >= seaLevel + 197.0f || normal[1] < 0.90f) {
-                    materialSprite = sprites.stone();
-                    materialRgb = 0xD0D0CC;
-                } else if (averageHeight <= seaLevel + 25.0f && normal[1] > 0.94f) {
-                    materialSprite = sprites.sand();
-                    materialRgb = 0xE8D9B0;
+                    materialRgb = 0xE1E7EA;
+                } else if (skirt || averageHeight >= seaLevel + 197.0f
+                        || averageNormalY < 0.90f) {
+                    materialRgb = 0x85857F;
+                } else if (averageHeight <= seaLevel + 25.0f && averageNormalY > 0.94f) {
+                    materialRgb = 0xC1AC7F;
                 } else {
-                    materialSprite = sprites.grass();
-                    materialRgb = 0xB5D39D;
+                    materialRgb = 0x789052;
                 }
-                emitTriangle(solid, materialSprite, materialRgb, 255,
-                        x, y, z, gridX, gridZ, layer, normal);
+                // A single white atlas texel lets Iris retain its normal
+                // terrain/G-buffer path while vertex colors provide stable,
+                // low-noise material colors. Sampling a full block sprite per
+                // tiny clipmap triangle created the colorful surface mosaic.
+                emitTriangle(solid, sprites.white(), materialRgb, 255,
+                        x, y, z, gridX, gridZ, smoothNormals,
+                        !skirt, false, faceNormalScratch);
             }
         }
+    }
+
+    private static boolean isInsideHole(int x, int z, int cells, int halfHole) {
+        int center = cells / 2;
+        return halfHole > 0
+                && Math.abs(x - center) < halfHole
+                && Math.abs(z - center) < halfHole;
     }
 
     private static float morphedHeight(short[] samples, int cells,
@@ -530,32 +557,68 @@ final class IrisNativeClipmapRenderer {
     private static float sampleHeight(short[] samples, int cells,
             int minHeight, int maxHeight, int x, int z) {
         int side = cells + 1;
-        int wrappedX = Math.floorMod(x, side);
-        int wrappedZ = Math.floorMod(z, side);
-        float normalized = (samples[wrappedZ * side + wrappedX] & 0xFFFF) / 65535.0f;
+        // IrisNativeClipmapRenderer stores a bounded row-major array, not the
+        // toroidal GL texture used by the fallback renderer. Parent samples at
+        // the outermost morph edge must clamp, never wrap to the opposite edge.
+        int clampedX = Math.max(0, Math.min(cells, x));
+        int clampedZ = Math.max(0, Math.min(cells, z));
+        float normalized = (samples[clampedZ * side + clampedX] & 0xFFFF) / 65535.0f;
         return minHeight + normalized * (maxHeight - minHeight);
     }
 
     private static void emitTriangle(BufferBuilder builder, TextureAtlasSprite sprite,
             int rgb, int alpha, float[] x, float[] y, float[] z,
-            int[] gridX, int[] gridZ, int[] layer, float[] normal) {
-        int minX = Math.min(gridX[0], Math.min(gridX[1], gridX[2]));
-        int maxX = Math.max(gridX[0], Math.max(gridX[1], gridX[2]));
-        int minZ = Math.min(gridZ[0], Math.min(gridZ[1], gridZ[2]));
-        int maxZ = Math.max(gridZ[0], Math.max(gridZ[1], gridZ[2]));
+            int[] gridX, int[] gridZ, float[] smoothNormals,
+            boolean useSmoothNormals, boolean flatUp, float[] faceNormalScratch) {
+        if (!useSmoothNormals && !flatUp) {
+            triangleNormalInto(x, y, z, faceNormalScratch);
+        }
+        int side = (int) Math.round(Math.sqrt(smoothNormals.length / 3.0));
         for (int vertex = 0; vertex < 3; vertex++) {
-            float u = maxX == minX ? layer[vertex] * 16.0f
-                    : (gridX[vertex] - minX) * 16.0f;
-            float v = maxZ == minZ ? layer[vertex] * 16.0f
-                    : (gridZ[vertex] - minZ) * 16.0f;
+            float nx;
+            float ny;
+            float nz;
+            if (flatUp) {
+                nx = 0.0f;
+                ny = 1.0f;
+                nz = 0.0f;
+            } else if (useSmoothNormals) {
+                int normalIndex = (gridZ[vertex] * side + gridX[vertex]) * 3;
+                nx = smoothNormals[normalIndex];
+                ny = smoothNormals[normalIndex + 1];
+                nz = smoothNormals[normalIndex + 2];
+            } else {
+                nx = faceNormalScratch[0];
+                ny = faceNormalScratch[1];
+                nz = faceNormalScratch[2];
+            }
+            // The white-concrete particle sprite is sampled at its center.
+            // Atlas UVs never reset across each terrain triangle, eliminating
+            // per-triangle texture repetition and color speckle.
             putVertex(builder, sprite, rgb, alpha,
-                    x[vertex], y[vertex], z[vertex], u, v, normal);
+                    x[vertex], y[vertex], z[vertex], 8.0f, 8.0f, nx, ny, nz);
         }
         // RenderType.solid/cutout/translucent use QUADS. A repeated final
         // vertex represents one triangle without introducing a second face.
-        float u = maxX == minX ? layer[2] * 16.0f : (gridX[2] - minX) * 16.0f;
-        float v = maxZ == minZ ? layer[2] * 16.0f : (gridZ[2] - minZ) * 16.0f;
-        putVertex(builder, sprite, rgb, alpha, x[2], y[2], z[2], u, v, normal);
+        float nx;
+        float ny;
+        float nz;
+        if (flatUp) {
+            nx = 0.0f;
+            ny = 1.0f;
+            nz = 0.0f;
+        } else if (useSmoothNormals) {
+            int normalIndex = (gridZ[2] * side + gridX[2]) * 3;
+            nx = smoothNormals[normalIndex];
+            ny = smoothNormals[normalIndex + 1];
+            nz = smoothNormals[normalIndex + 2];
+        } else {
+            nx = faceNormalScratch[0];
+            ny = faceNormalScratch[1];
+            nz = faceNormalScratch[2];
+        }
+        putVertex(builder, sprite, rgb, alpha,
+                x[2], y[2], z[2], 8.0f, 8.0f, nx, ny, nz);
     }
 
     private static void triangleNormalInto(float[] x, float[] y, float[] z,
@@ -748,12 +811,19 @@ final class IrisNativeClipmapRenderer {
     private static void putVertex(BufferBuilder builder, TextureAtlasSprite sprite,
             int rgb, int alpha, float x, float y, float z,
             float u, float v, float[] normal) {
+        putVertex(builder, sprite, rgb, alpha, x, y, z, u, v,
+                normal[0], normal[1], normal[2]);
+    }
+
+    private static void putVertex(BufferBuilder builder, TextureAtlasSprite sprite,
+            int rgb, int alpha, float x, float y, float z,
+            float u, float v, float nx, float ny, float nz) {
         builder.addVertex(x, y, z)
                 .setColor((rgb >>> 16) & 0xFF, (rgb >>> 8) & 0xFF,
                         rgb & 0xFF, alpha)
                 .setUv(sprite.getU(u), sprite.getV(v))
                 .setLight(SURFACE_SKY_LIGHT)
-                .setNormal(normal[0], normal[1], normal[2]);
+                .setNormal(nx, ny, nz);
     }
 
     private static float lerp(float from, float to, float amount) {
@@ -785,7 +855,7 @@ final class IrisNativeClipmapRenderer {
             TextureAtlasSprite sand, TextureAtlasSprite snow,
             TextureAtlasSprite water, TextureAtlasSprite leaves,
             TextureAtlasSprite wood, TextureAtlasSprite bricks,
-            TextureAtlasSprite black) {
+            TextureAtlasSprite black, TextureAtlasSprite white) {
         private static Sprites load(Minecraft minecraft) {
             BlockModelShaper shaper = minecraft.getBlockRenderer().getBlockModelShaper();
             return new Sprites(
@@ -797,7 +867,8 @@ final class IrisNativeClipmapRenderer {
                     particle(shaper, Blocks.OAK_LEAVES.defaultBlockState()),
                     particle(shaper, Blocks.OAK_LOG.defaultBlockState()),
                     particle(shaper, Blocks.STONE_BRICKS.defaultBlockState()),
-                    particle(shaper, Blocks.BLACK_CONCRETE.defaultBlockState()));
+                    particle(shaper, Blocks.BLACK_CONCRETE.defaultBlockState()),
+                    particle(shaper, Blocks.WHITE_CONCRETE.defaultBlockState()));
         }
 
         private static TextureAtlasSprite particle(BlockModelShaper shaper, BlockState state) {
