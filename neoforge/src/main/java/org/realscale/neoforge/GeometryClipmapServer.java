@@ -173,8 +173,14 @@ public final class GeometryClipmapServer {
         }
         if (session.inFlight) {
             long stalledFor = System.nanoTime() - session.lastProgressNanos;
+            boolean ringQueued = session.ringTask != null
+                    && SAMPLER.getQueue().contains(session.ringTask);
+            // Queue membership alone cannot distinguish a running task from
+            // a completed ring waiting for its server-thread callback.
+            boolean samplerHasStopped = session.ringTaskRunning
+                    || (!ringQueued && session.pendingRingCallbacks.get() == 0);
             if (session.lastProgressNanos != 0L && stalledFor > STALL_TIMEOUT_NANOS
-                    && (session.ringTask == null || !SAMPLER.getQueue().contains(session.ringTask))) {
+                    && samplerHasStopped) {
                 session.cancelTasks();
                 session.requestEpoch.advance();
                 session.inFlight = false;
@@ -262,11 +268,12 @@ public final class GeometryClipmapServer {
             private int i;
             private final List<ClipmapHeightGrid> nextGrids = new ArrayList<>(MAX_LEVELS);
             @Override public void run() {
-                if (!session.requestEpoch.isCurrent(requestEpoch)) return;
-                long started = System.nanoTime();
-                session.lastProgressNanos = started;
-                final int levelIndex = i;
+                session.ringTaskRunning = true;
                 try {
+                    if (!session.requestEpoch.isCurrent(requestEpoch)) return;
+                    long started = System.nanoTime();
+                    session.lastProgressNanos = started;
+                    final int levelIndex = i;
                     ClipmapHeightGrid previous = previousGrids == null
                             ? null : previousGrids.get(i);
                     int[] nextProgressThreshold = {0};
@@ -294,10 +301,12 @@ public final class GeometryClipmapServer {
                     int completedLevels = ++i;
                     double elapsedMs = (System.nanoTime() - started) / 1_000_000.0;
                     int newVertices = grid.newlySampledVertexCount();
+                    session.pendingRingCallbacks.incrementAndGet();
                     server.execute(() -> {
-                        ServerPlayer live = livePlayer();
-                        if (live == null) return;
-                        session.cachedHeightPayloads.add(payload);
+                        try {
+                            ServerPlayer live = livePlayer();
+                            if (live == null) return;
+                            session.cachedHeightPayloads.add(payload);
                         PacketDistributor.sendToPlayer(live, payload);
                         String detail = String.format(java.util.Locale.ROOT,
                                 "LOD %d/6 sent; %d new vertices; %.1fms; %.0f vertices/s; cancelled=%d",
@@ -315,6 +324,9 @@ public final class GeometryClipmapServer {
                             scheduleProxies(server, session, playerId, targetDimension,
                                     targetRequestId, targetSeed, requestEpoch, generator,
                                     randomState, nextLayout);
+                            }
+                        } finally {
+                            session.pendingRingCallbacks.decrementAndGet();
                         }
                     });
                     if (completedLevels < MAX_LEVELS && session.requestEpoch.isCurrent(requestEpoch)) {
@@ -323,16 +335,23 @@ public final class GeometryClipmapServer {
                     }
                 } catch (RuntimeException failure) {
                     if (!session.requestEpoch.isCurrent(requestEpoch)) return;
+                    session.pendingRingCallbacks.incrementAndGet();
                     server.execute(() -> {
-                        ServerPlayer live = livePlayer();
-                        if (live == null) return;
-                        session.inFlight = false;
-                        session.ringTask = null;
-                        session.requestEpoch.defer(serverTickCounter, RETRY_BACKOFF_TICKS);
-                        sendStatus(live, session, ClipmapStatusPayload.FAILED,
-                                session.completedLevels, failure.getClass().getSimpleName()
-                                        + ": " + String.valueOf(failure.getMessage()));
+                        try {
+                            ServerPlayer live = livePlayer();
+                            if (live == null) return;
+                            session.inFlight = false;
+                            session.ringTask = null;
+                            session.requestEpoch.defer(serverTickCounter, RETRY_BACKOFF_TICKS);
+                            sendStatus(live, session, ClipmapStatusPayload.FAILED,
+                                    session.completedLevels, failure.getClass().getSimpleName()
+                                            + ": " + String.valueOf(failure.getMessage()));
+                        } finally {
+                            session.pendingRingCallbacks.decrementAndGet();
+                        }
                     });
+                } finally {
+                    session.ringTaskRunning = false;
                 }
             }
 
@@ -497,6 +516,9 @@ public final class GeometryClipmapServer {
         private long cancelledTasks;
         private long cancelledProxyTasks;
         private volatile long lastProgressNanos;
+        private volatile boolean ringTaskRunning;
+        private final java.util.concurrent.atomic.AtomicInteger pendingRingCallbacks =
+                new java.util.concurrent.atomic.AtomicInteger();
         private volatile long lastSampleStartedNanos;
         private volatile long lastSampleDurationNanos;
         private volatile boolean sampleActive;

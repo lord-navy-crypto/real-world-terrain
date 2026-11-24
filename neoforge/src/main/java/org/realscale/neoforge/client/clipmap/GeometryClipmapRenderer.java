@@ -53,6 +53,7 @@ final class GeometryClipmapRenderer {
             uniform float uSeaLevel;
             uniform float uSkirtDepth[6];
             uniform float uMorphBandCells[6];
+            uniform float uInnerHalfCells[6];
             uniform vec2 uTextureOffset[6];
             uniform int uLevel;
             out float vHeight;
@@ -60,6 +61,13 @@ final class GeometryClipmapRenderer {
             out float vDistance;
             out vec3 vPosition;
             out vec2 vNoisePosition;
+            out vec3 vSmoothNormal;
+            out float vNormalBlend;
+
+            float surfaceHeightAt(vec2 sampleUv) {
+                float encoded = texture(uHeightMap, sampleUv).r;
+                return max(mix(uHeightMin, uHeightMax, encoded), uSeaLevel);
+            }
 
             void main() {
                 vec2 grid = aGridAndSkirt.xy;
@@ -74,11 +82,27 @@ final class GeometryClipmapRenderer {
                 vec2 textureGrid = mod(grid + levelTextureOffset, side);
                 vec2 uv = (textureGrid + vec2(0.5)) / side;
                 float h = mix(uHeightMin, uHeightMax, texture(uHeightMap, uv).r);
+                float edgeCells = min(min(grid.x, grid.y),
+                    min(uGridCells - grid.x, uGridCells - grid.y));
+                float holeEdgeCells = max(abs(grid.x - uGridCells * 0.5),
+                    abs(grid.y - uGridCells * 0.5)) - uInnerHalfCells[levelIndex];
+                // Use neighboring height texels for smooth normals. The inner
+                // hole and outer perimeter are excluded because wrapped
+                // neighbors at those boundaries are not reliable.
+                vec2 texel = vec2(1.0 / side);
+                float hLeft = surfaceHeightAt(uv - vec2(texel.x, 0.0));
+                float hRight = surfaceHeightAt(uv + vec2(texel.x, 0.0));
+                float hDown = surfaceHeightAt(uv - vec2(0.0, texel.y));
+                float hUp = surfaceHeightAt(uv + vec2(0.0, texel.y));
+                vSmoothNormal = normalize(vec3(
+                    hLeft - hRight, 2.0 * levelSpacing, hDown - hUp));
+                float normalSafeCells = min(holeEdgeCells,
+                    edgeCells - levelMorphBand);
+                vNormalBlend = smoothstep(0.0, 2.0, normalSafeCells);
+
                 // A fine outer boundary must converge on the 2x parent grid.
                 // These parent heights are sampled at even vertices of this
                 // SAME R16 texture; no additional worldgen or network data.
-                float edgeCells = min(min(grid.x, grid.y),
-                    min(uGridCells - grid.x, uGridCells - grid.y));
                 if (levelMorphBand > 0.0 && edgeCells < levelMorphBand) {
                     vec2 parentGrid = floor(grid * 0.5) * 2.0;
                     vec2 parentTextureGrid = mod(parentGrid + levelTextureOffset, side);
@@ -124,6 +148,8 @@ final class GeometryClipmapRenderer {
             in float vDistance;
             in vec3 vPosition;
             in vec2 vNoisePosition;
+            in vec3 vSmoothNormal;
+            in float vNormalBlend;
             uniform float uFogStart;
             uniform float uFogEnd;
             uniform float uNearClipBlocks;
@@ -169,9 +195,11 @@ final class GeometryClipmapRenderer {
                 // from GPU derivatives rather than sampling four extra heights.
                 vec3 rawNormal = cross(dFdx(vPosition), dFdy(vPosition));
                 float normalLength = length(rawNormal);
-                vec3 normal = normalLength > 0.00001
+                vec3 faceNormal = normalLength > 0.00001
                     ? rawNormal / normalLength : vec3(0.0, 1.0, 0.0);
-                if (normal.y < 0.0) normal = -normal;
+                if (faceNormal.y < 0.0) faceNormal = -faceNormal;
+                vec3 normal = normalize(mix(faceNormal,
+                    normalize(vSmoothNormal), clamp(vNormalBlend, 0.0, 1.0)));
                 float slope = 1.0 - clamp(normal.y, 0.0, 1.0);
 
                 // Broad, derivative-filtered fields retain natural regional
@@ -188,7 +216,7 @@ final class GeometryClipmapRenderer {
                 vec3 water = vec3(0.065, 0.23, 0.33);
 
                 vec3 land = mix(dryGrass, grass, smoothstep(0.15, 0.85, moisture));
-                float rockCover = max(smoothstep(0.10, 0.45, slope),
+                float rockCover = max(smoothstep(0.16, 0.55, slope),
                     smoothstep(uSeaLevel + 197.0, uSeaLevel + 737.0, vHeight) * 0.6);
                 land = mix(land, rock, rockCover);
                 float beach = (1.0 - smoothstep(uSeaLevel + 2.0, uSeaLevel + 25.0, vHeight))
@@ -222,6 +250,7 @@ final class GeometryClipmapRenderer {
     private static final FloatBuffer SPACING_UPLOAD = BufferUtils.createFloatBuffer(LEVEL_COUNT);
     private static final FloatBuffer SKIRT_DEPTH_UPLOAD = BufferUtils.createFloatBuffer(LEVEL_COUNT);
     private static final FloatBuffer MORPH_BAND_UPLOAD = BufferUtils.createFloatBuffer(LEVEL_COUNT);
+    private static final FloatBuffer INNER_HALF_CELLS_UPLOAD = BufferUtils.createFloatBuffer(LEVEL_COUNT);
     private static final Matrix4f MODEL_VIEW = new Matrix4f();
     private static final Matrix4f EXTENDED_PROJECTION = new Matrix4f();
     private static final Matrix4f VIEW_PROJECTION = new Matrix4f();
@@ -617,18 +646,21 @@ final class GeometryClipmapRenderer {
         FloatBuffer spacingUpload = SPACING_UPLOAD;
         FloatBuffer skirtDepthUpload = SKIRT_DEPTH_UPLOAD;
         FloatBuffer morphBandUpload = MORPH_BAND_UPLOAD;
+        FloatBuffer innerHalfCellsUpload = INNER_HALF_CELLS_UPLOAD;
         originUpload.clear();
         noiseOriginUpload.clear();
         textureOffsetUpload.clear();
         spacingUpload.clear();
         skirtDepthUpload.clear();
         morphBandUpload.clear();
+        innerHalfCellsUpload.clear();
         for (int level = 0; level < LEVEL_COUNT; level++) {
             var tile = tiles.get(level);
             if (tile == null) {
                 originUpload.put(0).put(0); noiseOriginUpload.put(0).put(0);
                 textureOffsetUpload.put(0).put(0); spacingUpload.put(1);
                 skirtDepthUpload.put(0); morphBandUpload.put(0);
+                innerHalfCellsUpload.put(0);
                 continue;
             }
             TextureWindow textureWindow = textureWindows[level];
@@ -642,6 +674,7 @@ final class GeometryClipmapRenderer {
             skirtDepthUpload.put(Math.min(32.0f, Math.max(4.0f,
                     tile.cellSpacingBlocks() * 0.125f)));
             morphBandUpload.put(level == tiles.size() - 1 ? 0.0f : 8.0f);
+            innerHalfCellsUpload.put(innerHalfCells[level]);
         }
         originUpload.flip();
         noiseOriginUpload.flip();
@@ -649,12 +682,14 @@ final class GeometryClipmapRenderer {
         spacingUpload.flip();
         skirtDepthUpload.flip();
         morphBandUpload.flip();
+        innerHalfCellsUpload.flip();
         GL20.glUniform2fv(uniforms.origin(), originUpload);
         GL20.glUniform2fv(uniforms.noiseOrigin(), noiseOriginUpload);
         GL20.glUniform2fv(uniforms.textureOffset(), textureOffsetUpload);
         GL20.glUniform1fv(uniforms.spacing(), spacingUpload);
         GL20.glUniform1fv(uniforms.skirtDepth(), skirtDepthUpload);
         GL20.glUniform1fv(uniforms.morphBandCells(), morphBandUpload);
+        GL20.glUniform1fv(uniforms.innerHalfCells(), innerHalfCellsUpload);
 
         GL30.glBindVertexArray(vao);
         for (int level = tiles.size() - 1; level >= 0; level--) {
@@ -748,7 +783,7 @@ final class GeometryClipmapRenderer {
             int fogStart, int fogEnd, int fogColor,
             int heightMap, int nearClipBlocks, int origin,
             int spacing, int textureOffset, int noiseOrigin, int skirtDepth,
-            int morphBandCells, int level) {
+            int morphBandCells, int innerHalfCells, int level) {
         private static UniformLocations lookup(int program) {
             return new UniformLocations(
                     GL20.glGetUniformLocation(program, "uViewProjection"),
@@ -771,6 +806,7 @@ final class GeometryClipmapRenderer {
                     GL20.glGetUniformLocation(program, "uNoiseOrigin[0]"),
                     GL20.glGetUniformLocation(program, "uSkirtDepth[0]"),
                     GL20.glGetUniformLocation(program, "uMorphBandCells[0]"),
+                    GL20.glGetUniformLocation(program, "uInnerHalfCells[0]"),
                     GL20.glGetUniformLocation(program, "uLevel"));
         }
     }
