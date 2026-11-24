@@ -48,6 +48,25 @@ final class ClipmapRingMeshTest {
     }
 
     @Test
+    void irisSurfaceTopologyHasNoArtificialSkirtWallsAndSupportsZeroHole() {
+        int cells = 256;
+        int innerHalf = 64;
+        int quads = cells * cells - (innerHalf * 2) * (innerHalf * 2);
+        int[] indices = ClipmapRingMesh.surfaceIndices(cells, innerHalf);
+        assertEquals(6 * quads, indices.length);
+        int base = (cells + 1) * (cells + 1);
+        for (int index : indices) {
+            assertTrue(index >= 0 && index < base,
+                    "surface-only topology must not reference skirt vertices");
+        }
+
+        int[] fullSurface = ClipmapRingMesh.surfaceIndices(cells, 0);
+        assertEquals(6 * cells * cells, fullSurface.length);
+        assertThrows(IllegalArgumentException.class,
+                () -> ClipmapRingMesh.surfaceIndices(cells, cells / 2));
+    }
+
+    @Test
     void invalidGridInputsAreRejected() {
         assertThrows(IllegalArgumentException.class, () -> ClipmapRingMesh.vertices(63));
         assertThrows(IllegalArgumentException.class,
