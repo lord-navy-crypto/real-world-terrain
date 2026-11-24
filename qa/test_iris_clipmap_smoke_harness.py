@@ -52,6 +52,25 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("len(centres) >= 1 and positive", SMOKE)
         self.assertIn("IRIS_CLIPMAP_MOVEMENT_REFRESH_PASS", SMOKE)
 
+    def test_settlement_and_color_gate_require_final_client_viewport(self):
+        self.assertIn("wait_for_settled_window", SMOKE)
+        self.assertIn("CLIENT_PROXY_RECEIVED", SMOKE)
+        self.assertIn("nativeProxyMeshesBuilt", SMOKE)
+        self.assertIn("minimum_seconds=90", SMOKE)
+        self.assertIn("iris-clipmap-after-motion-final", SMOKE)
+        self.assertIn("854x240+0+0", SMOKE)
+        self.assertIn("Persistent post-motion terrain contrast collapse", SMOKE)
+        self.assertIn("IRIS_TERRAIN_CONTRAST_GATE_PASS", SMOKE)
+
+    def test_native_proxy_meshes_are_independent_and_seams_use_parent_tile(self):
+        self.assertIn("proxySolidBuffer", IRIS_RENDERER)
+        self.assertIn("rebuildProxies(safeProxies, centerX, centerZ)", IRIS_RENDERER)
+        self.assertNotIn("proxies != cachedProxies || cachedTiles", IRIS_RENDERER)
+        self.assertIn("parentTile.heights()", IRIS_RENDERER)
+        self.assertIn("float parent = fx + fz <= 1.0f", IRIS_RENDERER)
+        self.assertIn("sprites.water()", IRIS_RENDERER)
+        self.assertIn("activeIrisExtendedFogStart", GEOMETRY_CLIENT)
+
     def test_iris_native_draw_uses_portable_terrain_stage_events(self):
         self.assertIn("prepareIrisFrameFog", IRIS_MIXIN)
         self.assertNotIn("ShaderInstance;clear()V", IRIS_MIXIN)
@@ -67,7 +86,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("IrisRenderCompatibility.terrainVertexFormat()", IRIS_RENDERER)
         self.assertIn("renderType.setupRenderState()", IRIS_RENDERER)
         self.assertIn("shader.setDefaultUniforms(VertexFormat.Mode.TRIANGLES,", IRIS_RENDERER)
-        self.assertEqual(4, IRIS_RENDERER.count("VertexFormat.Mode.TRIANGLES, irisTerrainFormat"))
+        self.assertEqual(5, IRIS_RENDERER.count("VertexFormat.Mode.TRIANGLES, irisTerrainFormat"))
         self.assertNotIn("VertexFormat.Mode.QUADS, irisTerrainFormat", IRIS_RENDERER)
         self.assertLess(IRIS_RENDERER.index("shader.setDefaultUniforms("),
                         IRIS_RENDERER.index("shader.apply()"))
