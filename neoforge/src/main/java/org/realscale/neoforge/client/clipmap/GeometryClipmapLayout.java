@@ -15,9 +15,9 @@ import java.util.List;
  * <p>No Minecraft chunks, block states, or OpenGL objects are created here.
  */
 public final class GeometryClipmapLayout {
-    public static final int DEFAULT_GRID_CELLS = 128;
+    public static final int DEFAULT_GRID_CELLS = 256;
     public static final int DEFAULT_LEVEL_COUNT = 6;
-    public static final int DEFAULT_BASE_CELL_SPACING_BLOCKS = 8;
+    public static final int DEFAULT_BASE_CELL_SPACING_BLOCKS = 4;
     public static final int DEFAULT_NEAR_RENDER_DISTANCE_CHUNKS = 10;
 
     private final int gridCells;
@@ -90,7 +90,7 @@ public final class GeometryClipmapLayout {
         while (((long) spacing << (DEFAULT_LEVEL_COUNT - 2)) >= nearRadius) {
             spacing >>= 1;
         }
-        while (chunks > 2L * spacing) {
+        while (chunks > 4L * spacing) {
             spacing <<= 1;
         }
         // A 32-block grid cannot align every chunk radius (e.g. 33*16).
