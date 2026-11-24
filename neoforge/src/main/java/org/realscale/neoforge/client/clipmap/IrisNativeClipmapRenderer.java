@@ -661,9 +661,9 @@ final class IrisNativeClipmapRenderer {
                 ny = faceNormalScratch[1];
                 nz = faceNormalScratch[2];
             }
-            // The uniform white-concrete sprite uses a small inset UV patch.
-            // Coordinates vary across the triangle so Iris can build a valid
-            // tangent frame for PBR shaders without reintroducing texture grain.
+            // Sprite-local UVs stay inside the selected atlas entry. Near LODs
+            // use authored block textures; coarse LODs use a neutral texel with
+            // macro-scale vertex tint to avoid distant texture aliasing.
             putVertex(builder, sprite, rgb[vertex], alpha,
                     x[vertex], y[vertex], z[vertex],
                     triangleUvs[vertex * 2], triangleUvs[vertex * 2 + 1], nx, ny, nz);
