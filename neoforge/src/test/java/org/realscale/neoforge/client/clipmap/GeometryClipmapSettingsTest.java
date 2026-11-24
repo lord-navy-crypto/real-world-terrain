@@ -14,15 +14,31 @@ class GeometryClipmapSettingsTest {
     Path tempDir;
 
     @Test
-    void defaultsToEnabledWhenPreferenceDoesNotExist() {
-        assertTrue(GeometryClipmapSettings.loadEnabled(
+    void defaultsToDisabledWhenPreferenceDoesNotExist() {
+        assertFalse(GeometryClipmapSettings.loadEnabled(
                 tempDir.resolve("missing.properties")));
+    }
+
+    @Test
+    void readsAnExplicitEnabledPreference() throws Exception {
+        Path file = tempDir.resolve("clipmap.properties");
+        Files.writeString(file, "enabled=true\n");
+
+        assertTrue(GeometryClipmapSettings.loadEnabled(file));
     }
 
     @Test
     void readsAnExplicitDisabledPreference() throws Exception {
         Path file = tempDir.resolve("clipmap.properties");
         Files.writeString(file, "enabled=false\n");
+
+        assertFalse(GeometryClipmapSettings.loadEnabled(file));
+    }
+
+    @Test
+    void missingEnabledPropertyDefaultsToDisabled() throws Exception {
+        Path file = tempDir.resolve("clipmap.properties");
+        Files.writeString(file, "# empty saved preference\n");
 
         assertFalse(GeometryClipmapSettings.loadEnabled(file));
     }
@@ -39,10 +55,10 @@ class GeometryClipmapSettingsTest {
     }
 
     @Test
-    void invalidPreferenceSafelyFallsBackToEnabled() throws Exception {
+    void invalidPreferenceSafelyFallsBackToDisabled() throws Exception {
         Path file = tempDir.resolve("clipmap.properties");
         Files.writeString(file, "enabled=maybe\n");
 
-        assertTrue(GeometryClipmapSettings.loadEnabled(file));
+        assertFalse(GeometryClipmapSettings.loadEnabled(file));
     }
 }
