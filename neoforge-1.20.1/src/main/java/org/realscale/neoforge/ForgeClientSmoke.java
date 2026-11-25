@@ -5,7 +5,7 @@ import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderTickEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -27,8 +27,8 @@ public final class ForgeClientSmoke {
     private ForgeClientSmoke() {}
 
     @SubscribeEvent
-    public static void verify(RenderTickEvent event) {
-        if (event.phase != RenderTickEvent.Phase.END
+    public static void verify(TickEvent.RenderTickEvent event) {
+        if (event.phase != TickEvent.Phase.END
                 || !"client".equals(System.getenv("REALSCALE_FORGE_CI_SMOKE"))) {
             return;
         }
