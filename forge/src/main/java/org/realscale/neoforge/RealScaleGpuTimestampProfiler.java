@@ -4,10 +4,10 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL15C;
 import org.lwjgl.opengl.GL33C;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.TickEvent;
 
 /**
  * Optional physical-client GPU timestamp span profiler.
@@ -59,7 +59,8 @@ public final class RealScaleGpuTimestampProfiler {
     }
 
     @SubscribeEvent
-    public static void onFramePre(RenderFrameEvent.Pre event) {
+    public static void onFramePre(TickEvent.RenderTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) return;
         if(!ENABLED||disabled)return;
         initialize();
         if(!supported)return;
@@ -87,7 +88,8 @@ public final class RealScaleGpuTimestampProfiler {
     }
 
     @SubscribeEvent
-    public static void onFramePost(RenderFrameEvent.Post event) {
+    public static void onFramePost(TickEvent.RenderTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
         if(!ENABLED||disabled||!frameActive)return;
         try {
             GL33C.glQueryCounter(END[activeSlot],GL_TIMESTAMP);
