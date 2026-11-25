@@ -547,10 +547,12 @@ final class IrisNativeClipmapRenderer {
                                 gridX, gridZ, level);
             }
         }
-        // Smooth normals are the far-field baseline. The first ring blends
-        // these normals toward flat voxel tops as its stepped geometry fades in.
+        // Coarser rings cover more world distance per vertex. Widen the
+        // normal footprint with LOD to suppress subpixel lighting sparkle
+        // without changing the sampled heightfield or its silhouette.
+        int normalRadiusCells = Math.min(8, 2 + level);
         float[] smoothNormals = ClipmapSurfaceNormals.compute(
-                surfaceHeights, cells, spacing, holeRadius, 2);
+                surfaceHeights, cells, spacing, holeRadius, normalRadiusCells);
 
         // Select the first ring that extends beyond the protected vanilla
         // overlap. This keeps the voxel transition active even in shorter

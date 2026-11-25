@@ -494,6 +494,8 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("mapToSprite(vertical, minWorldY, maxWorldY)", uv)
         self.assertIn("adjacent triangles and LOD", uv)
         self.assertIn("ClipmapSurfaceNormals.compute(", native)
+        self.assertIn("Math.min(8, 2 + level)", native)
+        self.assertIn("normalRadiusCells", native)
         self.assertIn("float[] smoothNormals", native)
         self.assertNotIn("ClipmapTriangleUv.computeInto(", native)
         self.assertIn("triangleUvs[vertex * 2]", native)
