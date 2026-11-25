@@ -1,0 +1,12 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:savanna",
+    "minecraft:wooded_badlands",
+    "realscale:semi_arid_scrubland",
+    "realscale:heathland",
+    "realscale:shrub_prairie"
+  ],
+  "features": "realscale:chaparral_scrub",
+  "step": "vegetal_decoration"
+}

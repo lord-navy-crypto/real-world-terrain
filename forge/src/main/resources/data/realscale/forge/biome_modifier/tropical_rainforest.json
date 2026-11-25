@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:jungle",
+    "minecraft:bamboo_jungle",
+    "minecraft:sparse_jungle",
+    "realscale:tropical_forest_edge"
+  ],
+  "features": "realscale:tropical_rainforest",
+  "step": "vegetal_decoration"
+}

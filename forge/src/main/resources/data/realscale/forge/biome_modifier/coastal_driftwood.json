@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:beach",
+    "minecraft:stony_shore",
+    "minecraft:snowy_beach"
+  ],
+  "features": "realscale:coastal_driftwood",
+  "step": "vegetal_decoration"
+}

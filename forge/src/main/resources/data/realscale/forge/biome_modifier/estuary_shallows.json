@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:mangrove_swamp",
+    "minecraft:swamp",
+    "minecraft:lukewarm_ocean"
+  ],
+  "features": "realscale:estuary_shallows",
+  "step": "vegetal_decoration"
+}
