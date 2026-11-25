@@ -548,7 +548,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("emitVoxelWallX(", native)
         self.assertIn("emitVoxelWallZ(", native)
         self.assertIn("level != 0", style)
-        self.assertIn("FADE_LENGTH_CELLS = 48.0f", style)
+        self.assertIn("FADE_LENGTH_CELLS = 40.0f", style)
         self.assertIn("Math.floor(height + 0.5f)", style)
 
 
