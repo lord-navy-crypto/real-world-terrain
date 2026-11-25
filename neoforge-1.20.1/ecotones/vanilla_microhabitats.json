@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "scope": "Extra dry-land surface decoration in original vanilla biome IDs; no ocean/river targets",
+  "v05_count": 10,
+  "v06_count": 8,
+  "features": [
+    "forest_wildflower_glades",
+    "spruce_berry_understory",
+    "mixed_forest_fern_mosaic",
+    "savanna_seasonal_grasses",
+    "meadow_oxeye_pockets",
+    "wetland_fern_islands",
+    "highland_grassy_terraces",
+    "arid_scrub_mosaics",
+    "old_growth_moss_floors",
+    "jungle_understory_ferns",
+    "plains_cornflower_clearings",
+    "oak_forest_lily_floor",
+    "cherry_petal_mosaics",
+    "wetland_blue_orchid_banks",
+    "taiga_brown_mushroom_pockets",
+    "montane_allium_flowers",
+    "coastal_dune_deadbush",
+    "bamboo_moss_understory"
+  ]
+}

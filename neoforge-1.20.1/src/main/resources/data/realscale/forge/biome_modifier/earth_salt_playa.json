@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:desert",
+    "minecraft:badlands"
+  ],
+  "features": "realscale:earth_salt_playa",
+  "step": "vegetal_decoration"
+}

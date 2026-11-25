@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "transportation",
+  "pattern": [
+    " L ",
+    "LBL",
+    " L "
+  ],
+  "key": {
+    "L": {
+      "item": "minecraft:leather"
+    },
+    "B": {
+      "tag": "minecraft:boats"
+    }
+  },
+  "result": {
+    "id": "realscale:hovercraft",
+    "count": 1
+  }
+}
