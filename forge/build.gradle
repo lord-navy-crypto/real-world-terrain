@@ -57,6 +57,9 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.named('test', Test).configure {
     useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
 }
 
 // Keep the mapped Minecraft/Forge compile and runtime classpaths available to
