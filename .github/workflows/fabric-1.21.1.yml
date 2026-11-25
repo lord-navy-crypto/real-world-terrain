@@ -2,7 +2,7 @@ name: RealScale Fabric 1.21.1 Port
 
 on:
   push:
-    branches: [feature/fabric-1.21.1-port]
+    branches: [feature/fabric-1.21.1-port, feature/fabric-1.21.1-validation]
     paths:
       - "fabric-1.21.1/**"
       - "scripts/**"
@@ -39,7 +39,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.12"
+          gradle-version: "9.2.1"
 
       - name: Build Fabric 1.21.1 module
         run: |
