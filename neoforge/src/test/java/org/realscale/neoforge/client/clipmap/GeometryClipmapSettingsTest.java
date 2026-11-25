@@ -55,6 +55,38 @@ class GeometryClipmapSettingsTest {
         assertTrue(GeometryClipmapSettings.loadEnabled(file));
     }
 
+
+    @Test
+    void defaultsToMaximumRangeWhenPreferenceDoesNotExist() {
+        assertEquals(256, GeometryClipmapSettings.loadGridCells(
+                tempDir.resolve("missing.properties")));
+    }
+
+    @Test
+    void readsAndPersistsSupportedRangePresets() throws Exception {
+        Path file = tempDir.resolve("nested").resolve("clipmap.properties");
+        GeometryClipmapSettings.saveGridCells(file, 64);
+        assertEquals(64, GeometryClipmapSettings.loadGridCells(file));
+        GeometryClipmapSettings.saveGridCells(file, 128);
+        assertEquals(128, GeometryClipmapSettings.loadGridCells(file));
+        GeometryClipmapSettings.saveGridCells(file, 256);
+        assertEquals(256, GeometryClipmapSettings.loadGridCells(file));
+    }
+
+    @Test
+    void invalidRangePreferenceFallsBackToMaximum() throws Exception {
+        Path file = tempDir.resolve("clipmap.properties");
+        Files.writeString(file, "gridCells=512\\n");
+        assertEquals(256, GeometryClipmapSettings.loadGridCells(file));
+    }
+
+    @Test
+    void rejectsUnsupportedRangePreset() {
+        assertThrows(IllegalArgumentException.class,
+                () -> GeometryClipmapSettings.saveGridCells(
+                        tempDir.resolve("clipmap.properties"), 32));
+    }
+
     @Test
     void invalidPreferenceSafelyFallsBackToDisabled() throws Exception {
         Path file = tempDir.resolve("clipmap.properties");
