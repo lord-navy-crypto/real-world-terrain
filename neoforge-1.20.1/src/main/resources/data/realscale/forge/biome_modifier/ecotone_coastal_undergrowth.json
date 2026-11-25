@@ -1,9 +1,0 @@
-{
-  "type": "neoforge:add_features",
-  "biomes": [
-    "realscale:coastal_heath",
-    "realscale:coastal_dune_meadow"
-  ],
-  "features": "realscale:ecotone_coastal_undergrowth",
-  "step": "vegetal_decoration"
-}

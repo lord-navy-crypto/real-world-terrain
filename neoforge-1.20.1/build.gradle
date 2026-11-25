@@ -12,11 +12,15 @@ base {
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 // The final NeoForge 1.20.1 legacy line is published as net.neoforged:forge.
-def neoForgeVersion = providers.gradleProperty('neoforge_version')
+def neoForgeCoordinateVersion = providers.gradleProperty('neoforge_version')
         .orElse('1.20.1-47.1.106').get()
 
 legacyForge {
-    version = neoForgeVersion
+    // NeoForge 1.20.1 uses the legacy 47.1.x artifact coordinate.
+    // Set neoForgeVersion explicitly; version= selects net.minecraftforge instead.
+    enable {
+        neoForgeVersion = neoForgeCoordinateVersion
+    }
     validateAccessTransformers = true
     runs {
         client { client() }
@@ -70,7 +74,7 @@ tasks.named('processResources', ProcessResources).configure {
         mod_name: 'RealScale',
         mod_version: project.version,
         minecraft_version: '1.20.1',
-        forge_version: neoForgeVersion.replace('1.20.1-', '')
+        forge_version: neoForgeCoordinateVersion.replace('1.20.1-', '')
     ]
     inputs.properties replaceProperties
     filesMatching(['META-INF/mods.toml']) {
