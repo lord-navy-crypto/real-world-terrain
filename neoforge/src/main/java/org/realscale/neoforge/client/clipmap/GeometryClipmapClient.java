@@ -410,7 +410,7 @@ public final class GeometryClipmapClient {
                     // Face down toward the generated surface. This is strictly
                     // opt-in for the automated screenshot harness, never normal gameplay.
                     minecraft.player.setYRot(0.0f);
-                    minecraft.player.setXRot(18.0f);
+                    minecraft.player.setXRot(35.0f);
                     minecraft.player.setYHeadRot(0.0f);
                 }
                 float pitch = minecraft.player == null ? 0.0f : minecraft.player.getXRot();

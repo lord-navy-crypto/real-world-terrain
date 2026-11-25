@@ -187,6 +187,8 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("drawProjection = activeIrisProjectionTarget;", GEOMETRY_CLIENT)
         self.assertIn("GL15.GL_SAMPLES_PASSED", IRIS_RENDERER)
         self.assertIn("FAR_SOLID_VISIBLE_SAMPLES=", IRIS_RENDERER)
+        self.assertIn("FAR_WATER_VISIBLE_SAMPLES=", IRIS_RENDERER)
+        self.assertIn("FAR_(?:SOLID|WATER)_VISIBLE_SAMPLES=", SMOKE)
         self.assertIn("IRIS_CAMERA_FAR_MIXIN_HIT", IRIS_FAR_MIXIN)
         self.assertIn("IRIS_CAMERA_FAR_EXTENDED", IRIS_FAR_MIXIN)
         self.assertIn("IRIS_FOG_RANGE original=", GEOMETRY_CLIENT)

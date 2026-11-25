@@ -714,7 +714,7 @@ def wait_for_settled_window(proc, lines, start: int, minimum_seconds: float = 30
             escaped = re.escape(centre)
             proxy_counts = re.findall(r"CLIENT_PROXY_RECEIVED center=\(" + escaped + r"\) count=(\d+)", output)
             mesh = re.findall(r"nativeMeshesBuilt=.*?levels=6.*?center=\(" + escaped + r"\)", output)
-            samples = re.findall(r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*?levels=6 center=\(" + escaped + r"\)", output)
+            samples = re.findall(r"FAR_(?:SOLID|WATER)_VISIBLE_SAMPLES=(\d+).*?levels=6 center=\(" + escaped + r"\)", output)
             proxy_ready = bool(proxy_counts) and (int(proxy_counts[-1]) == 0 or bool(re.search(
                 r"nativeProxyMeshesBuilt=.*?proxies=" + proxy_counts[-1] + r" center=\(" + escaped + r"\)", output)))
             state = (centre, len(mesh), len(proxy_counts), proxy_counts[-1] if proxy_counts else None)
@@ -903,7 +903,7 @@ def run_client(env: dict[str, str]) -> None:
             return any(
                 int(m.group(1)) > 0 and 2200.0 <= float(m.group(2)) <= 2500.0
                 for m in re.finditer(
-                    r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*?cameraY=([-+0-9.]+)", output)
+                    r"FAR_(?:SOLID|WATER)_VISIBLE_SAMPLES=(\d+).*?cameraY=([-+0-9.]+)", output)
             )
 
         def full_visible_ready() -> bool:
@@ -916,7 +916,7 @@ def run_client(env: dict[str, str]) -> None:
                 and any(
                     int(m.group(1)) > 0 and 2200.0 <= float(m.group(2)) <= 2500.0
                     for m in re.finditer(
-                        r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*?cameraY=([-+0-9.]+).*?\blevels=6\b",
+                        r"FAR_(?:SOLID|WATER)_VISIBLE_SAMPLES=(\d+).*?cameraY=([-+0-9.]+).*?\blevels=6\b",
                         output,
                     )
                 )
@@ -965,7 +965,7 @@ def run_client(env: dict[str, str]) -> None:
 
         if not camera_prepared or not visible_samples_ready() or not full_visible_ready():
             capture_screenshot("iris-client-no-visible-clipmap-samples")
-            raise RuntimeError("No verified depth-passing solid clipmap samples at the high-altitude camera")
+            raise RuntimeError("No verified depth-passing far solid or water surface samples at the high-altitude camera")
 
         # The marker is emitted only after six-level native mesh submission.
         stdout_text = "".join(lines)
@@ -999,10 +999,17 @@ def run_client(env: dict[str, str]) -> None:
         while proc.poll() is None and time.monotonic() < move_deadline:
             output = "".join(lines[motion_start:])
             centres = set(re.findall(r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", output)) - old_centres
-            positive = any(int(m.group(1)) > 0 for m in re.finditer(
-                r"FAR_SOLID_VISIBLE_SAMPLES=(\d+).*\blevels=6\b", output))
-            # One fresh complete centre during a real 30-second flight is
-            # sufficient to prove camera movement refreshes the clipmap.
+            positive_centres = {
+                m.group(2)
+                for m in re.finditer(
+                    r"FAR_(?:SOLID|WATER)_VISIBLE_SAMPLES=(\d+).*?\blevels=6 center=\(([^)]+)\)",
+                    output,
+                )
+                if int(m.group(1)) > 0
+            }
+            positive = bool(centres & positive_centres)
+            # The positive sample must belong to the newly published centre,
+            # not the stationary pre-movement window.
             # Requiring two new centres here was impossible after key release:
             # the harness did not issue a second movement segment.
             if len(centres) >= 1 and positive:

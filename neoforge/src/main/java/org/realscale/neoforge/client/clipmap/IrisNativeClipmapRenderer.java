@@ -73,15 +73,13 @@ final class IrisNativeClipmapRenderer {
             "realscale.experimental.geometryclipmap.debug", "true"));
     private static final boolean SMOKE_VISIBILITY_PROBE =
             Boolean.getBoolean("realscale.experimental.geometryclipmap.smokeCamera");
-    private static boolean smokeVisibilityPassed;
-    private static long lastSmokeProbeNanos;
-    private static int pendingVisibilityQuery;
-    private static int visibilityAttempts;
-    private static double visibilityCameraX;
-    private static double visibilityCameraY;
-    private static double visibilityCameraZ;
-    private static int visibilityProgram;
-    private static int visibilityFramebuffer;
+    // Runtime markers: FAR_SOLID_VISIBLE_SAMPLES= and FAR_WATER_VISIBLE_SAMPLES=.
+    private static final VisibilityProbe SOLID_VISIBILITY_PROBE =
+            new VisibilityProbe("FAR_SOLID", false);
+    // Ocean and lake surfaces are valid far-field output too. Keep their
+    // diagnostic query smoke-only so normal gameplay does not add extra GPU queries.
+    private static final VisibilityProbe WATER_VISIBILITY_PROBE =
+            new VisibilityProbe("FAR_WATER", true);
 
     private IrisNativeClipmapRenderer() {}
 
@@ -176,11 +174,17 @@ final class IrisNativeClipmapRenderer {
                 }
                 if (farSolidBuffer != null) {
                     farSolidBuffer.bind();
-                    drawWithVisibilityProbe(farSolidBuffer, renderType, shadowPass, cameraX, cameraY, cameraZ);
+                    drawWithVisibilityProbe(farSolidBuffer, SOLID_VISIBILITY_PROBE,
+                            shadowPass, cameraX, cameraY, cameraZ);
                 }
             } else {
                 target.bind();
-                target.draw();
+                if (renderType == RenderType.translucent()) {
+                    drawWithVisibilityProbe(target, WATER_VISIBILITY_PROBE,
+                            shadowPass, cameraX, cameraY, cameraZ);
+                } else {
+                    target.draw();
+                }
             }
             return true;
         } catch (RuntimeException | LinkageError failure) {
@@ -205,70 +209,108 @@ final class IrisNativeClipmapRenderer {
     }
 
     private static void drawWithVisibilityProbe(VertexBuffer target,
-            RenderType renderType, boolean shadowPass,
+            VisibilityProbe probe, boolean shadowPass,
             double cameraX, double cameraY, double cameraZ) {
-        if (shadowPass || renderType != RenderType.solid()
-                || (!DEBUG && !SMOKE_VISIBILITY_PROBE)) {
-            target.draw();
-            return;
-        }
-        // Retrieve only completed queries. This is supported on OpenGL 4.1
-        // (including Apple Silicon), and cannot block on an unfinished draw.
-        if (pendingVisibilityQuery != 0
-                && GL15.glGetQueryObjecti(pendingVisibilityQuery,
-                        GL15.GL_QUERY_RESULT_AVAILABLE) != 0) {
-            int samples = GL15.glGetQueryObjecti(pendingVisibilityQuery,
-                    GL15.GL_QUERY_RESULT);
-            GL15.glDeleteQueries(pendingVisibilityQuery);
-            pendingVisibilityQuery = 0;
-            smokeVisibilityPassed = samples > 0;
-            System.out.printf(java.util.Locale.ROOT,
-                    "[RealScale Iris Clipmap] FAR_SOLID_VISIBLE_SAMPLES=%d "
-                            + "cameraY=%.1f cameraX=%.1f cameraZ=%.1f program=%d drawFramebuffer=%d attempt=%d levels=%d center=(%d,%d)%n",
-                    samples, visibilityCameraY, visibilityCameraX, visibilityCameraZ,
-                    visibilityProgram, visibilityFramebuffer, visibilityAttempts,
-                    cachedTiles.size(), cachedCenterX, cachedCenterZ);
-        }
-
-        long now = System.nanoTime();
-        if (pendingVisibilityQuery != 0 || smokeVisibilityPassed
-                || (SMOKE_VISIBILITY_PROBE && cameraY < 2300.0)
-                || (!SMOKE_VISIBILITY_PROBE && visibilityAttempts >= 4)
-                || (lastSmokeProbeNanos != 0L && now - lastSmokeProbeNanos < 2_000_000_000L)
-                || GL15.glGetQueryi(GL15.GL_SAMPLES_PASSED, GL15.GL_CURRENT_QUERY) != 0) {
-            target.draw();
-            return;
-        }
-        lastSmokeProbeNanos = now;
-        visibilityAttempts++;
-        visibilityCameraX = cameraX;
-        visibilityCameraY = cameraY;
-        visibilityCameraZ = cameraZ;
-        visibilityProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
-        visibilityFramebuffer = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
-        int query = GL15.glGenQueries();
-        try {
-            GL15.glBeginQuery(GL15.GL_SAMPLES_PASSED, query);
-            try {
-                target.draw();
-            } finally {
-                GL15.glEndQuery(GL15.GL_SAMPLES_PASSED);
-            }
-            pendingVisibilityQuery = query;
-            query = 0;
-        } finally {
-            if (query != 0) GL15.glDeleteQueries(query);
-        }
+        probe.draw(target, shadowPass, cameraX, cameraY, cameraZ);
     }
 
     private static void resetVisibilityProbe() {
-        if (pendingVisibilityQuery != 0) {
-            GL15.glDeleteQueries(pendingVisibilityQuery);
-            pendingVisibilityQuery = 0;
+        SOLID_VISIBILITY_PROBE.reset();
+        WATER_VISIBILITY_PROBE.reset();
+    }
+
+    private static final class VisibilityProbe {
+        private final String label;
+        private final boolean smokeOnly;
+        private int pendingQuery;
+        private int attempts;
+        private long lastProbeNanos;
+        private double cameraX;
+        private double cameraY;
+        private double cameraZ;
+        private int program;
+        private int framebuffer;
+        private int levels;
+        private long centerX;
+        private long centerZ;
+        private boolean passed;
+
+        private VisibilityProbe(String label, boolean smokeOnly) {
+            this.label = label;
+            this.smokeOnly = smokeOnly;
         }
-        smokeVisibilityPassed = false;
-        lastSmokeProbeNanos = 0L;
-        visibilityAttempts = 0;
+
+        private void draw(VertexBuffer target, boolean shadowPass,
+                double cameraX, double cameraY, double cameraZ) {
+            if (shadowPass || (smokeOnly && !SMOKE_VISIBILITY_PROBE)
+                    || (!DEBUG && !SMOKE_VISIBILITY_PROBE)) {
+                target.draw();
+                return;
+            }
+
+            // Each render layer owns its query. Solid terrain can be absent
+            // over an ocean while the translucent far-water surface is valid.
+            if (pendingQuery != 0
+                    && GL15.glGetQueryObjecti(pendingQuery,
+                            GL15.GL_QUERY_RESULT_AVAILABLE) != 0) {
+                int samples = GL15.glGetQueryObjecti(pendingQuery,
+                        GL15.GL_QUERY_RESULT);
+                GL15.glDeleteQueries(pendingQuery);
+                pendingQuery = 0;
+                passed = samples > 0;
+                System.out.printf(java.util.Locale.ROOT,
+                        "[RealScale Iris Clipmap] %s_VISIBLE_SAMPLES=%d "
+                                + "cameraY=%.1f cameraX=%.1f cameraZ=%.1f program=%d "
+                                + "drawFramebuffer=%d attempt=%d levels=%d center=(%d,%d)%n",
+                        label, samples, this.cameraY, this.cameraX, this.cameraZ,
+                        program, framebuffer, attempts, levels, centerX, centerZ);
+            }
+
+            long now = System.nanoTime();
+            if (pendingQuery != 0 || passed
+                    || (SMOKE_VISIBILITY_PROBE && cameraY < 2300.0)
+                    || (!SMOKE_VISIBILITY_PROBE && attempts >= 4)
+                    || (lastProbeNanos != 0L && now - lastProbeNanos < 2_000_000_000L)
+                    || GL15.glGetQueryi(GL15.GL_SAMPLES_PASSED,
+                            GL15.GL_CURRENT_QUERY) != 0) {
+                target.draw();
+                return;
+            }
+
+            lastProbeNanos = now;
+            attempts++;
+            this.cameraX = cameraX;
+            this.cameraY = cameraY;
+            this.cameraZ = cameraZ;
+            program = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+            framebuffer = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
+            levels = cachedTiles.size();
+            centerX = cachedCenterX;
+            centerZ = cachedCenterZ;
+            int query = GL15.glGenQueries();
+            try {
+                GL15.glBeginQuery(GL15.GL_SAMPLES_PASSED, query);
+                try {
+                    target.draw();
+                } finally {
+                    GL15.glEndQuery(GL15.GL_SAMPLES_PASSED);
+                }
+                pendingQuery = query;
+                query = 0;
+            } finally {
+                if (query != 0) GL15.glDeleteQueries(query);
+            }
+        }
+
+        private void reset() {
+            if (pendingQuery != 0) {
+                GL15.glDeleteQueries(pendingQuery);
+                pendingQuery = 0;
+            }
+            attempts = 0;
+            lastProbeNanos = 0L;
+            passed = false;
+        }
     }
 
     static void dispose() {
