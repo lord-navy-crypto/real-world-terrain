@@ -111,7 +111,7 @@ def generatedUrbanTemplates = layout.buildDirectory.dir("generated/realscale-urb
 // Gradle 9 removed Project.exec. Use ProviderFactory.exec so these
 // deterministic resource generators work on both the Gradle 8 and 9 CI lanes.
 def runArchitecturePython = { String scriptPath, List<String> arguments ->
-    def command = [System.getenv("PYTHON") ?: "python3", file(scriptPath).absolutePath] + arguments
+    def command = [System.getenv("PYTHON") ?: "python3", file("tools/generate_legacy_templates.py").absolutePath, file(scriptPath).absolutePath] + arguments
     providers.exec {
         commandLine(command)
     }.result.get()
@@ -120,6 +120,7 @@ def runArchitecturePython = { String scriptPath, List<String> arguments ->
 // Convert only the three explicitly licensed GDMC source schematics. The source
 // files stay outside the NeoForge module and are never packaged in the JAR.
 tasks.register("generateArchitectureTemplates") {
+    inputs.file(file("tools/generate_legacy_templates.py"))
     inputs.dir(file("../assets/architecture/gdmc-source"))
     inputs.file(file("../scripts/convert_gdmc_architecture.py"))
     outputs.dir(generatedLicensedArchitectureTemplates)
@@ -134,6 +135,7 @@ tasks.register("generateArchitectureTemplates") {
 }
 
 tasks.register("generateOriginalArchitectureTemplates") {
+    inputs.file(file("tools/generate_legacy_templates.py"))
     inputs.file(file("../scripts/generate_original_architecture.py"))
     outputs.dir(generatedOriginalArchitectureTemplates)
     doLast {
@@ -146,6 +148,7 @@ tasks.register("generateOriginalArchitectureTemplates") {
 }
 
 tasks.register("generateArchitectureBatchTemplates") {
+    inputs.file(file("tools/generate_legacy_templates.py"))
     inputs.file(file("../scripts/generate_architecture_batch.py"))
     inputs.file(file("../scripts/generate_original_architecture.py"))
     outputs.dir(generatedBatchArchitectureTemplates)
@@ -159,6 +162,7 @@ tasks.register("generateArchitectureBatchTemplates") {
 }
 
 tasks.register("generateArchitectureExpansionTemplates") {
+    inputs.file(file("tools/generate_legacy_templates.py"))
     inputs.file(file("../scripts/generate_architecture_expansion.py"))
     inputs.file(file("../scripts/generate_original_architecture.py"))
     outputs.dir(generatedExpansionArchitectureTemplates)
@@ -172,6 +176,7 @@ tasks.register("generateArchitectureExpansionTemplates") {
 }
 
 tasks.register("generateUrbanDistrictTemplates") {
+    inputs.file(file("tools/generate_legacy_templates.py"))
     inputs.file(file("../scripts/generate_urban_districts.py"))
     inputs.file(file("../scripts/urban_district_profiles.json"))
     inputs.file(file("../scripts/generate_original_architecture.py"))
@@ -191,6 +196,8 @@ tasks.register("generateBuiltInStructurePacks") {
               "generateUrbanDistrictTemplates")
     inputs.file(file("../scripts/architecture_expansion_profiles.json"))
     inputs.file(file("../scripts/urban_district_profiles.json"))
+    inputs.files(generatedLicensedArchitectureTemplates, generatedOriginalArchitectureTemplates,
+                 generatedBatchArchitectureTemplates, generatedExpansionArchitectureTemplates, generatedUrbanTemplates)
     outputs.dir(generatedStructureResources)
     doLast {
         def root = generatedStructureResources.get().asFile
@@ -266,7 +273,7 @@ tasks.register("generateBuiltInStructurePacks") {
         // StructureTemplateManager reads templates from the mod's normal
         // data namespace. Keep the NBT available for explicit /place template
         // use even when the optional worldgen pack is not selected.
-        def templateTarget = new File(root, "data/realscale/structure/architecture")
+        def templateTarget = new File(root, "data/realscale/structures/architecture")
         def licensedTemplateSource = new File(generatedLicensedArchitectureTemplates.get().asFile,
                 "data/realscale/structure/architecture")
         def originalTemplateSource = new File(generatedOriginalArchitectureTemplates.get().asFile,
@@ -294,7 +301,7 @@ tasks.register("generateBuiltInStructurePacks") {
         // Mirror the exact templates into the opt-in architecture pack as well.
         // Keep base-namespace copies for explicit placement without pack opt-in.
         def optionalTemplateTarget = new File(architecturePack,
-                "data/realscale/structure/architecture")
+                "data/realscale/structures/architecture")
         project.copy {
             from(licensedTemplateSource)
             from(originalTemplateSource)
@@ -604,11 +611,11 @@ tasks.register("generateBuiltInStructurePacks") {
         // disabled; worldgen JSON exists ONLY in the optional city pack.
         project.copy {
             from(urbanSource)
-            into(new File(root, "data/realscale/structure/urban"))
+            into(new File(root, "data/realscale/structures/urban"))
         }
         project.copy {
             from(urbanSource)
-            into(new File(urbanPack, "data/realscale/structure/urban"))
+            into(new File(urbanPack, "data/realscale/structures/urban"))
         }
         def writeUrbanJson = { String rel, Object data ->
             def target=new File(urbanPack,rel)
