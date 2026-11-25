@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "realscale",
+  "version": "${version}",
+  "name": "RealScale — Real-World Terrain",
+  "description": "Fabric 1.21.1 port of the RealScale Natural Automate terrain engine.",
+  "authors": [
+    "RealScale Research"
+  ],
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "org.realscale.neoforge.RealScaleMod"
+    ],
+    "client": [
+      "org.realscale.neoforge.RealScaleFabricClient"
+    ]
+  },
+  "mixins": [
+    {
+      "config": "realscale.fabric.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.14",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabric-api": ">=0.116.18"
+  },
+  "suggests": {
+    "yet_another_config_lib_v3": ">=3.8.1",
+    "distanthorizons": "*",
+    "chunky": "*"
+  }
+}

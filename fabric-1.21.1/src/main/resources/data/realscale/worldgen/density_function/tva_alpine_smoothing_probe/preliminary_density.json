@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:add",
+  "argument1": "realscale:tva_alpine_smoothing_probe/terrain_density",
+  "argument2": 0.390625
+}

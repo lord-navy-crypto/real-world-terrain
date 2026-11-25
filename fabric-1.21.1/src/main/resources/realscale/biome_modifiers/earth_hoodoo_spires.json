@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:badlands",
+    "minecraft:eroded_badlands",
+    "minecraft:wooded_badlands",
+    "minecraft:desert"
+  ],
+  "features": "realscale:earth_hoodoo_spires",
+  "step": "vegetal_decoration"
+}

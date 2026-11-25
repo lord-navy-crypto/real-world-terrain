@@ -1,0 +1,136 @@
+name: RealScale Fabric 1.21.1 Port
+
+on:
+  push:
+    branches: [feature/fabric-1.21.1-port]
+    paths:
+      - "fabric-1.21.1/**"
+      - "scripts/**"
+      - "assets/architecture/**"
+      - ".github/workflows/fabric-1.21.1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fabric-1.21.1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-smoke:
+    name: Fabric 1.21.1 build and runtime smoke
+    runs-on: ubuntu-latest
+    env:
+      FABRIC_LOADER_VERSION: "0.19.5"
+      FABRIC_API_VERSION: "0.116.18+1.21.1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            fabric-1.21.1
+            scripts
+            assets/architecture
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.12"
+
+      - name: Build Fabric 1.21.1 module
+        run: |
+          test ! -d forge
+          test ! -d neoforge
+          gradle --no-daemon -p fabric-1.21.1 clean build
+
+      - name: Audit remapped Fabric JAR
+        run: |
+          python3 - <<'PY'
+          import glob, json, zipfile
+          jars = [j for j in glob.glob("fabric-1.21.1/build/libs/RealScale-Fabric-1.21.1-*.jar")
+                  if not j.endswith(("-dev.jar", "-sources.jar"))]
+          assert len(jars) == 1, jars
+          with zipfile.ZipFile(jars[0]) as z:
+              names = z.namelist()
+              assert "fabric.mod.json" in names
+              assert "META-INF/mods.toml" not in names
+              assert "META-INF/neoforge.mods.toml" not in names
+              metadata = json.loads(z.read("fabric.mod.json"))
+              assert metadata["depends"]["minecraft"] == "1.21.1"
+              assert metadata["depends"]["java"] == ">=21"
+              assert "yet_another_config_lib_v3" in metadata.get("suggests", {})
+              rules = [n for n in names if n.startswith("realscale/biome_modifiers/") and n.endswith(".json")]
+              arch = [n for n in names if n.startswith("data/realscale/structures/architecture/") and n.endswith(".nbt")]
+              urban = [n for n in names if n.startswith("data/realscale/structures/urban/") and n.endswith(".nbt")]
+              assert len(rules) == 120, len(rules)
+              assert len(arch) == 100 and len(urban) == 4, (len(arch), len(urban))
+              for n in names:
+                  if n.endswith(".class"):
+                      data = z.read(n)
+                      assert b"net/minecraftforge/" not in data, n
+                      assert b"net/neoforged/" not in data, n
+              assert json.loads(z.read("pack.mcmeta"))["pack"]["pack_format"] == 48
+              print("FABRIC_1_21_1_JAR_AUDIT_OK", len(rules), len(arch), len(urban))
+          PY
+
+      - name: Generate Natural Automate world on Fabric 1.21.1
+        timeout-minutes: 8
+        env:
+          REALSCALE_FABRIC_CI_SMOKE: server
+        run: |
+          mkdir -p fabric-1.21.1/run
+          printf 'eula=true\n' > fabric-1.21.1/run/eula.txt
+          cat > fabric-1.21.1/run/server.properties <<'EOF'
+          level-name=fabric-1.21.1-smoke
+          level-type=realscale:natural_automate_three_realms
+          online-mode=false
+          view-distance=2
+          simulation-distance=2
+          max-tick-time=120000
+          EOF
+          timeout --signal=TERM --kill-after=15s 420s gradle --no-daemon -p fabric-1.21.1 runServer > fabric-1.21.1-server.log 2>&1 || { tail -180 fabric-1.21.1-server.log; exit 1; }
+          grep -F 'Done (' fabric-1.21.1/run/logs/latest.log
+          grep -F 'FABRIC_SERVER_TEMPLATE_SMOKE_OK' fabric-1.21.1-server.log
+
+      - name: Test client startup without optional YACL
+        timeout-minutes: 5
+        env:
+          JAVA_TOOL_OPTIONS: "-Drealscale.fabric.ci.clientSmoke=true"
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          ALSOFT_DRIVERS: "null"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth libgl1-mesa-dri libglx-mesa0
+          set +e
+          timeout --signal=TERM --kill-after=15s 180s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon -p fabric-1.21.1 runClient -Prealscale_include_yacl_dev=false > fabric-1.21.1-client-smoke.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] && [ "$status" -ne 124 ]; then
+            tail -180 fabric-1.21.1-client-smoke.log
+            exit "$status"
+          fi
+          grep -F 'FABRIC_CLIENT_NO_YACL_SMOKE_OK' fabric-1.21.1-client-smoke.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RealScale-Fabric-1.21.1-build-and-smoke-logs
+          path: |
+            fabric-1.21.1-server.log
+            fabric-1.21.1-client-smoke.log
+            fabric-1.21.1/run/logs/
+            fabric-1.21.1/run/crash-reports/
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-Fabric-1.21.1-JAR
+          path: |
+            fabric-1.21.1/build/libs/*.jar
+            !fabric-1.21.1/build/libs/*-dev.jar
+            !fabric-1.21.1/build/libs/*-sources.jar
+          if-no-files-found: error
