@@ -2,15 +2,15 @@ package org.realscale.neoforge;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.TickEvent;
 
 /**
  * Optional, physical-client-only FPS and frame interval measurements.
  *
- * Uses NeoForge's public RenderFrameEvent.Post, once per displayed frame.
+ * Uses Forge's RenderTickEvent END phase, once per displayed frame.
  * It NEVER changes worldgen, Section visibility, render distance, render
  * queue, VSync, shader state, or Sodium.
  *
@@ -46,7 +46,8 @@ public final class RealScaleClientFrameProfiler {
     private static ClientFrameIntervalStats window = new ClientFrameIntervalStats();
 
     @SubscribeEvent
-    public static void onFrame(RenderFrameEvent.Post event) {
+    public static void onFrame(TickEvent.RenderTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
         if (!ENABLED) return; // No per-frame nanotime calls when OFF.
         Minecraft client=Minecraft.getInstance();
         ClientLevel world=client.level;
