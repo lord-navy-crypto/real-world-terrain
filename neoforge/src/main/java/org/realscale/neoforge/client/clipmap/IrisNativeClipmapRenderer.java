@@ -505,9 +505,8 @@ final class IrisNativeClipmapRenderer {
                                 gridX, gridZ, level);
             }
         }
-        // The native Iris path must shade the actual surface smoothly. A
-        // two-sample footprint suppresses cell-scale ridges without changing
-        // the sampled terrain heights or the distant silhouette.
+        // Smooth normals are the far-field baseline. The first ring blends
+        // these normals toward flat voxel tops as its stepped geometry fades in.
         float[] smoothNormals = ClipmapSurfaceNormals.compute(
                 surfaceHeights, cells, spacing, holeRadius, 2);
 
@@ -518,11 +517,14 @@ final class IrisNativeClipmapRenderer {
         float[] voxelHeights = new float[cells * cells];
         float[] voxelBlends = new float[cells * cells];
         int[] voxelColors = new int[cells * cells];
-        Arrays.fill(voxelHeights, Float.NaN);
+        if (level == 0) {
+            Arrays.fill(voxelHeights, Float.NaN);
+        }
         long clipmapCenterX = tile.originX() + (long) cells * spacing / 2L;
         long clipmapCenterZ = tile.originZ() + (long) cells * spacing / 2L;
-        for (int cellZ = 0; cellZ < cells; cellZ++) {
-            for (int cellX = 0; cellX < cells; cellX++) {
+        if (level == 0) {
+            for (int cellZ = 0; cellZ < cells; cellZ++) {
+                for (int cellX = 0; cellX < cells; cellX++) {
                 int sample = cellZ * side + cellX;
                 float h00 = surfaceHeights[sample];
                 float h10 = surfaceHeights[sample + 1];
@@ -547,8 +549,11 @@ final class IrisNativeClipmapRenderer {
                         + smoothNormals[(sample + side + 1) * 3 + 1]) * 0.25f;
                 voxelHeights[cell] = ClipmapVoxelStyle.quantizeHeight(averageHeight);
                 voxelBlends[cell] = blend;
-                voxelColors[cell] = ClipmapSurfacePalette.terrainColorAt(
-                        averageHeight, averageNormalY, seaLevel, false, worldX, worldZ);
+                    if (blend > 0.001f) {
+                        voxelColors[cell] = ClipmapSurfacePalette.terrainColorAt(
+                                averageHeight, averageNormalY, seaLevel, false, worldX, worldZ);
+                    }
+                }
             }
         }
 
@@ -879,16 +884,15 @@ final class IrisNativeClipmapRenderer {
                 ny = faceNormalScratch[1];
                 nz = faceNormalScratch[2];
             }
-            // Sprite-local UVs stay inside the selected atlas entry. Near LODs
-            // use authored block textures; coarse LODs use a neutral texel with
-            // macro-scale vertex tint to avoid distant texture aliasing.
+            // Terrain samples one neutral atlas texel at every LOD. Its actual
+            // material is carried by the vertex palette, avoiding atlas aliasing.
             putVertex(builder, sprite, rgb[vertex], alpha,
                     x[vertex], y[vertex], z[vertex],
                     triangleUvs[vertex * 2], triangleUvs[vertex * 2 + 1], nx, ny, nz);
         }
         // TRIANGLES keeps Iris's per-vertex normals intact. Its QUADS
         // extension path recalculates one face normal and would erase the
-        // smooth clipmap normals supplied above.
+        // smooth-to-voxel normal transition supplied above.
     }
 
     private static void triangleNormalInto(float[] x, float[] y, float[] z,
