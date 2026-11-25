@@ -94,23 +94,29 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("click_y = window_y + (button_y + 10) * gui_scale", SMOKE)
 
     def test_pause_menu_toggle_waits_for_actual_world_render(self):
-        self.assertIn("def wait_until_world_rendered(", SMOKE)
-        self.assertIn("CLIENT_WORLD_RENDER_READY", SMOKE)
-        self.assertIn("Loading terrain", SMOKE)
-        self.assertIn("wait_until_world_rendered()", SMOKE)
+        self.assertIn("CLIENT_WORLD_RENDER_READY:", GEOMETRY_CLIENT)
+        self.assertIn("minecraft.screen == null", GEOMETRY_CLIENT)
+        self.assertIn("hasChunkAt(minecraft.player.blockPosition())", GEOMETRY_CLIENT)
+        self.assertIn("def wait_until_world_rendered(lines", SMOKE)
+        self.assertIn("CLIENT_WORLD_RENDER_READY_CONFIRMED", SMOKE)
+        self.assertIn("wait_until_world_rendered(lines)", SMOKE)
 
     def test_real_client_exercises_pause_menu_geometry_clipmap_toggle(self):
         self.assertIn("def read_pause_menu_toggle_text(", SMOKE)
+        self.assertIn("def wait_for_pause_screen(", SMOKE)
+        self.assertIn('"back to game"', SMOKE)
+        self.assertIn('"options"', SMOKE)
         self.assertIn("def test_pause_menu_geometry_clipmap_toggle(", SMOKE)
         self.assertIn("CLIPMAP_PAUSE_MENU_TOGGLE_PASS", SMOKE)
-        self.assertIn('if "geometry clipmap off" not in initial:', SMOKE)
+        self.assertIn('if "clipmap off" not in initial:', SMOKE)
         self.assertIn("Geometry Clipmap must default to OFF", SMOKE)
-        self.assertIn("geometry clipmap on", SMOKE)
-        self.assertIn("geometry clipmap off", SMOKE)
+        self.assertIn('if "clipmap on" not in on_text:', SMOKE)
+        self.assertIn("clipmap on", SMOKE)
+        self.assertIn("clipmap off", SMOKE)
         self.assertIn("[RealScale] Clipmap: OFF", SMOKE)
         self.assertIn("[RealScale] Clipmap: ON", SMOKE)
         self.assertGreaterEqual(SMOKE.count('["xdotool", "mousemove", "--sync"'), 3)
-        self.assertIn('["tesseract", str(crop), "stdout", "--psm", "6"]', SMOKE)
+        self.assertIn('["tesseract", str(crop), "stdout", "--psm", "11"]', SMOKE)
 
     def test_eye_level_capture_waits_for_complete_lods_and_proxies(self):
         self.assertIn("capture_natural_surface_view(proc, lines)", SMOKE)

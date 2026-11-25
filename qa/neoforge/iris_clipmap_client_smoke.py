@@ -395,7 +395,7 @@ def ocr_game_window(name: str) -> str:
             check=True, timeout=30,
         )
     result = subprocess.run(
-        ["tesseract", str(crop), "stdout", "--psm", "6"],
+        ["tesseract", str(crop), "stdout", "--psm", "11"],
         check=True, capture_output=True, text=True, timeout=60,
     )
     return re.sub(r"[^a-z0-9]+", " ", result.stdout.lower()).strip()
@@ -403,6 +403,22 @@ def ocr_game_window(name: str) -> str:
 
 def read_pause_menu_toggle_text(name: str) -> str:
     return ocr_game_window(name)
+
+
+def wait_for_pause_screen(name: str, timeout: float = 12.0) -> str:
+    """Require vanilla pause-screen labels before asserting the custom toggle."""
+    deadline = time.monotonic() + timeout
+    latest = ""
+    while time.monotonic() < deadline:
+        latest = read_pause_menu_toggle_text(name)
+        if "back to game" in latest and "options" in latest:
+            print("PAUSE_SCREEN_VERIFIED: Back to Game + Options", flush=True)
+            return latest
+        time.sleep(0.5)
+    raise RuntimeError(
+        "Escape did not open the actual Minecraft PauseScreen; "
+        "expected Back to Game and Options, OCR was: " + latest
+    )
 
 
 def wait_for_toggle_status(lines, marker: str, start: int, timeout: float = 12.0) -> None:
@@ -415,16 +431,19 @@ def wait_for_toggle_status(lines, marker: str, start: int, timeout: float = 12.0
     raise RuntimeError("Client did not report the pause-menu toggle: " + marker)
 
 
-def wait_until_world_rendered(timeout: float = 120.0) -> None:
-    """Do not interact with the pause menu while the client is still on Loading terrain."""
+def wait_until_world_rendered(lines: list[str], timeout: float = 120.0) -> None:
+    """Wait for render-thread proof of a loaded player chunk and no active screen."""
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        normalized = ocr_game_window("iris-client-world-ready-probe")
-        if "loading terrain" not in normalized:
-            print("CLIENT_WORLD_RENDER_READY", flush=True)
+        if "CLIENT_WORLD_RENDER_READY:" in "".join(lines):
+            capture_screenshot("iris-client-world-ready-probe")
+            print("CLIENT_WORLD_RENDER_READY_CONFIRMED", flush=True)
             return
-        time.sleep(2)
-    raise RuntimeError("Minecraft remained on the Loading terrain screen; pause-menu toggle was not attempted")
+        time.sleep(0.25)
+    raise RuntimeError(
+        "Minecraft did not render a loaded player chunk with its loading screen closed; "
+        "pause-menu interaction was not attempted"
+    )
 
 
 def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
@@ -449,8 +468,10 @@ def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
     focus_minecraft_window()
     subprocess.run(["xdotool", "key", "Escape"], check=True, timeout=10)
     time.sleep(1)
-    initial = read_pause_menu_toggle_text("iris-clipmap-pause-menu-default-off")
-    if "geometry clipmap off" not in initial:
+    initial = wait_for_pause_screen("iris-clipmap-pause-menu-default-off")
+    # Narrow CI windows use the compact "Clipmap: OFF" label; wider windows
+    # use "Geometry Clipmap: OFF". Both expose the same state token.
+    if "clipmap off" not in initial:
         raise RuntimeError("Geometry Clipmap must default to OFF: " + initial)
 
     before_on = len(lines)
@@ -459,8 +480,8 @@ def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
         check=True, timeout=10,
     )
     wait_for_toggle_status(lines, "[RealScale] Clipmap: ON", before_on)
-    on_text = read_pause_menu_toggle_text("iris-clipmap-pause-menu-on")
-    if "geometry clipmap on" not in on_text:
+    on_text = wait_for_pause_screen("iris-clipmap-pause-menu-on")
+    if "clipmap on" not in on_text:
         raise RuntimeError("Pause-menu toggle did not enable Geometry Clipmap: " + on_text)
 
     before_off = len(lines)
@@ -469,8 +490,8 @@ def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
         check=True, timeout=10,
     )
     wait_for_toggle_status(lines, "[RealScale] Clipmap: OFF", before_off)
-    off_text = read_pause_menu_toggle_text("iris-clipmap-pause-menu-off")
-    if "geometry clipmap off" not in off_text:
+    off_text = wait_for_pause_screen("iris-clipmap-pause-menu-off")
+    if "clipmap off" not in off_text:
         raise RuntimeError("Pause-menu toggle did not disable Geometry Clipmap: " + off_text)
 
     before_on_again = len(lines)
@@ -479,8 +500,8 @@ def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
         check=True, timeout=10,
     )
     wait_for_toggle_status(lines, "[RealScale] Clipmap: ON", before_on_again)
-    on_again_text = read_pause_menu_toggle_text("iris-clipmap-pause-menu-on-again")
-    if "geometry clipmap on" not in on_again_text:
+    on_again_text = wait_for_pause_screen("iris-clipmap-pause-menu-on-again")
+    if "clipmap on" not in on_again_text:
         raise RuntimeError("Pause-menu toggle did not re-enable Geometry Clipmap: " + on_again_text)
 
     subprocess.run(["xdotool", "key", "Escape"], check=True, timeout=10)
@@ -846,7 +867,7 @@ def run_client(env: dict[str, str]) -> None:
             elif not camera_prepared:
                 if client_latest.exists() and "Loaded 2 advancements" in client_latest.read_text(
                         encoding="utf-8", errors="replace"):
-                    wait_until_world_rendered()
+                    wait_until_world_rendered(lines)
                     test_pause_menu_geometry_clipmap_toggle(lines)
                     capture_natural_surface_view(proc, lines)
                     prepare_open_rendering_view(client_latest, lines)
