@@ -232,7 +232,7 @@ tasks.register("generateBuiltInStructurePacks") {
         // StructureTemplateManager reads templates from the mod's normal
         // data namespace. Keep the NBT available for explicit /place template
         // use even when the optional worldgen pack is not selected.
-        def templateTarget = new File(root, "data/realscale/structures/architecture")
+        def templateTarget = new File(root, "data/realscale/structure/architecture")
         def licensedTemplateSource = new File(generatedLicensedArchitectureTemplates.get().asFile,
                 "data/realscale/structure/architecture")
         def originalTemplateSource = new File(generatedOriginalArchitectureTemplates.get().asFile,
@@ -260,7 +260,7 @@ tasks.register("generateBuiltInStructurePacks") {
         // Mirror the exact templates into the opt-in architecture pack as well.
         // Keep base-namespace copies for explicit placement without pack opt-in.
         def optionalTemplateTarget = new File(architecturePack,
-                "data/realscale/structures/architecture")
+                "data/realscale/structure/architecture")
         project.copy {
             from(licensedTemplateSource)
             from(originalTemplateSource)
@@ -570,11 +570,11 @@ tasks.register("generateBuiltInStructurePacks") {
         // disabled; worldgen JSON exists ONLY in the optional city pack.
         project.copy {
             from(urbanSource)
-            into(new File(root, "data/realscale/structures/urban"))
+            into(new File(root, "data/realscale/structure/urban"))
         }
         project.copy {
             from(urbanSource)
-            into(new File(urbanPack, "data/realscale/structures/urban"))
+            into(new File(urbanPack, "data/realscale/structure/urban"))
         }
         def writeUrbanJson = { String rel, Object data ->
             def target=new File(urbanPack,rel)
