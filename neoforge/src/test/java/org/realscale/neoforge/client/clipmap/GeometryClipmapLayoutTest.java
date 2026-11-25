@@ -124,6 +124,54 @@ final class GeometryClipmapLayoutTest {
                 () -> new GeometryClipmapLayout(256, 6, 8, 8));
     }
 
+
+    @Test
+    void rangePresetsScaleTheOuterExtentAndSampleGrid() {
+        GeometryClipmapLayout.Layout shortRange =
+                GeometryClipmapLayout.forRenderDistanceChunks(10, 64).compute(0.0, 0.0);
+        GeometryClipmapLayout.Layout mediumRange =
+                GeometryClipmapLayout.forRenderDistanceChunks(10, 128).compute(0.0, 0.0);
+        GeometryClipmapLayout.Layout longRange =
+                GeometryClipmapLayout.forRenderDistanceChunks(10, 256).compute(0.0, 0.0);
+
+        assertEquals(64, shortRange.gridCells());
+        assertEquals(128, mediumRange.gridCells());
+        assertEquals(256, longRange.gridCells());
+        assertEquals(4096L, shortRange.maxAxisExtentBlocks());
+        assertEquals(8192L, mediumRange.maxAxisExtentBlocks());
+        assertEquals(16384L, longRange.maxAxisExtentBlocks());
+    }
+
+    @Test
+    void rangePresetAutomaticallyExpandsIfVanillaNearDistanceNeedsMoreCoverage() {
+        GeometryClipmapLayout shortRequest =
+                GeometryClipmapLayout.forRenderDistanceChunks(12, 64);
+        GeometryClipmapLayout mediumRequest =
+                GeometryClipmapLayout.forRenderDistanceChunks(12, 128);
+
+        assertEquals(128, shortRequest.gridCells());
+        assertEquals(128, mediumRequest.gridCells());
+        assertEquals(8192L, shortRequest.compute(0.0, 0.0).maxAxisExtentBlocks());
+    }
+
+    @Test
+    void allRangePresetsPreserveTheVanillaNearFieldForEverySupportedViewDistance() {
+        for (int chunks = 2; chunks <= 64; chunks++) {
+            for (int requestedGrid : new int[]{64, 128, 256}) {
+                GeometryClipmapLayout planner =
+                        GeometryClipmapLayout.forRenderDistanceChunks(chunks, requestedGrid);
+                GeometryClipmapLayout.Layout layout = planner.compute(0.0, 0.0);
+                long snap = layout.levels().get(layout.levels().size() - 1)
+                        .cellSpacingBlocks();
+                assertTrue(layout.effectiveInnerRadiusBlocks() + snap / 2L
+                                <= layout.nearRadiusBlocks(),
+                        "Blank near/far gap possible at " + chunks
+                                + " chunks and grid " + requestedGrid);
+                assertTrue(layout.gridCells() >= requestedGrid);
+            }
+        }
+    }
+
     @Test
     void rejectsIncompatiblePreviousLayoutAndInvalidGrid() {
         GeometryClipmapLayout.Layout before = planner.compute(0.0, 0.0);
