@@ -8,6 +8,13 @@ on:
       - "scripts/**"
       - "assets/architecture/**"
       - ".github/workflows/fabric-1.21.1.yml"
+  pull_request:
+    branches: [feature/fabric-1.21.1-port]
+    paths:
+      - "fabric-1.21.1/**"
+      - "scripts/**"
+      - "assets/architecture/**"
+      - ".github/workflows/fabric-1.21.1.yml"
   workflow_dispatch:
 
 permissions:
