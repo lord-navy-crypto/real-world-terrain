@@ -1,0 +1,14 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:plains",
+    "minecraft:forest",
+    "minecraft:swamp",
+    "realscale:floodplain_margin",
+    "realscale:wet_meadow",
+    "realscale:riverine_woodland",
+    "realscale:seasonal_floodforest"
+  ],
+  "features": "realscale:floodplain_bank",
+  "step": "vegetal_decoration"
+}
