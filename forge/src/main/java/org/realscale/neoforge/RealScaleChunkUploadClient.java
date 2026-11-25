@@ -108,7 +108,7 @@ public final class RealScaleChunkUploadClient {
         if(dispatcher==null)return;
         int queued=readDispatcherCount(dispatcher,queuedAccessor);
         int uploading=readDispatcherCount(dispatcher,uploadingAccessor);
-        int free=readDispatcherCount(dispatcher,freeBuffersAccessor)
+        int free=readDispatcherCount(dispatcher,freeBuffersAccessor);
         Runtime runtime=Runtime.getRuntime();
         long heapUsed=Math.max(0L,runtime.totalMemory()-runtime.freeMemory());
         long heapMax=Math.max(1L,runtime.maxMemory());
