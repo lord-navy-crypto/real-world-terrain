@@ -10,6 +10,8 @@ final class ClipmapVoxelStyleTest {
         assertEquals(0, ClipmapVoxelStyle.transitionLevel(256, 4, 10));
         assertEquals(0, ClipmapVoxelStyle.transitionLevel(128, 4, 10));
         assertEquals(1, ClipmapVoxelStyle.transitionLevel(64, 4, 10));
+        assertEquals(-1, ClipmapVoxelStyle.transitionLevel(64, 8, 32));
+        assertEquals(-1, ClipmapVoxelStyle.transitionLevel(128, 16, 64));
         assertEquals(0.0f,
                 ClipmapVoxelStyle.blend(0, 160.0, 10, 4, 4, 256), 1.0e-6f);
         assertEquals(0.0f,
