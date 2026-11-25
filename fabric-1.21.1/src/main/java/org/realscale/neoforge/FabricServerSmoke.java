@@ -64,6 +64,7 @@ public final class FabricServerSmoke {
         System.out.println("FABRIC_TEMPLATE_MANAGER_DIAGNOSTIC count=" + managerIds.size()
                 + " sample=" + managerIds.stream().limit(8).toList());
 
+        var unsupportedBlocks = new java.util.ArrayList<String>();
         for (ResourceLocation id : ids) {
             var resourceId = resourceIdsByTemplate.get(id);
             var resource = packagedResources.get(resourceId);
@@ -77,14 +78,21 @@ public final class FabricServerSmoke {
                 if (palette.isEmpty())
                     throw new IllegalStateException("Empty palette in " + id);
                 for (int i = 0; i < palette.size(); i++) {
-                    var blockId = ResourceLocation.tryParse(palette.getCompound(i).getString("Name"));
+                    var rawBlockId = palette.getCompound(i).getString("Name");
+                    var blockId = ResourceLocation.tryParse(rawBlockId);
                     if (blockId == null || !BuiltInRegistries.BLOCK.containsKey(blockId))
-                        throw new IllegalStateException("Unsupported palette block " + blockId + " in " + id);
+                        unsupportedBlocks.add(rawBlockId + " in " + id);
                 }
             } catch (IOException e) {
                 throw new IllegalStateException("Could not read " + id, e);
             }
+        }
+        if (!unsupportedBlocks.isEmpty())
+            throw new IllegalStateException("Unsupported palette blocks (" + unsupportedBlocks.size()
+                    + "): " + unsupportedBlocks.stream().limit(80).toList());
 
+        for (ResourceLocation id : ids) {
+            var resourceId = resourceIdsByTemplate.get(id);
             var managerId = managerIdsByPath.get(id.getPath());
             if (managerId == null)
                 throw new IllegalStateException("StructureTemplateManager did not enumerate " + id
