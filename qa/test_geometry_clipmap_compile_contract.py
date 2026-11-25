@@ -533,5 +533,24 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("public void copyHeightsRegionTo(", payload)
 
 
+    def test_iris_near_ring_transitions_from_voxel_steps_to_continuous_lods(self):
+        native = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/IrisNativeClipmapRenderer.java").read_text(
+            encoding="utf-8"
+        )
+        style = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapVoxelStyle.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("ClipmapVoxelStyle.blend(", native)
+        self.assertIn("ClipmapVoxelStyle.quantizeHeight(", native)
+        self.assertIn("ClipmapVoxelStyle.blendHeight(", native)
+        self.assertIn("ClipmapVoxelStyle.blendColor(", native)
+        self.assertIn("appendVoxelWalls(", native)
+        self.assertIn("emitVoxelWallX(", native)
+        self.assertIn("emitVoxelWallZ(", native)
+        self.assertIn("level != 0", style)
+        self.assertIn("FADE_LENGTH_CELLS = 48.0f", style)
+        self.assertIn("Math.floor(height + 0.5f)", style)
+
+
 if __name__ == "__main__":
     unittest.main()
