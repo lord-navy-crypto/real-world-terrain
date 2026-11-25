@@ -510,12 +510,15 @@ final class IrisNativeClipmapRenderer {
         float[] smoothNormals = ClipmapSurfaceNormals.compute(
                 surfaceHeights, cells, spacing, holeRadius, 2);
 
-        // Only the nearest ring receives voxel-cell data. The transition starts
-        // beyond the protected vanilla overlap, then fades out before coarse LODs.
-        float[] voxelHeights = level == 0 ? new float[cells * cells] : null;
-        float[] voxelBlends = level == 0 ? new float[cells * cells] : null;
-        int[] voxelColors = level == 0 ? new int[cells * cells] : null;
-        if (level == 0) {
+        // Select the first ring that extends beyond the protected vanilla
+        // overlap. This keeps the voxel transition active even in shorter
+        // range presets where LOD 0 itself is fully hidden by vanilla chunks.
+        int voxelLevel = ClipmapVoxelStyle.transitionLevel(
+                cells, baseSpacing, nearChunks);
+        float[] voxelHeights = level == voxelLevel ? new float[cells * cells] : null;
+        float[] voxelBlends = level == voxelLevel ? new float[cells * cells] : null;
+        int[] voxelColors = level == voxelLevel ? new int[cells * cells] : null;
+        if (level == voxelLevel) {
             Arrays.fill(voxelHeights, Float.NaN);
             long clipmapCenterX = tile.originX() + (long) cells * spacing / 2L;
             long clipmapCenterZ = tile.originZ() + (long) cells * spacing / 2L;
@@ -537,7 +540,7 @@ final class IrisNativeClipmapRenderer {
                     double distance = Math.hypot(worldX - clipmapCenterX,
                             worldZ - clipmapCenterZ);
                     float blend = ClipmapVoxelStyle.blend(
-                            level, distance, nearChunks, spacing);
+                            level, distance, nearChunks, baseSpacing, spacing, cells);
                     float averageNormalY = (
                             smoothNormals[sample * 3 + 1]
                             + smoothNormals[(sample + 1) * 3 + 1]
@@ -582,10 +585,10 @@ final class IrisNativeClipmapRenderer {
             int cellX = Math.min(gridX[0], Math.min(gridX[1], gridX[2]));
             int cellZ = Math.min(gridZ[0], Math.min(gridZ[1], gridZ[2]));
             int cellIndex = cellZ * cells + cellX;
-            float voxelBlend = level == 0 ? voxelBlends[cellIndex] : 0.0f;
-            float voxelHeight = level == 0 ? voxelHeights[cellIndex]
+            float voxelBlend = level == voxelLevel ? voxelBlends[cellIndex] : 0.0f;
+            float voxelHeight = level == voxelLevel ? voxelHeights[cellIndex]
                     : (topHeight[0] + topHeight[1] + topHeight[2]) / 3.0f;
-            if (level == 0 && !Float.isFinite(voxelHeight)) {
+            if (level == voxelLevel && !Float.isFinite(voxelHeight)) {
                 voxelHeight = (topHeight[0] + topHeight[1] + topHeight[2]) / 3.0f;
             }
 
@@ -643,15 +646,15 @@ final class IrisNativeClipmapRenderer {
         // Add vertical risers between neighbouring quantized cells. The wall
         // height shrinks with the same blend as the top surface, disappearing
         // before the first fully continuous coarse LOD.
-        appendVoxelWalls(tile, level, seaLevel, sprites.neutral(),
+        appendVoxelWalls(tile, level, voxelLevel, seaLevel, sprites.neutral(),
                 surfaceHeights, voxelHeights, voxelBlends, solid);
     }
 
     private static void appendVoxelWalls(ClipmapHeightTilePayload tile, int level,
-            int seaLevel, TextureAtlasSprite neutral,
+            int voxelLevel, int seaLevel, TextureAtlasSprite neutral,
             float[] surfaceHeights, float[] voxelHeights, float[] voxelBlends,
             BufferBuilder solid) {
-        if (level != 0) return;
+        if (level != voxelLevel || voxelHeights == null || voxelBlends == null) return;
         int cells = tile.gridCells();
         int side = cells + 1;
         int spacing = tile.cellSpacingBlocks();
