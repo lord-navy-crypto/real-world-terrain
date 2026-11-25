@@ -1,4 +1,4 @@
-name: Forge 1.20.1 Build
+name: Forge 1.20.1 Compatibility Matrix
 
 on:
   push:
@@ -25,7 +25,27 @@ concurrency:
 
 jobs:
   build:
+    name: Forge ${{ matrix.forge_version }} / Minecraft 1.20.1
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 47.1.0 was the first recommended Forge 1.20.1 build.
+          # Build every compatibility checkpoint; run full server/client
+          # integration on the oldest supported and current recommended lines.
+          - forge_version: "47.1.0"
+            integration: true
+          - forge_version: "47.2.0"
+            integration: false
+          - forge_version: "47.3.0"
+            integration: false
+          - forge_version: "47.4.0"
+            integration: false
+          - forge_version: "47.4.28"
+            integration: true
+    env:
+      FORGE_VERSION: ${{ matrix.forge_version }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -50,16 +70,19 @@ jobs:
         run: |
           test ! -d neoforge
           gradle --no-daemon -p forge clean build
+
       - name: Audit the actual Forge JAR
         run: python3 forge/tools/audit_jar.py forge/build/libs/RealScale-Forge-1.20.1-*.jar
 
       - name: Upload Forge JAR
         uses: actions/upload-artifact@v4
         with:
-          name: RealScale-Forge-1.20.1
+          name: RealScale-Forge-1.20.1-${{ matrix.forge_version }}
           path: forge/build/libs/*.jar
           if-no-files-found: error
+
       - name: Smoke-test dedicated server with the RealScale default preset
+        if: matrix.integration
         timeout-minutes: 6
         env:
           REALSCALE_FORGE_CI_SMOKE: server
@@ -92,6 +115,7 @@ jobs:
           echo "Forge server loaded the RealScale preset and reached the ready state."
 
       - name: Install standalone Forge and test the distributable JAR
+        if: matrix.integration
         timeout-minutes: 8
         env:
           REALSCALE_FORGE_CI_SMOKE: server
@@ -100,7 +124,7 @@ jobs:
           mkdir -p forge-production/mods
           cp forge/build/libs/RealScale-Forge-1.20.1-*.jar forge-production/mods/
           cd forge-production
-          curl --fail --location --retry 3 -o forge-installer.jar https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.28/forge-1.20.1-47.4.28-installer.jar
+          curl --fail --location --retry 3 -o forge-installer.jar "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-${FORGE_VERSION}/forge-1.20.1-${FORGE_VERSION}-installer.jar"
           java -jar forge-installer.jar --installServer > installer.log 2>&1 || { tail -150 installer.log; exit 1; }
           printf 'eula=true\n' > eula.txt
           cat > server.properties <<'EOF'
@@ -120,20 +144,23 @@ jobs:
           echo 'FORGE_STANDALONE_JAR_SMOKE_OK'
 
       - name: Start Forge client and render RealScale UI
+        if: matrix.integration
         timeout-minutes: 6
         env:
           REALSCALE_FORGE_CI_SMOKE: client
           LIBGL_ALWAYS_SOFTWARE: "1"
+          ALSOFT_DRIVERS: "null"
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb xauth libgl1-mesa-dri libglx-mesa0
           timeout 240s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon -p forge runClient > forge-client-smoke.log 2>&1 || { tail -150 forge-client-smoke.log; exit 1; }
           grep 'FORGE_CLIENT_UI_SMOKE_OK' forge-client-smoke.log
+
       - name: Upload Forge integration logs
-        if: always()
+        if: always() && matrix.integration
         uses: actions/upload-artifact@v4
         with:
-          name: RealScale-Forge-integration-logs
+          name: RealScale-Forge-integration-logs-${{ matrix.forge_version }}
           path: |
             forge-server-smoke.log
             forge-client-smoke.log
