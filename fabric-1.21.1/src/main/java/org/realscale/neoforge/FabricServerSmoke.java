@@ -24,11 +24,11 @@ public final class FabricServerSmoke {
 
         var resourceManager = server.getResourceManager();
         var packagedResources = resourceManager.listResources(
-                "structures", id -> id.getNamespace().equals("realscale"));
+                "structure", id -> id.getNamespace().equals("realscale"));
         var resourceIdsByTemplate = new java.util.HashMap<ResourceLocation, ResourceLocation>();
         for (var resourceId : packagedResources.keySet()) {
             String path = resourceId.getPath();
-            if (path.startsWith("structures/")) path = path.substring("structures/".length());
+            if (path.startsWith("structure/")) path = path.substring("structure/".length());
             if (!path.endsWith(".nbt")) continue;
             String templatePath = path.substring(0, path.length() - ".nbt".length());
             if (!templatePath.startsWith("architecture/") && !templatePath.startsWith("urban/")) continue;
@@ -57,7 +57,7 @@ public final class FabricServerSmoke {
         var managerIdsByPath = new java.util.HashMap<String, ResourceLocation>();
         for (var managerId : managerIds) {
             String path = managerId.getPath();
-            if (path.startsWith("structures/")) path = path.substring("structures/".length());
+            if (path.startsWith("structure/")) path = path.substring("structure/".length());
             if (path.endsWith(".nbt")) path = path.substring(0, path.length() - ".nbt".length());
             managerIdsByPath.put(path, managerId);
         }
