@@ -143,9 +143,9 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
         self.assertIn("sprites.neutral()", IRIS_RENDERER)
         self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", IRIS_RENDERER)
-        self.assertIn("triangleUvs[0] = 8.0f", IRIS_RENDERER)
-        self.assertIn("triangleUvs[5] = 8.0f", IRIS_RENDERER)
-        self.assertNotIn("ClipmapTriangleUv.computeCellAlignedInto(", IRIS_RENDERER)
+        self.assertEqual(2, IRIS_RENDERER.count("ClipmapTriangleUv.computeCellAlignedInto("))
+        self.assertIn("per-cell UV basis", IRIS_RENDERER)
+        self.assertNotIn("triangleUvs[0] = 8.0f", IRIS_RENDERER)
         self.assertIn("emitTriangle(water, sprites.neutral()", IRIS_RENDERER)
         palette = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapSurfacePalette.java").read_text(
             encoding="utf-8"
@@ -156,7 +156,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
 
     def test_native_terrain_uses_procedural_palette_and_doubles_grid_density(self):
         self.assertIn("ClipmapRingMesh.surfaceIndices(cells, holeRadius)", IRIS_RENDERER)
-        self.assertNotIn("ClipmapTriangleUv.computeCellAlignedInto", IRIS_RENDERER)
+        self.assertIn("ClipmapTriangleUv.computeCellAlignedInto", IRIS_RENDERER)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
         self.assertIn("sprites.neutral()", IRIS_RENDERER)
         self.assertNotIn("sprites.forMaterial(", IRIS_RENDERER)

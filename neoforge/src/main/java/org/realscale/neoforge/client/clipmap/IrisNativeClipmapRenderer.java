@@ -646,14 +646,10 @@ final class IrisNativeClipmapRenderer {
                     vertexColors[vertex] = ClipmapSurfacePalette.waterColor();
                 }
                 // Far water must not repeat the high-frequency block-water atlas.
-                // Sample the same neutral white texel as terrain and carry its
-                // stable material entirely in vertex color to avoid LOD shimmer.
-                triangleUvs[0] = 8.0f;
-                triangleUvs[1] = 8.0f;
-                triangleUvs[2] = 8.0f;
-                triangleUvs[3] = 8.0f;
-                triangleUvs[4] = 8.0f;
-                triangleUvs[5] = 8.0f;
+                // Keep a non-degenerate per-cell UV basis for Iris/PBR tangent
+                // reconstruction, but sample only the flat neutral white sprite.
+                // The stable water material remains in vertex color and alpha.
+                ClipmapTriangleUv.computeCellAlignedInto(gridX, gridZ, triangleUvs);
                 emitTriangle(water, sprites.neutral(), vertexColors, 190,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         false, 0.0f, true, faceNormalScratch);
@@ -678,15 +674,10 @@ final class IrisNativeClipmapRenderer {
                             continuousColor, voxelColor, voxelBlend);
                 }
                 // Never paint terrain surfaces with block/item-atlas artwork.
-                // Iris requires sampler0, so all terrain vertices sample one fixed
-                // neutral texel; the actual surface material comes from the
-                // procedural per-vertex terrain palette above.
-                triangleUvs[0] = 8.0f;
-                triangleUvs[1] = 8.0f;
-                triangleUvs[2] = 8.0f;
-                triangleUvs[3] = 8.0f;
-                triangleUvs[4] = 8.0f;
-                triangleUvs[5] = 8.0f;
+                // A neutral white sprite prevents texture aliasing, while a
+                // per-cell UV basis keeps Iris/PBR tangent reconstruction valid.
+                // The actual material comes from the procedural vertex palette.
+                ClipmapTriangleUv.computeCellAlignedInto(gridX, gridZ, triangleUvs);
                 emitTriangle(solid, sprites.neutral(), vertexColors, 255,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         true, voxelBlend, false, faceNormalScratch);
