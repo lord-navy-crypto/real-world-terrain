@@ -63,7 +63,6 @@ public final class GeometryClipmapClient {
     private static boolean unsupportedWorld;
     private static boolean irisCompatibilityNoticeShown;
     private static boolean cameraVantageReported;
-    private static boolean worldRenderReadyReported;
     // Iris's main G-buffer projection must match the projection used to write
     // every depth value for the whole frame, not just the clipmap draw call.
     private static IrisRenderCompatibility.ProjectionScope activeIrisProjectionScope;
@@ -316,7 +315,6 @@ public final class GeometryClipmapClient {
         // Recover safely if a previous frame aborted before AFTER_LEVEL was posted.
         restoreIrisProjectionFrame();
         if (!GeometryClipmapSettings.isEnabled() || minecraft.level == null || minecraft.player == null) {
-            if (minecraft.level == null) worldRenderReadyReported = false;
             if (lastLevel != null || activeRequestId != 0L) clear();
             lastLevel = null;
             lastNearChunks = -1;
@@ -398,23 +396,6 @@ public final class GeometryClipmapClient {
 
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
-        // This marker is stronger than OCR: it proves Minecraft is rendering a
-        // loaded player chunk with no loading or pause screen active.
-        if (DEBUG && !worldRenderReadyReported
-                && event.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY) {
-            Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.level != null && minecraft.player != null
-                    && minecraft.screen == null
-                    && minecraft.level.hasChunkAt(minecraft.player.blockPosition())) {
-                worldRenderReadyReported = true;
-                var cameraPosition = event.getCamera().getPosition();
-                System.out.printf(java.util.Locale.ROOT,
-                        "[RealScale Geometry Clipmap] CLIENT_WORLD_RENDER_READY: "
-                                + "x=%.1f y=%.1f z=%.1f%n",
-                        cameraPosition.x, cameraPosition.y, cameraPosition.z);
-            }
-        }
-
         // The CI harness verifies camera height from this render-thread telemetry,
         // not OCR of the debug overlay. Emit it once after the spectator reaches
         // the high-altitude vantage so the screenshot is taken from a known view.
