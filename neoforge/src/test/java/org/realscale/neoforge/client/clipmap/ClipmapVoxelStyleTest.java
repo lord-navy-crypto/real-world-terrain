@@ -14,8 +14,8 @@ final class ClipmapVoxelStyleTest {
     @Test
     void nearestRingSmoothlyTransitionsBeforeTheCoarseRings() {
         float near = ClipmapVoxelStyle.blend(0, 160.0, 10, 4);
-        float middle = ClipmapVoxelStyle.blend(0, 256.0, 10, 4);
-        float far = ClipmapVoxelStyle.blend(0, 352.0, 10, 4);
+        float middle = ClipmapVoxelStyle.blend(0, 312.0, 10, 4);
+        float far = ClipmapVoxelStyle.blend(0, 392.0, 10, 4);
         assertTrue(near > middle);
         assertTrue(middle > far);
         assertEquals(0.5f, middle, 1.0e-5f);
