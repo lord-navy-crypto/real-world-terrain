@@ -78,8 +78,10 @@ public final class GeometryClipmapServer {
     private GeometryClipmapServer() {}
 
     public static void request(ServerPlayer player, int nearRenderDistanceChunks,
-            long requestId) {
+            int gridCells, long requestId) {
         if (nearRenderDistanceChunks < 2 || nearRenderDistanceChunks > 64
+                || !org.realscale.neoforge.network.ClipmapRequestPayload
+                        .isSupportedGridCells(gridCells)
                 || requestId <= 0L) return;
         UUID id = player.getUUID();
         Session current = SESSIONS.get(id);
@@ -95,7 +97,8 @@ public final class GeometryClipmapServer {
         // Same-ID requests are client heartbeats. Resend cached data instead
         // of ignoring a retry or recomputing the complete six-ring snapshot.
         if (current != null && requestId == current.requestId) {
-            if (current.nearChunks != nearRenderDistanceChunks) return;
+            if (current.nearChunks != nearRenderDistanceChunks
+                    || current.gridCells != gridCells) return;
             if (current.cachedHeightPayloads != null) {
                 sendSnapshot(player, current);
             } else {
@@ -104,9 +107,11 @@ public final class GeometryClipmapServer {
             }
             return;
         }
-        if (current == null || current.nearChunks != nearRenderDistanceChunks) {
+        if (current == null || current.nearChunks != nearRenderDistanceChunks
+                || current.gridCells != gridCells) {
             if (current != null) current.invalidate();
-            current = new Session(nearRenderDistanceChunks, requestId, player.connection);
+            current = new Session(nearRenderDistanceChunks, gridCells,
+                    requestId, player.connection);
             SESSIONS.put(id, current);
         } else {
             current.invalidate();
@@ -205,7 +210,8 @@ public final class GeometryClipmapServer {
         if (!session.requestEpoch.mayStart(serverTickCounter)) return;
 
         GeometryClipmapLayout planner =
-                GeometryClipmapLayout.forRenderDistanceChunks(session.nearChunks);
+                GeometryClipmapLayout.forRenderDistanceChunks(
+                        session.nearChunks, session.gridCells);
         GeometryClipmapLayout.Layout nextLayout = planner.compute(
                 player.getX(), player.getZ(), session.layout);
         if (session.layout != null
@@ -502,6 +508,7 @@ public final class GeometryClipmapServer {
 
     private static final class Session {
         private final int nearChunks;
+        private final int gridCells;
         private final Object connectionToken;
         private long requestId;
         private String dimensionKey;
@@ -531,8 +538,10 @@ public final class GeometryClipmapServer {
         private ClipmapSurfaceProxyPayload cachedProxyPayload;
         private final ClipmapRequestEpoch requestEpoch = new ClipmapRequestEpoch();
 
-        private Session(int nearChunks, long requestId, Object connectionToken) {
+        private Session(int nearChunks, int gridCells,
+                long requestId, Object connectionToken) {
             this.nearChunks = nearChunks;
+            this.gridCells = gridCells;
             this.requestId = requestId;
             this.connectionToken = connectionToken;
         }
