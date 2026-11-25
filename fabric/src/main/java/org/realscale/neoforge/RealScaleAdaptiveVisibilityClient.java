@@ -63,7 +63,6 @@ public final class RealScaleAdaptiveVisibilityClient {
 
     public static void onClientTick(Minecraft client) {
         if (!ACTIVE) return; // no client queries or sampling when both opt-ins are disabled
-        Minecraft client = Minecraft.getInstance();
         ClientLevel level = client.level;
         LocalPlayer player = client.player;
         if (level != lastLevel) {
