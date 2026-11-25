@@ -11,25 +11,53 @@ import java.io.IOException;
 public final class FabricServerSmoke {
     private FabricServerSmoke() {}
 
-    public static void register() { net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED.register(FabricServerSmoke::verify); }
+    public static void register() {
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED.register(FabricServerSmoke::verify);
+    }
+
     public static void verify(net.minecraft.server.MinecraftServer server) {
         if (!"server".equals(System.getenv("REALSCALE_FABRIC_CI_SMOKE"))) return;
         if (!(server.overworld().getChunkSource().getGenerator().getBiomeSource()
                 instanceof SkyOceanBiomeSource)) {
             throw new IllegalStateException("RealScale preset not active");
         }
-        var manager = server.getStructureManager();
-        var ids = manager.listTemplates().filter(id -> id.getNamespace().equals("realscale"))
-                .filter(id -> id.getPath().startsWith("architecture/") || id.getPath().startsWith("urban/"))
-                .distinct().toList();
+
+        // Enumerate packaged data-pack resources directly. StructureTemplateManager.listTemplates()
+        // can omit mod-pack resources on this Fabric startup path, so it is not a reliable
+        // inventory source for this CI assertion.
+        var resourceManager = server.getResourceManager();
+        var packagedResources = resourceManager.listResources(
+                "structures", id -> id.getNamespace().equals("realscale"));
+        var resourceIdsByTemplate = new java.util.HashMap<ResourceLocation, ResourceLocation>();
+        for (var resourceId : packagedResources.keySet()) {
+            String path = resourceId.getPath();
+            // ResourceManager implementations may expose either the path relative to the
+            // requested directory or the full resource path. Accept both representations.
+            if (path.startsWith("structures/")) path = path.substring("structures/".length());
+            if (!path.endsWith(".nbt")) continue;
+            String templatePath = path.substring(0, path.length() - ".nbt".length());
+            if (!templatePath.startsWith("architecture/") && !templatePath.startsWith("urban/")) continue;
+            var templateId = ResourceLocation.fromNamespaceAndPath(resourceId.getNamespace(), templatePath);
+            resourceIdsByTemplate.put(templateId, resourceId);
+        }
+
+        var ids = resourceIdsByTemplate.keySet().stream()
+                .sorted(java.util.Comparator.comparing(ResourceLocation::toString))
+                .toList();
         long architecture = ids.stream().filter(id -> id.getPath().startsWith("architecture/")).count();
-        long urban = ids.size() - architecture;
-        if (architecture != 100 || urban != 4)
-            throw new IllegalStateException("Unexpected template counts " + architecture + "/" + urban);
+        long urban = ids.stream().filter(id -> id.getPath().startsWith("urban/")).count();
+        if (architecture != 100 || urban != 4) {
+            throw new IllegalStateException("Unexpected packaged template counts " + architecture + "/" + urban
+                    + "; matching realscale resources=" + packagedResources.size()
+                    + "; sample paths=" + packagedResources.keySet().stream().limit(8).toList());
+        }
+
+        var manager = server.getStructureManager();
         for (ResourceLocation id : ids) {
-            var resourceId = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "structures/" + id.getPath() + ".nbt");
-            var resource = server.getResourceManager().getResource(resourceId)
-                    .orElseThrow(() -> new IllegalStateException("Missing packaged NBT " + resourceId));
+            var resourceId = resourceIdsByTemplate.get(id);
+            var resource = packagedResources.get(resourceId);
+            if (resource == null)
+                throw new IllegalStateException("Missing packaged NBT resource " + resourceId);
             try (var stream = resource.open()) {
                 var nbt = NbtIo.readCompressed(stream, NbtAccounter.unlimitedHeap());
                 if (nbt.getInt("DataVersion") != 3955)
@@ -45,7 +73,7 @@ public final class FabricServerSmoke {
             } catch (IOException e) {
                 throw new IllegalStateException("Could not read " + id, e);
             }
-            var template = manager.get(id).orElseThrow(() -> new IllegalStateException("Missing template " + id));
+            var template = manager.get(id).orElseThrow(() -> new IllegalStateException("Missing loaded template " + id));
             var size = template.getSize();
             if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0)
                 throw new IllegalStateException("Empty template " + id);
