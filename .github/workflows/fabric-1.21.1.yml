@@ -71,9 +71,10 @@ jobs:
               assert metadata["depends"]["java"] == ">=21"
               assert "yet_another_config_lib_v3" in metadata.get("suggests", {})
               rules = [n for n in names if n.startswith("realscale/biome_modifiers/") and n.endswith(".json")]
-              arch = [n for n in names if n.startswith("data/realscale/structures/architecture/") and n.endswith(".nbt")]
-              urban = [n for n in names if n.startswith("data/realscale/structures/urban/") and n.endswith(".nbt")]
+              arch = [n for n in names if n.startswith("data/realscale/structure/architecture/") and n.endswith(".nbt")]
+              urban = [n for n in names if n.startswith("data/realscale/structure/urban/") and n.endswith(".nbt")]
               assert len(rules) == 120, len(rules)
+              assert not any(n.startswith("data/realscale/structures/") for n in names), "legacy plural structure directory found"
               assert len(arch) == 100 and len(urban) == 4, (len(arch), len(urban))
               for n in names:
                   if n.endswith(".class"):
