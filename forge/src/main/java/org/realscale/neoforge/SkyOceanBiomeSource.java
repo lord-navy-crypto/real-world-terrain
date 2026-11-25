@@ -17,9 +17,9 @@ import java.util.stream.Stream;
  * biome source. Everything below Y160 is delegated without modification.
  */
 public final class SkyOceanBiomeSource extends BiomeSource {
-    public static final Codec<SkyOceanBiomeSource> CODEC=RecordCodecBuilder.mapCodec(i->
+    public static final Codec<SkyOceanBiomeSource> CODEC=RecordCodecBuilder.<SkyOceanBiomeSource>mapCodec(i->
         i.group(BiomeSource.CODEC.fieldOf("source").forGetter(SkyOceanBiomeSource::source),
-                RegistryOps.retrieveGetter(Registries.BIOME))
+                RegistryOps.<Biome, SkyOceanBiomeSource>retrieveGetter(Registries.BIOME))
           .apply(i, SkyOceanBiomeSource::new)).codec();
     private final BiomeSource source;
     // Offshore radius probes only classify vanilla oceans. Bypass expensive
