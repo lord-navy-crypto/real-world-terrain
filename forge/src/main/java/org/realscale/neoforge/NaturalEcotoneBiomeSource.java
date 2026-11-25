@@ -33,9 +33,9 @@ import java.util.stream.Stream;
  */
 public final class NaturalEcotoneBiomeSource extends BiomeSource {
     public static final Codec<NaturalEcotoneBiomeSource> CODEC =
-            RecordCodecBuilder.mapCodec(instance -> instance.group(
+            RecordCodecBuilder.<NaturalEcotoneBiomeSource>mapCodec(instance -> instance.group(
                     BiomeSource.CODEC.fieldOf("source").forGetter(NaturalEcotoneBiomeSource::source),
-                    RegistryOps.retrieveGetter(Registries.BIOME)
+                    RegistryOps.<Biome, NaturalEcotoneBiomeSource>retrieveGetter(Registries.BIOME)
             ).apply(instance, NaturalEcotoneBiomeSource::new)).codec();
 
     private record Rule(String target, int widthBlocks, Set<String> left, Set<String> right) {
