@@ -8,6 +8,13 @@ on:
       - "scripts/**"
       - "assets/architecture/**"
       - ".github/workflows/neoforge-1.20.1.yml"
+  pull_request:
+    branches: [feature/neoforge-1.20.1-port]
+    paths:
+      - "neoforge-1.20.1/**"
+      - "scripts/**"
+      - "assets/architecture/**"
+      - ".github/workflows/neoforge-1.20.1.yml"
   workflow_dispatch:
 
 permissions:
@@ -36,7 +43,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.12"
+          gradle-version: "8.14.5"
 
       - name: Build NeoForge 1.20.1 module
         run: |
