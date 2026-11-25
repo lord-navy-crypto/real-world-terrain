@@ -119,7 +119,7 @@ public final class VanillaHabitatFeature extends Feature<NoneFeatureConfiguratio
                 ? Blocks.SUGAR_CANE.defaultBlockState()
                 : Blocks.FERN.defaultBlockState();
             if (!candidate.canSurvive(level, plant))
-                candidate = Blocks.SHORT_GRASS.defaultBlockState();
+                candidate = Blocks.GRASS.defaultBlockState();
             if (!candidate.canSurvive(level, plant)) continue;
             level.setBlock(plant, candidate, 2);
             placed++;
