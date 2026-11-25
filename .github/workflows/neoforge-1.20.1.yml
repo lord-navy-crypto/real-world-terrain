@@ -1,0 +1,92 @@
+name: RealScale NeoForge 1.20.1 Legacy Compatibility
+
+on:
+  push:
+    branches: [feature/neoforge-1.20.1-validated]
+    paths:
+      - "neoforge-1.20.1/**"
+      - "scripts/**"
+      - "assets/architecture/**"
+      - ".github/workflows/neoforge-1.20.1.yml"
+  pull_request:
+    branches: [feature/neoforge-1.20.1-port]
+    paths:
+      - "neoforge-1.20.1/**"
+      - "scripts/**"
+      - "assets/architecture/**"
+      - ".github/workflows/neoforge-1.20.1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neoforge-1.20.1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-server-smoke:
+    name: NeoForge 1.20.1 (legacy 47.1.106)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            neoforge-1.20.1
+            scripts
+            assets/architecture
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.5"
+
+      - name: Build NeoForge 1.20.1 module
+        run: |
+          gradle --no-daemon -p neoforge-1.20.1 clean build
+
+      - name: Audit distributable JAR
+        run: |
+          python3 neoforge-1.20.1/tools/audit_jar.py neoforge-1.20.1/build/libs/RealScale-NeoForge-1.20.1-*.jar
+
+      - name: Upload NeoForge JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-NeoForge-1.20.1-47.1.106
+          path: neoforge-1.20.1/build/libs/*.jar
+          if-no-files-found: error
+
+      - name: Start dedicated server and generate Natural Automate world
+        timeout-minutes: 8
+        env:
+          REALSCALE_FORGE_CI_SMOKE: server
+        run: |
+          mkdir -p neoforge-1.20.1/run
+          printf "eula=true\n" > neoforge-1.20.1/run/eula.txt
+          cat > neoforge-1.20.1/run/server.properties <<'EOF'
+          level-name=neoforge-legacy-smoke
+          level-type=realscale:natural_automate_three_realms
+          online-mode=false
+          view-distance=2
+          simulation-distance=2
+          spawn-protection=0
+          max-tick-time=120000
+          motd=RealScale NeoForge 1.20.1 smoke
+          EOF
+          timeout --signal=TERM --kill-after=15s 420s gradle --no-daemon -p neoforge-1.20.1 runServer --args="--nogui" > neoforge-server-smoke.log 2>&1 || { tail -180 neoforge-server-smoke.log; exit 1; }
+          grep -F "Done (" neoforge-1.20.1/run/logs/latest.log
+          grep -F "FORGE_SERVER_TEMPLATE_SMOKE_OK" neoforge-server-smoke.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: NeoForge-1.20.1-server-logs
+          path: |
+            neoforge-server-smoke.log
+            neoforge-1.20.1/run/logs/
+            neoforge-1.20.1/run/crash-reports/
+          if-no-files-found: ignore

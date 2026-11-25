@@ -1,0 +1,13 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:plains",
+    "minecraft:sunflower_plains",
+    "minecraft:meadow",
+    "realscale:woodland_meadow",
+    "realscale:forest_steppe",
+    "realscale:shrub_prairie"
+  ],
+  "features": "realscale:grassland_mosaic",
+  "step": "vegetal_decoration"
+}

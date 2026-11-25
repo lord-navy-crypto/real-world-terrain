@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:snowy_slopes",
+    "minecraft:jagged_peaks",
+    "minecraft:frozen_peaks"
+  ],
+  "features": "realscale:geo_region_glacial_moraine_ring",
+  "step": "vegetal_decoration"
+}

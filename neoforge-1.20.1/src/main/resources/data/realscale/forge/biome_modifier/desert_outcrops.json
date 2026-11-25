@@ -1,0 +1,12 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:desert",
+    "minecraft:badlands",
+    "minecraft:eroded_badlands",
+    "realscale:dune_scrub",
+    "realscale:terracotta_scrub"
+  ],
+  "features": "realscale:desert_outcrops",
+  "step": "vegetal_decoration"
+}

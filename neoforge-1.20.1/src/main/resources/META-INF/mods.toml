@@ -1,0 +1,45 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="Source research implementation; retains Minecraft's own vanilla assets/data references"
+
+[[mods]]
+modId="realscale"
+version="${mod_version}"
+displayName="RealScale — Real-World Terrain (NeoForge 1.20.1)"
+authors="RealScale Research"
+description='''Real-world terrain generation with measured elevation data, procedural landforms, climate-aware biomes, rivers, caves, and configurable terrain profiles.'''
+
+[[dependencies.realscale]]
+modId="forge"
+mandatory=true
+versionRange="[47.1.0,48)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.realscale]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.20.2)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.realscale]]
+modId="yet_another_config_lib_v3"
+mandatory=true
+versionRange="[3.6.6,)"
+ordering="NONE"
+side="CLIENT"
+
+[[dependencies.realscale]]
+modId="distanthorizons"
+mandatory=false
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.realscale]]
+modId="chunky"
+mandatory=false
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"
