@@ -4,19 +4,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
 /**
  * Opt-in CI smoke test. Hold each RealScale screen for 20 client ticks so the
  * normal client render loop has time to initialize and draw it before moving on.
  */
-@Mod.EventBusSubscriber(
-        modid = "realscale",
-        bus = Mod.EventBusSubscriber.Bus.FORGE,
-        value = Dist.CLIENT)
 public final class ForgeClientSmoke {
     private static int stage;
     private static int ticksOnScreen;
@@ -25,12 +19,15 @@ public final class ForgeClientSmoke {
     private static Screen expected;
     private static boolean waitStateReported;
 
-    static {
+    private ForgeClientSmoke() {}
+
+    /** Explicit client-only registration; legacy Forge ModDev does not discover
+     * this test subscriber reliably from the development classpath. */
+    public static void register() {
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(ForgeClientSmoke.class);
         System.out.println("NEOFORGE_CLIENT_SMOKE_SUBSCRIBER_LOADED mode="
                 + System.getenv("REALSCALE_FORGE_CI_SMOKE"));
     }
-
-    private ForgeClientSmoke() {}
 
     @SubscribeEvent
     public static void verify(TickEvent.ClientTickEvent event) {
