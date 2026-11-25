@@ -77,7 +77,7 @@ jobs:
           max-tick-time=120000
           motd=RealScale NeoForge 1.20.1 smoke
           EOF
-          timeout --signal=TERM --kill-after=15s 420s gradle --no-daemon -p neoforge-1.20.1 runServer --args="--nogui" > neoforge-server-smoke.log 2>&1 || { tail -180 neoforge-server-smoke.log; exit 1; }
+          timeout --signal=TERM --kill-after=15s 420s gradle --no-daemon -p neoforge-1.20.1 runServer > neoforge-server-smoke.log 2>&1 || { tail -180 neoforge-server-smoke.log; exit 1; }
           grep -F "Done (" neoforge-1.20.1/run/logs/latest.log
           grep -F "FORGE_SERVER_TEMPLATE_SMOKE_OK" neoforge-server-smoke.log
 
