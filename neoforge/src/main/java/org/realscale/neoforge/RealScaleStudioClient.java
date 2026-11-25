@@ -34,10 +34,6 @@ public final class RealScaleStudioClient {
                 button -> {
                     org.realscale.neoforge.client.clipmap.GeometryClipmapClient.toggleEnabled();
                     button.setMessage(clipmapToggleLabel(compact));
-                    System.out.printf(java.util.Locale.ROOT,
-                            "[RealScale Geometry Clipmap] CLIENT_PAUSE_MENU_TOGGLE_UPDATED: enabled=%s%n",
-                            org.realscale.neoforge.client.clipmap.GeometryClipmapClient.isEnabled()
-                                    ? "ON" : "OFF");
                 })
                 .bounds(x + buttonWidth + gap, y, buttonWidth, 20).build());
         event.addListener(Button.builder(clipmapRangeLabel(compact),
@@ -46,13 +42,6 @@ public final class RealScaleStudioClient {
                     button.setMessage(clipmapRangeLabel(compact));
                 })
                 .bounds(x + (buttonWidth + gap) * 2, y, buttonWidth, 20).build());
-
-        System.out.printf(java.util.Locale.ROOT,
-                "[RealScale Geometry Clipmap] CLIENT_PAUSE_MENU_UI_INITIALIZED: "
-                        + "width=%d height=%d buttonWidth=%d enabled=%s%n",
-                pause.width, pause.height, buttonWidth,
-                org.realscale.neoforge.client.clipmap.GeometryClipmapClient.isEnabled()
-                        ? "ON" : "OFF");
     }
 
     private static Component clipmapToggleLabel(boolean compact) {

@@ -413,6 +413,9 @@ def wait_for_pause_screen(lines: list[str], start: int, name: str,
                     raise RuntimeError(
                         "PauseScreen opened with an unexpected clipmap state: " + line
                     )
+                # Let Minecraft render at least one complete frame after Init.Post
+                # before capturing evidence of the visible pause menu.
+                time.sleep(0.5)
                 capture_screenshot(name)
                 print("PAUSE_SCREEN_VERIFIED:", line.strip(), flush=True)
                 return line
@@ -421,6 +424,16 @@ def wait_for_pause_screen(lines: list[str], start: int, name: str,
         "Minecraft did not initialize the actual PauseScreen with the RealScale "
         "buttons; expected state=" + expected_state
     )
+
+
+def click_pause_menu_toggle(click_x: int, click_y: int, *, position_pointer: bool = False) -> None:
+    """Position the pointer once, then click without waiting for redundant motion."""
+    if position_pointer:
+        subprocess.run(
+            ["xdotool", "mousemove", "--sync", str(click_x), str(click_y)],
+            check=True, timeout=10,
+        )
+    subprocess.run(["xdotool", "click", "1"], check=True, timeout=5)
 
 
 def wait_for_pause_menu_toggle(lines: list[str], start: int, expected_state: str,
@@ -539,27 +552,21 @@ def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
         lines, before_pause, "iris-clipmap-pause-menu-default-off", "OFF"
     )
 
+    # Move the pointer once. Repeating "mousemove --sync" at the same location
+    # can wait forever because XTest emits no new motion event for identical
+    # coordinates; subsequent state changes only need an ordinary click.
     before_on = len(lines)
-    subprocess.run(
-        ["xdotool", "mousemove", "--sync", str(click_x), str(click_y), "click", "1"],
-        check=True, timeout=10,
-    )
+    click_pause_menu_toggle(click_x, click_y, position_pointer=True)
     wait_for_toggle_status(lines, "[RealScale] Clipmap: ON", before_on)
     wait_for_pause_menu_toggle(lines, before_on, "ON")
 
     before_off = len(lines)
-    subprocess.run(
-        ["xdotool", "mousemove", "--sync", str(click_x), str(click_y), "click", "1"],
-        check=True, timeout=10,
-    )
+    click_pause_menu_toggle(click_x, click_y)
     wait_for_toggle_status(lines, "[RealScale] Clipmap: OFF", before_off)
     wait_for_pause_menu_toggle(lines, before_off, "OFF")
 
     before_on_again = len(lines)
-    subprocess.run(
-        ["xdotool", "mousemove", "--sync", str(click_x), str(click_y), "click", "1"],
-        check=True, timeout=10,
-    )
+    click_pause_menu_toggle(click_x, click_y)
     wait_for_toggle_status(lines, "[RealScale] Clipmap: ON", before_on_again)
     wait_for_pause_menu_toggle(lines, before_on_again, "ON")
 

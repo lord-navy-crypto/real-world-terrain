@@ -108,7 +108,9 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("CLIENT_PAUSE_MENU_UI_INITIALIZED:", STUDIO_CLIENT)
         self.assertIn("CLIENT_PAUSE_MENU_TOGGLE_UPDATED:", STUDIO_CLIENT)
         self.assertIn("def wait_for_pause_screen(lines:", SMOKE)
-        self.assertIn("def wait_for_pause_menu_toggle(", SMOKE)
+        self.assertIn("def click_pause_menu_toggle(", SMOKE)
+        self.assertIn('["xdotool", "click", "1"]', SMOKE)
+        self.assertIn("position_pointer=True", SMOKE)
         self.assertIn("CLIENT_PAUSE_MENU_UI_INITIALIZED:", SMOKE)
         self.assertIn("CLIENT_PAUSE_MENU_TOGGLE_UPDATED:", SMOKE)
         self.assertIn("def test_pause_menu_geometry_clipmap_toggle(", SMOKE)
@@ -117,7 +119,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn('"ON"', SMOKE)
         self.assertIn("[RealScale] Clipmap: OFF", SMOKE)
         self.assertIn("[RealScale] Clipmap: ON", SMOKE)
-        self.assertGreaterEqual(SMOKE.count('["xdotool", "mousemove", "--sync"'), 3)
+        self.assertEqual(SMOKE.count('["xdotool", "mousemove", "--sync"'), 1)
 
     def test_eye_level_capture_waits_for_complete_lods_and_proxies(self):
         self.assertIn("capture_natural_surface_view(proc, lines)", SMOKE)
