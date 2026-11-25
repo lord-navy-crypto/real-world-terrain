@@ -12,10 +12,13 @@ import dev.isxander.yacl3.api.controller.CyclingListControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.ConfigScreenHandler;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.common.Mod;
+
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -32,15 +35,18 @@ import java.util.Map;
  *
  * Never change generator settings of a loaded world in-place.
  */
-@Mod(value = "realscale", dist = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = "realscale", bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class RealScaleTerrainLabClient {
     private static final Path CONFIG = Path.of("config", "realscale-terrain-lab.json");
     private static final Path PERFORMANCE_CONFIG = Path.of("config", "realscale-performance.json");
     private static final Gson JSON = new GsonBuilder().setPrettyPrinting().create();
 
-    public RealScaleTerrainLabClient(ModContainer container) {
-        container.registerExtensionPoint(IConfigScreenFactory.class,
-            (mod, parent) -> createScreen(parent));
+    @SubscribeEvent
+    public static void onClientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> ModLoadingContext.get().registerExtensionPoint(
+            ConfigScreenHandler.ConfigScreenFactory.class,
+            () -> new ConfigScreenHandler.ConfigScreenFactory((minecraft, parent) -> createScreen(parent))
+        ));
     }
 
     // These THREE editable presets keep their tuning in independent slots.
