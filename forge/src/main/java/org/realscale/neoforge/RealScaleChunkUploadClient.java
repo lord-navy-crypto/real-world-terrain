@@ -3,10 +3,10 @@ package org.realscale.neoforge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.TickEvent;
 
 /**
  * Actual opt-in client upload pacing and diagnostic telemetry.
@@ -47,7 +47,8 @@ public final class RealScaleChunkUploadClient {
     private static long lastReportedDeferred;
     private static long heapSamples,totalHeapUsedBytes,peakHeapUsedBytes,maxHeapBytes;
 
-    @SubscribeEvent public static void onPre(RenderFrameEvent.Pre event){
+    @SubscribeEvent public static void onPre(TickEvent.RenderTickEvent event){
+        if (event.phase != TickEvent.Phase.START) return;
         if(!PROFILE)return;
         Minecraft mc=Minecraft.getInstance();
         ClientLevel world=mc.level;
@@ -81,7 +82,8 @@ public final class RealScaleChunkUploadClient {
         }
     }
 
-    @SubscribeEvent public static void onPost(RenderFrameEvent.Post event){
+    @SubscribeEvent public static void onPost(TickEvent.RenderTickEvent event){
+        if (event.phase != TickEvent.Phase.END) return;
         if(!PROFILE)return;
         Minecraft mc=Minecraft.getInstance();
         if(ENABLED){
