@@ -119,7 +119,10 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn('"ON"', SMOKE)
         self.assertIn("[RealScale] Clipmap: OFF", SMOKE)
         self.assertIn("[RealScale] Clipmap: ON", SMOKE)
-        self.assertEqual(SMOKE.count('["xdotool", "mousemove", "--sync"'), 1)
+        self.assertEqual(
+            SMOKE.count('["xdotool", "mousemove", "--sync", str(click_x), str(click_y)]'), 1
+        )
+        self.assertEqual(SMOKE.count('click_pause_menu_toggle(click_x, click_y)'), 2)
 
     def test_eye_level_capture_waits_for_complete_lods_and_proxies(self):
         self.assertIn("capture_natural_surface_view(proc, lines)", SMOKE)

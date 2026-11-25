@@ -401,52 +401,24 @@ def ocr_game_window(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", result.stdout.lower()).strip()
 
 
-def wait_for_pause_screen(lines: list[str], start: int, name: str,
-                         expected_state: str, timeout: float = 12.0) -> str:
-    """Wait for the real PauseScreen event after its three custom buttons exist."""
+def read_pause_menu_toggle_text(name: str) -> str:
+    return ocr_game_window(name)
+
+
+def wait_for_pause_screen(name: str, timeout: float = 12.0) -> str:
+    """Require vanilla pause-screen labels before asserting the custom toggle."""
     deadline = time.monotonic() + timeout
-    marker = "CLIENT_PAUSE_MENU_UI_INITIALIZED:"
+    latest = ""
     while time.monotonic() < deadline:
-        for line in lines[start:]:
-            if marker in line:
-                if f"enabled={expected_state}" not in line:
-                    raise RuntimeError(
-                        "PauseScreen opened with an unexpected clipmap state: " + line
-                    )
-                # Let Minecraft render at least one complete frame after Init.Post
-                # before capturing evidence of the visible pause menu.
-                time.sleep(0.5)
-                capture_screenshot(name)
-                print("PAUSE_SCREEN_VERIFIED:", line.strip(), flush=True)
-                return line
-        time.sleep(0.25)
+        latest = read_pause_menu_toggle_text(name)
+        if "back to game" in latest and "options" in latest:
+            print("PAUSE_SCREEN_VERIFIED: Back to Game + Options", flush=True)
+            return latest
+        time.sleep(0.5)
     raise RuntimeError(
-        "Minecraft did not initialize the actual PauseScreen with the RealScale "
-        "buttons; expected state=" + expected_state
+        "Escape did not open the actual Minecraft PauseScreen; "
+        "expected Back to Game and Options, OCR was: " + latest
     )
-
-
-def click_pause_menu_toggle(click_x: int, click_y: int, *, position_pointer: bool = False) -> None:
-    """Position the pointer once, then click without waiting for redundant motion."""
-    if position_pointer:
-        subprocess.run(
-            ["xdotool", "mousemove", "--sync", str(click_x), str(click_y)],
-            check=True, timeout=10,
-        )
-    subprocess.run(["xdotool", "click", "1"], check=True, timeout=5)
-
-
-def wait_for_pause_menu_toggle(lines: list[str], start: int, expected_state: str,
-                               timeout: float = 12.0) -> None:
-    """Verify the real toggle callback updated its button label."""
-    deadline = time.monotonic() + timeout
-    marker = f"CLIENT_PAUSE_MENU_TOGGLE_UPDATED: enabled={expected_state}"
-    while time.monotonic() < deadline:
-        if marker in "".join(lines[start:]):
-            print("PAUSE_MENU_BUTTON_UPDATED:", expected_state, flush=True)
-            return
-        time.sleep(0.25)
-    raise RuntimeError("Pause-menu button callback did not update to " + expected_state)
 
 
 def wait_for_toggle_status(lines, marker: str, start: int, timeout: float = 12.0) -> None:
@@ -459,70 +431,18 @@ def wait_for_toggle_status(lines, marker: str, start: int, timeout: float = 12.0
     raise RuntimeError("Client did not report the pause-menu toggle: " + marker)
 
 
-def ocr_loading_overlay(name: str) -> str:
-    """OCR only Minecraft's centered Loading terrain label, not the whole scene."""
-    image = capture_screenshot(name)
-    if image is None:
-        raise RuntimeError("Could not capture Minecraft while checking its loading overlay")
-    geometry = active_game_window_geometry()
-    if geometry is None:
-        dimensions = subprocess.run(
-            ["identify", "-format", "%w %h", str(image)],
-            check=True, capture_output=True, text=True, timeout=10,
-        ).stdout.split()
-        window_x = window_y = 0
-        window_width, window_height = (int(dimensions[0]), int(dimensions[1]))
-        print("LOADING_OCR_USING_FULL_DISPLAY_FALLBACK", flush=True)
-    else:
-        window_x, window_y, window_width, window_height = geometry
-
-    # Minecraft draws "Loading terrain..." in a narrow band around 30% of
-    # the game viewport height. A tight crop avoids unrelated blurred scenery.
-    crop_x = window_x + int(window_width * 0.30)
-    crop_y = window_y + int(window_height * 0.22)
-    crop_width = max(1, int(window_width * 0.40))
-    crop_height = max(1, int(window_height * 0.18))
-    crop = BUILD / (name + "-loading-label.png")
-    subprocess.run(
-        ["convert", str(image), "-crop",
-         f"{crop_width}x{crop_height}+{crop_x}+{crop_y}", "+repage",
-         "-colorspace", "Gray", "-contrast-stretch", "1%x1%",
-         "-resize", "300%", str(crop)],
-        check=True, timeout=30,
-    )
-    result = subprocess.run(
-        ["tesseract", str(crop), "stdout", "--psm", "7"],
-        check=True, capture_output=True, text=True, timeout=30,
-    )
-    return re.sub(r"[^a-z0-9]+", " ", result.stdout.lower()).strip()
-
-
-def wait_until_world_rendered(timeout: float = 180.0) -> None:
-    """Wait until the actual Loading terrain overlay disappears for 3 frames."""
+def wait_until_world_rendered(lines: list[str], timeout: float = 120.0) -> None:
+    """Wait for render-thread proof of a loaded player chunk and no active screen."""
     deadline = time.monotonic() + timeout
-    consecutive_clear = 0
-    latest = ""
     while time.monotonic() < deadline:
-        latest = ocr_loading_overlay("iris-client-loading-gate")
-        if "loading terrain" in latest:
-            consecutive_clear = 0
-            print("CLIENT_LOADING_OVERLAY_VISIBLE", flush=True)
-        else:
-            consecutive_clear += 1
-            print(
-                "CLIENT_LOADING_OVERLAY_ABSENT:",
-                consecutive_clear, "/ 3",
-                "ocr=", latest,
-                flush=True,
-            )
-            if consecutive_clear >= 3:
-                capture_screenshot("iris-client-world-ready-probe")
-                print("CLIENT_WORLD_RENDER_READY_CONFIRMED", flush=True)
-                return
-        time.sleep(1.0)
+        if "CLIENT_WORLD_RENDER_READY:" in "".join(lines):
+            capture_screenshot("iris-client-world-ready-probe")
+            print("CLIENT_WORLD_RENDER_READY_CONFIRMED", flush=True)
+            return
+        time.sleep(0.25)
     raise RuntimeError(
-        "Minecraft's Loading terrain overlay did not disappear for 3 consecutive "
-        "samples; pause-menu interaction was not attempted. Last OCR: " + latest
+        "Minecraft did not render a loaded player chunk with its loading screen closed; "
+        "pause-menu interaction was not attempted"
     )
 
 
@@ -546,29 +466,43 @@ def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
     click_y = window_y + (button_y + 10) * gui_scale
     print("CLIPMAP_TOGGLE_CLICK_POINT:", (click_x, click_y), flush=True)
     focus_minecraft_window()
-    before_pause = len(lines)
     subprocess.run(["xdotool", "key", "Escape"], check=True, timeout=10)
-    initial = wait_for_pause_screen(
-        lines, before_pause, "iris-clipmap-pause-menu-default-off", "OFF"
-    )
+    time.sleep(1)
+    initial = wait_for_pause_screen("iris-clipmap-pause-menu-default-off")
+    # Narrow CI windows use the compact "Clipmap: OFF" label; wider windows
+    # use "Geometry Clipmap: OFF". Both expose the same state token.
+    if "clipmap off" not in initial:
+        raise RuntimeError("Geometry Clipmap must default to OFF: " + initial)
 
-    # Move the pointer once. Repeating "mousemove --sync" at the same location
-    # can wait forever because XTest emits no new motion event for identical
-    # coordinates; subsequent state changes only need an ordinary click.
     before_on = len(lines)
-    click_pause_menu_toggle(click_x, click_y, position_pointer=True)
+    subprocess.run(
+        ["xdotool", "mousemove", "--sync", str(click_x), str(click_y), "click", "1"],
+        check=True, timeout=10,
+    )
     wait_for_toggle_status(lines, "[RealScale] Clipmap: ON", before_on)
-    wait_for_pause_menu_toggle(lines, before_on, "ON")
+    on_text = wait_for_pause_screen("iris-clipmap-pause-menu-on")
+    if "clipmap on" not in on_text:
+        raise RuntimeError("Pause-menu toggle did not enable Geometry Clipmap: " + on_text)
 
     before_off = len(lines)
-    click_pause_menu_toggle(click_x, click_y)
+    subprocess.run(
+        ["xdotool", "mousemove", "--sync", str(click_x), str(click_y), "click", "1"],
+        check=True, timeout=10,
+    )
     wait_for_toggle_status(lines, "[RealScale] Clipmap: OFF", before_off)
-    wait_for_pause_menu_toggle(lines, before_off, "OFF")
+    off_text = wait_for_pause_screen("iris-clipmap-pause-menu-off")
+    if "clipmap off" not in off_text:
+        raise RuntimeError("Pause-menu toggle did not disable Geometry Clipmap: " + off_text)
 
     before_on_again = len(lines)
-    click_pause_menu_toggle(click_x, click_y)
+    subprocess.run(
+        ["xdotool", "mousemove", "--sync", str(click_x), str(click_y), "click", "1"],
+        check=True, timeout=10,
+    )
     wait_for_toggle_status(lines, "[RealScale] Clipmap: ON", before_on_again)
-    wait_for_pause_menu_toggle(lines, before_on_again, "ON")
+    on_again_text = wait_for_pause_screen("iris-clipmap-pause-menu-on-again")
+    if "clipmap on" not in on_again_text:
+        raise RuntimeError("Pause-menu toggle did not re-enable Geometry Clipmap: " + on_again_text)
 
     subprocess.run(["xdotool", "key", "Escape"], check=True, timeout=10)
     time.sleep(1)
@@ -933,7 +867,7 @@ def run_client(env: dict[str, str]) -> None:
             elif not camera_prepared:
                 if client_latest.exists() and "Loaded 2 advancements" in client_latest.read_text(
                         encoding="utf-8", errors="replace"):
-                    wait_until_world_rendered()
+                    wait_until_world_rendered(lines)
                     test_pause_menu_geometry_clipmap_toggle(lines)
                     capture_natural_surface_view(proc, lines)
                     prepare_open_rendering_view(client_latest, lines)
