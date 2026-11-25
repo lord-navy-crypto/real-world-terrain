@@ -1,4 +1,5 @@
-name: Fabric 1.20.1 Build
+name: Fabric 1.20.1 Compatibility Matrix
+
 on:
   push:
     branches: [feature/fabric-1.20.1-port]
@@ -9,9 +10,33 @@ permissions:
 concurrency:
   group: fabric-1.20.1-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
   build:
+    name: Loader ${{ matrix.loader_version }} / API ${{ matrix.api_version }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Lowest supported pair: Fabric API 0.92.6 declares Loader >=0.16.10.
+          - loader_version: '0.16.10'
+            api_version: '0.92.6+1.20.1'
+            integration: true
+          - loader_version: '0.16.14'
+            api_version: '0.92.6+1.20.1'
+            integration: false
+          - loader_version: '0.16.14'
+            api_version: '0.92.12+1.20.1'
+            integration: false
+          # Newer Loader and latest 1.20.1 API release candidate.
+          - loader_version: '0.19.5'
+            api_version: '0.92.12+1.20.1'
+            integration: true
+    env:
+      FABRIC_LOADER_VERSION: ${{ matrix.loader_version }}
+      FABRIC_API_VERSION: ${{ matrix.api_version }}
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,18 +44,22 @@ jobs:
             fabric
             scripts
             assets/architecture
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.12'
+
       - name: Independent Fabric build
         run: |
           test ! -d forge
           test ! -d neoforge
           gradle --no-daemon -p fabric clean build
+
       - name: Audit remapped JAR
         run: |
           python3 - <<'PY'
@@ -53,17 +82,22 @@ jobs:
                   if n.endswith(".class"):
                       assert b"net/minecraftforge/" not in z.read(n), n
                       assert b"net/neoforged/" not in z.read(n), n
+              metadata = z.read("fabric.mod.json").decode("utf-8")
+              assert '">=0.16.10"' in metadata
               print("FABRIC_JAR_AUDIT_OK", len(rules), len(arch), len(urban))
           PY
+
       - uses: actions/upload-artifact@v4
         with:
-          name: RealScale-Fabric-1.20.1
+          name: RealScale-Fabric-1.20.1-L${{ matrix.loader_version }}-A${{ matrix.api_version }}
           path: |
             fabric/build/libs/*.jar
             !fabric/build/libs/*-dev.jar
             !fabric/build/libs/*-sources.jar
           if-no-files-found: error
+
       - name: Generate Natural Automate world on Fabric
+        if: matrix.integration
         timeout-minutes: 7
         env:
           REALSCALE_FABRIC_CI_SMOKE: server
@@ -82,7 +116,9 @@ jobs:
           timeout --signal=TERM --kill-after=15s 360s gradle --no-daemon -p fabric runServer > fabric-server.log 2>&1 || { tail -150 fabric-server.log; exit 1; }
           grep -F 'Done (' fabric/run/logs/latest.log
           grep -F 'FABRIC_SERVER_TEMPLATE_SMOKE_OK' fabric-server.log
+
       - name: Standalone Fabric remapped JAR smoke
+        if: matrix.integration
         timeout-minutes: 8
         env:
           REALSCALE_FABRIC_CI_SMOKE: server
@@ -90,17 +126,18 @@ jobs:
           mkdir -p fabric-production/mods
           find fabric/build/libs -name '*.jar' ! -name '*-dev.jar' ! -name '*-sources.jar' -exec cp {} fabric-production/mods/ \;
           cd fabric-production
-          curl -fL --retry 3 -o server.jar https://meta.fabricmc.net/v2/versions/loader/1.20.1/0.16.14/1.0.3/server/jar
-          curl -fL --retry 3 -o mods/fabric-api.jar 'https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.92.6+1.20.1/fabric-api-0.92.6+1.20.1.jar'
+          curl -fL --retry 3 -o server.jar "https://meta.fabricmc.net/v2/versions/loader/1.20.1/${FABRIC_LOADER_VERSION}/1.0.3/server/jar"
+          curl -fL --retry 3 -o mods/fabric-api.jar "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/${FABRIC_API_VERSION}/fabric-api-${FABRIC_API_VERSION}.jar"
           cp ../fabric/run/server.properties .
           printf 'eula=true\n' > eula.txt
           timeout --signal=TERM --kill-after=15s 360s java -Xmx4G -jar server.jar nogui > standalone.log 2>&1 || { tail -150 standalone.log; exit 1; }
           grep -F 'Done (' logs/latest.log
           grep -F 'FABRIC_SERVER_TEMPLATE_SMOKE_OK' standalone.log
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Fabric-integration-logs
+          name: Fabric-integration-logs-L${{ matrix.loader_version }}-A${{ matrix.api_version }}
           path: |
             fabric-server.log
             fabric/run/logs/
