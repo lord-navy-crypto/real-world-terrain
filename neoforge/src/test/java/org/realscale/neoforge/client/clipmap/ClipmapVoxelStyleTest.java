@@ -7,15 +7,18 @@ import static org.junit.jupiter.api.Assertions.*;
 final class ClipmapVoxelStyleTest {
     @Test
     void nearestRingIsBlockyAcrossTheVanillaOverlap() {
-        assertEquals(1.0f, ClipmapVoxelStyle.blend(0, 96.0, 10, 4), 1.0e-6f);
-        assertEquals(1.0f, ClipmapVoxelStyle.blend(0, 160.0, 10, 4), 1.0e-6f);
+        assertEquals(0, ClipmapVoxelStyle.transitionLevel(256, 4, 10));
+        assertEquals(0, ClipmapVoxelStyle.transitionLevel(128, 4, 10));
+        assertEquals(1, ClipmapVoxelStyle.transitionLevel(64, 4, 10));
+        assertEquals(1.0f,
+                ClipmapVoxelStyle.blend(0, 160.0, 10, 4, 4, 256), 1.0e-6f);
     }
 
     @Test
     void nearestRingSmoothlyTransitionsBeforeTheCoarseRings() {
-        float near = ClipmapVoxelStyle.blend(0, 160.0, 10, 4);
-        float middle = ClipmapVoxelStyle.blend(0, 312.0, 10, 4);
-        float far = ClipmapVoxelStyle.blend(0, 392.0, 10, 4);
+        float near = ClipmapVoxelStyle.blend(0, 232.0, 10, 4, 4, 256);
+        float middle = ClipmapVoxelStyle.blend(0, 312.0, 10, 4, 4, 256);
+        float far = ClipmapVoxelStyle.blend(0, 392.0, 10, 4, 4, 256);
         assertTrue(near > middle);
         assertTrue(middle > far);
         assertEquals(0.5f, middle, 1.0e-5f);
@@ -24,10 +27,12 @@ final class ClipmapVoxelStyleTest {
 
     @Test
     void everyCoarserLodRemainsContinuous() {
-        for (int level = 1; level < GeometryClipmapLayout.DEFAULT_LEVEL_COUNT; level++) {
-            assertEquals(0.0f,
-                    ClipmapVoxelStyle.blend(level, 180.0, 10, 4), 1.0e-6f);
-        }
+        assertEquals(0.0f,
+                ClipmapVoxelStyle.blend(1, 180.0, 10, 4, 8, 256), 1.0e-6f);
+        assertEquals(1.0f,
+                ClipmapVoxelStyle.blend(1, 200.0, 10, 4, 8, 64), 1.0e-6f);
+        assertEquals(0.0f,
+                ClipmapVoxelStyle.blend(2, 260.0, 10, 4, 16, 64), 1.0e-6f);
     }
 
     @Test
@@ -51,9 +56,9 @@ final class ClipmapVoxelStyleTest {
     @Test
     void invalidTransitionInputsAreRejected() {
         assertThrows(IllegalArgumentException.class,
-                () -> ClipmapVoxelStyle.blend(6, 100.0, 10, 4));
+                () -> ClipmapVoxelStyle.blend(6, 100.0, 10, 4, 4, 256));
         assertThrows(IllegalArgumentException.class,
-                () -> ClipmapVoxelStyle.blend(0, Double.NaN, 10, 4));
+                () -> ClipmapVoxelStyle.blend(0, Double.NaN, 10, 4, 4, 256));
         assertThrows(IllegalArgumentException.class,
                 () -> ClipmapVoxelStyle.quantizeHeight(Float.POSITIVE_INFINITY));
     }
