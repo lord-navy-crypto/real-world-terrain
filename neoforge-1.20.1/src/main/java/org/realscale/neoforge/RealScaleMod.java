@@ -19,7 +19,7 @@ public final class RealScaleMod {
         bus.addListener(RealScaleStructurePacks::register);
         bus.addListener(this::registerDensity);
         MinecraftForge.EVENT_BUS.addListener(DhChunkyGuardCommands::registerCommands);
-        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ForgeClientSmoke::register);
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ForgeClientSmoke.register());
     }
     private void registerDensity(RegisterEvent event) {
         event.register(Registries.DENSITY_FUNCTION_TYPE, helper -> {
