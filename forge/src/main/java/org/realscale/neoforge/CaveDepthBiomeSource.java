@@ -51,7 +51,7 @@ public final class CaveDepthBiomeSource extends BiomeSource {
                 default->throw new IllegalStateException("NONE is never target");
             };
             targets.put(region,biomes.getOrThrow(ResourceKey.create(Registries.BIOME,
-                    ResourceLocation.fromNamespaceAndPath("realscale",path))));
+                    new ResourceLocation("realscale",path))));
         }
         this.regions=Map.copyOf(targets);
     }

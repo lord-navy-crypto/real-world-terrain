@@ -195,7 +195,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         this.source = source;
         this.transitionBiomes = new HashMap<>();
         for (Rule rule : RULES) {
-            ResourceLocation location = ResourceLocation.fromNamespaceAndPath("realscale", rule.target());
+            ResourceLocation location = new ResourceLocation("realscale", rule.target());
             transitionBiomes.put(rule.target(), biomes.getOrThrow(ResourceKey.create(Registries.BIOME, location)));
         }
     }

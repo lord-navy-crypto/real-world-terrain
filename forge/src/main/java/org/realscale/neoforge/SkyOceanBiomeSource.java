@@ -56,7 +56,7 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         this.source=source;
         this.oceanClassificationSource=unwrapOceanClassificationSource(source);
         blossomIsle=biomes.getOrThrow(ResourceKey.create(Registries.BIOME,
-            ResourceLocation.fromNamespaceAndPath("realscale","sky_blossom_isles")));
+            new ResourceLocation("realscale","sky_blossom_isles")));
     }
     private BiomeSource source(){return source;}
     /** Preserve sky island placement for nested optional Geo Wonders presets. */
