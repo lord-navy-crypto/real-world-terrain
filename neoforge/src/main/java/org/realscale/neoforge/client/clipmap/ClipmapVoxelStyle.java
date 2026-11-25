@@ -16,26 +16,54 @@ public final class ClipmapVoxelStyle {
     }
 
     /**
-     * Returns 1 near the vanilla view boundary and 0 in the far half of LOD 0.
-     * Higher LODs are always continuous.
+     * Selects the first ring whose outer edge reaches beyond the vanilla
+     * render radius plus the shared-centre snap allowance.
+     */
+    public static int transitionLevel(int gridCells, int baseCellSpacingBlocks,
+            int nearRenderDistanceChunks) {
+        if (gridCells < 16 || gridCells > 256 || (gridCells & (gridCells - 1)) != 0
+                || baseCellSpacingBlocks < 1
+                || nearRenderDistanceChunks < 2 || nearRenderDistanceChunks > 64) {
+            throw new IllegalArgumentException("invalid voxel transition layout");
+        }
+        double nearRadius = nearRenderDistanceChunks * 16.0;
+        double cameraOffsetAllowance = baseCellSpacingBlocks * 16.0;
+        double protectedStart = nearRadius + cameraOffsetAllowance
+                + baseCellSpacingBlocks * 2.0;
+        for (int level = 0; level < GeometryClipmapLayout.DEFAULT_LEVEL_COUNT; level++) {
+            double spacing = (long) baseCellSpacingBlocks << level;
+            double outerRadius = (gridCells * 0.5) * spacing;
+            if (outerRadius > protectedStart) return level;
+        }
+        return -1;
+    }
+
+    /**
+     * Returns 1 near the protected vanilla boundary and fades to 0 at or
+     * before the selected ring's outer edge. Exactly one ring is voxelized.
      */
     public static float blend(int level, double distanceBlocks,
-            int nearRenderDistanceChunks, int cellSpacingBlocks) {
+            int nearRenderDistanceChunks, int baseCellSpacingBlocks,
+            int cellSpacingBlocks, int gridCells) {
         if (level < 0 || level >= GeometryClipmapLayout.DEFAULT_LEVEL_COUNT
                 || !Double.isFinite(distanceBlocks) || distanceBlocks < 0.0
                 || nearRenderDistanceChunks < 2 || nearRenderDistanceChunks > 64
-                || cellSpacingBlocks < 1) {
+                || baseCellSpacingBlocks < 1 || cellSpacingBlocks < baseCellSpacingBlocks
+                || gridCells < 16 || gridCells > 256) {
             throw new IllegalArgumentException("invalid voxel transition inputs");
         }
-        if (level != 0) return 0.0f;
+        int transitionLevel = transitionLevel(
+                gridCells, baseCellSpacingBlocks, nearRenderDistanceChunks);
+        if (level != transitionLevel) return 0.0f;
 
         double nearRadius = nearRenderDistanceChunks * 16.0;
-        // The common clipmap centre can lag the camera by half the coarsest
-        // snap cell. Keep the voxel band outside that protected vanilla overlap.
-        double cameraOffsetAllowance = cellSpacingBlocks * 16.0;
+        double cameraOffsetAllowance = baseCellSpacingBlocks * 16.0;
         double fadeStart = nearRadius + cameraOffsetAllowance
                 + cellSpacingBlocks * 2.0;
-        double fadeEnd = fadeStart + cellSpacingBlocks * FADE_LENGTH_CELLS;
+        double outerRadius = (gridCells * 0.5) * cellSpacingBlocks;
+        double fadeEnd = Math.min(
+                fadeStart + cellSpacingBlocks * FADE_LENGTH_CELLS, outerRadius);
+        if (fadeEnd <= fadeStart) return 0.0f;
         return 1.0f - smoothstep((float) fadeStart, (float) fadeEnd,
                 (float) distanceBlocks);
     }
