@@ -8,7 +8,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /** Client request to enable the opt-in RealScale far-surface stream. */
-public record ClipmapRequestPayload(int nearRenderDistanceChunks, long requestId)
+public record ClipmapRequestPayload(
+        int nearRenderDistanceChunks, int gridCells, long requestId)
         implements CustomPacketPayload {
     public static final Type<ClipmapRequestPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(
@@ -19,11 +20,13 @@ public record ClipmapRequestPayload(int nearRenderDistanceChunks, long requestId
                 @Override
                 public ClipmapRequestPayload decode(RegistryFriendlyByteBuf buffer) {
                     int chunks = buffer.readVarInt();
+                    int gridCells = buffer.readVarInt();
                     long requestId = buffer.readLong();
-                    if (chunks < 2 || chunks > 64 || requestId <= 0L) {
+                    if (chunks < 2 || chunks > 64
+                            || !isSupportedGridCells(gridCells) || requestId <= 0L) {
                         throw new DecoderException("Invalid RealScale clipmap request");
                     }
-                    return new ClipmapRequestPayload(chunks, requestId);
+                    return new ClipmapRequestPayload(chunks, gridCells, requestId);
                 }
 
                 @Override
@@ -31,10 +34,12 @@ public record ClipmapRequestPayload(int nearRenderDistanceChunks, long requestId
                         ClipmapRequestPayload value) {
                     if (value.nearRenderDistanceChunks() < 2
                             || value.nearRenderDistanceChunks() > 64
+                            || !isSupportedGridCells(value.gridCells())
                             || value.requestId() <= 0L) {
                         throw new EncoderException("Invalid RealScale clipmap request");
                     }
                     buffer.writeVarInt(value.nearRenderDistanceChunks());
+                    buffer.writeVarInt(value.gridCells());
                     buffer.writeLong(value.requestId());
                 }
             };
@@ -44,9 +49,17 @@ public record ClipmapRequestPayload(int nearRenderDistanceChunks, long requestId
             throw new IllegalArgumentException(
                     "Invalid RealScale clipmap render distance: " + nearRenderDistanceChunks);
         }
+        if (!isSupportedGridCells(gridCells)) {
+            throw new IllegalArgumentException(
+                    "Invalid RealScale clipmap grid resolution: " + gridCells);
+        }
         if (requestId <= 0L) {
             throw new IllegalArgumentException("Clipmap request ID must be positive");
         }
+    }
+
+    public static boolean isSupportedGridCells(int value) {
+        return value == 64 || value == 128 || value == 256;
     }
 
     @Override
