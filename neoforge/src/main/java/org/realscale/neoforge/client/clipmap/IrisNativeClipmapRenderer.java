@@ -645,8 +645,16 @@ final class IrisNativeClipmapRenderer {
                 for (int vertex = 0; vertex < 3; vertex++) {
                     vertexColors[vertex] = ClipmapSurfacePalette.waterColor();
                 }
-                ClipmapTriangleUv.computeCellAlignedInto(gridX, gridZ, triangleUvs);
-                emitTriangle(water, sprites.water(), vertexColors, 190,
+                // Far water must not repeat the high-frequency block-water atlas.
+                // Sample the same neutral white texel as terrain and carry its
+                // stable material entirely in vertex color to avoid LOD shimmer.
+                triangleUvs[0] = 8.0f;
+                triangleUvs[1] = 8.0f;
+                triangleUvs[2] = 8.0f;
+                triangleUvs[3] = 8.0f;
+                triangleUvs[4] = 8.0f;
+                triangleUvs[5] = 8.0f;
+                emitTriangle(water, sprites.neutral(), vertexColors, 190,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         false, 0.0f, true, faceNormalScratch);
             }
@@ -1175,15 +1183,14 @@ final class IrisNativeClipmapRenderer {
     }
 
     private record Sprites(TextureAtlasSprite grass, TextureAtlasSprite stone,
-            TextureAtlasSprite water, TextureAtlasSprite leaves,
-            TextureAtlasSprite wood, TextureAtlasSprite bricks,
-            TextureAtlasSprite black, TextureAtlasSprite neutral) {
+            TextureAtlasSprite leaves, TextureAtlasSprite wood,
+            TextureAtlasSprite bricks, TextureAtlasSprite black,
+            TextureAtlasSprite neutral) {
         private static Sprites load(Minecraft minecraft) {
             BlockModelShaper shaper = minecraft.getBlockRenderer().getBlockModelShaper();
             return new Sprites(
                     particle(shaper, Blocks.GRASS_BLOCK.defaultBlockState()),
                     particle(shaper, Blocks.STONE.defaultBlockState()),
-                    particle(shaper, Blocks.WATER.defaultBlockState()),
                     particle(shaper, Blocks.OAK_LEAVES.defaultBlockState()),
                     particle(shaper, Blocks.OAK_LOG.defaultBlockState()),
                     particle(shaper, Blocks.STONE_BRICKS.defaultBlockState()),
