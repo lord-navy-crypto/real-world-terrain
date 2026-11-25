@@ -1,6 +1,8 @@
 package org.realscale.neoforge;
 
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.RegisterEvent;
@@ -17,6 +19,7 @@ public final class RealScaleMod {
         bus.addListener(RealScaleStructurePacks::register);
         bus.addListener(this::registerDensity);
         MinecraftForge.EVENT_BUS.addListener(DhChunkyGuardCommands::registerCommands);
+        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ForgeClientSmoke::register);
     }
     private void registerDensity(RegisterEvent event) {
         event.register(Registries.DENSITY_FUNCTION_TYPE, helper -> {
