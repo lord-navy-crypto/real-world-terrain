@@ -12,7 +12,7 @@ import net.minecraft.world.level.biome.Climate;
  */
 public final class GeoWondersBiomeSource extends BiomeSource {
     public static final Codec<GeoWondersBiomeSource> CODEC =
-        RecordCodecBuilder.mapCodec(i -> i.group(
+        RecordCodecBuilder.<GeoWondersBiomeSource>mapCodec(i -> i.group(
             BiomeSource.CODEC.fieldOf("source").forGetter(GeoWondersBiomeSource::source)
         ).apply(i, GeoWondersBiomeSource::new)).codec();
     private final BiomeSource source;
