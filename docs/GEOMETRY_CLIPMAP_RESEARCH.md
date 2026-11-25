@@ -658,3 +658,38 @@ clipmap projection. As a result, distant trees/buildings could be clipped at
 the original Minecraft far plane even when the ground mesh remained visible.
 The terrain draw now passes its already-extended projection matrix to the
 proxy renderer, keeping both systems on the same horizon and fog range.
+
+
+## Distance-dependent voxel-to-continuous terrain transition (2026-11-25)
+
+The Iris-native terrain mesh now has a Minecraft-like stepped band before it
+becomes a continuous far-field surface. The transition is selected from the
+first ring whose outer edge reaches beyond the vanilla render radius plus the
+shared clipmap-centre snap allowance. This makes the behavior work with the
+64/128/256 grid range presets without applying voxel steps inside the protected
+vanilla near field.
+
+Within that selected ring:
+- Each valid height-grid cell derives a representative height from its four
+  corner samples and snaps that height to the nearest integer block level.
+- The cell's top triangles blend toward one flat height, while adjacent cells
+  receive vertical riser faces wherever their blended edge heights differ.
+- Surface normals and procedural terrain colors blend toward flat, cell-level
+  values together with the geometry.
+- The voxel influence fades in outside the protected vanilla overlap and fades
+  back to zero by the selected ring's outer boundary. Other LOD rings remain
+  continuous and retain the existing parent-height morph.
+
+This is a stepped heightfield, not yet a full one-block reconstruction outside
+vanilla chunk render distance. Its horizontal cell footprint is the selected
+ring's sample spacing (four blocks per cell in the usual ten-chunk/default-grid
+case, and potentially larger in reduced-range presets). The vanilla chunk
+renderer continues to provide exact block geometry in its normal view range.
+A dedicated one-block near-detail strip would require additional high-resolution
+surface sampling and a separate CPU, network, mesh-memory and frame-time budget;
+it must be validated before replacing this conservative first transition.
+
+The transition has pure-Java tests for protected-overlap behavior, adaptive ring
+selection, fade endpoints, integer-height quantization and geometry/color blend
+endpoints. The Iris client render smoke and full NeoForge build remain required
+before the visual change can be considered accepted.
