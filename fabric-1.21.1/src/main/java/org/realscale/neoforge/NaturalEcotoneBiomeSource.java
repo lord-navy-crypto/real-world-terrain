@@ -1,6 +1,6 @@
 package org.realscale.neoforge;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.BlockPos;
@@ -32,11 +32,11 @@ import java.util.stream.Stream;
  * surface transition strip. Rivers and oceans are never replaced.</p>
  */
 public final class NaturalEcotoneBiomeSource extends BiomeSource {
-    public static final Codec<NaturalEcotoneBiomeSource> CODEC =
-            RecordCodecBuilder.<NaturalEcotoneBiomeSource>mapCodec(instance -> instance.group(
+    public static final MapCodec<NaturalEcotoneBiomeSource> CODEC =
+            RecordCodecBuilder.mapCodec(instance -> instance.group(
                     BiomeSource.CODEC.fieldOf("source").forGetter(NaturalEcotoneBiomeSource::source),
-                    RegistryOps.<Biome, NaturalEcotoneBiomeSource>retrieveGetter(Registries.BIOME)
-            ).apply(instance, NaturalEcotoneBiomeSource::new)).codec();
+                    RegistryOps.retrieveGetter(Registries.BIOME)
+            ).apply(instance, NaturalEcotoneBiomeSource::new));
 
     private record Rule(String target, int widthBlocks, Set<String> left, Set<String> right) {
         boolean matches(String first, String second) {
@@ -195,7 +195,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         this.source = source;
         this.transitionBiomes = new HashMap<>();
         for (Rule rule : RULES) {
-            ResourceLocation location = new ResourceLocation("realscale", rule.target());
+            ResourceLocation location = ResourceLocation.fromNamespaceAndPath("realscale", rule.target());
             transitionBiomes.put(rule.target(), biomes.getOrThrow(ResourceKey.create(Registries.BIOME, location)));
         }
     }
@@ -235,7 +235,8 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         return source;
     }
 
-    @Override public Codec<? extends BiomeSource> codec() {
+    @Override
+    protected MapCodec<? extends BiomeSource> codec() {
         return CODEC;
     }
 

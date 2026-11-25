@@ -37,11 +37,11 @@ final class FabricBiomeModifiers {
                         BiomeModifications.addFeature(context -> {
                             for (String selector : selectors) {
                                 if (selector.startsWith("#")) {
-                                    if (context.hasTag(TagKey.create(Registries.BIOME, new ResourceLocation(selector.substring(1))))) return true;
-                                } else if (context.getBiomeKey().location().equals(new ResourceLocation(selector))) return true;
+                                    if (context.hasTag(TagKey.create(Registries.BIOME, ResourceLocation.parse(selector.substring(1))))) return true;
+                                } else if (context.getBiomeKey().location().equals(ResourceLocation.parse(selector))) return true;
                             }
                             return false;
-                        }, step, ResourceKey.create(Registries.PLACED_FEATURE, new ResourceLocation(feature)));
+                        }, step, ResourceKey.create(Registries.PLACED_FEATURE, ResourceLocation.parse(feature)));
                     }
                     count++;
                 }

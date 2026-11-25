@@ -176,7 +176,7 @@ public final class ClientChunkUploadBudget {
         int tasks=Integer.getInteger("realscale.experimental.client.upload_max_tasks",8);
         // Explicit hard caps prevent accidentally starving world appearance.
         return new ClientChunkUploadBudget(
-                Math.max(250L,Math.min(10_000L,ms))*1000L,
-                Math.max(1,Math.min(32,tasks)));
+                Math.clamp(ms,250L,10_000L)*1000L,
+                Math.clamp(tasks,1,32));
     }
 }

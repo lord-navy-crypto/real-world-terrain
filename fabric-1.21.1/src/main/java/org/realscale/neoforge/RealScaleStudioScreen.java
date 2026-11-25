@@ -43,7 +43,7 @@ public final class RealScaleStudioScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics,int mouseX,int mouseY,float partialTick) {
-        renderBackground(graphics);
+        renderBackground(graphics,mouseX,mouseY,partialTick);
         super.render(graphics,mouseX,mouseY,partialTick);
         graphics.drawCenteredString(font,title,width/2,20,0xffffffff);
         graphics.drawCenteredString(font,

@@ -58,7 +58,7 @@ public final class GroundMicrostructureFeature extends Feature<NoneFeatureConfig
         BlockState state = level.getBlockState(pos);
         // Replace only air or common undergrowth. Never overwrite flowers, roots,
         // water, leaf canopy, logs, structures, or block entities.
-        boolean free = state.isAir() || state.is(Blocks.GRASS) || state.is(Blocks.FERN);
+        boolean free = state.isAir() || state.is(Blocks.SHORT_GRASS) || state.is(Blocks.FERN);
         return free && level.getFluidState(pos).isEmpty()
                 && level.getBlockState(pos.above()).isAir();
     }

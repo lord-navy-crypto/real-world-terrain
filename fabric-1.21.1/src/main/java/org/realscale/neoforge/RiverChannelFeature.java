@@ -56,7 +56,7 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
      */
     private static boolean removableCover(BlockState state) {
         return state.is(Blocks.SNOW)
-            || state.is(Blocks.GRASS)
+            || state.is(Blocks.SHORT_GRASS)
             || state.is(Blocks.FERN)
             || state.is(Blocks.DEAD_BUSH);
     }

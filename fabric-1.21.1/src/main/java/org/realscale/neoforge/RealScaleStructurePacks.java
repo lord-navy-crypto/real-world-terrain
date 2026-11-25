@@ -118,7 +118,7 @@ public final class RealScaleStructurePacks {
     private static void registerOne(String id, String displayName, boolean selectedDefault) {
         var mod = FabricLoader.getInstance().getModContainer(MODID).orElseThrow();
         boolean ok = ResourceManagerHelper.registerBuiltinResourcePack(
-            new ResourceLocation(MODID, "realscale_structures_" + id), mod,
+            ResourceLocation.fromNamespaceAndPath(MODID, "realscale_structures_" + id), mod,
             selectedDefault ? ResourcePackActivationType.DEFAULT_ENABLED : ResourcePackActivationType.NORMAL);
         if (!ok) throw new IllegalStateException("Missing built-in RealScale pack: " + id);
     }

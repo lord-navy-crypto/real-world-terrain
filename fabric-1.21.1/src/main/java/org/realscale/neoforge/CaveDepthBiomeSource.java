@@ -1,6 +1,6 @@
 package org.realscale.neoforge;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.EnumMap;
 import java.util.Map;
@@ -26,11 +26,11 @@ import net.minecraft.world.level.biome.Climate;
  * carver and spawn lists to preserve vanilla generation.
  */
 public final class CaveDepthBiomeSource extends BiomeSource {
-    public static final Codec<CaveDepthBiomeSource> CODEC=
-            RecordCodecBuilder.<CaveDepthBiomeSource>mapCodec(i->i.group(
+    public static final MapCodec<CaveDepthBiomeSource> CODEC=
+            RecordCodecBuilder.mapCodec(i->i.group(
                     BiomeSource.CODEC.fieldOf("source").forGetter(CaveDepthBiomeSource::source),
-                    RegistryOps.<Biome, CaveDepthBiomeSource>retrieveGetter(Registries.BIOME))
-                    .apply(i, CaveDepthBiomeSource::new)).codec();
+                    RegistryOps.retrieveGetter(Registries.BIOME))
+                    .apply(i,CaveDepthBiomeSource::new));
     private final BiomeSource source;
     private final Map<CaveBiomeRegionMath.Region,Holder<Biome>> regions;
     private CaveDepthBiomeSource(BiomeSource base,HolderGetter<Biome> biomes) {
@@ -51,13 +51,13 @@ public final class CaveDepthBiomeSource extends BiomeSource {
                 default->throw new IllegalStateException("NONE is never target");
             };
             targets.put(region,biomes.getOrThrow(ResourceKey.create(Registries.BIOME,
-                    new ResourceLocation("realscale",path))));
+                    ResourceLocation.fromNamespaceAndPath("realscale",path))));
         }
         this.regions=Map.copyOf(targets);
     }
     private BiomeSource source(){return source;}
     BiomeSource wrappedSource(){return source;}
-    @Override public Codec<? extends BiomeSource> codec(){return CODEC;}
+    @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),regions.values().stream()).distinct();
     }

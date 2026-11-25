@@ -1,7 +1,7 @@
 {
-  "ambient_light": 0,
+  "ambient_light": 0.0,
   "bed_works": true,
-  "coordinate_scale": 1,
+  "coordinate_scale": 1.0,
   "effects": "minecraft:overworld",
   "has_ceiling": false,
   "has_raids": true,
@@ -13,10 +13,8 @@
   "monster_spawn_block_light_limit": 0,
   "monster_spawn_light_level": {
     "type": "minecraft:uniform",
-    "value": {
-      "min_inclusive": 0,
-      "max_inclusive": 7
-    }
+    "min_inclusive": 0,
+    "max_inclusive": 7
   },
   "natural": true,
   "piglin_safe": false,

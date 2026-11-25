@@ -12,9 +12,9 @@ public final class RealScaleVehicles {
     public static final Supplier<EntityType<HovercraftEntity>> HOVERCRAFT = () -> entity;
     public static final Supplier<Item> HOVERCRAFT_ITEM = () -> item;
     public static void register() {
-        entity = Registry.register(BuiltInRegistries.ENTITY_TYPE, new ResourceLocation("realscale", "hovercraft"),
+        entity = Registry.register(BuiltInRegistries.ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "hovercraft"),
             EntityType.Builder.<HovercraftEntity>of(HovercraftEntity::new, MobCategory.MISC).sized(1.375F, 0.5625F).clientTrackingRange(10).build("realscale:hovercraft"));
-        item = Registry.register(BuiltInRegistries.ITEM, new ResourceLocation("realscale", "hovercraft"),
+        item = Registry.register(BuiltInRegistries.ITEM, ResourceLocation.fromNamespaceAndPath("realscale", "hovercraft"),
             new HovercraftItem(new Item.Properties().stacksTo(1)));
     }
     private RealScaleVehicles() {}

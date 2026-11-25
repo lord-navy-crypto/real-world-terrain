@@ -1,6 +1,6 @@
 package org.realscale.neoforge;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
@@ -17,10 +17,10 @@ import java.util.stream.Stream;
  * biome source. Everything below Y160 is delegated without modification.
  */
 public final class SkyOceanBiomeSource extends BiomeSource {
-    public static final Codec<SkyOceanBiomeSource> CODEC=RecordCodecBuilder.<SkyOceanBiomeSource>mapCodec(i->
+    public static final MapCodec<SkyOceanBiomeSource> CODEC=RecordCodecBuilder.mapCodec(i->
         i.group(BiomeSource.CODEC.fieldOf("source").forGetter(SkyOceanBiomeSource::source),
-                RegistryOps.<Biome, SkyOceanBiomeSource>retrieveGetter(Registries.BIOME))
-          .apply(i, SkyOceanBiomeSource::new)).codec();
+                RegistryOps.retrieveGetter(Registries.BIOME))
+          .apply(i,SkyOceanBiomeSource::new));
     private final BiomeSource source;
     // Offshore radius probes only classify vanilla oceans. Bypass expensive
     // 8-direction ecotone ray searches, which cannot change ocean predicates.
@@ -56,14 +56,14 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         this.source=source;
         this.oceanClassificationSource=unwrapOceanClassificationSource(source);
         blossomIsle=biomes.getOrThrow(ResourceKey.create(Registries.BIOME,
-            new ResourceLocation("realscale","sky_blossom_isles")));
+            ResourceLocation.fromNamespaceAndPath("realscale","sky_blossom_isles")));
     }
     private BiomeSource source(){return source;}
     /** Preserve sky island placement for nested optional Geo Wonders presets. */
     public boolean containsGeoWonders() {
         return source instanceof GeoWondersBiomeSource;
     }
-    @Override public Codec<? extends BiomeSource> codec(){return CODEC;}
+    @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),Stream.of(blossomIsle)).distinct();
     }

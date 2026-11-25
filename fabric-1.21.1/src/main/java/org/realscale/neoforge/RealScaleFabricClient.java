@@ -12,7 +12,7 @@ public final class RealScaleFabricClient implements ClientModInitializer {
         if (FabricLoader.getInstance().isModLoaded("yet_another_config_lib_v3")) {
             RealScaleStudioClient.register();
         } else {
-            System.err.println("[RealScale] Install YACL 3.6.6 for the Terrain Lab and Studio screens.");
+            System.err.println("[RealScale] Install YACL 3.8.1 for the Terrain Lab and Studio screens.");
         }
         ClientTickEvents.END_CLIENT_TICK.register(RealScaleAdaptiveVisibilityClient::onClientTick);
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> {

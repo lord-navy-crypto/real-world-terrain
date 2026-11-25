@@ -19,7 +19,7 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  */
 public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
     private static final ResourceKey<Biome> SKY = ResourceKey.create(Registries.BIOME,
-            new ResourceLocation("realscale", "sky_blossom_isles"));
+            ResourceLocation.fromNamespaceAndPath("realscale", "sky_blossom_isles"));
 
     public SkyIslandFeature() { super(NoneFeatureConfiguration.CODEC); }
 

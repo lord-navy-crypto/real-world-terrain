@@ -3,6 +3,7 @@ package org.realscale.neoforge;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.Tag;
 import java.io.IOException;
 
@@ -26,12 +27,12 @@ public final class FabricServerSmoke {
         if (architecture != 100 || urban != 4)
             throw new IllegalStateException("Unexpected template counts " + architecture + "/" + urban);
         for (ResourceLocation id : ids) {
-            var resourceId = new ResourceLocation(id.getNamespace(), "structures/" + id.getPath() + ".nbt");
+            var resourceId = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "structures/" + id.getPath() + ".nbt");
             var resource = server.getResourceManager().getResource(resourceId)
                     .orElseThrow(() -> new IllegalStateException("Missing packaged NBT " + resourceId));
             try (var stream = resource.open()) {
-                var nbt = NbtIo.readCompressed(stream);
-                if (nbt.getInt("DataVersion") != 3465)
+                var nbt = NbtIo.readCompressed(stream, NbtAccounter.unlimitedHeap());
+                if (nbt.getInt("DataVersion") != 3955)
                     throw new IllegalStateException("Wrong DataVersion in " + id);
                 var palette = nbt.getList("palette", Tag.TAG_COMPOUND);
                 if (palette.isEmpty())

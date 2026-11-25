@@ -255,7 +255,7 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
                         ? (random.nextInt(4) == 0 ? Blocks.MOSS_CARPET.defaultBlockState()
                             : Blocks.FERN.defaultBlockState())
                         : (random.nextInt(6) == 0 ? Blocks.POPPY.defaultBlockState()
-                            : Blocks.GRASS.defaultBlockState());
+                            : Blocks.SHORT_GRASS.defaultBlockState());
                 if (!plant.canSurvive(level, pos)) continue;
                 level.setBlock(pos, plant, 2);
                 placed++;
@@ -287,7 +287,7 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
                 } else if (under.is(Blocks.GRASS_BLOCK) && random.nextInt(3) == 0) {
                     BlockState plant = random.nextBoolean()
                             ? Blocks.MOSS_CARPET.defaultBlockState()
-                            : Blocks.GRASS.defaultBlockState();
+                            : Blocks.SHORT_GRASS.defaultBlockState();
                     if (plant.canSurvive(level, pos)) {
                         level.setBlock(pos, plant, 2);
                         placed++;
