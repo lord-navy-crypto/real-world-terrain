@@ -39,8 +39,8 @@ public final class ClipmapVoxelStyle {
     }
 
     /**
-     * Returns 1 near the protected vanilla boundary and fades to 0 at or
-     * before the selected ring's outer edge. Exactly one ring is voxelized.
+     * Returns 0 inside the protected vanilla overlap, rises to a stepped
+     * surface immediately beyond it, then fades to 0 at the selected ring edge.
      */
     public static float blend(int level, double distanceBlocks,
             int nearRenderDistanceChunks, int baseCellSpacingBlocks,
@@ -64,8 +64,14 @@ public final class ClipmapVoxelStyle {
         double fadeEnd = Math.min(
                 fadeStart + cellSpacingBlocks * FADE_LENGTH_CELLS, outerRadius);
         if (fadeEnd <= fadeStart) return 0.0f;
-        return 1.0f - smoothstep((float) fadeStart, (float) fadeEnd,
+        double available = fadeEnd - fadeStart;
+        double fadeInEnd = fadeStart + Math.min(
+                cellSpacingBlocks * 2.0, available * 0.25);
+        float fadeIn = smoothstep((float) fadeStart, (float) fadeInEnd,
                 (float) distanceBlocks);
+        float fadeOut = 1.0f - smoothstep((float) fadeInEnd,
+                (float) fadeEnd, (float) distanceBlocks);
+        return fadeIn * fadeOut;
     }
 
     /** Snap a sampled surface height to the nearest Minecraft block level. */
