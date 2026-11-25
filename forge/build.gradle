@@ -26,7 +26,14 @@ minecraft {
                 }
             }
         }
-        client {}
+        client {
+            // Forge 1.20.1 userdev runs with Mojmap names, while published
+            // dependencies such as YACL ship SRG-targeted mixin refmaps.
+            // Enable Forge's SRG -> Mojmap refmap remapper for runClient.
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile',
+                    file("$buildDir/createSrgToMcp/output.srg").absolutePath
+        }
         server {
             args '--nogui'
         }
