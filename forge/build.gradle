@@ -11,6 +11,12 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
+// Select the Forge 1.20.1 API line through -Pforge_version or FORGE_VERSION.
+// Keep 47.4.28 as the default development target; CI tests older supported builds.
+def forgeVersion = providers.gradleProperty('forge_version')
+        .orElse(providers.environmentVariable('FORGE_VERSION'))
+        .getOrElse('47.4.28')
+
 minecraft {
     mappings channel: 'official', version: '1.20.1'
     copyIdeResources = true
@@ -48,7 +54,7 @@ repositories {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.20.1-47.4.28'
+    minecraft "net.minecraftforge:forge:1.20.1-${forgeVersion}"
 
     // YACL 3.6.6 is the current Forge build for Minecraft 1.20.1.
     implementation fg.deobf('maven.modrinth:1eAoo2KR:sCWgXDYQ')
@@ -80,7 +86,7 @@ tasks.named('processResources', ProcessResources).configure {
         mod_name: 'RealScale',
         mod_version: project.version,
         minecraft_version: '1.20.1',
-        forge_version: '47.4.28'
+        forge_version: forgeVersion
     ]
     inputs.properties replaceProperties
     filesMatching(['META-INF/mods.toml']) {
