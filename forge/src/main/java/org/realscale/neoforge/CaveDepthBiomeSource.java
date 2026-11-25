@@ -27,9 +27,9 @@ import net.minecraft.world.level.biome.Climate;
  */
 public final class CaveDepthBiomeSource extends BiomeSource {
     public static final Codec<CaveDepthBiomeSource> CODEC=
-            RecordCodecBuilder.mapCodec(i->i.group(
+            RecordCodecBuilder.<CaveDepthBiomeSource>mapCodec(i->i.group(
                     BiomeSource.CODEC.fieldOf("source").forGetter(CaveDepthBiomeSource::source),
-                    RegistryOps.retrieveGetter(Registries.BIOME))
+                    RegistryOps.<Biome, CaveDepthBiomeSource>retrieveGetter(Registries.BIOME))
                     .apply(i, CaveDepthBiomeSource::new)).codec();
     private final BiomeSource source;
     private final Map<CaveBiomeRegionMath.Region,Holder<Biome>> regions;
