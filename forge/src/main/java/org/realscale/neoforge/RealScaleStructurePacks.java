@@ -6,7 +6,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.PathPackResources;
-import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraftforge.fml.ModList;
@@ -124,17 +123,7 @@ public final class RealScaleStructurePacks {
             var modFileInfo = ModList.get().getModFileById(MODID);
             if (modFileInfo == null) return;
             Path root = modFileInfo.getFile().findResource(resourcePath);
-            Pack.ResourcesSupplier resources = new Pack.ResourcesSupplier() {
-                @Override
-                public PackResources openPrimary(String packId) {
-                    return new PathPackResources(packId, root, true);
-                }
-
-                @Override
-                public PackResources openFull(String packId, Pack.Info info) {
-                    return new PathPackResources(packId, root, true);
-                }
-            };
+            Pack.ResourcesSupplier resources = packId -> new PathPackResources(packId, root, true);
             Pack pack = Pack.readMetaAndCreate(
                     MODID + ":" + resourcePath,
                     Component.literal(displayName),
