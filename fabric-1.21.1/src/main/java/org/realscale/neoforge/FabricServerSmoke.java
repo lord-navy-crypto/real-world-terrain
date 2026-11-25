@@ -22,17 +22,12 @@ public final class FabricServerSmoke {
             throw new IllegalStateException("RealScale preset not active");
         }
 
-        // Enumerate packaged data-pack resources directly. StructureTemplateManager.listTemplates()
-        // can omit mod-pack resources on this Fabric startup path, so it is not a reliable
-        // inventory source for this CI assertion.
         var resourceManager = server.getResourceManager();
         var packagedResources = resourceManager.listResources(
                 "structures", id -> id.getNamespace().equals("realscale"));
         var resourceIdsByTemplate = new java.util.HashMap<ResourceLocation, ResourceLocation>();
         for (var resourceId : packagedResources.keySet()) {
             String path = resourceId.getPath();
-            // ResourceManager implementations may expose either the path relative to the
-            // requested directory or the full resource path. Accept both representations.
             if (path.startsWith("structures/")) path = path.substring("structures/".length());
             if (!path.endsWith(".nbt")) continue;
             String templatePath = path.substring(0, path.length() - ".nbt".length());
@@ -53,6 +48,22 @@ public final class FabricServerSmoke {
         }
 
         var manager = server.getStructureManager();
+        // Rebind against the final server resource manager before querying templates.
+        // This is safe here because this verifier is enabled only in the isolated CI smoke run.
+        manager.onResourceManagerReload(resourceManager);
+        var managerIds = manager.listTemplates()
+                .filter(id -> id.getNamespace().equals("realscale"))
+                .toList();
+        var managerIdsByPath = new java.util.HashMap<String, ResourceLocation>();
+        for (var managerId : managerIds) {
+            String path = managerId.getPath();
+            if (path.startsWith("structures/")) path = path.substring("structures/".length());
+            if (path.endsWith(".nbt")) path = path.substring(0, path.length() - ".nbt".length());
+            managerIdsByPath.put(path, managerId);
+        }
+        System.out.println("FABRIC_TEMPLATE_MANAGER_DIAGNOSTIC count=" + managerIds.size()
+                + " sample=" + managerIds.stream().limit(8).toList());
+
         for (ResourceLocation id : ids) {
             var resourceId = resourceIdsByTemplate.get(id);
             var resource = packagedResources.get(resourceId);
@@ -73,7 +84,15 @@ public final class FabricServerSmoke {
             } catch (IOException e) {
                 throw new IllegalStateException("Could not read " + id, e);
             }
-            var template = manager.get(id).orElseThrow(() -> new IllegalStateException("Missing loaded template " + id));
+
+            var managerId = managerIdsByPath.get(id.getPath());
+            if (managerId == null)
+                throw new IllegalStateException("StructureTemplateManager did not enumerate " + id
+                        + "; manager templates=" + managerIds.size()
+                        + "; sample=" + managerIds.stream().limit(12).toList());
+            var template = manager.get(managerId)
+                    .orElseThrow(() -> new IllegalStateException("StructureTemplateManager could not load "
+                            + managerId + "; resource=" + resourceId));
             var size = template.getSize();
             if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0)
                 throw new IllegalStateException("Empty template " + id);
