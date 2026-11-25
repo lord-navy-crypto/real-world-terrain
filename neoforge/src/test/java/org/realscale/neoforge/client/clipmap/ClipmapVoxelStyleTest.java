@@ -30,7 +30,7 @@ final class ClipmapVoxelStyleTest {
     }
 
     @Test
-    void everyCoarserLodRemainsContinuous() {
+    void onlySelectedNearRingUsesVoxelStyle() {
         assertEquals(0.0f,
                 ClipmapVoxelStyle.blend(1, 180.0, 10, 4, 8, 256), 1.0e-6f);
         assertEquals(0.0f,
