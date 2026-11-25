@@ -18,14 +18,15 @@ public final class GeometryClipmapNetwork {
     private GeometryClipmapNetwork() {}
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("4");
+        var registrar = event.registrar("5");
         registrar.playToServer(
                 ClipmapRequestPayload.TYPE,
                 ClipmapRequestPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) {
                         GeometryClipmapServer.request(player,
-                                payload.nearRenderDistanceChunks(), payload.requestId());
+                                payload.nearRenderDistanceChunks(),
+                                payload.gridCells(), payload.requestId());
                     }
                 }));
         registrar.playToClient(
