@@ -13,6 +13,11 @@ def fabricLoaderVersion = providers.gradleProperty('fabric_loader_version')
 def fabricApiVersion = providers.gradleProperty('fabric_api_version')
         .orElse(providers.environmentVariable('FABRIC_API_VERSION'))
         .getOrElse('0.92.6+1.20.1')
+def includeYaclDev = providers.gradleProperty('realscale_include_yacl_dev')
+        .map { it.toBoolean() }
+        .getOrElse(true)
+def rendererStack = providers.gradleProperty('realscale_renderer_stack')
+        .getOrElse('vanilla')
 repositories {
     maven { url = 'https://api.modrinth.com/maven' }
     mavenCentral()
@@ -22,7 +27,32 @@ dependencies {
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${fabricLoaderVersion}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}"
-    modImplementation 'maven.modrinth:1eAoo2KR:dvS5DjUA'
+    // YACL is compile-time only unless a client smoke lane explicitly enables it.
+    modCompileOnly 'maven.modrinth:1eAoo2KR:dvS5DjUA'
+    if (includeYaclDev) modRuntimeOnly 'maven.modrinth:1eAoo2KR:dvS5DjUA'
+
+    // Optional renderer stacks are runtime-only test fixtures, never hard dependencies.
+    switch (rendererStack) {
+        case 'vanilla':
+            break
+        case 'sodium_indium':
+            modRuntimeOnly 'maven.modrinth:AANobbMI:OihdIimA'
+            modRuntimeOnly 'maven.modrinth:Orvt0mRa:nQHYSjxO'
+            break
+        case 'sodium_iris_indium':
+            modRuntimeOnly 'maven.modrinth:AANobbMI:OihdIimA'
+            modRuntimeOnly 'maven.modrinth:Orvt0mRa:nQHYSjxO'
+            modRuntimeOnly 'maven.modrinth:YL57xq9U:s5eFLITc'
+            break
+        case 'sodium_iris_indium_dh':
+            modRuntimeOnly 'maven.modrinth:AANobbMI:OihdIimA'
+            modRuntimeOnly 'maven.modrinth:Orvt0mRa:nQHYSjxO'
+            modRuntimeOnly 'maven.modrinth:YL57xq9U:s5eFLITc'
+            modRuntimeOnly 'maven.modrinth:uCdwusMi:10i2Xjtv'
+            break
+        default:
+            throw new GradleException("Unknown RealScale renderer test stack: " + rendererStack)
+    }
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
