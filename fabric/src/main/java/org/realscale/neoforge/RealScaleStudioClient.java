@@ -10,6 +10,7 @@ import net.minecraft.network.chat.Component;
 
 /** One pause-menu entry point for Terrain Lab, Climate and Performance tools. */
 public final class RealScaleStudioClient {
+    private static boolean smokeReported;
     private RealScaleStudioClient() {}
 
     public static void register() {
@@ -22,6 +23,11 @@ public final class RealScaleStudioClient {
                 button -> Minecraft.getInstance().setScreen(
                         new RealScaleStudioScreen(pause)))
                 .bounds(x,y,width,20).build());
+        if (!smokeReported && pause instanceof TitleScreen
+                && Boolean.getBoolean("realscale.fabric.ci.clientSmoke")) {
+            smokeReported = true;
+            System.err.println("FABRIC_CLIENT_UI_SMOKE_OK");
+        }
         });
     }
 }
