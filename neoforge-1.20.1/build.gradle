@@ -24,7 +24,7 @@ legacyForge {
     validateAccessTransformers = true
     runs {
         client { client() }
-        server { server() }
+        server { server(); programArgument '--nogui' }
     }
     mods {
         realscale {
