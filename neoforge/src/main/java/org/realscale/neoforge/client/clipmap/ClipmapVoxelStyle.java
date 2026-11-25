@@ -4,10 +4,9 @@ package org.realscale.neoforge.client.clipmap;
  * Distance-dependent transition from Minecraft-like stepped terrain to the
  * continuous far-field height surface.
  *
- * <p>The first clipmap ring starts in the overlap with vanilla chunks. Its
- * surface is initially quantized into flat, block-height cells with vertical
- * risers. The voxel influence then fades to zero before the first coarse ring.
- * All other LODs remain continuous.
+ * <p>The first visible ring beyond the protected vanilla overlap is quantized
+ * into flat, block-height cells with vertical risers. The voxel influence fades
+ * to zero before that ring's outer edge; all other LODs remain continuous.
  */
 public final class ClipmapVoxelStyle {
     private static final float FADE_LENGTH_CELLS = 40.0f;
