@@ -11,18 +11,18 @@ import java.nio.file.StandardCopyOption;
 import java.util.Properties;
 
 /**
- * Persistent client-side switch for the automatic Geometry Clipmap renderer.
+ * Persistent client-side controls for the automatic Geometry Clipmap renderer.
  *
- * <p>The default is OFF so distant terrain rendering starts only after the
- * player explicitly enables it from the in-game pause menu. Explicit saved
- * preferences are preserved across launches; disabling also releases the
- * active render resources.
+ * <p>The renderer defaults to OFF. The far range is selected independently
+ * from Minecraft's vanilla chunk distance, using a compact 64/128/256 grid.
  */
 public final class GeometryClipmapSettings {
     private static final Path CONFIG_FILE =
             Path.of("config", "realscale-geometry-clipmap.properties");
+    private static final int DEFAULT_GRID_CELLS = 256;
 
     private static volatile boolean enabled = loadEnabled(CONFIG_FILE);
+    private static volatile int gridCells = loadGridCells(CONFIG_FILE);
 
     private GeometryClipmapSettings() {
     }
@@ -31,17 +31,42 @@ public final class GeometryClipmapSettings {
         return enabled;
     }
 
+    public static int gridCells() {
+        return gridCells;
+    }
+
     public static synchronized void setEnabled(boolean next) {
         if (enabled == next) {
             return;
         }
         try {
-            saveEnabled(CONFIG_FILE, next);
+            saveSettings(CONFIG_FILE, next, gridCells);
             enabled = next;
         } catch (IOException failure) {
             throw new IllegalStateException(
                     "Cannot save RealScale Geometry Clipmap setting", failure);
         }
+    }
+
+    public static synchronized void setGridCells(int next) {
+        if (!isSupportedGridCells(next)) {
+            throw new IllegalArgumentException(
+                    "Geometry Clipmap range grid must be 64, 128, or 256");
+        }
+        if (gridCells == next) {
+            return;
+        }
+        try {
+            saveSettings(CONFIG_FILE, enabled, next);
+            gridCells = next;
+        } catch (IOException failure) {
+            throw new IllegalStateException(
+                    "Cannot save RealScale Geometry Clipmap range", failure);
+        }
+    }
+
+    public static boolean isSupportedGridCells(int value) {
+        return value == 64 || value == 128 || value == 256;
     }
 
     static boolean loadEnabled(Path path) {
@@ -60,22 +85,54 @@ public final class GeometryClipmapSettings {
             }
             return false;
         } catch (IOException | IllegalArgumentException failure) {
-            // A missing or damaged preference must never enable the renderer at boot.
             return false;
         }
     }
 
+    static int loadGridCells(Path path) {
+        if (!Files.isRegularFile(path)) {
+            return DEFAULT_GRID_CELLS;
+        }
+        Properties properties = new Properties();
+        try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            properties.load(reader);
+            int value = Integer.parseInt(
+                    properties.getProperty("gridCells", Integer.toString(DEFAULT_GRID_CELLS)).trim());
+            return isSupportedGridCells(value) ? value : DEFAULT_GRID_CELLS;
+        } catch (IOException | IllegalArgumentException failure) {
+            return DEFAULT_GRID_CELLS;
+        }
+    }
+
     static void saveEnabled(Path path, boolean value) throws IOException {
+        saveSettings(path, value, loadGridCells(path));
+    }
+
+    static void saveGridCells(Path path, int value) throws IOException {
+        if (!isSupportedGridCells(value)) {
+            throw new IllegalArgumentException(
+                    "Geometry Clipmap range grid must be 64, 128, or 256");
+        }
+        saveSettings(path, loadEnabled(path), value);
+    }
+
+    private static void saveSettings(Path path, boolean enabledValue,
+            int gridCellsValue) throws IOException {
+        if (!isSupportedGridCells(gridCellsValue)) {
+            throw new IllegalArgumentException(
+                    "Geometry Clipmap range grid must be 64, 128, or 256");
+        }
         Path parent = path.getParent();
         if (parent != null) {
             Files.createDirectories(parent);
         }
         Path temporary = path.resolveSibling(path.getFileName() + ".tmp");
         Properties properties = new Properties();
-        properties.setProperty("enabled", Boolean.toString(value));
+        properties.setProperty("enabled", Boolean.toString(enabledValue));
+        properties.setProperty("gridCells", Integer.toString(gridCellsValue));
         try {
             try (Writer writer = Files.newBufferedWriter(temporary, StandardCharsets.UTF_8)) {
-                properties.store(writer, "RealScale Geometry Clipmap runtime setting");
+                properties.store(writer, "RealScale Geometry Clipmap client settings");
             }
             try {
                 Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE,
