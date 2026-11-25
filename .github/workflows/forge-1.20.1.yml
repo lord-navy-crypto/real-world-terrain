@@ -46,3 +46,32 @@ jobs:
           name: RealScale-Forge-1.20.1
           path: forge/build/libs/*.jar
           if-no-files-found: error
+      - name: Smoke-test dedicated server with the RealScale default preset
+        timeout-minutes: 4
+        run: |
+          mkdir -p forge/run
+          printf "eula=true\n" > forge/run/eula.txt
+          cat > forge/run/server.properties <<'EOF'
+          level-name=forge-smoke
+          level-type=realscale:natural_automate_three_realms
+          online-mode=false
+          view-distance=2
+          simulation-distance=2
+          spawn-protection=0
+          max-tick-time=120000
+          motd=RealScale Forge 1.20.1 CI smoke
+          EOF
+          set +e
+          timeout --signal=TERM --kill-after=15s 180s gradle --no-daemon -p forge runServer --args='--nogui'
+          server_status=$?
+          set -e
+          if [ "$server_status" -ne 0 ] && [ "$server_status" -ne 124 ]; then
+            cat forge/run/logs/latest.log || true
+            exit "$server_status"
+          fi
+          if ! grep -q 'Done (' forge/run/logs/latest.log; then
+            echo "Forge server did not reach the ready state."
+            cat forge/run/logs/latest.log || true
+            exit 1
+          fi
+          echo "Forge server loaded the RealScale preset and reached the ready state."
