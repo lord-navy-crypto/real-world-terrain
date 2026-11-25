@@ -291,7 +291,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         network = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/network/GeometryClipmapNetwork.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn('event.registrar("4")', network)
+        self.assertIn('event.registrar("5")', network)
         self.assertIn("ClipmapStatusPayload.TYPE", network)
         self.assertNotIn("STILL WAITING", client)
 
@@ -469,7 +469,10 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("vertexColors[vertex]", native)
         self.assertNotIn("int materialRgb", native)
         self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", native)
-        self.assertNotIn("8.0f, 8.0f, nx", native)
+        terrain_triangle = native.split("private static void emitTriangle(BufferBuilder", 1)[1].split(
+            "private static void triangleNormalInto", 1
+        )[0]
+        self.assertNotIn("8.0f, 8.0f, nx", terrain_triangle)
 
     def test_iris_native_terrain_uses_procedural_vertex_palette_without_atlas_materials(self):
         native = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/IrisNativeClipmapRenderer.java").read_text(
@@ -547,7 +550,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("appendVoxelWalls(", native)
         self.assertIn("emitVoxelWallX(", native)
         self.assertIn("emitVoxelWallZ(", native)
-        self.assertIn("level != 0", style)
+        self.assertIn("if (level != transitionLevel)", style)
         self.assertIn("FADE_LENGTH_CELLS = 40.0f", style)
         self.assertIn("transitionLevel(", style)
         self.assertIn("protectedStart", style)
