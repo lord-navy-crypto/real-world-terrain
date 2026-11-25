@@ -2,7 +2,7 @@ package org.realscale.neoforge;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
+import java.lang.reflect.Method;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -40,6 +40,11 @@ public final class RealScaleChunkUploadClient {
             ClientChunkUploadBudget.fromProperties();
 
     private static ClientLevel lastWorld;
+    private static Method dispatcherAccessor;
+    private static Method queuedAccessor;
+    private static Method uploadingAccessor;
+    private static Method freeBuffersAccessor;
+    private static boolean dispatcherLookupAttempted;
     private static long lastReportNanos;
     private static long frames,framesWithBacklog,totalQueued,totalUploading;
     private static int peakQueued,peakUploading,minFreeBuffers=Integer.MAX_VALUE;
@@ -65,8 +70,7 @@ public final class RealScaleChunkUploadClient {
             // interval includes frame pacing and is not GPU-only render time.
             frameBeginNanos=ADAPTIVE&&playing?System.nanoTime():0L;
             if(MODE_AWARE) {
-                SectionRenderDispatcher dispatcher=playing
-                        ?mc.levelRenderer.getSectionRenderDispatcher():null;
+                Object dispatcher=playing ? getSectionDispatcher(mc) : null;
                 RealScaleDomainManager.Domain domain=playing&&dispatcher!=null
                         ?RealScaleAdaptiveVisibilityClient.currentDomainFor(world,mc.player)
                         :RealScaleDomainManager.Domain.TRANSITION;
@@ -76,7 +80,7 @@ public final class RealScaleChunkUploadClient {
                     case TRANSITION -> ClientChunkUploadBudget.VisibilityMode.TRANSITION;
                 };
                 BUDGET.beginModeAwareFrame(playing,uploadMode,
-                        dispatcher==null?0:Math.max(0,dispatcher.getToUpload()),
+                        dispatcher==null?0:readDispatcherCount(dispatcher,uploadingAccessor),
                         ADAPTIVE&&GOVERNOR.constrained(),PREDICTIVE);
             } else BUDGET.beginFrame(playing);
         }
@@ -100,11 +104,11 @@ public final class RealScaleChunkUploadClient {
             BUDGET.endFrame();
         }
         if(mc.level==null || mc.player==null || mc.screen!=null)return;
-        SectionRenderDispatcher dispatcher=mc.levelRenderer.getSectionRenderDispatcher();
+        Object dispatcher=getSectionDispatcher(mc);
         if(dispatcher==null)return;
-        int queued=Math.max(0,dispatcher.getToBatchCount());
-        int uploading=Math.max(0,dispatcher.getToUpload());
-        int free=Math.max(0,dispatcher.getFreeBufferCount());
+        int queued=readDispatcherCount(dispatcher,queuedAccessor);
+        int uploading=readDispatcherCount(dispatcher,uploadingAccessor);
+        int free=readDispatcherCount(dispatcher,freeBuffersAccessor)
         Runtime runtime=Runtime.getRuntime();
         long heapUsed=Math.max(0L,runtime.totalMemory()-runtime.freeMemory());
         long heapMax=Math.max(1L,runtime.maxMemory());
@@ -180,12 +184,12 @@ public final class RealScaleChunkUploadClient {
         boolean available=mc.level!=null && mc.player!=null
                 && mc.levelRenderer!=null;
         if(available) {
-            SectionRenderDispatcher dispatcher=mc.levelRenderer.getSectionRenderDispatcher();
+            Object dispatcher=getSectionDispatcher(mc);
             if(dispatcher==null) available=false;
             else {
-                queued=Math.max(0,dispatcher.getToBatchCount());
-                uploading=Math.max(0,dispatcher.getToUpload());
-                free=Math.max(0,dispatcher.getFreeBufferCount());
+                queued=readDispatcherCount(dispatcher,queuedAccessor);
+                uploading=readDispatcherCount(dispatcher,uploadingAccessor);
+                free=readDispatcherCount(dispatcher,freeBuffersAccessor);
             }
         }
         Runtime runtime=Runtime.getRuntime();
@@ -199,6 +203,43 @@ public final class RealScaleChunkUploadClient {
                 BUDGET.activeDomain(),BUDGET.activeUploadMultiplier());
     }
 
+    /** Resolve the chunk renderer without a version-specific compile-time type. */
+    private static Object getSectionDispatcher(Minecraft minecraft) {
+        if (minecraft.levelRenderer == null) return null;
+        if (!dispatcherLookupAttempted) {
+            dispatcherLookupAttempted = true;
+            Class<?> rendererType = minecraft.levelRenderer.getClass();
+            dispatcherAccessor = findNoArg(rendererType, "getSectionRenderDispatcher");
+            if (dispatcherAccessor == null) dispatcherAccessor = findNoArg(rendererType, "getChunkRenderDispatcher");
+        }
+        if (dispatcherAccessor == null) return null;
+        try {
+            Object dispatcher = dispatcherAccessor.invoke(minecraft.levelRenderer);
+            if (dispatcher != null && queuedAccessor == null && uploadingAccessor == null && freeBuffersAccessor == null) {
+                Class<?> type = dispatcher.getClass();
+                queuedAccessor = findNoArg(type, "getToBatchCount");
+                uploadingAccessor = findNoArg(type, "getToUpload");
+                freeBuffersAccessor = findNoArg(type, "getFreeBufferCount");
+            }
+            return dispatcher;
+        } catch (ReflectiveOperationException | RuntimeException ignored) { return null; }
+    }
+
+    private static Method findNoArg(Class<?> type, String name) {
+        for (Class<?> current = type; current != null; current = current.getSuperclass()) {
+            try { Method method = current.getDeclaredMethod(name); method.setAccessible(true); return method; }
+            catch (ReflectiveOperationException | RuntimeException ignored) { }
+        }
+        return null;
+    }
+
+    private static int readDispatcherCount(Object dispatcher, Method accessor) {
+        if (dispatcher == null || accessor == null) return 0;
+        try {
+            Object value = accessor.invoke(dispatcher);
+            return value instanceof Number number ? Math.max(0, number.intValue()) : 0;
+        } catch (ReflectiveOperationException | RuntimeException ignored) { return 0; }
+    }
     private static void reset(ClientLevel world){
         lastWorld=world;
         frames=framesWithBacklog=totalQueued=totalUploading=budgetFrames=uploaded=0;
