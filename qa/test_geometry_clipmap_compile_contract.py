@@ -552,6 +552,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("emitVoxelWallZ(", native)
         self.assertIn("if (level != transitionLevel)", style)
         self.assertIn("FADE_LENGTH_CELLS = 40.0f", style)
+        self.assertIn("MAX_VOXEL_CELL_SPACING_BLOCKS = 8", style)
         self.assertIn("transitionLevel(", style)
         self.assertIn("protectedStart", style)
         self.assertIn("outerRadius", style)
