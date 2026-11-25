@@ -43,6 +43,7 @@ public final class GeometryClipmapClient {
                     "realscale.experimental.geometryclipmap.smokeCamera", "false"));
     private static ClientLevel lastLevel;
     private static int lastNearChunks = -1;
+    private static int lastGridCells = -1;
     private static long requestSequence;
     private static long activeRequestId;
     private static long requestStartedNanos;
@@ -109,6 +110,64 @@ public final class GeometryClipmapClient {
         return GeometryClipmapSettings.isEnabled();
     }
 
+    /** Human-readable actual far radius, after protecting the vanilla near field. */
+    public static String rangeLabel() {
+        Minecraft minecraft = Minecraft.getInstance();
+        int nearChunks = Math.max(2,
+                Math.min(64, minecraft.options.getEffectiveRenderDistance()));
+        GeometryClipmapLayout.Layout layout =
+                GeometryClipmapLayout.forRenderDistanceChunks(
+                        nearChunks, GeometryClipmapSettings.gridCells()).compute(0.0, 0.0);
+        long blocks = layout.maxAxisExtentBlocks();
+        long kilometres = Math.round(blocks / 1024.0);
+        return "Clipmap Range: " + kilometres + "k";
+    }
+
+    /** Cycle among safe effective grid sizes without changing vanilla view distance. */
+    public static void cycleRange() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!minecraft.isSameThread()) {
+            minecraft.execute(GeometryClipmapClient::cycleRange);
+            return;
+        }
+        int nearChunks = Math.max(2,
+                Math.min(64, minecraft.options.getEffectiveRenderDistance()));
+        int current = GeometryClipmapLayout.forRenderDistanceChunks(
+                nearChunks, GeometryClipmapSettings.gridCells()).gridCells();
+        int next = -1;
+        for (int requested : new int[]{64, 128, 256}) {
+            int effective = GeometryClipmapLayout.forRenderDistanceChunks(
+                    nearChunks, requested).gridCells();
+            if (effective > current) {
+                next = effective;
+                break;
+            }
+        }
+        if (next < 0) {
+            for (int requested : new int[]{64, 128, 256}) {
+                int effective = GeometryClipmapLayout.forRenderDistanceChunks(
+                        nearChunks, requested).gridCells();
+                if (effective < current) {
+                    next = effective;
+                    break;
+                }
+            }
+        }
+        if (next < 0 || next == current) return;
+        try {
+            GeometryClipmapSettings.setGridCells(next);
+        } catch (IllegalStateException failure) {
+            reportStatus(minecraft,
+                    "[RealScale] Clipmap: COULD NOT SAVE RANGE - " + failure.getMessage());
+            return;
+        }
+        clear();
+        lastLevel = null;
+        lastNearChunks = -1;
+        lastGridCells = -1;
+        reportStatus(minecraft, "[RealScale] Clipmap: RANGE CHANGED - " + rangeLabel());
+    }
+
     /** Toggle the client renderer and persist the choice immediately. */
     public static void toggleEnabled() {
         Minecraft minecraft = Minecraft.getInstance();
@@ -132,6 +191,7 @@ public final class GeometryClipmapClient {
         clear();
         lastLevel = null;
         lastNearChunks = -1;
+        lastGridCells = -1;
         cameraVantageReported = false;
         reportStatus(minecraft, next
                 ? "[RealScale] Clipmap: ON - automatic terrain rendering will initialize"
@@ -258,16 +318,20 @@ public final class GeometryClipmapClient {
             if (lastLevel != null || activeRequestId != 0L) clear();
             lastLevel = null;
             lastNearChunks = -1;
+            lastGridCells = -1;
             return;
         }
 
         ClientLevel level = minecraft.level;
         int nearChunks = Math.max(2,
                 Math.min(64, minecraft.options.getEffectiveRenderDistance()));
-        if (level != lastLevel || nearChunks != lastNearChunks) {
+        int gridCells = GeometryClipmapSettings.gridCells();
+        if (level != lastLevel || nearChunks != lastNearChunks
+                || gridCells != lastGridCells) {
             clear();
             lastLevel = level;
             lastNearChunks = nearChunks;
+            lastGridCells = gridCells;
             activeRequestId = nextRequestId();
             requestStartedNanos = System.nanoTime();
             firstSnapshotRecorded = false;
@@ -286,7 +350,7 @@ public final class GeometryClipmapClient {
             reportStatus(minecraft,
                     "[RealScale] Clipmap: REQUEST SENT - awaiting server acknowledgement");
             PacketDistributor.sendToServer(
-                    new ClipmapRequestPayload(nearChunks, activeRequestId));
+                    new ClipmapRequestPayload(nearChunks, gridCells, activeRequestId));
         }
 
         if (TILES.promotePendingForCamera(minecraft.player.getX(), minecraft.player.getZ())) {
@@ -296,7 +360,7 @@ public final class GeometryClipmapClient {
         if (!firstSnapshotRecorded && !unsupportedWorld && activeRequestId > 0L
                 && now - lastRequestSentNanos >= HEARTBEAT_INTERVAL_NANOS) {
             PacketDistributor.sendToServer(
-                    new ClipmapRequestPayload(nearChunks, activeRequestId));
+                    new ClipmapRequestPayload(nearChunks, gridCells, activeRequestId));
             lastRequestSentNanos = now;
             retryCount++;
             if (!waitingDiagnosticShown
