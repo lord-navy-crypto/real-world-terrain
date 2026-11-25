@@ -449,12 +449,12 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("Blocks.WHITE_CONCRETE", native)
         self.assertIn("sprites.neutral()", native)
         self.assertIn("sprites.neutral()", native)
-        self.assertIn("triangleUvs[0] = 8.0f", native)
+        self.assertIn("ClipmapTriangleUv.computeCellAlignedInto(gridX, gridZ, triangleUvs)", native)
         self.assertNotIn("MAX_TEXTURED_DETAIL_LEVEL", native)
         self.assertNotIn("sprites.forMaterial(", native)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", native)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", native)
-        self.assertEqual(1, native.count("ClipmapTriangleUv.computeCellAlignedInto("))  # water only
+        self.assertEqual(2, native.count("ClipmapTriangleUv.computeCellAlignedInto("))  # solid and water
         self.assertNotIn("ClipmapTriangleUv.computeInto(", native)
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
@@ -479,13 +479,13 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("sprites.neutral()", native)
-        self.assertIn("triangleUvs[0] = 8.0f", native)
-        self.assertIn("triangleUvs[5] = 8.0f", native)
+        self.assertEqual(2, native.count("ClipmapTriangleUv.computeCellAlignedInto("))
+        self.assertNotIn("triangleUvs[0] = 8.0f", native)
         self.assertNotIn("MAX_TEXTURED_DETAIL_LEVEL", native)
         self.assertNotIn("sprites.forMaterial(", native)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", native)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", native)
-        self.assertIn("sprite.getU(u), sprite.getV(v)", native)  # proxy geometry only
+        self.assertIn("sprite.getU(u), sprite.getV(v)", native)  # terrain and proxy geometry
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
@@ -504,7 +504,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("beach", palette)
         self.assertIn("snowCover", palette)
         self.assertNotIn("int materialRgb", native)
-        self.assertIn("triangleUvs[0] = 8.0f", native)
+        self.assertIn("per-cell UV basis", native)
         self.assertNotIn("int minX = Math.min(gridX", native)
         self.assertNotIn("Math.floorMod(x, side)", native)
         self.assertEqual(5, native.count("VertexFormat.Mode.TRIANGLES, irisTerrainFormat"))
