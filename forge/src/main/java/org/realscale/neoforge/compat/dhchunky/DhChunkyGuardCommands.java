@@ -2,7 +2,7 @@ package org.realscale.neoforge.compat.dhchunky;
 
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.RegisterCommandsEvent;
 
 /**
  * Read-only lifecycle diagnostics retained from the former standalone addon.
