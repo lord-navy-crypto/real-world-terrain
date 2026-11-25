@@ -19,3 +19,6 @@ gradle --no-daemon -p neoforge-1.20.1 clean build
 ```
 
 The distributable JAR is written to `neoforge-1.20.1/build/libs/`. CI checks the packaged resources and starts a dedicated server with the Natural Automate preset. Client rendering and third-party mod compatibility still require in-game validation.
+
+
+<!-- CI validation branch marker; do not merge this marker into the port branch. -->
