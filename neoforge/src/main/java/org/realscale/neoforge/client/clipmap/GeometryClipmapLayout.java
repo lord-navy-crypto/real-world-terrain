@@ -80,8 +80,23 @@ public final class GeometryClipmapLayout {
      * The standard 8–10 chunk case retains four-block finest samples.
      */
     public static GeometryClipmapLayout forRenderDistanceChunks(int chunks) {
+        return forRenderDistanceChunks(chunks, DEFAULT_GRID_CELLS);
+    }
+
+    /**
+     * Selects a requested far-field grid while preserving the vanilla near-field
+     * overlap. Short range uses fewer height samples; the grid is promoted only
+     * when the requested size would expose an unsampled gap beside vanilla terrain.
+     */
+    public static GeometryClipmapLayout forRenderDistanceChunks(
+            int chunks, int requestedGridCells) {
         if (chunks < 2 || chunks > 64) {
             throw new IllegalArgumentException("render distance must be between 2 and 64 chunks");
+        }
+        if (requestedGridCells < 64 || requestedGridCells > DEFAULT_GRID_CELLS
+                || (requestedGridCells & (requestedGridCells - 1)) != 0) {
+            throw new IllegalArgumentException(
+                    "requested clipmap grid must be 64, 128, or 256 cells");
         }
         int spacing = DEFAULT_BASE_CELL_SPACING_BLOCKS;
         long nearRadius = chunks * 16L;
@@ -98,8 +113,25 @@ public final class GeometryClipmapLayout {
         while (nearRadius % spacing != 0L) {
             spacing >>= 1;
         }
-        return new GeometryClipmapLayout(DEFAULT_GRID_CELLS,
+
+        long cameraOffsetAllowance =
+                ((long) spacing << (DEFAULT_LEVEL_COUNT - 1)) / 2L;
+        long protectedInnerRadius = nearRadius - cameraOffsetAllowance;
+        int effectiveGridCells = requestedGridCells;
+        while (effectiveGridCells < DEFAULT_GRID_CELLS
+                && protectedInnerRadius >= (long) (effectiveGridCells / 2) * spacing) {
+            effectiveGridCells <<= 1;
+        }
+        if (protectedInnerRadius >= (long) (effectiveGridCells / 2) * spacing) {
+            throw new IllegalArgumentException(
+                    "clipmap grid cannot cover the requested vanilla near distance");
+        }
+        return new GeometryClipmapLayout(effectiveGridCells,
                 DEFAULT_LEVEL_COUNT, spacing, chunks);
+    }
+
+    public int gridCells() {
+        return gridCells;
     }
 
     public Layout compute(double cameraX, double cameraZ) {
