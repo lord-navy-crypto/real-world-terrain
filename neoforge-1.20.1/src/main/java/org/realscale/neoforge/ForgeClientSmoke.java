@@ -1,6 +1,7 @@
 package org.realscale.neoforge;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraftforge.api.distmarker.Dist;
@@ -41,6 +42,18 @@ public final class ForgeClientSmoke {
         Minecraft mc = Minecraft.getInstance();
         if (mc.getOverlay() != null) {
             reportWaitState("overlay=" + mc.getOverlay().getClass().getName());
+            return;
+        }
+
+        // Fresh 1.20.1 client profiles can open this vanilla first-run screen
+        // before the title screen. Close it through its own callback so the
+        // smoke test follows the same normal path as a user pressing Done.
+        if (stage == 0 && mc.screen instanceof AccessibilityOnboardingScreen onboarding) {
+            if (++ticksOnScreen >= 20) {
+                System.out.println("NEOFORGE_CLIENT_ACCESSIBILITY_ONBOARDING_DISMISSED");
+                onboarding.onClose();
+                ticksOnScreen = 0;
+            }
             return;
         }
 
