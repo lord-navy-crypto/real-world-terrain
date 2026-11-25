@@ -1,0 +1,23 @@
+{
+  "anisotropy_gain": 1.045483,
+  "base": "realscale:tva_canyon_fitted/original_height_signal",
+  "cliff_index": 0.291044,
+  "continents": "realscale:grand_canyon/continents",
+  "dominant_wavelength_m": 34289.3669,
+  "dune_axis_radians": -2.243785,
+  "family": "canyon",
+  "macro_gain": 0.918247,
+  "meso_gain": 0.387271,
+  "micro_gain": 0.082729,
+  "relief_gain": 0.363634,
+  "ridge_index": 0.479623,
+  "ridge_sharpness": 0.597412,
+  "selector": {
+    "noise": "minecraft:erosion",
+    "type": "minecraft:noise",
+    "xz_scale": 0.006,
+    "y_scale": 0
+  },
+  "type": "realscale:terrain_archetype",
+  "valley_index": 0.520377
+}

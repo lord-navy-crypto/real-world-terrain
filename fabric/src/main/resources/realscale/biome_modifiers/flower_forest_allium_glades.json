@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:flower_forest"
+  ],
+  "features": "realscale:flower_forest_allium_glades",
+  "step": "vegetal_decoration"
+}

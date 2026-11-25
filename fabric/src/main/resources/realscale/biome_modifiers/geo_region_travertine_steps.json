@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:stony_peaks",
+    "minecraft:meadow",
+    "minecraft:windswept_hills"
+  ],
+  "features": "realscale:geo_region_travertine_steps",
+  "step": "vegetal_decoration"
+}

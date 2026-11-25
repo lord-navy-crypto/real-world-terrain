@@ -1,0 +1,111 @@
+name: Fabric 1.20.1 Build
+on:
+  push:
+    branches: [feature/fabric-1.20.1-port]
+    paths: ['fabric/**', 'scripts/**', 'assets/architecture/**', '.github/workflows/fabric-1.20.1.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: fabric-1.20.1-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            fabric
+            scripts
+            assets/architecture
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+      - name: Independent Fabric build
+        run: |
+          test ! -d forge
+          test ! -d neoforge
+          gradle --no-daemon -p fabric clean build
+      - name: Audit remapped JAR
+        run: |
+          python3 - <<'PY'
+          import glob, zipfile
+          jars = [j for j in glob.glob("fabric/build/libs/RealScale-Fabric-1.20.1-*.jar") if not j.endswith(("-dev.jar", "-sources.jar"))]
+          assert len(jars) == 1, jars
+          with zipfile.ZipFile(jars[0]) as z:
+              names = z.namelist()
+              assert "fabric.mod.json" in names
+              assert "META-INF/mods.toml" not in names
+              assert "META-INF/neoforge.mods.toml" not in names
+              assert not any("/forge/biome_modifier/" in n for n in names)
+              assert "data/realscale/worldgen/world_preset/natural_automate_three_realms.json" in names
+              rules = [n for n in names if n.startswith("realscale/biome_modifiers/") and n.endswith(".json")]
+              arch = [n for n in names if n.startswith("data/realscale/structures/architecture/") and n.endswith(".nbt")]
+              urban = [n for n in names if n.startswith("data/realscale/structures/urban/") and n.endswith(".nbt")]
+              assert len(rules) == 120, len(rules)
+              assert len(arch) == 100 and len(urban) == 4, (len(arch), len(urban))
+              for n in names:
+                  if n.endswith(".class"):
+                      assert b"net/minecraftforge/" not in z.read(n), n
+                      assert b"net/neoforged/" not in z.read(n), n
+              print("FABRIC_JAR_AUDIT_OK", len(rules), len(arch), len(urban))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-Fabric-1.20.1
+          path: |
+            fabric/build/libs/*.jar
+            !fabric/build/libs/*-dev.jar
+            !fabric/build/libs/*-sources.jar
+          if-no-files-found: error
+      - name: Generate Natural Automate world on Fabric
+        timeout-minutes: 7
+        env:
+          REALSCALE_FABRIC_CI_SMOKE: server
+        run: |
+          mkdir -p fabric/run
+          printf 'eula=true\n' > fabric/run/eula.txt
+          cat > fabric/run/server.properties <<'EOF'
+          level-name=fabric-smoke
+          level-type=realscale:natural_automate_three_realms
+          server-ip=127.0.0.1
+          online-mode=false
+          view-distance=2
+          simulation-distance=2
+          max-tick-time=120000
+          EOF
+          timeout --signal=TERM --kill-after=15s 360s gradle --no-daemon -p fabric runServer > fabric-server.log 2>&1 || { tail -150 fabric-server.log; exit 1; }
+          grep -F 'Done (' fabric/run/logs/latest.log
+          grep -F 'FABRIC_SERVER_TEMPLATE_SMOKE_OK' fabric-server.log
+      - name: Standalone Fabric remapped JAR smoke
+        timeout-minutes: 8
+        env:
+          REALSCALE_FABRIC_CI_SMOKE: server
+        run: |
+          mkdir -p fabric-production/mods
+          find fabric/build/libs -name '*.jar' ! -name '*-dev.jar' ! -name '*-sources.jar' -exec cp {} fabric-production/mods/ \;
+          cd fabric-production
+          curl -fL --retry 3 -o server.jar https://meta.fabricmc.net/v2/versions/loader/1.20.1/0.16.14/1.0.3/server/jar
+          curl -fL --retry 3 -o mods/fabric-api.jar 'https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.92.6+1.20.1/fabric-api-0.92.6+1.20.1.jar'
+          cp ../fabric/run/server.properties .
+          printf 'eula=true\n' > eula.txt
+          timeout --signal=TERM --kill-after=15s 360s java -Xmx4G -jar server.jar nogui > standalone.log 2>&1 || { tail -150 standalone.log; exit 1; }
+          grep -F 'Done (' logs/latest.log
+          grep -F 'FABRIC_SERVER_TEMPLATE_SMOKE_OK' standalone.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Fabric-integration-logs
+          path: |
+            fabric-server.log
+            fabric/run/logs/
+            fabric/run/crash-reports/
+            fabric-production/standalone.log
+            fabric-production/logs/
+            fabric-production/crash-reports/
+          if-no-files-found: ignore

@@ -1,0 +1,14 @@
+{
+  "argument1": {
+    "input": "realscale:tva_volcanic_fitted/height_signal",
+    "type": "realscale:measured_horizontal_memo"
+  },
+  "argument2": {
+    "from_value": 0.9921875,
+    "from_y": -64,
+    "to_value": -15.3828125,
+    "to_y": 2032,
+    "type": "minecraft:y_clamped_gradient"
+  },
+  "type": "minecraft:add"
+}

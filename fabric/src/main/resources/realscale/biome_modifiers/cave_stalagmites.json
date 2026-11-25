@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:dripstone_caves",
+    "realscale:dry_karst_caves",
+    "realscale:damp_limestone_caverns"
+  ],
+  "features": "realscale:cave_stalagmites",
+  "step": "underground_decoration"
+}

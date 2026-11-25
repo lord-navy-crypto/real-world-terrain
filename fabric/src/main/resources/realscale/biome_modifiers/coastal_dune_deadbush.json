@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:beach",
+    "minecraft:desert",
+    "minecraft:badlands"
+  ],
+  "features": "realscale:coastal_dune_deadbush",
+  "step": "vegetal_decoration"
+}
