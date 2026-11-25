@@ -123,7 +123,7 @@ public final class RealScaleStructurePacks {
             var modFileInfo = ModList.get().getModFileById(MODID);
             if (modFileInfo == null) return;
             Path root = modFileInfo.getFile().findResource(resourcePath);
-            var resources = new PathPackResources.PathResourcesSupplier(root);
+            var resources = new PathPackResources.PathResourcesSupplier(root, true);
             Pack pack = Pack.readMetaAndCreate(
                     MODID + ":" + resourcePath,
                     Component.literal(displayName),
