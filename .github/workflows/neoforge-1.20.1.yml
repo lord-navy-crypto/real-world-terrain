@@ -90,6 +90,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb xauth libgl1-mesa-dri libglx-mesa0 libflite1 flite1-dev
+          # Minecraft's OpenAL output is disabled above; Flite also needs a valid
+          # ALSA default. Route that device to ALSA's built-in null PCM.
+          cat > /tmp/realscale-alsa-null.conf <<'EOF'
+          pcm.!default {
+              type null
+          }
+          EOF
+          export ALSA_CONFIG_PATH=/tmp/realscale-alsa-null.conf
+          export SDL_AUDIODRIVER=dummy
           timeout --signal=TERM --kill-after=15s 360s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon -p neoforge-1.20.1 runClient > neoforge-client-smoke.log 2>&1 || { tail -180 neoforge-client-smoke.log; exit 1; }
           grep -F "FORGE_CLIENT_UI_SMOKE_OK" neoforge-client-smoke.log
 
