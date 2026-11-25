@@ -1,6 +1,7 @@
 package org.realscale.neoforge;
 
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.RegisterEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -10,7 +11,8 @@ import net.minecraft.resources.ResourceLocation;
 
 @Mod("realscale")
 public final class RealScaleMod {
-    public RealScaleMod(IEventBus bus) {
+    public RealScaleMod() {
+        IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
         RealScaleVehicles.register(bus);
         bus.addListener(RealScaleStructurePacks::register);
         bus.addListener(this::registerDensity);
