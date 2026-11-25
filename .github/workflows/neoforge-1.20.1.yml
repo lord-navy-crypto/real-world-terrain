@@ -81,12 +81,25 @@ jobs:
           grep -F "Done (" neoforge-1.20.1/run/logs/latest.log
           grep -F "FORGE_SERVER_TEMPLATE_SMOKE_OK" neoforge-server-smoke.log
 
+      - name: Start NeoForge client and render RealScale UI
+        timeout-minutes: 8
+        env:
+          REALSCALE_FORGE_CI_SMOKE: client
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          ALSOFT_DRIVERS: "null"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth libgl1-mesa-dri libglx-mesa0 libflite1 flite1-dev
+          timeout --signal=TERM --kill-after=15s 360s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon -p neoforge-1.20.1 runClient > neoforge-client-smoke.log 2>&1 || { tail -180 neoforge-client-smoke.log; exit 1; }
+          grep -F "FORGE_CLIENT_UI_SMOKE_OK" neoforge-client-smoke.log
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: NeoForge-1.20.1-server-logs
+          name: NeoForge-1.20.1-integration-logs
           path: |
             neoforge-server-smoke.log
+            neoforge-client-smoke.log
             neoforge-1.20.1/run/logs/
             neoforge-1.20.1/run/crash-reports/
           if-no-files-found: ignore
