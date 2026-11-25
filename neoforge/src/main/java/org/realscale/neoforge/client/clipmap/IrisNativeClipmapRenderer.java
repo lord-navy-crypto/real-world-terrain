@@ -25,6 +25,7 @@ import org.lwjgl.opengl.GL30;
 import org.realscale.neoforge.network.ClipmapHeightTilePayload;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -510,6 +511,47 @@ final class IrisNativeClipmapRenderer {
         float[] smoothNormals = ClipmapSurfaceNormals.compute(
                 surfaceHeights, cells, spacing, holeRadius, 2);
 
+        // Each LOD-0 grid cell gets a flat, integer-height target. The blend is
+        // strongest in the vanilla overlap and fades out before the coarse LOD
+        // rings, so the near surface reads as Minecraft terrain rather than a
+        // uniformly smooth game-world heightfield.
+        float[] voxelHeights = new float[cells * cells];
+        float[] voxelBlends = new float[cells * cells];
+        int[] voxelColors = new int[cells * cells];
+        Arrays.fill(voxelHeights, Float.NaN);
+        long clipmapCenterX = tile.originX() + (long) cells * spacing / 2L;
+        long clipmapCenterZ = tile.originZ() + (long) cells * spacing / 2L;
+        for (int cellZ = 0; cellZ < cells; cellZ++) {
+            for (int cellX = 0; cellX < cells; cellX++) {
+                int sample = cellZ * side + cellX;
+                float h00 = surfaceHeights[sample];
+                float h10 = surfaceHeights[sample + 1];
+                float h01 = surfaceHeights[sample + side];
+                float h11 = surfaceHeights[sample + side + 1];
+                if (!Float.isFinite(h00) || !Float.isFinite(h10)
+                        || !Float.isFinite(h01) || !Float.isFinite(h11)) {
+                    continue;
+                }
+                int cell = cellZ * cells + cellX;
+                float averageHeight = (h00 + h10 + h01 + h11) * 0.25f;
+                long worldX = tile.originX() + (long) cellX * spacing + spacing / 2L;
+                long worldZ = tile.originZ() + (long) cellZ * spacing + spacing / 2L;
+                double distance = Math.hypot(worldX - clipmapCenterX,
+                        worldZ - clipmapCenterZ);
+                float blend = ClipmapVoxelStyle.blend(
+                        level, distance, nearChunks, spacing);
+                float averageNormalY = 0.0f;
+                for (int corner : new int[]{sample, sample + 1,
+                        sample + side, sample + side + 1}) {
+                    averageNormalY += smoothNormals[corner * 3 + 1] * 0.25f;
+                }
+                voxelHeights[cell] = ClipmapVoxelStyle.quantizeHeight(averageHeight);
+                voxelBlends[cell] = blend;
+                voxelColors[cell] = ClipmapSurfacePalette.terrainColorAt(
+                        averageHeight, averageNormalY, seaLevel, false, worldX, worldZ);
+            }
+        }
+
         int[] gridX = new int[3];
         int[] gridZ = new int[3];
         float[] topHeight = new float[3];
@@ -536,6 +578,15 @@ final class IrisNativeClipmapRenderer {
                 z[vertex] = (gridZ[vertex] - cells * 0.5f) * spacing;
             }
 
+            int cellX = Math.min(gridX[0], Math.min(gridX[1], gridX[2]));
+            int cellZ = Math.min(gridZ[0], Math.min(gridZ[1], gridZ[2]));
+            int cellIndex = cellZ * cells + cellX;
+            float voxelBlend = voxelBlends[cellIndex];
+            float voxelHeight = voxelHeights[cellIndex];
+            if (!Float.isFinite(voxelHeight)) {
+                voxelHeight = (topHeight[0] + topHeight[1] + topHeight[2]) / 3.0f;
+            }
+
             // Shoreline triangles may straddle sea level. Draw a water plane
             // over the submerged portion, and preserve the actual terrain
             // heights so the depth buffer clips water against dry land.
@@ -550,22 +601,24 @@ final class IrisNativeClipmapRenderer {
                 ClipmapTriangleUv.computeCellAlignedInto(gridX, gridZ, triangleUvs);
                 emitTriangle(water, sprites.water(), vertexColors, 190,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
-                        false, true, faceNormalScratch);
+                        false, 0.0f, true, faceNormalScratch);
             }
             if (maximumHeight >= seaLevel) {
                 for (int vertex = 0; vertex < 3; vertex++) {
-                    y[vertex] = topHeight[vertex];
+                    y[vertex] = ClipmapVoxelStyle.blendHeight(
+                            topHeight[vertex], voxelHeight, voxelBlend);
                 }
-                // Blend material classes per vertex rather than assigning one
-                // hard material to the whole triangle. This removes visible
-                // color facets at LOD scale while preserving broad landforms.
+                // Continuous palette colors fade toward one block-like cell
+                // color together with the geometry and surface normals.
                 for (int vertex = 0; vertex < 3; vertex++) {
                     int normalIndex = (gridZ[vertex] * side + gridX[vertex]) * 3;
                     long worldX = tile.originX() + (long) gridX[vertex] * spacing;
                     long worldZ = tile.originZ() + (long) gridZ[vertex] * spacing;
-                    vertexColors[vertex] = ClipmapSurfacePalette.terrainColorAt(
-                            Math.max(topHeight[vertex], seaLevel),
+                    int continuousColor = ClipmapSurfacePalette.terrainColorAt(
+                            Math.max(y[vertex], seaLevel),
                             smoothNormals[normalIndex + 1], seaLevel, false, worldX, worldZ);
+                    vertexColors[vertex] = ClipmapVoxelStyle.blendColor(
+                            continuousColor, voxelColors[cellIndex], voxelBlend);
                 }
                 // Never paint terrain surfaces with block/item-atlas artwork.
                 // Iris requires sampler0, so all terrain vertices sample one fixed
@@ -579,9 +632,177 @@ final class IrisNativeClipmapRenderer {
                 triangleUvs[5] = 8.0f;
                 emitTriangle(solid, sprites.neutral(), vertexColors, 255,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
-                        true, false, faceNormalScratch);
+                        true, voxelBlend, false, faceNormalScratch);
             }
         }
+
+        // Add vertical risers between neighbouring quantized cells. The wall
+        // height shrinks with the same blend as the top surface, disappearing
+        // before the first fully continuous coarse LOD.
+        appendVoxelWalls(tile, level, seaLevel, sprites.neutral(),
+                surfaceHeights, voxelHeights, voxelBlends, solid);
+    }
+
+    private static void appendVoxelWalls(ClipmapHeightTilePayload tile, int level,
+            int seaLevel, TextureAtlasSprite neutral,
+            float[] surfaceHeights, float[] voxelHeights, float[] voxelBlends,
+            BufferBuilder solid) {
+        if (level != 0) return;
+        int cells = tile.gridCells();
+        int side = cells + 1;
+        int spacing = tile.cellSpacingBlocks();
+        for (int cellZ = 0; cellZ < cells; cellZ++) {
+            for (int cellX = 0; cellX < cells; cellX++) {
+                int cell = cellZ * cells + cellX;
+                if (!Float.isFinite(voxelHeights[cell])) continue;
+                if (cellX + 1 < cells) {
+                    appendVoxelWallX(tile, seaLevel, neutral, surfaceHeights,
+                            voxelHeights, voxelBlends, cellX, cellZ, side, spacing, solid);
+                }
+                if (cellZ + 1 < cells) {
+                    appendVoxelWallZ(tile, seaLevel, neutral, surfaceHeights,
+                            voxelHeights, voxelBlends, cellX, cellZ, side, spacing, solid);
+                }
+            }
+        }
+    }
+
+    private static void appendVoxelWallX(ClipmapHeightTilePayload tile, int seaLevel,
+            TextureAtlasSprite neutral, float[] surfaceHeights,
+            float[] voxelHeights, float[] voxelBlends,
+            int cellX, int cellZ, int side, int spacing, BufferBuilder solid) {
+        int left = cellZ * tile.gridCells() + cellX;
+        int right = left + 1;
+        if (!Float.isFinite(voxelHeights[right])
+                || Math.max(voxelBlends[left], voxelBlends[right]) <= 0.001f) return;
+
+        int edgeX = cellX + 1;
+        int sample0 = cellZ * side + edgeX;
+        int sample1 = (cellZ + 1) * side + edgeX;
+        float raw0 = surfaceHeights[sample0];
+        float raw1 = surfaceHeights[sample1];
+        if (!Float.isFinite(raw0) || !Float.isFinite(raw1)) return;
+
+        float a0 = ClipmapVoxelStyle.blendHeight(
+                raw0, voxelHeights[left], voxelBlends[left]);
+        float a1 = ClipmapVoxelStyle.blendHeight(
+                raw1, voxelHeights[left], voxelBlends[left]);
+        float b0 = ClipmapVoxelStyle.blendHeight(
+                raw0, voxelHeights[right], voxelBlends[right]);
+        float b1 = ClipmapVoxelStyle.blendHeight(
+                raw1, voxelHeights[right], voxelBlends[right]);
+        float difference0 = a0 - b0;
+        float difference1 = a1 - b1;
+        if (Math.max(Math.abs(difference0), Math.abs(difference1)) < 0.5f) return;
+
+        float upper0 = Math.max(a0, b0);
+        float upper1 = Math.max(a1, b1);
+        float lower0 = Math.min(a0, b0);
+        float lower1 = Math.min(a1, b1);
+        boolean positiveNormal = difference0 + difference1 >= 0.0f;
+        float x = (edgeX - tile.gridCells() * 0.5f) * spacing;
+        float z0 = (cellZ - tile.gridCells() * 0.5f) * spacing;
+        float z1 = z0 + spacing;
+        long worldX = tile.originX() + (long) edgeX * spacing;
+        long worldZ = tile.originZ() + (long) cellZ * spacing + spacing / 2L;
+        int color = ClipmapSurfacePalette.terrainColorAt(
+                (upper0 + upper1 + lower0 + lower1) * 0.25f,
+                0.0f, seaLevel, true, worldX, worldZ);
+        emitVoxelWallX(solid, neutral, color, x, z0, z1,
+                upper0, upper1, lower0, lower1, positiveNormal);
+    }
+
+    private static void appendVoxelWallZ(ClipmapHeightTilePayload tile, int seaLevel,
+            TextureAtlasSprite neutral, float[] surfaceHeights,
+            float[] voxelHeights, float[] voxelBlends,
+            int cellX, int cellZ, int side, int spacing, BufferBuilder solid) {
+        int north = cellZ * tile.gridCells() + cellX;
+        int south = north + tile.gridCells();
+        if (!Float.isFinite(voxelHeights[south])
+                || Math.max(voxelBlends[north], voxelBlends[south]) <= 0.001f) return;
+
+        int edgeZ = cellZ + 1;
+        int sample0 = edgeZ * side + cellX;
+        int sample1 = edgeZ * side + cellX + 1;
+        float raw0 = surfaceHeights[sample0];
+        float raw1 = surfaceHeights[sample1];
+        if (!Float.isFinite(raw0) || !Float.isFinite(raw1)) return;
+
+        float a0 = ClipmapVoxelStyle.blendHeight(
+                raw0, voxelHeights[north], voxelBlends[north]);
+        float a1 = ClipmapVoxelStyle.blendHeight(
+                raw1, voxelHeights[north], voxelBlends[north]);
+        float b0 = ClipmapVoxelStyle.blendHeight(
+                raw0, voxelHeights[south], voxelBlends[south]);
+        float b1 = ClipmapVoxelStyle.blendHeight(
+                raw1, voxelHeights[south], voxelBlends[south]);
+        float difference0 = a0 - b0;
+        float difference1 = a1 - b1;
+        if (Math.max(Math.abs(difference0), Math.abs(difference1)) < 0.5f) return;
+
+        float upper0 = Math.max(a0, b0);
+        float upper1 = Math.max(a1, b1);
+        float lower0 = Math.min(a0, b0);
+        float lower1 = Math.min(a1, b1);
+        boolean positiveNormal = difference0 + difference1 >= 0.0f;
+        float z = (edgeZ - tile.gridCells() * 0.5f) * spacing;
+        float x0 = (cellX - tile.gridCells() * 0.5f) * spacing;
+        float x1 = x0 + spacing;
+        long worldX = tile.originX() + (long) cellX * spacing + spacing / 2L;
+        long worldZ = tile.originZ() + (long) edgeZ * spacing;
+        int color = ClipmapSurfacePalette.terrainColorAt(
+                (upper0 + upper1 + lower0 + lower1) * 0.25f,
+                0.0f, seaLevel, true, worldX, worldZ);
+        emitVoxelWallZ(solid, neutral, color, x0, x1, z,
+                upper0, upper1, lower0, lower1, positiveNormal);
+    }
+
+    private static void emitVoxelWallX(BufferBuilder builder, TextureAtlasSprite sprite,
+            int rgb, float x, float z0, float z1,
+            float upper0, float upper1, float lower0, float lower1,
+            boolean positiveNormal) {
+        float nx = positiveNormal ? 1.0f : -1.0f;
+        if (positiveNormal) {
+            emitWallTriangle(builder, sprite, rgb, x, upper0, z0,
+                    x, upper1, z1, x, lower1, z1, nx, 0.0f, 0.0f);
+            emitWallTriangle(builder, sprite, rgb, x, upper0, z0,
+                    x, lower1, z1, x, lower0, z0, nx, 0.0f, 0.0f);
+        } else {
+            emitWallTriangle(builder, sprite, rgb, x, upper0, z0,
+                    x, lower1, z1, x, upper1, z1, nx, 0.0f, 0.0f);
+            emitWallTriangle(builder, sprite, rgb, x, upper0, z0,
+                    x, lower0, z0, x, lower1, z1, nx, 0.0f, 0.0f);
+        }
+    }
+
+    private static void emitVoxelWallZ(BufferBuilder builder, TextureAtlasSprite sprite,
+            int rgb, float x0, float x1, float z,
+            float upper0, float upper1, float lower0, float lower1,
+            boolean positiveNormal) {
+        float nz = positiveNormal ? 1.0f : -1.0f;
+        if (positiveNormal) {
+            emitWallTriangle(builder, sprite, rgb, x0, upper0, z,
+                    x1, lower1, z, x1, upper1, z, 0.0f, 0.0f, nz);
+            emitWallTriangle(builder, sprite, rgb, x0, upper0, z,
+                    x0, lower0, z, x1, lower1, z, 0.0f, 0.0f, nz);
+        } else {
+            emitWallTriangle(builder, sprite, rgb, x0, upper0, z,
+                    x1, upper1, z, x1, lower1, z, 0.0f, 0.0f, nz);
+            emitWallTriangle(builder, sprite, rgb, x0, upper0, z,
+                    x1, lower1, z, x0, lower0, z, 0.0f, 0.0f, nz);
+        }
+    }
+
+    private static void emitWallTriangle(BufferBuilder builder, TextureAtlasSprite sprite,
+            int rgb, float x0, float y0, float z0,
+            float x1, float y1, float z1, float x2, float y2, float z2,
+            float nx, float ny, float nz) {
+        putVertex(builder, sprite, rgb, 255, x0, y0, z0,
+                8.0f, 8.0f, nx, ny, nz);
+        putVertex(builder, sprite, rgb, 255, x1, y1, z1,
+                8.0f, 8.0f, nx, ny, nz);
+        putVertex(builder, sprite, rgb, 255, x2, y2, z2,
+                8.0f, 8.0f, nx, ny, nz);
     }
 
     private static boolean isInsideHole(int x, int z, int cells, int halfHole) {
@@ -630,7 +851,7 @@ final class IrisNativeClipmapRenderer {
             int[] rgb, int alpha, float[] x, float[] y, float[] z,
             int[] gridX, int[] gridZ, int side, float[] triangleUvs,
             float[] smoothNormals, boolean useSmoothNormals,
-            boolean flatUp, float[] faceNormalScratch) {
+            float normalBlend, boolean flatUp, float[] faceNormalScratch) {
         if (!useSmoothNormals && !flatUp) {
             triangleNormalInto(x, y, z, faceNormalScratch);
         }
@@ -644,9 +865,15 @@ final class IrisNativeClipmapRenderer {
                 nz = 0.0f;
             } else if (useSmoothNormals) {
                 int normalIndex = (gridZ[vertex] * side + gridX[vertex]) * 3;
-                nx = smoothNormals[normalIndex];
-                ny = smoothNormals[normalIndex + 1];
-                nz = smoothNormals[normalIndex + 2];
+                float blend = Math.max(0.0f, Math.min(1.0f, normalBlend));
+                nx = smoothNormals[normalIndex] * (1.0f - blend);
+                ny = smoothNormals[normalIndex + 1] * (1.0f - blend) + blend;
+                nz = smoothNormals[normalIndex + 2] * (1.0f - blend);
+                float inverseLength = 1.0f / (float) Math.sqrt(
+                        nx * nx + ny * ny + nz * nz);
+                nx *= inverseLength;
+                ny *= inverseLength;
+                nz *= inverseLength;
             } else {
                 nx = faceNormalScratch[0];
                 ny = faceNormalScratch[1];
