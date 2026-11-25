@@ -177,8 +177,9 @@ public final class RealScalePerformanceProfile {
     }
 
     public static boolean clientUploadBudgetEnabled() {
-        return Boolean.getBoolean("realscale.experimental.client.uploadbudget")
-                || usesSmoothRender(ACTIVE);
+        // No Forge 1.20.1 upload interception mixin is installed yet.
+        // Never report an inactive renderer hook as enabled.
+        return false;
     }
 
     public static boolean modeAwareUploadEnabled() {

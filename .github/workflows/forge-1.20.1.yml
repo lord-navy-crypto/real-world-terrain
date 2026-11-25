@@ -6,10 +6,14 @@ on:
       - feature/forge-1.20.1-port
     paths:
       - "forge/**"
+      - "scripts/**"
+      - "assets/architecture/**"
       - ".github/workflows/forge-1.20.1.yml"
   pull_request:
     paths:
       - "forge/**"
+      - "scripts/**"
+      - "assets/architecture/**"
       - ".github/workflows/forge-1.20.1.yml"
 
 permissions:
@@ -25,6 +29,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            forge
+            scripts
+            assets/architecture
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -37,8 +46,12 @@ jobs:
         with:
           gradle-version: "8.8"
 
-      - name: Build Forge module
-        run: gradle --no-daemon -p forge clean build
+      - name: Build Forge module in isolation
+        run: |
+          test ! -d neoforge
+          gradle --no-daemon -p forge clean build
+      - name: Audit the actual Forge JAR
+        run: python3 forge/tools/audit_jar.py forge/build/libs/RealScale-Forge-1.20.1-*.jar
 
       - name: Upload Forge JAR
         uses: actions/upload-artifact@v4
@@ -47,7 +60,9 @@ jobs:
           path: forge/build/libs/*.jar
           if-no-files-found: error
       - name: Smoke-test dedicated server with the RealScale default preset
-        timeout-minutes: 4
+        timeout-minutes: 6
+        env:
+          REALSCALE_FORGE_CI_SMOKE: server
         run: |
           mkdir -p forge/run
           printf "eula=true\n" > forge/run/eula.txt
@@ -62,16 +77,38 @@ jobs:
           motd=RealScale Forge 1.20.1 CI smoke
           EOF
           set +e
-          timeout --signal=TERM --kill-after=15s 180s gradle --no-daemon -p forge runServer --args='--nogui'
+          timeout --signal=TERM --kill-after=15s 300s gradle --no-daemon -p forge runServer --args='--nogui' > forge-server-smoke.log 2>&1
           server_status=$?
           set -e
           if [ "$server_status" -ne 0 ] && [ "$server_status" -ne 124 ]; then
-            cat forge/run/logs/latest.log || true
+            tail -150 forge-server-smoke.log || true
             exit "$server_status"
           fi
-          if ! grep -q 'Done (' forge/run/logs/latest.log; then
+          if ! grep -q 'Done (' forge/run/logs/latest.log || ! grep -q 'FORGE_SERVER_TEMPLATE_SMOKE_OK' forge-server-smoke.log; then
             echo "Forge server did not reach the ready state."
             cat forge/run/logs/latest.log || true
             exit 1
           fi
           echo "Forge server loaded the RealScale preset and reached the ready state."
+
+      - name: Start Forge client and render RealScale UI
+        timeout-minutes: 6
+        env:
+          REALSCALE_FORGE_CI_SMOKE: client
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth libgl1-mesa-dri libglx-mesa0
+          timeout 240s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon -p forge runClient > forge-client-smoke.log 2>&1 || { tail -150 forge-client-smoke.log; exit 1; }
+          grep 'FORGE_CLIENT_UI_SMOKE_OK' forge-client-smoke.log
+      - name: Upload Forge integration logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-Forge-integration-logs
+          path: |
+            forge-server-smoke.log
+            forge-client-smoke.log
+            forge/run/logs/
+            forge/run/crash-reports/
+          if-no-files-found: ignore

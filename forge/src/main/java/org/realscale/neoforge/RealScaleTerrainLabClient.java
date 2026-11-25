@@ -486,7 +486,7 @@ public final class RealScaleTerrainLabClient {
                 .name(Component.literal("Performance Studio | Configuration"))
                 .option(Option.<String>createBuilder()
                     .name(Component.literal("Performance Profile"))
-                    .description(description("Balanced preserves current cache sizes and disables upload pacing. Low Memory reduces bounded RealScale cache capacities to one quarter. Smooth Render enables guarded FIFO upload pacing, adaptive frame-pressure control and the optional DH cave-LOD adapter. Combined applies both. Restart required."))
+                    .description(description("Balanced preserves current cache sizes. Low Memory reduces bounded RealScale cache capacities to one quarter. On Forge 1.20.1, Smooth Render does not yet intercept chunk uploads; it only requests the optional DH cave-LOD adapter. Restart required."))
                     .binding("balanced", () -> d.performanceProfile,
                             v -> d.performanceProfile=v)
                     .controller(o -> CyclingListControllerBuilder.create(o).values(
@@ -500,7 +500,7 @@ public final class RealScaleTerrainLabClient {
                     .controller(BooleanControllerBuilder::create).build())
                 .option(Option.<Boolean>createBuilder()
                     .name(Component.literal("Predictive Upload Pacing (Experimental)"))
-                    .description(description("Uses a bounded moving estimate to defer later FIFO upload tasks. It never drops or reorders tasks, but may delay distant terrain appearance. Keep OFF until client A/B tests show a benefit. Restart required."))
+                    .description(description("Reserved for the Forge upload interception port. No effect in this build; keep OFF."))
                     .binding(false, () -> d.predictiveUpload,
                             v -> d.predictiveUpload=v)
                     .controller(BooleanControllerBuilder::create).build())
