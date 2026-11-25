@@ -10,7 +10,7 @@ package org.realscale.neoforge.client.clipmap;
  * All other LODs remain continuous.
  */
 public final class ClipmapVoxelStyle {
-    private static final float FADE_LENGTH_CELLS = 48.0f;
+    private static final float FADE_LENGTH_CELLS = 40.0f;
 
     private ClipmapVoxelStyle() {
     }
@@ -30,8 +30,13 @@ public final class ClipmapVoxelStyle {
         if (level != 0) return 0.0f;
 
         double nearRadius = nearRenderDistanceChunks * 16.0;
-        double fadeEnd = nearRadius + cellSpacingBlocks * FADE_LENGTH_CELLS;
-        return 1.0f - smoothstep((float) nearRadius, (float) fadeEnd,
+        // The common clipmap centre can lag the camera by half the coarsest
+        // snap cell. Keep the voxel band outside that protected vanilla overlap.
+        double cameraOffsetAllowance = cellSpacingBlocks * 16.0;
+        double fadeStart = nearRadius + cameraOffsetAllowance
+                + cellSpacingBlocks * 2.0;
+        double fadeEnd = fadeStart + cellSpacingBlocks * FADE_LENGTH_CELLS;
+        return 1.0f - smoothstep((float) fadeStart, (float) fadeEnd,
                 (float) distanceBlocks);
     }
 
