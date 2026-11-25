@@ -13,7 +13,7 @@ import java.util.Properties;
 /**
  * Persistent client-side controls for the automatic Geometry Clipmap renderer.
  *
- * <p>The renderer defaults to OFF. The far range is selected independently
+ * <p>The default is OFF. The far range is selected independently
  * from Minecraft's vanilla chunk distance, using a compact 64/128/256 grid.
  */
 public final class GeometryClipmapSettings {
