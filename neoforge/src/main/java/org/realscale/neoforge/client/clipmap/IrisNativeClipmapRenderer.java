@@ -510,45 +510,41 @@ final class IrisNativeClipmapRenderer {
         float[] smoothNormals = ClipmapSurfaceNormals.compute(
                 surfaceHeights, cells, spacing, holeRadius, 2);
 
-        // Each LOD-0 grid cell gets a flat, integer-height target. The blend is
-        // strongest in the vanilla overlap and fades out before the coarse LOD
-        // rings, so the near surface reads as Minecraft terrain rather than a
-        // uniformly smooth game-world heightfield.
-        float[] voxelHeights = new float[cells * cells];
-        float[] voxelBlends = new float[cells * cells];
-        int[] voxelColors = new int[cells * cells];
+        // Only the nearest ring receives voxel-cell data. The transition starts
+        // beyond the protected vanilla overlap, then fades out before coarse LODs.
+        float[] voxelHeights = level == 0 ? new float[cells * cells] : null;
+        float[] voxelBlends = level == 0 ? new float[cells * cells] : null;
+        int[] voxelColors = level == 0 ? new int[cells * cells] : null;
         if (level == 0) {
             Arrays.fill(voxelHeights, Float.NaN);
-        }
-        long clipmapCenterX = tile.originX() + (long) cells * spacing / 2L;
-        long clipmapCenterZ = tile.originZ() + (long) cells * spacing / 2L;
-        if (level == 0) {
+            long clipmapCenterX = tile.originX() + (long) cells * spacing / 2L;
+            long clipmapCenterZ = tile.originZ() + (long) cells * spacing / 2L;
             for (int cellZ = 0; cellZ < cells; cellZ++) {
                 for (int cellX = 0; cellX < cells; cellX++) {
-                int sample = cellZ * side + cellX;
-                float h00 = surfaceHeights[sample];
-                float h10 = surfaceHeights[sample + 1];
-                float h01 = surfaceHeights[sample + side];
-                float h11 = surfaceHeights[sample + side + 1];
-                if (!Float.isFinite(h00) || !Float.isFinite(h10)
-                        || !Float.isFinite(h01) || !Float.isFinite(h11)) {
-                    continue;
-                }
-                int cell = cellZ * cells + cellX;
-                float averageHeight = (h00 + h10 + h01 + h11) * 0.25f;
-                long worldX = tile.originX() + (long) cellX * spacing + spacing / 2L;
-                long worldZ = tile.originZ() + (long) cellZ * spacing + spacing / 2L;
-                double distance = Math.hypot(worldX - clipmapCenterX,
-                        worldZ - clipmapCenterZ);
-                float blend = ClipmapVoxelStyle.blend(
-                        level, distance, nearChunks, spacing);
-                float averageNormalY = (
-                        smoothNormals[sample * 3 + 1]
-                        + smoothNormals[(sample + 1) * 3 + 1]
-                        + smoothNormals[(sample + side) * 3 + 1]
-                        + smoothNormals[(sample + side + 1) * 3 + 1]) * 0.25f;
-                voxelHeights[cell] = ClipmapVoxelStyle.quantizeHeight(averageHeight);
-                voxelBlends[cell] = blend;
+                    int sample = cellZ * side + cellX;
+                    float h00 = surfaceHeights[sample];
+                    float h10 = surfaceHeights[sample + 1];
+                    float h01 = surfaceHeights[sample + side];
+                    float h11 = surfaceHeights[sample + side + 1];
+                    if (!Float.isFinite(h00) || !Float.isFinite(h10)
+                            || !Float.isFinite(h01) || !Float.isFinite(h11)) {
+                        continue;
+                    }
+                    int cell = cellZ * cells + cellX;
+                    float averageHeight = (h00 + h10 + h01 + h11) * 0.25f;
+                    long worldX = tile.originX() + (long) cellX * spacing + spacing / 2L;
+                    long worldZ = tile.originZ() + (long) cellZ * spacing + spacing / 2L;
+                    double distance = Math.hypot(worldX - clipmapCenterX,
+                            worldZ - clipmapCenterZ);
+                    float blend = ClipmapVoxelStyle.blend(
+                            level, distance, nearChunks, spacing);
+                    float averageNormalY = (
+                            smoothNormals[sample * 3 + 1]
+                            + smoothNormals[(sample + 1) * 3 + 1]
+                            + smoothNormals[(sample + side) * 3 + 1]
+                            + smoothNormals[(sample + side + 1) * 3 + 1]) * 0.25f;
+                    voxelHeights[cell] = ClipmapVoxelStyle.quantizeHeight(averageHeight);
+                    voxelBlends[cell] = blend;
                     if (blend > 0.001f) {
                         voxelColors[cell] = ClipmapSurfacePalette.terrainColorAt(
                                 averageHeight, averageNormalY, seaLevel, false, worldX, worldZ);
@@ -586,9 +582,10 @@ final class IrisNativeClipmapRenderer {
             int cellX = Math.min(gridX[0], Math.min(gridX[1], gridX[2]));
             int cellZ = Math.min(gridZ[0], Math.min(gridZ[1], gridZ[2]));
             int cellIndex = cellZ * cells + cellX;
-            float voxelBlend = voxelBlends[cellIndex];
-            float voxelHeight = voxelHeights[cellIndex];
-            if (!Float.isFinite(voxelHeight)) {
+            float voxelBlend = level == 0 ? voxelBlends[cellIndex] : 0.0f;
+            float voxelHeight = level == 0 ? voxelHeights[cellIndex]
+                    : (topHeight[0] + topHeight[1] + topHeight[2]) / 3.0f;
+            if (level == 0 && !Float.isFinite(voxelHeight)) {
                 voxelHeight = (topHeight[0] + topHeight[1] + topHeight[2]) / 3.0f;
             }
 
@@ -622,8 +619,10 @@ final class IrisNativeClipmapRenderer {
                     int continuousColor = ClipmapSurfacePalette.terrainColorAt(
                             Math.max(y[vertex], seaLevel),
                             smoothNormals[normalIndex + 1], seaLevel, false, worldX, worldZ);
+                    int voxelColor = voxelBlend > 0.001f
+                            ? voxelColors[cellIndex] : continuousColor;
                     vertexColors[vertex] = ClipmapVoxelStyle.blendColor(
-                            continuousColor, voxelColors[cellIndex], voxelBlend);
+                            continuousColor, voxelColor, voxelBlend);
                 }
                 // Never paint terrain surfaces with block/item-atlas artwork.
                 // Iris requires sampler0, so all terrain vertices sample one fixed
