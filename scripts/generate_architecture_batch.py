@@ -128,7 +128,7 @@ def feature_snow(b, c):
     b.set(4, 2, 7, "minecraft:campfire", facing="north", lit="true",
           signal_fire="false", waterlogged="false")
     b.set(c + 2, 2, 7, "minecraft:barrel", facing="up", open="false")
-    b.fill(5, 2, 8, 7, 2, 8, "minecraft:carpet")
+    b.fill(5, 2, 8, 7, 2, 8, "minecraft:white_carpet")
 
 
 def feature_savanna(b, c):
