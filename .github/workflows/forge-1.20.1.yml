@@ -91,6 +91,34 @@ jobs:
           fi
           echo "Forge server loaded the RealScale preset and reached the ready state."
 
+      - name: Install standalone Forge and test the distributable JAR
+        timeout-minutes: 8
+        env:
+          REALSCALE_FORGE_CI_SMOKE: server
+        run: |
+          set -euo pipefail
+          mkdir -p forge-production/mods
+          cp forge/build/libs/RealScale-Forge-1.20.1-*.jar forge-production/mods/
+          cd forge-production
+          curl --fail --location --retry 3 -o forge-installer.jar https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.28/forge-1.20.1-47.4.28-installer.jar
+          java -jar forge-installer.jar --installServer > installer.log 2>&1 || { tail -150 installer.log; exit 1; }
+          printf 'eula=true\n' > eula.txt
+          cat > server.properties <<'EOF'
+          level-name=production-smoke
+          level-type=realscale:natural_automate_three_realms
+          server-ip=127.0.0.1
+          online-mode=false
+          view-distance=2
+          simulation-distance=2
+          spawn-protection=0
+          max-tick-time=120000
+          EOF
+          printf '%s\n' '-Xmx4G' > user_jvm_args.txt
+          timeout --signal=TERM --kill-after=15s 300s bash run.sh nogui > production-server.log 2>&1 || { tail -150 production-server.log; exit 1; }
+          grep -F 'Done (' logs/latest.log
+          grep -F 'FORGE_SERVER_TEMPLATE_SMOKE_OK' production-server.log
+          echo 'FORGE_STANDALONE_JAR_SMOKE_OK'
+
       - name: Start Forge client and render RealScale UI
         timeout-minutes: 6
         env:
@@ -111,4 +139,8 @@ jobs:
             forge-client-smoke.log
             forge/run/logs/
             forge/run/crash-reports/
+            forge-production/installer.log
+            forge-production/production-server.log
+            forge-production/logs/
+            forge-production/crash-reports/
           if-no-files-found: ignore
