@@ -1,6 +1,6 @@
 package org.realscale.neoforge;
 
-import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.BlockPos;
@@ -32,11 +32,11 @@ import java.util.stream.Stream;
  * surface transition strip. Rivers and oceans are never replaced.</p>
  */
 public final class NaturalEcotoneBiomeSource extends BiomeSource {
-    public static final MapCodec<NaturalEcotoneBiomeSource> CODEC =
+    public static final Codec<NaturalEcotoneBiomeSource> CODEC =
             RecordCodecBuilder.mapCodec(instance -> instance.group(
                     BiomeSource.CODEC.fieldOf("source").forGetter(NaturalEcotoneBiomeSource::source),
                     RegistryOps.retrieveGetter(Registries.BIOME)
-            ).apply(instance, NaturalEcotoneBiomeSource::new));
+            ).apply(instance, NaturalEcotoneBiomeSource::new)).codec();
 
     private record Rule(String target, int widthBlocks, Set<String> left, Set<String> right) {
         boolean matches(String first, String second) {
@@ -235,8 +235,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         return source;
     }
 
-    @Override
-    protected MapCodec<? extends BiomeSource> codec() {
+    @Override public Codec<? extends BiomeSource> codec() {
         return CODEC;
     }
 
