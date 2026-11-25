@@ -6,10 +6,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.PathPackResources;
-import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
-import net.minecraft.server.packs.repository.PackLocationInfo;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.event.AddPackFindersEvent;
 
@@ -17,7 +15,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 
 /**
  * Built-in optional structure packs: six vanilla density presets plus a
@@ -127,15 +124,14 @@ public final class RealScaleStructurePacks {
             if (modFileInfo == null) return;
             Path root = modFileInfo.getFile().findResource(resourcePath);
             var resources = new PathPackResources.PathResourcesSupplier(root);
-            PackLocationInfo location = new PackLocationInfo(
+            Pack pack = Pack.readMetaAndCreate(
                     MODID + ":" + resourcePath,
                     Component.literal(displayName),
-                    selectedDefault ? PackSource.DEFAULT : OPTIONAL_BUILT_IN,
-                    Optional.empty());
-            PackSelectionConfig selection = new PackSelectionConfig(
-                    false, Pack.Position.TOP, false);
-            Pack pack = Pack.readMetaAndCreate(
-                    location, resources, PackType.SERVER_DATA, selection);
+                    false, // Optional: never force a datapack into an existing world.
+                    resources,
+                    PackType.SERVER_DATA,
+                    Pack.Position.TOP,
+                    selectedDefault ? PackSource.DEFAULT : OPTIONAL_BUILT_IN);
             if (pack != null) consumer.accept(pack);
         });
     }
