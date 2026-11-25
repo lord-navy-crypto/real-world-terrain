@@ -1,6 +1,6 @@
 package org.realscale.neoforge;
 
-import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
@@ -17,10 +17,10 @@ import java.util.stream.Stream;
  * biome source. Everything below Y160 is delegated without modification.
  */
 public final class SkyOceanBiomeSource extends BiomeSource {
-    public static final MapCodec<SkyOceanBiomeSource> CODEC=RecordCodecBuilder.mapCodec(i->
+    public static final Codec<SkyOceanBiomeSource> CODEC=RecordCodecBuilder.mapCodec(i->
         i.group(BiomeSource.CODEC.fieldOf("source").forGetter(SkyOceanBiomeSource::source),
                 RegistryOps.retrieveGetter(Registries.BIOME))
-          .apply(i,SkyOceanBiomeSource::new));
+          .apply(i, SkyOceanBiomeSource::new)).codec();
     private final BiomeSource source;
     // Offshore radius probes only classify vanilla oceans. Bypass expensive
     // 8-direction ecotone ray searches, which cannot change ocean predicates.
@@ -63,7 +63,7 @@ public final class SkyOceanBiomeSource extends BiomeSource {
     public boolean containsGeoWonders() {
         return source instanceof GeoWondersBiomeSource;
     }
-    @Override protected MapCodec<? extends BiomeSource> codec(){return CODEC;}
+    @Override public Codec<? extends BiomeSource> codec(){return CODEC;}
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),Stream.of(blossomIsle)).distinct();
     }
