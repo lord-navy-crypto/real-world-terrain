@@ -540,11 +540,11 @@ final class IrisNativeClipmapRenderer {
                         worldZ - clipmapCenterZ);
                 float blend = ClipmapVoxelStyle.blend(
                         level, distance, nearChunks, spacing);
-                float averageNormalY = 0.0f;
-                for (int corner : new int[]{sample, sample + 1,
-                        sample + side, sample + side + 1}) {
-                    averageNormalY += smoothNormals[corner * 3 + 1] * 0.25f;
-                }
+                float averageNormalY = (
+                        smoothNormals[sample * 3 + 1]
+                        + smoothNormals[(sample + 1) * 3 + 1]
+                        + smoothNormals[(sample + side) * 3 + 1]
+                        + smoothNormals[(sample + side + 1) * 3 + 1]) * 0.25f;
                 voxelHeights[cell] = ClipmapVoxelStyle.quantizeHeight(averageHeight);
                 voxelBlends[cell] = blend;
                 voxelColors[cell] = ClipmapSurfacePalette.terrainColorAt(
