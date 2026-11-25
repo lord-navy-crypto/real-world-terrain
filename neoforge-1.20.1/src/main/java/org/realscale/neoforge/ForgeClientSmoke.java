@@ -4,36 +4,38 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RenderTickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 /**
- * Opt-in CI smoke test. Hold each RealScale screen for 20 client ticks so the
- * normal client render loop has time to initialize and draw it before moving on.
+ * Opt-in CI smoke test. Uses the render-tick event that the legacy 1.20.1
+ * client reliably posts after the title screen and each screen has rendered.
+ * It is inert in normal gameplay unless REALSCALE_FORGE_CI_SMOKE=client.
  */
+@Mod.EventBusSubscriber(modid = "realscale", value = Dist.CLIENT)
 public final class ForgeClientSmoke {
     private static int stage;
-    private static int ticksOnScreen;
-    private static int waitTicks;
+    private static int framesOnScreen;
+    private static int waitFrames;
     private static Screen title;
     private static Screen expected;
-    private static boolean waitStateReported;
+    private static String lastWaitState = "";
+    private static boolean firstRenderTickReported;
 
     private ForgeClientSmoke() {}
 
-    /** Explicit client-only registration; legacy Forge ModDev does not discover
-     * this test subscriber reliably from the development classpath. */
-    public static void register() {
-        net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(ForgeClientSmoke.class);
-        System.out.println("NEOFORGE_CLIENT_SMOKE_SUBSCRIBER_LOADED mode="
-                + System.getenv("REALSCALE_FORGE_CI_SMOKE"));
-    }
-
     @SubscribeEvent
-    public static void verify(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END
+    public static void verify(RenderTickEvent event) {
+        if (event.phase != RenderTickEvent.Phase.END
                 || !"client".equals(System.getenv("REALSCALE_FORGE_CI_SMOKE"))) {
             return;
+        }
+
+        if (!firstRenderTickReported) {
+            firstRenderTickReported = true;
+            System.out.println("NEOFORGE_CLIENT_SMOKE_RENDER_TICK_OK");
         }
 
         Minecraft mc = Minecraft.getInstance();
@@ -42,14 +44,11 @@ public final class ForgeClientSmoke {
             return;
         }
 
-        // Fresh 1.20.1 client profiles can open this vanilla first-run screen
-        // before the title screen. Close it through its own callback so the
-        // smoke test follows the same normal path as a user pressing Done.
         if (stage == 0 && mc.screen instanceof AccessibilityOnboardingScreen onboarding) {
-            if (++ticksOnScreen >= 20) {
+            if (++framesOnScreen >= 20) {
                 System.out.println("NEOFORGE_CLIENT_ACCESSIBILITY_ONBOARDING_DISMISSED");
                 onboarding.onClose();
-                ticksOnScreen = 0;
+                framesOnScreen = 0;
             }
             return;
         }
@@ -65,15 +64,13 @@ public final class ForgeClientSmoke {
             reportWaitState("expected=" + expected.getClass().getName()
                     + " actual=" + (mc.screen == null
                     ? "null" : mc.screen.getClass().getName()));
-            ticksOnScreen = 0;
+            framesOnScreen = 0;
             return;
         }
 
-        waitStateReported = false;
-        if (++ticksOnScreen < 20) {
-            return;
-        }
-        ticksOnScreen = 0;
+        lastWaitState = "";
+        if (++framesOnScreen < 20) return;
+        framesOnScreen = 0;
 
         switch (stage++) {
             case 0 -> expected = new RealScaleStudioScreen(title);
@@ -86,13 +83,12 @@ public final class ForgeClientSmoke {
                 mc.stop();
                 return;
             }
-            default -> {
-                return;
-            }
+            default -> { return; }
         }
 
         if (expected == null) {
-            throw new IllegalStateException("RealScale client smoke created a null screen at stage " + stage);
+            throw new IllegalStateException(
+                    "RealScale client smoke created a null screen at stage " + stage);
         }
         System.out.println("NEOFORGE_CLIENT_UI_STAGE_OK stage=" + stage
                 + " screen=" + expected.getClass().getName());
@@ -100,9 +96,9 @@ public final class ForgeClientSmoke {
     }
 
     private static void reportWaitState(String state) {
-        if (!waitStateReported && ++waitTicks % 100 == 0) {
+        if (!state.equals(lastWaitState) && ++waitFrames % 60 == 0) {
+            lastWaitState = state;
             System.out.println("NEOFORGE_CLIENT_UI_WAIT stage=" + stage + " " + state);
-            waitStateReported = true;
         }
     }
 }
