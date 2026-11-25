@@ -685,6 +685,8 @@ vanilla chunk render distance. Its horizontal cell footprint is the selected
 ring's sample spacing (four blocks per cell in the usual ten-chunk/default-grid
 case, and potentially larger in reduced-range presets). The vanilla chunk
 renderer continues to provide exact block geometry in its normal view range.
+The stepped transition is capped at eight horizontal blocks per cell; when the
+first visible ring is coarser than that, the far terrain remains continuous.
 A dedicated one-block near-detail strip would require additional high-resolution
 surface sampling and a separate CPU, network, mesh-memory and frame-time budget;
 it must be validated before replacing this conservative first transition.
