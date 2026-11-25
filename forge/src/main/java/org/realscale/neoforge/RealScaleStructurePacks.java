@@ -7,7 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
-import net.neoforged.neoforge.event.AddPackFindersEvent;
+import net.minecraftforge.event.AddPackFindersEvent;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -116,7 +116,7 @@ public final class RealScaleStructurePacks {
     private static void registerOne(AddPackFindersEvent event, String id,
                                     String displayName, boolean selectedDefault) {
         event.addPackFinders(
-                ResourceLocation.fromNamespaceAndPath(
+                new ResourceLocation(
                         MODID, "resourcepacks/realscale_structures_" + id),
                 PackType.SERVER_DATA,
                 Component.literal(displayName),
