@@ -10,6 +10,7 @@ package org.realscale.neoforge.client.clipmap;
  */
 public final class ClipmapVoxelStyle {
     private static final float FADE_LENGTH_CELLS = 40.0f;
+    private static final int MAX_VOXEL_CELL_SPACING_BLOCKS = 8;
 
     private ClipmapVoxelStyle() {
     }
@@ -30,7 +31,11 @@ public final class ClipmapVoxelStyle {
         double protectedStart = nearRadius + cameraOffsetAllowance
                 + baseCellSpacingBlocks * 2.0;
         for (int level = 0; level < GeometryClipmapLayout.DEFAULT_LEVEL_COUNT; level++) {
-            double spacing = (long) baseCellSpacingBlocks << level;
+            long spacing = (long) baseCellSpacingBlocks << level;
+            // Do not turn already-distant, coarse rings into giant voxels.
+            // The vanilla chunk renderer owns exact blocks; the custom stepped
+            // band is limited to reasonably fine near-field samples.
+            if (spacing > MAX_VOXEL_CELL_SPACING_BLOCKS) break;
             double outerRadius = (gridCells * 0.5) * spacing;
             if (outerRadius > protectedStart) return level;
         }
