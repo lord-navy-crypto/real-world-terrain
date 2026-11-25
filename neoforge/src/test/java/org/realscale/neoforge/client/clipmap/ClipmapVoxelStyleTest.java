@@ -10,14 +10,18 @@ final class ClipmapVoxelStyleTest {
         assertEquals(0, ClipmapVoxelStyle.transitionLevel(256, 4, 10));
         assertEquals(0, ClipmapVoxelStyle.transitionLevel(128, 4, 10));
         assertEquals(1, ClipmapVoxelStyle.transitionLevel(64, 4, 10));
-        assertEquals(1.0f,
+        assertEquals(0.0f,
                 ClipmapVoxelStyle.blend(0, 160.0, 10, 4, 4, 256), 1.0e-6f);
+        assertEquals(0.0f,
+                ClipmapVoxelStyle.blend(0, 220.0, 10, 4, 4, 256), 1.0e-6f);
+        assertEquals(1.0f,
+                ClipmapVoxelStyle.blend(0, 240.0, 10, 4, 4, 256), 1.0e-6f);
     }
 
     @Test
     void nearestRingSmoothlyTransitionsBeforeTheCoarseRings() {
-        float near = ClipmapVoxelStyle.blend(0, 232.0, 10, 4, 4, 256);
-        float middle = ClipmapVoxelStyle.blend(0, 312.0, 10, 4, 4, 256);
+        float near = ClipmapVoxelStyle.blend(0, 240.0, 10, 4, 4, 256);
+        float middle = ClipmapVoxelStyle.blend(0, 316.0, 10, 4, 4, 256);
         float far = ClipmapVoxelStyle.blend(0, 392.0, 10, 4, 4, 256);
         assertTrue(near > middle);
         assertTrue(middle > far);
@@ -29,8 +33,10 @@ final class ClipmapVoxelStyleTest {
     void everyCoarserLodRemainsContinuous() {
         assertEquals(0.0f,
                 ClipmapVoxelStyle.blend(1, 180.0, 10, 4, 8, 256), 1.0e-6f);
-        assertEquals(1.0f,
+        assertEquals(0.0f,
                 ClipmapVoxelStyle.blend(1, 200.0, 10, 4, 8, 64), 1.0e-6f);
+        assertEquals(1.0f,
+                ClipmapVoxelStyle.blend(1, 244.0, 10, 4, 8, 64), 1.0e-6f);
         assertEquals(0.0f,
                 ClipmapVoxelStyle.blend(2, 260.0, 10, 4, 16, 64), 1.0e-6f);
     }
