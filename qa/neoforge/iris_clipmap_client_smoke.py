@@ -430,7 +430,7 @@ def wait_until_world_rendered(timeout: float = 120.0) -> None:
 def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
     """Verify default OFF, then exercise ON -> OFF -> ON through the pause-menu button."""
     # Derive the click point from the actual game window. The CI options set
-    # GUI scale 2; the custom pause-menu row is 154px + 4px + 154px wide.
+    # GUI scale 2; the custom pause-menu row contains Studio, toggle and range.
     window_geometry = active_game_window_geometry()
     if window_geometry is None:
         raise RuntimeError("Could not locate the visible Minecraft window for pause-menu clicking")
@@ -440,7 +440,7 @@ def test_pause_menu_geometry_clipmap_toggle(lines) -> None:
     gap = 4
     logical_width = window_width // gui_scale
     logical_height = window_height // gui_scale
-    row_width = button_width * 2 + gap
+    row_width = button_width * 3 + gap * 2
     button_x = (logical_width - row_width) // 2 + button_width + gap
     button_y = max(4, logical_height - 28)
     click_x = window_x + (button_x + button_width // 2) * gui_scale
