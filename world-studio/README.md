@@ -9,6 +9,7 @@ A browser-first world creation interface for the RealScale project.
 - Natural Automate-inspired terrain preview.
 - Browser-side relief and biome views.
 - Elevation inspection, land coverage, and elevation range.
+- Downloadable PNG map previews (image export only; not a playable Minecraft save).
 - Square map rendering so the displayed geometry preserves the selected square footprint.
 - Frame-batched terrain sampling and shading, with live progress updates to keep the browser responsive.
 - No executable downloads, launcher integration, or local filesystem access.
