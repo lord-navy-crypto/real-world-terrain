@@ -1,16 +1,14 @@
 name: RealScale World Studio
 
 on:
-  push:
-    branches:
-      - feature/realscale-world-studio-mvp
-    paths:
-      - "world-studio/**"
-      - ".github/workflows/world-studio.yml"
   pull_request:
     paths:
       - "world-studio/**"
       - ".github/workflows/world-studio.yml"
+
+concurrency:
+  group: world-studio-pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
