@@ -10,6 +10,7 @@ const reliefValue = document.querySelector("#relief-value");
 const generateButton = document.querySelector("#generate-button");
 const refreshButton = document.querySelector("#refresh-map");
 const downloadPreviewButton = document.querySelector("#download-preview");
+const downloadCsvButton = document.querySelector("#download-csv");
 const randomSeedButton = document.querySelector("#random-seed");
 const statusText = document.querySelector("#generation-status");
 const loading = document.querySelector("#map-loading");
@@ -28,6 +29,11 @@ const biomeLegend = document.querySelector("#biome-legend");
 const RESOLUTION = 384;
 const ROWS_PER_FRAME = 8;
 const SEA_LEVEL = 63;
+
+let currentView = "relief";
+let latestMap = null;
+let isGenerating = false;
+let renderToken = 0;
 function colorForTerrain(height, temperature, humidity, slope, view) {
   if (height < SEA_LEVEL - 180) {
     const depth = clamp((SEA_LEVEL - height) / 520, 0, 1);
@@ -49,8 +55,70 @@ function colorForTerrain(height, temperature, humidity, slope, view) {
   return [103, 132, 83];
 }
 
+function renderMap(map, onComplete) {
+  const token = ++renderToken;
+  let renderedView = currentView;
+  let renderRow = 0;
+  let image = ctx.createImageData(RESOLUTION, RESOLUTION);
+
+  function renderBatch() {
+    if (token !== renderToken) return;
+    if (renderedView !== currentView) {
+      renderedView = currentView;
+      renderRow = 0;
+      image = ctx.createImageData(RESOLUTION, RESOLUTION);
+    }
+
+    const pixels = image.data;
+    const endRow = Math.min(RESOLUTION, renderRow + ROWS_PER_FRAME);
+    for (let py = renderRow; py < endRow; py += 1) {
+      for (let px = 0; px < RESOLUTION; px += 1) {
+        const index = py * RESOLUTION + px;
+        const left = map.heights[py * RESOLUTION + Math.max(0, px - 1)];
+        const right = map.heights[py * RESOLUTION + Math.min(RESOLUTION - 1, px + 1)];
+        const up = map.heights[Math.max(0, py - 1) * RESOLUTION + px];
+        const down = map.heights[Math.min(RESOLUTION - 1, py + 1) * RESOLUTION + px];
+        const dx = (right - left) / Math.max(map.step * 2, 1);
+        const dz = (down - up) / Math.max(map.step * 2, 1);
+        const slope = Math.hypot(dx, dz);
+        const color = colorForTerrain(
+          map.heights[index],
+          map.temperatures[index],
+          map.humidities[index],
+          slope,
+          renderedView
+        );
+        const contourValue = (map.heights[index] - SEA_LEVEL) / 120;
+        const isContour = map.heights[index] > SEA_LEVEL + 30
+          && Math.abs(contourValue - Math.round(contourValue)) < 0.026;
+        const contourShade = isContour ? 0.74 : 1;
+        const shade = clamp(0.86 - dx * 0.8 - dz * 0.55, 0.62, 1.16);
+        const pixel = index * 4;
+        pixels[pixel] = clamp(color[0] * shade * contourShade, 0, 255);
+        pixels[pixel + 1] = clamp(color[1] * shade * contourShade, 0, 255);
+        pixels[pixel + 2] = clamp(color[2] * shade * contourShade, 0, 255);
+        pixels[pixel + 3] = 255;
+      }
+    }
+
+    renderRow = endRow;
+    const progress = Math.round(renderRow / RESOLUTION * 100);
+    statusText.textContent = "Rendering " + renderedView + " map… " + progress + "%";
+    if (renderRow < RESOLUTION) {
+      window.requestAnimationFrame(renderBatch);
+      return;
+    }
+
+    ctx.putImageData(image, 0, 0);
+    if (onComplete) onComplete();
+  }
+
+  window.requestAnimationFrame(renderBatch);
+}
+
 function generateMap() {
   if (isGenerating) return;
+  renderToken += 1;
   const seedText = seedInput.value.trim() || "realscale";
   const seed = hashSeed(seedText);
   const size = Number(sizeSelect.value);
@@ -68,6 +136,7 @@ function generateMap() {
   isGenerating = true;
   generateButton.disabled = true;
   downloadPreviewButton.disabled = true;
+  downloadCsvButton.disabled = true;
   generateButton.classList.add("is-loading");
   loading.hidden = false;
   statusText.textContent = "Sampling terrain fields… 0%";
@@ -75,15 +144,6 @@ function generateMap() {
   mapSeedLabel.textContent = "SEED: " + seedText.toUpperCase();
 
   function finishGeneration() {
-    latestMap = {
-      heights,
-      size,
-      step,
-      min,
-      max,
-      landPercent: landCount / heights.length * 100,
-      seedText
-    };
     const elapsed = ((performance.now() - started) / 1000).toFixed(2);
     mapTitle.textContent = "World " + seedText;
     mapScale.textContent = (size / 1000) + " KM × " + (size / 1000) + " KM";
@@ -98,61 +158,9 @@ function generateMap() {
     loading.hidden = true;
     generateButton.disabled = false;
     downloadPreviewButton.disabled = false;
+    downloadCsvButton.disabled = false;
     generateButton.classList.remove("is-loading");
     isGenerating = false;
-  }
-
-  function renderMap() {
-    let renderedView = currentView;
-    let renderRow = 0;
-    let image = ctx.createImageData(RESOLUTION, RESOLUTION);
-
-    function renderBatch() {
-      if (renderedView !== currentView) {
-        renderedView = currentView;
-        renderRow = 0;
-        image = ctx.createImageData(RESOLUTION, RESOLUTION);
-      }
-
-      const pixels = image.data;
-      const endRow = Math.min(RESOLUTION, renderRow + ROWS_PER_FRAME);
-      for (let py = renderRow; py < endRow; py += 1) {
-        for (let px = 0; px < RESOLUTION; px += 1) {
-          const index = py * RESOLUTION + px;
-          const left = heights[py * RESOLUTION + Math.max(0, px - 1)];
-          const right = heights[py * RESOLUTION + Math.min(RESOLUTION - 1, px + 1)];
-          const up = heights[Math.max(0, py - 1) * RESOLUTION + px];
-          const down = heights[Math.min(RESOLUTION - 1, py + 1) * RESOLUTION + px];
-          const dx = (right - left) / Math.max(step * 2, 1);
-          const dz = (down - up) / Math.max(step * 2, 1);
-          const slope = Math.hypot(dx, dz);
-          const shade = clamp(0.86 - dx * 0.8 - dz * 0.55, 0.62, 1.16);
-          const color = colorForTerrain(heights[index], temperatures[index], humidities[index], slope, renderedView);
-          const contourValue = (heights[index] - SEA_LEVEL) / 120;
-          const isContour = heights[index] > SEA_LEVEL + 30
-            && Math.abs(contourValue - Math.round(contourValue)) < 0.026;
-          const contourShade = isContour ? 0.74 : 1;
-          const pixel = index * 4;
-          pixels[pixel] = clamp(color[0] * shade * contourShade, 0, 255);
-          pixels[pixel + 1] = clamp(color[1] * shade * contourShade, 0, 255);
-          pixels[pixel + 2] = clamp(color[2] * shade * contourShade, 0, 255);
-          pixels[pixel + 3] = 255;
-        }
-      }
-
-      renderRow = endRow;
-      const progress = 70 + Math.round(renderRow / RESOLUTION * 30);
-      statusText.textContent = "Rendering " + renderedView + " map… " + progress + "%";
-      if (renderRow < RESOLUTION) {
-        window.requestAnimationFrame(renderBatch);
-        return;
-      }
-
-      ctx.putImageData(image, 0, 0);
-      finishGeneration();
-    }
-
-    window.requestAnimationFrame(renderBatch);
   }
 
   function sampleBatch() {
@@ -179,23 +187,87 @@ function generateMap() {
       window.requestAnimationFrame(sampleBatch);
       return;
     }
-    renderMap();
+    latestMap = {
+      heights,
+      temperatures,
+      humidities,
+      size,
+      step,
+      min,
+      max,
+      landPercent: landCount / heights.length * 100,
+      seedText,
+      reliefScale
+    };
+    renderMap(latestMap, finishGeneration);
   }
 
   window.requestAnimationFrame(sampleBatch);
 }
 
-function downloadPreview() {
-  if (!latestMap) return;
-  const safeSeed = latestMap.seedText.toLowerCase()
+function safeSeedFilename(seed) {
+  return seed.toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 32) || "world";
+}
+
+function downloadPreview() {
+  if (!latestMap || isGenerating) return;
   const link = document.createElement("a");
   link.href = canvas.toDataURL("image/png");
-  link.download = "realscale-preview-" + safeSeed + ".png";
+  link.download = "realscale-preview-" + safeSeedFilename(latestMap.seedText) + ".png";
   link.click();
   statusText.textContent = "Preview PNG downloaded · image only, not a Minecraft save";
+}
+
+function csvCell(value, protectFormula = false) {
+  let text = String(value);
+  if (protectFormula && /^[=+\\-@]/.test(text)) text = "'" + text;
+  return '"' + text.replace(/"/g, '""') + '"';
+}
+
+function downloadElevationCsv() {
+  if (!latestMap || isGenerating) return;
+  const rows = [[
+    "sample_x_blocks",
+    "sample_z_blocks",
+    "estimated_elevation_m",
+    "temperature_index",
+    "humidity_index",
+    "seed",
+    "footprint_blocks"
+  ].map(value => csvCell(value)).join(",")];
+
+  for (let py = 0; py < RESOLUTION; py += 1) {
+    const z = Math.round((py / (RESOLUTION - 1) - 0.5) * latestMap.size);
+    for (let px = 0; px < RESOLUTION; px += 1) {
+      const x = Math.round((px / (RESOLUTION - 1) - 0.5) * latestMap.size);
+      const index = py * RESOLUTION + px;
+      rows.push([
+        x,
+        z,
+        latestMap.heights[index].toFixed(1),
+        latestMap.temperatures[index].toFixed(4),
+        latestMap.humidities[index].toFixed(4),
+        latestMap.seedText,
+        latestMap.size
+      ].map((value, column) => csvCell(value, column === 5)).join(","));
+    }
+  }
+
+  const csv = new Blob(["\\uFEFF" + rows.join("\\r\\n")], {
+    type: "text/csv;charset=utf-8"
+  });
+  const objectUrl = URL.createObjectURL(csv);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = "realscale-elevation-" + safeSeedFilename(latestMap.seedText)
+    + "-" + latestMap.size + "m-preview.csv";
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  statusText.textContent = "Elevation CSV downloaded · " + (RESOLUTION * RESOLUTION).toLocaleString()
+    + " estimated samples";
 }
 
 function inspectMap(event) {
@@ -218,7 +290,12 @@ function setView(view) {
   });
   reliefLegend.hidden = view !== "relief";
   biomeLegend.hidden = view !== "biomes";
-  if (latestMap) generateMap();
+  if (latestMap && !isGenerating) {
+    statusText.textContent = "Updating map view…";
+    renderMap(latestMap, () => {
+      statusText.textContent = "Map view updated";
+    });
+  }
 }
 
 randomSeedButton.addEventListener("click", () => {
@@ -232,6 +309,7 @@ reliefSlider.addEventListener("input", () => {
 });
 generateButton.addEventListener("click", generateMap);
 downloadPreviewButton.addEventListener("click", downloadPreview);
+downloadCsvButton.addEventListener("click", downloadElevationCsv);
 refreshButton.addEventListener("click", generateMap);
 sizeSelect.addEventListener("change", () => {
   statusText.textContent = "World size changed · regenerate to update preview";
