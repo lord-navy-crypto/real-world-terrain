@@ -69,3 +69,12 @@ The export worker therefore needs a separate compatibility-bake stage:
 - Reopen the exported archive with an unmodified vanilla server/client and verify there are no missing registry, codec, or data-pack errors before marking it downloadable.
 
 Do not advertise vanilla compatibility until this clean vanilla reopen test passes for the exact Minecraft version being exported.
+
+
+## Preview parity boundary
+
+The browser preview now mirrors the six fitted morphology coefficient sets and the deterministic volcanic/karst site geometry used by the Java terrain kernels. The site-center hash uses the same 64-bit world-absolute mixing and cell-offset rules as `MountainReliefMath`; the Java block-coordinate truncation behavior is also mirrored for these kernels.
+
+The browser preview is still not an exact Minecraft world-generation replica. Its base continental field, original height signal, regional selector, temperature, and humidity are generated from browser-side deterministic FBM noise. The production server instead samples Minecraft's registered density/noise fields, including the Natural Automate smoothed height signal, continental field, erosion/offset selectors, and shifted temperature/vegetation noise. The production noise router also applies its own vertical density gradient, surface rules, biome source, and feature placement. Therefore preview elevations are explicitly estimates, not authoritative block heights, and matching seeds do not yet guarantee matching terrain.
+
+The next parity gate is a fixed-seed server comparison: sample identical X/Z coordinates from the actual NeoForge worldgen runtime, export the resulting surface heights and biome IDs as a reference fixture, and compare the browser preview against that fixture. Do not label the preview exact until those measured differences are within a documented tolerance.
