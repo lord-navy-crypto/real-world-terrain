@@ -129,3 +129,25 @@ h1 em,h2 em { color: #b5d28f; font-style: normal; }
   .map-panel-head { flex-wrap:wrap; gap:12px; }
   .map-tools { width:100%; justify-content:flex-start; flex-wrap:wrap; }
 }
+
+.cancel-generation-button {
+  width:100%;
+  min-height:34px;
+  margin-top:8px;
+  border:1px solid rgba(194,116,92,.34);
+  border-radius:3px;
+  color:#d9a18e;
+  background:rgba(194,116,92,.06);
+  font:10px "DM Mono",monospace;
+  letter-spacing:.06em;
+  transition:background .2s,border-color .2s,color .2s;
+}
+.cancel-generation-button:hover:not(:disabled) {
+  border-color:rgba(194,116,92,.7);
+  color:#f0c0ae;
+  background:rgba(194,116,92,.13);
+}
+.cancel-generation-button:disabled {
+  opacity:.35;
+  cursor:not-allowed;
+}
