@@ -63,11 +63,9 @@ test("worker emits progress and transfers all three completed terrain arrays", a
   assert.equal(complete.message.map.temperatures.length, 256);
   assert.equal(complete.message.map.humidities.length, 256);
   assert.equal(complete.transfer.length, 3);
-  assert.deepEqual(complete.transfer, [
-    complete.message.map.heights.buffer,
-    complete.message.map.temperatures.buffer,
-    complete.message.map.humidities.buffer
-  ]);
+  assert.equal(complete.transfer[0], complete.message.map.heights.buffer);
+  assert.equal(complete.transfer[1], complete.message.map.temperatures.buffer);
+  assert.equal(complete.transfer[2], complete.message.map.humidities.buffer);
 });
 
 test("worker cancellation stops the active request without publishing partial arrays", async () => {
@@ -84,11 +82,9 @@ test("worker rejects unsupported messages with a structured error", async () => 
   const worker = createWorkerHarness();
   await worker.dispatch({ type: "unknown", requestId: "job-invalid" });
 
-  assert.deepEqual(worker.messages[0].message, {
-    type: "error",
-    requestId: "job-invalid",
-    message: "Unsupported terrain worker message"
-  });
+  assert.equal(worker.messages[0].message.type, "error");
+  assert.equal(worker.messages[0].message.requestId, "job-invalid");
+  assert.equal(worker.messages[0].message.message, "Unsupported terrain worker message");
 });
 
 test("worker converts invalid generation options into an error response", async () => {
@@ -99,9 +95,7 @@ test("worker converts invalid generation options into an error response", async 
     options: { ...options, size: 4095 }
   });
 
-  assert.deepEqual(worker.messages[0].message, {
-    type: "error",
-    requestId: "job-bad-options",
-    message: "Unsupported preview footprint"
-  });
+  assert.equal(worker.messages[0].message.type, "error");
+  assert.equal(worker.messages[0].message.requestId, "job-bad-options");
+  assert.equal(worker.messages[0].message.message, "Unsupported preview footprint");
 });
