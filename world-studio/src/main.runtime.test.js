@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { buildWorldShareUrl, parseWorldSettings } from "./world-settings.js";
+import { buildIsometricMesh } from "./terrain-3d.js";
 
 const source = readFileSync(new URL("./main.js", import.meta.url), "utf8")
   .replace(/^import\s+.*?;\s*$/gm, "");
@@ -14,6 +15,7 @@ function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported"
   const clipboardWrites = [];
   let sampleCalls = 0;
   let renderedFrames = 0;
+  let renderedTriangles = 0;
   let now = 0;
   let workerInstance = null;
 
@@ -118,29 +120,42 @@ function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported"
 
   const canvas = element("#terrain-canvas");
   const context = {
+    fillStyle: "",
     createImageData(width, height) {
       return { data: new Uint8ClampedArray(width * height * 4) };
     },
-    putImageData() { renderedFrames += 1; }
+    putImageData() { renderedFrames += 1; },
+    fillRect() {},
+    beginPath() {},
+    moveTo() {},
+    lineTo() {},
+    closePath() {},
+    fill() { renderedTriangles += 1; }
   };
   canvas.width = 384;
   canvas.height = 384;
   canvas.getContext = () => context;
   canvas.toDataURL = () => "data:image/png;base64,preview";
+  canvas.style = {};
+  canvas.setPointerCapture = () => {};
   element("#seed-input").value = seed;
   element("#size-select").value = "8192";
   element("#relief-slider").value = "100";
   element("#share-link-panel").hidden = true;
+  element("#three-d-legend").hidden = true;
+  element("#reset-3d-view").hidden = true;
 
   const reliefButton = element(".view-relief");
   reliefButton.dataset.view = "relief";
   const biomeButton = element(".view-biomes");
   biomeButton.dataset.view = "biomes";
+  const threeDButton = element(".view-3d");
+  threeDButton.dataset.view = "3d";
 
   const document = {
     querySelector: selector => element(selector),
     querySelectorAll: selector => selector === ".view-button"
-      ? [reliefButton, biomeButton]
+      ? [reliefButton, biomeButton, threeDButton]
       : [],
     createElement(tag) {
       assert.equal(tag, "a");
@@ -181,6 +196,7 @@ function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported"
     },
     buildWorldShareUrl,
     parseWorldSettings,
+    buildIsometricMesh,
     Blob,
     clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     hashSeed: () => 123456,
@@ -202,6 +218,9 @@ function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported"
     get worker() { return workerInstance; },
     reliefButton,
     biomeButton,
+    threeDButton,
+    get renderedTriangles() { return renderedTriangles; },
+    canvas,
     get sampleCalls() { return sampleCalls; },
     get renderedFrames() { return renderedFrames; }
   };
@@ -361,4 +380,49 @@ test("share link remains visible and selectable when clipboard access is unavail
   assert.ok(runtime.elements.get("#share-link-input").value.startsWith("https://example.test/studio?"));
   assert.equal(runtime.elements.get("#share-link-panel").hidden, false);
   assert.match(runtime.elements.get("#generation-status").textContent, /copy the selected URL/i);
+});
+
+
+test("3D view draws the isometric terrain mesh without resampling the world", () => {
+  const runtime = createRuntime("isometric-seed", { workerMode: "complete" });
+  const samplesBefore = runtime.sampleCalls;
+
+  runtime.threeDButton.dispatch("click");
+
+  assert.ok(runtime.renderedTriangles > 0);
+  assert.equal(runtime.sampleCalls, samplesBefore);
+  assert.equal(runtime.elements.get("#three-d-legend").hidden, false);
+  assert.equal(runtime.elements.get("#reset-3d-view").hidden, false);
+  assert.equal(runtime.elements.get("#relief-legend").hidden, true);
+  assert.equal(runtime.elements.get("#biome-legend").hidden, true);
+});
+
+test("3D camera supports drag rotation, wheel zoom, and reset", () => {
+  const runtime = createRuntime("camera-seed", { workerMode: "complete" });
+  runtime.threeDButton.dispatch("click");
+  const before = runtime.renderedTriangles;
+  let prevented = false;
+
+  runtime.canvas.dispatch("pointerdown", { pointerId: 1, clientX: 100, clientY: 100 });
+  runtime.canvas.dispatch("pointermove", { pointerId: 1, clientX: 142, clientY: 118 });
+  runtime.canvas.dispatch("pointerup", { pointerId: 1 });
+  runtime.canvas.dispatch("wheel", {
+    deltaY: -120,
+    preventDefault() { prevented = true; }
+  });
+
+  assert.ok(prevented);
+  assert.ok(runtime.renderedTriangles > before);
+  const afterCameraChange = runtime.renderedTriangles;
+  runtime.elements.get("#reset-3d-view").click();
+  assert.ok(runtime.renderedTriangles > afterCameraChange);
+});
+
+test("3D projection does not report false top-down click coordinates", () => {
+  const runtime = createRuntime("inspect-3d", { workerMode: "complete" });
+  runtime.threeDButton.dispatch("click");
+  runtime.canvas.dispatch("click", { clientX: 240, clientY: 160 });
+
+  assert.equal(runtime.elements.get("#inspect-position").textContent, "Select a point on the map");
+  assert.match(runtime.elements.get("#generation-status").textContent, /3D view/i);
 });
