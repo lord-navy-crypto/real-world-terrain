@@ -216,9 +216,9 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("GL_INVALID_OPERATION in glUniform(program not linked)", SMOKE)
 
     def test_camera_telemetry_regexes_parse_actual_markers(self):
-        self.assertIn(r'logged in with entity id \\d+', SMOKE)
-        self.assertIn(r'CLIENT_CAMERA_VANTAGE_READY:\\s*x=', SMOKE)
-        self.assertIn(r'CLIENT_CAMERA_POSITION:\\s*x=', SMOKE)
+        self.assertIn(r'logged in with entity id \d+', SMOKE)
+        self.assertIn(r'CLIENT_CAMERA_VANTAGE_READY:\s*x=', SMOKE)
+        self.assertIn(r'CLIENT_CAMERA_POSITION:\s*x=', SMOKE)
         self.assertIn("CLIENT_CAMERA_POSITION:", GEOMETRY_CLIENT)
         self.assertIn("lastSmokeCameraTelemetryNanos", GEOMETRY_CLIENT)
 
