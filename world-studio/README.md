@@ -10,6 +10,7 @@ A browser-first world creation interface for the RealScale project.
 - Browser-side relief and biome views.
 - Elevation inspection, land coverage, and elevation range.
 - Downloadable PNG map previews (image export only; not a playable Minecraft save).
+- Downloadable CSV elevation grids with X/Z sample coordinates, estimated height, temperature/humidity indices, seed, and footprint metadata.
 - Square map rendering so the displayed geometry preserves the selected square footprint.
 - Frame-batched terrain sampling and shading, with live progress updates to keep the browser responsive.
 - No executable downloads, launcher integration, or local filesystem access.
@@ -32,7 +33,7 @@ The Vercel site should remain a control plane and preview renderer. Long-running
 
 ## Development
 
-Run `npm install`, then `npm run dev`. Run `npm test` for deterministic terrain-core checks and `npm run build` to create the production bundle.
+Run `npm install`, then `npm run dev`. Run `npm test` for deterministic terrain-core and browser-runtime smoke checks, and `npm run build` to create the production bundle.
 
 ## Security principles
 
@@ -79,3 +80,9 @@ The browser preview now mirrors the six fitted morphology coefficient sets and t
 The browser preview is still not an exact Minecraft world-generation replica. Its base continental field, original height signal, regional selector, temperature, and humidity are generated from browser-side deterministic FBM noise. The production server instead samples Minecraft's registered density/noise fields, including the Natural Automate smoothed height signal, continental field, erosion/offset selectors, and shifted temperature/vegetation noise. The production noise router also applies its own vertical density gradient, surface rules, biome source, and feature placement. Therefore preview elevations are explicitly estimates, not authoritative block heights, and matching seeds do not yet guarantee matching terrain.
 
 The next parity gate is a fixed-seed server comparison: sample identical X/Z coordinates from the actual NeoForge worldgen runtime, export the resulting surface heights and biome IDs as a reference fixture, and compare the browser preview against that fixture. Do not label the preview exact until those measured differences are within a documented tolerance.
+
+
+## Data export boundary
+The CSV export contains the complete 384 × 384 browser preview sample grid. Elevation and climate columns are estimated browser-model values, not authoritative Minecraft block heights or biome IDs. The file includes X/Z coordinates in blocks, the seed, and preview footprint so the samples can be inspected in a spreadsheet or GIS workflow without implying a playable-world export.
+
+Relief/biome view switching reuses the already sampled height and climate arrays and only re-renders the map colors. It does not run the terrain sampler again.
