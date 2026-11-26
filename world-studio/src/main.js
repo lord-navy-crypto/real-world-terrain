@@ -115,9 +115,9 @@ function renderIsometricMap(map, onComplete, token) {
   let cellCursor = 0;
 
   function drawTriangle(first, second, third) {
-    const colorA = colors[first.sampleIndex];
-    const colorB = colors[second.sampleIndex];
-    const colorC = colors[third.sampleIndex];
+    const colorA = colors[first.gridIndex];
+    const colorB = colors[second.gridIndex];
+    const colorC = colors[third.gridIndex];
     const slope = (first.slope + second.slope + third.slope) / 3;
     const shade = clamp(1.08 - slope * 0.28, 0.58, 1.14);
     const red = Math.round(clamp((colorA[0] + colorB[0] + colorC[0]) / 3 * shade, 0, 255));
