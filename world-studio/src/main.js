@@ -42,6 +42,7 @@ let activeGenerationId = null;
 let activeGenerationStartedAt = 0;
 let activeGenerationOptions = null;
 let terrainWorker = null;
+let workerRequestInFlight = false;
 function colorForTerrain(height, temperature, humidity, slope, view) {
   if (height < SEA_LEVEL - 180) {
     const depth = clamp((SEA_LEVEL - height) / 520, 0, 1);
@@ -207,17 +208,21 @@ function handleTerrainWorkerMessage(event) {
   }
 
   if (message.type === "complete") {
+    workerRequestInFlight = false;
     if (!validTerrainMap(message.map, activeGenerationOptions)) {
       switchToMainThreadFallback("Worker returned an invalid terrain grid");
       return;
     }
-    latestMap = message.map;
-    renderMap(latestMap, () => finishGeneration(latestMap, activeGenerationStartedAt));
+    const completedMap = message.map;
+    renderMap(completedMap, () => {
+      latestMap = completedMap;
+      finishGeneration(completedMap, activeGenerationStartedAt);
+    });
   }
 }
 
 function handleTerrainWorkerFailure(event) {
-  if (!isGenerating) {
+  if (!isGenerating || !workerRequestInFlight) {
     if (terrainWorker) terrainWorker.terminate();
     terrainWorker = null;
     computeMode.textContent = "MAIN THREAD FALLBACK";
@@ -229,6 +234,7 @@ function handleTerrainWorkerFailure(event) {
 function switchToMainThreadFallback(reason) {
   const failedWorker = terrainWorker;
   terrainWorker = null;
+  workerRequestInFlight = false;
   if (failedWorker) failedWorker.terminate();
   computeMode.textContent = "MAIN THREAD FALLBACK";
   if (!isGenerating || !activeGenerationOptions) return;
@@ -287,7 +293,7 @@ function startFallbackGeneration(options, requestId) {
       return;
     }
 
-    latestMap = {
+    const completedMap = {
       heights,
       temperatures,
       humidities,
@@ -300,7 +306,10 @@ function startFallbackGeneration(options, requestId) {
       reliefScale,
       resolution
     };
-    renderMap(latestMap, () => finishGeneration(latestMap, activeGenerationStartedAt));
+    renderMap(completedMap, () => {
+      latestMap = completedMap;
+      finishGeneration(completedMap, activeGenerationStartedAt);
+    });
   }
 
   window.requestAnimationFrame(sampleBatch);
@@ -316,6 +325,7 @@ function cancelGeneration() {
       // The active request is invalidated locally even if the worker is already gone.
     }
   }
+  workerRequestInFlight = false;
   generationSequence += 1;
   activeGenerationId = "cancelled-" + generationSequence;
   renderToken += 1;
@@ -330,6 +340,11 @@ function cancelGeneration() {
   }
   statusText.textContent = "Generation cancelled";
   syncGenerationControls();
+  if (latestMap) {
+    renderMap(latestMap, () => {
+      statusText.textContent = "Generation cancelled";
+    });
+  }
 }
 
 function generateMap() {
@@ -356,6 +371,7 @@ function generateMap() {
 
   if (terrainWorker) {
     try {
+      workerRequestInFlight = true;
       terrainWorker.postMessage({
         type: "generate",
         requestId: activeGenerationId,
@@ -368,6 +384,7 @@ function generateMap() {
     }
   }
 
+  workerRequestInFlight = false;
   startFallbackGeneration(options, activeGenerationId);
 }
 
