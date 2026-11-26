@@ -9,6 +9,8 @@ A browser-first world creation interface for the RealScale project.
 - Natural Automate-inspired terrain preview.
 - Browser-side relief and biome views.
 - Elevation inspection, land coverage, and elevation range.
+- Square map rendering so the displayed geometry preserves the selected square footprint.
+- Frame-batched terrain sampling and shading, with live progress updates to keep the browser responsive.
 - No executable downloads, launcher integration, or local filesystem access.
 
 ## Important generation boundary
@@ -29,7 +31,7 @@ The Vercel site should remain a control plane and preview renderer. Long-running
 
 ## Development
 
-Run npm install, then npm run dev. Use npm run build to create the production bundle.
+Run `npm install`, then `npm run dev`. Run `npm test` for deterministic terrain-core checks and `npm run build` to create the production bundle.
 
 ## Security principles
 
