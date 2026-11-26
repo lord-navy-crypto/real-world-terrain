@@ -16,6 +16,7 @@ A browser-first world creation interface for the RealScale project.
 - Frame-batched Canvas shading, with worker-result validation and stale-request protection.
 - No executable downloads, launcher integration, or local filesystem access.
 - A visible compute-mode indicator and a cancel control for active generation.
+- Shareable settings URLs that restore the seed, preview footprint, relief multiplier, and relief/biome view.
 
 ## Important generation boundary
 
@@ -99,3 +100,10 @@ The default preview path creates a Vite module Web Worker and sends a request-sc
 Generation can be cancelled while sampling or while the Canvas is rendering. Request IDs prevent late results from an older generation from replacing the current map. The last completed map remains available if a newer generation is cancelled. If Worker construction or execution fails, the app terminates the failed worker and switches to its frame-batched local sampler.
 
 The worker moves terrain sampling off the UI thread; Canvas rendering and map inspection remain on the main thread. The preview continues to use deterministic browser-side noise inputs and is not an exact Minecraft noise-router or playable-save export.
+
+
+## Shareable preview configurations
+
+The Share action creates a URL containing only the preview configuration: seed text, footprint, relief multiplier, and selected map view. Opening that URL validates each value against the supported controls, restores valid settings, and starts a fresh deterministic preview. Unknown query parameters and the URL fragment are preserved. Invalid or out-of-range values fall back independently to the page defaults.
+
+The URL does not contain a generated Minecraft save, server-side job, or uploaded map. It is a reproducible recipe for rebuilding the same browser preview.
