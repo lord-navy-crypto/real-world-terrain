@@ -223,7 +223,7 @@ function downloadPreview() {
 
 function csvCell(value, protectFormula = false) {
   let text = String(value);
-  if (protectFormula && /^[=+\\-@]/.test(text)) text = "'" + text;
+  if (protectFormula && /^[=+@-]/.test(text)) text = "'" + text;
   return '"' + text.replace(/"/g, '""') + '"';
 }
 
@@ -256,7 +256,7 @@ function downloadElevationCsv() {
     }
   }
 
-  const csv = new Blob(["\\uFEFF" + rows.join("\\r\\n")], {
+  const csv = new Blob(["\uFEFF" + rows.join("\r\n")], {
     type: "text/csv;charset=utf-8"
   });
   const objectUrl = URL.createObjectURL(csv);
