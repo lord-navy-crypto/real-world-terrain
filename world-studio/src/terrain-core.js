@@ -83,17 +83,50 @@ function fbm(seed, x, z, octaves = 4, salt = 0) {
   return total / normalization;
 }
 
-function siteGeometry(seed, cellX, cellZ) {
-  const h = hash2(seed ^ 0x4d3cdbe3, cellX, cellZ, 0x8197a5d3);
-  const centerX = cellX * 2048 + 1024 + (h % 301) - 150;
-  const centerZ = cellZ * 2048 + 1024 + ((h >>> 9) % 301) - 150;
-  const sinkHash = hash2(seed ^ 0x6a09e667, cellX, cellZ, h);
-  return {
+const UINT64_MASK = (1n << 64n) - 1n;
+const SITE_GEOMETRY_CACHE = new Map();
+
+function mix64(value) {
+  let hash = value & UINT64_MASK;
+  hash ^= hash >> 30n;
+  hash = (hash * 0xbf58476d1ce4e5b9n) & UINT64_MASK;
+  hash ^= hash >> 27n;
+  hash = (hash * 0x94d049bb133111ebn) & UINT64_MASK;
+  return (hash ^ (hash >> 31n)) & UINT64_MASK;
+}
+
+function siteHash(cellX, cellZ) {
+  const input = BigInt(cellX) * 0x9e3779b97f4a7c15n
+    ^ BigInt(cellZ) * 0xc2b2ae3d27d4eb4fn
+    ^ 0x4d3cdbe3f81907a5n;
+  return mix64(input);
+}
+
+function centerOffsetX(hash) {
+  return Number((hash >> 11n) % 301n) - 150;
+}
+
+function centerOffsetZ(hash) {
+  return Number((hash >> 32n) % 301n) - 150;
+}
+
+export function siteGeometry(cellX, cellZ) {
+  const key = cellX + "," + cellZ;
+  const cached = SITE_GEOMETRY_CACHE.get(key);
+  if (cached) return cached;
+
+  const hash = siteHash(cellX, cellZ);
+  const centerX = cellX * 2048 + 1024 + centerOffsetX(hash);
+  const centerZ = cellZ * 2048 + 1024 + centerOffsetZ(hash);
+  const sinkHash = mix64(hash ^ 0x6a09e667f3bcc909n);
+  const site = Object.freeze({
     centerX,
     centerZ,
-    sinkX: centerX + ((sinkHash % 301) - 150) * 1.8,
-    sinkZ: centerZ + (((sinkHash >>> 10) % 301) - 150) * 1.8
-  };
+    sinkX: centerX + centerOffsetX(sinkHash) * 1.8,
+    sinkZ: centerZ + centerOffsetZ(sinkHash) * 1.8
+  });
+  SITE_GEOMETRY_CACHE.set(key, site);
+  return site;
 }
 
 function orientedAcross(family, x, z) {
@@ -139,7 +172,7 @@ function familySuitability(index, original, temp, moisture, region) {
   return clamp(regional * topography * climate, 0, 1);
 }
 
-function familyDelta(index, original, continent, signal, x, z, seed) {
+function familyDelta(index, original, continent, signal, x, z) {
   const family = FAMILIES[index];
   const landGate = smoothstep(-0.1, 0.22, continent);
   const across = orientedAcross(family, x, z);
@@ -153,7 +186,7 @@ function familyDelta(index, original, continent, signal, x, z, seed) {
   }
   if (index === 1) {
     const glacialWidth = clamp(family.wavelength * 0.035, 180, 1600);
-    const cellX = Math.floor(x / 2048);
+    const cellX = Math.floor(Math.trunc(x) / 2048);
     const centerX = cellX * 2048 + 1024 + glacialWidth * 0.22 * Math.sin(TAU * z / family.wavelength + cellX * 1.17);
     const trough = 1 - smoothstep(glacialWidth * 0.28, glacialWidth, Math.abs(x - centerX));
     const result = original - landGate * family.relief * 0.44 * Math.max(family.valley, 0.12) * trough;
@@ -168,27 +201,39 @@ function familyDelta(index, original, continent, signal, x, z, seed) {
     return result - original;
   }
   if (index === 3) {
-    const site = siteGeometry(seed, Math.floor(x / 2048), Math.floor(z / 2048));
+    const blockX = Math.trunc(x);
+    const blockZ = Math.trunc(z);
+    const cellX = Math.floor(blockX / 2048);
+    const cellZ = Math.floor(blockZ / 2048);
+    const site = siteGeometry(cellX, cellZ);
     const radius = clamp(family.wavelength * 0.025, 250, 800);
     let shape = 0;
-    if (Math.abs(x - site.centerX) < radius && Math.abs(z - site.centerZ) < radius) {
-      const radial = Math.hypot(x - site.centerX, z - site.centerZ) / radius;
-      if (radial < 1) shape = Math.pow(Math.max(0, 1 - radial), 1.35) - 0.16 * Math.exp(-Math.pow(radial / 0.12, 2));
+    if (Math.abs(blockX - site.centerX) < radius && Math.abs(blockZ - site.centerZ) < radius) {
+      const radial = Math.hypot(blockX - site.centerX, blockZ - site.centerZ) / radius;
+      if (radial < 1) {
+        const shield = Math.pow(Math.max(0, 1 - radial), 1.35);
+        const caldera = 0.16 * Math.exp(-Math.pow(radial / 0.12, 2));
+        shape = shield - caldera;
+      }
     }
     const result = original + landGate * family.relief * 0.55 * Math.max(family.macro, 0.12) * shape;
     return result - original;
   }
   if (index === 4) {
-    const site = siteGeometry(seed, Math.floor(x / 2048), Math.floor(z / 2048));
+    const blockX = Math.trunc(x);
+    const blockZ = Math.trunc(z);
+    const cellX = Math.floor(blockX / 2048);
+    const cellZ = Math.floor(blockZ / 2048);
+    const site = siteGeometry(cellX, cellZ);
     const towerRadius = clamp(family.wavelength * 0.025, 80, 450);
     const sinkRadius = clamp(family.wavelength * 0.012, 40, 200);
     let tower = 0;
     let sink = 0;
-    if (Math.abs(x - site.centerX) < towerRadius && Math.abs(z - site.centerZ) < towerRadius) {
-      tower = 1 - smoothstep(towerRadius * 0.55, towerRadius, Math.hypot(x - site.centerX, z - site.centerZ));
+    if (Math.abs(blockX - site.centerX) < towerRadius && Math.abs(blockZ - site.centerZ) < towerRadius) {
+      tower = 1 - smoothstep(towerRadius * 0.55, towerRadius, Math.hypot(blockX - site.centerX, blockZ - site.centerZ));
     }
-    if (Math.abs(x - site.sinkX) < sinkRadius && Math.abs(z - site.sinkZ) < sinkRadius) {
-      sink = 1 - smoothstep(sinkRadius * 0.45, sinkRadius, Math.hypot(x - site.sinkX, z - site.sinkZ));
+    if (Math.abs(blockX - site.sinkX) < sinkRadius && Math.abs(blockZ - site.sinkZ) < sinkRadius) {
+      sink = 1 - smoothstep(sinkRadius * 0.45, sinkRadius, Math.hypot(blockX - site.sinkX, blockZ - site.sinkZ));
     }
     const noiseTower = Math.max(0, signal) * 0.08 * Math.max(0.12, family.macro + 0.5 * family.micro);
     const result = original + landGate * family.relief * (0.36 * Math.max(family.ridgeIndex, 0.12) * tower + noiseTower - 0.22 * Math.max(family.valley, 0.12) * sink);
@@ -228,7 +273,7 @@ export function sampleTerrain(x, z, size, seed, reliefScale) {
     if (coverage > 0) {
       let weightedDelta = 0;
       for (let i = 0; i < 6; i += 1) {
-        if (weights[i] > 0.01) weightedDelta += familyDelta(i, original, continent, signal, x, z, seed) * (weights[i] / total);
+        if (weights[i] > 0.01) weightedDelta += familyDelta(i, original, continent, signal, x, z) * (weights[i] / total);
       }
       value += weightedDelta * coverage * reliefScale;
     }
