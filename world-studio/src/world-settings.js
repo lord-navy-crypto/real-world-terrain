@@ -1,5 +1,5 @@
 const ALLOWED_SIZES = new Set([4096, 8192, 16384, 32768, 65536]);
-const ALLOWED_VIEWS = new Set(["relief", "biomes"]);
+const ALLOWED_VIEWS = new Set(["relief", "biomes", "3d"]);
 const DEFAULT_SETTINGS = Object.freeze({
   seed: "realscale",
   size: 8192,
