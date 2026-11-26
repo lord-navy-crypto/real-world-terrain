@@ -291,7 +291,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         network = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/network/GeometryClipmapNetwork.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn('event.registrar("5")', network)
+        self.assertIn('event.registrar("6")', network)
         self.assertIn("ClipmapStatusPayload.TYPE", network)
         self.assertNotIn("STILL WAITING", client)
 

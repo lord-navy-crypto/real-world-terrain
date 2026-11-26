@@ -112,26 +112,38 @@ public final class ClipmapSurfacePalette {
                 blue * lightness * 255.0f);
     }
 
-    /** Biome-aware palette; unknown IDs retain the existing procedural fallback. */
-    public static int terrainColorAt(float height,float normalY,float seaLevel,
-            boolean verticalSkirt,byte biomeMaterial,long worldX,long worldZ){
-        if(biomeMaterial==ClipmapBiomeMaterial.UNKNOWN)
-            return terrainColorAt(height,normalY,seaLevel,verticalSkirt,worldX,worldZ);
-        if(!Float.isFinite(height)||!Float.isFinite(normalY)||!Float.isFinite(seaLevel))
+    /**
+     * Biome-aware palette; unknown IDs retain the established procedural fallback.
+     * Slope and altitude overlays keep mountain faces and high snowlines coherent.
+     */
+    public static int terrainColorAt(float height, float normalY, float seaLevel,
+            boolean verticalSkirt, byte biomeMaterial, long worldX, long worldZ) {
+        if (biomeMaterial == ClipmapBiomeMaterial.UNKNOWN) {
+            return terrainColorAt(height, normalY, seaLevel, verticalSkirt, worldX, worldZ);
+        }
+        if (!Float.isFinite(height) || !Float.isFinite(normalY) || !Float.isFinite(seaLevel)) {
             throw new IllegalArgumentException("surface palette inputs must be finite");
-        if(verticalSkirt)return 0x6B665E;
-        int base=ClipmapBiomeMaterial.baseColor(biomeMaterial);
-        if(base<0)return terrainColorAt(height,normalY,seaLevel,verticalSkirt,worldX,worldZ);
-        float slope=1.0f-clamp(normalY,0.0f,1.0f);
-        float rock=smoothstep(0.18f,0.58f,slope);
-        float snow=smoothstep(seaLevel+677.0f,seaLevel+1157.0f,height+(valueNoise(worldX,worldZ,2048)-0.5f)*130.0f);
-        float red=mix(channel(base,16),channel(ROCK,16),rock);
-        float green=mix(channel(base,8),channel(ROCK,8),rock);
-        float blue=mix(channel(base,0),channel(ROCK,0),rock);
-        red=mix(red,channel(SNOW,16),snow);green=mix(green,channel(SNOW,8),snow);blue=mix(blue,channel(SNOW,0),snow);
-        float regional=valueNoise(worldX,worldZ,512),local=valueNoise(worldX,worldZ,256);
-        float lightness=(0.97f+0.06f*regional)*(0.985f+0.03f*local);
-        return pack(red*lightness,green*lightness,blue*lightness);
+        }
+        if (verticalSkirt) return 0x6B665E;
+        int base = ClipmapBiomeMaterial.baseColor(biomeMaterial);
+        if (base < 0) {
+            return terrainColorAt(height, normalY, seaLevel, verticalSkirt, worldX, worldZ);
+        }
+
+        float slope = 1.0f - clamp(normalY, 0.0f, 1.0f);
+        float rock = smoothstep(0.18f, 0.58f, slope);
+        float snow = smoothstep(seaLevel + 677.0f, seaLevel + 1157.0f,
+                height + (valueNoise(worldX, worldZ, 2048) - 0.5f) * 130.0f);
+        float red = mix(channel(base, 16), channel(ROCK, 16), rock);
+        float green = mix(channel(base, 8), channel(ROCK, 8), rock);
+        float blue = mix(channel(base, 0), channel(ROCK, 0), rock);
+        red = mix(red, channel(SNOW, 16), snow);
+        green = mix(green, channel(SNOW, 8), snow);
+        blue = mix(blue, channel(SNOW, 0), snow);
+        float regional = valueNoise(worldX, worldZ, 512);
+        float local = valueNoise(worldX, worldZ, 256);
+        float lightness = (0.97f + 0.06f * regional) * (0.985f + 0.03f * local);
+        return pack(red * lightness, green * lightness, blue * lightness);
     }
 
     private static float valueNoise(long worldX, long worldZ, int cellSize) {

@@ -6,11 +6,13 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+
 import java.nio.ShortBuffer;
+import java.util.Objects;
 
 /**
- * One quantized visible-surface height grid. Payload size is bounded and never
- * contains block states, cave interiors, or complete far-distance chunks.
+ * One quantized visible-surface height grid plus compact biome-material IDs.
+ * The payload never contains block states, cave interiors, or full chunks.
  */
 public record ClipmapHeightTilePayload(
         String dimensionKey,
@@ -47,20 +49,33 @@ public record ClipmapHeightTilePayload(
                     long originZ = buffer.readLong();
                     int min = buffer.readInt();
                     int max = buffer.readInt();
-                    int count=buffer.readVarInt(), materialCount=buffer.readVarInt();
-                    validate(dimension,requestId,near,cells,level,spacing,min,max,count,materialCount);
-                    short[] values=new short[count];for(int i=0;i<count;i++)values[i]=buffer.readShort();
-                    byte[] materials=new byte[materialCount];buffer.readBytes(materials);
-                    return new ClipmapHeightTilePayload(dimension,requestId,near,cells,level,spacing,originX,originZ,min,max,values,materials);
+                    int count = buffer.readVarInt();
+                    int materialCount = buffer.readVarInt();
+                    validate(dimension, requestId, near, cells, level, spacing,
+                            min, max, count, materialCount);
+
+                    short[] values = new short[count];
+                    for (int i = 0; i < count; i++) {
+                        values[i] = buffer.readShort();
+                    }
+                    byte[] materials = new byte[materialCount];
+                    buffer.readBytes(materials);
+                    return new ClipmapHeightTilePayload(dimension, requestId, near,
+                            cells, level, spacing, originX, originZ, min, max,
+                            values, materials);
                 }
 
                 @Override
                 public void encode(RegistryFriendlyByteBuf buffer,
                         ClipmapHeightTilePayload value) {
-                    short[] values=value.heights;byte[] materials=value.biomeMaterials;
-                    validate(value.dimensionKey(),value.requestId(),value.nearRenderDistanceChunks(),
-                            value.gridCells(),value.levelIndex(),value.cellSpacingBlocks(),
-                            value.minHeight(),value.maxHeight(),values.length,materials.length);
+                    short[] values = value.heights;
+                    byte[] materials = value.biomeMaterials;
+                    validate(value.dimensionKey(), value.requestId(),
+                            value.nearRenderDistanceChunks(), value.gridCells(),
+                            value.levelIndex(), value.cellSpacingBlocks(),
+                            value.minHeight(), value.maxHeight(),
+                            values.length, materials.length);
+
                     buffer.writeUtf(value.dimensionKey(), MAX_DIMENSION_KEY_LENGTH);
                     buffer.writeLong(value.requestId());
                     buffer.writeVarInt(value.nearRenderDistanceChunks());
@@ -71,33 +86,51 @@ public record ClipmapHeightTilePayload(
                     buffer.writeLong(value.originZ());
                     buffer.writeInt(value.minHeight());
                     buffer.writeInt(value.maxHeight());
-                    buffer.writeVarInt(values.length);buffer.writeVarInt(materials.length);
-                    for(short sample:values)buffer.writeShort(sample);buffer.writeBytes(materials);
+                    buffer.writeVarInt(values.length);
+                    buffer.writeVarInt(materials.length);
+                    for (short sample : values) {
+                        buffer.writeShort(sample);
+                    }
+                    buffer.writeBytes(materials);
                 }
             };
 
-    public ClipmapHeightTilePayload(String dimensionKey,long requestId,int nearRenderDistanceChunks,
-            int gridCells,int levelIndex,int cellSpacingBlocks,long originX,long originZ,
-            int minHeight,int maxHeight,short[] heights){
-        this(dimensionKey,requestId,nearRenderDistanceChunks,gridCells,levelIndex,cellSpacingBlocks,
-                originX,originZ,minHeight,maxHeight,heights,new byte[heights.length]);
+    /** Compatibility constructor for producers that do not supply biome metadata. */
+    public ClipmapHeightTilePayload(String dimensionKey, long requestId,
+            int nearRenderDistanceChunks, int gridCells, int levelIndex,
+            int cellSpacingBlocks, long originX, long originZ,
+            int minHeight, int maxHeight, short[] heights) {
+        this(dimensionKey, requestId, nearRenderDistanceChunks, gridCells,
+                levelIndex, cellSpacingBlocks, originX, originZ, minHeight,
+                maxHeight, heights, new byte[Objects.requireNonNull(heights).length]);
     }
-    public ClipmapHeightTilePayload{
-        heights=heights.clone();biomeMaterials=biomeMaterials.clone();
-        validate(dimensionKey,requestId,nearRenderDistanceChunks,gridCells,levelIndex,cellSpacingBlocks,
-                minHeight,maxHeight,heights.length,biomeMaterials.length);
+
+    public ClipmapHeightTilePayload {
+        heights = Objects.requireNonNull(heights, "heights").clone();
+        biomeMaterials = Objects.requireNonNull(biomeMaterials, "biomeMaterials").clone();
+        validate(dimensionKey, requestId, nearRenderDistanceChunks, gridCells,
+                levelIndex, cellSpacingBlocks, minHeight, maxHeight,
+                heights.length, biomeMaterials.length);
     }
-    @Override public short[] heights(){return heights.clone();}
-    @Override public byte[] biomeMaterials(){return biomeMaterials.clone();}
-    public byte biomeMaterialAt(int index){
-        if(index<0||index>=biomeMaterials.length)throw new IndexOutOfBoundsException("biome material index outside tile");
+
+    @Override
+    public short[] heights() {
+        return heights.clone();
+    }
+
+    @Override
+    public byte[] biomeMaterials() {
+        return biomeMaterials.clone();
+    }
+
+    public byte biomeMaterialAt(int index) {
+        if (index < 0 || index >= biomeMaterials.length) {
+            throw new IndexOutOfBoundsException("biome material index outside tile");
+        }
         return biomeMaterials[index];
     }
 
-    /**
-     * Copies immutable samples into a caller-owned buffer without exposing or
-     * cloning the internal array.
-     */
+    /** Copies immutable samples into a caller-owned buffer without exposing the backing array. */
     public void copyHeightsTo(ShortBuffer destination) {
         if (destination == null || destination.remaining() < heights.length) {
             throw new IllegalArgumentException("destination buffer is too small for clipmap heights");
@@ -105,11 +138,7 @@ public record ClipmapHeightTilePayload(
         destination.put(heights);
     }
 
-    /**
-     * Copies one tightly packed row-major rectangle without exposing the
-     * packet's backing array. The destination receives {@code width * height}
-     * samples and can be passed directly to glTexSubImage2D.
-     */
+    /** Copies one tightly packed row-major rectangle into a caller-owned upload buffer. */
     public void copyHeightsRegionTo(int x, int z, int width, int height,
             ShortBuffer destination) {
         int side = gridCells + 1;
@@ -127,8 +156,8 @@ public record ClipmapHeightTilePayload(
         }
     }
 
-    private static void validate(String dimension,long requestId,int near,int cells,int level,
-            int spacing,int min,int max,int count,int materialCount){
+    private static void validate(String dimension, long requestId, int near, int cells,
+            int level, int spacing, int min, int max, int count, int materialCount) {
         if (requestId <= 0L) {
             throw new IllegalArgumentException("Clipmap request ID must be positive");
         }
@@ -149,8 +178,14 @@ public record ClipmapHeightTilePayload(
             throw new IllegalArgumentException("Invalid clipmap height range");
         }
         int expected = Math.multiplyExact(cells + 1, cells + 1);
-        if(count!=expected)throw new IllegalArgumentException("Clipmap sample count mismatch: "+count+" != "+expected);
-        if(materialCount!=expected)throw new IllegalArgumentException("Clipmap biome-material count mismatch: "+materialCount+" != "+expected);
+        if (count != expected) {
+            throw new IllegalArgumentException("Clipmap sample count mismatch: "
+                    + count + " != " + expected);
+        }
+        if (materialCount != expected) {
+            throw new IllegalArgumentException("Clipmap biome-material count mismatch: "
+                    + materialCount + " != " + expected);
+        }
     }
 
     @Override
