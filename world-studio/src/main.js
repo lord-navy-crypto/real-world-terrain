@@ -17,6 +17,8 @@ const shareButton = document.querySelector("#share-world");
 const shareLinkPanel = document.querySelector("#share-link-panel");
 const shareLinkInput = document.querySelector("#share-link-input");
 const copyShareLinkButton = document.querySelector("#copy-share-link");
+const threeDLegend = document.querySelector("#three-d-legend");
+const reset3dViewButton = document.querySelector("#reset-3d-view");
 const randomSeedButton = document.querySelector("#random-seed");
 const statusText = document.querySelector("#generation-status");
 const loading = document.querySelector("#map-loading");
@@ -47,6 +49,11 @@ let activeGenerationStartedAt = 0;
 let activeGenerationOptions = null;
 let terrainWorker = null;
 let workerRequestInFlight = false;
+let cameraAngle = -0.65;
+let cameraPitch = 0.78;
+let cameraZoom = 1;
+let cameraDrag = null;
+let cameraRenderQueued = false;
 function colorForTerrain(height, temperature, humidity, slope, view) {
   if (height < SEA_LEVEL - 180) {
     const depth = clamp((SEA_LEVEL - height) / 520, 0, 1);
@@ -68,8 +75,85 @@ function colorForTerrain(height, temperature, humidity, slope, view) {
   return [103, 132, 83];
 }
 
+function renderIsometricMap(map, onComplete, token) {
+  let mesh;
+  try {
+    mesh = buildIsometricMesh(map, {
+      angle: cameraAngle,
+      pitch: cameraPitch,
+      zoom: cameraZoom
+    });
+  } catch (error) {
+    statusText.textContent = "3D terrain view unavailable · " + (error?.message || "invalid map");
+    return;
+  }
+
+  const colors = mesh.vertices.map(vertex => {
+    const index = vertex.sampleIndex;
+    return colorForTerrain(
+      map.heights[index],
+      map.temperatures[index],
+      map.humidities[index],
+      vertex.slope,
+      "relief"
+    );
+  });
+
+  ctx.fillStyle = "#10232b";
+  ctx.fillRect(0, 0, RESOLUTION, RESOLUTION);
+  let cellCursor = 0;
+
+  function drawTriangle(first, second, third) {
+    const colorA = colors[first.sampleIndex];
+    const colorB = colors[second.sampleIndex];
+    const colorC = colors[third.sampleIndex];
+    const slope = (first.slope + second.slope + third.slope) / 3;
+    const shade = clamp(1.08 - slope * 0.28, 0.58, 1.14);
+    const red = Math.round(clamp((colorA[0] + colorB[0] + colorC[0]) / 3 * shade, 0, 255));
+    const green = Math.round(clamp((colorA[1] + colorB[1] + colorC[1]) / 3 * shade, 0, 255));
+    const blue = Math.round(clamp((colorA[2] + colorB[2] + colorC[2]) / 3 * shade, 0, 255));
+
+    ctx.fillStyle = "rgb(" + red + " " + green + " " + blue + ")";
+    ctx.beginPath();
+    ctx.moveTo(first.x, first.y);
+    ctx.lineTo(second.x, second.y);
+    ctx.lineTo(third.x, third.y);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawBatch() {
+    if (token !== renderToken || currentView !== "3d") return;
+    const endCell = Math.min(mesh.cells.length, cellCursor + 384);
+    for (let index = cellCursor; index < endCell; index += 1) {
+      const cell = mesh.cells[index];
+      const a = mesh.vertices[cell.a];
+      const b = mesh.vertices[cell.b];
+      const c = mesh.vertices[cell.c];
+      const d = mesh.vertices[cell.d];
+      drawTriangle(a, b, c);
+      drawTriangle(b, d, c);
+    }
+
+    cellCursor = endCell;
+    const progress = Math.round(cellCursor / mesh.cells.length * 100);
+    statusText.textContent = "Rendering 3D terrain… " + progress + "%";
+    if (cellCursor < mesh.cells.length) {
+      window.requestAnimationFrame(drawBatch);
+      return;
+    }
+    if (onComplete) onComplete();
+  }
+
+  window.requestAnimationFrame(drawBatch);
+}
+
 function renderMap(map, onComplete) {
   const token = ++renderToken;
+  if (currentView === "3d") {
+    renderIsometricMap(map, onComplete, token);
+    return;
+  }
   let renderedView = currentView;
   let renderRow = 0;
   let image = ctx.createImageData(RESOLUTION, RESOLUTION);
@@ -152,7 +236,9 @@ function finishGeneration(map, startedAt) {
   statDimensions.innerHTML = map.size.toLocaleString() + " × " + map.size.toLocaleString() + " <small>blocks</small>";
   statLand.textContent = map.landPercent.toFixed(1) + "% land";
   statElevation.textContent = Math.round(map.min).toLocaleString() + "–" + Math.round(map.max).toLocaleString() + " m est.";
-  statusText.textContent = "Preview generated in " + elapsed + "s";
+  statusText.textContent = currentView === "3d"
+    ? "Preview generated in " + elapsed + "s · drag to rotate, scroll to zoom"
+    : "Preview generated in " + elapsed + "s";
   inspectPosition.textContent = "Select a point on the map";
   inspectElevation.textContent = "—";
   loading.hidden = true;
@@ -537,6 +623,10 @@ function downloadElevationCsv() {
 
 function inspectMap(event) {
   if (!latestMap) return;
+  if (currentView === "3d") {
+    statusText.textContent = "3D view · drag to rotate and scroll to zoom; switch to a 2D view to inspect coordinates";
+    return;
+  }
   const rect = canvas.getBoundingClientRect();
   const px = clamp(Math.floor((event.clientX - rect.left) / rect.width * RESOLUTION), 0, RESOLUTION - 1);
   const py = clamp(Math.floor((event.clientY - rect.top) / rect.height * RESOLUTION), 0, RESOLUTION - 1);
@@ -555,12 +645,72 @@ function setView(view) {
   });
   reliefLegend.hidden = view !== "relief";
   biomeLegend.hidden = view !== "biomes";
+  threeDLegend.hidden = view !== "3d";
+  reset3dViewButton.hidden = view !== "3d";
+  canvas.style.cursor = view === "3d" ? "grab" : "crosshair";
   if (latestMap && !isGenerating && !isExportingCsv) {
     statusText.textContent = "Updating map view…";
     renderMap(latestMap, () => {
-      statusText.textContent = "Map view updated";
+      statusText.textContent = currentView === "3d"
+        ? "3D view ready · drag to rotate, scroll to zoom"
+        : "Map view updated";
     });
   }
+}
+
+function queue3dCameraRender() {
+  if (cameraRenderQueued || !latestMap || currentView !== "3d" || isGenerating || isExportingCsv) return;
+  cameraRenderQueued = true;
+  window.requestAnimationFrame(() => {
+    cameraRenderQueued = false;
+    if (!latestMap || currentView !== "3d") return;
+    statusText.textContent = "Updating 3D camera…";
+    renderMap(latestMap, () => {
+      statusText.textContent = "3D view ready · drag to rotate, scroll to zoom";
+    });
+  });
+}
+
+function handle3dPointerDown(event) {
+  if (currentView !== "3d") return;
+  cameraDrag = {
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY
+  };
+  if (canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
+  canvas.style.cursor = "grabbing";
+}
+
+function handle3dPointerMove(event) {
+  if (!cameraDrag || cameraDrag.pointerId !== event.pointerId) return;
+  const deltaX = event.clientX - cameraDrag.x;
+  const deltaY = event.clientY - cameraDrag.y;
+  cameraDrag.x = event.clientX;
+  cameraDrag.y = event.clientY;
+  cameraAngle += deltaX * 0.009;
+  cameraPitch = clamp(cameraPitch + deltaY * 0.006, 0.28, 1.18);
+  queue3dCameraRender();
+}
+
+function handle3dPointerEnd(event) {
+  if (!cameraDrag || (event.pointerId !== undefined && cameraDrag.pointerId !== event.pointerId)) return;
+  cameraDrag = null;
+  canvas.style.cursor = "grab";
+}
+
+function handle3dWheel(event) {
+  if (currentView !== "3d") return;
+  if (event.preventDefault) event.preventDefault();
+  cameraZoom = clamp(cameraZoom * (event.deltaY < 0 ? 1.08 : 0.92), 0.65, 1.8);
+  queue3dCameraRender();
+}
+
+function reset3dCamera() {
+  cameraAngle = -0.65;
+  cameraPitch = 0.78;
+  cameraZoom = 1;
+  queue3dCameraRender();
 }
 
 randomSeedButton.addEventListener("click", () => {
@@ -578,6 +728,7 @@ downloadCsvButton.addEventListener("click", downloadElevationCsv);
 shareButton.addEventListener("click", copyShareLink);
 copyShareLinkButton.addEventListener("click", copyVisibleShareLink);
 cancelButton.addEventListener("click", cancelGeneration);
+reset3dViewButton.addEventListener("click", reset3dCamera);
 refreshButton.addEventListener("click", generateMap);
 sizeSelect.addEventListener("change", () => {
   statusText.textContent = "World size changed · regenerate to update preview";
@@ -586,6 +737,11 @@ document.querySelectorAll(".view-button").forEach(button => {
   button.addEventListener("click", () => setView(button.dataset.view));
 });
 canvas.addEventListener("click", inspectMap);
+canvas.addEventListener("pointerdown", handle3dPointerDown);
+canvas.addEventListener("pointermove", handle3dPointerMove);
+canvas.addEventListener("pointerup", handle3dPointerEnd);
+canvas.addEventListener("pointercancel", handle3dPointerEnd);
+canvas.addEventListener("wheel", handle3dWheel, { passive: false });
 
 const initialWorldSettings = parseWorldSettings(window.location.search, {
   seed: seedInput.value,
