@@ -133,7 +133,7 @@ function orientedAcross(family, x, z) {
   return x * Math.cos(family.angle) + z * Math.sin(family.angle);
 }
 
-function familySuitability(index, original, temp, moisture, region) {
+export function familySuitability(index, original, temp, moisture, region) {
   const center = -5 / 6 + index / 3;
   const regional = 1 - smoothstep(0.18, 0.62, Math.abs(region - center));
   if (regional <= 0) return 0;
@@ -172,7 +172,7 @@ function familySuitability(index, original, temp, moisture, region) {
   return clamp(regional * topography * climate, 0, 1);
 }
 
-function familyDelta(index, original, continent, signal, x, z) {
+export function familyDelta(index, original, continent, signal, x, z) {
   const family = FAMILIES[index];
   const landGate = smoothstep(-0.1, 0.22, continent);
   const across = orientedAcross(family, x, z);
@@ -284,3 +284,18 @@ export function sampleTerrain(x, z, size, seed, reliefScale) {
 }
 
 export const TERRAIN_FAMILY_NAMES = Object.freeze(FAMILIES.map(family => family.name));
+
+export const TERRAIN_FAMILY_PROFILES = Object.freeze(FAMILIES.map(family => Object.freeze({
+  name: family.name,
+  macro: family.macro,
+  meso: family.meso,
+  micro: family.micro,
+  relief: family.relief,
+  ridge: family.ridge,
+  cliff: family.cliff,
+  valley: family.valley,
+  ridgeIndex: family.ridgeIndex,
+  anisotropy: family.anisotropy,
+  angle: family.angle,
+  wavelength: family.wavelength
+})));
