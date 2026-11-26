@@ -84,7 +84,18 @@ function renderIsometricMap(map, onComplete, token) {
       zoom: cameraZoom
     });
   } catch (error) {
-    statusText.textContent = "3D terrain view unavailable · " + (error?.message || "invalid map");
+    statusText.textContent = "3D terrain view unavailable · returning to relief view";
+    currentView = "relief";
+    document.querySelectorAll(".view-button").forEach(button => {
+      button.classList.toggle("active", button.dataset.view === "relief");
+    });
+    reliefLegend.hidden = false;
+    biomeLegend.hidden = true;
+    threeDLegend.hidden = true;
+    reset3dViewButton.hidden = true;
+    canvas.dataset.view = "relief";
+    canvas.style.cursor = "crosshair";
+    renderMap(map, onComplete);
     return;
   }
 
