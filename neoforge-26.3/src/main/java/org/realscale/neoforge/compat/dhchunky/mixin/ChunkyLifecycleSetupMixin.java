@@ -1,0 +1,162 @@
+package org.realscale.neoforge.compat.dhchunky.mixin;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import org.realscale.neoforge.compat.dhchunky.ChunkyBridgeMetrics;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+/**
+ * Distant Horizons 3.3.3's AbstractChunkyAccessor sets listenerBound=true
+ * BEFORE it calls its NeoForge ChunkyAccessor.bindOnGenerationProgressEvent().
+ *
+ * During integrated singleplayer's early full chunk events, Chunky 1.4.23's
+ * ChunkyProvider.get() can throw "Chunky is not loaded." because its provider
+ * registration has not happened yet. Defer only that first native binding
+ * attempt, without mutating DH's flag, so its next chunk event can retry.
+ *
+ * This Mixin is optional and is version-gated by DhChunkyMixinConfigPlugin.
+ * It does not modify RealScale worldgen, DH rendering, or Chunky scheduling.
+ */
+@Pseudo
+@Mixin(
+    targets = "com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractChunkyAccessor",
+    remap = false
+)
+public abstract class ChunkyLifecycleSetupMixin {
+    @Shadow(remap = false) private boolean listenerBound;
+    @Unique private static final AtomicBoolean realscale$warned = new AtomicBoolean();
+    @Unique private static final AtomicBoolean realscale$hookSeen = new AtomicBoolean();
+    @Unique private static final AtomicBoolean realscale$providerReady = new AtomicBoolean();
+    @Unique private static final AtomicLong realscale$nextProbeNanos = new AtomicLong();
+    @Unique private static final AtomicLong realscale$probeBackoffNanos =
+            new AtomicLong(50_000_000L);
+    @Unique private static final long realscale$MIN_PROBE_INTERVAL_NANOS = 50_000_000L;
+    @Unique private static final long realscale$MAX_PROBE_INTERVAL_NANOS = 1_000_000_000L;
+    @Unique private static volatile Method realscale$providerGet;
+    // JVM flags are immutable for this mod lifetime. Avoid property parsing
+    // on every full-chunk event after DH has bound its native listener.
+    @Unique private static final boolean realscale$guardEnabled =
+            Boolean.parseBoolean(System.getProperty(
+                    "realscale.dhchunky.guard.enabled", "true"));
+    @Unique private boolean realscale$boundConfirmed;
+
+    @Inject(method = "tryRunFirstTimeSetup()V", at = @At("HEAD"),
+            cancellable = true, remap = false)
+    private void realscale$deferChunkyBindingUntilReady(CallbackInfo ci) {
+        // Normal completed-chunk hot path: one field read and return.
+        if (listenerBound) return;
+        if (!realscale$guardEnabled) return;
+        if (realscale$hookSeen.compareAndSet(false, true)) {
+            System.err.println("REALSCALE_DH_CHUNKY_GUARD_HOOK_ENTERED");
+        }
+
+        // Once the provider has been observed, do not reflectively probe it again.
+        // Before that point, bound retries to 50 ms..1 s so a burst of early chunk
+        // events cannot turn the startup race into repeated reflection work.
+        if (!realscale$providerReady.get()) {
+            long now = System.nanoTime();
+            long scheduled = realscale$nextProbeNanos.get();
+            if (scheduled != 0L && now - scheduled < 0L) {
+                if (!realscale$providerReady.get()) {
+                    ChunkyBridgeMetrics.deferred();
+                    ChunkyBridgeMetrics.backoffSkipped();
+                    ci.cancel();
+                    return;
+                }
+            } else if (!realscale$nextProbeNanos.compareAndSet(
+                    scheduled, now + realscale$probeBackoffNanos.get())) {
+                if (!realscale$providerReady.get()) {
+                    ChunkyBridgeMetrics.deferred();
+                    ChunkyBridgeMetrics.backoffSkipped();
+                    ci.cancel();
+                    return;
+                }
+            }
+
+            if (!realscale$providerReady.get()) {
+                long started = System.nanoTime();
+                boolean providerReady = realscale$isChunkyProviderReady();
+                ChunkyBridgeMetrics.probe(providerReady, System.nanoTime() - started);
+                if (!providerReady) {
+                    realscale$probeBackoffNanos.updateAndGet(
+                        current -> Math.min(realscale$MAX_PROBE_INTERVAL_NANOS, current * 2L));
+                    ChunkyBridgeMetrics.deferred();
+                    // Cancel BEFORE DH flips listenerBound; a later real chunk event retries.
+                    if (realscale$warned.compareAndSet(false, true)) {
+                        System.err.println(
+                            "REALSCALE_DH_CHUNKY_GUARD_DEFERRED: Chunky provider not ready; "
+                            + "leaving DH listener unbound until a later chunk event");
+                    }
+                    ci.cancel();
+                    return;
+                }
+
+                realscale$providerReady.set(true);
+                realscale$nextProbeNanos.set(0L);
+                realscale$probeBackoffNanos.set(realscale$MIN_PROBE_INTERVAL_NANOS);
+                if (realscale$warned.compareAndSet(true, false)) {
+                    ChunkyBridgeMetrics.ready();
+                    System.err.println(
+                        "REALSCALE_DH_CHUNKY_GUARD_READY: Chunky provider is now registered; "
+                        + "allowing native DH event registration");
+                }
+            }
+        }
+    }
+
+    /** Report success only AFTER Distant Horizons' original listener binding returns. */
+    @Inject(method = "tryRunFirstTimeSetup()V", at = @At("RETURN"), remap = false)
+    private void realscale$confirmNativeDhListener(CallbackInfo ci) {
+        if (!realscale$boundConfirmed && listenerBound) {
+            realscale$boundConfirmed = true;
+            ChunkyBridgeMetrics.bound();
+            System.err.println("REALSCALE_DH_CHUNKY_GUARD_BOUND: native DH listener initialized");
+        }
+    }
+
+    /** Resolve ChunkyProvider.get once; never repeatedly scan classes on chunk updates. */
+    @Unique
+    private static Method realscale$resolveChunkyGetter() throws ReflectiveOperationException {
+        Method getter = realscale$providerGet;
+        if (getter != null) return getter;
+        synchronized (realscale$hookSeen) {
+            getter = realscale$providerGet;
+            if (getter == null) {
+                Class<?> provider = Class.forName("org.popcraft.chunky.ChunkyProvider");
+                getter = provider.getMethod("get");
+                realscale$providerGet = getter;
+            }
+        }
+        return getter;
+    }
+
+    @Unique
+    private static boolean realscale$isChunkyProviderReady() {
+        // Avoid directly linking Chunky classes while registries are loading.
+        try {
+            return realscale$resolveChunkyGetter().invoke(null) != null;
+        } catch (InvocationTargetException ex) {
+            Throwable root = ex.getCause();
+            if (root instanceof IllegalStateException
+                    && "Chunky is not loaded.".equals(root.getMessage())) {
+                return false; // The one confirmed and narrowly handled error.
+            }
+            if (root instanceof Error error) throw error;
+            if (root instanceof RuntimeException runtime) throw runtime;
+            throw new IllegalStateException(
+                "Unexpected ChunkyProvider.get() invocation error", root);
+        } catch (ReflectiveOperationException ex) {
+            // Fail visibly rather than masking an unknown API/version change.
+            throw new IllegalStateException(
+                "Chunky 1.4.23 provider API was not found; check the installed mods", ex);
+        }
+    }
+}

@@ -1,0 +1,72 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="Source research implementation; retains Minecraft's own vanilla assets/data references"
+[[mods]]
+modId="realscale"
+version="2.0.0-preview.2-test.12"
+displayName="RealScale — Terrain, Caves & Oceans (Experimental)"
+authors="RealScale Research"
+description="Experimental single-entry three-realm terrain. Natural Automate composes the natural baseline with six climate/topography-gated fitted morphology kernels, smooth cross-fades and natural fallback. Includes ecotones, cave habitats, offshore skylands and expanded Nether/End."
+[[dependencies.realscale]]
+modId="neoforge"
+type="required"
+versionRange="[26.3.0,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.realscale]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.21.2)"
+ordering="NONE"
+side="BOTH"
+
+# The restored in-game Terrain Lab GUI is provided by YACL on the CLIENT only.
+# Standalone players install YACL 3.8.1+ separately; servers never need it.
+[[dependencies.realscale]]
+modId="yet_another_config_lib_v3"
+type="required"
+versionRange="[3.8.1,)"
+ordering="NONE"
+side="CLIENT"
+
+# Distant Horizons and Chunky are optional. The embedded compatibility Mixin
+# activates only for the exact, tested DH 3.3.3 + Chunky 1.4.23 pair.
+[[dependencies.realscale]]
+modId="distanthorizons"
+type="optional"
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"
+[[dependencies.realscale]]
+modId="chunky"
+type="optional"
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"
+# Prevent installing the retired standalone addon beside the embedded copy.
+[[dependencies.realscale]]
+modId="dhchunkyguard"
+type="incompatible"
+versionRange="[0,)"
+ordering="NONE"
+side="BOTH"
+[[mixins]]
+config="realscale.dhchunky.mixins.json"
+
+# RealScale-only initial spawn fast path. It samples the climate-selected
+# chunk's terrain columns directly instead of generating up to 121 FULL chunks
+# while vanilla searches outward for a safe spawn.
+[[mixins]]
+config="realscale.fastspawn.mixins.json"
+
+# TEST MAIN ONLY: original gameplay by default. These plugins enable their
+# individual opt-in mixins only when explicit JVM flags are supplied.
+# NEVER merge to release without full saved-world parity and client FPS proof.
+[[mixins]]
+config="realscale.experimental.mixins.json"
+
+[[mixins]]
+config="realscale.aquifer.audit.mixins.json"
+
+[[mixins]]
+config="realscale.client.experiment.mixins.json"

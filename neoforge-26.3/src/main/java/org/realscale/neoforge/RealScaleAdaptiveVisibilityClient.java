@@ -1,0 +1,301 @@
+package org.realscale.neoforge;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+
+/**
+ * Opt-in client-only exposure classifier. It never culls vanilla sections;
+ * the optional DH adapter consumes its conservative mode for distant cave LODs.
+ *
+ * Features: no forced loads, variable sampling cadence, immediate fail-open
+ * after teleports/unloaded samples, 5 local sky probes and at most 4 bounded
+ * 24-block sightline checks to prevent many tunnel-mouth misclassifications.
+ *
+ * The optional DH adapter only toggles Distant Horizons' own cave LOD culling;
+ * it does not suppress vanilla section meshes or alter worldgen. Enabled with:
+ * -Drealscale.client.visibility.profile=true
+ * or -Drealscale.experimental.client.underground_lod_culling=true
+ * or BOTH experimental upload budget properties with modeaware=true
+ */
+@EventBusSubscriber(modid="realscale", value=Dist.CLIENT)
+public final class RealScaleAdaptiveVisibilityClient {
+    private RealScaleAdaptiveVisibilityClient(){}
+
+    private static final boolean PROFILE =
+            Boolean.getBoolean("realscale.client.visibility.profile");
+    private static final boolean DH_CAVE_LOD =
+            DistantHorizonsCaveLodController.enabled();
+    private static final boolean UPLOAD_MODE_AWARE =
+            RealScaleChunkUploadClient.MODE_AWARE;
+    private static final boolean ACTIVE = PROFILE || DH_CAVE_LOD || UPLOAD_MODE_AWARE;
+    private static final int REPORT_EVERY_SAMPLES = 20;
+    private static final int MAX_SIGHTLINE_REACH = 24;
+    private static final int[][] SKY_PROBES = {
+        {0,0},{8,0},{-8,0},{0,8},{0,-8}
+    };
+    // Extra height probes are used only by the opt-in DH cave-LOD controller.
+    // They conservatively reject deep open cuts/ravines before enabling culling.
+    private static final int[][] RAVINE_HEIGHT_PROBES = {
+        {16,0},{-16,0},{0,16},{0,-16},
+        {16,16},{16,-16},{-16,16},{-16,-16}
+    };
+    private static final int[][] SIGHT_DIRECTIONS = {
+        {1,0},{-1,0},{0,1},{0,-1}
+    };
+    private static final AdaptiveVisibilityBudget.Tracker TRACKER =
+            new AdaptiveVisibilityBudget.Tracker();
+
+    private static AdaptiveVisibilityTelemetry telemetry =
+            new AdaptiveVisibilityTelemetry();
+    private static ClientLevel lastLevel;
+    private static BlockPos lastSamplePos;
+    private static int ticks;
+    private static int sinceLog;
+
+    private enum Exterior { NONE, VISIBLE, UNKNOWN }
+
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
+        if (!ACTIVE) return; // no client queries or sampling when both opt-ins are disabled
+        Minecraft client = Minecraft.getInstance();
+        ClientLevel level = client.level;
+        LocalPlayer player = client.player;
+        if (level != lastLevel) {
+            if(lastLevel!=null)DistantHorizonsCaveLodController.restore();
+            TRACKER.reset();
+            telemetry = new AdaptiveVisibilityTelemetry();
+            lastLevel = level;
+            lastSamplePos = null;
+            ticks = 0;
+            sinceLog = 0;
+        }
+        if (level == null || player == null) {
+            DistantHorizonsCaveLodController.restore();
+            TRACKER.reset();
+            lastSamplePos=null;
+            ticks=0;
+            return;
+        }
+
+        // Cheap scalar displacement every tick; all block/sky/ray queries are
+        // deferred. Teleport invalidates stale surface/cave policy IMMEDIATELY.
+        double dx = 0,dy = 0,dz = 0, horizontalSq = 0;
+        if (lastSamplePos != null) {
+            dx=player.getX()-lastSamplePos.getX();
+            dy=player.getEyeY()-lastSamplePos.getY();
+            dz=player.getZ()-lastSamplePos.getZ();
+            horizontalSq=dx*dx+dz*dz;
+            if (horizontalSq>24.0*24.0 || Math.abs(dy)>24.0) {
+                AdaptiveVisibilityBudget.Mode previousMode=TRACKER.mode();
+                TRACKER.observe(unknown());
+                if(DH_CAVE_LOD)
+                    DistantHorizonsCaveLodController.observe(
+                            AdaptiveVisibilityBudget.Mode.TRANSITION);
+                lastSamplePos=BlockPos.containing(player.getEyePosition());
+                ticks=0;
+                if(previousMode!=AdaptiveVisibilityBudget.Mode.TRANSITION)
+                    System.err.println("[RealScale adaptive visibility] "+
+                            previousMode+" -> TRANSITION (teleport/move beyond sample range)");
+                return;
+            }
+        }
+
+        // DH mode samples every 0.5s while uncertain or moving, then every
+        // 1s once surface/cave classification is stable. This halves repeated
+        // sky/heightmap/LOS probes in stationary scenes without slowing entry:
+        // the first changed observation immediately returns to TRANSITION.
+        double displacementSq=horizontalSq+dy*dy;
+        int interval=(DH_CAVE_LOD||UPLOAD_MODE_AWARE)
+                ?AdaptiveVisibilityBudget.distantHorizonSamplingIntervalTicks(
+                        TRACKER.mode(),displacementSq)
+                :AdaptiveVisibilityBudget.samplingIntervalTicks(
+                        TRACKER.mode(),displacementSq);
+        if (++ticks<interval) return;
+        ticks=0;
+
+        BlockPos eye=BlockPos.containing(player.getEyePosition());
+        lastSamplePos=eye;
+        long started=System.nanoTime();
+        AdaptiveVisibilityBudget.Observation sample=observe(level,player,eye);
+        AdaptiveVisibilityBudget.Mode before=TRACKER.mode();
+        AdaptiveVisibilityBudget.Mode mode=TRACKER.observe(sample);
+        if(DH_CAVE_LOD)DistantHorizonsCaveLodController.observe(mode);
+        if(PROFILE)telemetry.recordSample(mode,sample.known(),System.nanoTime()-started);
+        if(mode!=before){
+            if(PROFILE)
+                System.err.println("[RealScale adaptive visibility] "+before+
+                        " -> "+mode+" at "+eye.toShortString()+
+                        " (classifier; vanilla section meshes unchanged)");
+            if(DH_CAVE_LOD)
+                System.err.println("[RealScale DH cave LOD] visibility mode="+mode+
+                        " targetCull="+AdaptiveVisibilityBudget.shouldCullDistantHorizonCaves(mode));
+        }
+        if(PROFILE && ++sinceLog>=REPORT_EVERY_SAMPLES) {
+            sinceLog=0;
+            System.err.println("[RealScale adaptive visibility] "+telemetry.summary()+
+                    " at "+eye.toShortString());
+        }
+    }
+
+    private static AdaptiveVisibilityBudget.Observation observe(
+            ClientLevel level,LocalPlayer player,BlockPos eye) {
+        // Not all dimensions have the same sky rules. This intentionally
+        // does not classify the Nether, End or submerged viewpoints.
+        if(!level.dimension().equals(Level.OVERWORLD) || player.isUnderWater())
+            return unknown();
+        int skyCount=0;
+        boolean skyAtCamera=false;
+        for(int i=0;i<SKY_PROBES.length;i++){
+            BlockPos sample=eye.offset(SKY_PROBES[i][0],0,SKY_PROBES[i][1]);
+            if(!loaded(level,sample))return unknown();
+            boolean exposed=level.canSeeSky(sample);
+            if(i==0)skyAtCamera=exposed;
+            if(exposed)skyCount++;
+        }
+        // Mixed sky coverage is an obvious cave mouth, ravine, shaft or
+        // irregular ridge: avoid the costly heightmap and LOS checks.
+        if(skyCount>0 && skyCount<SKY_PROBES.length)
+            return new AdaptiveVisibilityBudget.Observation(
+                    true,skyAtCamera,true,false,true,false);
+        // Exposed, open surface: sky is positive in all five sample columns.
+        // No heightmap query is required to infer the absence of a roof.
+        if(skyCount==SKY_PROBES.length){
+            // A deep open cut can expose sky at the camera while still
+            // revealing cave walls below. Never enable DH cave LOD culling
+            // unless nearby loaded heightmaps also rule out a ravine/cliff.
+            if((DH_CAVE_LOD||UPLOAD_MODE_AWARE)&&hasDeepOpenCut(level,eye))
+                return new AdaptiveVisibilityBudget.Observation(
+                        true,true,true,false,true,false);
+            return new AdaptiveVisibilityBudget.Observation(
+                    true,true,true,false,false,false);
+        }
+        // All five probes are covered. Check roof thickness first: a thin
+        // roof or covered edge is ambiguous and needs normal priorities.
+        // Build a virtual local surface boundary from the same five columns
+        // already proven loaded by the sky probes. The minimum surface height
+        // is conservative: every probe column must have sufficient roof above
+        // the camera. A sharp local height discontinuity is ambiguous (cliff,
+        // ravine wall or cave mouth), so it fails open instead of hiding LODs.
+        int h0=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                eye.getX(),eye.getZ());
+        int h1=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                eye.getX()+8,eye.getZ());
+        int h2=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                eye.getX()-8,eye.getZ());
+        int h3=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                eye.getX(),eye.getZ()+8);
+        int h4=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                eye.getX(),eye.getZ()-8);
+        int boundaryY=VirtualUndergroundBoundary.conservativeBoundaryY(h0,h1,h2,h3,h4);
+        if(!VirtualUndergroundBoundary.isBelowBoundary(eye.getY(),boundaryY))
+            return new AdaptiveVisibilityBudget.Observation(
+                    true,false,false,false,true,false);
+        Exterior exterior=exteriorInLoadedRange(level,player,eye);
+        if(exterior==Exterior.UNKNOWN)return unknown();
+        return new AdaptiveVisibilityBudget.Observation(
+                true,false,false,true,false,false,
+                exterior==Exterior.VISIBLE);
+    }
+
+    private static boolean hasDeepOpenCut(ClientLevel level,BlockPos eye) {
+        for(int[] offset:RAVINE_HEIGHT_PROBES){
+            BlockPos sample=eye.offset(offset[0],0,offset[1]);
+            // Missing neighboring chunks mean visibility is uncertain:
+            // fail open rather than force-loading them for a classification.
+            if(!loaded(level,sample))return true;
+            int surfaceY=level.getHeight(
+                    Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                    sample.getX(),sample.getZ());
+            if(surfaceY>eye.getY()+12)return true;
+        }
+        return false;
+    }
+
+    private static boolean loaded(ClientLevel level,BlockPos p) {
+        return p.getY()>=level.getMinBuildHeight()
+                && p.getY()<level.getMaxBuildHeight()
+                && level.hasChunk(Math.floorDiv(p.getX(),16),
+                                  Math.floorDiv(p.getZ(),16));
+    }
+
+    /**
+     * Only a *conservative positive* outward sky line of sight.
+     * At most four rays, and ONLY for strong sealed-cave candidates.
+     * Verify every 8-block interval has a loaded chunk BEFORE calling
+     * Minecraft's vanilla clip(): never request/force a missing chunk.
+     */
+    private static Exterior exteriorInLoadedRange(
+            ClientLevel level,LocalPlayer player,BlockPos eye) {
+        Vec3 from=player.getEyePosition();
+        for(int[] dir:SIGHT_DIRECTIONS){
+            for(int d=8;d<=MAX_SIGHTLINE_REACH;d+=8)
+                if(!loaded(level,eye.offset(dir[0]*d,0,dir[1]*d)))
+                    return Exterior.UNKNOWN;
+            BlockPos endpoint=eye.offset(
+                    dir[0]*MAX_SIGHTLINE_REACH,0,
+                    dir[1]*MAX_SIGHTLINE_REACH);
+            if(!level.canSeeSky(endpoint))continue;
+            Vec3 to=new Vec3(endpoint.getX()+0.5,from.y,
+                    endpoint.getZ()+0.5);
+            var hit=level.clip(new ClipContext(from,to,
+                    ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,player));
+            if(hit.getType()==HitResult.Type.MISS)
+                return Exterior.VISIBLE;
+            // Glass/foliage/many modded blocks are see-through but may
+            // still have collision. Never use them to prove an opaque wall.
+            BlockState wall=level.getBlockState(((net.minecraft.world.phys.BlockHitResult)hit).getBlockPos());
+            if(!wall.canOcclude())return Exterior.UNKNOWN;
+        }
+        return Exterior.NONE;
+    }
+
+    /**
+     * Render-frame-safe snapshot. The client-tick classifier can lag a frame
+     * behind dimension changes or teleports; never reuse its last confident
+     * cave/surface mode for a different world or a moved-away camera.
+     * No heightmap, block-state, chunk or ray queries on the render thread.
+     */
+    public static AdaptiveVisibilityBudget.Mode currentModeFor(
+            ClientLevel world,LocalPlayer player) {
+        if(!ACTIVE || world==null || player==null || lastSamplePos==null)
+            return AdaptiveVisibilityBudget.Mode.TRANSITION;
+        double dx=player.getX()-lastSamplePos.getX();
+        double dy=player.getEyeY()-lastSamplePos.getY();
+        double dz=player.getZ()-lastSamplePos.getZ();
+        if(!AdaptiveVisibilityBudget.freshForUpload(
+                world==lastLevel,true,world.dimension().equals(Level.OVERWORLD),
+                player.isUnderWater(),dx,dy,dz))
+            return AdaptiveVisibilityBudget.Mode.TRANSITION;
+        return TRACKER.mode();
+    }
+
+    /** Domain view shared by the client upload and optional DH adapters. */
+    public static RealScaleDomainManager.Domain currentDomainFor(
+            ClientLevel world,LocalPlayer player) {
+        return RealScaleDomainManager.fromVisibilityMode(
+                currentModeFor(world,player));
+    }
+
+    /** Read-only context for opt-in FPS attribution, never a renderer hook. */
+    public static AdaptiveVisibilityBudget.Mode currentMode() {
+        return ACTIVE ? TRACKER.mode() :
+                AdaptiveVisibilityBudget.Mode.TRANSITION;
+    }
+
+    private static AdaptiveVisibilityBudget.Observation unknown() {
+        return new AdaptiveVisibilityBudget.Observation(
+                false,false,false,false,true,false);
+    }
+}
