@@ -25,7 +25,7 @@
         </nav>
         <div class="topbar-right">
           <span class="status-dot"></span>
-          <span class="topbar-status">BROWSER PREVIEW</span>
+          <span class="topbar-status" id="compute-mode">INITIALIZING</span>
           <span class="version-tag">0.1.1</span>
         </div>
       </header>
@@ -119,6 +119,7 @@
               <span>Generate map preview</span>
               <span class="button-arrow">↗</span>
             </button>
+            <button class="cancel-generation-button" id="cancel-generation" type="button" disabled>Cancel generation</button>
             <div class="generation-note"><span class="status-dot"></span><span id="generation-status" role="status" aria-live="polite">Ready to generate</span></div>
           </aside>
 
