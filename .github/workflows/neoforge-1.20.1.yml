@@ -2,7 +2,7 @@ name: RealScale NeoForge 1.20.1 Legacy Compatibility
 
 on:
   push:
-    branches: [feature/neoforge-1.20.1-port, feature/neoforge-1.20.1-validation, test/neoforge-1.20.1-47.1.37-compat]
+    branches: [feature/neoforge-1.20.1-port, feature/neoforge-1.20.1-validation, test/neoforge-1.20.1-47.1.54-compat]
     paths:
       - "neoforge-1.20.1/**"
       - "scripts/**"
@@ -32,12 +32,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - neoforge_version: "1.20.1-47.1.37"
+          - neoforge_version: "1.20.1-47.1.54"
             yacl_version_id: "KN3TLTr4"
-            artifact_suffix: "47.1.37-yacl-3.6.5"
-          - neoforge_version: "1.20.1-47.1.37"
+            artifact_suffix: "47.1.54-yacl-3.6.5"
+          - neoforge_version: "1.20.1-47.1.54"
             yacl_version_id: "sCWgXDYQ"
-            artifact_suffix: "47.1.37-yacl-3.6.6"
+            artifact_suffix: "47.1.54-yacl-3.6.6"
           - neoforge_version: "1.20.1-47.1.105"
             yacl_version_id: "KN3TLTr4"
             artifact_suffix: "47.1.105-yacl-3.6.5"
