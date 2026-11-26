@@ -26,8 +26,27 @@ concurrency:
 
 jobs:
   build-and-server-smoke:
-    name: NeoForge 1.20.1 (legacy 47.1.106)
+    name: NeoForge 1.20.1 (\${{ matrix.artifact_suffix }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - neoforge_version: "1.20.1-47.1.5"
+            yacl_version_id: "KN3TLTr4"
+            artifact_suffix: "47.1.5-yacl-3.6.5"
+          - neoforge_version: "1.20.1-47.1.5"
+            yacl_version_id: "sCWgXDYQ"
+            artifact_suffix: "47.1.5-yacl-3.6.6"
+          - neoforge_version: "1.20.1-47.1.106"
+            yacl_version_id: "KN3TLTr4"
+            artifact_suffix: "47.1.106-yacl-3.6.5"
+          - neoforge_version: "1.20.1-47.1.106"
+            yacl_version_id: "sCWgXDYQ"
+            artifact_suffix: "47.1.106-yacl-3.6.6"
+    env:
+      NEOFORGE_VERSION: \${{ matrix.neoforge_version }}
+      YACL_VERSION_ID: \${{ matrix.yacl_version_id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,7 +66,7 @@ jobs:
 
       - name: Build NeoForge 1.20.1 module
         run: |
-          gradle --no-daemon -p neoforge-1.20.1 clean build
+          gradle --no-daemon -p neoforge-1.20.1 -Pneoforge_version="$NEOFORGE_VERSION" -Pyacl_version_id="$YACL_VERSION_ID" clean build
 
       - name: Audit distributable JAR
         run: |
@@ -56,7 +75,7 @@ jobs:
       - name: Upload NeoForge JAR
         uses: actions/upload-artifact@v4
         with:
-          name: RealScale-NeoForge-1.20.1-47.1.106
+          name: RealScale-NeoForge-1.20.1-\${{ matrix.artifact_suffix }}
           path: neoforge-1.20.1/build/libs/*.jar
           if-no-files-found: error
 
@@ -77,7 +96,7 @@ jobs:
           max-tick-time=120000
           motd=RealScale NeoForge 1.20.1 smoke
           EOF
-          timeout --signal=TERM --kill-after=15s 420s gradle --no-daemon -p neoforge-1.20.1 runServer > neoforge-server-smoke.log 2>&1 || { tail -180 neoforge-server-smoke.log; exit 1; }
+          timeout --signal=TERM --kill-after=15s 420s gradle --no-daemon -p neoforge-1.20.1 -Pneoforge_version="$NEOFORGE_VERSION" -Pyacl_version_id="$YACL_VERSION_ID" runServer > neoforge-server-smoke.log 2>&1 || { tail -180 neoforge-server-smoke.log; exit 1; }
           grep -F "Done (" neoforge-1.20.1/run/logs/latest.log
           grep -F "FORGE_SERVER_TEMPLATE_SMOKE_OK" neoforge-server-smoke.log
 
@@ -99,13 +118,13 @@ jobs:
           EOF
           export ALSA_CONFIG_PATH=/tmp/realscale-alsa-null.conf
           export SDL_AUDIODRIVER=dummy
-          timeout --signal=TERM --kill-after=15s 360s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon -p neoforge-1.20.1 runClient > neoforge-client-smoke.log 2>&1 || { tail -180 neoforge-client-smoke.log; exit 1; }
+          timeout --signal=TERM --kill-after=15s 360s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon -p neoforge-1.20.1 -Pneoforge_version="$NEOFORGE_VERSION" -Pyacl_version_id="$YACL_VERSION_ID" runClient > neoforge-client-smoke.log 2>&1 || { tail -180 neoforge-client-smoke.log; exit 1; }
           grep -F "FORGE_CLIENT_UI_SMOKE_OK" neoforge-client-smoke.log
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: NeoForge-1.20.1-integration-logs
+          name: NeoForge-1.20.1-integration-logs-\${{ matrix.artifact_suffix }}
           path: |
             neoforge-server-smoke.log
             neoforge-client-smoke.log
