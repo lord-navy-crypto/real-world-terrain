@@ -647,6 +647,7 @@ function setView(view) {
   biomeLegend.hidden = view !== "biomes";
   threeDLegend.hidden = view !== "3d";
   reset3dViewButton.hidden = view !== "3d";
+  canvas.dataset.view = view;
   canvas.style.cursor = view === "3d" ? "grab" : "crosshair";
   if (latestMap && !isGenerating && !isExportingCsv) {
     statusText.textContent = "Updating map view…";
@@ -696,7 +697,7 @@ function handle3dPointerMove(event) {
 function handle3dPointerEnd(event) {
   if (!cameraDrag || (event.pointerId !== undefined && cameraDrag.pointerId !== event.pointerId)) return;
   cameraDrag = null;
-  canvas.style.cursor = "grab";
+  canvas.style.cursor = currentView === "3d" ? "grab" : "crosshair";
 }
 
 function handle3dWheel(event) {
