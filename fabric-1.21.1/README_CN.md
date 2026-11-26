@@ -4,7 +4,7 @@ RealScale 面向 Minecraft 1.21.1 的独立 Fabric 移植版本。
 
 - Minecraft：**1.21.1**
 - Fabric Loader：**0.16.14 或更新版本**（CI 基准：0.19.5）
-- Fabric API：**0.116.18 或更新版本**
+- Fabric API：**0.116.17 或更新版本**
 - Java：**21**
 - 可选配置界面：**YACL 3.8.1+1.21.1-fabric**
 
