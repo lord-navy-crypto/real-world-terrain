@@ -1108,9 +1108,10 @@ def run_client(env: dict[str, str]) -> None:
         print("IRIS_CLIPMAP_MOVEMENT_REFRESH_PASS", sorted(centres), settled_centre, flush=True)
         # A depth query does not prove final color visibility. Flag persistent
         # contrast collapse only after the complete window has had time to settle.
-        if max(settled_high_frequency, final_high_frequency) > 0.28:
+        if max(settled_high_frequency, final_high_frequency) > 0.18:
             raise RuntimeError("Distant terrain still has excessive high-frequency texture aliasing: "
-                               f"settled={settled_high_frequency:.5f}, final={final_high_frequency:.5f}")
+                               f"settled={settled_high_frequency:.5f}, final={final_high_frequency:.5f}; "
+                               "the macro-scale UV path must reduce repeated PBR detail")
         print("IRIS_TERRAIN_TEXTURE_ALIASING_GATE_PASS", flush=True)
         if initial_contrast < 0.055:
             raise RuntimeError(f"Initial terrain viewport has insufficient contrast: {initial_contrast:.5f}")
