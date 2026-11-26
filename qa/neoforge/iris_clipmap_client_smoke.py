@@ -935,8 +935,8 @@ def run_client(env: dict[str, str]) -> None:
                         encoding="utf-8", errors="replace"):
                     wait_until_world_rendered()
                     test_pause_menu_geometry_clipmap_toggle(lines)
-                    capture_natural_surface_view(proc, lines)
                     prepare_open_rendering_view(client_latest, lines)
+                    capture_natural_surface_view(proc, lines)
                     camera_prepared = True
                 elif time.monotonic() >= world_ready_deadline:
                     raise RuntimeError("Singleplayer world did not become ready for camera positioning")

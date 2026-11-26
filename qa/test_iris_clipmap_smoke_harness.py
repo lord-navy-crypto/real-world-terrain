@@ -232,6 +232,12 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn('rcon.send("setworldspawn 0 1200 0")', SMOKE)
         self.assertIn('"gamemode=spectator\\n"', SMOKE)
         self.assertIn('"force-gamemode=true\\n"', SMOKE)
+        run_client = SMOKE[SMOKE.index("def run_client"):SMOKE.index("def main")]
+        self.assertLess(
+            run_client.index("prepare_open_rendering_view(client_latest, lines)"),
+            run_client.index("capture_natural_surface_view(proc, lines)"),
+            "The camera must be moved to the terrain viewing position before the visual capture gate",
+        )
 
     def test_client_dismisses_experimental_world_warning_before_draw_gate(self):
         self.assertIn("def experimental_warning_visible()", SMOKE)
