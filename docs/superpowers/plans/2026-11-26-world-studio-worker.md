@@ -36,10 +36,10 @@
 - Produces \`generateTerrainGrid(options, hooks)\` returning a Promise of a map result or a cancelled result.
 - Consumes \`sampleTerrain\` and \`hashSeed\` from \`terrain-core.js\`.
 
-- [ ] Write tests for deterministic output, summary metadata, monotonic progress, invalid inputs, and cooperative cancellation.
-- [ ] Run \`npm test\` and confirm the new tests fail because the sampler module does not exist.
-- [ ] Implement validation and batched sampling with a yield between batches.
-- [ ] Run \`npm test\`; all terrain and grid-sampler tests must pass.
+- [x] Write tests for deterministic output, summary metadata, monotonic progress, invalid inputs, and cooperative cancellation.
+- [x] Run \`npm test\` and confirm the new tests fail because the sampler module does not exist.
+- [x] Implement validation and batched sampling with a yield between batches.
+- [x] Run \`npm test\`; all terrain and grid-sampler tests must pass.
 
 ### Task 2: Worker message protocol
 
@@ -51,10 +51,10 @@
 - Consumes \`{ type: "generate" | "cancel", requestId, options }\`.
 - Produces \`progress\`, \`complete\`, and \`error\` messages; completion transfers height, temperature, and humidity buffers.
 
-- [ ] Test completion payloads, progress ordering, cancellation, malformed messages, and transfer-list contents.
-- [ ] Run the targeted test and confirm it fails before the worker adapter exists.
-- [ ] Implement the worker adapter with request-scoped cancellation.
-- [ ] Run the targeted and complete test suites.
+- [x] Test completion payloads, progress ordering, cancellation, malformed messages, and transfer-list contents.
+- [x] Run the targeted test and confirm it fails before the worker adapter exists.
+- [x] Implement the worker adapter with request-scoped cancellation.
+- [x] Run the targeted and complete test suites.
 
 ### Task 3: Main-thread integration and fallback
 
@@ -68,10 +68,10 @@
 - Existing Canvas rendering, map inspector, PNG export, and CSV export consume the worker result without format changes.
 - If Worker is unavailable or fails, use the existing frame-batched sampler.
 
-- [ ] Add runtime tests for worker success, stale responses, worker errors, and no-Worker fallback.
-- [ ] Run the runtime tests and confirm they fail before integration.
-- [ ] Integrate worker lifecycle, request IDs, safe control restoration, and fallback.
-- [ ] Run the complete test suite and production build.
+- [x] Add runtime tests for worker success, stale responses, worker errors, and no-Worker fallback.
+- [x] Run the runtime tests and confirm they fail before integration.
+- [x] Integrate worker lifecycle, request IDs, safe control restoration, and fallback.
+- [x] Run the complete test suite and production build.
 
 ### Task 4: Documentation and CI contract
 
@@ -79,12 +79,18 @@
 - Modify: \`world-studio/README.md\`
 - Modify: \`.github/workflows/world-studio.yml\`
 
-- [ ] Document worker execution, fallback behavior, and preview-data limits.
-- [ ] Ensure CI runs all Node tests (including worker-core, worker-protocol, and browser runtime tests) before Vite build.
-- [ ] Run the full CI workflow and inspect its logs for test counts, failures, and build output.
+- [x] Document worker execution, fallback behavior, and preview-data limits.
+- [x] Ensure CI runs all Node tests (including worker-core, worker-protocol, and browser runtime tests) before Vite build.
+- [x] Run the full CI workflow and inspect its logs for test counts, failures, and build output.
 
 ## Completion Contract
 - All new tests have been observed failing before implementation and passing afterward.
 - Full Node test suite and Vite production build pass.
 - Worker and fallback paths are both covered.
 - No claim of actual Minecraft save generation or deployment is made.
+
+
+## Execution evidence
+- GitHub Actions PR run: `45850685303` — `npm test` passed 29/29; `vite build` passed and emitted a separate `terrain-worker-*.js` bundle (8.60 kB).
+- The RED runs confirmed the missing sampler/worker entry points and then exposed test-harness cross-realm assumptions plus a cross-realm error-message extraction bug; these were corrected before the green run.
+- Deployment was intentionally excluded from this implementation phase.
