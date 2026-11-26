@@ -8,14 +8,15 @@ final class GeometryClipmapLayoutTest {
     private final GeometryClipmapLayout planner = new GeometryClipmapLayout();
 
     @Test
-    void defaultLayoutUsesTenChunkNearFieldAndSixAlignedLevels() {
+    void defaultLayoutUsesBalanced128GridAndSixAlignedLevels() {
         GeometryClipmapLayout.Layout layout = planner.compute(0.0, 0.0);
 
+        assertEquals(128, layout.gridCells());
         assertEquals(160L, layout.nearRadiusBlocks());
         assertEquals(96L, layout.effectiveInnerRadiusBlocks());
         assertEquals(6, layout.levels().size());
         long[] expectedSpacing = {4, 8, 16, 32, 64, 128};
-        long[] expectedHalfExtent = {512, 1024, 2048, 4096, 8192, 16384};
+        long[] expectedHalfExtent = {256, 512, 1024, 2048, 4096, 8192};
         for (int i = 0; i < expectedSpacing.length; i++) {
             GeometryClipmapLayout.Level level = layout.levels().get(i);
             assertEquals(expectedSpacing[i], level.cellSpacingBlocks());
@@ -78,7 +79,7 @@ final class GeometryClipmapLayoutTest {
 
         assertEquals(32, update.shiftCellsX());
         assertEquals(32, update.shiftCellsZ());
-        assertEquals(32L * 257L + 32L * 257L - 32L * 32L,
+        assertEquals(32L * 129L + 32L * 129L - 32L * 32L,
                 update.newSampleVertices());
     }
 
@@ -87,7 +88,7 @@ final class GeometryClipmapLayoutTest {
         GeometryClipmapLayout.Layout before = planner.compute(0.0, 0.0);
         GeometryClipmapLayout.Layout after = planner.compute(8192.0, 0.0, before);
         assertTrue(after.levels().get(0).updatePlan().fullRefresh());
-        assertEquals(257L * 257L,
+        assertEquals(129L * 129L,
                 after.levels().get(0).updatePlan().newSampleVertices());
     }
 

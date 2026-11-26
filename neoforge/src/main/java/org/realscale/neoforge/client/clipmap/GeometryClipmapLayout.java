@@ -15,7 +15,8 @@ import java.util.List;
  * <p>No Minecraft chunks, block states, or OpenGL objects are created here.
  */
 public final class GeometryClipmapLayout {
-    public static final int DEFAULT_GRID_CELLS = 256;
+    public static final int DEFAULT_GRID_CELLS = 128;
+    public static final int MAX_GRID_CELLS = 256;
     public static final int DEFAULT_LEVEL_COUNT = 6;
     public static final int DEFAULT_BASE_CELL_SPACING_BLOCKS = 4;
     public static final int DEFAULT_NEAR_RENDER_DISTANCE_CHUNKS = 10;
@@ -34,7 +35,7 @@ public final class GeometryClipmapLayout {
 
     public GeometryClipmapLayout(int gridCells, int levelCount,
             int baseCellSpacingBlocks, int nearRenderDistanceChunks) {
-        if (gridCells < 16 || gridCells > 256 || (gridCells & (gridCells - 1)) != 0) {
+        if (gridCells < 16 || gridCells > MAX_GRID_CELLS || (gridCells & (gridCells - 1)) != 0) {
             throw new IllegalArgumentException("gridCells must be a power of two >= 16");
         }
         if (levelCount < 2 || levelCount > 8) {
@@ -93,7 +94,7 @@ public final class GeometryClipmapLayout {
         if (chunks < 2 || chunks > 64) {
             throw new IllegalArgumentException("render distance must be between 2 and 64 chunks");
         }
-        if (requestedGridCells < 64 || requestedGridCells > DEFAULT_GRID_CELLS
+        if (requestedGridCells < 64 || requestedGridCells > MAX_GRID_CELLS
                 || (requestedGridCells & (requestedGridCells - 1)) != 0) {
             throw new IllegalArgumentException(
                     "requested clipmap grid must be 64, 128, or 256 cells");
@@ -118,7 +119,7 @@ public final class GeometryClipmapLayout {
                 ((long) spacing << (DEFAULT_LEVEL_COUNT - 1)) / 2L;
         long protectedInnerRadius = nearRadius - cameraOffsetAllowance;
         int effectiveGridCells = requestedGridCells;
-        while (effectiveGridCells < DEFAULT_GRID_CELLS
+        while (effectiveGridCells < MAX_GRID_CELLS
                 && protectedInnerRadius >= (long) (effectiveGridCells / 2) * spacing) {
             effectiveGridCells <<= 1;
         }

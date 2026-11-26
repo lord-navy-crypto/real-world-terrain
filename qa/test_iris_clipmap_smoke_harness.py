@@ -165,7 +165,8 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         layout = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapLayout.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn("DEFAULT_GRID_CELLS = 256", layout)
+        self.assertIn("DEFAULT_GRID_CELLS = 128", layout)
+        self.assertIn("MAX_GRID_CELLS = 256", layout)
         self.assertIn("DEFAULT_BASE_CELL_SPACING_BLOCKS = 4", layout)
 
     def test_iris_native_draw_uses_portable_terrain_stage_events(self):

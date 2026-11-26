@@ -15,11 +15,12 @@ import java.util.Properties;
  *
  * <p>The default is OFF. The far range is selected independently
  * from Minecraft's vanilla chunk distance, using a compact 64/128/256 grid.
+ * <p>128 is the balanced default; 256 remains available as a higher-cost option.
  */
 public final class GeometryClipmapSettings {
     private static final Path CONFIG_FILE =
             Path.of("config", "realscale-geometry-clipmap.properties");
-    private static final int DEFAULT_GRID_CELLS = 256;
+    private static final int DEFAULT_GRID_CELLS = 128;
 
     private static volatile boolean enabled = loadEnabled(CONFIG_FILE);
     private static volatile int gridCells = loadGridCells(CONFIG_FILE);
