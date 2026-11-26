@@ -12,7 +12,7 @@ description='''Real-world terrain generation with measured elevation data, proce
 [[dependencies.realscale]]
 modId="forge"
 mandatory=true
-versionRange="[47.1.0,48)"
+versionRange="[47.1.5,48)"
 ordering="NONE"
 side="BOTH"
 
@@ -26,7 +26,7 @@ side="BOTH"
 [[dependencies.realscale]]
 modId="yet_another_config_lib_v3"
 mandatory=true
-versionRange="[3.6.6,)"
+versionRange="[3.6.5,)"
 ordering="NONE"
 side="CLIENT"
 
