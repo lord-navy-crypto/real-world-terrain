@@ -107,3 +107,10 @@ The worker moves terrain sampling off the UI thread; Canvas rendering and map in
 The Share action creates a URL containing only the preview configuration: seed text, footprint, relief multiplier, and selected map view. Opening that URL validates each value against the supported controls, restores valid settings, and starts a fresh deterministic preview. Unknown query parameters and the URL fragment are preserved. Invalid or out-of-range values fall back independently to the page defaults.
 
 The URL does not contain a generated Minecraft save, server-side job, or uploaded map. It is a reproducible recipe for rebuilding the same browser preview.
+
+
+## Isometric 3D terrain view
+
+The 3D tab builds a 97 × 97 decimated surface mesh from the existing 384 × 384 height/climate samples. Canvas 2D draws depth-sorted terrain facets with relief colors and slope shading. Drag rotates the surface, vertical drag adjusts camera pitch, the wheel zooms, and Reset restores the default camera. The view reuses the current map and does not start another terrain-sampling job.
+
+The 3D view is an isometric surface visualization, not a full WebGL scene or Minecraft runtime render. The 2D point inspector remains available in Relief and Biomes modes; projected 3D screen coordinates are not presented as direct world X/Z coordinates. PNG export captures the currently selected view, and share links can restore the 3D mode.
