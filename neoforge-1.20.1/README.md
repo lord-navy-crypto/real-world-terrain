@@ -3,7 +3,7 @@
 Dedicated legacy NeoForge build for Minecraft 1.20.1.
 
 - Minecraft: **1.20.1**
-- NeoForge Legacy: **47.1.5–47.1.106 (declared range; CI tests both endpoints)**
+- NeoForge Legacy: **47.1.105–47.1.106 (declared range; CI tests both endpoints)**
 - Java: **17**
 - Build: **ModDevGradle Legacy Forge plugin 2.0.148**
 - Client configuration library: **YACL 3.6.5+ (CI tests 3.6.5 and 3.6.6)**
