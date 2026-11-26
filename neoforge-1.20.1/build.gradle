@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'org.realscale'
-version = '2.0.0-neoforge.1.20.1'
+version = '2.0.1-neoforge.1.20.1'
 base {
     archivesName = 'RealScale-NeoForge-1.20.1'
 }
@@ -14,6 +14,8 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // The final NeoForge 1.20.1 legacy line is published as net.neoforged:forge.
 def neoForgeCoordinateVersion = providers.gradleProperty('neoforge_version')
         .orElse('1.20.1-47.1.106').get()
+def yaclVersionId = providers.gradleProperty('yacl_version_id')
+        .orElse('sCWgXDYQ').get()
 
 legacyForge {
     // NeoForge 1.20.1 uses the legacy 47.1.x artifact coordinate.
@@ -42,7 +44,7 @@ repositories {
 
 dependencies {
     // NeoForge 1.20.1 retains the legacy Forge 47.1.x API surface.
-    modImplementation 'maven.modrinth:1eAoo2KR:sCWgXDYQ'
+    modImplementation "maven.modrinth:1eAoo2KR:${yaclVersionId}"
 
     // YACL 3.6.6 is the current Forge build for Minecraft 1.20.1.
     // YACL is the 1.20.1 Forge-compatible client build used by this legacy NeoForge line.
