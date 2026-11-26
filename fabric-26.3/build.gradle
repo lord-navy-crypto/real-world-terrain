@@ -24,7 +24,6 @@ repositories {
 }
 dependencies {
     minecraft 'com.mojang:minecraft:26.3'
-    mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${fabricLoaderVersion}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}"
     // YACL is compile-time only unless a client smoke lane explicitly enables it.
