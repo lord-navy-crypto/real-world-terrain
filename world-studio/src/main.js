@@ -11,6 +11,8 @@ const generateButton = document.querySelector("#generate-button");
 const refreshButton = document.querySelector("#refresh-map");
 const downloadPreviewButton = document.querySelector("#download-preview");
 const downloadCsvButton = document.querySelector("#download-csv");
+const cancelButton = document.querySelector("#cancel-generation");
+const computeMode = document.querySelector("#compute-mode");
 const randomSeedButton = document.querySelector("#random-seed");
 const statusText = document.querySelector("#generation-status");
 const loading = document.querySelector("#map-loading");
@@ -35,6 +37,11 @@ let latestMap = null;
 let isGenerating = false;
 let isExportingCsv = false;
 let renderToken = 0;
+let generationSequence = 0;
+let activeGenerationId = null;
+let activeGenerationStartedAt = 0;
+let activeGenerationOptions = null;
+let terrainWorker = null;
 function colorForTerrain(height, temperature, humidity, slope, view) {
   if (height < SEA_LEVEL - 180) {
     const depth = clamp((SEA_LEVEL - height) / 520, 0, 1);
@@ -117,61 +124,152 @@ function renderMap(map, onComplete) {
   window.requestAnimationFrame(renderBatch);
 }
 
-function generateMap() {
-  if (isGenerating || isExportingCsv) return;
-  renderToken += 1;
-  const seedText = seedInput.value.trim() || "realscale";
-  const seed = hashSeed(seedText);
-  const size = Number(sizeSelect.value);
-  const reliefScale = Number(reliefSlider.value) / 100;
-  const started = performance.now();
-  const heights = new Float32Array(RESOLUTION * RESOLUTION);
-  const temperatures = new Float32Array(RESOLUTION * RESOLUTION);
-  const humidities = new Float32Array(RESOLUTION * RESOLUTION);
-  const step = size / (RESOLUTION - 1);
+function syncGenerationControls() {
+  const busy = isGenerating || isExportingCsv;
+  generateButton.disabled = busy;
+  refreshButton.disabled = busy;
+  cancelButton.disabled = !isGenerating;
+  downloadPreviewButton.disabled = busy || !latestMap;
+  downloadCsvButton.disabled = busy || !latestMap;
+  seedInput.disabled = busy;
+  randomSeedButton.disabled = busy;
+  sizeSelect.disabled = busy;
+  reliefSlider.disabled = busy;
+}
+
+function finishGeneration(map, startedAt) {
+  const elapsed = ((performance.now() - startedAt) / 1000).toFixed(2);
+  mapTitle.textContent = "World " + map.seedText;
+  mapSeedLabel.textContent = "SEED: " + map.seedText.toUpperCase();
+  mapScale.textContent = (map.size / 1000) + " KM × " + (map.size / 1000) + " KM";
+  mapCoordinates.textContent = "X " + Math.round(-map.size / 2) + " … " + Math.round(map.size / 2)
+    + " · Z " + Math.round(-map.size / 2) + " … " + Math.round(map.size / 2);
+  statDimensions.innerHTML = map.size.toLocaleString() + " × " + map.size.toLocaleString() + " <small>blocks</small>";
+  statLand.textContent = map.landPercent.toFixed(1) + "% land";
+  statElevation.textContent = Math.round(map.min).toLocaleString() + "–" + Math.round(map.max).toLocaleString() + " m est.";
+  statusText.textContent = "Preview generated in " + elapsed + "s";
+  inspectPosition.textContent = "Select a point on the map";
+  inspectElevation.textContent = "—";
+  loading.hidden = true;
+  isGenerating = false;
+  generateButton.classList.remove("is-loading");
+  syncGenerationControls();
+}
+
+function failGeneration(message) {
+  isGenerating = false;
+  loading.hidden = true;
+  generateButton.classList.remove("is-loading");
+  statusText.textContent = "Terrain generation failed · " + message;
+  syncGenerationControls();
+}
+
+function validTerrainMap(map, options) {
+  const expectedLength = options.resolution * options.resolution;
+  const isFloat32 = value => ArrayBuffer.isView(value)
+    && Object.prototype.toString.call(value) === "[object Float32Array]"
+    && value.length === expectedLength;
+  return Boolean(map)
+    && isFloat32(map.heights)
+    && isFloat32(map.temperatures)
+    && isFloat32(map.humidities)
+    && map.size === options.size
+    && map.seedText === options.seedText
+    && map.resolution === options.resolution
+    && Number.isFinite(map.step)
+    && Number.isFinite(map.min)
+    && Number.isFinite(map.max)
+    && Number.isFinite(map.landPercent)
+    && map.landPercent >= 0
+    && map.landPercent <= 100;
+}
+
+function handleTerrainWorkerMessage(event) {
+  const message = event?.data;
+  if (!message || message.requestId !== activeGenerationId || !isGenerating) return;
+
+  if (message.type === "progress") {
+    if (Number.isFinite(message.progress)) {
+      const progress = Math.max(0, Math.min(100, Math.round(message.progress)));
+      statusText.textContent = "Sampling terrain fields… " + progress + "%";
+    }
+    return;
+  }
+
+  if (message.type === "cancelled") {
+    cancelGeneration();
+    return;
+  }
+
+  if (message.type === "error") {
+    switchToMainThreadFallback(message.message || "Worker reported an error");
+    return;
+  }
+
+  if (message.type === "complete") {
+    if (!validTerrainMap(message.map, activeGenerationOptions)) {
+      switchToMainThreadFallback("Worker returned an invalid terrain grid");
+      return;
+    }
+    latestMap = message.map;
+    renderMap(latestMap, () => finishGeneration(latestMap, activeGenerationStartedAt));
+  }
+}
+
+function handleTerrainWorkerFailure(event) {
+  if (!isGenerating) {
+    if (terrainWorker) terrainWorker.terminate();
+    terrainWorker = null;
+    computeMode.textContent = "MAIN THREAD FALLBACK";
+    return;
+  }
+  switchToMainThreadFallback(event?.message || "Worker runtime error");
+}
+
+function switchToMainThreadFallback(reason) {
+  const failedWorker = terrainWorker;
+  terrainWorker = null;
+  if (failedWorker) failedWorker.terminate();
+  computeMode.textContent = "MAIN THREAD FALLBACK";
+  if (!isGenerating || !activeGenerationOptions) return;
+  statusText.textContent = "Worker unavailable · switching to local sampling";
+  startFallbackGeneration(activeGenerationOptions, activeGenerationId);
+}
+
+function createTerrainWorker() {
+  if (typeof Worker === "undefined") return null;
+  try {
+    const worker = new Worker(new URL("./terrain-worker.js", import.meta.url), {
+      type: "module"
+    });
+    worker.addEventListener("message", handleTerrainWorkerMessage);
+    worker.addEventListener("error", handleTerrainWorkerFailure);
+    return worker;
+  } catch {
+    return null;
+  }
+}
+
+function startFallbackGeneration(options, requestId) {
+  const { size, seed, seedText, reliefScale, resolution } = options;
+  const heights = new Float32Array(resolution * resolution);
+  const temperatures = new Float32Array(resolution * resolution);
+  const humidities = new Float32Array(resolution * resolution);
+  const step = size / (resolution - 1);
   let min = Infinity;
   let max = -Infinity;
   let landCount = 0;
   let sampleRow = 0;
 
-  isGenerating = true;
-  generateButton.disabled = true;
-  downloadPreviewButton.disabled = true;
-  downloadCsvButton.disabled = true;
-  generateButton.classList.add("is-loading");
-  loading.hidden = false;
-  statusText.textContent = "Sampling terrain fields… 0%";
-  mapTitle.textContent = "Generating landscape";
-  mapSeedLabel.textContent = "SEED: " + seedText.toUpperCase();
-
-  function finishGeneration() {
-    const elapsed = ((performance.now() - started) / 1000).toFixed(2);
-    mapTitle.textContent = "World " + seedText;
-    mapScale.textContent = (size / 1000) + " KM × " + (size / 1000) + " KM";
-    mapCoordinates.textContent = "X " + Math.round(-size / 2) + " … " + Math.round(size / 2)
-      + " · Z " + Math.round(-size / 2) + " … " + Math.round(size / 2);
-    statDimensions.innerHTML = size.toLocaleString() + " × " + size.toLocaleString() + " <small>blocks</small>";
-    statLand.textContent = latestMap.landPercent.toFixed(1) + "% land";
-    statElevation.textContent = Math.round(min).toLocaleString() + "–" + Math.round(max).toLocaleString() + " m est.";
-    statusText.textContent = "Preview generated in " + elapsed + "s";
-    inspectPosition.textContent = "Select a point on the map";
-    inspectElevation.textContent = "—";
-    loading.hidden = true;
-    generateButton.disabled = false;
-    downloadPreviewButton.disabled = false;
-    downloadCsvButton.disabled = false;
-    generateButton.classList.remove("is-loading");
-    isGenerating = false;
-  }
-
   function sampleBatch() {
-    const endRow = Math.min(RESOLUTION, sampleRow + ROWS_PER_FRAME);
+    if (!isGenerating || requestId !== activeGenerationId) return;
+    const endRow = Math.min(resolution, sampleRow + ROWS_PER_FRAME);
     for (let py = sampleRow; py < endRow; py += 1) {
-      const z = (py / (RESOLUTION - 1) - 0.5) * size;
-      for (let px = 0; px < RESOLUTION; px += 1) {
-        const x = (px / (RESOLUTION - 1) - 0.5) * size;
+      const z = (py / (resolution - 1) - 0.5) * size;
+      for (let px = 0; px < resolution; px += 1) {
+        const x = (px / (resolution - 1) - 0.5) * size;
         const sample = sampleTerrain(x, z, size, seed, reliefScale);
-        const index = py * RESOLUTION + px;
+        const index = py * resolution + px;
         heights[index] = sample.elevation;
         temperatures[index] = sample.temperature;
         humidities[index] = sample.humidity;
@@ -182,12 +280,13 @@ function generateMap() {
     }
 
     sampleRow = endRow;
-    const progress = Math.round(sampleRow / RESOLUTION * 70);
+    const progress = Math.round(sampleRow / resolution * 70);
     statusText.textContent = "Sampling terrain fields… " + progress + "%";
-    if (sampleRow < RESOLUTION) {
+    if (sampleRow < resolution) {
       window.requestAnimationFrame(sampleBatch);
       return;
     }
+
     latestMap = {
       heights,
       temperatures,
@@ -198,12 +297,78 @@ function generateMap() {
       max,
       landPercent: landCount / heights.length * 100,
       seedText,
-      reliefScale
+      reliefScale,
+      resolution
     };
-    renderMap(latestMap, finishGeneration);
+    renderMap(latestMap, () => finishGeneration(latestMap, activeGenerationStartedAt));
   }
 
   window.requestAnimationFrame(sampleBatch);
+}
+
+function cancelGeneration() {
+  if (!isGenerating) return;
+  const cancelledRequestId = activeGenerationId;
+  if (terrainWorker) {
+    try {
+      terrainWorker.postMessage({ type: "cancel", requestId: cancelledRequestId });
+    } catch {
+      // The active request is invalidated locally even if the worker is already gone.
+    }
+  }
+  generationSequence += 1;
+  activeGenerationId = "cancelled-" + generationSequence;
+  renderToken += 1;
+  isGenerating = false;
+  loading.hidden = true;
+  generateButton.classList.remove("is-loading");
+  if (latestMap) {
+    mapTitle.textContent = "World " + latestMap.seedText;
+    mapSeedLabel.textContent = "SEED: " + latestMap.seedText.toUpperCase();
+  } else {
+    mapTitle.textContent = "Untitled world";
+  }
+  statusText.textContent = "Generation cancelled";
+  syncGenerationControls();
+}
+
+function generateMap() {
+  if (isGenerating || isExportingCsv) return;
+  renderToken += 1;
+  const seedText = seedInput.value.trim() || "realscale";
+  const options = {
+    size: Number(sizeSelect.value),
+    seed: hashSeed(seedText),
+    seedText,
+    reliefScale: Number(reliefSlider.value) / 100,
+    resolution: RESOLUTION
+  };
+  activeGenerationOptions = options;
+  activeGenerationStartedAt = performance.now();
+  activeGenerationId = "generation-" + (++generationSequence);
+  isGenerating = true;
+  generateButton.classList.add("is-loading");
+  loading.hidden = false;
+  statusText.textContent = "Sampling terrain fields… 0%";
+  mapTitle.textContent = "Generating landscape";
+  mapSeedLabel.textContent = "SEED: " + seedText.toUpperCase();
+  syncGenerationControls();
+
+  if (terrainWorker) {
+    try {
+      terrainWorker.postMessage({
+        type: "generate",
+        requestId: activeGenerationId,
+        options
+      });
+      return;
+    } catch (error) {
+      switchToMainThreadFallback(error?.message || "Unable to start worker");
+      return;
+    }
+  }
+
+  startFallbackGeneration(options, activeGenerationId);
 }
 
 function safeSeedFilename(seed) {
@@ -214,7 +379,7 @@ function safeSeedFilename(seed) {
 }
 
 function downloadPreview() {
-  if (!latestMap || isGenerating) return;
+  if (!latestMap || isGenerating || isExportingCsv) return;
   const link = document.createElement("a");
   link.href = canvas.toDataURL("image/png");
   link.download = "realscale-preview-" + safeSeedFilename(latestMap.seedText) + ".png";
@@ -243,9 +408,7 @@ function downloadElevationCsv() {
   ].map(value => csvCell(value)).join(",") + "\r\n"];
   let sampleRow = 0;
 
-  downloadCsvButton.disabled = true;
-  generateButton.disabled = true;
-  refreshButton.disabled = true;
+  syncGenerationControls();
   statusText.textContent = "Preparing elevation CSV… 0%";
 
   function finishCsvExport() {
@@ -266,9 +429,7 @@ function downloadElevationCsv() {
       statusText.textContent = "CSV export failed · " + (error?.message || "unknown error");
     } finally {
       isExportingCsv = false;
-      downloadCsvButton.disabled = false;
-      generateButton.disabled = false;
-      refreshButton.disabled = false;
+      syncGenerationControls();
     }
   }
 
@@ -326,7 +487,7 @@ function setView(view) {
   });
   reliefLegend.hidden = view !== "relief";
   biomeLegend.hidden = view !== "biomes";
-  if (latestMap && !isGenerating) {
+  if (latestMap && !isGenerating && !isExportingCsv) {
     statusText.textContent = "Updating map view…";
     renderMap(latestMap, () => {
       statusText.textContent = "Map view updated";
@@ -346,6 +507,7 @@ reliefSlider.addEventListener("input", () => {
 generateButton.addEventListener("click", generateMap);
 downloadPreviewButton.addEventListener("click", downloadPreview);
 downloadCsvButton.addEventListener("click", downloadElevationCsv);
+cancelButton.addEventListener("click", cancelGeneration);
 refreshButton.addEventListener("click", generateMap);
 sizeSelect.addEventListener("change", () => {
   statusText.textContent = "World size changed · regenerate to update preview";
@@ -355,4 +517,6 @@ document.querySelectorAll(".view-button").forEach(button => {
 });
 canvas.addEventListener("click", inspectMap);
 
+terrainWorker = createTerrainWorker();
+computeMode.textContent = terrainWorker ? "WEB WORKER" : "MAIN THREAD FALLBACK";
 generateMap();
