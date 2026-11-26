@@ -196,3 +196,8 @@ h1 em,h2 em { color: #b5d28f; font-style: normal; }
   font-size:10px;
   line-height:1.5;
 }
+
+.view-button[data-view="3d"] { min-width:34px; }
+#reset-3d-view { width:32px; min-width:32px; height:32px; }
+#terrain-canvas { touch-action:pan-y; }
+#terrain-canvas[data-view="3d"] { cursor:grab; }
