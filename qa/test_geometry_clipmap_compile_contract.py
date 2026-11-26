@@ -449,12 +449,15 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("Blocks.WHITE_CONCRETE", native)
         self.assertIn("sprites.neutral()", native)
         self.assertIn("sprites.neutral()", native)
-        self.assertIn("ClipmapTriangleUv.computeCellAlignedInto(gridX, gridZ, triangleUvs)", native)
+        self.assertIn("computeTerrainUvs(tile, level", native)
+        self.assertIn("ClipmapTriangleUv.computeWorldAlignedInto(", native)
+        self.assertNotIn("ClipmapTriangleUv.computeCellAlignedInto(", native)
         self.assertNotIn("MAX_TEXTURED_DETAIL_LEVEL", native)
         self.assertNotIn("sprites.forMaterial(", native)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", native)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", native)
-        self.assertEqual(2, native.count("ClipmapTriangleUv.computeCellAlignedInto("))  # solid and water
+        self.assertEqual(1, native.count("ClipmapTriangleUv.computeWorldAlignedInto("))
+        self.assertIn("worldHalfExtent", native)
         self.assertNotIn("ClipmapTriangleUv.computeInto(", native)
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
@@ -479,7 +482,9 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("sprites.neutral()", native)
-        self.assertEqual(2, native.count("ClipmapTriangleUv.computeCellAlignedInto("))
+        self.assertIn("computeTerrainUvs(tile, level", native)
+        self.assertIn("ClipmapTriangleUv.computeWorldAlignedInto(", native)
+        self.assertNotIn("ClipmapTriangleUv.computeCellAlignedInto(", native)
         self.assertNotIn("triangleUvs[0] = 8.0f", native)
         self.assertNotIn("MAX_TEXTURED_DETAIL_LEVEL", native)
         self.assertNotIn("sprites.forMaterial(", native)
