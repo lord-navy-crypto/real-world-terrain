@@ -89,7 +89,7 @@ function generateMap() {
       + " · Z " + Math.round(-size / 2) + " … " + Math.round(size / 2);
     statDimensions.innerHTML = size.toLocaleString() + " × " + size.toLocaleString() + " <small>blocks</small>";
     statLand.textContent = latestMap.landPercent.toFixed(1) + "% land";
-    statElevation.textContent = Math.round(min).toLocaleString() + "–" + Math.round(max).toLocaleString() + " m";
+    statElevation.textContent = Math.round(min).toLocaleString() + "–" + Math.round(max).toLocaleString() + " m est.";
     statusText.textContent = "Preview generated in " + elapsed + "s";
     inspectPosition.textContent = "Select a point on the map";
     inspectElevation.textContent = "—";
@@ -191,7 +191,7 @@ function inspectMap(event) {
   const z = Math.round((py / (RESOLUTION - 1) - 0.5) * latestMap.size);
   const elevation = Math.round(latestMap.heights[py * RESOLUTION + px]);
   inspectPosition.textContent = "X " + x.toLocaleString() + " · Z " + z.toLocaleString();
-  inspectElevation.textContent = elevation.toLocaleString() + " m";
+  inspectElevation.textContent = elevation.toLocaleString() + " m est.";
   mapCoordinates.textContent = "X " + x.toLocaleString() + " · Z " + z.toLocaleString();
 }
 
