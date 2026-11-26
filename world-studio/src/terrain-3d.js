@@ -66,7 +66,9 @@ export function buildIsometricMesh(map, camera = {}) {
       const dx = (right - left) / dxDistance;
       const dz = (down - up) / dzDistance;
 
-      vertices[sampleIndexForGrid(gridZ, gridX, gridSize)] = {
+      const gridIndex = sampleIndexForGrid(gridZ, gridX, gridSize);
+      vertices[gridIndex] = {
+        gridIndex,
         x: 192 + rotatedX * 128 * zoom,
         y: 192 + rotatedDepth * 84 * Math.sin(pitch) * zoom - normalizedHeight * 96 * zoom,
         depth: rotatedDepth * Math.cos(pitch) + normalizedHeight * Math.sin(pitch) * 0.35,
