@@ -238,7 +238,8 @@ function switchToMainThreadFallback(reason) {
   if (failedWorker) failedWorker.terminate();
   computeMode.textContent = "MAIN THREAD FALLBACK";
   if (!isGenerating || !activeGenerationOptions) return;
-  statusText.textContent = "Worker unavailable · switching to local sampling";
+  const detail = String(reason || "worker failure").replace(/[<>\\r\\n]/g, " ").slice(0, 80);
+  statusText.textContent = "Worker unavailable (" + detail + ") · switching to local sampling";
   startFallbackGeneration(activeGenerationOptions, activeGenerationId);
 }
 
@@ -270,19 +271,24 @@ function startFallbackGeneration(options, requestId) {
   function sampleBatch() {
     if (!isGenerating || requestId !== activeGenerationId) return;
     const endRow = Math.min(resolution, sampleRow + ROWS_PER_FRAME);
-    for (let py = sampleRow; py < endRow; py += 1) {
-      const z = (py / (resolution - 1) - 0.5) * size;
-      for (let px = 0; px < resolution; px += 1) {
-        const x = (px / (resolution - 1) - 0.5) * size;
-        const sample = sampleTerrain(x, z, size, seed, reliefScale);
-        const index = py * resolution + px;
-        heights[index] = sample.elevation;
-        temperatures[index] = sample.temperature;
-        humidities[index] = sample.humidity;
-        min = Math.min(min, sample.elevation);
-        max = Math.max(max, sample.elevation);
-        if (sample.elevation >= SEA_LEVEL) landCount += 1;
+    try {
+      for (let py = sampleRow; py < endRow; py += 1) {
+        const z = (py / (resolution - 1) - 0.5) * size;
+        for (let px = 0; px < resolution; px += 1) {
+          const x = (px / (resolution - 1) - 0.5) * size;
+          const sample = sampleTerrain(x, z, size, seed, reliefScale);
+          const index = py * resolution + px;
+          heights[index] = sample.elevation;
+          temperatures[index] = sample.temperature;
+          humidities[index] = sample.humidity;
+          min = Math.min(min, sample.elevation);
+          max = Math.max(max, sample.elevation);
+          if (sample.elevation >= SEA_LEVEL) landCount += 1;
+        }
       }
+    } catch (error) {
+      failGeneration(error?.message || "Local terrain sampler failed");
+      return;
     }
 
     sampleRow = endRow;
