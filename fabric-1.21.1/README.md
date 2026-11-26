@@ -4,7 +4,7 @@ Independent Fabric port of RealScale for Minecraft 1.21.1.
 
 - Minecraft: **1.21.1**
 - Fabric Loader: **0.16.14 or newer** (CI baseline: 0.19.5)
-- Fabric API: **0.116.18 or newer**
+- Fabric API: **0.116.17 or newer**
 - Java: **21**
 - Optional configuration UI: **YACL 3.8.1+1.21.1-fabric**
 
