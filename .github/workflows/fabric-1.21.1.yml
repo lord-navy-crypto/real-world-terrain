@@ -26,11 +26,19 @@ concurrency:
 
 jobs:
   build-and-smoke:
-    name: Fabric 1.21.1 build and runtime smoke
+    name: Fabric 1.21.1 build and runtime smoke (${{ matrix.artifact_suffix }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - fabric_api_version: "0.116.17+1.21.1"
+            artifact_suffix: "api-0.116.17"
+          - fabric_api_version: "0.116.18+1.21.1"
+            artifact_suffix: "api-0.116.18"
     env:
       FABRIC_LOADER_VERSION: "0.19.5"
-      FABRIC_API_VERSION: "0.116.18+1.21.1"
+      FABRIC_API_VERSION: ${{ matrix.fabric_api_version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,6 +77,7 @@ jobs:
               metadata = json.loads(z.read("fabric.mod.json"))
               assert metadata["depends"]["minecraft"] == "1.21.1"
               assert metadata["depends"]["java"] == ">=21"
+              assert metadata["depends"]["fabric-api"] == ">=0.116.17"
               assert "yet_another_config_lib_v3" in metadata.get("suggests", {})
               rules = [n for n in names if n.startswith("realscale/biome_modifiers/") and n.endswith(".json")]
               arch = [n for n in names if n.startswith("data/realscale/structure/architecture/") and n.endswith(".nbt")]
@@ -126,7 +135,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: RealScale-Fabric-1.21.1-build-and-smoke-logs
+          name: RealScale-Fabric-1.21.1-build-and-smoke-logs-${{ matrix.artifact_suffix }}
           path: |
             fabric-1.21.1-server.log
             fabric-1.21.1-client-smoke.log
@@ -136,7 +145,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: RealScale-Fabric-1.21.1-JAR
+          name: RealScale-Fabric-1.21.1-JAR-${{ matrix.artifact_suffix }}
           path: |
             fabric-1.21.1/build/libs/*.jar
             !fabric-1.21.1/build/libs/*-dev.jar
