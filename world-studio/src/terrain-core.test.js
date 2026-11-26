@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { hashSeed, sampleTerrain, TERRAIN_FAMILY_NAMES } from "./terrain-core.js";
+import { hashSeed, sampleTerrain, siteGeometry, TERRAIN_FAMILY_NAMES } from "./terrain-core.js";
 
 test("the preview model exposes all six terrain morphology families", () => {
   assert.deepEqual(TERRAIN_FAMILY_NAMES, [
@@ -46,4 +46,19 @@ test("different seeds produce different terrain fields", () => {
   const a = sampleTerrain(1234, -5678, 8192, hashSeed("seed-a"), 1);
   const b = sampleTerrain(1234, -5678, 8192, hashSeed("seed-b"), 1);
   assert.notDeepEqual(a, b);
+});
+
+test("volcanic and karst site geometry matches the Java world-absolute hash", () => {
+  assert.deepEqual(siteGeometry(0, 0), {
+    centerX: 947,
+    centerZ: 1121,
+    sinkX: 1035.2,
+    sinkZ: 1310
+  });
+  assert.deepEqual(siteGeometry(-1, 2), {
+    centerX: -990,
+    centerZ: 5029,
+    sinkX: -810,
+    sinkZ: 5129.8
+  });
 });
