@@ -1,3 +1,5 @@
+import './style.css';
+
 const canvas = document.querySelector("#terrain-canvas");
 const ctx = canvas.getContext("2d", { alpha: false });
 const seedInput = document.querySelector("#seed-input");
