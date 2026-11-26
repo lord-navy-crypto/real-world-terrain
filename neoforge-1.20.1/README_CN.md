@@ -3,7 +3,7 @@
 这是面向 Minecraft 1.20.1 的独立旧版 NeoForge 构建。
 
 - Minecraft：**1.20.1**
-- NeoForge Legacy：**47.1.5–47.1.106（声明范围；CI 测试两个端点）**
+- NeoForge Legacy：**47.1.105–47.1.106（声明范围；CI 测试两个端点）**
 - Java：**17**
 - 构建工具：**ModDevGradle Legacy Forge 插件 2.0.148**
 - 客户端配置库：**YACL 3.6.5+（CI 测试 3.6.5 和 3.6.6）**
