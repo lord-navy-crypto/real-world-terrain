@@ -68,6 +68,21 @@ final class ClipmapHeightTilePayloadTest {
     }
 
     @Test
+    void biomeMaterialsAreDefensiveAndIndexable(){
+        short[] h=new short[17*17];byte[] m=new byte[17*17];m[4]=ClipmapBiomeMaterial.FOREST;
+        ClipmapHeightTilePayload p=new ClipmapHeightTilePayload("minecraft:overworld",1L,10,16,0,8,-64,-64,-64,2032,h,m);
+        m[4]=ClipmapBiomeMaterial.DESERT;assertEquals(ClipmapBiomeMaterial.FOREST,p.biomeMaterialAt(4));
+        byte[] copy=p.biomeMaterials();copy[4]=ClipmapBiomeMaterial.SNOW;
+        assertEquals(ClipmapBiomeMaterial.FOREST,p.biomeMaterialAt(4));
+        assertThrows(IndexOutOfBoundsException.class,()->p.biomeMaterialAt(-1));
+    }
+    @Test
+    void rejectsBiomeMaterialArrayWithWrongLength(){
+        assertThrows(IllegalArgumentException.class,()->new ClipmapHeightTilePayload(
+            "minecraft:overworld",1L,10,16,0,8,-64,-64,-64,2032,new short[17*17],new byte[3]));
+    }
+
+    @Test
     void rejectsNonPositiveRequestGeneration() {
         assertThrows(IllegalArgumentException.class, () ->
                 new ClipmapHeightTilePayload("minecraft:overworld", 0L,

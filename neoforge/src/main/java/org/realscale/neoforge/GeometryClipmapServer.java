@@ -1,6 +1,9 @@
 package org.realscale.neoforge;
 
 import net.minecraft.core.registries.Registries;
+import net.minecraft.core.QuartPos;
+import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.biome.Climate;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -16,6 +19,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.realscale.neoforge.client.clipmap.ClipmapHeightGrid;
 import org.realscale.neoforge.client.clipmap.ClipmapHeightQuantizer;
+import org.realscale.neoforge.client.clipmap.ClipmapBiomeMaterial;
 import org.realscale.neoforge.client.clipmap.GeometryClipmapLayout;
 import org.realscale.neoforge.client.clipmap.NaturalAutomateHeightMapping;
 import org.realscale.neoforge.network.ClipmapHeightTilePayload;
@@ -303,7 +307,8 @@ public final class GeometryClipmapServer {
                     if (!session.requestEpoch.isCurrent(requestEpoch)) return;
                     nextGrids.add(grid);
                     ClipmapHeightTilePayload payload = toPayload(targetDimension, targetRequestId,
-                            session.nearChunks, nextLayout, i, grid);
+                            session.nearChunks, nextLayout, i, grid,
+                            generator.getBiomeSource(), randomState.sampler());
                     int completedLevels = ++i;
                     double elapsedMs = (System.nanoTime() - started) / 1_000_000.0;
                     int newVertices = grid.newlySampledVertexCount();
@@ -439,25 +444,31 @@ public final class GeometryClipmapServer {
         }
     }
 
-    private static ClipmapHeightTilePayload toPayload(String dimension,
-            long requestId, int nearChunks, GeometryClipmapLayout.Layout layout,
-            int levelIndex, ClipmapHeightGrid grid) {
-        int side = grid.gridSide();
-        float[] heights = grid.copyHeights();
-        short[] encoded = new short[heights.length];
-        for (int z = 0; z < side; z++) {
-            for (int x = 0; x < side; x++) {
-                int index = z * side + x;
-                float height = Float.isFinite(heights[index])
-                        ? heights[index] : MIN_HEIGHT;
-                encoded[index] = (short) ClipmapHeightQuantizer.encode(
-                        height, MIN_HEIGHT, MAX_HEIGHT);
+    private static ClipmapHeightTilePayload toPayload(String dimension,long requestId,
+            int nearChunks,GeometryClipmapLayout.Layout layout,int levelIndex,
+            ClipmapHeightGrid grid,BiomeSource biomeSource,Climate.Sampler climateSampler){
+        int side=grid.gridSide(),spacing=grid.cellSpacingBlocks();
+        float[] heights=grid.copyHeights();short[] encoded=new short[heights.length];
+        byte[] materials=new byte[heights.length];
+        for(int z=0;z<side;z++){
+            long worldZ=grid.originZ()+(long)z*spacing;
+            for(int x=0;x<side;x++){
+                int index=z*side+x;float height=heights[index];
+                if(!Float.isFinite(height)){
+                    encoded[index]=(short)ClipmapHeightQuantizer.encode(MIN_HEIGHT,MIN_HEIGHT,MAX_HEIGHT);
+                    materials[index]=ClipmapBiomeMaterial.UNKNOWN;continue;
+                }
+                long worldX=grid.originX()+(long)x*spacing;
+                int bx=Math.toIntExact(worldX),bz=Math.toIntExact(worldZ),by=Math.round(height);
+                encoded[index]=(short)ClipmapHeightQuantizer.encode(height,MIN_HEIGHT,MAX_HEIGHT);
+                String path=biomeSource.getNoiseBiome(QuartPos.fromBlock(bx),QuartPos.fromBlock(by),
+                        QuartPos.fromBlock(bz),climateSampler).unwrapKey()
+                        .map(ResourceKey::location).map(ResourceLocation::getPath).orElse("");
+                materials[index]=ClipmapBiomeMaterial.fromBiomePath(path);
             }
         }
-        return new ClipmapHeightTilePayload(dimension, requestId, nearChunks,
-                layout.gridCells(), levelIndex,
-                grid.cellSpacingBlocks(), grid.originX(), grid.originZ(),
-                MIN_HEIGHT, MAX_HEIGHT, encoded);
+        return new ClipmapHeightTilePayload(dimension,requestId,nearChunks,layout.gridCells(),
+                levelIndex,spacing,grid.originX(),grid.originZ(),MIN_HEIGHT,MAX_HEIGHT,encoded,materials);
     }
 
     private static void sendStatus(ServerPlayer player, Session session,

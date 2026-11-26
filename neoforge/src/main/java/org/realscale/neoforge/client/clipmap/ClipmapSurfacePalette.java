@@ -76,10 +76,11 @@ public final class ClipmapSurfacePalette {
 
         // Broad vegetation palette. Climate sampling can replace this
         // world-anchored proxy once the server sends biome/climate attributes.
-        float dry = smoothstep(0.15f, 0.85f, moisture);
-        float red = mix(0.37f, 0.18f, dry);
-        float green = mix(0.34f, 0.34f, dry);
-        float blue = mix(0.22f, 0.16f, dry);
+        // Procedural lushness proxy only; this is not measured biome climate.
+        float lushness = smoothstep(0.15f, 0.85f, moisture);
+        float red = mix(0.37f, 0.18f, lushness);
+        float green = mix(0.34f, 0.34f, lushness);
+        float blue = mix(0.22f, 0.16f, lushness);
 
         float rockCover = Math.max(
                 smoothstep(0.16f, 0.55f, slope),
@@ -109,6 +110,28 @@ public final class ClipmapSurfacePalette {
         return pack(red * lightness * 255.0f,
                 green * lightness * 255.0f,
                 blue * lightness * 255.0f);
+    }
+
+    /** Biome-aware palette; unknown IDs retain the existing procedural fallback. */
+    public static int terrainColorAt(float height,float normalY,float seaLevel,
+            boolean verticalSkirt,byte biomeMaterial,long worldX,long worldZ){
+        if(biomeMaterial==ClipmapBiomeMaterial.UNKNOWN)
+            return terrainColorAt(height,normalY,seaLevel,verticalSkirt,worldX,worldZ);
+        if(!Float.isFinite(height)||!Float.isFinite(normalY)||!Float.isFinite(seaLevel))
+            throw new IllegalArgumentException("surface palette inputs must be finite");
+        if(verticalSkirt)return 0x6B665E;
+        int base=ClipmapBiomeMaterial.baseColor(biomeMaterial);
+        if(base<0)return terrainColorAt(height,normalY,seaLevel,verticalSkirt,worldX,worldZ);
+        float slope=1.0f-clamp(normalY,0.0f,1.0f);
+        float rock=smoothstep(0.18f,0.58f,slope);
+        float snow=smoothstep(seaLevel+677.0f,seaLevel+1157.0f,height+(valueNoise(worldX,worldZ,2048)-0.5f)*130.0f);
+        float red=mix(channel(base,16),channel(ROCK,16),rock);
+        float green=mix(channel(base,8),channel(ROCK,8),rock);
+        float blue=mix(channel(base,0),channel(ROCK,0),rock);
+        red=mix(red,channel(SNOW,16),snow);green=mix(green,channel(SNOW,8),snow);blue=mix(blue,channel(SNOW,0),snow);
+        float regional=valueNoise(worldX,worldZ,512),local=valueNoise(worldX,worldZ,256);
+        float lightness=(0.97f+0.06f*regional)*(0.985f+0.03f*local);
+        return pack(red*lightness,green*lightness,blue*lightness);
     }
 
     private static float valueNoise(long worldX, long worldZ, int cellSize) {

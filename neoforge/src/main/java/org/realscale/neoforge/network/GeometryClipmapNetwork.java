@@ -18,7 +18,7 @@ public final class GeometryClipmapNetwork {
     private GeometryClipmapNetwork() {}
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("5");
+        var registrar = event.registrar("6");
         registrar.playToServer(
                 ClipmapRequestPayload.TYPE,
                 ClipmapRequestPayload.STREAM_CODEC,

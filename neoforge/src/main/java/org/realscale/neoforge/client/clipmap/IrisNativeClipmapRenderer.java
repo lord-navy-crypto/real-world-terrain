@@ -535,6 +535,7 @@ final class IrisNativeClipmapRenderer {
                 : cells / 4;
         int[] indices = ClipmapRingMesh.surfaceIndices(cells, holeRadius);
         short[] encodedHeights = tile.heights();
+        byte[] biomeMaterials = tile.biomeMaterials();
         float[] surfaceHeights = new float[baseCount];
         for (int gridZ = 0; gridZ <= cells; gridZ++) {
             for (int gridX = 0; gridX <= cells; gridX++) {
@@ -593,8 +594,12 @@ final class IrisNativeClipmapRenderer {
                     voxelHeights[cell] = ClipmapVoxelStyle.quantizeHeight(averageHeight);
                     voxelBlends[cell] = blend;
                     if (blend > 0.001f) {
+                        byte cellMaterial = ClipmapBiomeMaterial.majority(
+                                biomeMaterials[sample], biomeMaterials[sample + 1],
+                                biomeMaterials[sample + side], biomeMaterials[sample + side + 1]);
                         voxelColors[cell] = ClipmapSurfacePalette.terrainColorAt(
-                                averageHeight, averageNormalY, seaLevel, false, worldX, worldZ);
+                                averageHeight, averageNormalY, seaLevel, false,
+                                cellMaterial, worldX, worldZ);
                     }
                 }
             }
@@ -669,7 +674,8 @@ final class IrisNativeClipmapRenderer {
                     long worldZ = tile.originZ() + (long) gridZ[vertex] * spacing;
                     int continuousColor = ClipmapSurfacePalette.terrainColorAt(
                             Math.max(y[vertex], seaLevel),
-                            smoothNormals[normalIndex + 1], seaLevel, false, worldX, worldZ);
+                            smoothNormals[normalIndex + 1], seaLevel, false,
+                            biomeMaterials[heightIndex], worldX, worldZ);
                     int voxelColor = voxelBlend > 0.001f
                             ? voxelColors[cellIndex] : continuousColor;
                     vertexColors[vertex] = ClipmapVoxelStyle.blendColor(

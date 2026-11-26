@@ -563,3 +563,16 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_biome_materials_are_sampled_streamed_and_used_by_iris_renderer(self):
+        server = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java").read_text(encoding="utf-8")
+        payload = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/network/ClipmapHeightTilePayload.java").read_text(encoding="utf-8")
+        renderer = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/IrisNativeClipmapRenderer.java").read_text(encoding="utf-8")
+        network = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/network/GeometryClipmapNetwork.java").read_text(encoding="utf-8")
+        self.assertIn("biomeSource.getNoiseBiome(", server)
+        self.assertIn("ClipmapBiomeMaterial.fromBiomePath(path)", server)
+        self.assertIn("byte[] biomeMaterials", payload)
+        self.assertIn("buffer.writeBytes(materials)", payload)
+        self.assertIn("tile.biomeMaterials()", renderer)
+        self.assertIn("ClipmapBiomeMaterial.majority(", renderer)
+        self.assertIn('event.registrar("6")', network)
