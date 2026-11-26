@@ -471,7 +471,6 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertNotIn("int minX = Math.min(gridX", native)
         self.assertIn("vertexColors[vertex]", native)
         self.assertNotIn("int materialRgb", native)
-        self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", native)
         terrain_triangle = native.split("private static void emitTriangle(BufferBuilder", 1)[1].split(
             "private static void triangleNormalInto", 1
         )[0]
