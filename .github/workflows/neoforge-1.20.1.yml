@@ -2,7 +2,7 @@ name: RealScale NeoForge 1.20.1 Legacy Compatibility
 
 on:
   push:
-    branches: [feature/neoforge-1.20.1-port, feature/neoforge-1.20.1-validation]
+    branches: [feature/neoforge-1.20.1-port, feature/neoforge-1.20.1-validation, test/neoforge-1.20.1-47.1.37-compat]
     paths:
       - "neoforge-1.20.1/**"
       - "scripts/**"
