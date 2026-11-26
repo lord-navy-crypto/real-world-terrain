@@ -104,6 +104,7 @@ function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported"
         for (const callback of listeners.get(type) || []) callback(event);
       },
       focus() {},
+      select() {},
       click() {
         this.dispatch("click");
       },
