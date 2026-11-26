@@ -136,10 +136,20 @@
                 </div>
                 <button class="download-preview-button" id="download-preview" type="button" disabled title="Download the current map image only">PNG</button>
                 <button class="download-preview-button" id="download-csv" type="button" disabled title="Download all 384 × 384 estimated terrain samples as CSV">CSV</button>
+                <button class="download-preview-button" id="share-world" type="button" title="Copy a link to the current seed and preview settings">LINK</button>
                 <button class="icon-button map-refresh" id="refresh-map" type="button" aria-label="Regenerate map" title="Regenerate">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 9a7 7 0 0 1 11.5-2L20 12M4 12l2.4 5a7 7 0 0 0 11.5-2"/></svg>
                 </button>
               </div>
+            </div>
+
+            <div class="share-link-panel" id="share-link-panel" hidden>
+              <div class="share-link-heading">SHAREABLE WORLD SETTINGS</div>
+              <div class="share-link-row">
+                <input id="share-link-input" type="url" readonly aria-label="Shareable world settings URL" />
+                <button id="copy-share-link" type="button">Copy link</button>
+              </div>
+              <p>Opens the same seed, footprint, relief, and map view. This link shares settings only, not a Minecraft save.</p>
             </div>
 
             <div class="map-stage">
