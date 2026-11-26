@@ -134,7 +134,11 @@ function renderIsometricMap(map, onComplete, token) {
   }
 
   function drawBatch() {
-    if (token !== renderToken || currentView !== "3d") return;
+    if (token !== renderToken) return;
+    if (currentView !== "3d") {
+      renderMap(map, onComplete);
+      return;
+    }
     const endCell = Math.min(mesh.cells.length, cellCursor + 384);
     for (let index = cellCursor; index < endCell; index += 1) {
       const cell = mesh.cells[index];
