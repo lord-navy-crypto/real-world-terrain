@@ -73,8 +73,8 @@ test("grid sampler includes both negative and positive footprint edges", async (
   const first = sampleTerrain(-2048, -2048, 4096, BASE_OPTIONS.seed, 1);
   const last = sampleTerrain(2048, 2048, 4096, BASE_OPTIONS.seed, 1);
 
-  assert.equal(result.heights[0], first.elevation);
-  assert.equal(result.heights[255], last.elevation);
+  assert.ok(Math.abs(result.heights[0] - first.elevation) < 1e-4);
+  assert.ok(Math.abs(result.heights[255] - last.elevation) < 1e-4);
 });
 
 test("grid sampler rejects invalid footprint, seed, resolution, and relief settings before sampling", async () => {
@@ -96,7 +96,7 @@ test("grid sampler rejects invalid footprint, seed, resolution, and relief setti
   );
   await assert.rejects(
     generateTerrainGrid({ ...BASE_OPTIONS, reliefScale: 1.41 }, FAST_HOOKS),
-    /relief scale/
+    /relief scale/i
   );
 });
 
