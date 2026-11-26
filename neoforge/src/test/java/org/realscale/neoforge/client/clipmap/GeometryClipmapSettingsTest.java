@@ -72,14 +72,14 @@ class GeometryClipmapSettingsTest {
         GeometryClipmapSettings.saveGridCells(file, 128);
         assertEquals(128, GeometryClipmapSettings.loadGridCells(file));
         GeometryClipmapSettings.saveGridCells(file, 256);
-        assertEquals(128, GeometryClipmapSettings.loadGridCells(file));
+        assertEquals(256, GeometryClipmapSettings.loadGridCells(file));
     }
 
     @Test
     void invalidRangePreferenceFallsBackToBalancedDefault() throws Exception {
         Path file = tempDir.resolve("clipmap.properties");
         Files.writeString(file, "gridCells=512\\n");
-        assertEquals(256, GeometryClipmapSettings.loadGridCells(file));
+        assertEquals(128, GeometryClipmapSettings.loadGridCells(file));
     }
 
     @Test

@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class ClipmapHeightGridTest {
-    private final GeometryClipmapLayout planner = new GeometryClipmapLayout();
+    private final GeometryClipmapLayout planner = new GeometryClipmapLayout(256, 6, 4, 10);
 
     @Test
     void samplesOnlyVerticesOutsideTheFinerWindow() {
