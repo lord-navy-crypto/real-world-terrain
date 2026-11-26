@@ -1080,10 +1080,22 @@ def run_client(env: dict[str, str]) -> None:
         validate_screenshot(early)
         terrain_contrast(early)
         settled_centre = wait_for_settled_window(proc, lines, motion_start, minimum_seconds=90)
-        if settled_centre != new_centre:
+        # A fast spectator flight can cross more than one snapped centre before
+        # the first replacement window finishes. Accept the final stable centre,
+        # provided it is new and has its own complete mesh, proxy and visible-pixel
+        # evidence (all required by wait_for_settled_window).
+        settled_output = "".join(lines[motion_start:])
+        settled_centres = set(re.findall(
+            r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", settled_output
+        )) - old_centres
+        if settled_centre in old_centres or settled_centre not in settled_centres:
             raise RuntimeError(
-                f"Settled centre {settled_centre} differs from movement centre {new_centre}"
+                f"Settled centre {settled_centre} is not a newly published movement centre: "
+                f"{sorted(settled_centres)}"
             )
+        centres = settled_centres
+        moving_centres = settled_centres
+        print("CLIENT_MOVEMENT_SETTLED_CENTER:", settled_centre, flush=True)
         moving = capture_screenshot("iris-clipmap-after-motion")
         validate_screenshot(moving)
         settled_contrast = terrain_contrast(moving)
