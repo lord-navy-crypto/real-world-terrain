@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   build-and-server-smoke:
-    name: NeoForge 1.20.1 (\${{ matrix.artifact_suffix }})
+    name: NeoForge 1.20.1 (${{ matrix.artifact_suffix }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -45,8 +45,8 @@ jobs:
             yacl_version_id: "sCWgXDYQ"
             artifact_suffix: "47.1.106-yacl-3.6.6"
     env:
-      NEOFORGE_VERSION: \${{ matrix.neoforge_version }}
-      YACL_VERSION_ID: \${{ matrix.yacl_version_id }}
+      NEOFORGE_VERSION: ${{ matrix.neoforge_version }}
+      YACL_VERSION_ID: ${{ matrix.yacl_version_id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,7 +75,7 @@ jobs:
       - name: Upload NeoForge JAR
         uses: actions/upload-artifact@v4
         with:
-          name: RealScale-NeoForge-1.20.1-\${{ matrix.artifact_suffix }}
+          name: RealScale-NeoForge-1.20.1-${{ matrix.artifact_suffix }}
           path: neoforge-1.20.1/build/libs/*.jar
           if-no-files-found: error
 
@@ -124,7 +124,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: NeoForge-1.20.1-integration-logs-\${{ matrix.artifact_suffix }}
+          name: NeoForge-1.20.1-integration-logs-${{ matrix.artifact_suffix }}
           path: |
             neoforge-server-smoke.log
             neoforge-client-smoke.log
