@@ -53,3 +53,17 @@ The size selector currently controls the browser preview footprint, not a promis
 | 64 km | 4,096 | 16,777,216 |
 
 The production export service must enforce an explicit chunk budget, disk quota, generation timeout, and archive-size limit. Larger maps should be treated as preview extents or split into controlled generation jobs; the browser must never imply that a 64 km save has already been generated just because its preview rendered.
+
+
+## Vanilla-compatible export is a validation requirement
+
+The goal is to let players open an exported save without installing the RealScale client mod. This is not guaranteed merely by generating chunks on a modded server: the current worldgen includes custom density-function codecs and custom biome/registry identifiers.
+
+The export worker therefore needs a separate compatibility-bake stage:
+- Generate the selected area with a pinned RealScale server runtime.
+- Pre-generate only the approved chunk budget and set a matching world border.
+- Convert or remap any mod-specific biome/registry references that vanilla cannot resolve; preserve the already-generated block terrain.
+- Replace mod-specific generator metadata with a vanilla-loadable configuration where required.
+- Reopen the exported archive with an unmodified vanilla server/client and verify there are no missing registry, codec, or data-pack errors before marking it downloadable.
+
+Do not advertise vanilla compatibility until this clean vanilla reopen test passes for the exact Minecraft version being exported.
