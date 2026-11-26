@@ -38,3 +38,18 @@ Run npm install, then npm run dev. Use npm run build to create the production bu
 - Only generate worlds using a pinned, signed-off RealScale server image and allowlisted options.
 - Apply quotas, timeouts, disk limits, checksums, and cleanup to generation jobs.
 - Treat community uploads as untrusted files; validate archive paths and scan before publication.
+
+
+## Full-world generation budget
+
+The size selector currently controls the browser preview footprint, not a promise that every chunk in that square will be pre-generated. At the project's approximate 1 block = 1 metre horizontal scale, fully pre-generating a square area would require:
+
+| Side length | Chunk width | Total chunks |
+|---|---:|---:|
+| 4 km | 256 | 65,536 |
+| 8 km | 512 | 262,144 |
+| 16 km | 1,024 | 1,048,576 |
+| 32 km | 2,048 | 4,194,304 |
+| 64 km | 4,096 | 16,777,216 |
+
+The production export service must enforce an explicit chunk budget, disk quota, generation timeout, and archive-size limit. Larger maps should be treated as preview extents or split into controlled generation jobs; the browser must never imply that a 64 km save has already been generated just because its preview rendered.
