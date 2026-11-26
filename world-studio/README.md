@@ -12,8 +12,10 @@ A browser-first world creation interface for the RealScale project.
 - Downloadable PNG map previews (image export only; not a playable Minecraft save).
 - Downloadable CSV elevation grids with X/Z sample coordinates, estimated height, temperature/humidity indices, seed, and footprint metadata.
 - Square map rendering so the displayed geometry preserves the selected square footprint.
-- Frame-batched terrain sampling and shading, with live progress updates to keep the browser responsive.
+- Module Web Worker terrain sampling with live progress and cooperative cancellation; environments without Worker support use a frame-batched main-thread fallback.
+- Frame-batched Canvas shading, with worker-result validation and stale-request protection.
 - No executable downloads, launcher integration, or local filesystem access.
+- A visible compute-mode indicator and a cancel control for active generation.
 
 ## Important generation boundary
 
@@ -88,3 +90,12 @@ The CSV export contains the complete 384 × 384 browser preview sample grid. Ele
 Relief/biome view switching reuses the already sampled height and climate arrays and only re-renders the map colors. It does not run the terrain sampler again.
 
 CSV generation is split into animation-frame batches so the full sample grid can be exported without building all rows in one long browser task. Switching between relief and biome views reuses the same sampled arrays and only re-renders colors.
+
+
+## Browser compute lifecycle
+
+The default preview path creates a Vite module Web Worker and sends a request-scoped seed, footprint, relief scale, and sample resolution. The worker validates its inputs before allocating arrays, computes terrain in short row batches, reports progress, and transfers the three Float32Array buffers back to the page. The main thread validates the returned array types, lengths, seed, footprint, and summary metadata before rendering.
+
+Generation can be cancelled while sampling or while the Canvas is rendering. Request IDs prevent late results from an older generation from replacing the current map. The last completed map remains available if a newer generation is cancelled. If Worker construction or execution fails, the app terminates the failed worker and switches to its frame-batched local sampler.
+
+The worker moves terrain sampling off the UI thread; Canvas rendering and map inspection remain on the main thread. The preview continues to use deterministic browser-side noise inputs and is not an exact Minecraft noise-router or playable-save export.
