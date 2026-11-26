@@ -119,3 +119,7 @@ h1 em,h2 em { color: #b5d28f; font-style: normal; }
 .preview-badge { display:inline-flex; align-items:center; margin-left:12px; padding:5px 7px; border:1px solid rgba(180,212,138,.25); border-radius:2px; color:#b5d28f; background:rgba(180,212,138,.05); font:8px "DM Mono",monospace; letter-spacing:.1em; white-space:nowrap; }
 .preview-disclaimer { margin:0 0 9px; color:#819084; font-size:9px; line-height:1.55; }
 @media (max-width:420px) { .preview-badge { margin:8px 0 0; } .map-panel-head { flex-wrap:wrap; } }
+
+.download-preview-button { height:32px; padding:0 10px; border:1px solid rgba(180,212,138,.24); border-radius:3px; color:#c8d9bd; background:rgba(180,212,138,.06); font:9px "DM Mono",monospace; letter-spacing:.08em; transition:background .2s,border-color .2s; }
+.download-preview-button:hover:not(:disabled) { background:rgba(180,212,138,.14); border-color:rgba(180,212,138,.5); }
+.download-preview-button:disabled { opacity:.42; cursor:not-allowed; }
