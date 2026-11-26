@@ -9,6 +9,7 @@ const reliefSlider = document.querySelector("#relief-slider");
 const reliefValue = document.querySelector("#relief-value");
 const generateButton = document.querySelector("#generate-button");
 const refreshButton = document.querySelector("#refresh-map");
+const downloadPreviewButton = document.querySelector("#download-preview");
 const randomSeedButton = document.querySelector("#random-seed");
 const statusText = document.querySelector("#generation-status");
 const loading = document.querySelector("#map-loading");
@@ -66,6 +67,7 @@ function generateMap() {
 
   isGenerating = true;
   generateButton.disabled = true;
+  downloadPreviewButton.disabled = true;
   generateButton.classList.add("is-loading");
   loading.hidden = false;
   statusText.textContent = "Sampling terrain fields… 0%";
@@ -95,6 +97,7 @@ function generateMap() {
     inspectElevation.textContent = "—";
     loading.hidden = true;
     generateButton.disabled = false;
+    downloadPreviewButton.disabled = false;
     generateButton.classList.remove("is-loading");
     isGenerating = false;
   }
@@ -182,6 +185,19 @@ function generateMap() {
   window.requestAnimationFrame(sampleBatch);
 }
 
+function downloadPreview() {
+  if (!latestMap) return;
+  const safeSeed = latestMap.seedText.toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32) || "world";
+  const link = document.createElement("a");
+  link.href = canvas.toDataURL("image/png");
+  link.download = "realscale-preview-" + safeSeed + ".png";
+  link.click();
+  statusText.textContent = "Preview PNG downloaded · image only, not a Minecraft save";
+}
+
 function inspectMap(event) {
   if (!latestMap) return;
   const rect = canvas.getBoundingClientRect();
@@ -215,6 +231,7 @@ reliefSlider.addEventListener("input", () => {
   reliefValue.textContent = reliefSlider.value + "%";
 });
 generateButton.addEventListener("click", generateMap);
+downloadPreviewButton.addEventListener("click", downloadPreview);
 refreshButton.addEventListener("click", generateMap);
 sizeSelect.addEventListener("change", () => {
   statusText.textContent = "World size changed · regenerate to update preview";
