@@ -1,0 +1,35 @@
+name: RealScale World Studio
+
+on:
+  pull_request:
+    paths:
+      - "world-studio/**"
+      - ".github/workflows/world-studio.yml"
+
+concurrency:
+  group: world-studio-pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build browser studio
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: world-studio
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Run terrain core tests
+        run: npm test
+      - name: Build production bundle
+        run: npm run build
