@@ -1,5 +1,7 @@
 package org.realscale.neoforge.network;
 
+import org.realscale.neoforge.client.clipmap.ClipmapBiomeMaterial;
+
 import org.junit.jupiter.api.Test;
 import java.nio.ShortBuffer;
 import static org.junit.jupiter.api.Assertions.*;
