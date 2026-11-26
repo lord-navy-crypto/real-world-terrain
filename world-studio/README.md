@@ -86,3 +86,5 @@ The next parity gate is a fixed-seed server comparison: sample identical X/Z coo
 The CSV export contains the complete 384 × 384 browser preview sample grid. Elevation and climate columns are estimated browser-model values, not authoritative Minecraft block heights or biome IDs. The file includes X/Z coordinates in blocks, the seed, and preview footprint so the samples can be inspected in a spreadsheet or GIS workflow without implying a playable-world export.
 
 Relief/biome view switching reuses the already sampled height and climate arrays and only re-renders the map colors. It does not run the terrain sampler again.
+
+CSV generation is split into animation-frame batches so the full sample grid can be exported without building all rows in one long browser task. Switching between relief and biome views reuses the same sampled arrays and only re-renders colors.
