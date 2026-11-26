@@ -63,6 +63,9 @@ public final class GeometryClipmapClient {
     private static boolean unsupportedWorld;
     private static boolean irisCompatibilityNoticeShown;
     private static boolean cameraVantageReported;
+    // CI-only telemetry used to prove that the smoke camera actually crossed
+    // a clipmap centre boundary during the real-client movement gate.
+    private static long lastSmokeCameraTelemetryNanos;
     // Iris's main G-buffer projection must match the projection used to write
     // every depth value for the whole frame, not just the clipmap draw call.
     private static IrisRenderCompatibility.ProjectionScope activeIrisProjectionScope;
@@ -193,6 +196,7 @@ public final class GeometryClipmapClient {
         lastNearChunks = -1;
         lastGridCells = -1;
         cameraVantageReported = false;
+        lastSmokeCameraTelemetryNanos = 0L;
         reportStatus(minecraft, next
                 ? "[RealScale] Clipmap: ON - automatic terrain rendering will initialize"
                 : "[RealScale] Clipmap: OFF - automatic terrain rendering stopped");
@@ -419,6 +423,23 @@ public final class GeometryClipmapClient {
                         "[RealScale Geometry Clipmap] CLIENT_CAMERA_VANTAGE_READY: "
                                 + "x=%.1f y=%.1f z=%.1f pitch=%.1f yaw=%.1f%n",
                         cameraPosition.x, cameraPosition.y, cameraPosition.z, pitch, yaw);
+            }
+        }
+
+        // Emit bounded-rate camera coordinates only in the opt-in CI smoke mode.
+        // The movement gate uses this telemetry to verify actual horizontal travel
+        // before waiting for the server to publish the replacement six-LOD window.
+        if (DEBUG && SMOKE_CAMERA && cameraVantageReported
+                && event.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY) {
+            long now = System.nanoTime();
+            if (lastSmokeCameraTelemetryNanos == 0L
+                    || now - lastSmokeCameraTelemetryNanos >= 1_000_000_000L) {
+                lastSmokeCameraTelemetryNanos = now;
+                var cameraPosition = event.getCamera().getPosition();
+                System.out.printf(java.util.Locale.ROOT,
+                        "[RealScale Geometry Clipmap] CLIENT_CAMERA_POSITION: "
+                                + "x=%.1f y=%.1f z=%.1f%n",
+                        cameraPosition.x, cameraPosition.y, cameraPosition.z);
             }
         }
 
