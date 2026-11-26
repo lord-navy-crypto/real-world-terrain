@@ -700,6 +700,78 @@ def terrain_high_frequency_ratio(path: pathlib.Path) -> float:
     return ratio
 
 
+def latest_camera_position(output: str) -> tuple[float, float, float] | None:
+    matches = re.findall(
+        r"CLIENT_CAMERA_POSITION:\s*x=([-+0-9.]+)\s+y=([-+0-9.]+)\s+z=([-+0-9.]+)",
+        output,
+    )
+    if not matches:
+        return None
+    return tuple(float(value) for value in matches[-1])
+
+
+def move_camera_until_horizontal_distance(
+        proc, lines, start: int, baseline: tuple[float, float, float],
+        target_distance: float = 320.0, timeout_seconds: float = 90.0) -> float:
+    """Strafe at a fixed camera altitude until a new snapped clipmap centre is unavoidable."""
+    started = time.monotonic()
+    deadline = started + timeout_seconds
+    reached_distance = 0.0
+    subprocess.run(["xdotool", "keydown", "Control_L"], check=True, timeout=10)
+    subprocess.run(["xdotool", "keydown", "d"], check=True, timeout=10)
+    try:
+        while proc.poll() is None and time.monotonic() < deadline:
+            current = latest_camera_position("".join(lines[start:]))
+            if current is not None:
+                dx = current[0] - baseline[0]
+                dz = current[2] - baseline[2]
+                reached_distance = (dx * dx + dz * dz) ** 0.5
+                if reached_distance >= target_distance:
+                    break
+            time.sleep(0.5)
+    finally:
+        subprocess.run(["xdotool", "keyup", "d"], check=False, timeout=10)
+        subprocess.run(["xdotool", "keyup", "Control_L"], check=False, timeout=10)
+
+    if reached_distance < target_distance:
+        capture_screenshot("iris-clipmap-camera-movement-distance-timeout")
+        raise RuntimeError(
+            "Smoke camera did not complete the required horizontal movement: "
+            f"{reached_distance:.1f}/{target_distance:.1f} blocks"
+        )
+    print(
+        f"CLIENT_CAMERA_MOVEMENT_VERIFIED: horizontal={reached_distance:.1f} "
+        f"target={target_distance:.1f} elapsed={time.monotonic()-started:.1f}s",
+        flush=True,
+    )
+    return reached_distance
+
+
+def wait_for_new_complete_center(proc, lines, start: int,
+                                 previous_centres: set[str],
+                                 timeout_seconds: float = 240.0) -> str:
+    """Wait for the server/client to publish a six-level window at a new snapped centre."""
+    deadline = time.monotonic() + timeout_seconds
+    last_centres: list[str] = []
+    while proc.poll() is None and time.monotonic() < deadline:
+        output = "".join(lines[start:])
+        active = re.findall(
+            r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", output
+        )
+        last_centres = [centre for centre in active if centre not in previous_centres]
+        if last_centres:
+            centre = last_centres[-1]
+            print("CLIENT_MOVEMENT_NEW_SIX_LOD_CENTER:", centre, flush=True)
+            return centre
+        time.sleep(1)
+    capture_screenshot("iris-clipmap-new-centre-timeout")
+    raise RuntimeError(
+        "Camera moved far enough to cross a clipmap snap boundary, but no new "
+        "complete six-LOD centre was published within "
+        f"{timeout_seconds:.0f}s: {last_centres!r}"
+    )
+
+
 def wait_for_settled_window(proc, lines, start: int, minimum_seconds: float = 30.0) -> str:
     """Wait for the latest complete height and proxy snapshot and stable draw evidence."""
     started = time.monotonic()
@@ -980,48 +1052,38 @@ def run_client(env: dict[str, str]) -> None:
         stable = capture_screenshot("iris-clipmap-native-after-stable-frames")
         validate_screenshot(stable)
         initial_contrast = terrain_contrast(stable)
-        # Real horizontal spectator flight, not a synthetic scheduler unit test.
-        # Require a fresh complete window during motion and another visible
-        # window after release. The initial stationary result cannot satisfy it.
+        # Move far enough to cross a known clipmap snap boundary, while
+        # preserving altitude so the far-field depth probe remains active.
+        # Then wait for the replacement six-LOD window instead of requiring
+        # the server's expensive density sampler to finish during the key hold.
         motion_start = len(lines)
-        old_centres = set(re.findall(r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", "".join(lines)))
-        subprocess.run(["xdotool", "keydown", "w"], check=True, timeout=10)
-        try:
-            time.sleep(30)
-            moving_output = "".join(lines[motion_start:])
-        finally:
-            subprocess.run(["xdotool", "keyup", "w"], check=False, timeout=10)
-        moving_centres = set(re.findall(r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", moving_output)) - old_centres
-        if not moving_centres:
-            capture_screenshot("iris-clipmap-moving-no-window")
-            raise RuntimeError("No new complete clipmap centre published during 30s continuous movement")
-        move_deadline = time.monotonic() + 150
-        while proc.poll() is None and time.monotonic() < move_deadline:
-            output = "".join(lines[motion_start:])
-            centres = set(re.findall(r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", output)) - old_centres
-            positive_centres = {
-                m.group(2)
-                for m in re.finditer(
-                    r"FAR_(?:SOLID|WATER)_VISIBLE_SAMPLES=(\d+).*?\blevels=6 center=\(([^)]+)\)",
-                    output,
-                )
-                if int(m.group(1)) > 0
-            }
-            positive = bool(centres & positive_centres)
-            # The positive sample must belong to the newly published centre,
-            # not the stationary pre-movement window.
-            # Requiring two new centres here was impossible after key release:
-            # the harness did not issue a second movement segment.
-            if len(centres) >= 1 and positive:
-                break
-            time.sleep(1)
-        else:
-            capture_screenshot("iris-clipmap-moving-failed")
-            raise RuntimeError("Continuous movement did not produce a fresh complete centre and visible samples")
+        old_centres = set(re.findall(
+            r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", "".join(lines)
+        ))
+        baseline_position = latest_camera_position("".join(lines))
+        if baseline_position is None:
+            raise RuntimeError("No baseline CLIENT_CAMERA_POSITION telemetry before movement")
+        move_camera_until_horizontal_distance(
+            proc, lines, motion_start, baseline_position, target_distance=320.0
+        )
+        new_centre = wait_for_new_complete_center(
+            proc, lines, motion_start, old_centres, timeout_seconds=240.0
+        )
+        moving_output = "".join(lines[motion_start:])
+        centres = set(re.findall(
+            r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", moving_output
+        )) - old_centres
+        moving_centres = {new_centre}
+        if new_centre not in centres:
+            raise RuntimeError("New-centre marker was not retained in movement telemetry")
         early = capture_screenshot("iris-clipmap-after-motion-early")
         validate_screenshot(early)
         terrain_contrast(early)
         settled_centre = wait_for_settled_window(proc, lines, motion_start, minimum_seconds=90)
+        if settled_centre != new_centre:
+            raise RuntimeError(
+                f"Settled centre {settled_centre} differs from movement centre {new_centre}"
+            )
         moving = capture_screenshot("iris-clipmap-after-motion")
         validate_screenshot(moving)
         settled_contrast = terrain_contrast(moving)
