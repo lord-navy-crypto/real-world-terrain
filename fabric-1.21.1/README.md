@@ -17,3 +17,6 @@ gradle --no-daemon -p fabric-1.21.1 clean build
 ```
 
 The distributable JAR is written to `fabric-1.21.1/build/libs/`. This is a separate 1.21.1 artifact and must not be installed in a 1.20.1 instance. The first port milestone validates compilation, packaged worldgen resources, Natural Automate dedicated-server startup, and client startup without YACL. Renderer stacks and real-world chunk-generation performance require further in-game testing.
+
+
+<!-- CI validation branch marker; do not merge this marker into the port branch. -->

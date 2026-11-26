@@ -2,14 +2,14 @@ name: RealScale Fabric 1.21.1 Port
 
 on:
   push:
-    branches: [feature/fabric-1.21.1-port, feature/fabric-1.21.1-validation]
+    branches: [feature/fabric-1.21.1-port, feature/fabric-1.21.1-validation, feature/fabric-1.21.1-validated]
     paths:
       - "fabric-1.21.1/**"
       - "scripts/**"
       - "assets/architecture/**"
       - ".github/workflows/fabric-1.21.1.yml"
   pull_request:
-    branches: [feature/fabric-1.21.1-port]
+    branches: [feature/fabric-1.21.1-port, feature/fabric-1.21.1-validated]
     paths:
       - "fabric-1.21.1/**"
       - "scripts/**"
