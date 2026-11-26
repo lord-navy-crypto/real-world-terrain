@@ -151,3 +151,48 @@ h1 em,h2 em { color: #b5d28f; font-style: normal; }
   opacity:.35;
   cursor:not-allowed;
 }
+
+.share-link-panel {
+  margin:0 0 14px;
+  padding:12px;
+  border:1px solid rgba(180,212,138,.2);
+  border-radius:3px;
+  background:rgba(180,212,138,.035);
+}
+.share-link-heading {
+  margin-bottom:8px;
+  color:#9fb69a;
+  font:9px "DM Mono",monospace;
+  letter-spacing:.12em;
+}
+.share-link-row {
+  display:flex;
+  gap:8px;
+  min-width:0;
+}
+.share-link-row input {
+  flex:1;
+  min-width:0;
+  height:34px;
+  padding:0 9px;
+  border:1px solid var(--line);
+  border-radius:3px;
+  color:#dce6d7;
+  background:#0d1510;
+  font:10px "DM Mono",monospace;
+}
+.share-link-row button {
+  flex:0 0 auto;
+  padding:0 12px;
+  border:1px solid rgba(180,212,138,.28);
+  border-radius:3px;
+  color:#c8d9bd;
+  background:rgba(180,212,138,.08);
+  font:9px "DM Mono",monospace;
+}
+.share-link-panel p {
+  margin:8px 0 0;
+  color:#87968a;
+  font-size:10px;
+  line-height:1.5;
+}
