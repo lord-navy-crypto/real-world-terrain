@@ -1,0 +1,14 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "minecraft:dripstone_caves",
+    "realscale:dry_karst_caves",
+    "realscale:damp_limestone_caverns",
+    "minecraft:stony_peaks",
+    "minecraft:windswept_hills",
+    "minecraft:plains",
+    "minecraft:meadow"
+  ],
+  "features": "realscale:cave_calcite_shelves_highland",
+  "step": "underground_decoration"
+}

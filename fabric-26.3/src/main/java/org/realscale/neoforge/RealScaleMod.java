@@ -1,0 +1,118 @@
+package org.realscale.neoforge;
+
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import org.realscale.neoforge.compat.dhchunky.DhChunkyGuardCommands;
+
+/** Fabric 1.21.1 entrypoint. Registry codecs and features mirror the current
+ * 1.21.1 NeoForge implementation; loader-specific hooks remain Fabric-native.
+ */
+public final class RealScaleMod implements ModInitializer {
+    @Override
+    public void onInitialize() {
+        RealScaleVehicles.register();
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "dem_density"), RealDemDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "dem_density_seamless"), RealDemSeamlessDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "measured_horizontal_memo"), MeasuredHorizontalMemoDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "grand_end_density"), GrandEndDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "grand_nether_caverns"), GrandNetherCaverns.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "grand_overworld_caverns"), GrandOverworldCaverns.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "range_min_exact"), RangeMinDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "mountain_relief"), MountainReliefDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "terrain_archetype"), TerrainArchetypeDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "ridge_erosion"), RidgeErosionDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "strata"), StrataDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "valley_temperature"), ValleyTemperatureDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "latitude_temperature"), LatitudeTemperatureDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "basin_temperature"), BasinTemperatureDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "mountain_basin_temperature"), MountainBasinTemperatureDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "radial_latitude_temperature"), RadialLatitudeTemperatureDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "climate_budget"), ClimateBudgetDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "fantasy_end_islands"), FantasyEndIslandsDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "fantasy_nether_caverns"), FantasyNetherCavernsDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("realscale", "fantasy_end_archipelago"), FantasyEndArchipelagoDensity.MAP_CODEC);
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "river_channel"), new RiverChannelFeature());
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "fallen_timber"), new VanillaHabitatFeature(VanillaHabitatFeature.Habitat.FALLEN_TIMBER));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "riparian_reeds"), new VanillaHabitatFeature(VanillaHabitatFeature.Habitat.RIPARIAN_REEDS));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "fallen_oak_log"), new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.OAK_LOG));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "fallen_spruce_log"), new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.SPRUCE_LOG));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "woodland_hummock"), new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.FOREST_HUMMOCK));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "upland_scree"), new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.UPLAND_SCREE));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "coastal_driftwood"), new GroundMicrostructureFeature(GroundMicrostructureFeature.Kind.COASTAL_DRIFTWOOD));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "sky_blossom_island"), new SkyIslandFeature());
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "cave_moss_nooks"), new HabitatPatchFeature(HabitatPatchFeature.Kind.CAVE_MOSS));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "cave_stalagmites"), new HabitatPatchFeature(HabitatPatchFeature.Kind.CAVE_DRIPSTONE));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "ocean_seagrass_patches"), new HabitatPatchFeature(HabitatPatchFeature.Kind.OCEAN_SEAGRASS));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "ocean_sediment_stones"), new HabitatPatchFeature(HabitatPatchFeature.Kind.OCEAN_STONE));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "temperate_rainforest"), new GrandEcologyFeature(GrandEcologyFeature.Kind.TEMPERATE_RAINFOREST));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "savanna_canopy"), new GrandEcologyFeature(GrandEcologyFeature.Kind.SAVANNA_CANOPY));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "chaparral_scrub"), new GrandEcologyFeature(GrandEcologyFeature.Kind.CHAPARRAL_SCRUB));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "grassland_mosaic"), new GrandEcologyFeature(GrandEcologyFeature.Kind.GRASSLAND_MOSAIC));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "alpine_tundra"), new GrandEcologyFeature(GrandEcologyFeature.Kind.ALPINE_TUNDRA));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "floodplain_bank"), new GrandEcologyFeature(GrandEcologyFeature.Kind.FLOODPLAIN_BANK));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "tropical_rainforest"), new GrandEcologyFeature(GrandEcologyFeature.Kind.TROPICAL_RAINFOREST));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "temperate_seasonal_forest"), new GrandEcologyFeature(GrandEcologyFeature.Kind.TEMPERATE_SEASONAL_FOREST));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "boreal_taiga_floor"), new GrandEcologyFeature(GrandEcologyFeature.Kind.BOREAL_TAIGA));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_cave_lava_tube"), new CaveWonderNetworkFeature(CaveWonderNetworkFeature.Kind.LAVA_TUBE));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_cave_karst_passage"), new CaveWonderNetworkFeature(CaveWonderNetworkFeature.Kind.KARST_PASSAGE));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_playa_basin"), new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.PLAYA_BASIN));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_alluvial_fan"), new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.ALLUVIAL_FAN));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_cold_desert_pavement"), new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.COLD_DESERT_PAVEMENT));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_hoodoo_amphitheater"), new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.HOODOO_AMPHITHEATER));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_travertine_steps"), new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.TRAVERTINE_STEPS));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_mangrove_estuary"), new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.MANGROVE_ESTUARY));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_cooled_lava_field"), new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.COOLED_LAVA_FIELD));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_glacial_moraine_ring"), new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.GLACIAL_MORAINE_RING));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_delta_distributaries"), new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.DELTA_DISTRIBUTARIES));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_region_karst_doline_rim"), new GeoWonderRegionFeature(GeoWonderRegionFeature.Kind.KARST_DOLINE_RIM));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_hoodoo_spires"), new EarthWonderFeature(EarthWonderFeature.Kind.HOODOO_SPIRES));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_travertine_terraces"), new EarthWonderFeature(EarthWonderFeature.Kind.TRAVERTINE_TERRACES));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_mangrove_tidal_roots"), new EarthWonderFeature(EarthWonderFeature.Kind.MANGROVE_TIDAL_ROOTS));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_cooled_lava_field"), new EarthWonderFeature(EarthWonderFeature.Kind.COOLED_LAVA_FIELD));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_lava_tube_lining"), new EarthWonderFeature(EarthWonderFeature.Kind.LAVA_TUBE_LINING));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_glacial_moraine"), new EarthWonderFeature(EarthWonderFeature.Kind.GLACIAL_MORAINE));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_delta_sediment"), new EarthWonderFeature(EarthWonderFeature.Kind.DELTA_SEDIMENT));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_karst_sinkhole_rim"), new EarthWonderFeature(EarthWonderFeature.Kind.KARST_SINKHOLE_RIM));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_cold_desert"), new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.COLD_DESERT));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_rocky_plateau"), new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.ROCKY_PLATEAU));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_salt_playa"), new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.SALT_PLAYA));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_cloud_forest"), new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.CLOUD_FOREST));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_alluvial_fan"), new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.ALLUVIAL_FAN));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_volcanic_highland"), new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.VOLCANIC_HIGHLAND));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_badlands"), new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.BADLANDS));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_yardang"), new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.YARDANG));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_karst"), new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.KARST));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_glacial"), new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.GLACIAL));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_wetland"), new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.WETLAND));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "earth_ash_field"), new EarthSystemsAccentFeature(EarthSystemsAccentFeature.Kind.ASH_FIELD));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "desert_outcrops"), new GrandEcologyFeature(GrandEcologyFeature.Kind.DESERT_OUTCROPS));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "arctic_tundra"), new GrandEcologyFeature(GrandEcologyFeature.Kind.ARCTIC_TUNDRA));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "freshwater_bed"), new GrandEcologyFeature(GrandEcologyFeature.Kind.FRESHWATER_BED));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "coastal_seagrass"), new GrandEcologyFeature(GrandEcologyFeature.Kind.COASTAL_SEAGRASS));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "coral_reef_floor"), new GrandEcologyFeature(GrandEcologyFeature.Kind.CORAL_REEF_FLOOR));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "estuary_shallows"), new GrandEcologyFeature(GrandEcologyFeature.Kind.ESTUARY_SHALLOWS));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "cave_fungal_grottos"), new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_FUNGAL));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "cave_calcite_shelves"), new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_CALCITE));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "cave_volcanic_basalt"), new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_VOLCANIC));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "cave_glacial_rock"), new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_GLACIAL));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "cave_spring_moss"), new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_SPRING));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "cold_water_reef"), new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.COLD_WATER_REEF));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "kelp_meadow"), new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.KELP_MEADOW));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "warm_reef_garden"), new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.WARM_REEF_GARDEN));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "cave_glow_lichen"), new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_GLOW));
+        Registry.register(BuiltInRegistries.FEATURE, ResourceLocation.fromNamespaceAndPath("realscale", "cave_fossil_matrix"), new CaveMarineHabitatFeature(CaveMarineHabitatFeature.Kind.CAVE_FOSSIL));
+        Registry.register(BuiltInRegistries.BIOME_SOURCE, ResourceLocation.fromNamespaceAndPath("realscale", "geo_wonders_opt_in"), GeoWondersBiomeSource.CODEC);
+        Registry.register(BuiltInRegistries.BIOME_SOURCE, ResourceLocation.fromNamespaceAndPath("realscale", "natural_ecotones"), NaturalEcotoneBiomeSource.CODEC);
+        Registry.register(BuiltInRegistries.BIOME_SOURCE, ResourceLocation.fromNamespaceAndPath("realscale", "sky_ocean"), SkyOceanBiomeSource.CODEC);
+        Registry.register(BuiltInRegistries.BIOME_SOURCE, ResourceLocation.fromNamespaceAndPath("realscale", "cave_depth_habitats"), CaveDepthBiomeSource.CODEC);
+        RealScaleStructurePacks.register();
+        FabricBiomeModifiers.register();
+        CommandRegistrationCallback.EVENT.register(
+                (dispatcher, access, environment) -> DhChunkyGuardCommands.registerCommands(dispatcher));
+        FabricServerSmoke.register();
+        System.out.println("[RealScale] Fabric 1.21.1 registries initialized: 94 codecs/features.");
+    }
+}
