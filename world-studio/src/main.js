@@ -13,6 +13,10 @@ const downloadPreviewButton = document.querySelector("#download-preview");
 const downloadCsvButton = document.querySelector("#download-csv");
 const cancelButton = document.querySelector("#cancel-generation");
 const computeMode = document.querySelector("#compute-mode");
+const shareButton = document.querySelector("#share-world");
+const shareLinkPanel = document.querySelector("#share-link-panel");
+const shareLinkInput = document.querySelector("#share-link-input");
+const copyShareLinkButton = document.querySelector("#copy-share-link");
 const randomSeedButton = document.querySelector("#random-seed");
 const statusText = document.querySelector("#generation-status");
 const loading = document.querySelector("#map-loading");
@@ -401,6 +405,47 @@ function safeSeedFilename(seed) {
     .slice(0, 32) || "world";
 }
 
+function currentWorldSettings() {
+  return {
+    seed: seedInput.value.trim() || "realscale",
+    size: Number(sizeSelect.value),
+    relief: Number(reliefSlider.value),
+    view: currentView
+  };
+}
+
+function showShareLink() {
+  const url = buildWorldShareUrl(window.location.href, currentWorldSettings());
+  shareLinkInput.value = url;
+  shareLinkPanel.hidden = false;
+  shareLinkInput.focus();
+  shareLinkInput.select();
+}
+
+async function copyVisibleShareLink() {
+  if (!shareLinkInput.value) {
+    showShareLink();
+  }
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+    await navigator.clipboard.writeText(shareLinkInput.value);
+    statusText.textContent = "Share link copied · restores the same preview settings";
+  } catch {
+    shareLinkInput.focus();
+    shareLinkInput.select();
+    statusText.textContent = "Share link ready · copy the selected URL below";
+  }
+}
+
+async function copyShareLink() {
+  try {
+    showShareLink();
+    await copyVisibleShareLink();
+  } catch (error) {
+    statusText.textContent = "Unable to create share link · " + (error?.message || "invalid settings");
+  }
+}
+
 function downloadPreview() {
   if (!latestMap || isGenerating || isExportingCsv) return;
   const link = document.createElement("a");
@@ -530,6 +575,8 @@ reliefSlider.addEventListener("input", () => {
 generateButton.addEventListener("click", generateMap);
 downloadPreviewButton.addEventListener("click", downloadPreview);
 downloadCsvButton.addEventListener("click", downloadElevationCsv);
+shareButton.addEventListener("click", copyShareLink);
+copyShareLinkButton.addEventListener("click", copyVisibleShareLink);
 cancelButton.addEventListener("click", cancelGeneration);
 refreshButton.addEventListener("click", generateMap);
 sizeSelect.addEventListener("change", () => {
@@ -539,6 +586,18 @@ document.querySelectorAll(".view-button").forEach(button => {
   button.addEventListener("click", () => setView(button.dataset.view));
 });
 canvas.addEventListener("click", inspectMap);
+
+const initialWorldSettings = parseWorldSettings(window.location.search, {
+  seed: seedInput.value,
+  size: Number(sizeSelect.value),
+  relief: Number(reliefSlider.value),
+  view: "relief"
+});
+seedInput.value = initialWorldSettings.seed;
+sizeSelect.value = String(initialWorldSettings.size);
+reliefSlider.value = String(initialWorldSettings.relief);
+reliefValue.textContent = initialWorldSettings.relief + "%";
+setView(initialWorldSettings.view);
 
 terrainWorker = createTerrainWorker();
 computeMode.textContent = terrainWorker ? "WEB WORKER" : "MAIN THREAD FALLBACK";
