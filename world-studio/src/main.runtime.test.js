@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 
 const source = readFileSync(new URL("./main.js", import.meta.url), "utf8")
-  .replace(/^import\\s+.*?;\\s*$/gm, "");
+  .replace(/^import\s+.*?;\s*$/gm, "");
 
 function createRuntime(seed = "runtime-smoke-seed") {
   const elements = new Map();
@@ -178,13 +178,13 @@ test("CSV export includes all preview samples and protects formula-like seed tex
   assert.equal(runtime.downloads[0].download, "realscale-elevation-1-1-8192m-preview.csv");
 
   const csv = await runtime.blobs[0].text();
-  const rows = csv.replace(/^\\uFEFF/, "").split("\\r\\n");
+  const rows = csv.replace(/^\uFEFF/, "").split("\r\n");
   assert.equal(rows.length, 384 * 384 + 1);
   assert.equal(
     rows[0],
     '"sample_x_blocks","sample_z_blocks","estimated_elevation_m","temperature_index","humidity_index","seed","footprint_blocks"'
   );
-  assert.ok(rows[1].includes('"'=1+1"'));
+  assert.ok(rows[1].includes("\"'=1+1\""));
   assert.ok(rows[1].includes('"-4096","-4096"'));
   assert.ok(rows[1].endsWith('"8192"'));
 });
