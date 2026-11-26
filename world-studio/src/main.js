@@ -292,7 +292,7 @@ function downloadElevationCsv() {
       }
     }
 
-    chunks.push(batchRows.join("\r\n") + "\r\n");
+    chunks.push(batchRows.join("\r\n") + (endRow < RESOLUTION ? "\r\n" : ""));
     sampleRow = endRow;
     const progress = Math.round(sampleRow / RESOLUTION * 100);
     statusText.textContent = "Preparing elevation CSV… " + progress + "%";
