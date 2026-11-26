@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101713" />
+    <meta name="description" content="Create, explore, and eventually export deterministic RealScale Minecraft worlds." />
+    <title>RealScale World Studio</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="RealScale World Studio home">
+          <span class="brand-mark"><span></span><span></span><span></span></span>
+          <span>REAL<span class="brand-light">SCALE</span></span>
+        </a>
+        <nav class="topnav" aria-label="Main navigation">
+          <a class="active" href="#studio">Studio</a>
+          <a href="#how-it-works">How it works</a>
+          <a href="#roadmap">Roadmap</a>
+        </nav>
+        <div class="topbar-right">
+          <span class="status-dot"></span>
+          <span class="topbar-status">BROWSER PREVIEW</span>
+          <span class="version-tag">0.1.0</span>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" id="studio">
+          <div class="hero-copy">
+            <div class="eyebrow"><span class="eyebrow-line"></span> WORLD GENERATION, REIMAGINED</div>
+            <h1>Build a world<br /><em>worth getting lost in.</em></h1>
+            <p class="hero-subtitle">Shape a new landscape with RealScale's adaptive terrain model. Choose a seed, set the scale, and explore the result before you play.</p>
+            <div class="hero-footnote"><span class="mini-check">✓</span> No launcher. No mod installation. Preview runs locally in your browser.</div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="art-grid"></div>
+            <div class="art-coordinate coord-a">48° 51′ 24″ N</div>
+            <div class="art-coordinate coord-b">2° 21′ 08″ E</div>
+            <div class="art-orbit orbit-one"></div>
+            <div class="art-orbit orbit-two"></div>
+            <div class="art-center">
+              <div class="art-continent"></div>
+              <div class="art-river"></div>
+              <div class="art-pin"><span></span></div>
+            </div>
+            <div class="art-caption"><span>RS / TERRAIN ENGINE</span><span>1 : 1,000,000</span></div>
+          </div>
+        </section>
+
+        <section class="studio-layout">
+          <aside class="control-panel">
+            <div class="panel-heading">
+              <div>
+                <div class="section-kicker">CONFIGURATION</div>
+                <h2>World parameters</h2>
+              </div>
+              <span class="panel-index">01 / 03</span>
+            </div>
+
+            <div class="field-group">
+              <label for="seed-input">WORLD SEED</label>
+              <div class="seed-control">
+                <input id="seed-input" type="text" value="realscale-2026" maxlength="48" autocomplete="off" spellcheck="false" />
+                <button class="icon-button" id="random-seed" type="button" aria-label="Generate random seed" title="Random seed">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l10 10h3M17 17h3v-3M4 17h3L17 7h3M17 7h3v3"/></svg>
+                </button>
+              </div>
+              <p class="field-hint">The same seed and settings always produce the same preview.</p>
+            </div>
+
+            <div class="field-group">
+              <label for="size-select">WORLD FOOTPRINT</label>
+              <div class="select-wrap">
+                <select id="size-select">
+                  <option value="4096">4 × 4 km — compact</option>
+                  <option value="8192" selected>8 × 8 km — standard</option>
+                  <option value="16384">16 × 16 km — expansive</option>
+                  <option value="32768">32 × 32 km — continental</option>
+                  <option value="65536">64 × 64 km — vast</option>
+                </select>
+                <span class="select-chevron">⌄</span>
+              </div>
+              <p class="field-hint">Horizontal scale: 1 Minecraft block ≈ 1 metre in the RealScale model.</p>
+            </div>
+
+            <div class="field-group">
+              <div class="label-row">
+                <label for="relief-slider">TERRAIN RELIEF</label>
+                <output id="relief-value" for="relief-slider">100%</output>
+              </div>
+              <input id="relief-slider" class="range-slider" type="range" min="65" max="140" step="5" value="100" />
+              <div class="range-labels"><span>Gentle</span><span>Balanced</span><span>Dramatic</span></div>
+            </div>
+
+            <div class="field-group">
+              <label>TERRAIN MODEL</label>
+              <div class="model-card">
+                <div class="model-icon">
+                  <svg viewBox="0 0 32 32" aria-hidden="true"><path d="m3 23 8-13 5 7 4-6 9 12H3Z"/><path d="m8 23 3-5 3 3 2-2 4 4" /></svg>
+                </div>
+                <div class="model-copy">
+                  <strong>Natural Automate</strong>
+                  <span>Adaptive six-family morphology</span>
+                </div>
+                <span class="model-check">✓</span>
+              </div>
+              <p class="field-hint">The public RealScale profile blends alpine, glacial, canyon, volcanic, karst, and dune forms where local conditions fit.</p>
+            </div>
+
+            <div class="panel-divider"></div>
+            <button class="generate-button" id="generate-button" type="button">
+              <span class="button-symbol">✳</span>
+              <span>Generate map preview</span>
+              <span class="button-arrow">↗</span>
+            </button>
+            <div class="generation-note"><span class="status-dot"></span><span id="generation-status">Ready to generate</span></div>
+          </aside>
+
+          <section class="map-panel" aria-label="Generated map preview">
+            <div class="map-panel-head">
+              <div>
+                <div class="section-kicker">TERRAIN PREVIEW</div>
+                <h2 id="map-title">Untitled world</h2>
+              </div>
+              <div class="map-tools">
+                <div class="view-switch" role="group" aria-label="Map display mode">
+                  <button type="button" class="view-button active" data-view="relief">Relief</button>
+                  <button type="button" class="view-button" data-view="biomes">Biomes</button>
+                </div>
+                <button class="icon-button map-refresh" id="refresh-map" type="button" aria-label="Regenerate map" title="Regenerate">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 9a7 7 0 0 1 11.5-2L20 12M4 12l2.4 5a7 7 0 0 0 11.5-2"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="map-stage">
+              <canvas id="terrain-canvas" width="384" height="384" aria-label="Procedural terrain map. Click to inspect elevation."></canvas>
+              <div class="map-overlay map-overlay-top"><span>REALSCALE / NATURAL AUTOMATE</span><span id="map-seed-label">SEED: REALSCALE-2026</span></div>
+              <div class="map-overlay map-overlay-bottom"><span id="map-coordinates">X 0 · Z 0</span><span id="map-scale">8 KM × 8 KM</span></div>
+              <div class="map-loading" id="map-loading" hidden>
+                <div class="loading-ring"></div>
+                <span>Computing terrain fields…</span>
+              </div>
+            </div>
+
+            <div class="map-legend" id="relief-legend">
+              <div class="legend-item"><span class="legend-swatch water"></span>Ocean</div>
+              <div class="legend-item"><span class="legend-swatch lowland"></span>Lowland</div>
+              <div class="legend-item"><span class="legend-swatch forest"></span>Forest</div>
+              <div class="legend-item"><span class="legend-swatch highland"></span>Highland</div>
+              <div class="legend-item"><span class="legend-swatch alpine"></span>Alpine</div>
+              <div class="legend-contours"><span class="contour-line"></span>120 m contours</div>
+            </div>
+            <div class="map-legend" id="biome-legend" hidden>
+              <div class="legend-item"><span class="legend-swatch ocean-bio"></span>Ocean</div>
+              <div class="legend-item"><span class="legend-swatch desert"></span>Arid</div>
+              <div class="legend-item"><span class="legend-swatch grass"></span>Grassland</div>
+              <div class="legend-item"><span class="legend-swatch forest"></span>Forest</div>
+              <div class="legend-item"><span class="legend-swatch snow"></span>Cold / alpine</div>
+            </div>
+
+            <div class="map-inspector" id="map-inspector">
+              <div class="inspector-icon">⌖</div>
+              <div class="inspector-copy"><span>MAP INSPECTOR</span><strong id="inspect-position">Select a point on the map</strong></div>
+              <div class="inspector-elevation"><span>ELEVATION</span><strong id="inspect-elevation">—</strong></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="stats-strip" aria-label="Map statistics">
+          <div class="stat-block"><span class="stat-label">MAP DIMENSIONS</span><strong id="stat-dimensions">8,192 × 8,192 <small>blocks</small></strong></div>
+          <div class="stat-block"><span class="stat-label">LAND COVER</span><strong id="stat-land">—</strong></div>
+          <div class="stat-block"><span class="stat-label">ELEVATION RANGE</span><strong id="stat-elevation">—</strong></div>
+          <div class="stat-block"><span class="stat-label">PREVIEW RESOLUTION</span><strong>384 × 384 <small>samples</small></strong></div>
+        </section>
+
+        <section class="export-section" id="roadmap">
+          <div class="export-copy">
+            <div class="section-kicker">NEXT PHASE</div>
+            <h2>Your world should be<br /><em>ready to play.</em></h2>
+            <p>The browser preview is the first step. The next phase will run the actual Minecraft world generator in an isolated server worker, validate the save, and package a downloadable world.</p>
+          </div>
+          <div class="export-card">
+            <div class="export-card-top"><span class="export-icon">↧</span><span class="coming-soon">IN DEVELOPMENT</span></div>
+            <h3>Export Minecraft world</h3>
+            <p>Download a validated world save and open it in vanilla Minecraft. No RealScale client mod required for exported worlds.</p>
+            <button type="button" class="export-button" disabled>World export · coming next <span>↗</span></button>
+            <div class="export-security"><span>◇</span> No executable downloads. World files only.</div>
+          </div>
+        </section>
+
+        <section class="how-section" id="how-it-works">
+          <div class="section-kicker">THE WORKFLOW</div>
+          <h2>From seed to <em>your next world.</em></h2>
+          <div class="steps-grid">
+            <article class="step-card"><span class="step-number">01</span><div class="step-icon">⌘</div><h3>Choose a seed</h3><p>Use a favorite seed or roll a new one. Every terrain preview is deterministic.</p></article>
+            <article class="step-card"><span class="step-number">02</span><div class="step-icon">▧</div><h3>Explore the map</h3><p>Inspect the terrain, elevation, and biome distribution before committing to a world.</p></article>
+            <article class="step-card"><span class="step-number">03</span><div class="step-icon">⇩</div><h3>Download & play</h3><p>In the next release, export a ready-to-open Minecraft save from the server generator.</p></article>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <a class="brand footer-brand" href="/"><span class="brand-mark"><span></span><span></span><span></span></span><span>REAL<span class="brand-light">SCALE</span></span></a>
+        <span>WORLD STUDIO · EXPERIMENTAL PREVIEW</span>
+        <span>Built around the RealScale terrain engine.</span>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
