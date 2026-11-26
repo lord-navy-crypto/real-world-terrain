@@ -79,3 +79,23 @@ test("share URL rejects invalid settings rather than creating a misleading link"
     /Invalid world settings/
   );
 });
+
+
+test("share settings accept and restore the interactive 3D view", () => {
+  assert.deepEqual(
+    parseWorldSettings("?seed=mountain-world&size=8192&relief=110&view=3d", DEFAULTS),
+    {
+      seed: "mountain-world",
+      size: 8192,
+      relief: 110,
+      view: "3d"
+    }
+  );
+  const url = buildWorldShareUrl("https://example.test/studio", {
+    seed: "mountain-world",
+    size: 8192,
+    relief: 110,
+    view: "3d"
+  });
+  assert.equal(new URL(url).searchParams.get("view"), "3d");
+});
