@@ -24,11 +24,11 @@ repositories {
 }
 dependencies {
     minecraft 'com.mojang:minecraft:26.3'
-    modImplementation "net.fabricmc:fabric-loader:${fabricLoaderVersion}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}"
+    implementation "net.fabricmc:fabric-loader:${fabricLoaderVersion}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}"
     // YACL is compile-time only unless a client smoke lane explicitly enables it.
-    modCompileOnly 'dev.isxander:yet-another-config-lib:3.9.7+26.3-fabric'
-    if (includeYaclDev) modRuntimeOnly 'dev.isxander:yet-another-config-lib:3.8.1+1.21.1-fabric'
+    compileOnly 'dev.isxander:yet-another-config-lib:3.9.7+26.3-fabric'
+    if (includeYaclDev) runtimeOnly 'dev.isxander:yet-another-config-lib:3.8.1+1.21.1-fabric'
 
     // Optional renderer stacks are runtime-only test fixtures, never hard dependencies.
     
