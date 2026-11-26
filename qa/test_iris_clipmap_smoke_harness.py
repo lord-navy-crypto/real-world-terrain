@@ -47,10 +47,16 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("validate_screenshot(first)", SMOKE)
         self.assertIn("validate_screenshot(stable)", SMOKE)
 
-    def test_continuous_movement_requires_new_windows_and_pixels(self):
-        self.assertIn('["xdotool", "keydown", "w"]', SMOKE)
+    def test_continuous_movement_requires_verified_travel_and_new_windows(self):
+        self.assertIn('["xdotool", "keydown", "Control_L"]', SMOKE)
+        self.assertIn('["xdotool", "keydown", "d"]', SMOKE)
+        self.assertIn("def move_camera_until_horizontal_distance", SMOKE)
+        self.assertIn("target_distance: float = 320.0", SMOKE)
+        self.assertIn("CLIENT_CAMERA_MOVEMENT_VERIFIED", SMOKE)
+        self.assertIn("def wait_for_new_complete_center", SMOKE)
         self.assertIn("moving_centres", SMOKE)
-        self.assertIn("len(centres) >= 1 and positive", SMOKE)
+        self.assertIn("settled_centre != new_centre", SMOKE)
+        self.assertNotIn("during 30s continuous movement", SMOKE)
         self.assertIn("IRIS_CLIPMAP_MOVEMENT_REFRESH_PASS", SMOKE)
 
     def test_settlement_and_color_gate_require_final_client_viewport(self):
@@ -210,8 +216,11 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("GL_INVALID_OPERATION in glUniform(program not linked)", SMOKE)
 
     def test_camera_telemetry_regexes_parse_actual_markers(self):
-        self.assertIn(r'logged in with entity id \d+', SMOKE)
-        self.assertIn(r'CLIENT_CAMERA_VANTAGE_READY:\s*x=', SMOKE)
+        self.assertIn(r'logged in with entity id \\d+', SMOKE)
+        self.assertIn(r'CLIENT_CAMERA_VANTAGE_READY:\\s*x=', SMOKE)
+        self.assertIn(r'CLIENT_CAMERA_POSITION:\\s*x=', SMOKE)
+        self.assertIn("CLIENT_CAMERA_POSITION:", GEOMETRY_CLIENT)
+        self.assertIn("lastSmokeCameraTelemetryNanos", GEOMETRY_CLIENT)
 
     def test_client_moves_camera_above_spawn_terrain_before_visual_capture(self):
         self.assertIn("def prepare_open_rendering_view", SMOKE)
