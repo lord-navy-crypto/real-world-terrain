@@ -88,7 +88,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("def terrain_high_frequency_ratio(", SMOKE)
         self.assertIn("TERRAIN_HIGH_FREQUENCY_RATIO", SMOKE)
         self.assertIn("IRIS_TERRAIN_TEXTURE_ALIASING_GATE_PASS", SMOKE)
-        self.assertIn("max(settled_high_frequency, final_high_frequency) > 0.28", SMOKE)
+        self.assertIn("max(settled_high_frequency, final_high_frequency) > 0.18", SMOKE)
         self.assertIn('"-blur", "0x2"', SMOKE)
 
     def test_pause_menu_toggle_uses_real_window_geometry_and_upscaled_ocr(self):
@@ -145,15 +145,19 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("TERRAIN_VIEWPORT_COLOR_COUNT", SMOKE)
         self.assertIn("minimum_seconds=60", SMOKE)
 
-    def test_all_lods_use_atlas_independent_procedural_terrain_materials(self):
+    def test_all_lods_use_shared_macro_world_uvs_and_procedural_materials(self):
         self.assertNotIn("MAX_TEXTURED_DETAIL_LEVEL", IRIS_RENDERER)
         self.assertNotIn("sprites.forMaterial(", IRIS_RENDERER)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", IRIS_RENDERER)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
         self.assertIn("sprites.neutral()", IRIS_RENDERER)
         self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", IRIS_RENDERER)
-        self.assertEqual(2, IRIS_RENDERER.count("ClipmapTriangleUv.computeCellAlignedInto("))
-        self.assertIn("per-cell UV basis", IRIS_RENDERER)
+        self.assertEqual(2, IRIS_RENDERER.count("computeTerrainUvs(tile, level"))
+        self.assertIn("private static void computeTerrainUvs(", IRIS_RENDERER)
+        self.assertIn("ClipmapTriangleUv.computeWorldAlignedInto(", IRIS_RENDERER)
+        self.assertNotIn("ClipmapTriangleUv.computeCellAlignedInto(", IRIS_RENDERER)
+        self.assertIn("worldHalfExtent", IRIS_RENDERER)
+        self.assertIn("baseSpacing", IRIS_RENDERER)
         self.assertNotIn("triangleUvs[0] = 8.0f", IRIS_RENDERER)
         self.assertIn("emitTriangle(water, sprites.neutral()", IRIS_RENDERER)
         palette = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapSurfacePalette.java").read_text(
@@ -163,9 +167,10 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("actual grass, dry-ground, rock, sand and snow material", palette)
         self.assertNotIn("near-neutral multipliers", palette)
 
-    def test_native_terrain_uses_procedural_palette_and_doubles_grid_density(self):
+    def test_native_terrain_uses_shared_macro_uvs_and_procedural_palette(self):
         self.assertIn("ClipmapRingMesh.surfaceIndices(cells, holeRadius)", IRIS_RENDERER)
-        self.assertIn("ClipmapTriangleUv.computeCellAlignedInto", IRIS_RENDERER)
+        self.assertIn("computeTerrainUvs(tile, level", IRIS_RENDERER)
+        self.assertIn("ClipmapTriangleUv.computeWorldAlignedInto(", IRIS_RENDERER)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
         self.assertIn("sprites.neutral()", IRIS_RENDERER)
         self.assertNotIn("sprites.forMaterial(", IRIS_RENDERER)
