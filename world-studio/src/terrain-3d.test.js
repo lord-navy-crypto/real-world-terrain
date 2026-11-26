@@ -47,6 +47,8 @@ test("isometric mesh covers the full sample grid with two triangles per cell", (
   assert.equal(mesh.vertices[15].sampleIndex, 15);
   assert.equal(mesh.vertices[240].sampleIndex, 240);
   assert.equal(mesh.vertices[255].sampleIndex, 255);
+  assert.equal(mesh.vertices[0].gridIndex, 0);
+  assert.equal(mesh.vertices[255].gridIndex, 255);
 });
 
 test("isometric projection returns finite screen coordinates and local slopes", () => {
