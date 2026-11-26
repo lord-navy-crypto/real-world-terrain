@@ -32,12 +32,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - neoforge_version: "1.20.1-47.1.5"
+          - neoforge_version: "1.20.1-47.1.105"
             yacl_version_id: "KN3TLTr4"
-            artifact_suffix: "47.1.5-yacl-3.6.5"
-          - neoforge_version: "1.20.1-47.1.5"
+            artifact_suffix: "47.1.105-yacl-3.6.5"
+          - neoforge_version: "1.20.1-47.1.105"
             yacl_version_id: "sCWgXDYQ"
-            artifact_suffix: "47.1.5-yacl-3.6.6"
+            artifact_suffix: "47.1.105-yacl-3.6.6"
           - neoforge_version: "1.20.1-47.1.106"
             yacl_version_id: "KN3TLTr4"
             artifact_suffix: "47.1.106-yacl-3.6.5"
