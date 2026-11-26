@@ -669,7 +669,8 @@ final class IrisNativeClipmapRenderer {
                 // Continuous palette colors fade toward one block-like cell
                 // color together with the geometry and surface normals.
                 for (int vertex = 0; vertex < 3; vertex++) {
-                    int normalIndex = (gridZ[vertex] * side + gridX[vertex]) * 3;
+                    int heightIndex = gridZ[vertex] * side + gridX[vertex];
+                    int normalIndex = heightIndex * 3;
                     long worldX = tile.originX() + (long) gridX[vertex] * spacing;
                     long worldZ = tile.originZ() + (long) gridZ[vertex] * spacing;
                     int continuousColor = ClipmapSurfacePalette.terrainColorAt(
