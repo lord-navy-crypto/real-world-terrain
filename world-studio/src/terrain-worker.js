@@ -68,10 +68,10 @@ async function handleMessage(message) {
       map.humidities.buffer
     ]);
   } catch (error) {
-    sendError(
-      requestId,
-      error instanceof Error ? error.message : "Terrain generation failed"
-    );
+    const errorMessage = error && typeof error.message === "string"
+      ? error.message
+      : "Terrain generation failed";
+    sendError(requestId, errorMessage);
   } finally {
     activeRequests.delete(requestId);
     cancelledRequests.delete(requestId);
