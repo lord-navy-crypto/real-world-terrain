@@ -33,6 +33,7 @@ const SEA_LEVEL = 63;
 let currentView = "relief";
 let latestMap = null;
 let isGenerating = false;
+let isExportingCsv = false;
 let renderToken = 0;
 function colorForTerrain(height, temperature, humidity, slope, view) {
   if (height < SEA_LEVEL - 180) {
@@ -117,7 +118,7 @@ function renderMap(map, onComplete) {
 }
 
 function generateMap() {
-  if (isGenerating) return;
+  if (isGenerating || isExportingCsv) return;
   renderToken += 1;
   const seedText = seedInput.value.trim() || "realscale";
   const seed = hashSeed(seedText);
@@ -228,8 +229,10 @@ function csvCell(value, protectFormula = false) {
 }
 
 function downloadElevationCsv() {
-  if (!latestMap || isGenerating) return;
-  const rows = [[
+  if (!latestMap || isGenerating || isExportingCsv) return;
+  isExportingCsv = true;
+  const exportMap = latestMap;
+  const chunks = [[
     "sample_x_blocks",
     "sample_z_blocks",
     "estimated_elevation_m",
@@ -237,37 +240,70 @@ function downloadElevationCsv() {
     "humidity_index",
     "seed",
     "footprint_blocks"
-  ].map(value => csvCell(value)).join(",")];
+  ].map(value => csvCell(value)).join(",") + "\r\n"];
+  let sampleRow = 0;
 
-  for (let py = 0; py < RESOLUTION; py += 1) {
-    const z = Math.round((py / (RESOLUTION - 1) - 0.5) * latestMap.size);
-    for (let px = 0; px < RESOLUTION; px += 1) {
-      const x = Math.round((px / (RESOLUTION - 1) - 0.5) * latestMap.size);
-      const index = py * RESOLUTION + px;
-      rows.push([
-        x,
-        z,
-        latestMap.heights[index].toFixed(1),
-        latestMap.temperatures[index].toFixed(4),
-        latestMap.humidities[index].toFixed(4),
-        latestMap.seedText,
-        latestMap.size
-      ].map((value, column) => csvCell(value, column === 5)).join(","));
+  downloadCsvButton.disabled = true;
+  generateButton.disabled = true;
+  refreshButton.disabled = true;
+  statusText.textContent = "Preparing elevation CSV… 0%";
+
+  function finishCsvExport() {
+    try {
+      const csv = new Blob(["\uFEFF", ...chunks], {
+        type: "text/csv;charset=utf-8"
+      });
+      const objectUrl = URL.createObjectURL(csv);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = "realscale-elevation-" + safeSeedFilename(exportMap.seedText)
+        + "-" + exportMap.size + "m-preview.csv";
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      statusText.textContent = "Elevation CSV downloaded · " + (RESOLUTION * RESOLUTION).toLocaleString()
+        + " estimated samples";
+    } catch (error) {
+      statusText.textContent = "CSV export failed · " + (error?.message || "unknown error");
+    } finally {
+      isExportingCsv = false;
+      downloadCsvButton.disabled = false;
+      generateButton.disabled = false;
+      refreshButton.disabled = false;
     }
   }
 
-  const csv = new Blob(["\uFEFF" + rows.join("\r\n")], {
-    type: "text/csv;charset=utf-8"
-  });
-  const objectUrl = URL.createObjectURL(csv);
-  const link = document.createElement("a");
-  link.href = objectUrl;
-  link.download = "realscale-elevation-" + safeSeedFilename(latestMap.seedText)
-    + "-" + latestMap.size + "m-preview.csv";
-  link.click();
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-  statusText.textContent = "Elevation CSV downloaded · " + (RESOLUTION * RESOLUTION).toLocaleString()
-    + " estimated samples";
+  function buildCsvBatch() {
+    const endRow = Math.min(RESOLUTION, sampleRow + ROWS_PER_FRAME);
+    const batchRows = [];
+    for (let py = sampleRow; py < endRow; py += 1) {
+      const z = Math.round((py / (RESOLUTION - 1) - 0.5) * exportMap.size);
+      for (let px = 0; px < RESOLUTION; px += 1) {
+        const x = Math.round((px / (RESOLUTION - 1) - 0.5) * exportMap.size);
+        const index = py * RESOLUTION + px;
+        batchRows.push([
+          x,
+          z,
+          exportMap.heights[index].toFixed(1),
+          exportMap.temperatures[index].toFixed(4),
+          exportMap.humidities[index].toFixed(4),
+          exportMap.seedText,
+          exportMap.size
+        ].map((value, column) => csvCell(value, column === 5)).join(","));
+      }
+    }
+
+    chunks.push(batchRows.join("\r\n") + "\r\n");
+    sampleRow = endRow;
+    const progress = Math.round(sampleRow / RESOLUTION * 100);
+    statusText.textContent = "Preparing elevation CSV… " + progress + "%";
+    if (sampleRow < RESOLUTION) {
+      window.requestAnimationFrame(buildCsvBatch);
+      return;
+    }
+    finishCsvExport();
+  }
+
+  window.requestAnimationFrame(buildCsvBatch);
 }
 
 function inspectMap(event) {
