@@ -59,6 +59,29 @@ final class ClipmapTriangleUvTest {
     }
 
     @Test
+    void adjacentCellsShareMacroWorldUvsWithoutRestartingTexturePerCell() {
+        float[] first = new float[6];
+        float[] second = new float[6];
+        ClipmapTriangleUv.computeWorldAlignedInto(
+                new float[]{0, 4, 0}, new float[]{100, 101, 102},
+                new float[]{0, 0, 4}, new int[]{0, 1, 0},
+                new int[]{0, 0, 1}, false, 8192.0f, -72.0f, 2032.0f, first);
+        ClipmapTriangleUv.computeWorldAlignedInto(
+                new float[]{4, 8, 4}, new float[]{100, 101, 102},
+                new float[]{0, 0, 4}, new int[]{0, 1, 0},
+                new int[]{0, 0, 1}, false, 8192.0f, -72.0f, 2032.0f, second);
+
+        // The shared world position (4,0) must keep exactly the same atlas UV.
+        assertEquals(first[2], second[0], 1.0e-6f);
+        assertEquals(first[3], second[1], 1.0e-6f);
+
+        // A four-block cell samples a tiny fraction of one neutral sprite,
+        // rather than restarting the entire 16x16 atlas tile at each cell.
+        assertTrue(Math.abs(first[2] - first[0]) < 0.01f);
+        assertTrue(Math.abs(first[5] - first[1]) < 0.01f);
+    }
+
+    @Test
     void skirtWithFixedXUsesWorldAlignedZAndHeight() {
         float[] uv = new float[6];
         ClipmapTriangleUv.computeWorldAlignedInto(
