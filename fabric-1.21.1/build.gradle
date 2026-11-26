@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.13.6'
 }
 group = 'org.realscale'
-version = '2.0.0-fabric.1.21.1'
+version = '2.0.1-fabric.1.21.1'
 base { archivesName = 'RealScale-Fabric-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
