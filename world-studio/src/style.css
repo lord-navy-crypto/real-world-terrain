@@ -123,3 +123,9 @@ h1 em,h2 em { color: #b5d28f; font-style: normal; }
 .download-preview-button { height:32px; padding:0 10px; border:1px solid rgba(180,212,138,.24); border-radius:3px; color:#c8d9bd; background:rgba(180,212,138,.06); font:9px "DM Mono",monospace; letter-spacing:.08em; transition:background .2s,border-color .2s; }
 .download-preview-button:hover:not(:disabled) { background:rgba(180,212,138,.14); border-color:rgba(180,212,138,.5); }
 .download-preview-button:disabled { opacity:.42; cursor:not-allowed; }
+
+.download-preview-button { white-space:nowrap; }
+@media (max-width: 760px) {
+  .map-panel-head { flex-wrap:wrap; gap:12px; }
+  .map-tools { width:100%; justify-content:flex-start; flex-wrap:wrap; }
+}
