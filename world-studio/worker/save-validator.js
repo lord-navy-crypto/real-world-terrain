@@ -169,7 +169,7 @@ function regionCoordinates(chunkX, chunkZ) {
   };
 }
 
-async function inspectRegionChunk(regionPath, header, headerIndex) {
+async function inspectRegionChunk(regionPath, header, headerIndex, expectedChunk) {
   const offset = header.readUIntBE(headerIndex, 3);
   const sectorCount = header.readUInt8(headerIndex + 3);
   if (offset < 2 || sectorCount < 1) return false;
@@ -202,6 +202,9 @@ async function inspectRegionChunk(regionPath, header, headerIndex) {
     if (external) throw new Error("External Anvil chunk streams are not supported by this exporter");
     const decoded = decodeCompressedNbt(compression, compressed);
     if (!decoded.root || typeof decoded.root !== "object") throw new Error("Chunk NBT root is invalid");
+    if (decoded.root.xPos !== expectedChunk.x || decoded.root.zPos !== expectedChunk.z) {
+      throw new Error("Anvil region slot points to a chunk with mismatched coordinates");
+    }
     return true;
   } finally {
     await handle.close();
@@ -250,7 +253,7 @@ export async function validateWorldSave(worldDirectory, requestInput) {
       }
       headerCache.set(regionPath, header);
     }
-    if (!await inspectRegionChunk(regionPath, header, region.headerIndex)) {
+    if (!await inspectRegionChunk(regionPath, header, region.headerIndex, chunk)) {
       throw new Error("Expected generated chunk is missing: " + chunk.x + "," + chunk.z);
     }
     verifiedChunks.push(chunk);
