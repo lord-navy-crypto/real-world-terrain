@@ -34,9 +34,11 @@ export class WorldExportJobManager {
     this.queue = [];
     this.activeJobId = null;
     this.idleWaiters = [];
+    this.shuttingDown = false;
   }
 
   create(input) {
+    if (this.shuttingDown) throw new Error("World export worker is shutting down");
     const normalized = normalizeExportRequest(input);
     const waiting = this.queue.length + (this.activeJobId ? 1 : 0);
     if (waiting >= this.maxQueue + 1) {
@@ -115,6 +117,7 @@ export class WorldExportJobManager {
   }
 
   shutdown() {
+    this.shuttingDown = true;
     const idle = new Promise(resolve => this.idleWaiters.push(resolve));
     for (const id of this.queue.splice(0)) {
       const job = this.jobs.get(id);
