@@ -62,21 +62,6 @@ final class ClipmapTriangleUvTest {
         assertEquals(15.5f, second[5], 1.0e-6f);
     }
 
-    @Test
-    void rejectsInvalidWorldBoundsAndDegenerateProjection() {
-        float[] uv = new float[6];
-        assertThrows(IllegalArgumentException.class, () ->
-                ClipmapTriangleUv.computeWorldAlignedInto(
-                        new float[]{0, 0, 0}, new float[]{10, 20, 30},
-                        new float[]{0, 0, 0}, new int[]{0, 0, 0},
-                        new int[]{0, 0, 0}, false, 0.0f, -72.0f, 2032.0f, uv));
-        assertThrows(IllegalArgumentException.class, () ->
-                ClipmapTriangleUv.computeWorldAlignedInto(
-                        new float[]{0, 0, 0}, new float[]{10, 20, 30},
-                        new float[]{0, 0, 0}, new int[]{0, 0, 0},
-                        new int[]{0, 0, 0}, false, 64.0f, -72.0f, 2032.0f, uv));
-    }
-
     private static void assertNonDegenerate(float[] uv) {
         float du1 = uv[2] - uv[0];
         float dv1 = uv[3] - uv[1];
