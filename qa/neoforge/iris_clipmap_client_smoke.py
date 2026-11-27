@@ -361,16 +361,27 @@ def capture_minecraft_screenshot(name: str, timeout: float = 12.0) -> pathlib.Pa
 
 
 def ocr_minecraft_screenshot(path: pathlib.Path) -> str:
-    """Read visible Minecraft UI labels from a framebuffer screenshot."""
+    """Read the pause-screen title from a small framebuffer crop."""
+    dimensions = subprocess.run(
+        ["identify", "-format", "%w %h", str(path)],
+        check=True, capture_output=True, text=True, timeout=10,
+    ).stdout.split()
+    width, height = (int(value) for value in dimensions)
+    crop_width = int(width * 0.24)
+    crop_height = int(height * 0.12)
+    crop_x = (width - crop_width) // 2
+    crop_y = int(height * 0.12)
     enlarged = BUILD / (path.stem + "-ocr.png")
     subprocess.run(
-        ["convert", str(path), "-resize", "300%", "-colorspace", "Gray",
+        ["convert", str(path), "-crop",
+         f"{crop_width}x{crop_height}+{crop_x}+{crop_y}", "+repage",
+         "-filter", "point", "-resize", "300%", "-colorspace", "Gray",
          "-contrast-stretch", "1%x1%", str(enlarged)],
-        check=True, timeout=30,
+        check=True, timeout=10,
     )
     result = subprocess.run(
-        ["tesseract", str(enlarged), "stdout", "--psm", "11"],
-        check=True, capture_output=True, text=True, timeout=30,
+        ["tesseract", str(enlarged), "stdout", "--psm", "6"],
+        check=True, capture_output=True, text=True, timeout=15,
     )
     normalized = re.sub(r"[^a-z0-9]+", " ", result.stdout.lower()).strip()
     print("PAUSE_SCREEN_OCR_TEXT:", normalized, flush=True)
