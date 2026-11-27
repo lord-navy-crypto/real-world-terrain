@@ -101,8 +101,8 @@ public final class CaveMarineHabitatFeature implements Feature {
     private static BlockPos findCave(WorldGenLevel w,BlockPos origin){
         int surface=w.getHeight(Heightmap.Types.WORLD_SURFACE_WG,
                 origin.getX(),origin.getZ())-1;
-        int min=w.getMinBuildHeight()+4; // Include vanilla caves below the grand-network floor.
-        int max=Math.min(w.getMaxBuildHeight()-4,
+        int min=w.getMinY()+4; // Include vanilla caves below the grand-network floor.
+        int max=Math.min(w.getMaxY()-4,
                 Math.min(GrandOverworldCaveNetwork.MAX_Y,surface-ROOF_DEPTH));
         if(min>max)return null;
         int y=HabitatFloorSearch.nearest(origin.getY(),min,max,36,
@@ -205,7 +205,7 @@ public final class CaveMarineHabitatFeature implements Feature {
             if(!sameChunk(origin,column))continue;
             int x=column.getX(),z=column.getZ();
             int seabed=w.getHeight(Heightmap.Types.OCEAN_FLOOR_WG,x,z)-1;
-            if(seabed<=w.getMinBuildHeight()+3
+            if(seabed<=w.getMinY()+3
                     ||seabed>=seaLevel-10)continue;
             BlockPos bottom=new BlockPos(x,seabed,z);
             BlockPos water=bottom.above();

@@ -141,7 +141,7 @@ public final class RiverChannelFeature implements Feature {
             if (Math.abs(first.getY() - second.getY()) > Math.min(3, maxGrade))
                 continue;
             int waterY = Math.min(first.getY(), second.getY()) - 1;
-            if (waterY <= floor || waterY > level.getMaxBuildHeight() - 7)
+            if (waterY <= floor || waterY > level.getMaxY() - 7)
                 continue;
             BlockPos[] pair = {first, second};
             boolean valid = true;
@@ -236,7 +236,7 @@ public final class RiverChannelFeature implements Feature {
                     && !level.getBiome(second).is(Biomes.FROZEN_RIVER))
                 continue;
             int waterY = Math.min(first.getY(), second.getY()) - 1;
-            if (waterY <= floor || waterY > level.getMaxBuildHeight() - 7)
+            if (waterY <= floor || waterY > level.getMaxY() - 7)
                 continue;
             BlockPos[] cells = {first, second};
             boolean enclosed = true;
@@ -381,7 +381,7 @@ public final class RiverChannelFeature implements Feature {
 
         WorldGenLevel level = context.level();
         ChunkPos chunk = new ChunkPos(context.origin().getX() >> 4, context.origin().getZ() >> 4);
-        int floor = Math.max(level.getMinBuildHeight() + 8, noise.getSeaLevel() + 6);
+        int floor = Math.max(level.getMinY() + 8, noise.getSeaLevel() + 6);
         boolean made = false;
         int highlandReaches = 0;
 
@@ -406,7 +406,7 @@ public final class RiverChannelFeature implements Feature {
                 BlockPos coverPos = new BlockPos(x, surfaceY, z);
                 boolean covered = removableCover(level.getBlockState(coverPos));
                 int y = covered ? surfaceY - 1 : surfaceY;
-                if (y <= floor || y > level.getMaxBuildHeight() - 6) continue;
+                if (y <= floor || y > level.getMaxY() - 6) continue;
                 BlockPos top = new BlockPos(x, y, z);
                 // A single biome lookup covers both checks. This matters for
                 // decorated biome sources that scan nearby quart boundaries.

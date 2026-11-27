@@ -86,8 +86,8 @@ public final class CaveWonderNetworkFeature implements Feature {
                     double lateral=Math.abs(side-deviation);
                     if(lateral>2.4)continue;
                     int y=cy+(int)Math.round(Math.sin(along*0.045+1.1)*3.0);
-                    if(y<w.getMinBuildHeight()+25
-                            ||y+10>=w.getMaxBuildHeight())continue;
+                    if(y<w.getMinY()+25
+                            ||y+10>=w.getMaxY())continue;
                     BlockPos roof=new BlockPos(x,y+9,z);
                     // A thick, solid cover prevents carving into exposed cliffs
                     // or opening an aquifer, even with high relief.

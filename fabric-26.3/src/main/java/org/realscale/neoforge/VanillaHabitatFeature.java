@@ -76,7 +76,7 @@ public final class VanillaHabitatFeature implements Feature {
             int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
             BlockPos surface = new BlockPos(x, surfaceY, z);
             BlockPos log = surface.above();
-            if (!inside(chunk, log) || log.getY() + 2 >= level.getMaxBuildHeight()
+            if (!inside(chunk, log) || log.getY() + 2 >= level.getMaxY()
                     || !soil(level.getBlockState(surface))
                     || !level.getBlockState(log).isAir()
                     || !level.getBlockState(log.above()).isAir())
@@ -111,7 +111,7 @@ public final class VanillaHabitatFeature implements Feature {
             int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
             BlockPos ground = new BlockPos(x, y, z);
             BlockPos plant = ground.above();
-            if (!inside(chunk, plant) || plant.getY() + 2 >= level.getMaxBuildHeight()
+            if (!inside(chunk, plant) || plant.getY() + 2 >= level.getMaxY()
                     || !bank(level.getBlockState(ground))
                     || !level.getBlockState(plant).isAir()
                     || !waterside(level, plant))

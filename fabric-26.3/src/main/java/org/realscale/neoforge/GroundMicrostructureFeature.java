@@ -35,8 +35,8 @@ public final class GroundMicrostructureFeature implements Feature {
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
         RandomSource random = context.random();
-        if (origin.getY() <= level.getMinBuildHeight() + 1
-                || origin.getY() >= level.getMaxBuildHeight() - 2) return false;
+        if (origin.getY() <= level.getMinY() + 1
+                || origin.getY() >= level.getMaxY() - 2) return false;
         return switch (kind) {
             case OAK_LOG -> fallenLog(level, origin, random, Blocks.OAK_LOG.defaultBlockState());
             case SPRUCE_LOG -> fallenLog(level, origin, random, Blocks.SPRUCE_LOG.defaultBlockState());

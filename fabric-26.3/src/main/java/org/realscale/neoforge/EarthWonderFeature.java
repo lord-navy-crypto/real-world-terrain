@@ -97,7 +97,7 @@ public final class EarthWonderFeature implements Feature {
             return false;
         BlockPos center=context.origin();
         int y=center.getY();
-        if (y<world.getMinBuildHeight()+8 || y>world.getMaxBuildHeight()-12)
+        if (y<world.getMinY()+8 || y>world.getMaxY()-12)
             return false;
         int cx=Math.floorDiv(center.getX(),16),cz=Math.floorDiv(center.getZ(),16);
         float temperature=world.getBiome(center).value().getBaseTemperature();

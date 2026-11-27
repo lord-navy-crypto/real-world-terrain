@@ -70,8 +70,8 @@ public final class SkyIslandFeature implements Feature {
 
     private static boolean placeIsland(WorldGenLevel world, SkyIslandLayout.Site site,
                                        int chunkX,int chunkZ) {
-        if (site.topY() + 4 >= world.getMaxBuildHeight()
-                || site.topY() - 17 <= world.getMinBuildHeight())
+        if (site.topY() + 4 >= world.getMaxY()
+                || site.topY() - 17 <= world.getMinY())
             return false;
         // Biome selection enforces the sampled ocean isolation tier, so an
         // inactive island slot cannot write a real landmass.
