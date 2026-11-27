@@ -156,6 +156,8 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("nativeProxyMeshesBuilt", SMOKE)
         self.assertIn("terrain_color_count", SMOKE)
         self.assertIn("TERRAIN_VIEWPORT_COLOR_COUNT", SMOKE)
+        self.assertIn("if contrast < 0.055 or colors < 16:", SMOKE)
+        self.assertIn("if initial_contrast < 0.055:", SMOKE)
         self.assertIn("minimum_seconds=60", SMOKE)
 
     def test_all_lods_use_compact_neutral_uv_patch_and_procedural_materials(self):
