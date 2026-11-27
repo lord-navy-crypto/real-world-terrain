@@ -1,16 +1,16 @@
 package org.realscale.neoforge;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -21,7 +21,10 @@ import java.util.Map;
  * only place blocks in the originating chunk. Large vegetation first checks
  * its entire footprint so rejected attempts cannot leave partial trees.
  */
-public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration> {
+public final class GrandEcologyFeature implements Feature {
+    public static final MapCodec<GrandEcologyFeature> MAP_CODEC = RealScaleFeatureCodecs.enumField("kind", Kind.class, GrandEcologyFeature::new, feature -> feature.kind);
+    @Override public MapCodec<? extends Feature> codec() { return MAP_CODEC; }
+
     public enum Kind {
         TEMPERATE_RAINFOREST, SAVANNA_CANOPY, CHAPARRAL_SCRUB,
         GRASSLAND_MOSAIC, ALPINE_TUNDRA, FLOODPLAIN_BANK,
@@ -36,7 +39,6 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
     private final boolean aquatic;
 
     public GrandEcologyFeature(Kind kind) {
-        super(NoneFeatureConfiguration.CODEC);
         this.kind = kind;
         this.habitat = EcologyDistributionMath.Habitat.valueOf(kind.name());
         // Invariant for this registered feature: resolve once on creation,
@@ -56,7 +58,7 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
     }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    private boolean placeLegacy(RealScaleFeatureContext context) {
         // The common path adds only a constant false branch; no clock reads.
         if (!WorldgenProfiler.ENABLED) return placeUnprofiled(context);
         long started = WorldgenProfiler.begin();
@@ -67,7 +69,7 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
         }
     }
 
-    private boolean placeUnprofiled(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    private boolean placeUnprofiled(RealScaleFeatureContext context) {
         // Limit global NeoForge biome-modifier decorations to RealScale worlds.
         if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
         WorldGenLevel level = context.level();
@@ -484,4 +486,11 @@ public final class GrandEcologyFeature extends Feature<NoneFeatureConfiguration>
         }
         return placed > 0;
     }
+
+    @Override
+    public boolean place(WorldGenLevel level, ChunkGenerator chunkGenerator,
+                         RandomSource random, BlockPos origin) {
+        return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
+    }
+
 }
