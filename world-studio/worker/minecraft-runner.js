@@ -53,6 +53,23 @@ function progress(callback, stage, percent, message, details = {}) {
   callback?.({ stage, percent, message, ...details });
 }
 
+function isTcpPortOpen(port) {
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return Promise.resolve(false);
+  return new Promise(resolve => {
+    const socket = net.createConnection({ host: "127.0.0.1", port });
+    let settled = false;
+    const finish = open => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(open);
+    };
+    socket.once("connect", () => finish(true));
+    socket.once("error", () => finish(false));
+    socket.setTimeout(500, () => finish(false));
+  });
+}
+
 async function reserveLocalPorts(count) {
   const servers = [];
   const ports = [];
@@ -368,6 +385,14 @@ export async function runMinecraftExport(input, {
     ]);
     propertiesSnapshot = await snapshotFile(propertiesPath);
     eulaSnapshot = await snapshotFile(eulaPath);
+    const previousProperties = propertiesSnapshot.exists
+      ? propertiesSnapshot.bytes.toString("utf8")
+      : "";
+    const previousPortMatch = previousProperties.match(/^server-port\s*=\s*(\d+)\s*$/mu);
+    const previousServerPort = previousPortMatch ? Number(previousPortMatch[1]) : 25565;
+    if (await isTcpPortOpen(previousServerPort)) {
+      throw new Error("A Minecraft server is already listening on the NeoForge run directory's game port; stop it before exporting");
+    }
     if (await fs.lstat(worldDirectory).catch(() => null)) {
       throw new Error("The generated world directory already exists; refusing to overwrite it");
     }
