@@ -3,8 +3,13 @@ package org.realscale.neoforge;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.KeyDispatchDataCodec;
-import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensitySampler;
+import net.minecraft.world.level.levelgen.densityfunction.DensityBuffer;
+import net.minecraft.world.level.levelgen.densityfunction.DensityVolume;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
+import net.minecraft.world.level.levelgen.densityfunction.DfRewriteRule;
+import net.minecraft.util.Interval;
 
 /**
  * Mountain-scale basin and plateau relief, applied to HORIZONTAL height
@@ -16,7 +21,7 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * Never samples another chunk's interpolated height, and never depends on
  * what neighboring chunk happened to generate first.
  */
-public final class MountainReliefDensity implements DensityFunction.SimpleFunction {
+public final class MountainReliefDensity implements DensityFunction {
     private final DensityFunction base, continents, selector;
     private final double basinDepth, plateauRise;
     // One bounded site memo per density function and worker. Revisit a region
@@ -43,27 +48,24 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
 
     public static final MapCodec<MountainReliefDensity> MAP_CODEC =
             RecordCodecBuilder.mapCodec(i -> i.group(
-                    DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(MountainReliefDensity::base),
-                    DensityFunction.HOLDER_HELPER_CODEC.fieldOf("continents").forGetter(MountainReliefDensity::continents),
-                    DensityFunction.HOLDER_HELPER_CODEC.fieldOf("selector").forGetter(MountainReliefDensity::selector),
+                    DensityFunction.CODEC.fieldOf("base").forGetter(MountainReliefDensity::base),
+                    DensityFunction.CODEC.fieldOf("continents").forGetter(MountainReliefDensity::continents),
+                    DensityFunction.CODEC.fieldOf("selector").forGetter(MountainReliefDensity::selector),
                     Codec.doubleRange(0.0, 1.9).fieldOf("basin_depth").forGetter(MountainReliefDensity::basinDepth),
                     Codec.doubleRange(0.0, 1.3).fieldOf("plateau_rise").forGetter(MountainReliefDensity::plateauRise)
             ).apply(i, MountainReliefDensity::new));
-    private static final KeyDispatchDataCodec<MountainReliefDensity> DISPATCH =
-            KeyDispatchDataCodec.of(MAP_CODEC);
-
-    private MountainReliefSiteCache.Site site(DensityFunction.FunctionContext ctx) {
+    private MountainReliefSiteCache.Site site(RealScaleDensityContext ctx) {
         int gx=Math.floorDiv(ctx.blockX(),MountainReliefMath.CELL);
         int gz=Math.floorDiv(ctx.blockZ(),MountainReliefMath.CELL);
         return current.get().get(gx,gz);
     }
 
-    private void classify(MountainReliefSiteCache.Site site) {
+    private void classify(MountainReliefSiteCache.Site site, RealScaleDensityContext ctx) {
         if (site.classified) return;
-        var anchor=new DensityFunction.SinglePointContext(
+        var anchor=ctx.at(
                 Math.toIntExact((long)site.centerX),0,
                 Math.toIntExact((long)site.centerZ));
-        double regionalSignal=selector.compute(anchor);
+        double regionalSignal=anchor.compute(selector);
         site.type=MountainReliefMath.kind(site.hash,regionalSignal);
         site.anchorHeight=site.type==MountainReliefMath.PLATEAU
                 ||site.type==MountainReliefMath.MESA
@@ -71,15 +73,15 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
         site.classified=true;
     }
 
-    @Override public double compute(DensityFunction.FunctionContext ctx) {
+    public double compute(RealScaleDensityContext ctx) {
         if(!DensityPerfSampler.ENABLED)return computeUnprofiled(ctx);
         long started=DensityPerfSampler.begin(DensityPerfSampler.Stage.MOUNTAIN_RELIEF);
         try{return computeUnprofiled(ctx);}
         finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.MOUNTAIN_RELIEF,started);}
     }
 
-    private double computeUnprofiled(DensityFunction.FunctionContext ctx) {
-        double original = base.compute(ctx);
+    private double computeUnprofiled(RealScaleDensityContext ctx) {
+        double original = ctx.compute(base);
         // For original <= 0.65, the upland gate's second smoothstep is
         // mathematically zero for ANY continentalness. This also avoids
         // expensive continent noise reads in the ocean and lowlands.
@@ -91,7 +93,7 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
         // seed-resolved selector. Faraway columns never need that sample.
         if (s.definitelyOutside(dx,dz))
             return original;
-        classify(s);
+        classify(s,ctx);
         if (s.type == MountainReliefMath.NONE) return original;
         // Type-specific support is narrower than the common basin envelope:
         // mesas vanish at radiusFraction >= 0.58, plateaus at >= 1.0.
@@ -99,7 +101,7 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
         // BEFORE computing potentially expensive continental noise.
         if (MountainReliefMath.definitelyOutsideActiveRelief(
                 s.type, dx, dz, s.radius)) return original;
-        double continent = continents.compute(ctx);
+        double continent = ctx.compute(continents);
         double gate = MountainReliefMath.inlandUplandGate(continent, original);
         if (gate <= 0.0) return original;
         double radiusFraction = Math.hypot(dx, dz) / s.radius;
@@ -107,14 +109,18 @@ public final class MountainReliefDensity implements DensityFunction.SimpleFuncti
                 continent, s.type, radiusFraction, basinDepth, plateauRise, gate);
     }
 
-    @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {
-        return visitor.apply(new MountainReliefDensity(base.mapAll(visitor),
-                continents.mapAll(visitor), selector.mapAll(visitor),
-                basinDepth, plateauRise));
+        @Override public DensitySampler compileSampler(DensityFunction.CompileContext context) {
+        return RealScaleDensitySamplerSupport.compile(context, new DensityFunction[]{base, continents, selector}, this::compute);
     }
-    @Override public double minValue() { return base.minValue() - basinDepth; }
-    @Override public double maxValue() {
-        return base.maxValue() + Math.max(plateauRise, basinDepth * 0.15);
+    @Override public Interval range() { return Interval.INFINITE; }
+    @Override public int domainAxes() { return DensityFunction.ALL_AXES; }
+
+@Override public DensityFunction rewriteChildren(DfRewriteRule rule) {
+        return new MountainReliefDensity(rule.rewrite(base),
+                rule.rewrite(continents), rule.rewrite(selector),
+                basinDepth, plateauRise);
     }
-    @Override public KeyDispatchDataCodec<? extends DensityFunction> codec() { return DISPATCH; }
+    
+    
+    @Override public MapCodec<? extends DensityFunction> codec() { return MAP_CODEC; }
 }
