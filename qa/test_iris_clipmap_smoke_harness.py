@@ -234,6 +234,10 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
 
         self.assertIn("CLIENT_CAMERA_POSE_VERIFIED", SMOKE)
         self.assertIn("expected_pose = (0.5, 2304.9, 1.5, 35.0, 45.0)", SMOKE)
+        self.assertIn("CLIENT_CAMERA_PIN_RELEASED_FOR_MOVEMENT", SMOKE)
+        self.assertIn("smokeCameraMovementStarted", GEOMETRY_CLIENT)
+        self.assertIn("minecraft.options.keyRight.isDown()", GEOMETRY_CLIENT)
+        self.assertIn("minecraft.player.setDeltaMovement(0.0, 0.0, 0.0)", GEOMETRY_CLIENT)
         self.assertIn(r'CLIENT_CAMERA_POSITION:\s*x=', SMOKE)
         self.assertIn("CLIENT_CAMERA_POSITION:", GEOMETRY_CLIENT)
         self.assertIn("lastSmokeCameraTelemetryNanos", GEOMETRY_CLIENT)
