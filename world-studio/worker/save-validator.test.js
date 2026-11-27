@@ -127,7 +127,7 @@ test("rejects invalid region sector offsets", async t => {
   const world = await createWorld();
   t.after(() => fs.rm(world, { recursive: true, force: true }));
   const handle = await fs.open(path.join(world, "region", "r.0.0.mca"), "r+");
-  const invalid = Buffer.from([0, 0, 1, 1]);
+  const invalid = Buffer.from([0, 0, 2, 255]);
   await handle.write(invalid, 0, 4, 0);
   await handle.close();
   await assert.rejects(
