@@ -202,6 +202,9 @@ async function inspectRegionChunk(regionPath, header, headerIndex, expectedChunk
     if (external) throw new Error("External Anvil chunk streams are not supported by this exporter");
     const decoded = decodeCompressedNbt(compression, compressed);
     if (!decoded.root || typeof decoded.root !== "object") throw new Error("Chunk NBT root is invalid");
+    if (!Number.isInteger(decoded.root.DataVersion)) {
+      throw new Error("Anvil chunk NBT is missing its DataVersion");
+    }
     if (decoded.root.xPos !== expectedChunk.x || decoded.root.zPos !== expectedChunk.z) {
       throw new Error("Anvil region slot points to a chunk with mismatched coordinates");
     }
