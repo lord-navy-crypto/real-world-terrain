@@ -1,7 +1,7 @@
 package org.realscale.neoforge;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -22,7 +22,7 @@ public final class RealScalePerformanceStudioScreen extends Screen {
         int center=width/2;
         int y=height-30;
         addRenderableWidget(Button.builder(Component.literal("Performance Settings"),
-                button -> Minecraft.getInstance().setScreen(
+                button -> Minecraft.getInstance().setScreenAndShow(
                         RealScaleTerrainLabClient.createScreen(this)))
                 .bounds(center-154,y,148,20).build());
         addRenderableWidget(Button.builder(Component.literal("Back"),
@@ -31,10 +31,10 @@ public final class RealScalePerformanceStudioScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics,int mouseX,int mouseY,float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor graphics,int mouseX,int mouseY,float partialTick) {
         renderBackground(graphics,mouseX,mouseY,partialTick);
-        super.render(graphics,mouseX,mouseY,partialTick);
-        graphics.drawCenteredString(font,title,width/2,12,0xffffffff);
+        super.extractRenderState(graphics,mouseX,mouseY,partialTick);
+        graphics.centeredText(font,title,width/2,12,0xffffffff);
 
         int left=Math.max(12,width/2-220);
         int right=Math.min(width-12,width/2+18);
@@ -47,7 +47,7 @@ public final class RealScalePerformanceStudioScreen extends Screen {
         line(graphics,left,y,"Minecraft-reported FPS",
                 Integer.toString(Minecraft.getInstance().getFps())); y+=18;
 
-        graphics.drawString(font,Component.literal("FRAME INTERVAL TELEMETRY"),
+        graphics.text(font,Component.literal("FRAME INTERVAL TELEMETRY"),
                 left,y,0xff80c8ff); y+=15;
         RealScaleClientFrameProfiler.FrameSnapshot frame=
                 RealScaleClientFrameProfiler.snapshot();
@@ -64,7 +64,7 @@ public final class RealScalePerformanceStudioScreen extends Screen {
         }
 
         y+=5;
-        graphics.drawString(font,Component.literal("GPU TIMESTAMP SPAN"),left,y,0xff80c8ff); y+=15;
+        graphics.text(font,Component.literal("GPU TIMESTAMP SPAN"),left,y,0xff80c8ff); y+=15;
         RealScaleGpuTimestampProfiler.Snapshot gpu=
                 RealScaleGpuTimestampProfiler.snapshot();
         line(graphics,left,y,"Timer queries",
@@ -75,7 +75,7 @@ public final class RealScalePerformanceStudioScreen extends Screen {
                 ms(gpu.p50Ms())+" / "+ms(gpu.p95Ms())+" / "+ms(gpu.p99Ms())); y+=15;
 
         y+=5;
-        graphics.drawString(font,Component.literal("CHUNK QUEUE & MEMORY"),
+        graphics.text(font,Component.literal("CHUNK QUEUE & MEMORY"),
                 left,y,0xff80c8ff); y+=15;
         RealScaleChunkUploadClient.QueueSnapshot queue=
                 RealScaleChunkUploadClient.snapshot();
@@ -104,22 +104,22 @@ public final class RealScalePerformanceStudioScreen extends Screen {
                 queue.deferredCalls()+" / "+queue.uploadedTasks()); y+=15;
 
         int noteY=Math.min(height-55,y+5);
-        graphics.drawCenteredString(font,
+        graphics.centeredText(font,
                 Component.literal("Frame intervals include VSync; GPU timestamp spans are not GPU utilization and may include idle gaps."),
                 width/2,noteY,0xffb5c0c8);
-        graphics.drawCenteredString(font,
+        graphics.centeredText(font,
                 Component.literal("Heap is JVM heap, not VRAM; timestamp span is not GPU busy time. Upload pacing may delay terrain appearance."),
                 width/2,noteY+13,0xff9eabb5);
         if(!frame.enabled())
-            graphics.drawCenteredString(font,
+            graphics.centeredText(font,
                     Component.literal("Enable Live Performance Diagnostics in Performance Settings, then restart."),
                     width/2,noteY+26,0xffd7bb83);
     }
 
-    private void line(GuiGraphics graphics,int x,int y,String label,String value) {
-        graphics.drawString(font,Component.literal(label),x,y,0xffb7c9d6);
+    private void line(GuiGraphicsExtractor graphics,int x,int y,String label,String value) {
+        graphics.text(font,Component.literal(label),x,y,0xffb7c9d6);
         int valueX=Math.min(width-12,x+250);
-        graphics.drawString(font,Component.literal(value),valueX,y,0xffffffff);
+        graphics.text(font,Component.literal(value),valueX,y,0xffffffff);
     }
 
     private static String ms(double value) {
@@ -133,6 +133,6 @@ public final class RealScalePerformanceStudioScreen extends Screen {
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().setScreenAndShow(parent);
     }
 }
