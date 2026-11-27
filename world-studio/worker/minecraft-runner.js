@@ -556,7 +556,7 @@ export async function runMinecraftExport(input, {
       }
       rcon.close();
     }
-    if (child && !serverStopped && child.exitCode === null && child.signalCode === null) {
+    if (child?.pid && !serverStopped && child.exitCode === null && child.signalCode === null) {
       try {
         await waitForExit(child, 30_000);
       } catch {
