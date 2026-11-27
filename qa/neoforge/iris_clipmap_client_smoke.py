@@ -1083,6 +1083,8 @@ def run_client(env: dict[str, str]) -> None:
         move_camera_until_horizontal_distance(
             proc, lines, motion_start, baseline_position, target_distance=320.0
         )
+        if "CLIENT_CAMERA_PIN_RELEASED_FOR_MOVEMENT" not in "".join(lines[motion_start:]):
+            raise RuntimeError("CI smoke camera remained pinned when horizontal movement began")
         new_centre = wait_for_new_complete_center(
             proc, lines, motion_start, old_centres, timeout_seconds=240.0
         )
