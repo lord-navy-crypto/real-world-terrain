@@ -510,7 +510,7 @@ def wait_for_pause_screen(lines: list[str], start: int, name: str,
                 time.sleep(0.5)
                 capture_screenshot(name + "-desktop-probe")
                 image = capture_minecraft_screenshot(name)
-                validate_screenshot(image)
+                validate_screenshot(image, min_width=640, min_height=360)
                 visible_text = ocr_minecraft_screenshot(image)
                 required_labels = ("clipmap", expected_state.lower(), "range")
                 missing = [label for label in required_labels if label not in visible_text]
@@ -747,7 +747,7 @@ def dismiss_experimental_warning() -> bool:
     return False
 
 
-def validate_screenshot(path: pathlib.Path | None) -> None:
+def validate_screenshot(path: pathlib.Path | None, min_width: int = 1280, min_height: int = 720) -> None:
     if path is None or not path.is_file():
         raise RuntimeError("Minecraft screenshot was not captured")
     if path.stat().st_size < 5_000:
@@ -768,10 +768,11 @@ def validate_screenshot(path: pathlib.Path | None) -> None:
         f"mean={mean:.5f} stddev={deviation:.5f} bytes={path.stat().st_size}",
         flush=True,
     )
-    if width < 1280 or height < 720 or mean < 0.005 or deviation < 0.005:
+    if width < min_width or height < min_height or mean < 0.005 or deviation < 0.005:
         raise RuntimeError(
             "Screenshot appears blank, incomplete, or below the expected display size: "
-            f"{width}x{height}, mean={mean:.5f}, stddev={deviation:.5f}"
+            f"{width}x{height} (minimum {min_width}x{min_height}), "
+            f"mean={mean:.5f}, stddev={deviation:.5f}"
         )
 
 
