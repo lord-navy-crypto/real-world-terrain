@@ -23,8 +23,9 @@ function integerInRange(value, min, max, label) {
 }
 
 function normalizeSeed(value) {
-  if (typeof value !== "string" && typeof value !== "number" && typeof value !== "bigint") {
-    throw new TypeError("Seed must be text or an integer");
+  if (typeof value !== "string" && typeof value !== "bigint"
+    && !(typeof value === "number" && Number.isSafeInteger(value))) {
+    throw new TypeError("Seed must be text or a safe integer");
   }
   const seed = String(value).trim();
   if (!seed || Buffer.byteLength(seed, "utf8") > 64 || /[\u0000-\u001f\u007f]/u.test(seed)) {
@@ -39,7 +40,7 @@ export function normalizeExportRequest(input) {
   }
 
   const presetKey = typeof input.preset === "string" ? input.preset : "natural-automate";
-  const presetId = WORLD_PRESETS[presetKey];
+  const presetId = Object.hasOwn(WORLD_PRESETS, presetKey) ? WORLD_PRESETS[presetKey] : null;
   if (!presetId) {
     throw new TypeError("Unsupported RealScale world preset");
   }
