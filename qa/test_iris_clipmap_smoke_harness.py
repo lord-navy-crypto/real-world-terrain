@@ -84,9 +84,12 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertNotIn("sprites.water()", IRIS_RENDERER)
         self.assertIn("activeIrisExtendedFogStart", GEOMETRY_CLIENT)
 
-    def test_far_field_render_smoke_measures_texture_aliasing(self):
-        self.assertIn("def terrain_high_frequency_ratio(", SMOKE)
+    def test_far_field_render_smoke_measures_absolute_and_normalized_texture_energy(self):
+        self.assertIn("def terrain_high_frequency_metrics(", SMOKE)
+        self.assertIn("TERRAIN_HIGH_FREQUENCY_RMS", SMOKE)
         self.assertIn("TERRAIN_HIGH_FREQUENCY_RATIO", SMOKE)
+        self.assertIn("initial_high_frequency_rms > 0.030", SMOKE)
+        self.assertIn("IRIS_TERRAIN_ABSOLUTE_TEXTURE_ENERGY_GATE_PASS", SMOKE)
         self.assertIn("IRIS_TERRAIN_TEXTURE_ALIASING_GATE_PASS", SMOKE)
         self.assertIn("max(settled_high_frequency, final_high_frequency) > 0.18", SMOKE)
         self.assertIn('"-blur", "0x2"', SMOKE)
