@@ -93,7 +93,7 @@ public final class EarthWonderFeature implements Feature {
     private boolean placeLegacy(RealScaleFeatureContext context) {
         if (!TVAWorldGuard.hasExperimentalWonders(context)) return false;
         WorldGenLevel world=context.level();
-        if (!world.getLevel().dimension().location().toString().equals("minecraft:overworld"))
+        if (!world.getLevel().dimension().identifier().toString().equals("minecraft:overworld"))
             return false;
         BlockPos center=context.origin();
         int y=center.getY();

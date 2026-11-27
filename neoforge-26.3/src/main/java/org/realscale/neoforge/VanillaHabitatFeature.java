@@ -133,7 +133,7 @@ public final class VanillaHabitatFeature implements Feature {
         if (!(generator instanceof NoiseBasedChunkGenerator noise)) return false;
         var key = noise.generatorSettings().unwrapKey();
         if (key.isEmpty()) return false;
-        Identifier id = key.get().location();
+        Identifier id = key.get().identifier();
         // Biome modifiers are global; never decorate vanilla/foreign worlds.
         if (!id.getNamespace().equals("realscale")) return false;
         WorldGenLevel level = context.level();
