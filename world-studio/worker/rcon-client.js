@@ -123,6 +123,9 @@ export class RconClient {
       let packet;
       try {
         packet = await Promise.race([this.readPacket(), timeout]);
+      } catch (error) {
+        if (/timed out/iu.test(error.message || "")) this.socket.destroy(error);
+        throw error;
       } finally {
         clearTimeout(timer);
       }
