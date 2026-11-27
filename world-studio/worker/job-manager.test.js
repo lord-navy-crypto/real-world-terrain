@@ -34,6 +34,7 @@ test("runs jobs sequentially and publishes progress without leaking filesystem p
   const b = manager.create({ seed: "second" });
   assert.equal(manager.get(a.id).status, "running");
   assert.equal(manager.get(b.id).status, "queued");
+  await new Promise(resolve => setImmediate(resolve));
   assert.equal(manager.get(a.id).progress, 42);
   assert.equal(calls.length, 1);
   first.resolve(success(a.id));
@@ -80,6 +81,7 @@ test("aborts an active job and records a cancelled terminal state", async () => 
     })
   });
   const job = manager.create({ seed: "cancel-me" });
+  await new Promise(resolve => setImmediate(resolve));
   assert.equal(manager.cancel(job.id).status, "cancelling");
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(signal.aborted, true);
