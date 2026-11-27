@@ -106,4 +106,31 @@ final class WorldgenResourceIntegrityTest {
                     path + " still uses the legacy nested config object");
         }
     }
+
+    @Test
+    void everyGeneratedStructurePackUses26_3Metadata() throws Exception {
+        Path packRoot = resourceDirectory("resourcepacks");
+        List<Path> packDirectories;
+        try (Stream<Path> directories = Files.list(packRoot)) {
+            packDirectories = directories.filter(Files::isDirectory).sorted().toList();
+        }
+        assertFalse(packDirectories.isEmpty(), "No generated structure resource packs were packaged");
+        for (Path directory : packDirectories) {
+            Path metadataPath = directory.resolve("pack.mcmeta");
+            assertTrue(Files.isRegularFile(metadataPath), directory + " has no pack.mcmeta");
+            JsonObject metadata = readObject(metadataPath).getAsJsonObject("pack");
+            assertNotNull(metadata, directory + " has no pack metadata object");
+            assertFalse(metadata.has("pack_format"),
+                    directory + " still uses the legacy pack_format field");
+            assertEquals(121, metadata.getAsJsonArray("min_format").get(0).getAsInt(),
+                    directory + " has the wrong minimum data-pack major format");
+            assertEquals(0, metadata.getAsJsonArray("min_format").get(1).getAsInt(),
+                    directory + " has the wrong minimum data-pack minor format");
+            assertEquals(121, metadata.getAsJsonArray("max_format").get(0).getAsInt(),
+                    directory + " has the wrong maximum data-pack major format");
+            assertEquals(0, metadata.getAsJsonArray("max_format").get(1).getAsInt(),
+                    directory + " has the wrong maximum data-pack minor format");
+        }
+    }
+
 }
