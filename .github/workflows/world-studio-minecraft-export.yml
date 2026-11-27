@@ -1,0 +1,55 @@
+name: RealScale World Studio Minecraft export smoke
+
+on:
+  pull_request:
+    paths:
+      - "world-studio/worker/**"
+      - "neoforge/build.gradle"
+      - "neoforge/gradle.properties"
+      - "neoforge/src/main/**"
+      - "neoforge/src/main/resources/data/realscale/worldgen/**"
+      - ".github/workflows/world-studio-minecraft-export.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  real-minecraft-export:
+    name: Generate and validate a real 4-chunk NeoForge save
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up pinned Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Generate a real Minecraft world and validate the save
+        env:
+          REALSCALE_SERVER_STARTUP_TIMEOUT_MS: "900000"
+          REALSCALE_GENERATION_TIMEOUT_MS: "600000"
+          REALSCALE_CHUNK_TIMEOUT_MS: "180000"
+        run: node world-studio/worker/integration-smoke.js
+
+      - name: Upload server diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-studio-minecraft-export-diagnostics
+          path: build/world-studio-export-smoke/
+          if-no-files-found: ignore
+          retention-days: 7
