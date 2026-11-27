@@ -68,7 +68,7 @@ final class WorldgenResourceIntegrityTest {
 
     @Test
     void everyCustomBiomeModifierResolvesToAPlacedFeature() throws Exception {
-        Path modifierDirectory = resourceDirectory("realscale/biome_modifiers");
+        Path modifierDirectory = resourceDirectory("data/realscale/neoforge/biome_modifier");
         Path placedDirectory = resourceDirectory("data/realscale/worldgen/placed_feature");
 
         for (Path path : jsonFiles(modifierDirectory)) {
