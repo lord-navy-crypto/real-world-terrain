@@ -373,7 +373,7 @@ public final class RiverChannelFeature implements Feature {
         // newly generated chunks may receive the two-layer stream.
         var settingsKey = noise.generatorSettings().unwrapKey();
         if (settingsKey.isEmpty()) return false;
-        Identifier id = settingsKey.get().location();
+        Identifier id = settingsKey.get().identifier();
         if (!id.getNamespace().equals("realscale"))
             return false;
         int maxGrade = riverGradeForWorld(id.getPath());

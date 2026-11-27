@@ -281,7 +281,7 @@ public final class CaveMarineHabitatFeature implements Feature {
     private boolean placeLegacy(RealScaleFeatureContext context){
         if(!TVAWorldGuard.hasRealScaleGenerator(context))return false;
         WorldGenLevel w=context.level();
-        if(!w.getLevel().dimension().location().toString()
+        if(!w.getLevel().dimension().identifier().toString()
                 .equals("minecraft:overworld"))return false;
         BlockPos origin=context.origin();
         ATTEMPTS[kind.ordinal()].increment();

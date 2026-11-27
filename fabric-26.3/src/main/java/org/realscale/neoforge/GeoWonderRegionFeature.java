@@ -178,7 +178,7 @@ public final class GeoWonderRegionFeature implements Feature {
             if(!naturalFloor(base)||!w.getFluidState(below).isEmpty())continue;
             if(!w.getBlockState(p).isAir()||!w.getFluidState(p).isEmpty())continue;
             String biome=w.getBiome(p).unwrapKey()
-                    .map(k->k.location().toString()).orElse("");
+                    .map(k->k.identifier().toString()).orElse("");
             if(!allowedBiome(biome))continue;
             if((kind==Kind.MANGROVE_ESTUARY||kind==Kind.DELTA_DISTRIBUTARIES)
                     && !nearWater(w,x,y,z,minX,minZ))continue;
@@ -204,7 +204,7 @@ public final class GeoWonderRegionFeature implements Feature {
 
     private boolean placeLegacy(RealScaleFeatureContext context) {
         if(!TVAWorldGuard.hasExperimentalWonders(context))return false;
-        if(!context.level().getLevel().dimension().location().toString()
+        if(!context.level().getLevel().dimension().identifier().toString()
                 .equals("minecraft:overworld"))return false;
         int minX=Math.floorDiv(context.origin().getX(),16)*16;
         int minZ=Math.floorDiv(context.origin().getZ(),16)*16;

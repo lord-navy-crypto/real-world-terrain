@@ -56,7 +56,7 @@ public final class CaveWonderNetworkFeature implements Feature {
     private boolean placeLegacy(RealScaleFeatureContext context) {
         if(!TVAWorldGuard.hasExperimentalWonders(context))return false;
         WorldGenLevel w=context.level();
-        if(!w.getLevel().dimension().location().toString().equals("minecraft:overworld"))
+        if(!w.getLevel().dimension().identifier().toString().equals("minecraft:overworld"))
             return false;
         int minX=Math.floorDiv(context.origin().getX(),16)*16;
         int minZ=Math.floorDiv(context.origin().getZ(),16)*16;
@@ -93,7 +93,7 @@ public final class CaveWonderNetworkFeature implements Feature {
                     // or opening an aquifer, even with high relief.
                     if(!acceptable(w.getBlockState(roof)))continue;
                     String biome=w.getBiome(new BlockPos(x,y,z)).unwrapKey()
-                            .map(k->k.location().toString()).orElse("");
+                            .map(k->k.identifier().toString()).orElse("");
                     if(kind==Kind.LAVA_TUBE) {
                         if(!biome.equals("minecraft:stony_peaks")
                                 && !biome.equals("minecraft:badlands")
