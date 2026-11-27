@@ -476,8 +476,8 @@ public final class GeometryClipmapClient {
                 var cameraPosition = event.getCamera().getPosition();
                 System.out.printf(java.util.Locale.ROOT,
                         "[RealScale Geometry Clipmap] CLIENT_CAMERA_POSITION: "
-                                + "x=%.1f y=%.1f z=%.1f%n",
-                        cameraPosition.x, cameraPosition.y, cameraPosition.z);
+                                + "x=%.1f y=%.1f z=%.1f sampleNanos=%d%n",
+                        cameraPosition.x, cameraPosition.y, cameraPosition.z, now);
             }
         }
 
