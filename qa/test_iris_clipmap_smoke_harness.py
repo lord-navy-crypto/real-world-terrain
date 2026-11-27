@@ -84,6 +84,16 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertNotIn("sprites.water()", IRIS_RENDERER)
         self.assertIn("activeIrisExtendedFogStart", GEOMETRY_CLIENT)
 
+    def test_modrinth_downloads_retry_transient_network_errors(self):
+        self.assertIn("RETRYABLE_HTTP_CODES = {408, 425, 429, 500, 502, 503, 504, 522, 524}", SMOKE)
+        self.assertIn("def open_url_with_retry(", SMOKE)
+        self.assertIn("urllib.error.HTTPError", SMOKE)
+        self.assertIn('error.headers.get("Retry-After")', SMOKE)
+        self.assertIn("attempt={attempt + 1}/{max_attempts}", SMOKE)
+        self.assertIn("time.sleep(delay)", SMOKE)
+        self.assertIn("open_url_with_retry(request, timeout=60, context=url)", SMOKE)
+        self.assertIn("open_url_with_retry(request, timeout=180, context=file_info[", SMOKE)
+
     def test_far_field_render_smoke_measures_absolute_and_normalized_texture_energy(self):
         self.assertIn("def terrain_high_frequency_metrics(", SMOKE)
         self.assertIn("TERRAIN_HIGH_FREQUENCY_RMS", SMOKE)
