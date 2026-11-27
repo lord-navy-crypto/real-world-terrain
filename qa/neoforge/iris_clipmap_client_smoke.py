@@ -905,7 +905,7 @@ def prepare_open_rendering_view(
             while time.monotonic() < ascent_deadline:
                 output = "".join(client_stdout_lines)
                 camera_match = re.search(
-                    r"CLIENT_CAMERA_VANTAGE_READY:\s*x=([-+0-9.]+)\s+y=([-+0-9.]+)\s+z=([-+0-9.]+)",
+                    r"CLIENT_CAMERA_VANTAGE_READY:\s*x=([-+0-9.]+)\s+y=([-+0-9.]+)\s+z=([-+0-9.]+)\s+pitch=([-+0-9.]+)\s+yaw=([-+0-9.]+)",
                     output,
                 )
                 if camera_match and float(camera_match.group(2)) >= 2300.0:
@@ -939,12 +939,27 @@ def prepare_open_rendering_view(
             "render-thread telemetry marker was not observed"
         )
 
-    # The CI-only Java camera hook applies a deterministic downward pitch.
-    time.sleep(2)
-    time.sleep(1)
+    camera_x, camera_y, camera_z, camera_pitch, camera_yaw = (
+        float(camera_match.group(index)) for index in range(1, 6)
+    )
+    expected_pose = (0.5, 2304.9, 1.5, 35.0, 45.0)
+    actual_pose = (camera_x, camera_y, camera_z, camera_pitch, camera_yaw)
+    if any(abs(actual - expected) > 0.11
+           for actual, expected in zip(actual_pose, expected_pose)):
+        raise RuntimeError(
+            "CI smoke camera did not reach its deterministic world-space pose: "
+            f"actual={actual_pose!r}, expected={expected_pose!r}"
+        )
+    print(
+        "CLIENT_CAMERA_POSE_VERIFIED: "
+        f"x={camera_x:.1f} y={camera_y:.1f} z={camera_z:.1f} "
+        f"pitch={camera_pitch:.1f} yaw={camera_yaw:.1f}",
+        flush=True,
+    )
+    time.sleep(3)
     print(
         "CLIENT_CAMERA_VANTAGE_READY_FOR_CAPTURE: "
-        f"y={float(camera_match.group(2)):.1f}, looking toward distant terrain",
+        f"y={camera_y:.1f}, looking toward distant terrain",
         flush=True,
     )
 
