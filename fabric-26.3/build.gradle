@@ -224,7 +224,7 @@ tasks.register("generateBuiltInStructurePacks") {
         architecturePack.mkdirs()
         new File(architecturePack, "pack.mcmeta").setText(
             groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
-                pack:[pack_format:48,
+                pack:[min_format:[121,0], max_format:[121,0],
                       description:"RealScale optional architecture library — Apache-2.0 imports + original generated designs"]
             ])) + "\n", "UTF-8")
 
@@ -550,7 +550,7 @@ tasks.register("generateBuiltInStructurePacks") {
         urbanPack.mkdirs()
         new File(urbanPack, "pack.mcmeta").setText(
             groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
-                pack:[pack_format:48,
+                pack:[min_format:[121,0], max_format:[121,0],
                     description:"RealScale experimental modern cities — four original high-rise districts"]
             ])) + "\n", "UTF-8")
 
