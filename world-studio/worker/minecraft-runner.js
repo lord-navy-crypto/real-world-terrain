@@ -53,15 +53,26 @@ function progress(callback, stage, percent, message, details = {}) {
   callback?.({ stage, percent, message, ...details });
 }
 
-async function reserveLocalPort() {
-  const server = net.createServer();
-  await new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", resolve);
-  });
-  const port = server.address().port;
-  await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
-  return port;
+async function reserveLocalPorts(count) {
+  const servers = [];
+  const ports = [];
+  try {
+    for (let index = 0; index < count; index += 1) {
+      const server = net.createServer();
+      servers.push(server);
+      await new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen(0, "127.0.0.1", resolve);
+      });
+      ports.push(server.address().port);
+    }
+    return ports;
+  } finally {
+    await Promise.all(servers.map(server => new Promise(resolve => {
+      if (!server.listening) return resolve();
+      server.close(() => resolve());
+    })));
+  }
 }
 
 async function snapshotFile(filePath) {
@@ -102,7 +113,7 @@ function buildServerProperties(request, { worldName, serverPort, rconPort, rconP
     "generate-structures=true",
     "hardcore=false",
     "level-name=" + worldName,
-    "level-seed=" + request.seed,
+    "level-seed=" + request.seed.replaceAll("\\", "\\\\"),
     "level-type=" + request.presetId,
     "max-players=0",
     "max-tick-time=-1",
@@ -166,14 +177,9 @@ async function waitForReady(child, lines, timeoutMs, signal) {
     const errors = createInterface({ input: child.stderr });
 
     const onLine = line => {
-      lines.push(line);
-      if (lines.length > 500) lines.shift();
       if (line.includes("Done (") && line.includes("For help")) finish(null);
     };
-    const onErrorLine = line => {
-      lines.push("[stderr] " + line);
-      if (lines.length > 500) lines.shift();
-    };
+    const onErrorLine = () => {};
     const onError = error => finish(error);
     const onExit = code => finish(new Error(
       "Minecraft server exited before startup completed (code " + code + "):\n" + lines.slice(-30).join("\n")
@@ -274,13 +280,8 @@ export async function runMinecraftExport(input, {
   });
 
   const jobDirectory = path.resolve(exportRoot, id);
-  await fs.mkdir(jobDirectory, { recursive: true });
   const logPath = path.join(jobDirectory, "minecraft-server.log");
-  const logStream = createWriteStream(logPath, { flags: "wx", mode: 0o600 });
-  await Promise.race([
-    once(logStream, "open"),
-    once(logStream, "error").then(([error]) => Promise.reject(error))
-  ]);
+  let logStream;
   const worldName = "realscale-export-" + id.replace(/-/gu, "").slice(0, 16).toLowerCase();
   const worldDirectory = path.join(runDirectory, worldName);
   const propertiesPath = path.join(runDirectory, "server.properties");
@@ -298,20 +299,25 @@ export async function runMinecraftExport(input, {
     if (logTail.length > 500) logTail.shift();
     const bytes = Buffer.byteLength(line + "\n");
     if (logBytes < LOG_LIMIT_BYTES) {
-      logStream.write(line + "\n");
+      logStream?.write(line + "\n");
       logBytes += bytes;
     }
   };
 
   try {
+    await fs.mkdir(jobDirectory, { recursive: true });
+    logStream = createWriteStream(logPath, { flags: "wx", mode: 0o600 });
+    await Promise.race([
+      once(logStream, "open"),
+      once(logStream, "error").then(([error]) => Promise.reject(error))
+    ]);
     propertiesSnapshot = await snapshotFile(propertiesPath);
     eulaSnapshot = await snapshotFile(eulaPath);
     if (await fs.lstat(worldDirectory).catch(() => null)) {
       throw new Error("The generated world directory already exists; refusing to overwrite it");
     }
 
-    const serverPort = await reserveLocalPort();
-    const rconPort = await reserveLocalPort();
+    const [serverPort, rconPort] = await reserveLocalPorts(2);
     const rconPassword = randomBytes(32).toString("base64url");
     const properties = buildServerProperties(request, { worldName, serverPort, rconPort, rconPassword });
     await fs.writeFile(propertiesPath, properties, { mode: 0o600 });
@@ -467,7 +473,7 @@ export async function runMinecraftExport(input, {
     if (child && (child.exitCode !== null || child.signalCode !== null)) {
       await fs.rm(worldDirectory, { recursive: true, force: true }).catch(() => {});
     }
-    if (!logStream.closed) {
+    if (logStream && !logStream.closed) {
       logStream.end();
       await once(logStream, "close").catch(() => {});
     }
