@@ -45,6 +45,7 @@ function chunkNbt(x = 0, z = 0) {
   return Buffer.concat([
     Buffer.from([10]),
     nbtString(""),
+    namedTag(3, "DataVersion", intPayload(3953)),
     namedTag(3, "xPos", intPayload(x)),
     namedTag(3, "zPos", intPayload(z)),
     Buffer.from([0])
