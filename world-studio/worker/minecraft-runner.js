@@ -414,19 +414,18 @@ export async function runMinecraftExport(input, {
     const properties = buildServerProperties(request, { worldName, serverPort, rconPort, rconPassword });
     await fs.writeFile(propertiesPath, properties, { mode: 0o600 });
     await fs.writeFile(eulaPath, "eula=true\n", { mode: 0o600 });
-    await writeLockOwner(lock, {
-      jobId: id,
-      workerPid: process.pid,
-      serverPid: child.pid ?? null,
-      createdAt: new Date().toISOString()
-    });
-
     progress(onProgress, "starting", 3, "Starting isolated NeoForge 1.21.1 server", { jobId: id });
     child = spawn(gradleCommand, ["--no-daemon", "runServer", "--stacktrace"], {
       cwd: neoforgeDirectory,
       env: { ...process.env, REALSCALE_WORLD_EXPORT_JOB: id },
       stdio: ["ignore", "pipe", "pipe"],
       detached: process.platform !== "win32"
+    });
+    await writeLockOwner(lock, {
+      jobId: id,
+      workerPid: process.pid,
+      serverPid: child.pid ?? null,
+      createdAt: new Date().toISOString()
     });
 
     const readyPromise = waitForReady(child, logTail, startupTimeoutMs, signal);
