@@ -70,6 +70,8 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("iris-clipmap-after-motion-final", SMOKE)
         self.assertIn("854x240+0+0", SMOKE)
         self.assertIn("def move_camera_to_baseline", SMOKE)
+        self.assertIn('["xdotool", "keydown", "a"]', SMOKE)
+        self.assertIn("tolerance: float = 8.0", SMOKE)
         self.assertIn("CLIENT_CAMERA_RETURNED_TO_BASELINE", SMOKE)
         self.assertIn("returned_center != baseline_center", SMOKE)
         self.assertIn("IRIS_TERRAIN_RETURN_CONTRAST_GATE_PASS", SMOKE)
