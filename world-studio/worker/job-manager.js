@@ -108,6 +108,18 @@ export class WorldExportJobManager {
     return publicJob(job);
   }
 
+  shutdown() {
+    for (const id of this.queue.splice(0)) {
+      const job = this.jobs.get(id);
+      if (!job || job.status !== "queued") continue;
+      job.status = "cancelled";
+      job.stage = "cancelled";
+      job.message = "Worker shutting down; queued export cancelled";
+      job.updatedAt = new Date().toISOString();
+    }
+    if (this.activeJobId) this.jobs.get(this.activeJobId)?.controller?.abort();
+  }
+
   list() {
     return [...this.jobs.values()]
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
