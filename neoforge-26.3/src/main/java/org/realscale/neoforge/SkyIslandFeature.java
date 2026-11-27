@@ -1,30 +1,34 @@
 package org.realscale.neoforge;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
 /**
  * Actual floating stone/soil landmass in the special, opt-in sky-ocean preset.
  * Worldgen only, at most five islands per 512x512 block grid and only over
  * biome-source-confirmed far-ocean conditions. Does not touch sea or seabed.
  */
-public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
+public final class SkyIslandFeature implements Feature {
+    public static final MapCodec<SkyIslandFeature> MAP_CODEC = MapCodec.unit(new SkyIslandFeature());
+    @Override public MapCodec<? extends Feature> codec() { return MAP_CODEC; }
+
     private static final ResourceKey<Biome> SKY = ResourceKey.create(Registries.BIOME,
             ResourceLocation.fromNamespaceAndPath("realscale", "sky_blossom_isles"));
 
-    public SkyIslandFeature() { super(NoneFeatureConfiguration.CODEC); }
+    public SkyIslandFeature() { }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    private boolean placeLegacy(RealScaleFeatureContext context) {
         // The common path adds only a constant false branch; no clock reads.
         if (!WorldgenProfiler.ENABLED) return placeUnprofiled(context);
         long started = WorldgenProfiler.begin();
@@ -35,7 +39,7 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
         }
     }
 
-    private boolean placeUnprofiled(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    private boolean placeUnprofiled(RealScaleFeatureContext context) {
         if (!(context.chunkGenerator().getBiomeSource() instanceof SkyOceanBiomeSource))
             return false; // Existing worlds and vanilla presets cannot create islands.
         WorldGenLevel world = context.level();
@@ -171,4 +175,11 @@ public final class SkyIslandFeature extends Feature<NoneFeatureConfiguration> {
     private static int thickness(double ratio) {
         return 2 + (int)Math.floor(6.0 * (1.0 - ratio));
     }
+
+    @Override
+    public boolean place(WorldGenLevel level, ChunkGenerator chunkGenerator,
+                         RandomSource random, BlockPos origin) {
+        return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
+    }
+
 }

@@ -1,27 +1,30 @@
 package org.realscale.neoforge;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
 /**
  * Compact cave and ocean-floor microhabitats. Entirely decorative: never
  * carves caves, changes liquids, removes ores, or cuts the ocean surface.
  */
-public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration> {
+public final class HabitatPatchFeature implements Feature {
+    public static final MapCodec<HabitatPatchFeature> MAP_CODEC = RealScaleFeatureCodecs.enumField("kind", Kind.class, HabitatPatchFeature::new, feature -> feature.kind);
+    @Override public MapCodec<? extends Feature> codec() { return MAP_CODEC; }
+
     public enum Kind { CAVE_MOSS, CAVE_DRIPSTONE, OCEAN_SEAGRASS, OCEAN_STONE }
     private final Kind kind;
     private static final int CAVE_SCAN_RADIUS_Y = 18;
     private static final int HIGHLAND_SCAN_RADIUS_Y = 40;
     private static final int MIN_ROOF_DEPTH = 20;
     public HabitatPatchFeature(Kind kind) {
-        super(NoneFeatureConfiguration.CODEC);
         this.kind = kind;
     }
 
@@ -70,7 +73,7 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
                 ? null : new BlockPos(origin.getX(), resultY, origin.getZ());
     }
 
-    @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    @Override private boolean placeLegacy(RealScaleFeatureContext context) {
         // Limit global NeoForge biome-modifier decorations to RealScale worlds.
         if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
         WorldGenLevel w = context.level();
@@ -137,4 +140,11 @@ public final class HabitatPatchFeature extends Feature<NoneFeatureConfiguration>
         }
         return changed > 0;
     }
+
+    @Override
+    public boolean place(WorldGenLevel level, ChunkGenerator chunkGenerator,
+                         RandomSource random, BlockPos origin) {
+        return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
+    }
+
 }

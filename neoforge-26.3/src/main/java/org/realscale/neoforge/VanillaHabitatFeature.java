@@ -1,5 +1,7 @@
 package org.realscale.neoforge;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -13,22 +15,21 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
 /**
  * OPT-IN ecological structures assembled ONLY from vanilla block states.
  * Not a biome, block or mob registry; enabled by a separate test datapack.
  * Validates every target before writing, never changes fluids, rock density,
  * structures, established chunks or the world preset/biome source.
  */
-public final class VanillaHabitatFeature extends Feature<NoneFeatureConfiguration> {
+public final class VanillaHabitatFeature implements Feature {
+    public static final MapCodec<VanillaHabitatFeature> MAP_CODEC = RealScaleFeatureCodecs.enumField("habitat", Habitat.class, VanillaHabitatFeature::new, feature -> feature.habitat);
+    @Override public MapCodec<? extends Feature> codec() { return MAP_CODEC; }
+
     public enum Habitat { FALLEN_TIMBER, RIPARIAN_REEDS }
 
     private final Habitat habitat;
 
     public VanillaHabitatFeature(Habitat habitat) {
-        super(NoneFeatureConfiguration.CODEC);
         this.habitat = habitat;
     }
 
@@ -128,7 +129,7 @@ public final class VanillaHabitatFeature extends Feature<NoneFeatureConfiguratio
     }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    private boolean placeLegacy(RealScaleFeatureContext context) {
         ChunkGenerator generator = context.chunkGenerator();
         if (!(generator instanceof NoiseBasedChunkGenerator noise)) return false;
         var key = noise.generatorSettings().unwrapKey();
@@ -142,4 +143,11 @@ public final class VanillaHabitatFeature extends Feature<NoneFeatureConfiguratio
             ? fallenTimber(level, chunk, context.origin(), context.random())
             : riparianReeds(level, chunk, context.origin(), context.random());
     }
+
+    @Override
+    public boolean place(WorldGenLevel level, ChunkGenerator chunkGenerator,
+                         RandomSource random, BlockPos origin) {
+        return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
+    }
+
 }

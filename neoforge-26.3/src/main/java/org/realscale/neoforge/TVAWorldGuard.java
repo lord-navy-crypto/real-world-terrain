@@ -2,7 +2,7 @@ package org.realscale.neoforge;
 
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.biome.BiomeSource;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
+
 
 /** Restrict global NeoForge biome-modifier decorations to RealScale worlds.
  * Never changes vanilla/foreign biome selection or requests adjacent chunks.
@@ -10,7 +10,7 @@ import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 public final class TVAWorldGuard {
     private TVAWorldGuard() {}
 
-    public static boolean hasRealScaleGenerator(FeaturePlaceContext<?> context) {
+    public static boolean hasRealScaleGenerator(RealScaleFeatureContext context) {
         if (!(context.chunkGenerator() instanceof NoiseBasedChunkGenerator generator))
             return false;
         return generator.generatorSettings().unwrapKey()
@@ -18,7 +18,7 @@ public final class TVAWorldGuard {
                 .orElse(false);
     }
     /** Opt-in wonder experiments, never enabled on the sacred timeline. */
-    public static boolean hasExperimentalWonders(FeaturePlaceContext<?> context) {
+    public static boolean hasExperimentalWonders(RealScaleFeatureContext context) {
         if (!hasRealScaleGenerator(context)) return false;
         BiomeSource source=context.chunkGenerator().getBiomeSource();
         return source instanceof GeoWondersBiomeSource
