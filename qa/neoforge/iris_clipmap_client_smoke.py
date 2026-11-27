@@ -806,6 +806,7 @@ def move_camera_to_baseline(
     remaining = distance_from_baseline(current)
     vertical_delta = abs(current[1] - baseline[1])
     pulse_count = 0
+    no_progress_count = 0
     while (remaining > tolerance or vertical_delta > 2.5) and proc.poll() is None:
         if time.monotonic() >= deadline:
             break
@@ -839,8 +840,24 @@ def move_camera_to_baseline(
                     break
                 time.sleep(0.05)
         if updated is None or updated == current:
-            raise RuntimeError("Camera telemetry did not advance after a bounded return pulse")
+            # Software-rendered clients can occasionally miss a short input
+            # pulse between frames. Retry a few times rather than treating one
+            # unchanged 1-second telemetry sample as a failed movement.
+            no_progress_count += 1
+            print(
+                f"CLIENT_CAMERA_RETURN_NO_PROGRESS: attempt={no_progress_count} "
+                f"remaining={remaining:.1f} pulse={pulse_seconds:.3f}s",
+                flush=True,
+            )
+            if no_progress_count >= 4:
+                raise RuntimeError(
+                    "Camera telemetry did not advance after four bounded return pulses: "
+                    f"remaining={remaining:.1f} blocks"
+                )
+            time.sleep(0.35)
+            continue
 
+        no_progress_count = 0
         next_remaining = distance_from_baseline(updated)
         if next_remaining > remaining + 2.0:
             raise RuntimeError(
@@ -851,6 +868,12 @@ def move_camera_to_baseline(
         remaining = next_remaining
         vertical_delta = abs(current[1] - baseline[1])
         pulse_count += 1
+        if pulse_count % 5 == 0:
+            print(
+                f"CLIENT_CAMERA_RETURN_PROGRESS: remaining={remaining:.1f} "
+                f"pulses={pulse_count}",
+                flush=True,
+            )
 
     # One final fresh sample confirms that key release left the camera inside
     # the same-location comparison window.
