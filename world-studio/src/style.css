@@ -201,3 +201,131 @@ h1 em,h2 em { color: #b5d28f; font-style: normal; }
 #reset-3d-view { width:32px; min-width:32px; height:32px; }
 #terrain-canvas { touch-action:pan-y; }
 #terrain-canvas[data-view="3d"] { cursor:grab; touch-action:none; }
+
+
+.export-principles {
+  display:grid;
+  gap:11px;
+  margin-top:24px;
+}
+.export-principles div {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  color:#aab8ac;
+  font-size:11px;
+}
+.export-principles span {
+  color:#b4d48a;
+  font:9px "DM Mono",monospace;
+}
+.world-export-card {
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.worker-state {
+  color:#a5bc8a;
+  font:8px "DM Mono",monospace;
+  letter-spacing:.12em;
+}
+.export-field {
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+.export-field label {
+  color:#9aa89c;
+  font:8px "DM Mono",monospace;
+  letter-spacing:.1em;
+}
+.export-field .select-wrap select {
+  height:40px;
+  font-size:10px;
+}
+.export-runtime-note {
+  padding:9px 10px;
+  border-left:2px solid rgba(180,212,138,.45);
+  color:#829185;
+  background:rgba(180,212,138,.035);
+  font-size:9px;
+  line-height:1.55;
+}
+.world-export-card .export-button {
+  min-height:42px;
+  margin-top:2px;
+  color:#1a261a;
+  border-color:#b4d48a;
+  background:#b4d48a;
+  font:600 10px "Space Grotesk",sans-serif;
+}
+.world-export-card .export-button:disabled {
+  opacity:.38;
+  cursor:not-allowed;
+}
+.cancel-world-export {
+  min-height:34px;
+  border:1px solid rgba(194,116,92,.34);
+  border-radius:3px;
+  color:#d9a18e;
+  background:rgba(194,116,92,.06);
+  font:9px "DM Mono",monospace;
+}
+.cancel-world-export:disabled {
+  opacity:.3;
+  cursor:not-allowed;
+}
+.export-job-status {
+  min-height:30px;
+  color:#aab8ac;
+  font:9px/1.6 "DM Mono",monospace;
+  overflow-wrap:anywhere;
+}
+.export-job-progress {
+  height:4px;
+  overflow:hidden;
+  border-radius:4px;
+  background:rgba(180,212,138,.12);
+}
+.export-job-progress[hidden] { display:none; }
+.export-job-progress span {
+  display:block;
+  width:0;
+  height:100%;
+  background:#b4d48a;
+  transition:width .25s ease;
+}
+.download-world-export {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  min-height:38px;
+  padding:0 12px;
+  border:1px solid rgba(180,212,138,.38);
+  border-radius:3px;
+  color:#d9e8cc;
+  background:rgba(180,212,138,.1);
+  font:10px "DM Mono",monospace;
+  text-decoration:none;
+}
+.download-world-export[hidden] { display:none; }
+.download-world-export span { color:#b4d48a; font-size:14px; }
+.worker-retry-button {
+  align-self:flex-start;
+  padding:5px 0;
+  border:0;
+  color:#9aac9d;
+  background:transparent;
+  font:9px "DM Mono",monospace;
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+.world-export-card .export-security {
+  margin-top:0;
+  align-items:flex-start;
+  line-height:1.6;
+}
+@media (max-width:760px) {
+  .world-export-card { min-width:0; }
+  .export-principles { margin-top:18px; }
+}
