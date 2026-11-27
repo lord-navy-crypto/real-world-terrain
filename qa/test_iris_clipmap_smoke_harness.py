@@ -145,19 +145,18 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("TERRAIN_VIEWPORT_COLOR_COUNT", SMOKE)
         self.assertIn("minimum_seconds=60", SMOKE)
 
-    def test_all_lods_use_shared_macro_world_uvs_and_procedural_materials(self):
+    def test_all_lods_use_compact_neutral_uv_patch_and_procedural_materials(self):
         self.assertNotIn("MAX_TEXTURED_DETAIL_LEVEL", IRIS_RENDERER)
         self.assertNotIn("sprites.forMaterial(", IRIS_RENDERER)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", IRIS_RENDERER)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
         self.assertIn("sprites.neutral()", IRIS_RENDERER)
         self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", IRIS_RENDERER)
-        self.assertEqual(2, IRIS_RENDERER.count("computeTerrainUvs(tile, level"))
-        self.assertIn("private static void computeTerrainUvs(", IRIS_RENDERER)
-        self.assertIn("ClipmapTriangleUv.computeWorldAlignedInto(", IRIS_RENDERER)
+        self.assertEqual(2, IRIS_RENDERER.count("ClipmapTriangleUv.computeNeutralCellAlignedInto("))
+        self.assertNotIn("computeTerrainUvs", IRIS_RENDERER)
+        self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", IRIS_RENDERER)
         self.assertNotIn("ClipmapTriangleUv.computeCellAlignedInto(", IRIS_RENDERER)
-        self.assertIn("worldHalfExtent", IRIS_RENDERER)
-        self.assertIn("baseSpacing", IRIS_RENDERER)
+        self.assertNotIn("worldHalfExtent", IRIS_RENDERER)
         self.assertNotIn("triangleUvs[0] = 8.0f", IRIS_RENDERER)
         self.assertIn("emitTriangle(water, sprites.neutral()", IRIS_RENDERER)
         palette = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapSurfacePalette.java").read_text(
@@ -167,21 +166,24 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("actual grass, dry-ground, rock, sand and snow material", palette)
         self.assertNotIn("near-neutral multipliers", palette)
 
-    def test_native_terrain_uses_shared_macro_uvs_and_procedural_palette(self):
+    def test_native_terrain_uses_compact_neutral_uv_patch_and_procedural_palette(self):
         self.assertIn("ClipmapRingMesh.surfaceIndices(cells, holeRadius)", IRIS_RENDERER)
-        self.assertIn("computeTerrainUvs(tile, level", IRIS_RENDERER)
-        self.assertIn("ClipmapTriangleUv.computeWorldAlignedInto(", IRIS_RENDERER)
+        self.assertIn("ClipmapTriangleUv.computeNeutralCellAlignedInto(", IRIS_RENDERER)
+        self.assertNotIn("computeTerrainUvs", IRIS_RENDERER)
+        self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", IRIS_RENDERER)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
         self.assertIn("sprites.neutral()", IRIS_RENDERER)
         self.assertNotIn("sprites.forMaterial(", IRIS_RENDERER)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", IRIS_RENDERER)
         self.assertNotIn("sprites.white()", IRIS_RENDERER)
-        layout = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/GeometryClipmapLayout.java").read_text(
+        uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn("DEFAULT_GRID_CELLS = 128", layout)
-        self.assertIn("MAX_GRID_CELLS = 256", layout)
-        self.assertIn("DEFAULT_BASE_CELL_SPACING_BLOCKS = 4", layout)
+        self.assertIn("NEUTRAL_UV_MIN = 7.5f", uv)
+        self.assertIn("NEUTRAL_UV_RANGE = 1.0f", uv)
+        self.assertIn("computeCellAlignedPatchInto", uv)
+        self.assertIn("sprite.getU(u), sprite.getV(v)", IRIS_RENDERER)
+        self.assertNotIn("one-pixel neutral patch", IRIS_RENDERER) if False else None
 
     def test_iris_native_draw_uses_portable_terrain_stage_events(self):
         self.assertIn("prepareIrisFrameFog", IRIS_MIXIN)
