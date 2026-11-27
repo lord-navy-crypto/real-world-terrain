@@ -271,6 +271,18 @@ async function ensureProject(neoforgeDirectory) {
   }
 }
 
+async function writeLockOwner(handle, owner) {
+  const bytes = Buffer.from(JSON.stringify(owner), "utf8");
+  await handle.truncate(0);
+  let offset = 0;
+  while (offset < bytes.length) {
+    const result = await handle.write(bytes, offset, bytes.length - offset, offset);
+    if (!result.bytesWritten) throw new Error("Unable to update NeoForge run-directory lock");
+    offset += result.bytesWritten;
+  }
+  await handle.sync();
+}
+
 async function isProcessAlive(pid) {
   if (!Number.isSafeInteger(pid) || pid < 1) return false;
   try {
@@ -291,7 +303,7 @@ async function acquireRunLock(lockPath, jobId) {
   try {
     const handle = await fs.open(lockPath, "wx", 0o600);
     try {
-      await fs.writeFile(lockPath, JSON.stringify(owner), { mode: 0o600 });
+      await writeLockOwner(handle, owner);
       return handle;
     } catch (error) {
       await handle.close().catch(() => {});
@@ -320,7 +332,7 @@ async function acquireRunLock(lockPath, jobId) {
   await fs.rm(lockPath);
   const handle = await fs.open(lockPath, "wx", 0o600);
   try {
-    await fs.writeFile(lockPath, JSON.stringify(owner), { mode: 0o600 });
+    await writeLockOwner(handle, owner);
     return handle;
   } catch (error) {
     await handle.close().catch(() => {});
@@ -402,12 +414,12 @@ export async function runMinecraftExport(input, {
     const properties = buildServerProperties(request, { worldName, serverPort, rconPort, rconPassword });
     await fs.writeFile(propertiesPath, properties, { mode: 0o600 });
     await fs.writeFile(eulaPath, "eula=true\n", { mode: 0o600 });
-    await fs.writeFile(lockPath, JSON.stringify({
+    await writeLockOwner(lock, {
       jobId: id,
       workerPid: process.pid,
       serverPid: child.pid ?? null,
       createdAt: new Date().toISOString()
-    }), { mode: 0o600 });
+    });
 
     progress(onProgress, "starting", 3, "Starting isolated NeoForge 1.21.1 server", { jobId: id });
     child = spawn(gradleCommand, ["--no-daemon", "runServer", "--stacktrace"], {
