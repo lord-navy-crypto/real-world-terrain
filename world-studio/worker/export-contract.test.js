@@ -27,10 +27,12 @@ test("accepts only allowlisted RealScale world presets", () => {
     () => normalizeExportRequest({ seed: "safe", preset: "minecraft:normal" }),
     /Unsupported RealScale world preset/
   );
+  assert.throws(() => normalizeExportRequest({ seed: "safe", preset: "__proto__" }), /Unsupported RealScale/);
+  assert.throws(() => normalizeExportRequest({ seed: "safe", preset: "constructor" }), /Unsupported RealScale/);
 });
 
 test("rejects unsafe, empty, oversized, and control-character seeds", () => {
-  for (const seed of ["", "  ", "x".repeat(65), "hello\nworld", "a\u0000b", {}, null]) {
+  for (const seed of ["", "  ", "x".repeat(65), "hello\nworld", "a\u0000b", {}, null, NaN, Infinity, 1.5]) {
     assert.throws(() => normalizeExportRequest({ seed }), /Seed/);
   }
   assert.equal(normalizeExportRequest({ seed: 20261127 }).seed, "20261127");
