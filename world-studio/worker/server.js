@@ -1,3 +1,4 @@
+// Temporary validation-branch change: run the full World Studio 0.5.0 CI suite.
 import http from "node:http";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
