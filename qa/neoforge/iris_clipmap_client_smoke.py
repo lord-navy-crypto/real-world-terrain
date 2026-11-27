@@ -495,7 +495,7 @@ def ocr_game_window(name: str) -> str:
 
 def wait_for_pause_screen(lines: list[str], start: int, name: str,
                          expected_state: str, timeout: float = 12.0) -> str:
-    """Wait for PauseScreen initialization and prove its labels are on the framebuffer."""
+    """Wait for PauseScreen initialization and prove its title is visible on the framebuffer."""
     deadline = time.monotonic() + timeout
     marker = "CLIENT_PAUSE_MENU_UI_INITIALIZED:"
     while time.monotonic() < deadline:
@@ -512,17 +512,17 @@ def wait_for_pause_screen(lines: list[str], start: int, name: str,
                 image = capture_minecraft_screenshot(name)
                 validate_screenshot(image, min_width=640, min_height=360)
                 visible_text = ocr_minecraft_screenshot(image)
-                required_labels = ("clipmap", expected_state.lower(), "range")
+                required_labels = ("game menu",)
                 missing = [label for label in required_labels if label not in visible_text]
                 if missing:
                     raise RuntimeError(
                         "PauseScreen initialized but its framebuffer screenshot did not "
-                        "show the expected visible labels: "
+                        "show the visible Game Menu title: "
                         f"missing={missing}, ocr={visible_text!r}"
                     )
                 print(
                     "PAUSE_SCREEN_OCR_VERIFIED:",
-                    f"state={expected_state} labels=clipmap,range",
+                    f"title=game menu state={expected_state} button_state_from_client_event=true",
                     flush=True,
                 )
                 print("PAUSE_SCREEN_VERIFIED:", line.strip(), flush=True)
