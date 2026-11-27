@@ -811,6 +811,16 @@ def move_camera_to_baseline(
     finally:
         subprocess.run(["xdotool", "keyup", "a"], check=False, timeout=10)
 
+    # Re-read telemetry after releasing the key so residual spectator motion
+    # cannot silently move the final screenshot away from the reference point.
+    time.sleep(1.0)
+    stopped = latest_camera_position("".join(lines[start:]))
+    if stopped is not None:
+        dx = stopped[0] - baseline[0]
+        dz = stopped[2] - baseline[2]
+        remaining = (dx * dx + dz * dz) ** 0.5
+        vertical_delta = abs(stopped[1] - baseline[1])
+
     if remaining > tolerance or vertical_delta > 2.5:
         capture_screenshot("iris-clipmap-return-to-baseline-timeout")
         raise RuntimeError(
