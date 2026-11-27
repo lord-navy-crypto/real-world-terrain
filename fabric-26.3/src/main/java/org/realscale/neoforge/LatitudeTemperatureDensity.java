@@ -3,8 +3,13 @@ package org.realscale.neoforge;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.KeyDispatchDataCodec;
-import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensitySampler;
+import net.minecraft.world.level.levelgen.densityfunction.DensityBuffer;
+import net.minecraft.world.level.levelgen.densityfunction.DensityVolume;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
+import net.minecraft.world.level.levelgen.densityfunction.DfRewriteRule;
+import net.minecraft.util.Interval;
 
 /**
  * New-world-only north/south climate latitude, using north = negative Z.
@@ -18,25 +23,28 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  */
 public record LatitudeTemperatureDensity(DensityFunction base,int equatorZ,
                                          int poleDistance,double strength)
-        implements DensityFunction.SimpleFunction {
+        implements DensityFunction {
     public static final MapCodec<LatitudeTemperatureDensity> MAP_CODEC =
         RecordCodecBuilder.mapCodec(i->i.group(
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(LatitudeTemperatureDensity::base),
+            DensityFunction.CODEC.fieldOf("base").forGetter(LatitudeTemperatureDensity::base),
             Codec.intRange(-29_000_000,29_000_000).fieldOf("equator_z").forGetter(LatitudeTemperatureDensity::equatorZ),
             Codec.intRange(1024,10_001_966).fieldOf("pole_distance").forGetter(LatitudeTemperatureDensity::poleDistance),
             Codec.doubleRange(0.0,1.0).fieldOf("strength").forGetter(LatitudeTemperatureDensity::strength)
         ).apply(i,LatitudeTemperatureDensity::new));
-    private static final KeyDispatchDataCodec<LatitudeTemperatureDensity> DISPATCH =
-        KeyDispatchDataCodec.of(MAP_CODEC);
-
-    @Override public double compute(DensityFunction.FunctionContext ctx){
+    public double compute(RealScaleDensityContext ctx){
         double latitude=GeographicClimateMath.geodeticLatitudeDeg(ctx.blockZ());
-        return GeoMath.latitudeTemperature(base.compute(ctx),latitude,strength);
+        return GeoMath.latitudeTemperature(ctx.compute(base),latitude,strength);
     }
-    @Override public DensityFunction mapAll(DensityFunction.Visitor visitor){
-        return visitor.apply(new LatitudeTemperatureDensity(base.mapAll(visitor),equatorZ,poleDistance,strength));
+        @Override public DensitySampler compileSampler(DensityFunction.CompileContext context) {
+        return RealScaleDensitySamplerSupport.compile(context, new DensityFunction[]{base}, this::compute);
     }
-    @Override public double minValue(){return base.minValue()-.68*strength;}
-    @Override public double maxValue(){return base.maxValue()+.22*strength;}
-    @Override public KeyDispatchDataCodec<? extends DensityFunction> codec(){return DISPATCH;}
+    @Override public Interval range() { return Interval.INFINITE; }
+    @Override public int domainAxes() { return DensityFunction.ALL_AXES; }
+
+@Override public DensityFunction rewriteChildren(DfRewriteRule rule){
+        return new LatitudeTemperatureDensity(rule.rewrite(base),equatorZ,poleDistance,strength);
+    }
+    
+    
+    @Override public MapCodec<? extends DensityFunction> codec(){return MAP_CODEC;}
 }
