@@ -28,11 +28,10 @@ function compoundPayload(children) {
   return Buffer.concat([...children, Buffer.from([0])]);
 }
 
-function levelDat() {
-  const data = compoundPayload([
-    namedTag(3, "DataVersion", intPayload(3953)),
-    namedTag(10, "WorldGenSettings", compoundPayload([]))
-  ]);
+function levelDat(includeWorldGen = true) {
+  const children = [namedTag(3, "DataVersion", intPayload(3953))];
+  if (includeWorldGen) children.push(namedTag(10, "WorldGenSettings", compoundPayload([])));
+  const data = compoundPayload(children);
   return gzipSync(Buffer.concat([
     Buffer.from([10]),
     nbtString(""),
@@ -154,5 +153,16 @@ test("rejects valid compressed chunk NBT stored in the wrong region slot", async
   await assert.rejects(
     validateWorldSave(world, { seed: "test", widthChunks: 1, depthChunks: 1 }),
     /mismatched coordinates/
+  );
+});
+
+
+test("rejects a level.dat without persisted world-generation settings", async t => {
+  const world = await createWorld();
+  t.after(() => fs.rm(world, { recursive: true, force: true }));
+  await fs.writeFile(path.join(world, "level.dat"), levelDat(false));
+  await assert.rejects(
+    validateWorldSave(world, { seed: "test", widthChunks: 1, depthChunks: 1 }),
+    /WorldGenSettings/
   );
 });
