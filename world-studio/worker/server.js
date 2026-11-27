@@ -195,8 +195,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === MODULE_PATH) {
     process.stdout.write("RealScale World Export Worker listening on http://" + host + ":" + port + "\n");
   });
   const shutdown = () => {
-    server.worldExportManager.shutdown();
-    server.close(() => process.exit(0));
+    server.close();
+    void server.worldExportManager.shutdown();
   };
   process.once("SIGINT", shutdown);
   process.once("SIGTERM", shutdown);
