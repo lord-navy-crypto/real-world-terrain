@@ -517,30 +517,6 @@ final class IrisNativeClipmapRenderer {
         }
     }
 
-    /**
-     * Use one macro-scale atlas domain for every vertex in every clipmap ring.
-     *
-     * <p>Restarting the neutral sprite on each grid cell makes the shader-pack
-     * sample the same PBR normal/detail pattern at every 4/8/16-block cell.
-     * That repetition aliases into dense diagonal bands at horizon distance.
-     * The outermost LOD defines the shared world-space UV extent; finer rings
-     * therefore sample the exact same coordinates at the same world position.
-     */
-    private static void computeTerrainUvs(ClipmapHeightTilePayload tile, int level,
-            float[] x, float[] y, float[] z, int[] gridX, int[] gridZ,
-            float[] destination) {
-        int baseSpacing = tile.cellSpacingBlocks() >> level;
-        if (baseSpacing <= 0) {
-            throw new IllegalStateException("clipmap LOD has an invalid UV base spacing");
-        }
-        float worldHalfExtent = (float) (
-                (long) tile.gridCells() * baseSpacing
-                        * (1L << (LEVEL_COUNT - 1)) * 0.5d);
-        ClipmapTriangleUv.computeWorldAlignedInto(
-                x, y, z, gridX, gridZ, false,
-                worldHalfExtent, -1.0f, 1.0f, destination);
-    }
-
     private static void appendTerrain(ClipmapHeightTilePayload tile, int level,
             int nearChunks, int seaLevel, Sprites sprites,
             BufferBuilder solid, BufferBuilder water) {
@@ -676,10 +652,10 @@ final class IrisNativeClipmapRenderer {
                 for (int vertex = 0; vertex < 3; vertex++) {
                     vertexColors[vertex] = ClipmapSurfacePalette.waterColor();
                 }
-                // Use the same macro-scale world UV domain as terrain. A
-                // per-cell atlas restart would repeat the shader-pack's PBR
-                // normal/detail map across the entire distant water plane.
-                computeTerrainUvs(tile, level, x, y, z, gridX, gridZ, triangleUvs);
+                // Water uses the same compact neutral patch as terrain so
+                // the shader's tangent frame stays valid without atlas detail shimmer.
+                ClipmapTriangleUv.computeNeutralCellAlignedInto(
+                        gridX, gridZ, triangleUvs);
                 emitTriangle(water, sprites.neutral(), vertexColors, 190,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         false, 0.0f, true, faceNormalScratch);
@@ -706,11 +682,11 @@ final class IrisNativeClipmapRenderer {
                             continuousColor, voxelColor, voxelBlend);
                 }
                 // Never paint terrain surfaces with block/item-atlas artwork.
-                // Keep Iris's UV/tangent basis non-degenerate, but map every
-                // LOD into one shared macro-scale world domain. The neutral
-                // sprite's PBR detail can no longer restart at every grid cell.
+                // Sample only a one-pixel neutral patch to preserve Iris's
+                // per-vertex tangent basis without repeating the full PBR atlas.
                 // Actual terrain material remains in the biome-aware vertex palette.
-                computeTerrainUvs(tile, level, x, y, z, gridX, gridZ, triangleUvs);
+                ClipmapTriangleUv.computeNeutralCellAlignedInto(
+                        gridX, gridZ, triangleUvs);
                 emitTriangle(solid, sprites.neutral(), vertexColors, 255,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         true, voxelBlend, false, faceNormalScratch);
