@@ -90,9 +90,14 @@ test("aborts an active job and records a cancelled terminal state", async () => 
 
 test("marks runner failures and enforces queue capacity", async () => {
   const first = deferred();
+  const second = deferred();
+  let calls = 0;
   const manager = new WorldExportJobManager({
     maxQueue: 1,
-    runner: () => first.promise
+    runner: () => {
+      calls += 1;
+      return calls === 1 ? first.promise : second.promise;
+    }
   });
   const active = manager.create({ seed: "one" });
   const waiting = manager.create({ seed: "two" });
@@ -102,6 +107,9 @@ test("marks runner failures and enforces queue capacity", async () => {
   assert.equal(manager.get(active.id).status, "failed");
   assert.match(manager.get(active.id).error, /failed to boot/);
   assert.equal(manager.get(waiting.id).status, "running");
+  second.resolve(success(waiting.id));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(manager.get(waiting.id).status, "completed");
 });
 
 test("rejects invalid export requests before they enter the queue", () => {
