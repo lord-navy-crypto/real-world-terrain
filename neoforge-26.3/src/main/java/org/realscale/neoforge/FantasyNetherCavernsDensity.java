@@ -3,8 +3,13 @@ package org.realscale.neoforge;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.KeyDispatchDataCodec;
-import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensitySampler;
+import net.minecraft.world.level.levelgen.densityfunction.DensityBuffer;
+import net.minecraft.world.level.levelgen.densityfunction.DensityVolume;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
+import net.minecraft.world.level.levelgen.densityfunction.DfRewriteRule;
+import net.minecraft.util.Interval;
 
 /**
  * V2 opt-in Nether geometry. Expands caves into several vertical chambers,
@@ -15,32 +20,29 @@ public record FantasyNetherCavernsDensity(
         DensityFunction base, DensityFunction chamberField,
         DensityFunction chamberMask, DensityFunction tunnelField,
         DensityFunction cliffField, double strength)
-        implements DensityFunction.SimpleFunction {
+        implements DensityFunction {
     public static final MapCodec<FantasyNetherCavernsDensity> MAP_CODEC =
         RecordCodecBuilder.mapCodec(i -> i.group(
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(FantasyNetherCavernsDensity::base),
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("chamber_field").forGetter(FantasyNetherCavernsDensity::chamberField),
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("chamber_mask").forGetter(FantasyNetherCavernsDensity::chamberMask),
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("tunnel_field").forGetter(FantasyNetherCavernsDensity::tunnelField),
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("cliff_field").forGetter(FantasyNetherCavernsDensity::cliffField),
+            DensityFunction.CODEC.fieldOf("base").forGetter(FantasyNetherCavernsDensity::base),
+            DensityFunction.CODEC.fieldOf("chamber_field").forGetter(FantasyNetherCavernsDensity::chamberField),
+            DensityFunction.CODEC.fieldOf("chamber_mask").forGetter(FantasyNetherCavernsDensity::chamberMask),
+            DensityFunction.CODEC.fieldOf("tunnel_field").forGetter(FantasyNetherCavernsDensity::tunnelField),
+            DensityFunction.CODEC.fieldOf("cliff_field").forGetter(FantasyNetherCavernsDensity::cliffField),
             Codec.doubleRange(0.0,1.0).fieldOf("strength").forGetter(FantasyNetherCavernsDensity::strength)
         ).apply(i,FantasyNetherCavernsDensity::new));
-    private static final KeyDispatchDataCodec<FantasyNetherCavernsDensity> DISPATCH =
-        KeyDispatchDataCodec.of(MAP_CODEC);
-
-    @Override public double compute(DensityFunction.FunctionContext ctx) {
-        double existing = base.compute(ctx);
+    public double compute(RealScaleDensityContext ctx) {
+        double existing = ctx.compute(base);
         int y = ctx.blockY();
         if (strength == 0.0 || y < 30 || y > 246) return existing;
 
         // Vertical ribbons of rock create cliffs, ribs and overhangs across
         // the already-expanded 256-block Nether, without moving lava level.
-        double rib = 0.17 - 1.02 * Math.abs(cliffField.compute(ctx));
+        double rib = 0.17 - 1.02 * Math.abs(ctx.compute(cliffField));
         rib -= Math.max(0, 50-y) * 0.012 + Math.max(0, y-224) * 0.022;
         double rock = Math.max(existing, strength * rib);
 
-        double wide = chamberField.compute(ctx);
-        double mask = Math.abs(chamberMask.compute(ctx));
+        double wide = ctx.compute(chamberField);
+        double mask = Math.abs(ctx.compute(chamberMask));
         // The independent mask narrows giant chambers so huge contiguous
         // hollow regions do not consume entire mountain/ceiling strata.
         double rarity = Math.max(0.0, mask - 0.29) * 0.70;
@@ -49,7 +51,7 @@ public record FantasyNetherCavernsDensity(
         double upper = wide + 0.67 + Math.abs(y-215) * 0.026 + rarity;
         double galleries = Math.min(lower, Math.min(middle, upper));
         // Narrow winding connectors can traverse between chamber tiers.
-        double tunnel = Math.abs(tunnelField.compute(ctx)) - 0.080;
+        double tunnel = Math.abs(ctx.compute(tunnelField)) - 0.080;
         double openings = Math.min(galleries, tunnel);
 
         // Smoothly extinguish additional carving beside the lava sea and
@@ -60,13 +62,19 @@ public record FantasyNetherCavernsDensity(
         return Math.min(rock, safeCavity);
     }
 
-    @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {
-        return visitor.apply(new FantasyNetherCavernsDensity(
-            base.mapAll(visitor), chamberField.mapAll(visitor),
-            chamberMask.mapAll(visitor), tunnelField.mapAll(visitor),
-            cliffField.mapAll(visitor), strength));
+        @Override public DensitySampler compileSampler(DensityFunction.CompileContext context) {
+        return RealScaleDensitySamplerSupport.compile(context, new DensityFunction[]{base, chamberField, chamberMask, tunnelField, cliffField}, this::compute);
     }
-    @Override public double minValue(){return Math.min(base.minValue(),-3.0);}
-    @Override public double maxValue(){return Math.max(base.maxValue(),2.0);}
-    @Override public KeyDispatchDataCodec<? extends DensityFunction> codec(){return DISPATCH;}
+    @Override public Interval range() { return Interval.INFINITE; }
+    @Override public int domainAxes() { return DensityFunction.ALL_AXES; }
+
+@Override public DensityFunction rewriteChildren(DfRewriteRule rule) {
+        return new FantasyNetherCavernsDensity(
+            rule.rewrite(base), rule.rewrite(chamberField),
+            rule.rewrite(chamberMask), rule.rewrite(tunnelField),
+            rule.rewrite(cliffField), strength);
+    }
+    
+    
+    @Override public MapCodec<? extends DensityFunction> codec(){return MAP_CODEC;}
 }
