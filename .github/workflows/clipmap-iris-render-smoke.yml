@@ -60,6 +60,13 @@ jobs:
         timeout-minutes: 10
         run: |
           set -euxo pipefail
+          # The hosted runner's optional Microsoft feed is not needed by this
+          # rendering job and can intermittently return 403, aborting apt update.
+          mapfile -t microsoft_sources < <(grep -rl 'packages.microsoft.com' /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null || true)
+          for source in "${microsoft_sources[@]}"; do
+            sudo mv "$source" "$source.disabled"
+            echo "DISABLED_UNAVAILABLE_MICROSOFT_APT_SOURCE: $source"
+          done
           sudo timeout 8m apt-get \
             -o Acquire::Retries=3 \
             -o Acquire::http::Timeout=30 \
