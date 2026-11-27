@@ -226,6 +226,9 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
     def test_camera_telemetry_regexes_parse_actual_markers(self):
         self.assertIn(r'logged in with entity id \d+', SMOKE)
         self.assertIn(r'CLIENT_CAMERA_VANTAGE_READY:\s*x=', SMOKE)
+        self.assertIn(r'pitch=([-+0-9.]+)\\s+yaw=([-+0-9.]+)', SMOKE)
+        self.assertIn("CLIENT_CAMERA_POSE_VERIFIED", SMOKE)
+        self.assertIn("expected_pose = (0.5, 2304.9, 1.5, 35.0, 45.0)", SMOKE)
         self.assertIn(r'CLIENT_CAMERA_POSITION:\s*x=', SMOKE)
         self.assertIn("CLIENT_CAMERA_POSITION:", GEOMETRY_CLIENT)
         self.assertIn("lastSmokeCameraTelemetryNanos", GEOMETRY_CLIENT)
