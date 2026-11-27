@@ -1,7 +1,7 @@
 name: RealScale NeoForge 26.3 Port
 on:
   push:
-    paths: ["neoforge-26.3/**", ".github/workflows/neoforge-26.3.yml"]
+    paths: ["neoforge-26.3/**", "scripts/**", "assets/architecture/gdmc-source/**", ".github/workflows/neoforge-26.3.yml"]
   pull_request:
     paths: ["neoforge-26.3/**", ".github/workflows/neoforge-26.3.yml"]
   workflow_dispatch:
