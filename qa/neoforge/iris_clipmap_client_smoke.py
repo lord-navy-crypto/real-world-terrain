@@ -788,6 +788,44 @@ def move_camera_until_horizontal_distance(
     return reached_distance
 
 
+def move_camera_to_baseline(
+        proc, lines, start: int, baseline: tuple[float, float, float],
+        tolerance: float = 8.0, timeout_seconds: float = 150.0) -> float:
+    """Return to the exact reference terrain area at normal spectator speed."""
+    started = time.monotonic()
+    deadline = started + timeout_seconds
+    remaining = float("inf")
+    vertical_delta = float("inf")
+    subprocess.run(["xdotool", "keydown", "a"], check=True, timeout=10)
+    try:
+        while proc.poll() is None and time.monotonic() < deadline:
+            current = latest_camera_position("".join(lines[start:]))
+            if current is not None:
+                dx = current[0] - baseline[0]
+                dz = current[2] - baseline[2]
+                remaining = (dx * dx + dz * dz) ** 0.5
+                vertical_delta = abs(current[1] - baseline[1])
+                if remaining <= tolerance and vertical_delta <= 2.5:
+                    break
+            time.sleep(0.1)
+    finally:
+        subprocess.run(["xdotool", "keyup", "a"], check=False, timeout=10)
+
+    if remaining > tolerance or vertical_delta > 2.5:
+        capture_screenshot("iris-clipmap-return-to-baseline-timeout")
+        raise RuntimeError(
+            "Smoke camera did not return to the reference viewport: "
+            f"horizontal={remaining:.1f}/{tolerance:.1f} blocks, "
+            f"vertical_delta={vertical_delta:.1f}/2.5 blocks"
+        )
+    print(
+        f"CLIENT_CAMERA_RETURNED_TO_BASELINE: horizontal={remaining:.1f} "
+        f"vertical_delta={vertical_delta:.1f} elapsed={time.monotonic()-started:.1f}s",
+        flush=True,
+    )
+    return remaining
+
+
 def wait_for_new_complete_center(proc, lines, start: int,
                                  previous_centres: set[str],
                                  timeout_seconds: float = 240.0) -> str:
@@ -1114,10 +1152,17 @@ def run_client(env: dict[str, str]) -> None:
         # Then wait for the replacement six-LOD window instead of requiring
         # the server's expensive density sampler to finish during the key hold.
         motion_start = len(lines)
+        baseline_output = "".join(lines)
         old_centres = set(re.findall(
-            r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", "".join(lines)
+            r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", baseline_output
         ))
-        baseline_position = latest_camera_position("".join(lines))
+        baseline_centres = re.findall(
+            r"CLIENT_LOD_ACTIVE levels=6 center=\(([^)]+)\)", baseline_output
+        )
+        if not baseline_centres:
+            raise RuntimeError("No complete six-LOD baseline centre before movement")
+        baseline_center = baseline_centres[-1]
+        baseline_position = latest_camera_position(baseline_output)
         if baseline_position is None:
             raise RuntimeError("No baseline CLIENT_CAMERA_POSITION telemetry before movement")
         move_camera_until_horizontal_distance(
@@ -1164,6 +1209,8 @@ def run_client(env: dict[str, str]) -> None:
         validate_screenshot(final_frame)
         final_contrast = terrain_contrast(final_frame)
         final_high_frequency, final_high_frequency_rms = terrain_high_frequency_metrics(final_frame)
+        settled_colors = terrain_color_count(moving)
+        final_colors = terrain_color_count(final_frame)
         print("IRIS_CLIPMAP_MOVEMENT_REFRESH_PASS", sorted(centres), settled_centre, flush=True)
         # The fixed initial camera is the controlled A/B location. Its absolute
         # high-pass RMS must remain below the pre-macro baseline with a small
@@ -1181,12 +1228,50 @@ def run_client(env: dict[str, str]) -> None:
                                f"settled={settled_high_frequency:.5f}, final={final_high_frequency:.5f}; "
                                "the compact neutral UV patch must reduce repeated PBR detail")
         print("IRIS_TERRAIN_TEXTURE_ALIASING_GATE_PASS", flush=True)
+        # A 320-block move samples different geography. Do not compare its
+        # global luminance deviation with the original biome as if they were
+        # the same scene; require visible color diversity and a conservative
+        # non-flat contrast floor at the new location.
+        if min(settled_contrast, final_contrast) < 0.035 or min(settled_colors, final_colors) < 16:
+            raise RuntimeError(
+                "Post-motion terrain lacks sufficient visible relief/material diversity: "
+                f"settled_contrast={settled_contrast:.5f}, final_contrast={final_contrast:.5f}, "
+                f"settled_colors={settled_colors}, final_colors={final_colors}"
+            )
+        print("IRIS_TERRAIN_MOVED_REGION_DETAIL_GATE_PASS", flush=True)
         if initial_contrast < 0.055:
             raise RuntimeError(f"Initial terrain viewport has insufficient contrast: {initial_contrast:.5f}")
-        if max(settled_contrast, final_contrast) < max(0.055, initial_contrast * 0.4):
-            raise RuntimeError("Persistent post-motion terrain contrast collapse after complete proxy/LOD settlement: "
-                               f"initial={initial_contrast:.5f}, settled={settled_contrast:.5f}, final={final_contrast:.5f}")
-        print("IRIS_TERRAIN_CONTRAST_GATE_PASS", flush=True)
+
+        # Return to the exact original world area, then re-check contrast there.
+        # This is the apples-to-apples test for persistent post-movement visual
+        # degradation; the moved-to biome is allowed to have different albedo.
+        return_start = len(lines)
+        move_camera_to_baseline(proc, lines, return_start, baseline_position)
+        returned_center = wait_for_settled_window(
+            proc, lines, return_start, minimum_seconds=90
+        )
+        if returned_center != baseline_center:
+            raise RuntimeError(
+                f"Returned camera did not restore the original clipmap centre: "
+                f"baseline={baseline_center}, returned={returned_center}"
+            )
+        returned = capture_screenshot("iris-clipmap-returned-to-baseline")
+        validate_screenshot(returned)
+        returned_contrast = terrain_contrast(returned)
+        returned_high_frequency, returned_high_frequency_rms = terrain_high_frequency_metrics(returned)
+        returned_colors = terrain_color_count(returned)
+        if returned_contrast < max(0.055, initial_contrast * 0.90):
+            raise RuntimeError(
+                "Original terrain viewport lost contrast after movement and return: "
+                f"initial={initial_contrast:.5f}, returned={returned_contrast:.5f}"
+            )
+        if returned_high_frequency_rms > 0.030 or returned_high_frequency > 0.18 or returned_colors < 16:
+            raise RuntimeError(
+                "Original terrain viewport texture/detail changed after movement and return: "
+                f"rms={returned_high_frequency_rms:.5f}, ratio={returned_high_frequency:.5f}, "
+                f"colors={returned_colors}"
+            )
+        print("IRIS_TERRAIN_RETURN_CONTRAST_GATE_PASS", flush=True)
         final_stdout = "".join(lines)
         if "SAMPLER STALLED" in final_stdout:
             raise RuntimeError(
