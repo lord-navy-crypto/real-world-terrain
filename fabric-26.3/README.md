@@ -1,6 +1,6 @@
 # RealScale — Fabric 26.3
 
-Experimental migration workspace for Minecraft Java **26.3**. This is not a release build.
+Experimental migration workspace for Minecraft Java **26.3**. This is not a release build.\n\n**The Fabric and NeoForge ports target the same Minecraft version, but their JARs are loader-specific and are not interchangeable.** Use this artifact only with Fabric.
 
 ## Toolchain
 
@@ -26,7 +26,7 @@ Build: `gradle --no-daemon -p fabric-26.3 clean build`
   - 35 random-patch vegetation definitions migrated to `simple_block` features with count, offset, and predicate placement modifiers.
   - Removed 106 obsolete 1.21 `configured_feature` JSON resources.
 - [x] All generated structure packs use data-pack format **121.0** metadata, including Architecture Pilot and Urban Districts.
-- [x] Worldgen resource-integrity tests pass for both loader modules.
+- [x] Both loader modules pass **108 automated tests**, including world-generation resource-integrity checks.
 
 ### Still pending
 
