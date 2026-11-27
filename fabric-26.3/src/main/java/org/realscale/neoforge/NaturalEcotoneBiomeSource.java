@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.biome.BiomeResolver;
 import net.minecraft.world.level.biome.Climate;
 
 import java.util.Arrays;
@@ -206,13 +207,13 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
      * is unnecessary; keep the exact original underlying samples and keys.
      */
     private Holder<Biome> sampleBase(int quartX, int quartY, int quartZ,
-                                    Climate.Sampler sampler, SamplingCache cache) {
+                                    Climate.Sampler sampler, SamplingCache cache, BiomeResolver sourceResolver) {
         long key = BlockPos.asLong(quartX, quartY, quartZ);
         Holder<Biome> existing = cache.positions.get(key);
         if(DensityPerfSampler.ENABLED)
             DensityPerfSampler.ecotoneCacheProbe(false,existing!=null);
         if (existing != null) return existing;
-        Holder<Biome> found = source.getNoiseBiome(quartX, quartY, quartZ, sampler);
+        Holder<Biome> found = sourceResolver.getNoiseBiome(quartX, quartY, quartZ);
         cache.positions.put(key, found);
         return found;
     }
@@ -262,16 +263,22 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
     }
 
     @Override
-    public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
-        if(!DensityPerfSampler.ENABLED)
-            return getNoiseBiomeUnprofiled(quartX,quartY,quartZ,sampler);
-        long start=DensityPerfSampler.begin(DensityPerfSampler.Stage.ECOTONE_BIOME);
-        try{return getNoiseBiomeUnprofiled(quartX,quartY,quartZ,sampler);}
-        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.ECOTONE_BIOME,start);}
+    public BiomeResolver createResolver(Climate.Sampler sampler) {
+        BiomeResolver sourceResolver = source.createResolver(sampler);
+        return (quartX, quartY, quartZ) -> {
+            if (!DensityPerfSampler.ENABLED)
+                return getNoiseBiomeUnprofiled(quartX, quartY, quartZ, sampler, sourceResolver);
+            long start = DensityPerfSampler.begin(DensityPerfSampler.Stage.ECOTONE_BIOME);
+            try {
+                return getNoiseBiomeUnprofiled(quartX, quartY, quartZ, sampler, sourceResolver);
+            } finally {
+                DensityPerfSampler.finish(DensityPerfSampler.Stage.ECOTONE_BIOME, start);
+            }
+        };
     }
 
     private Holder<Biome> getNoiseBiomeUnprofiled(
-            int quartX,int quartY,int quartZ,Climate.Sampler sampler) {
+            int quartX,int quartY,int quartZ,Climate.Sampler sampler,BiomeResolver sourceResolver) {
         SamplingCache cache = cached.get();
         cache.prepare(sampler);
         long key = BlockPos.asLong(quartX, quartY, quartZ);
@@ -280,7 +287,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
             DensityPerfSampler.ecotoneCacheProbe(true,previous!=null);
         if (previous != null) return previous;
 
-        Holder<Biome> result = resolveUncached(quartX, quartY, quartZ, sampler, cache);
+        Holder<Biome> result = resolveUncached(quartX, quartY, quartZ, sampler, cache, sourceResolver);
         cache.resolved.put(key, result);
         return result;
     }
@@ -291,8 +298,8 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
      */
     private Holder<Biome> resolveUncached(
             int quartX, int quartY, int quartZ, Climate.Sampler sampler,
-            SamplingCache cache) {
-        Holder<Biome> original = sampleBase(quartX, quartY, quartZ, sampler, cache);
+            SamplingCache cache, BiomeResolver sourceResolver) {
+        Holder<Biome> original = sampleBase(quartX, quartY, quartZ, sampler, cache, sourceResolver);
         // Surface ecotones must not be painted across caves or deep aquifers.
         if (quartY < 12) return original;
         String current = vanillaId(original);
@@ -314,7 +321,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
                 // stop once a heading cannot beat the best existing border.
                 if (distanceSquared >= closestDistanceSquared) break;
                 String next = vanillaId(sampleBase(quartX + direction[0] * step,
-                        quartY, quartZ + direction[1] * step, sampler, cache));
+                        quartY, quartZ + direction[1] * step, sampler, cache, sourceResolver));
                 if (current.equals(next)) continue;
                 Rule rule = findPair(current, next);
                 if (rule != null && EcotoneMath.withinRadialBand(

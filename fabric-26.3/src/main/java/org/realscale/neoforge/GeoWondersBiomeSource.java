@@ -5,6 +5,7 @@ import java.util.stream.Stream;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.biome.BiomeResolver;
 import net.minecraft.world.level.biome.Climate;
 
 /** Identity BiomeSource wrapper that opts into experimental geological wonders.
@@ -23,7 +24,7 @@ public final class GeoWondersBiomeSource extends BiomeSource {
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes(){
         return source.possibleBiomes().stream();
     }
-    @Override public Holder<Biome> getNoiseBiome(int x,int y,int z,Climate.Sampler sampler){
-        return source.getNoiseBiome(x,y,z,sampler);
+    @Override public BiomeResolver createResolver(Climate.Sampler sampler) {
+        return source.createResolver(sampler);
     }
 }
