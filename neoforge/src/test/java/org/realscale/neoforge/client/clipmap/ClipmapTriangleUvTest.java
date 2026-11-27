@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 final class ClipmapTriangleUvTest {
     @Test
-    void neutralCellPatchHasStableTangentBasisAndUsesOnlyTheCentralPixel() {
+    void neutralSubTexelPatchHasStableTangentBasisAndSamplesOneTexel() {
         float[] uv = new float[6];
         ClipmapTriangleUv.computeNeutralCellAlignedInto(
                 new int[]{12, 12, 13}, new int[]{20, 21, 20}, uv);
@@ -14,7 +14,7 @@ final class ClipmapTriangleUvTest {
         assertNonDegenerate(uv);
         assertInsideSprite(uv);
         assertArrayEquals(
-                new float[]{7.5f, 7.5f, 7.5f, 8.5f, 8.5f, 7.5f},
+                new float[]{7.4375f, 7.4375f, 7.4375f, 7.5625f, 7.5625f, 7.4375f},
                 uv, 1.0e-6f);
     }
 
@@ -31,7 +31,7 @@ final class ClipmapTriangleUvTest {
         assertNonDegenerate(second);
         assertArrayEquals(first, second, 1.0e-6f);
         for (float coordinate : first) {
-            assertTrue(coordinate >= 7.5f && coordinate <= 8.5f);
+            assertTrue(coordinate >= 7.4375f && coordinate <= 7.5625f);
         }
     }
 
