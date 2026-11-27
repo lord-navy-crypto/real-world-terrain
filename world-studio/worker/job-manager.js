@@ -33,6 +33,7 @@ export class WorldExportJobManager {
     this.jobs = new Map();
     this.queue = [];
     this.activeJobId = null;
+    this.idleWaiters = [];
   }
 
   create(input) {
@@ -108,7 +109,13 @@ export class WorldExportJobManager {
     return publicJob(job);
   }
 
+  resolveIdleWaiters() {
+    if (this.activeJobId || this.queue.length) return;
+    for (const resolve of this.idleWaiters.splice(0)) resolve();
+  }
+
   shutdown() {
+    const idle = new Promise(resolve => this.idleWaiters.push(resolve));
     for (const id of this.queue.splice(0)) {
       const job = this.jobs.get(id);
       if (!job || job.status !== "queued") continue;
@@ -118,6 +125,8 @@ export class WorldExportJobManager {
       job.updatedAt = new Date().toISOString();
     }
     if (this.activeJobId) this.jobs.get(this.activeJobId)?.controller?.abort();
+    this.resolveIdleWaiters();
+    return idle;
   }
 
   list() {
@@ -193,6 +202,7 @@ export class WorldExportJobManager {
         job.controller = null;
         this.activeJobId = null;
         this.pump();
+        this.resolveIdleWaiters();
       });
   }
 }
