@@ -231,6 +231,9 @@ export async function validateWorldSave(worldDirectory, requestInput) {
   if (!data || typeof data !== "object" || !Number.isInteger(data.DataVersion)) {
     throw new Error("level.dat is missing the Minecraft DataVersion compound");
   }
+  if (!data.WorldGenSettings || typeof data.WorldGenSettings !== "object") {
+    throw new Error("level.dat is missing its saved WorldGenSettings compound");
+  }
 
   const regionDir = path.join(worldDir, "region");
   const regionInfo = await fs.lstat(regionDir);
