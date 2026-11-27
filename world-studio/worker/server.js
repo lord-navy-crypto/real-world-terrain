@@ -1,3 +1,4 @@
+// Temporary validation-branch change: execute the World Studio 0.5.0 acceptance workflows.
 import http from "node:http";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
