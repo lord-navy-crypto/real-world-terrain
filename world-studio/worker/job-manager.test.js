@@ -59,6 +59,7 @@ test("cancels a queued job without starting the runner", async () => {
   });
   const active = manager.create({ seed: "active" });
   const queued = manager.create({ seed: "queued" });
+  await new Promise(resolve => setImmediate(resolve));
   assert.equal(manager.cancel(queued.id).status, "cancelled");
   assert.equal(calls, 1);
   first.resolve(success(active.id));
