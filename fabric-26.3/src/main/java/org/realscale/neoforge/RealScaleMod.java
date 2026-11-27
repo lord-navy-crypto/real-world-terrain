@@ -13,7 +13,7 @@ import org.realscale.neoforge.compat.dhchunky.DhChunkyGuardCommands;
 public final class RealScaleMod implements ModInitializer {
     @Override
     public void onInitialize() {
-        RealScaleVehicles.register();
+        
         // 26.3 separates statically registered feature codecs from datapack feature instances.
         Registry.register(BuiltInRegistries.FEATURE_TYPE, Identifier.fromNamespaceAndPath("realscale", "river_channel"), RiverChannelFeature.MAP_CODEC);
         Registry.register(BuiltInRegistries.FEATURE_TYPE, Identifier.fromNamespaceAndPath("realscale", "vanilla_habitat"), VanillaHabitatFeature.MAP_CODEC);

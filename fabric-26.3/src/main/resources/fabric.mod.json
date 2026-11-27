@@ -9,9 +9,7 @@
   "entrypoints": {
     "main": ["org.realscale.neoforge.RealScaleMod"],
     "client": ["org.realscale.neoforge.RealScaleFabricClient"]
-  },
-  "mixins": [{"config": "realscale.fabric.client.mixins.json", "environment": "client"}],
-  "depends": {
+  },"depends": {
     "fabricloader": ">=0.20.1",
     "minecraft": "26.3",
     "java": ">=25",

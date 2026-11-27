@@ -625,3 +625,27 @@ sourceSets.main.resources.srcDir(generatedStructureResources)
 tasks.named("processResources") {
     dependsOn("generateBuiltInStructurePacks")
 }
+
+
+// Optional client tooling, vehicles and 1.21.x mixin optimizations are deferred
+// until their dedicated 26.3 API ports are validated. Core world generation remains enabled.
+sourceSets {
+    main {
+        java {
+            exclude '**/HovercraftEntity.java'
+            exclude '**/HovercraftItem.java'
+            exclude '**/RealScaleVehicles.java'
+            exclude '**/RealScaleHovercraftClient.java'
+            exclude '**/RealScaleStudioClient.java'
+            exclude '**/RealScaleStudioScreen.java'
+            exclude '**/RealScalePerformanceStudioScreen.java'
+            exclude '**/GeographicClimateInspectorScreen.java'
+            exclude '**/RealScaleChunkUploadClient.java'
+            exclude '**/RealScaleAdaptiveVisibilityClient.java'
+            exclude '**/RealScaleClientFrameProfiler.java'
+            exclude '**/FabricServerSmoke.java'
+            exclude '**/mixin/**'
+            exclude '**/compat/dhchunky/mixin/**'
+        }
+    }
+}
