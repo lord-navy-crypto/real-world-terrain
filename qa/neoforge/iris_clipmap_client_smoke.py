@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import math
 import os
 import pathlib
 import re
@@ -325,6 +326,57 @@ def capture_screenshot(name: str) -> pathlib.Path | None:
         return None
 
 
+def capture_minecraft_screenshot(name: str, timeout: float = 12.0) -> pathlib.Path:
+    """Capture the actual Minecraft framebuffer with its UI, not only the X11 root."""
+    screenshot_dir = CLIENT_RUN / "screenshots"
+    screenshot_dir.mkdir(parents=True, exist_ok=True)
+    before = {path.resolve() for path in screenshot_dir.glob("*.png")}
+    subprocess.run(
+        ["xdotool", "key", "--clearmodifiers", "F2"],
+        check=True, timeout=10,
+    )
+    deadline = time.monotonic() + timeout
+    source = None
+    while time.monotonic() < deadline:
+        candidates = [
+            path for path in screenshot_dir.glob("*.png")
+            if path.resolve() not in before and path.is_file() and path.stat().st_size > 0
+        ]
+        if candidates:
+            candidate = max(candidates, key=lambda path: path.stat().st_mtime_ns)
+            time.sleep(0.2)
+            if candidate.exists() and candidate.stat().st_size > 0:
+                source = candidate
+                break
+        time.sleep(0.1)
+    if source is None:
+        raise RuntimeError("Minecraft F2 framebuffer screenshot was not written")
+    destination = BUILD / (name + ".png")
+    shutil.copy2(source, destination)
+    print(
+        "MINECRAFT_FRAMEBUFFER_SCREENSHOT_CAPTURED:",
+        destination, "bytes=", destination.stat().st_size, flush=True,
+    )
+    return destination
+
+
+def ocr_minecraft_screenshot(path: pathlib.Path) -> str:
+    """Read visible Minecraft UI labels from a framebuffer screenshot."""
+    enlarged = BUILD / (path.stem + "-ocr.png")
+    subprocess.run(
+        ["convert", str(path), "-resize", "300%", "-colorspace", "Gray",
+         "-contrast-stretch", "1%x1%", str(enlarged)],
+        check=True, timeout=30,
+    )
+    result = subprocess.run(
+        ["tesseract", str(enlarged), "stdout", "--psm", "11"],
+        check=True, capture_output=True, text=True, timeout=30,
+    )
+    normalized = re.sub(r"[^a-z0-9]+", " ", result.stdout.lower()).strip()
+    print("PAUSE_SCREEN_OCR_TEXT:", normalized, flush=True)
+    return normalized
+
+
 def _read_window_geometry(window_id: str):
     result = subprocess.run(
         ["xdotool", "getwindowgeometry", "--shell", window_id],
@@ -443,7 +495,7 @@ def ocr_game_window(name: str) -> str:
 
 def wait_for_pause_screen(lines: list[str], start: int, name: str,
                          expected_state: str, timeout: float = 12.0) -> str:
-    """Wait for the real PauseScreen event after its three custom buttons exist."""
+    """Wait for PauseScreen initialization and prove its labels are on the framebuffer."""
     deadline = time.monotonic() + timeout
     marker = "CLIENT_PAUSE_MENU_UI_INITIALIZED:"
     while time.monotonic() < deadline:
@@ -453,10 +505,26 @@ def wait_for_pause_screen(lines: list[str], start: int, name: str,
                     raise RuntimeError(
                         "PauseScreen opened with an unexpected clipmap state: " + line
                     )
-                # Let Minecraft render at least one complete frame after Init.Post
-                # before capturing evidence of the visible pause menu.
+                # Keep the X11 capture as a diagnostic, but use Minecraft's own
+                # framebuffer screenshot as the authoritative visible-UI evidence.
                 time.sleep(0.5)
-                capture_screenshot(name)
+                capture_screenshot(name + "-desktop-probe")
+                image = capture_minecraft_screenshot(name)
+                validate_screenshot(image)
+                visible_text = ocr_minecraft_screenshot(image)
+                required_labels = ("clipmap", expected_state.lower(), "range")
+                missing = [label for label in required_labels if label not in visible_text]
+                if missing:
+                    raise RuntimeError(
+                        "PauseScreen initialized but its framebuffer screenshot did not "
+                        "show the expected visible labels: "
+                        f"missing={missing}, ocr={visible_text!r}"
+                    )
+                print(
+                    "PAUSE_SCREEN_OCR_VERIFIED:",
+                    f"state={expected_state} labels=clipmap,range",
+                    flush=True,
+                )
                 print("PAUSE_SCREEN_VERIFIED:", line.strip(), flush=True)
                 return line
         time.sleep(0.25)
@@ -741,35 +809,59 @@ def terrain_high_frequency_metrics(path: pathlib.Path) -> tuple[float, float]:
     return ratio, high
 
 
-def latest_camera_position(output: str) -> tuple[float, float, float] | None:
+def latest_camera_sample(output: str):
+    """Return camera coordinates and the JVM-monotonic timestamp for the newest sample."""
     matches = re.findall(
-        r"CLIENT_CAMERA_POSITION:\s*x=([-+0-9.]+)\s+y=([-+0-9.]+)\s+z=([-+0-9.]+)",
+        r"CLIENT_CAMERA_POSITION:\\s*x=([-+0-9.]+)\\s+y=([-+0-9.]+)\\s+z=([-+0-9.]+)\\s+sampleNanos=(\\d+)",
         output,
     )
     if not matches:
         return None
-    return tuple(float(value) for value in matches[-1])
+    x, y, z, sample_nanos = matches[-1]
+    return (float(x), float(y), float(z)), int(sample_nanos)
+
+
+def latest_camera_position(output: str) -> tuple[float, float, float] | None:
+    sample = latest_camera_sample(output)
+    return sample[0] if sample is not None else None
+
+
+def wait_for_camera_sample_after(lines, start: int, previous_sample_nanos: int,
+                                 timeout_seconds: float = 2.5):
+    """Wait for a genuinely newer camera telemetry sample, not a stale log line."""
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        sample = latest_camera_sample("".join(lines[start:]))
+        if sample is not None and sample[1] > previous_sample_nanos:
+            return sample
+        time.sleep(0.05)
+    return None
 
 
 def move_camera_until_horizontal_distance(
         proc, lines, start: int, baseline: tuple[float, float, float],
         target_distance: float = 320.0, timeout_seconds: float = 90.0) -> float:
-    """Strafe at a fixed camera altitude until a new snapped clipmap centre is unavoidable."""
+    """Strafe until fresh timestamped telemetry proves a new snapped centre is unavoidable."""
     started = time.monotonic()
     deadline = started + timeout_seconds
+    baseline_sample = latest_camera_sample("".join(lines[:start]))
+    if baseline_sample is None:
+        raise RuntimeError("No timestamped baseline camera sample before movement")
+    last_sample_nanos = baseline_sample[1]
     reached_distance = 0.0
     subprocess.run(["xdotool", "keydown", "Control_L"], check=True, timeout=10)
     subprocess.run(["xdotool", "keydown", "d"], check=True, timeout=10)
     try:
         while proc.poll() is None and time.monotonic() < deadline:
-            current = latest_camera_position("".join(lines[start:]))
-            if current is not None:
+            sample = latest_camera_sample("".join(lines[start:]))
+            if sample is not None and sample[1] > last_sample_nanos:
+                current, last_sample_nanos = sample
                 dx = current[0] - baseline[0]
                 dz = current[2] - baseline[2]
                 reached_distance = (dx * dx + dz * dz) ** 0.5
                 if reached_distance >= target_distance:
                     break
-            time.sleep(0.5)
+            time.sleep(0.25)
     finally:
         subprocess.run(["xdotool", "keyup", "d"], check=False, timeout=10)
         subprocess.run(["xdotool", "keyup", "Control_L"], check=False, timeout=10)
@@ -782,7 +874,8 @@ def move_camera_until_horizontal_distance(
         )
     print(
         f"CLIENT_CAMERA_MOVEMENT_VERIFIED: horizontal={reached_distance:.1f} "
-        f"target={target_distance:.1f} elapsed={time.monotonic()-started:.1f}s",
+        f"target={target_distance:.1f} sampleNanos={last_sample_nanos} "
+        f"elapsed={time.monotonic()-started:.1f}s",
         flush=True,
     )
     return reached_distance
@@ -791,12 +884,13 @@ def move_camera_until_horizontal_distance(
 def move_camera_to_baseline(
         proc, lines, start: int, baseline: tuple[float, float, float],
         tolerance: float = 8.0, timeout_seconds: float = 150.0) -> float:
-    """Return to the reference area with bounded key pulses and fresh telemetry."""
+    """Return to the reference area using bounded pulses and fresh monotonic telemetry."""
     started = time.monotonic()
     deadline = started + timeout_seconds
-    current = latest_camera_position("".join(lines))
-    if current is None:
-        raise RuntimeError("No camera position telemetry before return-to-baseline movement")
+    initial_sample = latest_camera_sample("".join(lines[:start]))
+    if initial_sample is None:
+        raise RuntimeError("No timestamped camera position before return-to-baseline movement")
+    current, last_sample_nanos = initial_sample
 
     def distance_from_baseline(position):
         dx = position[0] - baseline[0]
@@ -828,33 +922,42 @@ def move_camera_to_baseline(
         finally:
             subprocess.run(["xdotool", "keyup", "a"], check=False, timeout=10)
 
-        # Wait for a telemetry tick after key release. The next position sample
-        # now describes a stopped camera, not a point midway through the pulse.
-        time.sleep(1.15)
-        updated = latest_camera_position("".join(lines[start:]))
-        if updated is None or updated == current:
-            telemetry_deadline = time.monotonic() + 1.5
-            while time.monotonic() < telemetry_deadline:
-                updated = latest_camera_position("".join(lines[start:]))
-                if updated is not None and updated != current:
-                    break
-                time.sleep(0.05)
-        if updated is None or updated == current:
-            # Software-rendered clients can occasionally miss a short input
-            # pulse between frames. Retry a few times rather than treating one
-            # unchanged 1-second telemetry sample as a failed movement.
+        # Accept only a sample whose JVM-monotonic timestamp is newer than the
+        # last sample. This separates stale log tails from a fresh zero-motion tick.
+        sample = wait_for_camera_sample_after(
+            lines, start, last_sample_nanos, timeout_seconds=2.5
+        )
+        if sample is None:
             no_progress_count += 1
             print(
-                f"CLIENT_CAMERA_RETURN_NO_PROGRESS: attempt={no_progress_count} "
-                f"remaining={remaining:.1f} pulse={pulse_seconds:.3f}s",
+                f"CLIENT_CAMERA_RETURN_STALE_TELEMETRY: attempt={no_progress_count} "
+                f"previousSampleNanos={last_sample_nanos} remaining={remaining:.1f} "
+                f"pulse={pulse_seconds:.3f}s",
                 flush=True,
             )
             if no_progress_count >= 4:
                 raise RuntimeError(
-                    "Camera telemetry did not advance after four bounded return pulses: "
+                    "Camera telemetry remained stale after four bounded return pulses: "
                     f"remaining={remaining:.1f} blocks"
                 )
-            time.sleep(0.35)
+            time.sleep(0.25)
+            continue
+
+        updated, updated_sample_nanos = sample
+        if updated == current:
+            last_sample_nanos = updated_sample_nanos
+            no_progress_count += 1
+            print(
+                f"CLIENT_CAMERA_RETURN_NO_MOVEMENT: attempt={no_progress_count} "
+                f"sampleNanos={updated_sample_nanos} remaining={remaining:.1f} "
+                f"pulse={pulse_seconds:.3f}s",
+                flush=True,
+            )
+            if no_progress_count >= 4:
+                raise RuntimeError(
+                    "Four fresh camera samples showed no movement after bounded return pulses: "
+                    f"remaining={remaining:.1f} blocks"
+                )
             continue
 
         no_progress_count = 0
@@ -865,25 +968,50 @@ def move_camera_to_baseline(
                 f"before={remaining:.1f}, after={next_remaining:.1f}"
             )
         current = updated
+        last_sample_nanos = updated_sample_nanos
         remaining = next_remaining
         vertical_delta = abs(current[1] - baseline[1])
         pulse_count += 1
         if pulse_count % 5 == 0:
             print(
                 f"CLIENT_CAMERA_RETURN_PROGRESS: remaining={remaining:.1f} "
-                f"pulses={pulse_count}",
+                f"pulses={pulse_count} sampleNanos={last_sample_nanos}",
                 flush=True,
             )
 
-    # One final fresh sample confirms that key release left the camera inside
-    # the same-location comparison window.
-    time.sleep(1.15)
-    stopped = latest_camera_position("".join(lines[start:]))
-    if stopped is not None:
+    # Require two distinct fresh samples after the final key release and prove
+    # the camera has stopped drifting before accepting the same-location frame.
+    stable_samples = 0
+    stable_delta = float("inf")
+    while stable_samples < 2 and proc.poll() is None:
+        if time.monotonic() >= deadline:
+            break
+        sample = wait_for_camera_sample_after(
+            lines, start, last_sample_nanos, timeout_seconds=2.5
+        )
+        if sample is None:
+            raise RuntimeError(
+                "No fresh camera telemetry after final key release: "
+                f"previousSampleNanos={last_sample_nanos}"
+            )
+        stopped, stopped_sample_nanos = sample
+        stable_delta = math.hypot(
+            stopped[0] - current[0], stopped[2] - current[2]
+        )
         current = stopped
+        last_sample_nanos = stopped_sample_nanos
         remaining = distance_from_baseline(current)
         vertical_delta = abs(current[1] - baseline[1])
+        if stable_delta <= 0.75:
+            stable_samples += 1
+        else:
+            stable_samples = 0
 
+    if stable_samples < 2:
+        raise RuntimeError(
+            "Camera did not produce two stable post-release telemetry samples: "
+            f"stable_samples={stable_samples}, last_delta={stable_delta:.2f}"
+        )
     if remaining > tolerance or vertical_delta > 2.5:
         capture_screenshot("iris-clipmap-return-to-baseline-timeout")
         raise RuntimeError(
@@ -894,7 +1022,8 @@ def move_camera_to_baseline(
     print(
         f"CLIENT_CAMERA_RETURNED_TO_BASELINE: horizontal={remaining:.1f} "
         f"vertical_delta={vertical_delta:.1f} pulses={pulse_count} "
-        f"elapsed={time.monotonic()-started:.1f}s",
+        f"stableSamples={stable_samples} stableDelta={stable_delta:.2f} "
+        f"sampleNanos={last_sample_nanos} elapsed={time.monotonic()-started:.1f}s",
         flush=True,
     )
     return remaining
