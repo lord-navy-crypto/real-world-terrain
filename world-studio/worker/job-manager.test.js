@@ -139,4 +139,5 @@ test("worker shutdown cancels queued jobs and waits for the active server job", 
   await shutdown;
   assert.equal(signal.aborted, true);
   assert.equal(manager.get(active.id).status, "cancelled");
+  assert.throws(() => manager.create({ seed: "after-shutdown" }), /worker is shutting down/);
 });
