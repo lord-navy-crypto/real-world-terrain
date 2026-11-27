@@ -1,6 +1,9 @@
 package org.realscale.neoforge;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.WorldGenLevel;
@@ -12,9 +15,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
 /**
  * Above-sea-level river and intentionally floodable mountain cascade
  * restore for vanilla River biomes in RealScale worlds.
@@ -24,10 +24,12 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  *
  * This is a shallow stream, NOT surveyed basin-scale river hydrology.
  */
-public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration> {
+public final class RiverChannelFeature implements Feature {
+    public static final MapCodec<RiverChannelFeature> MAP_CODEC = MapCodec.unit(new RiverChannelFeature());
+    @Override public MapCodec<? extends Feature> codec() { return MAP_CODEC; }
+
     public RiverChannelFeature() {
-        super(NoneFeatureConfiguration.CODEC);
-    }
+        }
 
     private static boolean natural(BlockState state) {
         return state.is(Blocks.STONE)
@@ -350,7 +352,7 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
     }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    private boolean placeLegacy(RealScaleFeatureContext context) {
         // The common path adds only a constant false branch; no clock reads.
         if (!WorldgenProfiler.ENABLED) return placeUnprofiled(context);
         long started = WorldgenProfiler.begin();
@@ -361,7 +363,7 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
         }
     }
 
-    private boolean placeUnprofiled(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    private boolean placeUnprofiled(RealScaleFeatureContext context) {
         ChunkGenerator base = context.chunkGenerator();
         if (!(base instanceof NoiseBasedChunkGenerator noise)) return false;
         // NeoForge biome modifiers are global: never touch vanilla or
@@ -488,4 +490,11 @@ public final class RiverChannelFeature extends Feature<NoneFeatureConfiguration>
         }
         return made;
     }
+
+    @Override
+    public boolean place(WorldGenLevel level, ChunkGenerator chunkGenerator,
+                         RandomSource random, BlockPos origin) {
+        return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
+    }
+
 }

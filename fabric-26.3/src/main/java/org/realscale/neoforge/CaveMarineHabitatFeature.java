@@ -1,17 +1,18 @@
 package org.realscale.neoforge;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
 /**
  * Small, biome-dependent additions to REAL pre-existing cave pockets and ocean
  * floors. This is not a biome source or a cave carver. It never alters water
@@ -20,7 +21,10 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  * Vanilla-only blocks; the extra cave habitats and marine shelves are
  * selected by NeoForge biome modifiers and restricted to RealScale worlds.
  */
-public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfiguration> {
+public final class CaveMarineHabitatFeature implements Feature {
+    public static final MapCodec<CaveMarineHabitatFeature> MAP_CODEC = RealScaleFeatureCodecs.enumField("kind", Kind.class, CaveMarineHabitatFeature::new, feature -> feature.kind);
+    @Override public MapCodec<? extends Feature> codec() { return MAP_CODEC; }
+
     public enum Kind {
         CAVE_FUNGAL, CAVE_CALCITE, CAVE_VOLCANIC, CAVE_GLACIAL, CAVE_SPRING,
         CAVE_GLOW, CAVE_FOSSIL,
@@ -52,7 +56,6 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
     }
 
     public CaveMarineHabitatFeature(Kind kind) {
-        super(NoneFeatureConfiguration.CODEC);
         this.kind=kind;
     }
     public Kind kind(){return kind;}
@@ -275,7 +278,7 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
         return changed>0;
     }
 
-    @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context){
+    @Override private boolean placeLegacy(RealScaleFeatureContext context){
         if(!TVAWorldGuard.hasRealScaleGenerator(context))return false;
         WorldGenLevel w=context.level();
         if(!w.getLevel().dimension().location().toString()
@@ -289,4 +292,11 @@ public final class CaveMarineHabitatFeature extends Feature<NoneFeatureConfigura
         if(changed)PLACEMENTS[kind.ordinal()].increment();
         return changed;
     }
+
+    @Override
+    public boolean place(WorldGenLevel level, ChunkGenerator chunkGenerator,
+                         RandomSource random, BlockPos origin) {
+        return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
+    }
+
 }
