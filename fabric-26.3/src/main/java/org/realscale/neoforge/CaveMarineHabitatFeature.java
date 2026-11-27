@@ -278,7 +278,7 @@ public final class CaveMarineHabitatFeature implements Feature {
         return changed>0;
     }
 
-    @Override private boolean placeLegacy(RealScaleFeatureContext context){
+    private boolean placeLegacy(RealScaleFeatureContext context){
         if(!TVAWorldGuard.hasRealScaleGenerator(context))return false;
         WorldGenLevel w=context.level();
         if(!w.getLevel().dimension().location().toString()

@@ -90,7 +90,7 @@ public final class EarthWonderFeature implements Feature {
         return true;
     }
 
-    @Override private boolean placeLegacy(RealScaleFeatureContext context) {
+    private boolean placeLegacy(RealScaleFeatureContext context) {
         if (!TVAWorldGuard.hasExperimentalWonders(context)) return false;
         WorldGenLevel world=context.level();
         if (!world.getLevel().dimension().location().toString().equals("minecraft:overworld"))

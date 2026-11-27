@@ -73,7 +73,7 @@ public final class HabitatPatchFeature implements Feature {
                 ? null : new BlockPos(origin.getX(), resultY, origin.getZ());
     }
 
-    @Override private boolean placeLegacy(RealScaleFeatureContext context) {
+    private boolean placeLegacy(RealScaleFeatureContext context) {
         // Limit global NeoForge biome-modifier decorations to RealScale worlds.
         if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
         WorldGenLevel w = context.level();

@@ -202,7 +202,7 @@ public final class GeoWonderRegionFeature implements Feature {
         return placed;
     }
 
-    @Override private boolean placeLegacy(RealScaleFeatureContext context) {
+    private boolean placeLegacy(RealScaleFeatureContext context) {
         if(!TVAWorldGuard.hasExperimentalWonders(context))return false;
         if(!context.level().getLevel().dimension().location().toString()
                 .equals("minecraft:overworld"))return false;

@@ -4,7 +4,7 @@ import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
@@ -128,17 +128,16 @@ public final class VanillaHabitatFeature implements Feature {
         return placed > 0;
     }
 
-    @Override
     private boolean placeLegacy(RealScaleFeatureContext context) {
         ChunkGenerator generator = context.chunkGenerator();
         if (!(generator instanceof NoiseBasedChunkGenerator noise)) return false;
         var key = noise.generatorSettings().unwrapKey();
         if (key.isEmpty()) return false;
-        ResourceLocation id = key.get().location();
+        Identifier id = key.get().location();
         // Biome modifiers are global; never decorate vanilla/foreign worlds.
         if (!id.getNamespace().equals("realscale")) return false;
         WorldGenLevel level = context.level();
-        ChunkPos chunk = new ChunkPos(context.origin());
+        ChunkPos chunk = new ChunkPos(context.origin().getX() >> 4, context.origin().getZ() >> 4);
         return habitat == Habitat.FALLEN_TIMBER
             ? fallenTimber(level, chunk, context.origin(), context.random())
             : riparianReeds(level, chunk, context.origin(), context.random());
