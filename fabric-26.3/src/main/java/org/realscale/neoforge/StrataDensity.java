@@ -3,8 +3,13 @@ package org.realscale.neoforge;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.KeyDispatchDataCodec;
-import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensitySampler;
+import net.minecraft.world.level.levelgen.densityfunction.DensityBuffer;
+import net.minecraft.world.level.levelgen.densityfunction.DensityVolume;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
+import net.minecraft.world.level.levelgen.densityfunction.DfRewriteRule;
+import net.minecraft.util.Interval;
 
 /**
  * Low-amplitude vertically banded SOLIDITY. This is a shape-only geology
@@ -12,29 +17,27 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * The seed-dependent warp prevents perfectly horizontal repeated rings.
  */
 public record StrataDensity(DensityFunction base,DensityFunction warp,
-                            double strength,int period) implements DensityFunction.SimpleFunction {
+                            double strength,int period) implements DensityFunction {
     public static final MapCodec<StrataDensity> MAP_CODEC=RecordCodecBuilder.mapCodec(i -> i.group(
-        DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(StrataDensity::base),
-        DensityFunction.HOLDER_HELPER_CODEC.fieldOf("warp").forGetter(StrataDensity::warp),
+        DensityFunction.CODEC.fieldOf("base").forGetter(StrataDensity::base),
+        DensityFunction.CODEC.fieldOf("warp").forGetter(StrataDensity::warp),
         Codec.doubleRange(0.0,0.06).fieldOf("strength").forGetter(StrataDensity::strength),
         Codec.intRange(24,128).fieldOf("period").forGetter(StrataDensity::period)
     ).apply(i,StrataDensity::new));
-    private static final KeyDispatchDataCodec<StrataDensity> DISPATCH=KeyDispatchDataCodec.of(MAP_CODEC);
+    public double compute(RealScaleDensityContext ctx) {
+        return GeoMath.strata(ctx.compute(base),ctx.compute(warp),ctx.blockY(),strength,period);
+    }
+    
+        @Override public DensitySampler compileSampler(DensityFunction.CompileContext context) {
+        return RealScaleDensitySamplerSupport.compile(context, new DensityFunction[]{base, warp}, this::compute);
+    }
+    @Override public Interval range() { return Interval.INFINITE; }
+    @Override public int domainAxes() { return DensityFunction.ALL_AXES; }
 
-    @Override public double compute(DensityFunction.FunctionContext ctx) {
-        return GeoMath.strata(base.compute(ctx),warp.compute(ctx),ctx.blockY(),strength,period);
+@Override public DensityFunction rewriteChildren(DfRewriteRule rule) {
+        return new StrataDensity(rule.rewrite(base),rule.rewrite(warp),strength,period);
     }
-    @Override public void fillArray(double[] samples,DensityFunction.ContextProvider contexts) {
-        base.fillArray(samples,contexts);
-        for(int i=0;i<samples.length;i++) {
-            DensityFunction.FunctionContext ctx=contexts.forIndex(i);
-            samples[i]=GeoMath.strata(samples[i],warp.compute(ctx),ctx.blockY(),strength,period);
-        }
-    }
-    @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {
-        return visitor.apply(new StrataDensity(base.mapAll(visitor),warp.mapAll(visitor),strength,period));
-    }
-    @Override public double minValue(){return base.minValue()-strength;}
-    @Override public double maxValue(){return base.maxValue()+strength;}
-    @Override public KeyDispatchDataCodec<? extends DensityFunction> codec(){return DISPATCH;}
+    
+    
+    @Override public MapCodec<? extends DensityFunction> codec(){return MAP_CODEC;}
 }

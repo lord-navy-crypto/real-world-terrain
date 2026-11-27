@@ -3,8 +3,13 @@ package org.realscale.neoforge;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.KeyDispatchDataCodec;
-import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensitySampler;
+import net.minecraft.world.level.levelgen.densityfunction.DensityBuffer;
+import net.minecraft.world.level.levelgen.densityfunction.DensityVolume;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
+import net.minecraft.world.level.levelgen.densityfunction.DfRewriteRule;
+import net.minecraft.util.Interval;
 
 /**
  * Opt-in End outer-archipelago density. The central 1152-block-radius
@@ -15,24 +20,21 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  */
 public record FantasyEndIslandsDensity(DensityFunction base,
         DensityFunction field,DensityFunction detail,double strength)
-        implements DensityFunction.SimpleFunction {
+        implements DensityFunction {
     public static final MapCodec<FantasyEndIslandsDensity> MAP_CODEC =
         RecordCodecBuilder.mapCodec(i -> i.group(
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(FantasyEndIslandsDensity::base),
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("field").forGetter(FantasyEndIslandsDensity::field),
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("detail").forGetter(FantasyEndIslandsDensity::detail),
+            DensityFunction.CODEC.fieldOf("base").forGetter(FantasyEndIslandsDensity::base),
+            DensityFunction.CODEC.fieldOf("field").forGetter(FantasyEndIslandsDensity::field),
+            DensityFunction.CODEC.fieldOf("detail").forGetter(FantasyEndIslandsDensity::detail),
             Codec.doubleRange(0.0,1.5).fieldOf("strength").forGetter(FantasyEndIslandsDensity::strength)
         ).apply(i,FantasyEndIslandsDensity::new));
-    private static final KeyDispatchDataCodec<FantasyEndIslandsDensity> DISPATCH =
-        KeyDispatchDataCodec.of(MAP_CODEC);
-
-    @Override public double compute(DensityFunction.FunctionContext ctx) {
-        double vanilla=base.compute(ctx);
+    public double compute(RealScaleDensityContext ctx) {
+        double vanilla=ctx.compute(base);
         double radius=Math.hypot((double)ctx.blockX(),(double)ctx.blockZ());
         if(radius <= 1152 || strength <= 0.0)return vanilla;
         double fade=GeoMath.smoothstep(1152.0,1920.0,radius);
-        double broad=field.compute(ctx);
-        double fine=detail.compute(ctx);
+        double broad=ctx.compute(field);
+        double fine=ctx.compute(detail);
         double y=ctx.blockY();
         // Two vertically separated outer-island terraces. A rare broad
         // footprint plus 3D variation yields sculpted rather than flat land.
@@ -43,11 +45,17 @@ public record FantasyEndIslandsDensity(DensityFunction base,
         double islands=Math.max(lower,upper)-(1.0-fade)*1.4;
         return Math.max(vanilla,islands);
     }
-    @Override public DensityFunction mapAll(DensityFunction.Visitor visitor){
-        return visitor.apply(new FantasyEndIslandsDensity(base.mapAll(visitor),
-                field.mapAll(visitor),detail.mapAll(visitor),strength));
+        @Override public DensitySampler compileSampler(DensityFunction.CompileContext context) {
+        return RealScaleDensitySamplerSupport.compile(context, new DensityFunction[]{base, field, detail}, this::compute);
     }
-    @Override public double minValue(){return Math.min(base.minValue(),-8.0);}
-    @Override public double maxValue(){return Math.max(base.maxValue(),3.0);}
-    @Override public KeyDispatchDataCodec<? extends DensityFunction> codec(){return DISPATCH;}
+    @Override public Interval range() { return Interval.INFINITE; }
+    @Override public int domainAxes() { return DensityFunction.ALL_AXES; }
+
+@Override public DensityFunction rewriteChildren(DfRewriteRule rule){
+        return new FantasyEndIslandsDensity(rule.rewrite(base),
+                rule.rewrite(field),rule.rewrite(detail),strength);
+    }
+    
+    
+    @Override public MapCodec<? extends DensityFunction> codec(){return MAP_CODEC;}
 }

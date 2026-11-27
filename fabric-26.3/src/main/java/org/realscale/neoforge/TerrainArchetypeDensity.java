@@ -3,8 +3,13 @@ package org.realscale.neoforge;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.KeyDispatchDataCodec;
-import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensitySampler;
+import net.minecraft.world.level.levelgen.densityfunction.DensityBuffer;
+import net.minecraft.world.level.levelgen.densityfunction.DensityVolume;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
+import net.minecraft.world.level.levelgen.densityfunction.DfRewriteRule;
+import net.minecraft.util.Interval;
 
 /**
  * Procedural morphology kernel whose compact coefficients are fitted offline
@@ -15,7 +20,7 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * chunks or blocks. Parameters are normalized fit statistics, not absolute
  * elevations; vertical scale remains the responsibility of the base noise graph.
  */
-public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunction {
+public final class TerrainArchetypeDensity implements DensityFunction {
     private final DensityFunction base;
     private final DensityFunction continents;
     private final DensityFunction selector;
@@ -137,11 +142,11 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
             DensityFunction temperature,DensityFunction humidity) {
         private static final Codec<EnvironmentInputs> CODEC =
                 RecordCodecBuilder.create(i -> i.group(
-                        DensityFunction.HOLDER_HELPER_CODEC.optionalFieldOf("region_selector")
+                        DensityFunction.CODEC.optionalFieldOf("region_selector")
                                 .forGetter(e -> java.util.Optional.ofNullable(e.regionSelector)),
-                        DensityFunction.HOLDER_HELPER_CODEC.optionalFieldOf("temperature")
+                        DensityFunction.CODEC.optionalFieldOf("temperature")
                                 .forGetter(e -> java.util.Optional.ofNullable(e.temperature)),
-                        DensityFunction.HOLDER_HELPER_CODEC.optionalFieldOf("humidity")
+                        DensityFunction.CODEC.optionalFieldOf("humidity")
                                 .forGetter(e -> java.util.Optional.ofNullable(e.humidity))
                 ).apply(i,(region,temperature,humidity) ->
                         new EnvironmentInputs(region.orElse(null),
@@ -173,9 +178,9 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
 
     public static final MapCodec<TerrainArchetypeDensity> MAP_CODEC =
             RecordCodecBuilder.mapCodec(i -> i.group(
-                    DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(TerrainArchetypeDensity::base),
-                    DensityFunction.HOLDER_HELPER_CODEC.fieldOf("continents").forGetter(TerrainArchetypeDensity::continents),
-                    DensityFunction.HOLDER_HELPER_CODEC.fieldOf("selector").forGetter(TerrainArchetypeDensity::selector),
+                    DensityFunction.CODEC.fieldOf("base").forGetter(TerrainArchetypeDensity::base),
+                    DensityFunction.CODEC.fieldOf("continents").forGetter(TerrainArchetypeDensity::continents),
+                    DensityFunction.CODEC.fieldOf("selector").forGetter(TerrainArchetypeDensity::selector),
                     EnvironmentInputs.CODEC.optionalFieldOf("environment")
                             .forGetter(TerrainArchetypeDensity::environmentInputs),
                     Codec.STRING.fieldOf("family").forGetter(TerrainArchetypeDensity::family),
@@ -191,38 +196,34 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
                     Codec.doubleRange(-Math.PI, Math.PI).fieldOf("dune_axis_radians").forGetter(TerrainArchetypeDensity::duneAxisRadians),
                     Codec.doubleRange(1.0, 1000000.0).fieldOf("dominant_wavelength_m").forGetter(TerrainArchetypeDensity::dominantWavelengthM)
             ).apply(i, TerrainArchetypeDensity::fromCodec));
-    private static final KeyDispatchDataCodec<TerrainArchetypeDensity> DISPATCH =
-            KeyDispatchDataCodec.of(MAP_CODEC);
-
-    @Override
-    public double compute(DensityFunction.FunctionContext ctx) {
+    public double compute(RealScaleDensityContext ctx) {
         if(!DensityPerfSampler.ENABLED)return computeUnprofiled(ctx);
         long started=DensityPerfSampler.begin(DensityPerfSampler.Stage.TERRAIN_ARCHETYPE);
         try{return computeUnprofiled(ctx);}
         finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.TERRAIN_ARCHETYPE,started);}
     }
 
-    private double computeUnprofiled(DensityFunction.FunctionContext ctx) {
-        double original = base.compute(ctx);
+    private double computeUnprofiled(RealScaleDensityContext ctx) {
+        double original = ctx.compute(base);
         // Alpine relief is mathematically zero for all continental/selector
         // inputs at or below 0.65. Run this independent exclusion BEFORE
         // sampling continental noise, which is costly in lowland columns.
         if (alpineFamily && original <= 0.65) return original;
-        double continent = continents.compute(ctx);
+        double continent = ctx.compute(continents);
         // The land gate is exactly zero below this boundary. Avoid
         // unnecessary selector noise work in ocean columns.
         if (continent <= -0.10) return original;
         // Glacier and volcano kernels never consume selector input. The flags
         // are computed once per codec instance instead of comparing strings
         // for every sampled block.
-        double signal = selectorFreeFamily ? 0.0 : selector.compute(ctx);
+        double signal = selectorFreeFamily ? 0.0 : ctx.compute(selector);
         boolean naturalAutomate = "natural_automate".equals(family);
         double regionSignal = naturalAutomate
-                ? regionSelector.compute(ctx) : signal;
+                ? ctx.compute(regionSelector) : signal;
         double temperatureSignal = naturalAutomate && temperature != null
-                ? temperature.compute(ctx) : 0.0;
+                ? ctx.compute(temperature) : 0.0;
         double humiditySignal = naturalAutomate && humidity != null
-                ? humidity.compute(ctx) : 0.0;
+                ? ctx.compute(humidity) : 0.0;
         if(naturalAutomate && DensityPerfSampler.ENABLED) {
             long blendStarted=DensityPerfSampler.begin(
                     DensityPerfSampler.Stage.NATURAL_AUTOMATE_BLEND);
@@ -238,21 +239,27 @@ public final class TerrainArchetypeDensity implements DensityFunction.SimpleFunc
                 temperatureSignal,humiditySignal,ctx.blockX(),ctx.blockZ());
     }
 
-    @Override
-    public DensityFunction mapAll(DensityFunction.Visitor visitor) {
-        DensityFunction mappedSelector=selector.mapAll(visitor);
-        DensityFunction mappedRegionSelector=regionSelector==selector
-                ?mappedSelector:regionSelector.mapAll(visitor);
-        return visitor.apply(new TerrainArchetypeDensity(
-                base.mapAll(visitor),continents.mapAll(visitor),mappedSelector,
-                mappedRegionSelector,family,macroGain,mesoGain,microGain,
-                reliefGain,ridgeSharpness,cliffIndex,valleyIndex,ridgeIndex,
-                anisotropyGain,duneAxisRadians,dominantWavelengthM,
-                temperature==null?null:temperature.mapAll(visitor),
-                humidity==null?null:humidity.mapAll(visitor)));
+            @Override public DensitySampler compileSampler(DensityFunction.CompileContext context) {
+        return RealScaleDensitySamplerSupport.compile(context, new DensityFunction[]{base, continents, selector, regionSelector, temperature, humidity}, this::compute);
+    }
+    @Override public Interval range() { return Interval.INFINITE; }
+    @Override public int domainAxes() { return DensityFunction.ALL_AXES; }
+
+@Override
+    public DensityFunction rewriteChildren(DfRewriteRule rule) {
+        DensityFunction mappedSelector = rule.rewrite(selector);
+        DensityFunction mappedRegionSelector = regionSelector == selector
+                ? mappedSelector : rule.rewrite(regionSelector);
+        return new TerrainArchetypeDensity(
+                rule.rewrite(base), rule.rewrite(continents), mappedSelector,
+                mappedRegionSelector, family, macroGain, mesoGain, microGain,
+                reliefGain, ridgeSharpness, cliffIndex, valleyIndex, ridgeIndex,
+                anisotropyGain, duneAxisRadians, dominantWavelengthM,
+                temperature == null ? null : rule.rewrite(temperature),
+                humidity == null ? null : rule.rewrite(humidity));
     }
 
-    @Override public double minValue() { return base.minValue() - 1.0; }
-    @Override public double maxValue() { return base.maxValue() + 1.0; }
-    @Override public KeyDispatchDataCodec<? extends DensityFunction> codec() { return DISPATCH; }
+    
+    
+    @Override public MapCodec<? extends DensityFunction> codec() { return MAP_CODEC; }
 }

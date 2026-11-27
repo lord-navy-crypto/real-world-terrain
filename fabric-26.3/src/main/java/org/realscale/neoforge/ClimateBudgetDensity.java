@@ -3,8 +3,13 @@ package org.realscale.neoforge;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.KeyDispatchDataCodec;
-import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensitySampler;
+import net.minecraft.world.level.levelgen.densityfunction.DensityBuffer;
+import net.minecraft.world.level.levelgen.densityfunction.DensityVolume;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
+import net.minecraft.world.level.levelgen.densityfunction.DfRewriteRule;
+import net.minecraft.util.Interval;
 
 /**
  * Relative-climate cap for opt-in radial terrain only.
@@ -15,25 +20,28 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  */
 public record ClimateBudgetDensity(DensityFunction original,DensityFunction adjusted,
                                   double maxCooling,double maxWarming)
-        implements DensityFunction.SimpleFunction {
+        implements DensityFunction {
     public static final MapCodec<ClimateBudgetDensity> MAP_CODEC =
         RecordCodecBuilder.mapCodec(i->i.group(
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("original").forGetter(ClimateBudgetDensity::original),
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("adjusted").forGetter(ClimateBudgetDensity::adjusted),
+            DensityFunction.CODEC.fieldOf("original").forGetter(ClimateBudgetDensity::original),
+            DensityFunction.CODEC.fieldOf("adjusted").forGetter(ClimateBudgetDensity::adjusted),
             Codec.doubleRange(0.01,1.0).fieldOf("max_cooling").forGetter(ClimateBudgetDensity::maxCooling),
             Codec.doubleRange(0.05,0.8).fieldOf("max_warming").forGetter(ClimateBudgetDensity::maxWarming)
         ).apply(i,ClimateBudgetDensity::new));
-    private static final KeyDispatchDataCodec<ClimateBudgetDensity> DISPATCH =
-        KeyDispatchDataCodec.of(MAP_CODEC);
+    public double compute(RealScaleDensityContext ctx){
+        return GeoMath.climateBudget(ctx.compute(original),ctx.compute(adjusted),maxCooling,maxWarming);
+    }
+        @Override public DensitySampler compileSampler(DensityFunction.CompileContext context) {
+        return RealScaleDensitySamplerSupport.compile(context, new DensityFunction[]{original, adjusted}, this::compute);
+    }
+    @Override public Interval range() { return Interval.INFINITE; }
+    @Override public int domainAxes() { return DensityFunction.ALL_AXES; }
 
-    @Override public double compute(DensityFunction.FunctionContext ctx){
-        return GeoMath.climateBudget(original.compute(ctx),adjusted.compute(ctx),maxCooling,maxWarming);
+@Override public DensityFunction rewriteChildren(DfRewriteRule rule){
+        return new ClimateBudgetDensity(rule.rewrite(original),
+            rule.rewrite(adjusted),maxCooling,maxWarming);
     }
-    @Override public DensityFunction mapAll(DensityFunction.Visitor visitor){
-        return visitor.apply(new ClimateBudgetDensity(original.mapAll(visitor),
-            adjusted.mapAll(visitor),maxCooling,maxWarming));
-    }
-    @Override public double minValue(){return original.minValue()-maxCooling;}
-    @Override public double maxValue(){return original.maxValue()+maxWarming;}
-    @Override public KeyDispatchDataCodec<? extends DensityFunction> codec(){return DISPATCH;}
+    
+    
+    @Override public MapCodec<? extends DensityFunction> codec(){return MAP_CODEC;}
 }
