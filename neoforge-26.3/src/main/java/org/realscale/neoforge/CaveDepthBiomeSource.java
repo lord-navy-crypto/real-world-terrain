@@ -13,6 +13,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.biome.BiomeResolver;
 import net.minecraft.world.level.biome.Climate;
 
 /**
@@ -61,13 +62,16 @@ public final class CaveDepthBiomeSource extends BiomeSource {
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),regions.values().stream()).distinct();
     }
-    @Override public Holder<Biome> getNoiseBiome(int x,int y,int z,Climate.Sampler sampler){
-        Holder<Biome> original=source.getNoiseBiome(x,y,z,sampler);
-        String id=original.unwrapKey().map(key->
-                "minecraft".equals(key.location().getNamespace())
-                        ?key.location().getPath():"").orElse("");
-        CaveBiomeRegionMath.Region choice=CaveBiomeRegionMath.select(x,y,z,id);
-        return choice==CaveBiomeRegionMath.Region.NONE
-                ?original:regions.get(choice);
+    @Override public BiomeResolver createResolver(Climate.Sampler sampler) {
+        BiomeResolver sourceResolver = source.createResolver(sampler);
+        return (x,y,z) -> {
+            Holder<Biome> original = sourceResolver.getNoiseBiome(x,y,z);
+            String id=original.unwrapKey().map(key->
+                    "minecraft".equals(key.location().getNamespace())
+                            ?key.location().getPath():"").orElse("");
+            CaveBiomeRegionMath.Region choice=CaveBiomeRegionMath.select(x,y,z,id);
+            return choice==CaveBiomeRegionMath.Region.NONE
+                    ?original:regions.get(choice);
+        };
     }
 }

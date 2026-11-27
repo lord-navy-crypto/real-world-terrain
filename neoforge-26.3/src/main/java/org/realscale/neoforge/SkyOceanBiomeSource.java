@@ -10,6 +10,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.biome.BiomeResolver;
 import net.minecraft.world.level.biome.Climate;
 import java.util.stream.Stream;
 
@@ -67,15 +68,14 @@ public final class SkyOceanBiomeSource extends BiomeSource {
     @Override protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(source.possibleBiomes().stream(),Stream.of(blossomIsle)).distinct();
     }
-    private String underlying(int x,int z,Climate.Sampler sampler) {
-        return oceanClassificationSource.getNoiseBiome(
-                    Math.floorDiv(x,4),16,Math.floorDiv(z,4),sampler)
+    private String underlying(int x,int z,BiomeResolver oceanResolver) {
+        return oceanResolver.getNoiseBiome(Math.floorDiv(x,4),16,Math.floorDiv(z,4))
                 .unwrapKey().map(k->{
                     var id=k.location();
                     return "minecraft".equals(id.getNamespace())?id.getPath():"";
                 }).orElse("");
     }
-    private int isolationTier(SkyIslandSiteCache.Entry site,Climate.Sampler sampler) {
+    private int isolationTier(SkyIslandSiteCache.Entry site,BiomeResolver oceanResolver) {
         if(site.tier>=0)return site.tier;
         int value=SkyIslandLayout.oceanTier(site.base(),
                 (x,z)->{
@@ -86,17 +86,24 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         site.tier=value;
         return value;
     }
-    @Override public Holder<Biome> getNoiseBiome(int quartX,int quartY,int quartZ,
-                                                  Climate.Sampler sampler) {
-        if(!DensityPerfSampler.ENABLED)
-            return getNoiseBiomeUnprofiled(quartX,quartY,quartZ,sampler);
-        long start=DensityPerfSampler.begin(DensityPerfSampler.Stage.SKY_BIOME);
-        try{return getNoiseBiomeUnprofiled(quartX,quartY,quartZ,sampler);}
-        finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.SKY_BIOME,start);}
+    @Override public BiomeResolver createResolver(Climate.Sampler sampler) {
+        BiomeResolver sourceResolver = source.createResolver(sampler);
+        BiomeResolver oceanResolver = oceanClassificationSource.createResolver(sampler);
+        return (quartX, quartY, quartZ) -> {
+            if (!DensityPerfSampler.ENABLED)
+                return getNoiseBiomeUnprofiled(quartX, quartY, quartZ, sampler, sourceResolver, oceanResolver);
+            long start = DensityPerfSampler.begin(DensityPerfSampler.Stage.SKY_BIOME);
+            try {
+                return getNoiseBiomeUnprofiled(quartX, quartY, quartZ, sampler, sourceResolver, oceanResolver);
+            } finally {
+                DensityPerfSampler.finish(DensityPerfSampler.Stage.SKY_BIOME, start);
+            }
+        };
     }
 
     private Holder<Biome> getNoiseBiomeUnprofiled(
-            int quartX,int quartY,int quartZ,Climate.Sampler sampler) {
+            int quartX,int quartY,int quartZ,Climate.Sampler sampler,
+            BiomeResolver sourceResolver,BiomeResolver oceanResolver) {
         // Explicit identity delegation for ocean, seabed, ocean structures and
         // even tall surface mountain biomes that do not contain an island.
         int y=quartY*4;
@@ -104,7 +111,7 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         // offsets and the -13/+8 biome interval) lies within 167..214.
         // Outside this proven envelope, preserve underlying biome directly.
         if(y<SkyIslandLayout.MIN_BIOME_Y||y>SkyIslandLayout.MAX_BIOME_Y)
-            return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
+            return sourceResolver.getNoiseBiome(quartX,quartY,quartZ);
         int x=quartX*4,z=quartZ*4;
         EligibilityCache state=cache.get();
         state.prepare(sampler);
@@ -114,7 +121,7 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         // Reject the overwhelming majority of distant quart queries before
         // hashing/allocating the five candidate island Site records.
         if(!SkyIslandLayout.mayIntersectIslands(base,x,z))
-            return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
+            return sourceResolver.getNoiseBiome(quartX,quartY,quartZ);
         // Reject most positions without computing a single remote-climate ring.
         // Only the central island needs a remote-ocean eligibility scan
         // before satellite checks. Once resolved, a tier 1/2 site skips
@@ -125,11 +132,11 @@ public final class SkyOceanBiomeSource extends BiomeSource {
             SkyIslandLayout.Site island=site.satellite(slot);
             if(!SkyIslandLayout.insideBiome(island,x,y,z))continue;
             if(tier<0){
-                tier=isolationTier(site,sampler);
+                tier=isolationTier(site,oceanResolver);
                 eligibleSlots=SkyIslandLayout.countForTier(tier);
             }
             if(slot<eligibleSlots)return blossomIsle;
         }
-        return source.getNoiseBiome(quartX,quartY,quartZ,sampler);
+        return sourceResolver.getNoiseBiome(quartX,quartY,quartZ);
     }
 }
