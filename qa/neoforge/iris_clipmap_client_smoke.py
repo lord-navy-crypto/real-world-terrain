@@ -922,6 +922,9 @@ def move_camera_to_baseline(
         finally:
             subprocess.run(["xdotool", "keyup", "a"], check=False, timeout=10)
 
+        # Allow at least one telemetry interval after key release so the
+        # accepted sample cannot describe motion during the key hold.
+        time.sleep(1.15)
         # Accept only a sample whose JVM-monotonic timestamp is newer than the
         # last sample. This separates stale log tails from a fresh zero-motion tick.
         sample = wait_for_camera_sample_after(
