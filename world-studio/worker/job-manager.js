@@ -160,18 +160,19 @@ export class WorldExportJobManager {
           throw error;
         }
         return this.runner(job.request, {
-        jobId: id,
-        signal: job.controller.signal,
-        onProgress: update => {
-          if (job.status !== "running" || !update || typeof update !== "object") return;
-          if (Number.isFinite(update.percent)) {
-            job.progress = Math.max(job.progress, Math.min(99, Math.max(0, update.percent)));
+          jobId: id,
+          signal: job.controller.signal,
+          onProgress: update => {
+            if (job.status !== "running" || !update || typeof update !== "object") return;
+            if (Number.isFinite(update.percent)) {
+              job.progress = Math.max(job.progress, Math.min(99, Math.max(0, update.percent)));
+            }
+            if (typeof update.stage === "string") job.stage = update.stage;
+            if (typeof update.message === "string") job.message = update.message.slice(0, 240);
+            job.updatedAt = new Date().toISOString();
           }
-          if (typeof update.stage === "string") job.stage = update.stage;
-          if (typeof update.message === "string") job.message = update.message.slice(0, 240);
-          job.updatedAt = new Date().toISOString();
-        }
-      }))
+        });
+      })
       .then(result => {
         if (job.controller.signal.aborted) {
           job.status = "cancelled";
