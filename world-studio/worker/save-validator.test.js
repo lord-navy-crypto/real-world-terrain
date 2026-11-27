@@ -135,3 +135,23 @@ test("rejects invalid region sector offsets", async t => {
     /outside its region file/
   );
 });
+
+
+test("rejects valid compressed chunk NBT stored in the wrong region slot", async t => {
+  const world = await createWorld();
+  t.after(() => fs.rm(world, { recursive: true, force: true }));
+  const compressed = deflateSync(chunkNbt(9, 9));
+  const chunkLength = compressed.length + 1;
+  const sectors = Math.ceil((chunkLength + 4) / 4096);
+  const region = Buffer.alloc((2 + sectors) * 4096);
+  region.writeUIntBE(2, 0, 3);
+  region.writeUInt8(sectors, 3);
+  region.writeUInt32BE(chunkLength, 2 * 4096);
+  region.writeUInt8(2, 2 * 4096 + 4);
+  compressed.copy(region, 2 * 4096 + 5);
+  await fs.writeFile(path.join(world, "region", "r.0.0.mca"), region);
+  await assert.rejects(
+    validateWorldSave(world, { seed: "test", widthChunks: 1, depthChunks: 1 }),
+    /mismatched coordinates/
+  );
+});
