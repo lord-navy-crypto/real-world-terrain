@@ -1,116 +1,129 @@
-# RealScale World Studio
+# RealScale World Studio 0.5.0
 
-A browser-first world creation interface for the RealScale project.
+A browser-first world creation interface with a local, real Minecraft/NeoForge world-export worker.
 
-## Current MVP
+## Current capabilities
 
-- Deterministic seed input and random seed generation.
-- Square world footprints from 4 km to 64 km.
-- Natural Automate-inspired terrain preview.
-- Browser-side relief and biome views.
-- Elevation inspection, land coverage, and elevation range.
-- Downloadable PNG map previews (image export only; not a playable Minecraft save).
-- Downloadable CSV elevation grids with X/Z sample coordinates, estimated height, temperature/humidity indices, seed, and footprint metadata.
-- Square map rendering so the displayed geometry preserves the selected square footprint.
-- Module Web Worker terrain sampling with live progress and cooperative cancellation; environments without Worker support use a frame-batched main-thread fallback.
-- Frame-batched Canvas shading, with worker-result validation and stale-request protection.
-- No executable downloads, launcher integration, or local filesystem access.
-- A visible compute-mode indicator and a cancel control for active generation.
-- Shareable settings URLs that restore the seed, preview footprint, relief multiplier, and relief/biome view.
+- Deterministic browser preview seed and random seed generation.
+- Preview footprints from 4 km to 64 km; this controls the visual preview only.
+- Relief, biome, and interactive isometric 3D surface views.
+- 384 × 384 browser terrain samples, elevation inspection, land coverage, and estimated elevation range.
+- PNG image export and CSV export of estimated browser samples.
+- Module Web Worker sampling with progress, cancellation, stale-result protection, and a main-thread fallback.
+- Shareable preview URLs that restore seed, preview footprint, relief multiplier, and view.
+- Local world-export UI connected to a loopback-only Node API.
+- Real Minecraft 1.21.1 + NeoForge 21.1.249 + RealScale 2.0.0-preview.2-test.12 server-side generation.
+- Bounded Anvil chunk generation, NBT/region validation, ZIP packaging, export manifest, and SHA-256 checksum.
 
-## Important generation boundary
+## Browser preview is not Minecraft world generation
 
-The current browser preview is a **visual terrain preview**, not a byte-for-byte reproduction of Minecraft world generation. It ports the six fitted morphology kernels and Natural Automate suitability/cross-fade logic from the RealScale TerrainArchetypeMath implementation, while using deterministic browser noise fields as preview inputs.
+The browser preview is a visual model, not a byte-for-byte reproduction of Minecraft world generation. It ports RealScale's fitted morphology kernels and deterministic site geometry, while using browser-side preview noise for its base continental field, regional selector, temperature, and humidity.
 
-The production RealScale worldgen also depends on Minecraft's seeded density functions, vanilla noise registries, climate sampling, biome source, surface rules, feature placement, and the current NeoForge runtime. The preview must not be presented as an exact world-save or as a validated playable Minecraft world.
+Production world generation also depends on Minecraft's seeded density functions, registered noise fields, climate sampler, biome source, surface rules, feature placement, and the NeoForge runtime. Matching seeds do not guarantee matching browser-preview elevations and generated Minecraft blocks. Preview elevations are estimates, not authoritative block heights or biome IDs.
 
-## Planned architecture
+The server-side export does use the actual pinned Minecraft/NeoForge runtime and writes real Anvil chunks. It is a separate generation path, not a conversion of the browser's PNG or CSV.
 
-1. Web preview — seed, map dimensions, terrain controls, and interactive map inspection.
-2. Server-side generation worker — run a pinned Minecraft + RealScale server build in an isolated job/container; create a fresh world from the requested seed and approved settings.
-3. Validation — confirm level.dat, region files, expected world preset, generation logs, and a successful clean reopen before packaging.
-4. World export — produce a ZIP containing a normal Minecraft save folder. No executable or installer is required.
-5. Community gallery — publish user-submitted worlds with metadata, checksums, moderation, size limits, and malware scanning.
+## Real Minecraft export MVP
 
-The Vercel site should remain a control plane and preview renderer. Long-running Minecraft world generation and large file packaging should run on a separate worker/storage service, not inside a short-lived serverless request.
+The local worker currently:
 
-## Development
+1. Validates the seed, allowlisted world preset, center, and chunk dimensions.
+2. Temporarily configures the repository's NeoForge runServer environment with a unique world name and a private loopback RCON endpoint.
+3. Starts the actual NeoForge dedicated server and selects the requested RealScale world preset through level-type.
+4. Uses RCON to force-load and verify each requested chunk in the Overworld.
+5. Removes the temporary force-load tickets, runs save-all flush, and stops the server.
+6. Validates level.dat, the Minecraft DataVersion, Anvil region headers, chunk sector bounds, compressed chunk NBT, and the presence of every requested chunk.
+7. Packages the world folder and realscale-export.json into a ZIP, then computes its SHA-256 checksum.
 
-Run `npm install`, then `npm run dev`. Run `npm test` for deterministic terrain-core and browser-runtime smoke checks, and `npm run build` to create the production bundle.
+### Current export limits
 
-## Security principles
+- One active Minecraft server job at a time; up to three additional jobs may wait in the in-memory queue.
+- Maximum 256 chunks per export, matching Minecraft's force-load ticket budget.
+- UI presets: 4 × 4, 8 × 8, 12 × 12, or 16 × 16 chunks.
+- The current export center is block coordinate X=0, Z=0.
+- The selected browser preview footprint (4–64 km) is not the generated save size.
+- The browser relief slider affects the preview only. The export selects an existing, allowlisted RealScale world preset.
+- Jobs are held in memory and are not recovered after a worker restart.
 
-- The browser preview is client-side and does not upload the seed or local files.
-- Never accept or execute user-supplied JARs, scripts, datapacks, or arbitrary server plugins in the generation worker.
-- Only generate worlds using a pinned, signed-off RealScale server image and allowlisted options.
-- Apply quotas, timeouts, disk limits, checksums, and cleanup to generation jobs.
-- Treat community uploads as untrusted files; validate archive paths and scan before publication.
+### Compatibility boundary
 
+The ZIP contains a normal Minecraft save folder, not an installer or executable. The generated world currently requires:
 
-## Full-world generation budget
+- Minecraft Java 1.21.1
+- NeoForge 21.1.249
+- RealScale 2.0.0-preview.2-test.12
+- The matching client-side YACL dependency required by the RealScale mod metadata (Yet Another Config Lib 3.8.1+1.21.1)
 
-The size selector currently controls the browser preview footprint, not a promise that every chunk in that square will be pre-generated. At the project's approximate 1 block = 1 metre horizontal scale, fully pre-generating a square area would require:
+**Vanilla compatibility is not implemented or claimed.** RealScale registers custom density-function codecs, biome sources, dimension types, and biome IDs. A vanilla-compatible compatibility-bake stage and clean vanilla reopen test remain future work.
 
-| Side length | Chunk width | Total chunks |
-|---|---:|---:|
-| 4 km | 256 | 65,536 |
-| 8 km | 512 | 262,144 |
-| 16 km | 1,024 | 1,048,576 |
-| 32 km | 2,048 | 4,194,304 |
-| 64 km | 4,096 | 16,777,216 |
+## Local development
 
-The production export service must enforce an explicit chunk budget, disk quota, generation timeout, and archive-size limit. Larger maps should be treated as preview extents or split into controlled generation jobs; the browser must never imply that a 64 km save has already been generated just because its preview rendered.
+### Prerequisites
 
+- Node.js 20 or newer
+- Java 21
+- Gradle 8.14.3 recommended (the CI worldgen workflow uses this version)
+- Python 3.9 or newer for the NeoForge build's deterministic resource-generation tasks
 
-## Vanilla-compatible export is a validation requirement
+Stop any existing gradle runClient or gradle runServer session using neoforge/run/server before starting an export. The worker temporarily writes server.properties and eula.txt in that run directory, then restores their original contents. A lock prevents two export workers from sharing the same run directory.
 
-The goal is to let players open an exported save without installing the RealScale client mod. This is not guaranteed merely by generating chunks on a modded server: the current worldgen includes custom density-function codecs and custom biome/registry identifiers.
+Open two terminals:
 
-The export worker therefore needs a separate compatibility-bake stage:
-- Generate the selected area with a pinned RealScale server runtime.
-- Pre-generate only the approved chunk budget and set a matching world border.
-- Convert or remap any mod-specific biome/registry references that vanilla cannot resolve; preserve the already-generated block terrain.
-- Replace mod-specific generator metadata with a vanilla-loadable configuration where required.
-- Reopen the exported archive with an unmodified vanilla server/client and verify there are no missing registry, codec, or data-pack errors before marking it downloadable.
+**Terminal A — real Minecraft worker**
 
-Do not advertise vanilla compatibility until this clean vanilla reopen test passes for the exact Minecraft version being exported.
+\`\`\`bash
+cd world-studio
+npm install
+npm run worker
+\`\`\`
 
+The worker binds only to 127.0.0.1:4174. It is intentionally not a public HTTP service.
 
-## Preview parity boundary
+**Terminal B — browser interface**
 
-The browser preview now mirrors the six fitted morphology coefficient sets and the deterministic volcanic/karst site geometry used by the Java terrain kernels. The site-center hash uses the same 64-bit world-absolute mixing and cell-offset rules as `MountainReliefMath`; the Java block-coordinate truncation behavior is also mirrored for these kernels.
+\`\`\`bash
+cd world-studio
+npm run dev
+\`\`\`
 
-The browser preview is still not an exact Minecraft world-generation replica. Its base continental field, original height signal, regional selector, temperature, and humidity are generated from browser-side deterministic FBM noise. The production server instead samples Minecraft's registered density/noise fields, including the Natural Automate smoothed height signal, continental field, erosion/offset selectors, and shifted temperature/vegetation noise. The production noise router also applies its own vertical density gradient, surface rules, biome source, and feature placement. Therefore preview elevations are explicitly estimates, not authoritative block heights, and matching seeds do not yet guarantee matching terrain.
+Open the local Vite address shown in the terminal. Vite proxies /api requests to the loopback worker.
 
-The next parity gate is a fixed-seed server comparison: sample identical X/Z coordinates from the actual NeoForge worldgen runtime, export the resulting surface heights and biome IDs as a reference fixture, and compare the browser preview against that fixture. Do not label the preview exact until those measured differences are within a documented tolerance.
+### Checks
 
+\`\`\`bash
+npm test
+npm run build
+npm run worker:check
+\`\`\`
 
-## Data export boundary
-The CSV export contains the complete 384 × 384 browser preview sample grid. Elevation and climate columns are estimated browser-model values, not authoritative Minecraft block heights or biome IDs. The file includes X/Z coordinates in blocks, the seed, and preview footprint so the samples can be inspected in a spreadsheet or GIS workflow without implying a playable-world export.
+### Worker configuration
 
-Relief/biome view switching reuses the already sampled height and climate arrays and only re-renders the map colors. It does not run the terrain sampler again.
+- REALSCALE_NEOFORGE_DIR: override the default ../neoforge project path.
+- REALSCALE_GRADLE_BIN: override the gradle executable.
+- REALSCALE_EXPORT_ROOT: change where job ZIPs and server logs are written (default: world-studio/exports).
+- REALSCALE_WORKER_PORT: change the local worker port (default: 4174).
+- REALSCALE_SERVER_STARTUP_TIMEOUT_MS: server boot timeout.
+- REALSCALE_GENERATION_TIMEOUT_MS: overall chunk-generation timeout.
+- REALSCALE_CHUNK_TIMEOUT_MS: per-chunk load timeout.
 
-CSV generation is split into animation-frame batches so the full sample grid can be exported without building all rows in one long browser task. Switching between relief and biome views reuses the same sampled arrays and only re-renders colors.
+The worker rejects non-loopback bind addresses. Do not expose it directly to the public internet. Public deployment needs authentication, durable job state, resource quotas, isolated runtime storage, and a separate long-running worker service.
 
+## Security and data boundaries
 
-## Browser compute lifecycle
+- User-provided JARs, scripts, datapacks, and arbitrary server plugins are never executed.
+- World presets are allowlisted; the browser cannot submit arbitrary level-type values or server commands.
+- Seed text is bounded and rejects control characters before it reaches server.properties.
+- The Minecraft server and RCON listener bind to loopback only; RCON uses a random per-job password.
+- The worker serializes jobs because the Gradle run directory is shared.
+- Save validation rejects symlinks, malformed NBT, invalid Anvil sector offsets, unsupported chunk compression, and missing requested chunks.
+- ZIP packaging rejects symlinks, unsafe paths, oversized files, and ZIP32 overflow.
+- Only the world folder and export manifest are packaged. Server logs remain outside the downloadable save.
 
-The default preview path creates a Vite module Web Worker and sends a request-scoped seed, footprint, relief scale, and sample resolution. The worker validates its inputs before allocating arrays, computes terrain in short row batches, reports progress, and transfers the three Float32Array buffers back to the page. The main thread validates the returned array types, lengths, seed, footprint, and summary metadata before rendering.
+## Next engineering gates
 
-Generation can be cancelled while sampling or while the Canvas is rendering. Request IDs prevent late results from an older generation from replacing the current map. The last completed map remains available if a newer generation is cancelled. If Worker construction or execution fails, the app terminates the failed worker and switches to its frame-batched local sampler.
-
-The worker moves terrain sampling off the UI thread; Canvas rendering and map inspection remain on the main thread. The preview continues to use deterministic browser-side noise inputs and is not an exact Minecraft noise-router or playable-save export.
-
-
-## Shareable preview configurations
-
-The Share action creates a URL containing only the preview configuration: seed text, footprint, relief multiplier, and selected map view. Opening that URL validates each value against the supported controls, restores valid settings, and starts a fresh deterministic preview. Unknown query parameters and the URL fragment are preserved. Invalid or out-of-range values fall back independently to the page defaults.
-
-The URL does not contain a generated Minecraft save, server-side job, or uploaded map. It is a reproducible recipe for rebuilding the same browser preview.
-
-
-## Isometric 3D terrain view
-
-The 3D tab builds a 97 × 97 decimated surface mesh from the existing 384 × 384 height/climate samples. Canvas 2D draws depth-sorted terrain facets with relief colors and slope shading. Drag rotates the surface, vertical drag adjusts camera pitch, the wheel zooms, and Reset restores the default camera. The view reuses the current map and does not start another terrain-sampling job.
-
-The 3D view is an isometric surface visualization, not a full WebGL scene or Minecraft runtime render. The 2D point inspector remains available in Relief and Biomes modes; projected 3D screen coordinates are not presented as direct world X/Z coordinates. PNG export captures the currently selected view, and share links can restore the 3D mode.
+1. Add a server-side chunk-baking scheduler for areas larger than the 256-chunk MVP limit.
+2. Persist job state and recover interrupted jobs safely.
+3. Add deeper Anvil/NBT and clean-reopen integration tests against the exact NeoForge server.
+4. Investigate a compatibility-bake path for vanilla clients; do not promise it until the exact exported ZIP opens in an unmodified vanilla runtime.
+5. Compare fixed-seed server-generated height/biome samples against the browser preview and document measured parity.
+6. Build a separately authenticated public worker and storage service. Deployment is intentionally out of scope for this code phase.
