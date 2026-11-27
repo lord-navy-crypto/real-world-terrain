@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { createWriteStream } from "node:fs";
+import { once } from "node:events";
 import { createInterface } from "node:readline";
 import { randomBytes, randomUUID } from "node:crypto";
 import net from "node:net";
@@ -274,7 +276,11 @@ export async function runMinecraftExport(input, {
   const jobDirectory = path.resolve(exportRoot, id);
   await fs.mkdir(jobDirectory, { recursive: true });
   const logPath = path.join(jobDirectory, "minecraft-server.log");
-  const logStream = await fs.open(logPath, "wx");
+  const logStream = createWriteStream(logPath, { flags: "wx", mode: 0o600 });
+  await Promise.race([
+    once(logStream, "open"),
+    once(logStream, "error").then(([error]) => Promise.reject(error))
+  ]);
   const worldName = "realscale-export-" + id.replace(/-/gu, "").slice(0, 16).toLowerCase();
   const worldDirectory = path.join(runDirectory, worldName);
   const propertiesPath = path.join(runDirectory, "server.properties");
@@ -461,7 +467,10 @@ export async function runMinecraftExport(input, {
     if (child && (child.exitCode !== null || child.signalCode !== null)) {
       await fs.rm(worldDirectory, { recursive: true, force: true }).catch(() => {});
     }
-    await logStream.close().catch(() => {});
+    if (!logStream.closed) {
+      logStream.end();
+      await once(logStream, "close").catch(() => {});
+    }
     await lock.close().catch(() => {});
     await fs.rm(lockPath, { force: true }).catch(() => {});
   }
