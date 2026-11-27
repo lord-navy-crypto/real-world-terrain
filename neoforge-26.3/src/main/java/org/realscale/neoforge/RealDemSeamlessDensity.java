@@ -3,8 +3,13 @@ package org.realscale.neoforge;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.KeyDispatchDataCodec;
-import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensitySampler;
+import net.minecraft.world.level.levelgen.densityfunction.DensityBuffer;
+import net.minecraft.world.level.levelgen.densityfunction.DensityVolume;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
+import net.minecraft.world.level.levelgen.densityfunction.DfRewriteRule;
+import net.minecraft.util.Interval;
 
 /**
  * Opt-in repaired USGS Big Sur DEM profile (new worlds only).
@@ -18,41 +23,44 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * grid-cell cusps, and cannot overshoot the surrounding four source samples.
  */
 public record RealDemSeamlessDensity(DensityFunction base, int blendMeters)
-        implements DensityFunction.SimpleFunction {
+        implements DensityFunction {
     public static final MapCodec<RealDemSeamlessDensity> MAP_CODEC =
         RecordCodecBuilder.mapCodec(i -> i.group(
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(RealDemSeamlessDensity::base),
+            DensityFunction.CODEC.fieldOf("base").forGetter(RealDemSeamlessDensity::base),
             Codec.intRange(256,4096).fieldOf("blend_meters").forGetter(RealDemSeamlessDensity::blendMeters)
         ).apply(i,RealDemSeamlessDensity::new));
-    private static final KeyDispatchDataCodec<RealDemSeamlessDensity> DISPATCH =
-        KeyDispatchDataCodec.of(MAP_CODEC);
-
-    @Override public double compute(DensityFunction.FunctionContext ctx) {
+    public double compute(RealScaleDensityContext ctx) {
         if(!DensityPerfSampler.ENABLED)return computeUnprofiled(ctx);
         long started=DensityPerfSampler.begin(DensityPerfSampler.Stage.REAL_DEM_SEAMLESS);
         try{return computeUnprofiled(ctx);}
         finally{DensityPerfSampler.finish(DensityPerfSampler.Stage.REAL_DEM_SEAMLESS,started);}
     }
 
-    private double computeUnprofiled(DensityFunction.FunctionContext ctx) {
+    private double computeUnprofiled(RealScaleDensityContext ctx) {
         int x=ctx.blockX(),z=ctx.blockZ();
         // The fade is exactly zero outside its circular support. Reject these
         // world columns before creating/probing a large per-worker DEM cache.
         if(RealDemSeamlessMath.outsideFadeRegion(x,z,blendMeters))
-            return base.compute(ctx);
+            return ctx.compute(base);
         RealDemSeamlessMath.ColumnSample sample=
                 RealDemSeamlessMath.cachedColumnSample(x,z,blendMeters);
         double w=sample.weight;
-        if (w<=0.0) return base.compute(ctx);
+        if (w<=0.0) return ctx.compute(base);
         double solid=(sample.height-ctx.blockY())/128.0;
         if (w>=1.0) return solid;
-        return solid*w + base.compute(ctx)*(1.0-w);
+        return solid*w + ctx.compute(base)*(1.0-w);
     }
 
-    @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {
-        return visitor.apply(new RealDemSeamlessDensity(base.mapAll(visitor),blendMeters));
+        @Override public DensitySampler compileSampler(DensityFunction.CompileContext context) {
+        return RealScaleDensitySamplerSupport.compile(context, new DensityFunction[]{base}, this::compute);
     }
-    @Override public double minValue(){return Math.min(-100.0,base.minValue());}
-    @Override public double maxValue(){return Math.max(100.0,base.maxValue());}
-    @Override public KeyDispatchDataCodec<? extends DensityFunction> codec(){return DISPATCH;}
+    @Override public Interval range() { return Interval.INFINITE; }
+    @Override public int domainAxes() { return DensityFunction.ALL_AXES; }
+
+@Override public DensityFunction rewriteChildren(DfRewriteRule rule) {
+        return new RealDemSeamlessDensity(rule.rewrite(base),blendMeters);
+    }
+    
+    
+    @Override public MapCodec<? extends DensityFunction> codec(){return MAP_CODEC;}
 }
