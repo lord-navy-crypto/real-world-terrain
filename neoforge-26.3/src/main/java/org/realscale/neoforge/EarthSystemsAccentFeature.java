@@ -1,20 +1,24 @@
 package org.realscale.neoforge;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
 /**
  * Grounded, single-column vanilla-block accents for named geological habitats.
  * These are NOT substitutes for basin hydrology, lava-flow simulation,
  * multi-chunk erosion or a climate model. Existing block/fluid states remain
  * unchanged; only empty air above compatible natural substrates is decorated.
  */
-public final class EarthSystemsAccentFeature extends Feature<NoneFeatureConfiguration> {
+public final class EarthSystemsAccentFeature implements Feature {
+    public static final MapCodec<EarthSystemsAccentFeature> MAP_CODEC = RealScaleFeatureCodecs.enumField("kind", Kind.class, EarthSystemsAccentFeature::new, feature -> feature.kind);
+    @Override public MapCodec<? extends Feature> codec() { return MAP_CODEC; }
+
     public enum Kind {
         COLD_DESERT, ROCKY_PLATEAU, SALT_PLAYA, CLOUD_FOREST, ALLUVIAL_FAN,
         VOLCANIC_HIGHLAND, BADLANDS, YARDANG, KARST, GLACIAL,
@@ -23,12 +27,11 @@ public final class EarthSystemsAccentFeature extends Feature<NoneFeatureConfigur
     private final Kind kind;
 
     public EarthSystemsAccentFeature(Kind kind) {
-        super(NoneFeatureConfiguration.CODEC);
         this.kind = kind;
     }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    private boolean placeLegacy(RealScaleFeatureContext context) {
         if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
         WorldGenLevel world = context.level();
         BlockPos position = context.origin();
@@ -141,4 +144,11 @@ public final class EarthSystemsAccentFeature extends Feature<NoneFeatureConfigur
         }
         return true;
     }
+
+    @Override
+    public boolean place(WorldGenLevel level, ChunkGenerator chunkGenerator,
+                         RandomSource random, BlockPos origin) {
+        return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
+    }
+
 }

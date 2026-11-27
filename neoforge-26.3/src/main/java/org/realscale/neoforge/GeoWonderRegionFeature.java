@@ -1,14 +1,15 @@
 package org.realscale.neoforge;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
 /**
  * Chunk-local painter for continuous, rare multi-chunk surface wonder regions.
  * Site identity and footprint are deterministic in world coordinates, not
@@ -18,7 +19,10 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  * DEM/river/cave density functions. Never modifies fluids, water columns,
  * structures or neighboring chunks. RealScale world presets only.
  */
-public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfiguration> {
+public final class GeoWonderRegionFeature implements Feature {
+    public static final MapCodec<GeoWonderRegionFeature> MAP_CODEC = RealScaleFeatureCodecs.enumField("kind", Kind.class, GeoWonderRegionFeature::new, feature -> feature.kind);
+    @Override public MapCodec<? extends Feature> codec() { return MAP_CODEC; }
+
     public enum Kind {
         PLAYA_BASIN, ALLUVIAL_FAN, COLD_DESERT_PAVEMENT,
         HOODOO_AMPHITHEATER, TRAVERTINE_STEPS, MANGROVE_ESTUARY,
@@ -29,7 +33,6 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
     private final Kind kind;
 
     public GeoWonderRegionFeature(Kind kind) {
-        super(NoneFeatureConfiguration.CODEC);
         this.kind=kind;
     }
     private static long mix(long n) {return GeoWonderGeometry.mix(n);}
@@ -199,7 +202,7 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
         return placed;
     }
 
-    @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    @Override private boolean placeLegacy(RealScaleFeatureContext context) {
         if(!TVAWorldGuard.hasExperimentalWonders(context))return false;
         if(!context.level().getLevel().dimension().location().toString()
                 .equals("minecraft:overworld"))return false;
@@ -217,4 +220,11 @@ public final class GeoWonderRegionFeature extends Feature<NoneFeatureConfigurati
         }
         return placed;
     }
+
+    @Override
+    public boolean place(WorldGenLevel level, ChunkGenerator chunkGenerator,
+                         RandomSource random, BlockPos origin) {
+        return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
+    }
+
 }

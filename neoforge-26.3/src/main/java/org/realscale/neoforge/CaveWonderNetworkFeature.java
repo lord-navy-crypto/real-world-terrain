@@ -1,13 +1,14 @@
 package org.realscale.neoforge;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
 /**
  * Rare deterministic underground tubes following one continuous world-space
  * centerline. Every decorating chunk handles ONLY its own solid blocks.
@@ -16,13 +17,15 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  * A tube is a short karst solution passage or cooled volcanic conduit,
  * not a replacement for the existing large TVA cave-density networks.
  */
-public final class CaveWonderNetworkFeature extends Feature<NoneFeatureConfiguration> {
+public final class CaveWonderNetworkFeature implements Feature {
+    public static final MapCodec<CaveWonderNetworkFeature> MAP_CODEC = RealScaleFeatureCodecs.enumField("kind", Kind.class, CaveWonderNetworkFeature::new, feature -> feature.kind);
+    @Override public MapCodec<? extends Feature> codec() { return MAP_CODEC; }
+
     public enum Kind { LAVA_TUBE, KARST_PASSAGE }
     private final Kind kind;
     private static final int CELL=256;
     private CaveWonderNetworkFeature.Kind type(){return kind;}
     public CaveWonderNetworkFeature(Kind kind) {
-        super(NoneFeatureConfiguration.CODEC);
         this.kind=kind;
     }
     private static long mix(long n) {
@@ -50,7 +53,7 @@ public final class CaveWonderNetworkFeature extends Feature<NoneFeatureConfigura
                     return false;
         return true;
     }
-    @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    @Override private boolean placeLegacy(RealScaleFeatureContext context) {
         if(!TVAWorldGuard.hasExperimentalWonders(context))return false;
         WorldGenLevel w=context.level();
         if(!w.getLevel().dimension().location().toString().equals("minecraft:overworld"))
@@ -120,4 +123,11 @@ public final class CaveWonderNetworkFeature extends Feature<NoneFeatureConfigura
             }
         return any;
     }
+
+    @Override
+    public boolean place(WorldGenLevel level, ChunkGenerator chunkGenerator,
+                         RandomSource random, BlockPos origin) {
+        return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
+    }
+
 }

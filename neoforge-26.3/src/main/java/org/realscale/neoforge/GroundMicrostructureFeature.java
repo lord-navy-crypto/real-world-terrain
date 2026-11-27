@@ -1,16 +1,16 @@
 package org.realscale.neoforge;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
 /**
  * Rare, compact, ground-supported ecological structures for existing vanilla
  * biomes. These decorations NEVER dig, alter fluids or modify river channels.
@@ -18,17 +18,19 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  * <p>The entire footprint is validated before any block is placed. Invalid
  * sites leave the world unchanged, including when crossing a chunk border.</p>
  */
-public final class GroundMicrostructureFeature extends Feature<NoneFeatureConfiguration> {
+public final class GroundMicrostructureFeature implements Feature {
+    public static final MapCodec<GroundMicrostructureFeature> MAP_CODEC = RealScaleFeatureCodecs.enumField("kind", Kind.class, GroundMicrostructureFeature::new, feature -> feature.kind);
+    @Override public MapCodec<? extends Feature> codec() { return MAP_CODEC; }
+
     public enum Kind { OAK_LOG, SPRUCE_LOG, FOREST_HUMMOCK, UPLAND_SCREE, COASTAL_DRIFTWOOD }
     private final Kind kind;
 
     public GroundMicrostructureFeature(Kind kind) {
-        super(NoneFeatureConfiguration.CODEC);
         this.kind = kind;
     }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    private boolean placeLegacy(RealScaleFeatureContext context) {
         // Limit global NeoForge biome-modifier decorations to RealScale worlds.
         if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
         WorldGenLevel level = context.level();
@@ -150,4 +152,11 @@ public final class GroundMicrostructureFeature extends Feature<NoneFeatureConfig
         level.setBlock(c, Blocks.STONE.defaultBlockState(), 2);
         return true;
     }
+
+    @Override
+    public boolean place(WorldGenLevel level, ChunkGenerator chunkGenerator,
+                         RandomSource random, BlockPos origin) {
+        return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
+    }
+
 }

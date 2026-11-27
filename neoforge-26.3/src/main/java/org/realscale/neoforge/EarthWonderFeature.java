@@ -1,13 +1,14 @@
 package org.realscale.neoforge;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
 /**
  * Natural Wonders manufacturing batch B/C: eight small, real-world-inspired
  * geological structures. The larger landform shape still belongs to the
@@ -17,7 +18,10 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  * Only enabled by RealScale biome modifiers, overworld-only, chunk-local,
  * deterministic, and never carves solid natural ground or overwrites water.
  */
-public final class EarthWonderFeature extends Feature<NoneFeatureConfiguration> {
+public final class EarthWonderFeature implements Feature {
+    public static final MapCodec<EarthWonderFeature> MAP_CODEC = RealScaleFeatureCodecs.enumField("kind", Kind.class, EarthWonderFeature::new, feature -> feature.kind);
+    @Override public MapCodec<? extends Feature> codec() { return MAP_CODEC; }
+
     public enum Kind {
         HOODOO_SPIRES, TRAVERTINE_TERRACES, MANGROVE_TIDAL_ROOTS,
         COOLED_LAVA_FIELD, LAVA_TUBE_LINING, GLACIAL_MORAINE,
@@ -26,7 +30,6 @@ public final class EarthWonderFeature extends Feature<NoneFeatureConfiguration> 
     private final Kind kind;
 
     public EarthWonderFeature(Kind kind) {
-        super(NoneFeatureConfiguration.CODEC);
         this.kind = kind;
     }
 
@@ -87,7 +90,7 @@ public final class EarthWonderFeature extends Feature<NoneFeatureConfiguration> 
         return true;
     }
 
-    @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    @Override private boolean placeLegacy(RealScaleFeatureContext context) {
         if (!TVAWorldGuard.hasExperimentalWonders(context)) return false;
         WorldGenLevel world=context.level();
         if (!world.getLevel().dimension().location().toString().equals("minecraft:overworld"))
@@ -193,4 +196,11 @@ public final class EarthWonderFeature extends Feature<NoneFeatureConfiguration> 
                 && nativeFloor(floor)
                 && floor.isCollisionShapeFullBlock(world,under);
     }
+
+    @Override
+    public boolean place(WorldGenLevel level, ChunkGenerator chunkGenerator,
+                         RandomSource random, BlockPos origin) {
+        return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
+    }
+
 }
