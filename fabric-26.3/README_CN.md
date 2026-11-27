@@ -1,6 +1,8 @@
 # RealScale — Fabric 26.3
 
-这是面向 Minecraft Java **26.3** 的实验性迁移工作区，不是正式发布版本。\n\n**Fabric 和 NeoForge 两个版本都以 Minecraft 26.3 为目标，但 JAR 分别适用于对应加载器，不能互换。** Fabric 环境请使用 Fabric 构建产物。
+这是面向 Minecraft Java **26.3** 的实验性迁移工作区，不是正式发布版本。
+
+**Fabric 和 NeoForge 两个版本都以 Minecraft 26.3 为目标，但 JAR 分别适用于对应加载器，不能互换。** Fabric 环境请使用 Fabric 构建产物。
 
 ## 工具链
 
