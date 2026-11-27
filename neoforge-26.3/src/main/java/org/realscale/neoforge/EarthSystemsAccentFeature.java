@@ -1,8 +1,11 @@
 package org.realscale.neoforge;
 
+import net.minecraft.resources.Identifier;
+
 import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -122,7 +125,7 @@ public final class EarthSystemsAccentFeature implements Feature {
                         && (base.is(Blocks.SAND) || base.is(Blocks.CLAY)
                             || base.is(Blocks.TERRACOTTA))) {
                     material=Math.floorMod(x+z,5)==0
-                            ? Blocks.WHITE_TERRACOTTA.defaultBlockState()
+                            ? vanillaBlock("white_terracotta").defaultBlockState()
                             : Blocks.CALCITE.defaultBlockState();
                 } else if (kind==Kind.ALLUVIAL_FAN
                         && (base.is(Blocks.GRAVEL) || base.is(Blocks.SAND)
@@ -150,4 +153,9 @@ public final class EarthSystemsAccentFeature implements Feature {
         return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
     }
 
+
+    private static net.minecraft.world.level.block.Block vanillaBlock(String path) {
+        return BuiltInRegistries.BLOCK.get(Identifier.fromNamespaceAndPath("minecraft", path))
+                .orElseThrow().value();
+    }
 }

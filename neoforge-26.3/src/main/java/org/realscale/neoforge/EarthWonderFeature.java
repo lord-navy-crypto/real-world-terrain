@@ -1,8 +1,11 @@
 package org.realscale.neoforge;
 
+import net.minecraft.resources.Identifier;
+
 import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -38,7 +41,7 @@ public final class EarthWonderFeature implements Feature {
                 || state.is(Blocks.GRAVEL) || state.is(Blocks.SAND)
                 || state.is(Blocks.RED_SAND) || state.is(Blocks.SANDSTONE)
                 || state.is(Blocks.RED_SANDSTONE) || state.is(Blocks.TERRACOTTA)
-                || state.is(Blocks.ORANGE_TERRACOTTA) || state.is(Blocks.CALCITE)
+                || state.is(vanillaBlock("orange_terracotta")) || state.is(Blocks.CALCITE)
                 || state.is(Blocks.CLAY) || state.is(Blocks.MUD)
                 || state.is(Blocks.TUFF) || state.is(Blocks.BASALT)
                 || state.is(Blocks.SNOW_BLOCK);
@@ -47,7 +50,7 @@ public final class EarthWonderFeature implements Feature {
         return switch (kind) {
             case HOODOO_SPIRES -> temperature>=0.65f &&
                     (base.is(Blocks.RED_SANDSTONE) || base.is(Blocks.SANDSTONE)
-                    || base.is(Blocks.TERRACOTTA) || base.is(Blocks.ORANGE_TERRACOTTA));
+                    || base.is(Blocks.TERRACOTTA) || base.is(vanillaBlock("orange_terracotta")));
             case TRAVERTINE_TERRACES -> y>=65 && (base.is(Blocks.STONE)
                     || base.is(Blocks.CALCITE) || base.is(Blocks.ANDESITE));
             case MANGROVE_TIDAL_ROOTS -> y<=100 &&
@@ -203,4 +206,9 @@ public final class EarthWonderFeature implements Feature {
         return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
     }
 
+
+    private static net.minecraft.world.level.block.Block vanillaBlock(String path) {
+        return BuiltInRegistries.BLOCK.get(Identifier.fromNamespaceAndPath("minecraft", path))
+                .orElseThrow().value();
+    }
 }
