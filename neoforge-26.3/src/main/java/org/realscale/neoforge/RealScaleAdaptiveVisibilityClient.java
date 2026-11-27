@@ -10,10 +10,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 /**
  * Opt-in client-only exposure classifier. It never culls vanilla sections;
@@ -29,7 +25,6 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * or -Drealscale.experimental.client.underground_lod_culling=true
  * or BOTH experimental upload budget properties with modeaware=true
  */
-@EventBusSubscriber(modid="realscale", value=Dist.CLIENT)
 public final class RealScaleAdaptiveVisibilityClient {
     private RealScaleAdaptiveVisibilityClient(){}
 
@@ -66,10 +61,8 @@ public final class RealScaleAdaptiveVisibilityClient {
 
     private enum Exterior { NONE, VISIBLE, UNKNOWN }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick(Minecraft client) {
         if (!ACTIVE) return; // no client queries or sampling when both opt-ins are disabled
-        Minecraft client = Minecraft.getInstance();
         ClientLevel level = client.level;
         LocalPlayer player = client.player;
         if (level != lastLevel) {

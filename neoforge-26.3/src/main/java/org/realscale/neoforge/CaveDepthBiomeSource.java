@@ -10,7 +10,7 @@ import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
@@ -51,7 +51,7 @@ public final class CaveDepthBiomeSource extends BiomeSource {
                 default->throw new IllegalStateException("NONE is never target");
             };
             targets.put(region,biomes.getOrThrow(ResourceKey.create(Registries.BIOME,
-                    ResourceLocation.fromNamespaceAndPath("realscale",path))));
+                    Identifier.fromNamespaceAndPath("realscale",path))));
         }
         this.regions=Map.copyOf(targets);
     }

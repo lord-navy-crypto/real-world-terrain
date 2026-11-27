@@ -6,7 +6,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.Locale;
@@ -68,7 +68,7 @@ public final class GeographicClimateInspectorScreen extends Screen {
                 latitude, pos.getY(), minecraft.level.getDayTime());
         String biome = minecraft.level.getBiome(pos).unwrapKey()
                 .map(key -> key.location().toString()).orElse("unregistered biome");
-        ResourceLocation dimension = minecraft.level.dimension().location();
+        Identifier dimension = minecraft.level.dimension().location();
 
         report = new Report(
                 pos.getX(), pos.getY(), pos.getZ(),
