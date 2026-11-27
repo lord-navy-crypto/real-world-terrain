@@ -5,7 +5,7 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
@@ -351,7 +351,6 @@ public final class RiverChannelFeature implements Feature {
         return -1; // Unsupported / malformed Lab id: never place fluids
     }
 
-    @Override
     private boolean placeLegacy(RealScaleFeatureContext context) {
         // The common path adds only a constant false branch; no clock reads.
         if (!WorldgenProfiler.ENABLED) return placeUnprofiled(context);
@@ -374,14 +373,14 @@ public final class RiverChannelFeature implements Feature {
         // newly generated chunks may receive the two-layer stream.
         var settingsKey = noise.generatorSettings().unwrapKey();
         if (settingsKey.isEmpty()) return false;
-        ResourceLocation id = settingsKey.get().location();
+        Identifier id = settingsKey.get().location();
         if (!id.getNamespace().equals("realscale"))
             return false;
         int maxGrade = riverGradeForWorld(id.getPath());
         if (maxGrade <= 0) return false;
 
         WorldGenLevel level = context.level();
-        ChunkPos chunk = new ChunkPos(context.origin());
+        ChunkPos chunk = new ChunkPos(context.origin().getX() >> 4, context.origin().getZ() >> 4);
         int floor = Math.max(level.getMinBuildHeight() + 8, noise.getSeaLevel() + 6);
         boolean made = false;
         int highlandReaches = 0;

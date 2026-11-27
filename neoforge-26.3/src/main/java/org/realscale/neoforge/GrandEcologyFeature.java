@@ -57,7 +57,6 @@ public final class GrandEcologyFeature implements Feature {
         };
     }
 
-    @Override
     private boolean placeLegacy(RealScaleFeatureContext context) {
         // The common path adds only a constant false branch; no clock reads.
         if (!WorldgenProfiler.ENABLED) return placeUnprofiled(context);

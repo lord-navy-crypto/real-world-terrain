@@ -30,7 +30,6 @@ public final class EarthSystemsAccentFeature implements Feature {
         this.kind = kind;
     }
 
-    @Override
     private boolean placeLegacy(RealScaleFeatureContext context) {
         if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
         WorldGenLevel world = context.level();

@@ -53,7 +53,7 @@ public final class CaveWonderNetworkFeature implements Feature {
                     return false;
         return true;
     }
-    @Override private boolean placeLegacy(RealScaleFeatureContext context) {
+    private boolean placeLegacy(RealScaleFeatureContext context) {
         if(!TVAWorldGuard.hasExperimentalWonders(context))return false;
         WorldGenLevel w=context.level();
         if(!w.getLevel().dimension().location().toString().equals("minecraft:overworld"))

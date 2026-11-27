@@ -6,7 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.biome.Biome;
@@ -23,11 +23,10 @@ public final class SkyIslandFeature implements Feature {
     @Override public MapCodec<? extends Feature> codec() { return MAP_CODEC; }
 
     private static final ResourceKey<Biome> SKY = ResourceKey.create(Registries.BIOME,
-            ResourceLocation.fromNamespaceAndPath("realscale", "sky_blossom_isles"));
+            Identifier.fromNamespaceAndPath("realscale", "sky_blossom_isles"));
 
     public SkyIslandFeature() { }
 
-    @Override
     private boolean placeLegacy(RealScaleFeatureContext context) {
         // The common path adds only a constant false branch; no clock reads.
         if (!WorldgenProfiler.ENABLED) return placeUnprofiled(context);

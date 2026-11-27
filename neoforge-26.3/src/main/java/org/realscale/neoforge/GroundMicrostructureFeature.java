@@ -29,7 +29,6 @@ public final class GroundMicrostructureFeature implements Feature {
         this.kind = kind;
     }
 
-    @Override
     private boolean placeLegacy(RealScaleFeatureContext context) {
         // Limit global NeoForge biome-modifier decorations to RealScale worlds.
         if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
