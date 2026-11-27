@@ -791,46 +791,87 @@ def move_camera_until_horizontal_distance(
 def move_camera_to_baseline(
         proc, lines, start: int, baseline: tuple[float, float, float],
         tolerance: float = 8.0, timeout_seconds: float = 150.0) -> float:
-    """Return to the exact reference terrain area at normal spectator speed."""
+    """Return to the reference area with bounded key pulses and fresh telemetry."""
     started = time.monotonic()
     deadline = started + timeout_seconds
-    remaining = float("inf")
-    vertical_delta = float("inf")
-    subprocess.run(["xdotool", "keydown", "a"], check=True, timeout=10)
-    try:
-        while proc.poll() is None and time.monotonic() < deadline:
-            current = latest_camera_position("".join(lines[start:]))
-            if current is not None:
-                dx = current[0] - baseline[0]
-                dz = current[2] - baseline[2]
-                remaining = (dx * dx + dz * dz) ** 0.5
-                vertical_delta = abs(current[1] - baseline[1])
-                if remaining <= tolerance and vertical_delta <= 2.5:
-                    break
-            time.sleep(0.1)
-    finally:
-        subprocess.run(["xdotool", "keyup", "a"], check=False, timeout=10)
+    current = latest_camera_position("".join(lines))
+    if current is None:
+        raise RuntimeError("No camera position telemetry before return-to-baseline movement")
 
-    # Re-read telemetry after releasing the key so residual spectator motion
-    # cannot silently move the final screenshot away from the reference point.
-    time.sleep(1.0)
+    def distance_from_baseline(position):
+        dx = position[0] - baseline[0]
+        dz = position[2] - baseline[2]
+        return (dx * dx + dz * dz) ** 0.5
+
+    remaining = distance_from_baseline(current)
+    vertical_delta = abs(current[1] - baseline[1])
+    pulse_count = 0
+    while (remaining > tolerance or vertical_delta > 2.5) and proc.poll() is None:
+        if time.monotonic() >= deadline:
+            break
+        # Camera telemetry is emitted once per second. Long key holds can jump
+        # over the narrow return tolerance between samples, so shorten each
+        # movement pulse as the reference point gets closer.
+        if remaining > 128.0:
+            pulse_seconds = 0.35
+        elif remaining > 48.0:
+            pulse_seconds = 0.16
+        elif remaining > 16.0:
+            pulse_seconds = 0.06
+        else:
+            pulse_seconds = 0.04
+
+        subprocess.run(["xdotool", "keydown", "a"], check=True, timeout=10)
+        try:
+            time.sleep(pulse_seconds)
+        finally:
+            subprocess.run(["xdotool", "keyup", "a"], check=False, timeout=10)
+
+        # Wait for a telemetry tick after key release. The next position sample
+        # now describes a stopped camera, not a point midway through the pulse.
+        time.sleep(1.15)
+        updated = latest_camera_position("".join(lines[start:]))
+        if updated is None or updated == current:
+            telemetry_deadline = time.monotonic() + 1.5
+            while time.monotonic() < telemetry_deadline:
+                updated = latest_camera_position("".join(lines[start:]))
+                if updated is not None and updated != current:
+                    break
+                time.sleep(0.05)
+        if updated is None or updated == current:
+            raise RuntimeError("Camera telemetry did not advance after a bounded return pulse")
+
+        next_remaining = distance_from_baseline(updated)
+        if next_remaining > remaining + 2.0:
+            raise RuntimeError(
+                "Return pulse moved away from the reference viewport: "
+                f"before={remaining:.1f}, after={next_remaining:.1f}"
+            )
+        current = updated
+        remaining = next_remaining
+        vertical_delta = abs(current[1] - baseline[1])
+        pulse_count += 1
+
+    # One final fresh sample confirms that key release left the camera inside
+    # the same-location comparison window.
+    time.sleep(1.15)
     stopped = latest_camera_position("".join(lines[start:]))
     if stopped is not None:
-        dx = stopped[0] - baseline[0]
-        dz = stopped[2] - baseline[2]
-        remaining = (dx * dx + dz * dz) ** 0.5
-        vertical_delta = abs(stopped[1] - baseline[1])
+        current = stopped
+        remaining = distance_from_baseline(current)
+        vertical_delta = abs(current[1] - baseline[1])
 
     if remaining > tolerance or vertical_delta > 2.5:
         capture_screenshot("iris-clipmap-return-to-baseline-timeout")
         raise RuntimeError(
             "Smoke camera did not return to the reference viewport: "
             f"horizontal={remaining:.1f}/{tolerance:.1f} blocks, "
-            f"vertical_delta={vertical_delta:.1f}/2.5 blocks"
+            f"vertical_delta={vertical_delta:.1f}/2.5 blocks, pulses={pulse_count}"
         )
     print(
         f"CLIENT_CAMERA_RETURNED_TO_BASELINE: horizontal={remaining:.1f} "
-        f"vertical_delta={vertical_delta:.1f} elapsed={time.monotonic()-started:.1f}s",
+        f"vertical_delta={vertical_delta:.1f} pulses={pulse_count} "
+        f"elapsed={time.monotonic()-started:.1f}s",
         flush=True,
     )
     return remaining
