@@ -15,8 +15,8 @@ public final class ClipmapTriangleUv {
     private static final float UV_MAX = 14.0f;
     private static final float UV_RANGE = UV_MAX - UV_MIN;
     private static final float MIN_SPAN = 1.0e-6f;
-    // A one-pixel neutral-white patch keeps the Iris tangent basis non-degenerate
-    // without sampling the full noisy PBR sprite on every distant grid cell.
+    // A sub-texel neutral-white patch keeps the Iris tangent basis non-degenerate
+    // without sampling neighbouring PBR texels on every distant grid cell.
     private static final float NEUTRAL_UV_MIN = 7.4375f;
     private static final float NEUTRAL_UV_RANGE = 0.125f;
 
