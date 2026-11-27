@@ -248,7 +248,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     private static String vanillaId(Holder<Biome> holder) {
         return holder.unwrapKey().map(key -> {
-            Identifier location = key.location();
+            Identifier location = key.identifier();
             return "minecraft".equals(location.getNamespace()) ? location.getPath() : "";
         }).orElse("");
     }

@@ -71,7 +71,7 @@ public final class SkyOceanBiomeSource extends BiomeSource {
     private String underlying(int x,int z,BiomeResolver oceanResolver) {
         return oceanResolver.getNoiseBiome(Math.floorDiv(x,4),16,Math.floorDiv(z,4))
                 .unwrapKey().map(k->{
-                    var id=k.location();
+                    var id=k.identifier();
                     return "minecraft".equals(id.getNamespace())?id.getPath():"";
                 }).orElse("");
     }
@@ -79,10 +79,10 @@ public final class SkyOceanBiomeSource extends BiomeSource {
         if(site.tier>=0)return site.tier;
         int value=SkyIslandLayout.oceanTier(site.base(),
                 (x,z)->{
-                    String id=underlying(x,z,sampler);
+                    String id=underlying(x,z,oceanResolver);
                     return id.startsWith("deep_")&&id.endsWith("ocean");
                 },
-                (x,z)->underlying(x,z,sampler).endsWith("ocean"));
+                (x,z)->underlying(x,z,oceanResolver).endsWith("ocean"));
         site.tier=value;
         return value;
     }

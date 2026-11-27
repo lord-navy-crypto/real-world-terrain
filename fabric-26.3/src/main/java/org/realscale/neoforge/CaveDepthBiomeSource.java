@@ -67,8 +67,8 @@ public final class CaveDepthBiomeSource extends BiomeSource {
         return (x,y,z) -> {
             Holder<Biome> original = sourceResolver.getNoiseBiome(x,y,z);
             String id=original.unwrapKey().map(key->
-                    "minecraft".equals(key.location().getNamespace())
-                            ?key.location().getPath():"").orElse("");
+                    "minecraft".equals(key.identifier().getNamespace())
+                            ?key.identifier().getPath():"").orElse("");
             CaveBiomeRegionMath.Region choice=CaveBiomeRegionMath.select(x,y,z,id);
             return choice==CaveBiomeRegionMath.Region.NONE
                     ?original:regions.get(choice);
