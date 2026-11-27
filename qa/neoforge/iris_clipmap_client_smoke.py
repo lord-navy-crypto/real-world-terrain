@@ -812,7 +812,7 @@ def terrain_high_frequency_metrics(path: pathlib.Path) -> tuple[float, float]:
 def latest_camera_sample(output: str):
     """Return camera coordinates and the JVM-monotonic timestamp for the newest sample."""
     matches = re.findall(
-        r"CLIENT_CAMERA_POSITION:\\s*x=([-+0-9.]+)\\s+y=([-+0-9.]+)\\s+z=([-+0-9.]+)\\s+sampleNanos=(\\d+)",
+        r"CLIENT_CAMERA_POSITION:\s*x=([-+0-9.]+)\s+y=([-+0-9.]+)\s+z=([-+0-9.]+)\s+sampleNanos=(\d+)",
         output,
     )
     if not matches:
