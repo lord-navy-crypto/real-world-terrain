@@ -40,7 +40,7 @@ final class FabricBiomeModifiers {
                             for (String selector : selectors) {
                                 if (selector.startsWith("#")) {
                                     if (context.hasTag(TagKey.create(Registries.BIOME, Identifier.parse(selector.substring(1))))) return true;
-                                } else if (context.getBiomeKey().location().equals(Identifier.parse(selector))) return true;
+                                } else if (context.getBiomeKey().identifier().equals(Identifier.parse(selector))) return true;
                             }
                             return false;
                         }, step, ResourceKey.create(Registries.PLACED_FEATURE, Identifier.parse(feature)));

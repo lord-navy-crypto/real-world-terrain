@@ -54,7 +54,6 @@ public final class RealScaleMod implements ModInitializer {
         FabricBiomeModifiers.register();
         CommandRegistrationCallback.EVENT.register(
                 (dispatcher, access, environment) -> DhChunkyGuardCommands.registerCommands(dispatcher));
-        FabricServerSmoke.register();
         System.out.println("[RealScale] Fabric 1.21.1 registries initialized: 94 codecs/features.");
     }
 }
