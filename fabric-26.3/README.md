@@ -1,6 +1,8 @@
 # RealScale — Fabric 26.3
 
-Experimental migration workspace for Minecraft Java 26.3.
+Experimental migration workspace for Minecraft Java **26.3**. This is not a release build.
+
+## Toolchain
 
 - Minecraft **26.3** / Java **25**
 - Fabric Loader **0.20.1**
@@ -11,12 +13,25 @@ Experimental migration workspace for Minecraft Java 26.3.
 
 Build: `gradle --no-daemon -p fabric-26.3 clean build`
 
-This is not a release build. Its source baseline is copied from the validated Fabric 1.21.1 module. Required migration work:
-- [ ] DensityFunction / DensitySampler split
-- [ ] Feature registry and worldgen JSON migration
-- [ ] BiomeSource / BiomeResolver migration
-- [ ] Data-pack format 121.0 and generated pack metadata
-- [ ] Client and dedicated-server startup
-- [ ] Multi-seed new-world generation and terrain regression checks
+## Migration status — 2026-11-27
 
-Back up worlds before testing; do not use this experimental build for production saves.
+### Completed and CI-verified on Fabric and NeoForge
+
+- [x] `DensityFunction` / `DensitySampler` API migration.
+- [x] `BiomeSource` / `BiomeResolver` API migration.
+- [x] Feature registry and worldgen data migration:
+  - 11 custom feature codecs and 70 custom feature definitions.
+  - 38 vanilla feature definitions; 108 feature definitions total.
+  - 122 placed-feature definitions and 120 biome modifiers.
+  - 35 random-patch vegetation definitions migrated to `simple_block` features with count, offset, and predicate placement modifiers.
+  - Removed 106 obsolete 1.21 `configured_feature` JSON resources.
+- [x] All generated structure packs use data-pack format **121.0** metadata, including Architecture Pilot and Urban Districts.
+- [x] Worldgen resource-integrity tests pass for both loader modules.
+
+### Still pending
+
+- [ ] Client runtime smoke test and UI/render integration. The current Fabric client entrypoint is intentionally minimal; Studio screens, upload pacing, vehicle rendering, and 1.21.x mixins remain deferred until their 26.3 ports are validated.
+- [ ] Dedicated-server startup with the RealScale default world preset and runtime registry/resource smoke checks.
+- [ ] Multi-seed new-world generation and terrain regression checks.
+
+Back up worlds before testing. Do not use this experimental build for production saves.
