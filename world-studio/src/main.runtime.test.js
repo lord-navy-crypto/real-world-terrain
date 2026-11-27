@@ -17,6 +17,7 @@ function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported"
   let sampleCalls = 0;
   let renderedFrames = 0;
   let renderedTriangles = 0;
+  let submittedChunkCount = 64;
   let now = 0;
   let workerInstance = null;
 
@@ -197,13 +198,15 @@ function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported"
       }
       const id = "12345678-1234-1234-1234-123456789012";
       if (url === "/api/world-exports" && options.method === "POST") {
+        const submitted = JSON.parse(options.body);
+        submittedChunkCount = submitted.widthChunks * submitted.depthChunks;
         return {
           ok: true,
           status: 202,
           async json() {
             return { job: {
               id, status: "queued", stage: "queued", progress: 0,
-              message: "Queued", request: { chunkCount: 64 }
+              message: "Queued", request: { chunkCount: submittedChunkCount }
             } };
           }
         };
@@ -228,15 +231,15 @@ function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported"
           async json() {
             return { job: completed ? {
               id, status: "completed", stage: "completed", progress: 100,
-              message: "Ready", request: { chunkCount: 64 },
+              message: "Ready", request: { chunkCount: submittedChunkCount },
               result: {
                 archiveBytes: 2048,
-                validation: { verifiedChunks: 64 },
+                validation: { verifiedChunks: submittedChunkCount },
                 downloadUrl: "/api/world-exports/" + id + "/download"
               }
             } : {
               id, status: "running", stage: "generating", progress: 35,
-              message: "Generating", request: { chunkCount: 64 }
+              message: "Generating", request: { chunkCount: submittedChunkCount }
             } };
           }
         };
@@ -518,7 +521,7 @@ test("world export UI submits the selected seed and preset then exposes the vali
   assert.equal(request.preset, "alpine");
   assert.equal(request.widthChunks, 12);
   assert.equal(request.depthChunks, 12);
-  assert.equal(runtime.elements.get("#world-export-status").textContent, "World save ready · 64 chunks validated · 2.0 KB");
+  assert.equal(runtime.elements.get("#world-export-status").textContent, "World save ready · 144 chunks validated · 2.0 KB");
   assert.equal(runtime.elements.get("#download-world-export").hidden, false);
   assert.match(runtime.elements.get("#download-world-export").href, /\/download$/);
   assert.equal(runtime.elements.get("#create-world-export").disabled, false);
