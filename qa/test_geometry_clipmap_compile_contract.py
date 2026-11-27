@@ -511,7 +511,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("beach", palette)
         self.assertIn("snowCover", palette)
         self.assertNotIn("int materialRgb", native)
-        self.assertIn("one-pixel neutral patch", native)
+        self.assertIn("sub-texel neutral patch", native)
         self.assertNotIn("int minX = Math.min(gridX", native)
         self.assertNotIn("Math.floorMod(x, side)", native)
         self.assertEqual(5, native.count("VertexFormat.Mode.TRIANGLES, irisTerrainFormat"))
