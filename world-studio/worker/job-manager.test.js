@@ -125,6 +125,7 @@ test("worker shutdown cancels queued jobs and waits for the active server job", 
   });
   const active = manager.create({ seed: "shutdown-active" });
   const queued = manager.create({ seed: "shutdown-queued" });
+  await new Promise(resolve => setImmediate(resolve));
   const shutdown = manager.shutdown();
   assert.equal(manager.get(queued.id).status, "cancelled");
   await shutdown;
