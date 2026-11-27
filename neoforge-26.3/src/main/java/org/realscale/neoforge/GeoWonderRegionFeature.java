@@ -1,8 +1,11 @@
 package org.realscale.neoforge;
 
+import net.minecraft.resources.Identifier;
+
 import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -71,7 +74,7 @@ public final class GeoWonderRegionFeature implements Feature {
                     ||b.is(Blocks.SNOW_BLOCK)||b.is(Blocks.COARSE_DIRT);
             case HOODOO_AMPHITHEATER -> b.is(Blocks.TERRACOTTA)
                     ||b.is(Blocks.RED_SANDSTONE)||b.is(Blocks.SANDSTONE)
-                    ||b.is(Blocks.ORANGE_TERRACOTTA);
+                    ||b.is(vanillaBlock("orange_terracotta"));
             case TRAVERTINE_STEPS -> b.is(Blocks.STONE)
                     ||b.is(Blocks.ANDESITE)||b.is(Blocks.CALCITE);
             case MANGROVE_ESTUARY -> b.is(Blocks.MUD)||b.is(Blocks.CLAY);
@@ -121,14 +124,14 @@ public final class GeoWonderRegionFeature implements Feature {
     private BlockState material(int x,int z,long point,int layer) {
         int n=(int)Math.floorMod(point,10L);
         return switch(kind) {
-            case PLAYA_BASIN -> (n<7?Blocks.CALCITE:Blocks.WHITE_TERRACOTTA)
+            case PLAYA_BASIN -> (n<7?Blocks.CALCITE:vanillaBlock("white_terracotta"))
                     .defaultBlockState();
             case ALLUVIAL_FAN -> (n<6?Blocks.GRAVEL:n<8?Blocks.COARSE_DIRT:
                     Blocks.SAND).defaultBlockState();
             case COLD_DESERT_PAVEMENT -> (n<6?Blocks.GRAVEL:Blocks.ANDESITE)
                     .defaultBlockState();
             case HOODOO_AMPHITHEATER -> (layer%3==0?Blocks.RED_SANDSTONE:
-                    layer%3==1?Blocks.TERRACOTTA:Blocks.ORANGE_TERRACOTTA)
+                    layer%3==1?Blocks.TERRACOTTA:vanillaBlock("orange_terracotta"))
                     .defaultBlockState();
             case TRAVERTINE_STEPS -> Blocks.CALCITE.defaultBlockState();
             case MANGROVE_ESTUARY -> Blocks.MANGROVE_ROOTS.defaultBlockState();
@@ -167,7 +170,7 @@ public final class GeoWonderRegionFeature implements Feature {
                 if(u*u+(v+lobe)*(v+lobe)>0.80)continue;
             }
             int y=w.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
-            if(y<=w.getMinBuildHeight()+8||y>=w.getMaxBuildHeight()-9)continue;
+            if(y<=w.getMinY()+8||y>=w.getMaxY()-9)continue;
             if(kind==Kind.PLAYA_BASIN&&y>135)continue;
             if((kind==Kind.MANGROVE_ESTUARY||kind==Kind.DELTA_DISTRIBUTARIES)&&y>97)
                 continue;
@@ -227,4 +230,8 @@ public final class GeoWonderRegionFeature implements Feature {
         return placeLegacy(new RealScaleFeatureContext(level, chunkGenerator, random, origin));
     }
 
+
+    private static net.minecraft.world.level.block.Block vanillaBlock(String path) {
+        return BuiltInRegistries.BLOCK.get(Identifier.fromNamespaceAndPath("minecraft", path));
+    }
 }

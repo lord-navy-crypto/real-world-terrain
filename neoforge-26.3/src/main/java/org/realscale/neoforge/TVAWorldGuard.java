@@ -13,9 +13,9 @@ public final class TVAWorldGuard {
     public static boolean hasRealScaleGenerator(RealScaleFeatureContext context) {
         if (!(context.chunkGenerator() instanceof NoiseBasedChunkGenerator generator))
             return false;
-        return generator.generatorSettings().unwrapKey()
-                .map(key -> "realscale".equals(key.location().getNamespace()))
-                .orElse(false);
+        var settingsKey = generator.generatorSettings().unwrapKey();
+        return settingsKey.isPresent()
+                && "realscale".equals(settingsKey.orElseThrow().identifier().getNamespace());
     }
     /** Opt-in wonder experiments, never enabled on the sacred timeline. */
     public static boolean hasExperimentalWonders(RealScaleFeatureContext context) {

@@ -54,14 +54,14 @@ public final class HabitatPatchFeature implements Feature {
      * never accessing chunks far away or replacing the solid cave wall.
      */
     private static BlockPos nearbyCaveFloor(WorldGenLevel w, BlockPos origin, boolean dripstone) {
-        int min = Math.max(w.getMinBuildHeight() + 3,
+        int min = Math.max(w.getMinY() + 3,
                 GrandOverworldCaveNetwork.MIN_Y);
         // Terrain is up to 2096 blocks tall; do NOT clip cave decorations
         // at old vanilla-level Y45. But a real overhead roof is required:
         // exposed slopes, beaches and hilltops must not get cave patches.
         int surface = w.getHeight(Heightmap.Types.WORLD_SURFACE_WG,
                 origin.getX(), origin.getZ()) - 1;
-        int max = Math.min(Math.min(w.getMaxBuildHeight() - 3,
+        int max = Math.min(Math.min(w.getMaxY() - 3,
                 GrandOverworldCaveNetwork.MAX_Y), surface - MIN_ROOF_DEPTH);
         if (max < min) return null;
         int search = origin.getY() > 60
@@ -85,7 +85,7 @@ public final class HabitatPatchFeature implements Feature {
             return false;
         if (cave) {
             if (start.getY() > GrandOverworldCaveNetwork.MAX_Y
-                    || start.getY() < w.getMinBuildHeight() + 3)
+                    || start.getY() < w.getMinY() + 3)
                 return false;
             start = nearbyCaveFloor(w, start, kind == Kind.CAVE_DRIPSTONE);
             if (start == null) return false;

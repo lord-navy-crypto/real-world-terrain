@@ -34,8 +34,8 @@ public final class EarthSystemsAccentFeature implements Feature {
         if (!TVAWorldGuard.hasRealScaleGenerator(context)) return false;
         WorldGenLevel world = context.level();
         BlockPos position = context.origin();
-        if (position.getY() <= world.getMinBuildHeight() + 3
-                || position.getY() >= world.getMaxBuildHeight() - 3) return false;
+        if (position.getY() <= world.getMinY() + 3
+                || position.getY() >= world.getMaxY() - 3) return false;
         if (!world.getBlockState(position).isAir()
                 || !world.getFluidState(position).isEmpty()
                 || !world.getBlockState(position.above()).isAir()) return false;

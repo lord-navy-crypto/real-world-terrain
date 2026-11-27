@@ -75,8 +75,8 @@ public final class GrandEcologyFeature implements Feature {
         BlockPos origin = context.origin();
         RandomSource random = context.random();
         // Height and aquatic classifications do not depend on position.
-        if (origin.getY() < level.getMinBuildHeight() + 3
-                || origin.getY() >= level.getMaxBuildHeight() - placementHeadroom) return false;
+        if (origin.getY() < level.getMinY() + 3
+                || origin.getY() >= level.getMaxY() - placementHeadroom) return false;
         var fluid = level.getFluidState(origin);
         if (aquatic ? !fluid.is(FluidTags.WATER) : !fluid.isEmpty()) return false;
         if (aquatic && !EcologyDistributionMath.aquaticDepthSuitable(
@@ -132,8 +132,8 @@ public final class GrandEcologyFeature implements Feature {
         if (!dryNaturalSurface(level, origin)) return false;
         for (BlockPos pos : plan.keySet()) {
             if (!sameChunk(origin, pos)
-                    || pos.getY() <= level.getMinBuildHeight()
-                    || pos.getY() >= level.getMaxBuildHeight() - 1
+                    || pos.getY() <= level.getMinY()
+                    || pos.getY() >= level.getMaxY() - 1
                     || !level.getFluidState(pos).isEmpty()
                     || !level.getBlockState(pos).isAir()) return false;
         }
@@ -405,7 +405,7 @@ public final class GrandEcologyFeature implements Feature {
         for (BlockPos pos : plan.keySet()) {
             if (!sameChunk(origin, pos) || !level.getBlockState(pos).isAir()
                     || !level.getFluidState(pos).isEmpty()
-                    || pos.getY() >= level.getMaxBuildHeight() - 1) return false;
+                    || pos.getY() >= level.getMaxY() - 1) return false;
         }
         plan.forEach((pos,rock) -> level.setBlock(pos,rock,2));
         return true;
