@@ -8,11 +8,12 @@ import { buildIsometricMesh } from "./terrain-3d.js";
 const source = readFileSync(new URL("./main.js", import.meta.url), "utf8")
   .replace(/^import\s+.*?;\s*$/gm, "");
 
-function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported", locationSearch = "", clipboardAvailable = true } = {}) {
+function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported", locationSearch = "", clipboardAvailable = true, exportApiMode = "offline" } = {}) {
   const elements = new Map();
   const downloads = [];
   const blobs = [];
   const clipboardWrites = [];
+  const fetchCalls = [];
   let sampleCalls = 0;
   let renderedFrames = 0;
   let renderedTriangles = 0;
@@ -86,6 +87,7 @@ function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported"
     const value = {
       selector,
       value: "",
+      style: {},
       textContent: "",
       innerHTML: "",
       disabled: false,
@@ -144,6 +146,10 @@ function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported"
   element("#share-link-panel").hidden = true;
   element("#three-d-legend").hidden = true;
   element("#reset-3d-view").hidden = true;
+  element("#export-area").value = "8";
+  element("#export-preset").value = "natural-automate";
+  element("#world-export-progress").hidden = true;
+  element("#download-world-export").hidden = true;
 
   const reliefButton = element(".view-relief");
   reliefButton.dataset.view = "relief";
@@ -176,9 +182,66 @@ function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported"
       callback();
       return 1;
     },
-    setTimeout(callback) {
-      callback();
+    setTimeout() {
       return 1;
+    },
+    clearTimeout() {},
+    async fetch(url, options = {}) {
+      fetchCalls.push({ url, options });
+      if (url === "/api/health") {
+        return {
+          ok: exportApiMode !== "offline",
+          status: exportApiMode === "offline" ? 503 : 200,
+          async json() { return { status: "ok" }; }
+        };
+      }
+      const id = "12345678-1234-1234-1234-123456789012";
+      if (url === "/api/world-exports" && options.method === "POST") {
+        return {
+          ok: true,
+          status: 202,
+          async json() {
+            return { job: {
+              id, status: "queued", stage: "queued", progress: 0,
+              message: "Queued", request: { chunkCount: 64 }
+            } };
+          }
+        };
+      }
+      if (url === "/api/world-exports/" + id + "/cancel") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return { job: {
+              id, status: "cancelled", stage: "cancelled", progress: 0,
+              message: "Cancelled", request: { chunkCount: 64 }
+            } };
+          }
+        };
+      }
+      if (url === "/api/world-exports/" + id) {
+        const completed = exportApiMode === "complete";
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return { job: completed ? {
+              id, status: "completed", stage: "completed", progress: 100,
+              message: "Ready", request: { chunkCount: 64 },
+              result: {
+                archiveBytes: 2048,
+                validation: { verifiedChunks: 64 },
+                downloadUrl: "/api/world-exports/" + id + "/download"
+              }
+            } : {
+              id, status: "running", stage: "generating", progress: 35,
+              message: "Generating", request: { chunkCount: 64 }
+            } };
+          }
+        };
+      }
+      throw new Error("Unexpected fake fetch: " + url);
     }
   };
 
@@ -215,6 +278,7 @@ function createRuntime(seed = "runtime-smoke-seed", { workerMode = "unsupported"
     downloads,
     blobs,
     clipboardWrites,
+    fetchCalls,
     get worker() { return workerInstance; },
     reliefButton,
     biomeButton,
@@ -425,4 +489,53 @@ test("3D projection does not report false top-down click coordinates", () => {
 
   assert.equal(runtime.elements.get("#inspect-position").textContent, "Select a point on the map");
   assert.match(runtime.elements.get("#generation-status").textContent, /3D view/i);
+});
+
+
+test("world export UI explains when the local Minecraft worker is offline", async () => {
+  const runtime = createRuntime("offline-seed", { exportApiMode: "offline" });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(runtime.elements.get("#export-worker-state").textContent, "WORKER OFFLINE");
+  assert.equal(runtime.elements.get("#create-world-export").disabled, true);
+  assert.match(runtime.elements.get("#world-export-status").textContent, /npm run worker/);
+});
+
+test("world export UI submits the selected seed and preset then exposes the validated ZIP", async () => {
+  const runtime = createRuntime("playable-world-seed", { exportApiMode: "complete" });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(runtime.elements.get("#export-worker-state").textContent, "LOCAL WORKER READY");
+  assert.equal(runtime.elements.get("#create-world-export").disabled, false);
+
+  runtime.elements.get("#export-area").value = "12";
+  runtime.elements.get("#export-preset").value = "alpine";
+  runtime.elements.get("#create-world-export").click();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const createCall = runtime.fetchCalls.find(call => call.url === "/api/world-exports" && call.options.method === "POST");
+  assert.ok(createCall);
+  const request = JSON.parse(createCall.options.body);
+  assert.equal(request.seed, "playable-world-seed");
+  assert.equal(request.preset, "alpine");
+  assert.equal(request.widthChunks, 12);
+  assert.equal(request.depthChunks, 12);
+  assert.equal(runtime.elements.get("#world-export-status").textContent, "World save ready · 64 chunks validated · 2.0 KB");
+  assert.equal(runtime.elements.get("#download-world-export").hidden, false);
+  assert.match(runtime.elements.get("#download-world-export").href, /\/download$/);
+  assert.equal(runtime.elements.get("#create-world-export").disabled, false);
+});
+
+test("world export UI can request cancellation of an active Minecraft job", async () => {
+  const runtime = createRuntime("cancel-world-seed", { exportApiMode: "running" });
+  await new Promise(resolve => setImmediate(resolve));
+  runtime.elements.get("#create-world-export").click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(runtime.elements.get("#cancel-world-export").disabled, false);
+
+  runtime.elements.get("#cancel-world-export").click();
+  await new Promise(resolve => setImmediate(resolve));
+  const cancelCall = runtime.fetchCalls.find(call => call.url.endsWith("/cancel"));
+  assert.ok(cancelCall);
+  assert.equal(cancelCall.options.method, "POST");
+  assert.equal(runtime.elements.get("#world-export-status").textContent, "World generation cancelled");
+  assert.equal(runtime.elements.get("#cancel-world-export").disabled, true);
 });
