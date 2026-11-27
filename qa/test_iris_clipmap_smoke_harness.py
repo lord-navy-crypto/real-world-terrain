@@ -152,6 +152,8 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("def capture_minecraft_screenshot(", SMOKE)
         self.assertIn('["xdotool", "key", "--clearmodifiers", "F2"]', SMOKE)
         self.assertIn("PAUSE_SCREEN_OCR_VERIFIED:", SMOKE)
+        self.assertIn('"-crop",', SMOKE)
+        self.assertIn('"--psm", "6"', SMOKE)
         self.assertIn("validate_screenshot(image, min_width=640, min_height=360)", SMOKE)
         self.assertIn('required_labels = ("game menu",)', SMOKE)
         self.assertIn("def click_pause_menu_toggle(", SMOKE)
