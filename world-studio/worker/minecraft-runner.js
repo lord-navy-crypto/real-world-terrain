@@ -254,6 +254,64 @@ async function ensureProject(neoforgeDirectory) {
   }
 }
 
+async function isProcessAlive(pid) {
+  if (!Number.isSafeInteger(pid) || pid < 1) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code !== "ESRCH";
+  }
+}
+
+async function acquireRunLock(lockPath, jobId) {
+  const owner = {
+    jobId,
+    workerPid: process.pid,
+    serverPid: null,
+    createdAt: new Date().toISOString()
+  };
+  try {
+    const handle = await fs.open(lockPath, "wx", 0o600);
+    try {
+      await fs.writeFile(lockPath, JSON.stringify(owner), { mode: 0o600 });
+      return handle;
+    } catch (error) {
+      await handle.close().catch(() => {});
+      await fs.rm(lockPath, { force: true }).catch(() => {});
+      throw error;
+    }
+  } catch (error) {
+    if (error.code !== "EEXIST") throw error;
+  }
+
+  const info = await fs.lstat(lockPath);
+  if (info.isSymbolicLink() || !info.isFile()) {
+    throw new Error("The NeoForge run-directory lock is not a regular file");
+  }
+  let previous;
+  try {
+    previous = JSON.parse(await fs.readFile(lockPath, "utf8"));
+  } catch {
+    throw new Error("The NeoForge run-directory lock exists but its owner cannot be verified");
+  }
+  const active = await Promise.all([previous.workerPid, previous.serverPid].map(isProcessAlive));
+  if (active.some(Boolean)) {
+    throw new Error("The NeoForge server run directory is already in use by another export or development session");
+  }
+
+  await fs.rm(lockPath);
+  const handle = await fs.open(lockPath, "wx", 0o600);
+  try {
+    await fs.writeFile(lockPath, JSON.stringify(owner), { mode: 0o600 });
+    return handle;
+  } catch (error) {
+    await handle.close().catch(() => {});
+    await fs.rm(lockPath, { force: true }).catch(() => {});
+    throw error;
+  }
+}
+
 export async function runMinecraftExport(input, {
   jobId,
   signal,
@@ -274,10 +332,7 @@ export async function runMinecraftExport(input, {
   const runDirectory = path.join(neoforgeDirectory, "run", "server");
   await fs.mkdir(runDirectory, { recursive: true });
   const lockPath = path.join(runDirectory, ".realscale-world-export.lock");
-  const lock = await fs.open(lockPath, "wx").catch(error => {
-    if (error.code === "EEXIST") throw new Error("The NeoForge server run directory is already in use by another export or development session");
-    throw error;
-  });
+  const lock = await acquireRunLock(lockPath, id);
 
   const jobDirectory = path.resolve(exportRoot, id);
   const logPath = path.join(jobDirectory, "minecraft-server.log");
@@ -322,7 +377,12 @@ export async function runMinecraftExport(input, {
     const properties = buildServerProperties(request, { worldName, serverPort, rconPort, rconPassword });
     await fs.writeFile(propertiesPath, properties, { mode: 0o600 });
     await fs.writeFile(eulaPath, "eula=true\n", { mode: 0o600 });
-    await lock.writeFile(JSON.stringify({ jobId: id, pid: process.pid, createdAt: new Date().toISOString() }));
+    await fs.writeFile(lockPath, JSON.stringify({
+      jobId: id,
+      workerPid: process.pid,
+      serverPid: child.pid ?? null,
+      createdAt: new Date().toISOString()
+    }), { mode: 0o600 });
 
     progress(onProgress, "starting", 3, "Starting isolated NeoForge 1.21.1 server", { jobId: id });
     child = spawn(gradleCommand, ["--no-daemon", "runServer", "--stacktrace"], {
