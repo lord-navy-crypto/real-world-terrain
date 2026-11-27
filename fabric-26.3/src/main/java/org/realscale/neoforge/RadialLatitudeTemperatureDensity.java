@@ -3,8 +3,13 @@ package org.realscale.neoforge;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.KeyDispatchDataCodec;
-import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensitySampler;
+import net.minecraft.world.level.levelgen.densityfunction.DensityBuffer;
+import net.minecraft.world.level.levelgen.densityfunction.DensityVolume;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
+import net.minecraft.world.level.levelgen.densityfunction.DfRewriteRule;
+import net.minecraft.util.Interval;
 
 /**
  * Concentric repeating "latitude" for Minecraft's unbounded procedural
@@ -17,10 +22,10 @@ import net.minecraft.world.level.levelgen.DensityFunction;
 public record RadialLatitudeTemperatureDensity(DensityFunction base,int centerX,
            int centerZ,int poleDistance,double strength,boolean balanced,double altitudeCooling,
            boolean areaBalanced, boolean singlePoleArea)
-        implements DensityFunction.SimpleFunction {
+        implements DensityFunction {
     public static final MapCodec<RadialLatitudeTemperatureDensity> MAP_CODEC =
         RecordCodecBuilder.mapCodec(i->i.group(
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(RadialLatitudeTemperatureDensity::base),
+            DensityFunction.CODEC.fieldOf("base").forGetter(RadialLatitudeTemperatureDensity::base),
             Codec.intRange(-29_000_000,29_000_000).fieldOf("center_x").forGetter(RadialLatitudeTemperatureDensity::centerX),
             Codec.intRange(-29_000_000,29_000_000).fieldOf("center_z").forGetter(RadialLatitudeTemperatureDensity::centerZ),
             Codec.intRange(1024,10_001_966).fieldOf("pole_distance").forGetter(RadialLatitudeTemperatureDensity::poleDistance),
@@ -31,10 +36,7 @@ public record RadialLatitudeTemperatureDensity(DensityFunction base,int centerX,
             Codec.BOOL.optionalFieldOf("single_pole_area",false).forGetter(RadialLatitudeTemperatureDensity::singlePoleArea)
         ).apply(i,RadialLatitudeTemperatureDensity::new));
 
-    private static final KeyDispatchDataCodec<RadialLatitudeTemperatureDensity> DISPATCH =
-        KeyDispatchDataCodec.of(MAP_CODEC);
-
-    @Override public double compute(DensityFunction.FunctionContext ctx){
+    public double compute(RealScaleDensityContext ctx){
         double latitude=singlePoleArea
             ?GeoMath.singlePoleAreaRadialLatitudeDeg(ctx.blockX(),ctx.blockZ(),centerX,centerZ,poleDistance)
             :areaBalanced
@@ -43,14 +45,20 @@ public record RadialLatitudeTemperatureDensity(DensityFunction base,int centerX,
               ?GeoMath.balancedRadialLatitudeDeg(ctx.blockX(),ctx.blockZ(),centerX,centerZ,poleDistance)
               :GeoMath.radialLatitudeDeg(ctx.blockX(),ctx.blockZ(),centerX,centerZ,poleDistance);
         return (balanced || areaBalanced || singlePoleArea)
-            ?GeoMath.balancedRadialTemperature(base.compute(ctx),latitude,strength,altitudeCooling,ctx.blockY())
-            :GeoMath.latitudeTemperature(base.compute(ctx),latitude,strength);
+            ?GeoMath.balancedRadialTemperature(ctx.compute(base),latitude,strength,altitudeCooling,ctx.blockY())
+            :GeoMath.latitudeTemperature(ctx.compute(base),latitude,strength);
     }
-    @Override public DensityFunction mapAll(DensityFunction.Visitor visitor){
-        return visitor.apply(new RadialLatitudeTemperatureDensity(base.mapAll(visitor),
-            centerX,centerZ,poleDistance,strength,balanced,altitudeCooling,areaBalanced,singlePoleArea));
+        @Override public DensitySampler compileSampler(DensityFunction.CompileContext context) {
+        return RealScaleDensitySamplerSupport.compile(context, new DensityFunction[]{base}, this::compute);
     }
-    @Override public double minValue(){return base.minValue()-.68*strength;}
-    @Override public double maxValue(){return base.maxValue()+.35*strength+altitudeCooling*.75;}
-    @Override public KeyDispatchDataCodec<? extends DensityFunction> codec(){return DISPATCH;}
+    @Override public Interval range() { return Interval.INFINITE; }
+    @Override public int domainAxes() { return DensityFunction.ALL_AXES; }
+
+@Override public DensityFunction rewriteChildren(DfRewriteRule rule){
+        return new RadialLatitudeTemperatureDensity(rule.rewrite(base),
+            centerX,centerZ,poleDistance,strength,balanced,altitudeCooling,areaBalanced,singlePoleArea);
+    }
+    
+    
+    @Override public MapCodec<? extends DensityFunction> codec(){return MAP_CODEC;}
 }

@@ -3,8 +3,13 @@ package org.realscale.neoforge;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.KeyDispatchDataCodec;
-import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
+import net.minecraft.world.level.levelgen.densityfunction.DensitySampler;
+import net.minecraft.world.level.levelgen.densityfunction.DensityBuffer;
+import net.minecraft.world.level.levelgen.densityfunction.DensityVolume;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
+import net.minecraft.world.level.levelgen.densityfunction.DfRewriteRule;
+import net.minecraft.util.Interval;
 
 /**
  * Small OPTIONAL warming of procedurally generated enclosed upland basins.
@@ -15,7 +20,7 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * basins colder at night. This approximation is bounded by climate_budget.
  */
 public final class MountainBasinTemperatureDensity
-        implements DensityFunction.SimpleFunction {
+        implements DensityFunction {
     private final DensityFunction base, heightSignal, continents, selector;
     private final double warmth;
     private final ThreadLocal<Site> current = ThreadLocal.withInitial(Site::new);
@@ -43,16 +48,13 @@ public final class MountainBasinTemperatureDensity
 
     public static final MapCodec<MountainBasinTemperatureDensity> MAP_CODEC =
             RecordCodecBuilder.mapCodec(i -> i.group(
-                    DensityFunction.HOLDER_HELPER_CODEC.fieldOf("base").forGetter(MountainBasinTemperatureDensity::base),
-                    DensityFunction.HOLDER_HELPER_CODEC.fieldOf("height_signal").forGetter(MountainBasinTemperatureDensity::heightSignal),
-                    DensityFunction.HOLDER_HELPER_CODEC.fieldOf("continents").forGetter(MountainBasinTemperatureDensity::continents),
-                    DensityFunction.HOLDER_HELPER_CODEC.fieldOf("selector").forGetter(MountainBasinTemperatureDensity::selector),
+                    DensityFunction.CODEC.fieldOf("base").forGetter(MountainBasinTemperatureDensity::base),
+                    DensityFunction.CODEC.fieldOf("height_signal").forGetter(MountainBasinTemperatureDensity::heightSignal),
+                    DensityFunction.CODEC.fieldOf("continents").forGetter(MountainBasinTemperatureDensity::continents),
+                    DensityFunction.CODEC.fieldOf("selector").forGetter(MountainBasinTemperatureDensity::selector),
                     Codec.doubleRange(0.0, 0.25).fieldOf("warmth").forGetter(MountainBasinTemperatureDensity::warmth)
             ).apply(i, MountainBasinTemperatureDensity::new));
-    private static final KeyDispatchDataCodec<MountainBasinTemperatureDensity> DISPATCH =
-            KeyDispatchDataCodec.of(MAP_CODEC);
-
-    private Site site(DensityFunction.FunctionContext ctx) {
+    private Site site(RealScaleDensityContext ctx) {
         int gx=Math.floorDiv(ctx.blockX(),MountainReliefMath.CELL);
         int gz=Math.floorDiv(ctx.blockZ(),MountainReliefMath.CELL);
         Site s=current.get();
@@ -73,16 +75,15 @@ public final class MountainBasinTemperatureDensity
         return s;
     }
 
-    private void classify(Site site) {
+    private void classify(Site site, RealScaleDensityContext ctx) {
         if(site.classified)return;
-        double region=selector.compute(new DensityFunction.SinglePointContext(
-                Math.toIntExact((long)site.x),0,Math.toIntExact((long)site.z)));
+        double region=ctx.at(Math.toIntExact((long)site.x),0,Math.toIntExact((long)site.z)).compute(selector);
         site.kind=MountainReliefMath.kind(site.hash,region);
         site.classified=true;
     }
 
-    @Override public double compute(DensityFunction.FunctionContext ctx) {
-        double original=base.compute(ctx);
+    public double compute(RealScaleDensityContext ctx) {
+        double original=ctx.compute(base);
         if(warmth==0)return original;
         // The altitude multiplier vanishes completely at Y<=80. Do not
         // sample continents/height noise in that common case.
@@ -96,12 +97,12 @@ public final class MountainBasinTemperatureDensity
         double dx=ctx.blockX()-s.x,dz=ctx.blockZ()-s.z;
         double limit=s.radius*0.780000001;
         if(dx*dx+dz*dz>=limit*limit)return original;
-        double continent=continents.compute(ctx);
+        double continent=ctx.compute(continents);
         if(continent<=-0.10)return original;
         double highlandGate=MountainReliefMath.inlandUplandGate(
-                continent,heightSignal.compute(ctx));
+                continent,ctx.compute(heightSignal));
         if(highlandGate<=0.0)return original;
-        classify(s);
+        classify(s,ctx);
         if(s.kind!=MountainReliefMath.BASIN)return original;
         double r=Math.hypot(dx,dz)/s.radius;
         if(r>=0.78)return original;
@@ -109,12 +110,18 @@ public final class MountainBasinTemperatureDensity
                 *highlandGate*exposedLand;
     }
 
-    @Override public DensityFunction mapAll(DensityFunction.Visitor visitor) {
-        return visitor.apply(new MountainBasinTemperatureDensity(base.mapAll(visitor),
-                heightSignal.mapAll(visitor),continents.mapAll(visitor),
-                selector.mapAll(visitor),warmth));
+        @Override public DensitySampler compileSampler(DensityFunction.CompileContext context) {
+        return RealScaleDensitySamplerSupport.compile(context, new DensityFunction[]{base, heightSignal, continents, selector}, this::compute);
     }
-    @Override public double minValue(){return base.minValue();}
-    @Override public double maxValue(){return base.maxValue()+warmth;}
-    @Override public KeyDispatchDataCodec<? extends DensityFunction> codec(){return DISPATCH;}
+    @Override public Interval range() { return Interval.INFINITE; }
+    @Override public int domainAxes() { return DensityFunction.ALL_AXES; }
+
+@Override public DensityFunction rewriteChildren(DfRewriteRule rule) {
+        return new MountainBasinTemperatureDensity(rule.rewrite(base),
+                rule.rewrite(heightSignal),rule.rewrite(continents),
+                rule.rewrite(selector),warmth);
+    }
+    
+    
+    @Override public MapCodec<? extends DensityFunction> codec(){return MAP_CODEC;}
 }
