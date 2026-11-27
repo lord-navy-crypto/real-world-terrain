@@ -1,0 +1,470 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import { spawn } from "node:child_process";
+import { createInterface } from "node:readline";
+import { randomBytes, randomUUID } from "node:crypto";
+import net from "node:net";
+import { fileURLToPath } from "node:url";
+import { RconClient } from "./rcon-client.js";
+import { normalizeExportRequest, expectedChunkCoordinates } from "./export-contract.js";
+import { validateWorldSave } from "./save-validator.js";
+import { createWorldArchive } from "./archive.js";
+
+const MODULE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
+const REPOSITORY_ROOT = path.resolve(MODULE_DIRECTORY, "../..");
+const DEFAULT_STARTUP_TIMEOUT_MS = 10 * 60 * 1000;
+const DEFAULT_GENERATION_TIMEOUT_MS = 30 * 60 * 1000;
+const DEFAULT_CHUNK_TIMEOUT_MS = 5 * 60 * 1000;
+const LOG_LIMIT_BYTES = 32 * 1024 * 1024;
+
+function abortError() {
+  const error = new Error("World export was cancelled");
+  error.name = "AbortError";
+  return error;
+}
+
+function throwIfAborted(signal) {
+  if (signal?.aborted) throw abortError();
+}
+
+function sleep(milliseconds, signal) {
+  throwIfAborted(signal);
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(done, milliseconds);
+    function cleanup() {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+    }
+    function done() {
+      cleanup();
+      resolve();
+    }
+    function onAbort() {
+      cleanup();
+      reject(abortError());
+    }
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+function progress(callback, stage, percent, message, details = {}) {
+  callback?.({ stage, percent, message, ...details });
+}
+
+async function reserveLocalPort() {
+  const server = net.createServer();
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const port = server.address().port;
+  await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  return port;
+}
+
+async function snapshotFile(filePath) {
+  try {
+    const info = await fs.lstat(filePath);
+    if (info.isSymbolicLink() || !info.isFile()) {
+      throw new Error("Refusing to replace a non-regular server configuration file: " + filePath);
+    }
+    return { exists: true, bytes: await fs.readFile(filePath), mode: info.mode };
+  } catch (error) {
+    if (error.code === "ENOENT") return { exists: false };
+    throw error;
+  }
+}
+
+async function restoreFile(filePath, snapshot) {
+  if (snapshot.exists) {
+    await fs.writeFile(filePath, snapshot.bytes, { mode: snapshot.mode });
+  } else {
+    await fs.rm(filePath, { force: true });
+  }
+}
+
+function buildServerProperties(request, { worldName, serverPort, rconPort, rconPassword }) {
+  return [
+    "accepts-transfers=false",
+    "allow-flight=false",
+    "broadcast-console-to-ops=false",
+    "broadcast-rcon-to-ops=false",
+    "difficulty=peaceful",
+    "enable-command-block=false",
+    "enable-query=false",
+    "enable-rcon=true",
+    "enable-status=false",
+    "enforce-secure-profile=false",
+    "force-gamemode=false",
+    "gamemode=survival",
+    "generate-structures=true",
+    "hardcore=false",
+    "level-name=" + worldName,
+    "level-seed=" + request.seed,
+    "level-type=" + request.presetId,
+    "max-players=0",
+    "max-tick-time=-1",
+    "motd=RealScale isolated world export",
+    "online-mode=false",
+    "pvp=false",
+    "rcon.ip=127.0.0.1",
+    "rcon.password=" + rconPassword,
+    "rcon.port=" + rconPort,
+    "server-ip=127.0.0.1",
+    "server-port=" + serverPort,
+    "simulation-distance=3",
+    "spawn-animals=false",
+    "spawn-monsters=false",
+    "spawn-npcs=false",
+    "spawn-protection=0",
+    "spawn-chunk-radius=0",
+    "sync-chunk-writes=true",
+    "view-distance=3",
+    "white-list=false",
+    ""
+  ].join("\n");
+}
+
+function waitForExit(child, timeoutMs) {
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return Promise.resolve({ code: child.exitCode, signal: child.signalCode });
+  }
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error("Minecraft server did not stop before the shutdown deadline"));
+    }, timeoutMs);
+    const onExit = (code, signal) => {
+      cleanup();
+      resolve({ code, signal });
+    };
+    function cleanup() {
+      clearTimeout(timer);
+      child.off("exit", onExit);
+    }
+    child.once("exit", onExit);
+  });
+}
+
+function killProcessTree(child, signal = "SIGTERM") {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
+  try {
+    if (process.platform !== "win32" && child.pid) process.kill(-child.pid, signal);
+    else child.kill(signal);
+  } catch (error) {
+    if (error.code !== "ESRCH") throw error;
+  }
+}
+
+async function waitForReady(child, lines, timeoutMs, signal) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => finish(new Error("Minecraft server startup timed out")), timeoutMs);
+    const output = createInterface({ input: child.stdout });
+    const errors = createInterface({ input: child.stderr });
+
+    const onLine = line => {
+      lines.push(line);
+      if (lines.length > 500) lines.shift();
+      if (line.includes("Done (") && line.includes("For help")) finish(null);
+    };
+    const onErrorLine = line => {
+      lines.push("[stderr] " + line);
+      if (lines.length > 500) lines.shift();
+    };
+    const onError = error => finish(error);
+    const onExit = code => finish(new Error(
+      "Minecraft server exited before startup completed (code " + code + "):\n" + lines.slice(-30).join("\n")
+    ));
+    const onAbort = () => finish(abortError());
+
+    function finish(error) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      output.close();
+      errors.close();
+      child.off("error", onError);
+      child.off("exit", onExit);
+      signal?.removeEventListener("abort", onAbort);
+      if (error) reject(error);
+      else resolve();
+    }
+
+    output.on("line", onLine);
+    errors.on("line", onErrorLine);
+    child.once("error", onError);
+    child.once("exit", onExit);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+async function connectRcon(port, password, signal) {
+  const deadline = Date.now() + 60_000;
+  let lastError;
+  while (Date.now() < deadline) {
+    throwIfAborted(signal);
+    try {
+      return await RconClient.connect({
+        host: "127.0.0.1",
+        port,
+        password,
+        timeoutMs: 5 * 60 * 1000
+      });
+    } catch (error) {
+      lastError = error;
+      await sleep(1000, signal);
+    }
+  }
+  throw new Error("Unable to connect to the isolated Minecraft RCON endpoint: " + (lastError?.message ?? "timeout"));
+}
+
+async function awaitChunkLoaded(rcon, chunk, deadline, signal) {
+  const blockX = chunk.x * 16 + 8;
+  const blockZ = chunk.z * 16 + 8;
+  const command = "execute in minecraft:overworld if loaded " + blockX + " 128 " + blockZ + " run seed";
+  while (Date.now() < deadline) {
+    throwIfAborted(signal);
+    const reply = await rcon.command(command);
+    if (reply.includes("Seed:")) return;
+    await sleep(500, signal);
+  }
+  throw new Error("Chunk generation timed out at " + chunk.x + "," + chunk.z);
+}
+
+function safeJobId(value) {
+  const id = typeof value === "string" ? value : randomUUID();
+  if (!/^[a-zA-Z0-9-]{8,64}$/u.test(id)) throw new TypeError("Invalid world export job ID");
+  return id;
+}
+
+async function ensureProject(neoforgeDirectory) {
+  const buildFile = path.join(neoforgeDirectory, "build.gradle");
+  const info = await fs.stat(buildFile).catch(() => null);
+  if (!info?.isFile()) {
+    throw new Error("NeoForge project not found; set REALSCALE_NEOFORGE_DIR to the neoforge project directory");
+  }
+}
+
+export async function runMinecraftExport(input, {
+  jobId,
+  signal,
+  onProgress,
+  repositoryRoot = REPOSITORY_ROOT,
+  gradleCommand = process.env.REALSCALE_GRADLE_BIN || "gradle",
+  exportRoot = process.env.REALSCALE_EXPORT_ROOT || path.join(MODULE_DIRECTORY, "../exports"),
+  startupTimeoutMs = Number(process.env.REALSCALE_SERVER_STARTUP_TIMEOUT_MS) || DEFAULT_STARTUP_TIMEOUT_MS,
+  generationTimeoutMs = Number(process.env.REALSCALE_GENERATION_TIMEOUT_MS) || DEFAULT_GENERATION_TIMEOUT_MS,
+  chunkTimeoutMs = Number(process.env.REALSCALE_CHUNK_TIMEOUT_MS) || DEFAULT_CHUNK_TIMEOUT_MS
+} = {}) {
+  const request = normalizeExportRequest(input);
+  const id = safeJobId(jobId);
+  const neoforgeDirectory = path.resolve(process.env.REALSCALE_NEOFORGE_DIR || path.join(repositoryRoot, "neoforge"));
+  await ensureProject(neoforgeDirectory);
+  throwIfAborted(signal);
+
+  const runDirectory = path.join(neoforgeDirectory, "run", "server");
+  await fs.mkdir(runDirectory, { recursive: true });
+  const lockPath = path.join(runDirectory, ".realscale-world-export.lock");
+  const lock = await fs.open(lockPath, "wx").catch(error => {
+    if (error.code === "EEXIST") throw new Error("The NeoForge server run directory is already in use by another export or development session");
+    throw error;
+  });
+
+  const jobDirectory = path.resolve(exportRoot, id);
+  await fs.mkdir(jobDirectory, { recursive: true });
+  const logPath = path.join(jobDirectory, "minecraft-server.log");
+  const logStream = await fs.open(logPath, "wx");
+  const worldName = "realscale-export-" + id.replace(/-/gu, "").slice(0, 16).toLowerCase();
+  const worldDirectory = path.join(runDirectory, worldName);
+  const propertiesPath = path.join(runDirectory, "server.properties");
+  const eulaPath = path.join(runDirectory, "eula.txt");
+  let propertiesSnapshot;
+  let eulaSnapshot;
+  let child;
+  let rcon;
+  let serverStopped = false;
+  let logBytes = 0;
+  const logTail = [];
+
+  const appendLog = line => {
+    logTail.push(line);
+    if (logTail.length > 500) logTail.shift();
+    const bytes = Buffer.byteLength(line + "\n");
+    if (logBytes < LOG_LIMIT_BYTES) {
+      logStream.write(line + "\n");
+      logBytes += bytes;
+    }
+  };
+
+  try {
+    propertiesSnapshot = await snapshotFile(propertiesPath);
+    eulaSnapshot = await snapshotFile(eulaPath);
+    if (await fs.lstat(worldDirectory).catch(() => null)) {
+      throw new Error("The generated world directory already exists; refusing to overwrite it");
+    }
+
+    const serverPort = await reserveLocalPort();
+    const rconPort = await reserveLocalPort();
+    const rconPassword = randomBytes(32).toString("base64url");
+    const properties = buildServerProperties(request, { worldName, serverPort, rconPort, rconPassword });
+    await fs.writeFile(propertiesPath, properties, { mode: 0o600 });
+    await fs.writeFile(eulaPath, "eula=true\n", { mode: 0o600 });
+    await lock.writeFile(JSON.stringify({ jobId: id, pid: process.pid, createdAt: new Date().toISOString() }));
+
+    progress(onProgress, "starting", 3, "Starting isolated NeoForge 1.21.1 server", { jobId: id });
+    child = spawn(gradleCommand, ["--no-daemon", "runServer", "--stacktrace"], {
+      cwd: neoforgeDirectory,
+      env: { ...process.env, REALSCALE_WORLD_EXPORT_JOB: id },
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: process.platform !== "win32"
+    });
+
+    const readyPromise = waitForReady(child, logTail, startupTimeoutMs, signal);
+    child.stdout.on("data", chunk => {
+      const text = chunk.toString("utf8");
+      for (const line of text.split(/\r?\n/u)) if (line) appendLog(line);
+    });
+    child.stderr.on("data", chunk => {
+      const text = chunk.toString("utf8");
+      for (const line of text.split(/\r?\n/u)) if (line) appendLog("[stderr] " + line);
+    });
+    await readyPromise;
+    progress(onProgress, "connecting", 8, "NeoForge server is ready; connecting over local RCON");
+
+    rcon = await connectRcon(rconPort, rconPassword, signal);
+    const bounds = request.bounds;
+    const forceload = "execute in minecraft:overworld run forceload add "
+      + bounds.minBlockX + " " + bounds.minBlockZ + " "
+      + bounds.maxBlockX + " " + bounds.maxBlockZ;
+    const forceloadReply = await rcon.command(forceload);
+    if (/unknown command|failed|no chunks|incorrect argument/iu.test(forceloadReply)) {
+      throw new Error("Minecraft rejected the bounded forceload request: " + forceloadReply);
+    }
+
+    const chunks = expectedChunkCoordinates(request);
+    const generationDeadline = Date.now() + Math.min(generationTimeoutMs, chunkTimeoutMs * chunks.length);
+    progress(onProgress, "generating", 10, "Generating " + chunks.length + " real Minecraft chunks", {
+      completedChunks: 0,
+      totalChunks: chunks.length
+    });
+    for (let index = 0; index < chunks.length; index += 1) {
+      throwIfAborted(signal);
+      const deadline = Math.min(generationDeadline, Date.now() + chunkTimeoutMs);
+      await awaitChunkLoaded(rcon, chunks[index], deadline, signal);
+      const completed = index + 1;
+      progress(onProgress, "generating", 10 + Math.round(75 * completed / chunks.length),
+        "Generated " + completed + " of " + chunks.length + " chunks", {
+          completedChunks: completed,
+          totalChunks: chunks.length,
+          currentChunk: chunks[index]
+        });
+    }
+
+    progress(onProgress, "saving", 88, "Flushing generated Anvil chunks to disk");
+    await rcon.command("execute in minecraft:overworld run forceload remove "
+      + bounds.minBlockX + " " + bounds.minBlockZ + " "
+      + bounds.maxBlockX + " " + bounds.maxBlockZ);
+    await rcon.command("save-all flush");
+    await rcon.command("stop");
+    rcon.close();
+    rcon = null;
+    const exit = await waitForExit(child, 180_000);
+    serverStopped = true;
+    if (exit.code !== 0) {
+      throw new Error("NeoForge server exited with code " + exit.code + ": " + logTail.slice(-30).join("\n"));
+    }
+
+    progress(onProgress, "validating", 92, "Checking level.dat and every requested Anvil chunk");
+    const validation = await validateWorldSave(worldDirectory, {
+      ...request,
+      preset: request.presetKey
+    });
+    const manifest = {
+      schemaVersion: 1,
+      exportType: "realscale-modded-minecraft-save",
+      createdAt: new Date().toISOString(),
+      seed: request.seed,
+      worldPreset: request.presetId,
+      presetKey: request.presetKey,
+      minecraftVersion: request.minecraftVersion,
+      neoforgeVersion: request.neoforgeVersion,
+      realscaleVersion: request.realscaleVersion,
+      area: {
+        widthChunks: request.widthChunks,
+        depthChunks: request.depthChunks,
+        chunkCount: request.chunkCount,
+        centerX: request.centerX,
+        centerZ: request.centerZ,
+        bounds: request.bounds
+      },
+      validation,
+      requirements: {
+        loader: "NeoForge",
+        minecraftVersion: request.minecraftVersion,
+        neoforgeVersion: request.neoforgeVersion,
+        modId: "realscale",
+        realscaleVersion: request.realscaleVersion
+      },
+      vanillaCompatible: false,
+      note: "This is a real generated Minecraft save. It requires the matching RealScale NeoForge mod; vanilla compatibility has not been validated."
+    };
+
+    progress(onProgress, "packaging", 97, "Packaging the validated world save");
+    const archiveName = "realscale-world-" + id.replace(/-/gu, "").slice(0, 12).toLowerCase();
+    const archivePath = path.join(jobDirectory, archiveName + ".zip");
+    const archive = await createWorldArchive(worldDirectory, archivePath, {
+      archiveName,
+      manifest
+    });
+    await fs.rm(worldDirectory, { recursive: true, force: true });
+    progress(onProgress, "completed", 100, "World save validated and packaged", {
+      verifiedChunks: validation.verifiedChunks,
+      archiveBytes: archive.archiveBytes
+    });
+    return Object.freeze({
+      jobId: id,
+      archivePath: archive.archivePath,
+      archiveBytes: archive.archiveBytes,
+      sha256: archive.sha256,
+      validation,
+      manifest,
+      logPath
+    });
+  } catch (error) {
+    if (error.name === "AbortError") throw error;
+    throw new Error(error.message + (logTail.length ? "\n\nLast server log lines:\n" + logTail.slice(-25).join("\n") : ""), { cause: error });
+  } finally {
+    if (rcon) {
+      try {
+        await rcon.command("stop");
+      } catch {
+        // The process shutdown path below remains authoritative.
+      }
+      rcon.close();
+    }
+    if (child && !serverStopped && child.exitCode === null && child.signalCode === null) {
+      try {
+        await waitForExit(child, 30_000);
+      } catch {
+        killProcessTree(child, "SIGTERM");
+        try {
+          await waitForExit(child, 15_000);
+        } catch {
+          killProcessTree(child, "SIGKILL");
+          await waitForExit(child, 5_000).catch(() => {});
+        }
+      }
+    }
+    if (propertiesSnapshot) await restoreFile(propertiesPath, propertiesSnapshot).catch(() => {});
+    if (eulaSnapshot) await restoreFile(eulaPath, eulaSnapshot).catch(() => {});
+    if (child && (child.exitCode !== null || child.signalCode !== null)) {
+      await fs.rm(worldDirectory, { recursive: true, force: true }).catch(() => {});
+    }
+    await logStream.close().catch(() => {});
+    await lock.close().catch(() => {});
+    await fs.rm(lockPath, { force: true }).catch(() => {});
+  }
+}
+
+export { buildServerProperties };
