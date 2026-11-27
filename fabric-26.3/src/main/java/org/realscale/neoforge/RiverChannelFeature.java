@@ -64,7 +64,7 @@ public final class RiverChannelFeature implements Feature {
     }
 
     private static boolean solidBank(BlockState state) {
-        return state.blocksMotion() && !state.is(Blocks.LAVA)
+        return state.isSolid() && !state.is(Blocks.LAVA)
             && !state.is(Blocks.WATER);
     }
 
@@ -256,7 +256,7 @@ public final class RiverChannelFeature implements Feature {
                 }
                 if (!enclosed || !level.getBlockState(
                         new BlockPos(cell.getX(), waterY - 3, cell.getZ()))
-                        .blocksMotion()) {
+                        .isSolid()) {
                     enclosed = false;
                     break;
                 }
@@ -463,7 +463,7 @@ public final class RiverChannelFeature implements Feature {
                 // Never lower farther than two blocks: avoid artificial wells.
                 int inset = enclosedByBanks(level, top, 1, maxGrade) ? 1 : 0;
                 if (inset == 0 && natural(deepFoundation)
-                    && level.getBlockState(top.below(5)).blocksMotion()
+                    && level.getBlockState(top.below(5)).isSolid()
                     && enclosedByBanks(level, top, 2, maxGrade))
                     inset = 2;
                 if (inset == 0) continue;

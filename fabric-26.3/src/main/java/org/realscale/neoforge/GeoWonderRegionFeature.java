@@ -232,6 +232,6 @@ public final class GeoWonderRegionFeature implements Feature {
 
 
     private static net.minecraft.world.level.block.Block vanillaBlock(String path) {
-        return BuiltInRegistries.BLOCK.get(Identifier.fromNamespaceAndPath("minecraft", path));
+        return BuiltInRegistries.BLOCK.get(Identifier.fromNamespaceAndPath("minecraft", path)).orElseThrow().value();
     }
 }
