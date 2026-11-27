@@ -1,6 +1,6 @@
 # RealScale — Fabric 26.3
 
-这是面向 Minecraft Java **26.3** 的实验性迁移工作区，不是正式发布版本。
+这是面向 Minecraft Java **26.3** 的实验性迁移工作区，不是正式发布版本。\n\n**Fabric 和 NeoForge 两个版本都以 Minecraft 26.3 为目标，但 JAR 分别适用于对应加载器，不能互换。** Fabric 环境请使用 Fabric 构建产物。
 
 ## 工具链
 
@@ -26,7 +26,7 @@
   - 35 个 random-patch 植被配置已拆分为 `simple_block` Feature，以及 count、offset、predicate 放置修饰器。
   - 删除 106 个过时的 1.21 `configured_feature` JSON 资源。
 - [x] 所有生成结构资源包均使用 **121.0** 数据包元数据，包括 Architecture Pilot 和 Urban Districts。
-- [x] Fabric 与 NeoForge 两个模块的世界生成资源完整性测试通过。
+- [x] 两个加载器模块均通过 **108 项自动化测试**，包括世界生成资源完整性测试。
 
 ### 尚未完成
 
