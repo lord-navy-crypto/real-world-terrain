@@ -19,6 +19,16 @@ const shareLinkInput = document.querySelector("#share-link-input");
 const copyShareLinkButton = document.querySelector("#copy-share-link");
 const threeDLegend = document.querySelector("#three-d-legend");
 const reset3dViewButton = document.querySelector("#reset-3d-view");
+const exportWorkerState = document.querySelector("#export-worker-state");
+const exportPresetSelect = document.querySelector("#export-preset");
+const exportAreaSelect = document.querySelector("#export-area");
+const createWorldExportButton = document.querySelector("#create-world-export");
+const cancelWorldExportButton = document.querySelector("#cancel-world-export");
+const worldExportStatus = document.querySelector("#world-export-status");
+const worldExportProgress = document.querySelector("#world-export-progress");
+const worldExportProgressBar = document.querySelector("#world-export-progress-bar");
+const downloadWorldExportLink = document.querySelector("#download-world-export");
+const checkExportWorkerButton = document.querySelector("#check-export-worker");
 const randomSeedButton = document.querySelector("#random-seed");
 const statusText = document.querySelector("#generation-status");
 const loading = document.querySelector("#map-loading");
@@ -54,6 +64,10 @@ let cameraPitch = 0.78;
 let cameraZoom = 1;
 let cameraDrag = null;
 let cameraRenderQueued = false;
+let exportWorkerOnline = false;
+let activeWorldExportId = null;
+let isWorldExporting = false;
+let exportPollTimer = null;
 function colorForTerrain(height, temperature, humidity, slope, view) {
   if (height < SEA_LEVEL - 180) {
     const depth = clamp((SEA_LEVEL - height) / 520, 0, 1);
@@ -729,6 +743,152 @@ function reset3dCamera() {
   queue3dCameraRender();
 }
 
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes < 0) return "unknown size";
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function updateWorldExportControls() {
+  createWorldExportButton.disabled = !exportWorkerOnline || isWorldExporting;
+  cancelWorldExportButton.disabled = !activeWorldExportId;
+}
+
+async function checkExportWorker() {
+  exportWorkerState.textContent = "CHECKING LOCAL WORKER";
+  try {
+    const response = await window.fetch("/api/health", { cache: "no-store" });
+    if (!response.ok) throw new Error("Local worker returned HTTP " + response.status);
+    const health = await response.json();
+    if (health.status !== "ok") throw new Error("Local worker is not ready");
+    exportWorkerOnline = true;
+    exportWorkerState.textContent = "LOCAL WORKER READY";
+    worldExportStatus.textContent = "Local NeoForge worker ready · exports run on this machine";
+  } catch {
+    exportWorkerOnline = false;
+    exportWorkerState.textContent = "WORKER OFFLINE";
+    worldExportStatus.textContent = "Start the local worker in another terminal: cd world-studio && npm run worker";
+  }
+  updateWorldExportControls();
+}
+
+function applyWorldExportJob(job) {
+  if (!job) return;
+  if (Number.isFinite(job.progress)) {
+    worldExportProgress.hidden = false;
+    worldExportProgressBar.style.width = Math.max(0, Math.min(100, job.progress)) + "%";
+  }
+  if (typeof job.message === "string") worldExportStatus.textContent = job.message;
+
+  if (job.status === "completed") {
+    activeWorldExportId = null;
+    isWorldExporting = false;
+    worldExportProgressBar.style.width = "100%";
+    const verified = job.result?.validation?.verifiedChunks ?? job.request?.chunkCount ?? 0;
+    const bytes = formatFileSize(job.result?.archiveBytes);
+    worldExportStatus.textContent = "World save ready · " + verified + " chunks validated · " + bytes;
+    downloadWorldExportLink.href = job.result?.downloadUrl || "#";
+    downloadWorldExportLink.hidden = false;
+    downloadWorldExportLink.textContent = "Download validated world (.zip) · " + bytes + " ↓";
+  } else if (job.status === "failed") {
+    activeWorldExportId = null;
+    isWorldExporting = false;
+    worldExportStatus.textContent = "Export failed · " + (job.error || "Check the local worker log");
+  } else if (job.status === "cancelled") {
+    activeWorldExportId = null;
+    isWorldExporting = false;
+    worldExportStatus.textContent = "World generation cancelled";
+  } else if (job.status === "cancelling") {
+    worldExportStatus.textContent = "Stopping the Minecraft server safely…";
+  } else {
+    isWorldExporting = true;
+  }
+  updateWorldExportControls();
+}
+
+async function pollWorldExport(jobId) {
+  if (activeWorldExportId !== jobId) return;
+  try {
+    const response = await window.fetch("/api/world-exports/" + encodeURIComponent(jobId), {
+      cache: "no-store"
+    });
+    if (!response.ok) throw new Error("Unable to read world export status");
+    const payload = await response.json();
+    applyWorldExportJob(payload.job);
+    if (activeWorldExportId === jobId) {
+      exportPollTimer = window.setTimeout(() => pollWorldExport(jobId), 1500);
+    }
+  } catch {
+    worldExportStatus.textContent = "Worker connection interrupted · retrying job status…";
+    exportPollTimer = window.setTimeout(() => pollWorldExport(jobId), 3000);
+  }
+}
+
+async function startWorldExport() {
+  if (!exportWorkerOnline || isWorldExporting) return;
+  const side = Number(exportAreaSelect.value);
+  const request = {
+    seed: seedInput.value.trim(),
+    preset: exportPresetSelect.value,
+    widthChunks: side,
+    depthChunks: side,
+    centerX: 0,
+    centerZ: 0
+  };
+  if (!request.seed) {
+    worldExportStatus.textContent = "Enter a world seed before exporting";
+    seedInput.focus();
+    return;
+  }
+
+  isWorldExporting = true;
+  activeWorldExportId = null;
+  downloadWorldExportLink.hidden = true;
+  worldExportProgress.hidden = false;
+  worldExportProgressBar.style.width = "0%";
+  worldExportStatus.textContent = "Submitting a real Minecraft world-generation job…";
+  updateWorldExportControls();
+
+  try {
+    const response = await window.fetch("/api/world-exports", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(request)
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Unable to create world export");
+    activeWorldExportId = payload.job.id;
+    applyWorldExportJob(payload.job);
+    if (activeWorldExportId) await pollWorldExport(activeWorldExportId);
+  } catch (error) {
+    activeWorldExportId = null;
+    isWorldExporting = false;
+    worldExportStatus.textContent = "Could not start export · " + (error?.message || "worker error");
+    updateWorldExportControls();
+  }
+}
+
+async function cancelWorldExport() {
+  if (!activeWorldExportId) return;
+  const jobId = activeWorldExportId;
+  cancelWorldExportButton.disabled = true;
+  worldExportStatus.textContent = "Requesting safe cancellation…";
+  try {
+    const response = await window.fetch("/api/world-exports/" + encodeURIComponent(jobId) + "/cancel", {
+      method: "POST"
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Cancellation request failed");
+    applyWorldExportJob(payload.job);
+    if (activeWorldExportId === jobId) await pollWorldExport(jobId);
+  } catch (error) {
+    worldExportStatus.textContent = "Unable to cancel export · " + (error?.message || "worker error");
+    cancelWorldExportButton.disabled = false;
+  }
+}
+
+
 randomSeedButton.addEventListener("click", () => {
   const bytes = new Uint32Array(2);
   crypto.getRandomValues(bytes);
@@ -745,6 +905,9 @@ shareButton.addEventListener("click", copyShareLink);
 copyShareLinkButton.addEventListener("click", copyVisibleShareLink);
 cancelButton.addEventListener("click", cancelGeneration);
 reset3dViewButton.addEventListener("click", reset3dCamera);
+createWorldExportButton.addEventListener("click", startWorldExport);
+cancelWorldExportButton.addEventListener("click", cancelWorldExport);
+checkExportWorkerButton.addEventListener("click", checkExportWorker);
 refreshButton.addEventListener("click", generateMap);
 sizeSelect.addEventListener("change", () => {
   statusText.textContent = "World size changed · regenerate to update preview";
@@ -770,6 +933,8 @@ sizeSelect.value = String(initialWorldSettings.size);
 reliefSlider.value = String(initialWorldSettings.relief);
 reliefValue.textContent = initialWorldSettings.relief + "%";
 setView(initialWorldSettings.view);
+
+checkExportWorker();
 
 terrainWorker = createTerrainWorker();
 computeMode.textContent = terrainWorker ? "WEB WORKER" : "MAIN THREAD FALLBACK";
