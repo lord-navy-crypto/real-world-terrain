@@ -182,8 +182,8 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn("NEUTRAL_UV_MIN = 7.5f", uv)
-        self.assertIn("NEUTRAL_UV_RANGE = 1.0f", uv)
+        self.assertIn("NEUTRAL_UV_MIN = 7.4375f", uv)
+        self.assertIn("NEUTRAL_UV_RANGE = 0.125f", uv)
         self.assertIn("computeCellAlignedPatchInto", uv)
         self.assertIn("sprite.getU(u), sprite.getV(v)", IRIS_RENDERER)
 
