@@ -28,13 +28,13 @@ neoForge {
 }
 
 
-// Dedicated original v1.3 Terrain Lab dependencies. YACL is CLIENT-ONLY in
-// metadata; the server must remain playable without any YACL installation.
+// Dedicated 26.3 Terrain Lab dependencies. YACL is CLIENT-ONLY in
+// metadata; production dedicated servers do not require a YACL installation.
 // Lithostitched is used only when the player explicitly exports a Lab profile
 // that contains its codecs, never by the legacy world-presets (including saved-world compatibility IDs).
 repositories {
     // Use YACL's author-maintained Maven rather than a brittle Modrinth
-    // short-ID/version artifact endpoint. This is the exact 1.21.1 NeoForge
+    // short-ID/version artifact endpoint. This is the exact 26.3 NeoForge
     // build used by the Config GUI.
     maven {
         name = 'Xander Maven'
@@ -72,7 +72,7 @@ repositories {
     }
 }
 dependencies {
-    implementation 'dev.isxander:yet-another-config-lib:3.9.7+26.3-neoforge' // YACL 3.8.1, official upstream Maven
+    implementation 'dev.isxander:yet-another-config-lib:3.9.7+26.3-neoforge' // YACL 3.9.7 for 26.3, official upstream Maven
     // Lithostitched-specific export integration is deferred until a verified 26.3 artifact is available.
     testImplementation(platform('org.junit:junit-bom:5.14.1'))
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -193,7 +193,7 @@ tasks.register("generateBuiltInStructurePacks") {
         def root = generatedStructureResources.get().asFile
         project.delete(root)
 
-        // Exact Minecraft 1.21.1 structure-set placement baselines.
+        // Original vanilla structure-set placement baselines retained for the 26.3 data format.
         // Keep in sync with scripts/make_structure_density_packs.py; CI compares
         // all generated resources to that independently tested implementation.
         def overworld = [
