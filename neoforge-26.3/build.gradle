@@ -660,3 +660,17 @@ sourceSets.main.resources.srcDir(generatedStructureResources)
 tasks.named("processResources") {
     dependsOn("generateBuiltInStructurePacks")
 }
+
+
+// Optional vehicle port is intentionally deferred from the 26.3 terrain build.
+// Original NeoForge vehicle sources remain in this module for a later dedicated migration.
+sourceSets {
+    main {
+        java {
+            exclude '**/HovercraftEntity.java'
+            exclude '**/HovercraftItem.java'
+            exclude '**/RealScaleVehicles.java'
+            exclude '**/RealScaleHovercraftClient.java'
+        }
+    }
+}

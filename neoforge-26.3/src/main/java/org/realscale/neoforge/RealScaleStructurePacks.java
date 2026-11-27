@@ -5,13 +5,10 @@ import com.google.gson.JsonParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
-import net.minecraft.server.packs.PathPackResources;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
+import net.neoforged.neoforge.event.AddPackFindersEvent;
 
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -90,37 +87,43 @@ public final class RealScaleStructurePacks {
         }
     }
 
-    public static void register() {
+    public static void register(AddPackFindersEvent event) {
+        if (event.getPackType() != PackType.SERVER_DATA) return;
 
         Selection current = readSelection();
         for (int ratio : new int[]{2, 3, 4, 6}) {
-            registerOne( "overworld_" + ratio,
+            registerOne(event, "overworld_" + ratio,
                     "RealScale | Overworld Structures " + ratio + "x",
                     current.overworld() == ratio);
         }
         for (int ratio : new int[]{2, 3}) {
-            registerOne( "dimensions_" + ratio,
+            registerOne(event, "dimensions_" + ratio,
                     "RealScale | Nether + End Structures " + ratio + "x",
                     current.otherDimensions() == ratio);
         }
         // Terrain Lab controls the next-world default. The pack remains
         // optional (required=false); existing saves retain their own selection.
-        registerOne( "architecture_pilot",
+        registerOne(event, "architecture_pilot",
                 "RealScale | Architecture Library (100 Structures)",
                 current.architectureEnabled());
         // Cities have their own optional pack; existing world datapack state
         // is never silently rewritten. The checkbox affects NEW worlds only.
-        registerOne( "urban_districts",
+        registerOne(event, "urban_districts",
                 "RealScale | Modern Cities (4 High-Rise Districts)",
                 urbanDistrictsEnabled());
     }
 
-    private static void registerOne(String id, String displayName, boolean selectedDefault) {
-        var mod = FabricLoader.getInstance().getModContainer(MODID).orElseThrow();
-        boolean ok = ResourceManagerHelper.registerBuiltinResourcePack(
-            Identifier.fromNamespaceAndPath(MODID, "realscale_structures_" + id), mod,
-            selectedDefault ? ResourcePackActivationType.DEFAULT_ENABLED : ResourcePackActivationType.NORMAL);
-        if (!ok) throw new IllegalStateException("Missing built-in RealScale pack: " + id);
+    private static void registerOne(AddPackFindersEvent event, String id,
+                                    String displayName, boolean selectedDefault) {
+        event.addPackFinders(
+                Identifier.fromNamespaceAndPath(
+                        MODID, "resourcepacks/realscale_structures_" + id),
+                PackType.SERVER_DATA,
+                Component.literal(displayName),
+                selectedDefault ? PackSource.DEFAULT : OPTIONAL_BUILT_IN,
+                false, // Never mandatory: an existing world may omit this pack.
+                Pack.Position.TOP);
     }
+
     private RealScaleStructurePacks() {}
 }
