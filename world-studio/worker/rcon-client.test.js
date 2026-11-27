@@ -20,7 +20,7 @@ function readPacket(socket, buffer, callback) {
   });
 }
 
-async function createFakeRcon({ rejectAuth = false } = {}) {
+async function createFakeRcon({ rejectAuth = false, ignoreCommands = false } = {}) {
   const server = net.createServer(socket => {
     const buffer = { value: Buffer.alloc(0) };
     const next = () => readPacket(socket, buffer, packet => {
@@ -29,7 +29,7 @@ async function createFakeRcon({ rejectAuth = false } = {}) {
         const response = encodeRconPacket(id, 2, "");
         socket.write(response.subarray(0, 3));
         setTimeout(() => socket.write(response.subarray(3)), 2);
-      } else {
+      } else if (!ignoreCommands) {
         const response = encodeRconPacket(packet.requestId, 0, "OK:" + packet.body);
         socket.write(response);
       }
@@ -76,4 +76,14 @@ test("RCON packet encoder writes the Minecraft little-endian framing", () => {
   assert.equal(packet.readInt32LE(8), 2);
   assert.equal(packet.subarray(12, -2).toString("utf8"), "seed");
   assert.deepEqual([...packet.subarray(-2)], [0, 0]);
+});
+
+
+test("RCON client closes a desynchronized socket after a command timeout", async t => {
+  const fake = await createFakeRcon({ ignoreCommands: true });
+  t.after(fake.close);
+  const client = await RconClient.connect({ port: fake.port, password: "test", timeoutMs: 80 });
+  await assert.rejects(client.command("slow"), /timed out/);
+  assert.equal(client.socket.destroyed, true);
+  client.close();
 });
