@@ -501,7 +501,11 @@ export async function runMinecraftExport(input, {
         minecraftVersion: request.minecraftVersion,
         neoforgeVersion: request.neoforgeVersion,
         modId: "realscale",
-        realscaleVersion: request.realscaleVersion
+        realscaleVersion: request.realscaleVersion,
+        clientDependencies: [{
+          modId: "yet_another_config_lib_v3",
+          version: "3.8.1+1.21.1"
+        }]
       },
       vanillaCompatible: false,
       note: "This is a real generated Minecraft save. It requires the matching RealScale NeoForge mod; vanilla compatibility has not been validated."
