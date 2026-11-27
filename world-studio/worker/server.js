@@ -2,6 +2,7 @@ import http from "node:http";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import path from "node:path";
+import { pipeline } from "node:stream/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { WorldExportJobManager } from "./job-manager.js";
 
@@ -11,6 +12,10 @@ const LOCAL_ORIGIN_PORTS = new Set(["", "5173", "4173", "4174"]);
 
 function sendJson(response, statusCode, value) {
   if (response.destroyed || response.writableEnded) return;
+  if (response.headersSent) {
+    response.destroy();
+    return;
+  }
   const body = Buffer.from(JSON.stringify(value));
   response.writeHead(statusCode, {
     "content-type": "application/json; charset=utf-8",
@@ -87,6 +92,7 @@ function createWorldExportServer({ manager = new WorldExportJobManager() } = {})
   server.requestTimeout = 20_000;
   server.headersTimeout = 10_000;
   server.maxHeadersCount = 32;
+  server.worldExportManager = manager;
   return server;
 }
 
@@ -170,13 +176,7 @@ async function handleRequest(request, response, manager) {
       "x-content-type-options": "nosniff",
       "x-realscale-sha256": download.sha256
     });
-    await new Promise((resolve, reject) => {
-      const stream = createReadStream(filePath);
-      stream.once("error", reject);
-      response.once("error", reject);
-      response.once("finish", resolve);
-      stream.pipe(response);
-    });
+    await pipeline(createReadStream(filePath), response);
     return;
   }
 
@@ -195,6 +195,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === MODULE_PATH) {
     process.stdout.write("RealScale World Export Worker listening on http://" + host + ":" + port + "\n");
   });
   const shutdown = () => {
+    server.worldExportManager.shutdown();
     server.close(() => process.exit(0));
   };
   process.once("SIGINT", shutdown);
