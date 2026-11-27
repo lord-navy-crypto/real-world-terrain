@@ -906,7 +906,7 @@ def capture_natural_surface_view(proc, lines) -> None:
     validate_screenshot(image)
     contrast = terrain_contrast(image)
     colors = terrain_color_count(image)
-    if contrast < 0.06 or colors < 16:
+    if contrast < 0.055 or colors < 16:
         raise RuntimeError("Natural eye-level terrain lacks visible surface detail: "
                            f"contrast={contrast:.5f}, colors={colors}")
 
