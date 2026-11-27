@@ -1,6 +1,8 @@
 # RealScale — Fabric 26.3
 
-Experimental migration workspace for Minecraft Java **26.3**. This is not a release build.\n\n**The Fabric and NeoForge ports target the same Minecraft version, but their JARs are loader-specific and are not interchangeable.** Use this artifact only with Fabric.
+Experimental migration workspace for Minecraft Java **26.3**. This is not a release build.
+
+**The Fabric and NeoForge ports target the same Minecraft version, but their JARs are loader-specific and are not interchangeable.** Use this artifact only with Fabric.
 
 ## Toolchain
 
