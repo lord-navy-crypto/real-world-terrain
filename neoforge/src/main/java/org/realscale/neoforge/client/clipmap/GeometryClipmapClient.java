@@ -41,6 +41,11 @@ public final class GeometryClipmapClient {
     private static final boolean SMOKE_CAMERA =
             Boolean.parseBoolean(System.getProperty(
                     "realscale.experimental.geometryclipmap.smokeCamera", "false"));
+    // Pin the opt-in CI camera to one world position so screenshots are
+    // comparable across runs; normal gameplay never reads these coordinates.
+    private static final double SMOKE_CAMERA_X = 0.5d;
+    private static final double SMOKE_CAMERA_Y = 2304.9d;
+    private static final double SMOKE_CAMERA_Z = 1.5d;
     private static ClientLevel lastLevel;
     private static int lastNearChunks = -1;
     private static int lastGridCells = -1;
@@ -411,18 +416,24 @@ public final class GeometryClipmapClient {
                 cameraVantageReported = true;
                 Minecraft minecraft = Minecraft.getInstance();
                 if (SMOKE_CAMERA && minecraft.player != null) {
-                    // Face down toward the generated surface. This is strictly
-                    // opt-in for the automated screenshot harness, never normal gameplay.
+                    // Pin position and orientation so the rendered surface is
+                    // reproducible across CI runs. This is strictly opt-in for
+                    // the automated screenshot harness, never normal gameplay.
+                    minecraft.player.setPos(
+                            SMOKE_CAMERA_X, SMOKE_CAMERA_Y, SMOKE_CAMERA_Z);
                     minecraft.player.setYRot(45.0f);
                     minecraft.player.setXRot(35.0f);
                     minecraft.player.setYHeadRot(45.0f);
                 }
                 float pitch = minecraft.player == null ? 0.0f : minecraft.player.getXRot();
                 float yaw = minecraft.player == null ? 0.0f : minecraft.player.getYRot();
+                double vantageX = minecraft.player == null ? cameraPosition.x : minecraft.player.getX();
+                double vantageY = minecraft.player == null ? cameraPosition.y : minecraft.player.getY();
+                double vantageZ = minecraft.player == null ? cameraPosition.z : minecraft.player.getZ();
                 System.out.printf(java.util.Locale.ROOT,
                         "[RealScale Geometry Clipmap] CLIENT_CAMERA_VANTAGE_READY: "
                                 + "x=%.1f y=%.1f z=%.1f pitch=%.1f yaw=%.1f%n",
-                        cameraPosition.x, cameraPosition.y, cameraPosition.z, pitch, yaw);
+                        vantageX, vantageY, vantageZ, pitch, yaw);
             }
         }
 
