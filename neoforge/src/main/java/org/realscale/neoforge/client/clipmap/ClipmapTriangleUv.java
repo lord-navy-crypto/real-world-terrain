@@ -17,8 +17,8 @@ public final class ClipmapTriangleUv {
     private static final float MIN_SPAN = 1.0e-6f;
     // A one-pixel neutral-white patch keeps the Iris tangent basis non-degenerate
     // without sampling the full noisy PBR sprite on every distant grid cell.
-    private static final float NEUTRAL_UV_MIN = 7.5f;
-    private static final float NEUTRAL_UV_RANGE = 1.0f;
+    private static final float NEUTRAL_UV_MIN = 7.4375f;
+    private static final float NEUTRAL_UV_RANGE = 0.125f;
 
     private ClipmapTriangleUv() {
     }
@@ -89,10 +89,10 @@ public final class ClipmapTriangleUv {
     }
 
     /**
-     * Maps each surface quad into the same one-pixel patch at the centre of
-     * the neutral white-concrete sprite. This preserves a well-conditioned
-     * tangent basis for Iris/PBR shaders while avoiding the full atlas detail
-     * pattern that aliases when repeated at every coarse LOD cell.
+     * Maps each surface quad into a 1/8-pixel patch centred on one neutral
+     * white-concrete texel. This preserves a well-conditioned tangent basis
+     * for Iris/PBR shaders while preventing neighbouring atlas texels from
+     * forming a repeated pattern at every coarse LOD cell.
      */
     public static void computeNeutralCellAlignedInto(int[] gridX, int[] gridZ,
             float[] destination) {
