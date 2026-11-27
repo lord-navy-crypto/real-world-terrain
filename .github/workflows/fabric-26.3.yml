@@ -3,7 +3,7 @@ on:
   push:
     paths: ["fabric-26.3/**", "scripts/**", "assets/architecture/gdmc-source/**", ".github/workflows/fabric-26.3.yml"]
   pull_request:
-    paths: ["fabric-26.3/**", ".github/workflows/fabric-26.3.yml"]
+    paths: ["fabric-26.3/**", "scripts/**", "assets/architecture/gdmc-source/**", ".github/workflows/fabric-26.3.yml"]
   workflow_dispatch:
 jobs:
   build:
