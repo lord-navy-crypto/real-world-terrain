@@ -7,8 +7,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import org.realscale.neoforge.compat.dhchunky.DhChunkyGuardCommands;
 
-/** Fabric 1.21.1 entrypoint. Registry codecs and features mirror the current
- * 1.21.1 NeoForge implementation; loader-specific hooks remain Fabric-native.
+/** Fabric 26.3 entrypoint. Shared world-generation codecs and features mirror
+ * the 26.3 NeoForge port; loader-specific hooks remain Fabric-native.
  */
 public final class RealScaleMod implements ModInitializer {
     @Override
@@ -54,6 +54,6 @@ public final class RealScaleMod implements ModInitializer {
         FabricBiomeModifiers.register();
         CommandRegistrationCallback.EVENT.register(
                 (dispatcher, access, environment) -> DhChunkyGuardCommands.registerCommands(dispatcher));
-        System.out.println("[RealScale] Fabric 1.21.1 registries initialized: 94 codecs/features.");
+        System.out.println("[RealScale] Fabric 26.3 registries initialized.");
     }
 }
