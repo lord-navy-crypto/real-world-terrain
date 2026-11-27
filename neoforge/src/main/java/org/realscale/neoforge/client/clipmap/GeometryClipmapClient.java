@@ -68,6 +68,7 @@ public final class GeometryClipmapClient {
     private static boolean unsupportedWorld;
     private static boolean irisCompatibilityNoticeShown;
     private static boolean cameraVantageReported;
+    private static boolean smokeCameraMovementStarted;
     // CI-only telemetry used to prove that the smoke camera actually crossed
     // a clipmap centre boundary during the real-client movement gate.
     private static long lastSmokeCameraTelemetryNanos;
@@ -424,6 +425,8 @@ public final class GeometryClipmapClient {
                     minecraft.player.setYRot(45.0f);
                     minecraft.player.setXRot(35.0f);
                     minecraft.player.setYHeadRot(45.0f);
+                    minecraft.player.setDeltaMovement(0.0, 0.0, 0.0);
+                    smokeCameraMovementStarted = false;
                 }
                 float pitch = minecraft.player == null ? 0.0f : minecraft.player.getXRot();
                 float yaw = minecraft.player == null ? 0.0f : minecraft.player.getYRot();
@@ -434,6 +437,30 @@ public final class GeometryClipmapClient {
                         "[RealScale Geometry Clipmap] CLIENT_CAMERA_VANTAGE_READY: "
                                 + "x=%.1f y=%.1f z=%.1f pitch=%.1f yaw=%.1f%n",
                         vantageX, vantageY, vantageZ, pitch, yaw);
+            }
+        }
+
+        // Keep the camera pinned after the first high-altitude frame. The harness
+        // explicitly releases the pin by starting horizontal movement with A/D/W/S.
+        // This prevents the held ascent key from drifting the screenshot pose.
+        else if (DEBUG && SMOKE_CAMERA && cameraVantageReported
+                && !smokeCameraMovementStarted
+                && event.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.player != null) {
+                if (minecraft.options.keyRight.isDown() || minecraft.options.keyLeft.isDown()
+                        || minecraft.options.keyUp.isDown() || minecraft.options.keyDown.isDown()) {
+                    smokeCameraMovementStarted = true;
+                    System.out.println(
+                            "[RealScale Geometry Clipmap] CLIENT_CAMERA_PIN_RELEASED_FOR_MOVEMENT");
+                } else {
+                    minecraft.player.setPos(
+                            SMOKE_CAMERA_X, SMOKE_CAMERA_Y, SMOKE_CAMERA_Z);
+                    minecraft.player.setYRot(45.0f);
+                    minecraft.player.setXRot(35.0f);
+                    minecraft.player.setYHeadRot(45.0f);
+                    minecraft.player.setDeltaMovement(0.0, 0.0, 0.0);
+                }
             }
         }
 
