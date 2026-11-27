@@ -79,8 +79,8 @@ async function collectFiles(root, directory = root) {
       result.push(...await collectFiles(root, fullPath));
     } else if (info.isFile()) {
       const relative = path.relative(root, fullPath).split(path.sep).join("/");
-      if (!relative || relative.startsWith("/") || relative.split("/").some(part => part === ".." || part === "")) {
-        throw new Error("Unsafe world archive path");
+      if (!relative || relative === "realscale-export.json" || relative.startsWith("/") || relative.split("/").some(part => part === ".." || part === "")) {
+        throw new Error("Unsafe or reserved world archive path");
       }
       if (info.size > MAX_FILE_BYTES) throw new Error("World file exceeds the 256 MiB packaging limit: " + relative);
       result.push({ fullPath, relative, size: info.size });
@@ -94,6 +94,15 @@ async function collectFiles(root, directory = root) {
 function validateArchiveName(name) {
   if (typeof name !== "string" || !/^[a-z0-9][a-z0-9_-]{0,63}$/u.test(name)) {
     throw new TypeError("World archive name must be a safe lowercase identifier");
+  }
+}
+
+async function writeAll(handle, buffer) {
+  let offset = 0;
+  while (offset < buffer.length) {
+    const result = await handle.write(buffer, offset, buffer.length - offset);
+    if (!result.bytesWritten) throw new Error("Unable to finish writing world archive");
+    offset += result.bytesWritten;
   }
 }
 
@@ -176,7 +185,7 @@ export async function createWorldArchive(worldDirectory, outputPath, { archiveNa
   let written = 0;
   try {
     for (const part of [...localParts, ...centralParts, end]) {
-      await handle.write(part);
+      await writeAll(handle, part);
       hash.update(part);
       written += part.length;
     }
