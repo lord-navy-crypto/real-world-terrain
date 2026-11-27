@@ -69,8 +69,15 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("minimum_seconds=90", SMOKE)
         self.assertIn("iris-clipmap-after-motion-final", SMOKE)
         self.assertIn("854x240+0+0", SMOKE)
-        self.assertIn("Persistent post-motion terrain contrast collapse", SMOKE)
-        self.assertIn("IRIS_TERRAIN_CONTRAST_GATE_PASS", SMOKE)
+        self.assertIn("def move_camera_to_baseline", SMOKE)
+        self.assertIn("CLIENT_CAMERA_RETURNED_TO_BASELINE", SMOKE)
+        self.assertIn("returned_center != baseline_center", SMOKE)
+        self.assertIn("IRIS_TERRAIN_RETURN_CONTRAST_GATE_PASS", SMOKE)
+        self.assertIn("IRIS_TERRAIN_MOVED_REGION_DETAIL_GATE_PASS", SMOKE)
+        self.assertIn("terrain_color_count(moving)", SMOKE)
+        self.assertIn("terrain_color_count(final_frame)", SMOKE)
+        self.assertIn("minimum_seconds=90", SMOKE)
+        self.assertIn("iris-clipmap-returned-to-baseline", SMOKE)
 
     def test_native_proxy_meshes_are_independent_and_seams_use_valid_fine_samples(self):
         self.assertIn("proxySolidBuffer", IRIS_RENDERER)
