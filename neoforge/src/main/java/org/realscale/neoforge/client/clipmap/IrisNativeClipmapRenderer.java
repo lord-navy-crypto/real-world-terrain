@@ -682,8 +682,8 @@ final class IrisNativeClipmapRenderer {
                             continuousColor, voxelColor, voxelBlend);
                 }
                 // Never paint terrain surfaces with block/item-atlas artwork.
-                // Sample only a one-pixel neutral patch to preserve Iris's
-                // per-vertex tangent basis without repeating the full PBR atlas.
+                // Sample only a sub-texel neutral patch to preserve Iris's
+                // per-vertex tangent basis without repeating neighbouring PBR texels.
                 // Actual terrain material remains in the biome-aware vertex palette.
                 ClipmapTriangleUv.computeNeutralCellAlignedInto(
                         gridX, gridZ, triangleUvs);
