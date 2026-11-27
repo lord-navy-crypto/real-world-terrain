@@ -115,13 +115,17 @@ export class RconClient {
     const deadline = Date.now() + this.timeoutMs;
     while (Date.now() < deadline) {
       const remaining = deadline - Date.now();
-      const packet = await Promise.race([
-        this.readPacket(),
-        new Promise((_, reject) => {
-          const timer = setTimeout(() => reject(new Error("RCON response timed out")), remaining);
-          timer.unref?.();
-        })
-      ]);
+      let timer;
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error("RCON response timed out")), remaining);
+        timer.unref?.();
+      });
+      let packet;
+      try {
+        packet = await Promise.race([this.readPacket(), timeout]);
+      } finally {
+        clearTimeout(timer);
+      }
       if (packet.requestId === -1) throw new Error("Minecraft RCON authentication was rejected");
       if (packet.requestId !== requestId) continue;
       return packet;
