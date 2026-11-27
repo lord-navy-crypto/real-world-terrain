@@ -1,7 +1,7 @@
 package org.realscale.neoforge;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
@@ -125,14 +125,14 @@ public final class GeographicClimateInspectorScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
-        graphics.drawCenteredString(font, title, width / 2, 12, 0xffffffff);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        graphics.centeredText(font, title, width / 2, 12, 0xffffffff);
 
         if (report == null) {
-            graphics.drawCenteredString(font, Component.literal(unavailableReason),
+            graphics.centeredText(font, Component.literal(unavailableReason),
                     width / 2, height / 2 - 12, 0xffffcc88);
-            graphics.drawCenteredString(font,
+            graphics.centeredText(font,
                     Component.literal("No world-generation node is required for this geographic report."),
                     width / 2, height / 2 + 8, 0xffbbbbbb);
             return;
@@ -167,24 +167,24 @@ public final class GeographicClimateInspectorScreen extends Screen {
         }
 
         int noteY = Math.min(height - 48, y + 18);
-        graphics.drawCenteredString(font,
+        graphics.centeredText(font,
                 Component.literal("X is the east–west map coordinate, not a true longitude."),
                 width / 2, noteY, 0xffc8c8c8);
-        graphics.drawCenteredString(font,
+        graphics.centeredText(font,
                 Component.literal("This is not a Köppen classification or local weather forecast."),
                 width / 2, noteY + 13, 0xffa8a8a8);
     }
 
-    private void drawLine(GuiGraphics graphics, String label, String value, int y) {
+    private void drawLine(GuiGraphicsExtractor graphics, String label, String value, int y) {
         int left = Math.max(8, width / 2 - 180);
         int right = Math.min(width - 8, width / 2 + 180);
-        graphics.drawString(font, Component.literal(label), left, y, 0xffb7c9d6);
+        graphics.text(font, Component.literal(label), left, y, 0xffb7c9d6);
         String clipped = font.plainSubstrByWidth(value, Math.max(40, right - left - 130));
-        graphics.drawString(font, Component.literal(clipped), left + 132, y, 0xffffffff);
+        graphics.text(font, Component.literal(clipped), left + 132, y, 0xffffffff);
     }
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().setScreenAndShow(parent);
     }
 }

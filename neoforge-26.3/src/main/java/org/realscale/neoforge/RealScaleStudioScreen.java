@@ -1,7 +1,7 @@
 package org.realscale.neoforge;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -23,17 +23,17 @@ public final class RealScaleStudioScreen extends Screen {
         int y=Math.max(48,height/2-62);
         addRenderableWidget(Button.builder(
                 Component.literal("Terrain Lab — Natural Automate"),
-                button -> Minecraft.getInstance().setScreen(
+                button -> Minecraft.getInstance().setScreenAndShow(
                         RealScaleTerrainLabClient.createScreen(this)))
                 .bounds(x,y,buttonWidth,22).build());
         addRenderableWidget(Button.builder(
                 Component.literal("Performance Studio"),
-                button -> Minecraft.getInstance().setScreen(
+                button -> Minecraft.getInstance().setScreenAndShow(
                         new RealScalePerformanceStudioScreen(this)))
                 .bounds(x,y+30,buttonWidth,22).build());
         addRenderableWidget(Button.builder(
                 Component.literal("Geographic Climate Inspector"),
-                button -> Minecraft.getInstance().setScreen(
+                button -> Minecraft.getInstance().setScreenAndShow(
                         new GeographicClimateInspectorScreen(this)))
                 .bounds(x,y+60,buttonWidth,22).build());
         addRenderableWidget(Button.builder(Component.literal("Back"),
@@ -42,20 +42,20 @@ public final class RealScaleStudioScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics,int mouseX,int mouseY,float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor graphics,int mouseX,int mouseY,float partialTick) {
         renderBackground(graphics,mouseX,mouseY,partialTick);
-        super.render(graphics,mouseX,mouseY,partialTick);
-        graphics.drawCenteredString(font,title,width/2,20,0xffffffff);
-        graphics.drawCenteredString(font,
+        super.extractRenderState(graphics,mouseX,mouseY,partialTick);
+        graphics.centeredText(font,title,width/2,20,0xffffffff);
+        graphics.centeredText(font,
                 Component.literal("One workspace for world profiles, climate and performance."),
                 width/2,36,0xffb9c8d4);
-        graphics.drawCenteredString(font,
+        graphics.centeredText(font,
                 Component.literal("Natural Automate is the recommended experimental terrain mode."),
                 width/2,Math.min(height-18,height/2+80),0xff9eabb5);
     }
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().setScreenAndShow(parent);
     }
 }
