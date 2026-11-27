@@ -183,7 +183,6 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("NEUTRAL_UV_RANGE = 1.0f", uv)
         self.assertIn("computeCellAlignedPatchInto", uv)
         self.assertIn("sprite.getU(u), sprite.getV(v)", IRIS_RENDERER)
-        self.assertNotIn("one-pixel neutral patch", IRIS_RENDERER) if False else None
 
     def test_iris_native_draw_uses_portable_terrain_stage_events(self):
         self.assertIn("prepareIrisFrameFog", IRIS_MIXIN)
