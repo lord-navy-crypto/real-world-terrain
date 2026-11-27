@@ -132,7 +132,13 @@ export class WorldExportJobManager {
     job.controller = new AbortController();
 
     Promise.resolve()
-      .then(() => this.runner(job.request, {
+      .then(() => {
+        if (job.controller.signal.aborted) {
+          const error = new Error("World export was cancelled");
+          error.name = "AbortError";
+          throw error;
+        }
+        return this.runner(job.request, {
         jobId: id,
         signal: job.controller.signal,
         onProgress: update => {
