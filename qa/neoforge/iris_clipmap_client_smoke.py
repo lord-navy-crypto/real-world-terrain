@@ -14,10 +14,12 @@ import pathlib
 import re
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -35,9 +37,47 @@ RCON_PORT = 25575
 SERVER_PORT = 25565
 
 
+RETRYABLE_HTTP_CODES = {408, 425, 429, 500, 502, 503, 504, 522, 524}
+
+
+def open_url_with_retry(request: urllib.request.Request, timeout: int, context: str):
+    max_attempts = 4
+    for attempt in range(max_attempts):
+        try:
+            return urllib.request.urlopen(request, timeout=timeout)
+        except urllib.error.HTTPError as error:
+            if error.code not in RETRYABLE_HTTP_CODES or attempt == max_attempts - 1:
+                raise
+            delay = min(16.0, 2.0 * (2 ** attempt))
+            retry_after = error.headers.get("Retry-After") if error.headers else None
+            if retry_after:
+                try:
+                    delay = min(30.0, max(delay, float(retry_after)))
+                except ValueError:
+                    pass
+            print(
+                f"MODRINTH_TRANSIENT_RETRY: {context} status={error.code} "
+                f"attempt={attempt + 1}/{max_attempts} delay={delay:.1f}s",
+                flush=True,
+            )
+            error.close()
+            time.sleep(delay)
+        except (urllib.error.URLError, TimeoutError, socket.timeout) as error:
+            if attempt == max_attempts - 1:
+                raise
+            delay = min(16.0, 2.0 * (2 ** attempt))
+            print(
+                f"MODRINTH_TRANSIENT_RETRY: {context} network_error={error!r} "
+                f"attempt={attempt + 1}/{max_attempts} delay={delay:.1f}s",
+                flush=True,
+            )
+            time.sleep(delay)
+    raise RuntimeError(f"Unable to fetch {context} after {max_attempts} attempts")
+
+
 def api_json(url: str):
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=60) as response:
+    with open_url_with_retry(request, timeout=60, context=url) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
@@ -48,7 +88,7 @@ def download_version_file(version: dict, destination: pathlib.Path) -> pathlib.P
         raise RuntimeError("Modrinth version has no downloadable file: " + str(version.get("id")))
     path = destination / file_info["filename"]
     request = urllib.request.Request(file_info["url"], headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=180) as response, path.open("wb") as output:
+    with open_url_with_retry(request, timeout=180, context=file_info["filename"]) as response, path.open("wb") as output:
         shutil.copyfileobj(response, output)
     if path.stat().st_size < 100_000:
         raise RuntimeError("Downloaded mod/shader file is unexpectedly small: " + str(path))
