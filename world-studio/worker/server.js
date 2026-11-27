@@ -3,12 +3,11 @@ import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { WorldExportJobManager } from "./job-manager.js";
 
 const MAX_BODY_BYTES = 16 * 1024;
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
-const LOCAL_ORIGIN_PORTS = new Set(["", "5173", "4173", "4174"]);
 
 function sendJson(response, statusCode, value) {
   if (response.destroyed || response.writableEnded) return;
@@ -37,8 +36,7 @@ function isAllowedOrigin(value) {
   try {
     const origin = new URL(value);
     return ["http:", "https:"].includes(origin.protocol)
-      && LOCAL_HOSTS.has(origin.hostname.toLowerCase())
-      && LOCAL_ORIGIN_PORTS.has(origin.port);
+      && LOCAL_HOSTS.has(origin.hostname.toLowerCase());
   } catch {
     return false;
   }
