@@ -8,7 +8,7 @@ import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
@@ -195,7 +195,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
         this.source = source;
         this.transitionBiomes = new HashMap<>();
         for (Rule rule : RULES) {
-            ResourceLocation location = ResourceLocation.fromNamespaceAndPath("realscale", rule.target());
+            Identifier location = Identifier.fromNamespaceAndPath("realscale", rule.target());
             transitionBiomes.put(rule.target(), biomes.getOrThrow(ResourceKey.create(Registries.BIOME, location)));
         }
     }
@@ -247,7 +247,7 @@ public final class NaturalEcotoneBiomeSource extends BiomeSource {
 
     private static String vanillaId(Holder<Biome> holder) {
         return holder.unwrapKey().map(key -> {
-            ResourceLocation location = key.location();
+            Identifier location = key.location();
             return "minecraft".equals(location.getNamespace()) ? location.getPath() : "";
         }).orElse("");
     }

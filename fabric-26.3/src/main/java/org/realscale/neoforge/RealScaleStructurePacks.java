@@ -3,7 +3,7 @@ package org.realscale.neoforge;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.PathPackResources;
 import net.minecraft.server.packs.repository.Pack;
@@ -118,7 +118,7 @@ public final class RealScaleStructurePacks {
     private static void registerOne(String id, String displayName, boolean selectedDefault) {
         var mod = FabricLoader.getInstance().getModContainer(MODID).orElseThrow();
         boolean ok = ResourceManagerHelper.registerBuiltinResourcePack(
-            ResourceLocation.fromNamespaceAndPath(MODID, "realscale_structures_" + id), mod,
+            Identifier.fromNamespaceAndPath(MODID, "realscale_structures_" + id), mod,
             selectedDefault ? ResourcePackActivationType.DEFAULT_ENABLED : ResourcePackActivationType.NORMAL);
         if (!ok) throw new IllegalStateException("Missing built-in RealScale pack: " + id);
     }

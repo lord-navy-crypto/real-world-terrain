@@ -1,4 +1,6 @@
 package org.realscale.neoforge;
+
+import net.minecraft.resources.Identifier;
 import com.google.gson.*;
 import java.io.IOException;
 import java.nio.file.*;
@@ -37,11 +39,11 @@ final class FabricBiomeModifiers {
                         BiomeModifications.addFeature(context -> {
                             for (String selector : selectors) {
                                 if (selector.startsWith("#")) {
-                                    if (context.hasTag(TagKey.create(Registries.BIOME, ResourceLocation.parse(selector.substring(1))))) return true;
-                                } else if (context.getBiomeKey().location().equals(ResourceLocation.parse(selector))) return true;
+                                    if (context.hasTag(TagKey.create(Registries.BIOME, Identifier.parse(selector.substring(1))))) return true;
+                                } else if (context.getBiomeKey().location().equals(Identifier.parse(selector))) return true;
                             }
                             return false;
-                        }, step, ResourceKey.create(Registries.PLACED_FEATURE, ResourceLocation.parse(feature)));
+                        }, step, ResourceKey.create(Registries.PLACED_FEATURE, Identifier.parse(feature)));
                     }
                     count++;
                 }

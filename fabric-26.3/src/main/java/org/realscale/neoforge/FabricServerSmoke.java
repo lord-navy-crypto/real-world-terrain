@@ -1,6 +1,6 @@
 package org.realscale.neoforge;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtAccounter;
@@ -25,19 +25,19 @@ public final class FabricServerSmoke {
         var resourceManager = server.getResourceManager();
         var packagedResources = resourceManager.listResources(
                 "structure", id -> id.getNamespace().equals("realscale"));
-        var resourceIdsByTemplate = new java.util.HashMap<ResourceLocation, ResourceLocation>();
+        var resourceIdsByTemplate = new java.util.HashMap<Identifier, Identifier>();
         for (var resourceId : packagedResources.keySet()) {
             String path = resourceId.getPath();
             if (path.startsWith("structure/")) path = path.substring("structure/".length());
             if (!path.endsWith(".nbt")) continue;
             String templatePath = path.substring(0, path.length() - ".nbt".length());
             if (!templatePath.startsWith("architecture/") && !templatePath.startsWith("urban/")) continue;
-            var templateId = ResourceLocation.fromNamespaceAndPath(resourceId.getNamespace(), templatePath);
+            var templateId = Identifier.fromNamespaceAndPath(resourceId.getNamespace(), templatePath);
             resourceIdsByTemplate.put(templateId, resourceId);
         }
 
         var ids = resourceIdsByTemplate.keySet().stream()
-                .sorted(java.util.Comparator.comparing(ResourceLocation::toString))
+                .sorted(java.util.Comparator.comparing(Identifier::toString))
                 .toList();
         long architecture = ids.stream().filter(id -> id.getPath().startsWith("architecture/")).count();
         long urban = ids.stream().filter(id -> id.getPath().startsWith("urban/")).count();
@@ -54,7 +54,7 @@ public final class FabricServerSmoke {
         var managerIds = manager.listTemplates()
                 .filter(id -> id.getNamespace().equals("realscale"))
                 .toList();
-        var managerIdsByPath = new java.util.HashMap<String, ResourceLocation>();
+        var managerIdsByPath = new java.util.HashMap<String, Identifier>();
         for (var managerId : managerIds) {
             String path = managerId.getPath();
             if (path.startsWith("structure/")) path = path.substring("structure/".length());
@@ -65,7 +65,7 @@ public final class FabricServerSmoke {
                 + " sample=" + managerIds.stream().limit(8).toList());
 
         var unsupportedBlocks = new java.util.ArrayList<String>();
-        for (ResourceLocation id : ids) {
+        for (Identifier id : ids) {
             var resourceId = resourceIdsByTemplate.get(id);
             var resource = packagedResources.get(resourceId);
             if (resource == null)
@@ -79,7 +79,7 @@ public final class FabricServerSmoke {
                     throw new IllegalStateException("Empty palette in " + id);
                 for (int i = 0; i < palette.size(); i++) {
                     var rawBlockId = palette.getCompound(i).getString("Name");
-                    var blockId = ResourceLocation.tryParse(rawBlockId);
+                    var blockId = Identifier.tryParse(rawBlockId);
                     if (blockId == null || !BuiltInRegistries.BLOCK.containsKey(blockId))
                         unsupportedBlocks.add(rawBlockId + " in " + id);
                 }
@@ -91,7 +91,7 @@ public final class FabricServerSmoke {
             throw new IllegalStateException("Unsupported palette blocks (" + unsupportedBlocks.size()
                     + "): " + unsupportedBlocks.stream().limit(80).toList());
 
-        for (ResourceLocation id : ids) {
+        for (Identifier id : ids) {
             var resourceId = resourceIdsByTemplate.get(id);
             var managerId = managerIdsByPath.get(id.getPath());
             if (managerId == null)
