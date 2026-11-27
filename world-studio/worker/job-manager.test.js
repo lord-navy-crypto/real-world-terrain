@@ -109,3 +109,25 @@ test("rejects invalid export requests before they enter the queue", () => {
   assert.throws(() => manager.create({ seed: "bad", preset: "untrusted" }), /Unsupported RealScale/);
   assert.equal(manager.list().length, 0);
 });
+
+
+test("worker shutdown cancels queued jobs and waits for the active server job", async () => {
+  let signal;
+  const manager = new WorldExportJobManager({
+    runner: (_request, context) => new Promise((_resolve, reject) => {
+      signal = context.signal;
+      signal.addEventListener("abort", () => {
+        const error = new Error("shutdown");
+        error.name = "AbortError";
+        reject(error);
+      }, { once: true });
+    })
+  });
+  const active = manager.create({ seed: "shutdown-active" });
+  const queued = manager.create({ seed: "shutdown-queued" });
+  const shutdown = manager.shutdown();
+  assert.equal(manager.get(queued.id).status, "cancelled");
+  await shutdown;
+  assert.equal(signal.aborted, true);
+  assert.equal(manager.get(active.id).status, "cancelled");
+});
