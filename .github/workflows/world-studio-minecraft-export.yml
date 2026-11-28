@@ -71,6 +71,15 @@ jobs:
           REALSCALE_CHUNK_TIMEOUT_MS: "180000"
         run: node world-studio/worker/integration-smoke.js
 
+      - name: Upload validated Minecraft world save
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-studio-validated-minecraft-save
+          path: build/world-studio-export-smoke/**/*.zip
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Upload server diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4
