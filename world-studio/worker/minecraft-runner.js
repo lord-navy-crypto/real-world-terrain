@@ -263,6 +263,12 @@ function safeJobId(value) {
   return id;
 }
 
+function resolveRunDirectory(neoforgeDirectory) {
+  // ModDevGradle's default server run uses neoforge/run as its game directory.
+  // Keep server.properties, eula.txt, the world, and the lock in that exact directory.
+  return path.join(neoforgeDirectory, "run");
+}
+
 async function ensureProject(neoforgeDirectory) {
   const buildFile = path.join(neoforgeDirectory, "build.gradle");
   const info = await fs.stat(buildFile).catch(() => null);
@@ -358,7 +364,7 @@ export async function runMinecraftExport(input, {
   await ensureProject(neoforgeDirectory);
   throwIfAborted(signal);
 
-  const runDirectory = path.join(neoforgeDirectory, "run", "server");
+  const runDirectory = resolveRunDirectory(neoforgeDirectory);
   await fs.mkdir(runDirectory, { recursive: true });
   const lockPath = path.join(runDirectory, ".realscale-world-export.lock");
   const lock = await acquireRunLock(lockPath, id);
@@ -582,4 +588,4 @@ export async function runMinecraftExport(input, {
   }
 }
 
-export { buildServerProperties };
+export { buildServerProperties, resolveRunDirectory };
