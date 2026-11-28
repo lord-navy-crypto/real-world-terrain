@@ -523,14 +523,14 @@ def wait_for_pause_screen(lines: list[str], start: int, name: str,
                 image = capture_minecraft_screenshot(name)
                 validate_screenshot(image, min_width=640, min_height=360)
                 visible_text = ocr_minecraft_screenshot(image)
-                # Tesseract's English model consistently reads Minecraft's
-                # pixel-font "Game Menu" as "Gane Nery" on the 854x480 Xvfb
-                # framebuffer. Accept that specific, reproducible OCR alias
-                # only in this fixed title crop; the PauseScreen init marker
-                # and the framebuffer screenshot are still both required.
+                # Tesseract's English model reads Minecraft's pixel-font
+                # title inconsistently across runners ("Gane Nery" locally,
+                # "Gone Nery" on the GitHub runner). Accept only those observed
+                # aliases in this fixed title crop; the PauseScreen init marker
+                # and framebuffer screenshot remain independently required.
                 recognized_title = (
                     "game menu" in visible_text
-                    or visible_text == "gane nery"
+                    or visible_text in {"gane nery", "gone nery"}
                 )
                 missing = [] if recognized_title else ["game menu"]
                 if missing:
