@@ -65,7 +65,7 @@ The ZIP contains a normal Minecraft save folder, not an installer or executable.
 - Gradle 8.14.3 recommended (the CI worldgen workflow uses this version)
 - Python 3.9 or newer for the NeoForge build's deterministic resource-generation tasks
 
-Stop any existing gradle runClient or gradle runServer session using neoforge/run/server before starting an export. The worker temporarily writes server.properties and eula.txt in that run directory, then restores their original contents. A lock prevents two export workers from sharing the same run directory.
+Stop any existing Gradle runClient or runServer session using neoforge/run before starting an export. ModDevGradle launches the server with neoforge/run as its actual game directory, so the worker writes server.properties, eula.txt, the temporary world, and its lock there. It restores the original configuration files after the export. A lock prevents two export workers from sharing the same run directory.
 
 Open two terminals:
 
