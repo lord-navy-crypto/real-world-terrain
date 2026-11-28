@@ -242,6 +242,8 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
     def test_native_terrain_uses_compact_neutral_uv_patch_and_procedural_palette(self):
         self.assertIn("ClipmapRingMesh.surfaceIndices(cells, holeRadius)", IRIS_RENDERER)
         self.assertIn("ClipmapTriangleUv.computeNeutralWorldAlignedInto(", IRIS_RENDERER)
+        self.assertIn("long maxAxisExtentBlocks", IRIS_RENDERER)
+        self.assertIn("x, z, maxAxisExtentBlocks, triangleUvs", IRIS_RENDERER)
         self.assertNotIn("computeTerrainUvs", IRIS_RENDERER)
         self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", IRIS_RENDERER)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
