@@ -81,6 +81,35 @@ final class ClipmapSurfacePaletteTest {
     }
 
     @Test
+    void coarseLodsFilterWorldNoiseBelowTheirSamplingResolution() {
+        int fineOrigin = ClipmapSurfacePalette.terrainColorAt(
+                100.0f, 1.0f, 63.0f, false, ClipmapBiomeMaterial.GRASSLAND,
+                0L, 0L, 4);
+        int fineOffset = ClipmapSurfacePalette.terrainColorAt(
+                100.0f, 1.0f, 63.0f, false, ClipmapBiomeMaterial.GRASSLAND,
+                128L, 128L, 4);
+        int coarseOrigin = ClipmapSurfacePalette.terrainColorAt(
+                100.0f, 1.0f, 63.0f, false, ClipmapBiomeMaterial.GRASSLAND,
+                0L, 0L, 256);
+        int coarseOffset = ClipmapSurfacePalette.terrainColorAt(
+                100.0f, 1.0f, 63.0f, false, ClipmapBiomeMaterial.GRASSLAND,
+                128L, 128L, 256);
+
+        assertNotEquals(fineOrigin, fineOffset,
+                "fine LODs should retain representable world-anchored material variation");
+        assertEquals(coarseOrigin, coarseOffset,
+                "coarse LODs must suppress sub-grid regional and local noise octaves");
+    }
+
+    @Test
+    void rejectsNonPositivePaletteSampleSpacing() {
+        assertThrows(IllegalArgumentException.class, () ->
+                ClipmapSurfacePalette.terrainColorAt(
+                        100.0f, 1.0f, 63.0f, false,
+                        ClipmapBiomeMaterial.GRASSLAND, 0L, 0L, 0));
+    }
+
+    @Test
     void rejectsNonFinitePaletteInputs() {
         assertThrows(IllegalArgumentException.class, () ->
                 ClipmapSurfacePalette.colorAt(Float.NaN, 1.0f, 63.0f, false));
