@@ -113,6 +113,12 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
 
     def test_far_field_render_smoke_measures_absolute_and_normalized_texture_energy(self):
         self.assertIn("def terrain_high_frequency_metrics(", SMOKE)
+        self.assertIn("def terrain_mid_frequency_metrics(", SMOKE)
+        self.assertIn("TERRAIN_MID_FREQUENCY_RMS", SMOKE)
+        self.assertIn("TERRAIN_MID_FREQUENCY_RATIO", SMOKE)
+        self.assertIn("IRIS_TERRAIN_MID_FREQUENCY_PATTERN_GATE_PASS", SMOKE)
+        self.assertIn("IRIS_TERRAIN_MID_FREQUENCY_RETURN_GATE_PASS", SMOKE)
+        self.assertIn('"0x8"', SMOKE)
         self.assertIn("TERRAIN_HIGH_FREQUENCY_RMS", SMOKE)
         self.assertIn("TERRAIN_HIGH_FREQUENCY_RATIO", SMOKE)
         self.assertIn("initial_high_frequency_rms > 0.030", SMOKE)
@@ -189,6 +195,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertNotIn("sprites.forMaterial(", IRIS_RENDERER)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", IRIS_RENDERER)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
+        self.assertIn("worldX, worldZ, spacing", IRIS_RENDERER)
         self.assertIn("sprites.neutral()", IRIS_RENDERER)
         self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", IRIS_RENDERER)
         self.assertEqual(2, IRIS_RENDERER.count("ClipmapTriangleUv.computeNeutralCellAlignedInto("))
@@ -211,6 +218,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertNotIn("computeTerrainUvs", IRIS_RENDERER)
         self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", IRIS_RENDERER)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
+        self.assertIn("worldX, worldZ, spacing", IRIS_RENDERER)
         self.assertIn("sprites.neutral()", IRIS_RENDERER)
         self.assertNotIn("sprites.forMaterial(", IRIS_RENDERER)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", IRIS_RENDERER)
