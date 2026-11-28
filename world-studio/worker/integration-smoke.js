@@ -38,6 +38,8 @@ try {
   assert.ok(result.archiveBytes > 0);
   assert.match(result.sha256, /^[a-f0-9]{64}$/u);
   assert.equal(result.manifest.vanillaCompatible, false);
+  assert.equal(result.reopenVerified, true);
+  assert.equal(result.manifest.reopenVerified, true);
   await fs.access(result.archivePath);
 
   process.stdout.write("REALSCALE_WORLD_EXPORT_INTEGRATION_PASS " + JSON.stringify({
@@ -45,11 +47,12 @@ try {
     neoforgeVersion: result.manifest.neoforgeVersion,
     realscaleVersion: result.manifest.realscaleVersion,
     verifiedChunks: result.validation.verifiedChunks,
+    reopenVerified: result.reopenVerified,
     archiveBytes: result.archiveBytes,
     sha256: result.sha256
   }) + "\n");
   succeeded = true;
 } finally {
-  if (succeeded) await fs.rm(exportRoot, { recursive: true, force: true });
+  if (succeeded) process.stdout.write("Validated Minecraft world archive retained at " + exportRoot + "\n");
   else process.stderr.write("World export smoke artifacts retained at " + exportRoot + "\n");
 }
