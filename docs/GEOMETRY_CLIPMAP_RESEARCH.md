@@ -695,3 +695,36 @@ The transition has pure-Java tests for protected-overlap behavior, adaptive ring
 selection, fade endpoints, integer-height quantization and geometry/color blend
 endpoints. The Iris client render smoke and full NeoForge build remain required
 before the visual change can be considered accepted.
+
+## LOD-aware material-noise filtering and mid-frequency aliasing (2026-11-28)
+
+The Iris-native client evidence showed a regular diagonal/dot pattern on distant
+terrain even though the existing high-frequency RMS gate passed. The working
+diagnosis is that the world-anchored 256- and 512-block palette-noise octaves
+were sampled too sparsely by the coarsest clipmap rings. At 128 blocks per
+vertex, the 256-block octave has only two samples per noise cell and can alias
+into a repeated grid-aligned pattern after perspective projection.
+
+The Iris-native palette now receives the active ring's world-space sample
+spacing. Each 256/512-block octave fades toward its neutral value when fewer
+than six samples cover one noise cell, with a smooth transition beginning at
+three samples per cell. The 2048-block macro field, heightfield, biome classes,
+shoreline, slope and snowline logic remain intact. Fine rings retain the
+existing world-anchored variation; coarse rings suppress detail they cannot
+represent reliably. This changes only client-side material color sampling,
+not world generation, height samples, geometry topology, camera movement or
+LOD placement.
+
+The client smoke adds a 2px-to-8px Gaussian band-pass measurement over the
+fixed terrain viewport, alongside the existing absolute high-pass RMS,
+normalized high-pass ratio, color count and same-location A/B contrast checks.
+The new fixed-camera and returned-camera gates require mid-frequency RMS at or
+below 0.00500 and contrast-normalized mid-frequency energy at or below 0.090.
+These limits are intended to catch the previously missed 10-20px periodic
+pattern without relaxing any existing gate.
+
+The change is provisional until the latest Iris + Complementary client run
+confirms that the mid-frequency metrics improve while terrain contrast,
+high-frequency energy, six-level LOD movement, return-to-baseline stability,
+and the existing world-generation regressions continue to pass. The feature
+remains opt-in and the PR remains Draft pending that evidence.
