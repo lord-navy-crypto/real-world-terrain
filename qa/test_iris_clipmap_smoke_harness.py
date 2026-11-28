@@ -82,8 +82,8 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("tolerance: float = 8.0", SMOKE)
         self.assertIn("CLIENT_CAMERA_RETURNED_TO_BASELINE", SMOKE)
         self.assertIn("returned_center != baseline_center", SMOKE)
-        self.assertIn("IRIS_TERRAIN_RETURN_CONTRAST_GATE_PASS", SMOKE)
-        self.assertIn("IRIS_TERRAIN_MOVED_REGION_DETAIL_GATE_PASS", SMOKE)
+        self.assertIn("\"IRIS_TERRAIN_RETURN_CONTRAST_GATE\"", SMOKE)
+        self.assertIn("\"IRIS_TERRAIN_MOVED_REGION_DETAIL_GATE\"", SMOKE)
         self.assertIn("terrain_color_count(moving)", SMOKE)
         self.assertIn("terrain_color_count(final_frame)", SMOKE)
         self.assertIn("minimum_seconds=90", SMOKE)
@@ -137,15 +137,16 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("def terrain_mid_frequency_metrics(", SMOKE)
         self.assertIn("TERRAIN_MID_FREQUENCY_RMS", SMOKE)
         self.assertIn("TERRAIN_MID_FREQUENCY_RATIO", SMOKE)
-        self.assertIn("IRIS_TERRAIN_MID_FREQUENCY_PATTERN_GATE_PASS", SMOKE)
-        self.assertIn("IRIS_TERRAIN_MID_FREQUENCY_RETURN_GATE_PASS", SMOKE)
+        self.assertIn("\"IRIS_TERRAIN_MID_FREQUENCY_PATTERN_GATE\"", SMOKE)
+        self.assertIn("record_quality_gate(", SMOKE)
+        self.assertIn("\"IRIS_TERRAIN_MID_FREQUENCY_RETURN_GATE\"", SMOKE)
         self.assertIn('"0x8"', SMOKE)
         self.assertIn("TERRAIN_HIGH_FREQUENCY_RMS", SMOKE)
         self.assertIn("TERRAIN_HIGH_FREQUENCY_RATIO", SMOKE)
-        self.assertIn("initial_high_frequency_rms > 0.030", SMOKE)
-        self.assertIn("IRIS_TERRAIN_ABSOLUTE_TEXTURE_ENERGY_GATE_PASS", SMOKE)
-        self.assertIn("IRIS_TERRAIN_TEXTURE_ALIASING_GATE_PASS", SMOKE)
-        self.assertIn("max(settled_high_frequency, final_high_frequency) > 0.18", SMOKE)
+        self.assertIn("initial_high_frequency_rms <= 0.030", SMOKE)
+        self.assertIn("\"IRIS_TERRAIN_ABSOLUTE_TEXTURE_ENERGY_GATE\"", SMOKE)
+        self.assertIn("\"IRIS_TERRAIN_TEXTURE_ALIASING_GATE\"", SMOKE)
+        self.assertIn("max(settled_high_frequency, final_high_frequency) <= 0.18", SMOKE)
         self.assertIn('"-blur", "0x2"', SMOKE)
 
     def test_pause_menu_toggle_uses_real_window_geometry_and_upscaled_ocr(self):
@@ -203,15 +204,17 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertEqual(SMOKE.count('click_pause_menu_toggle(click_x, click_y)'), 2)
 
     def test_eye_level_capture_waits_for_complete_lods_and_proxies(self):
-        self.assertIn("capture_natural_surface_view(proc, lines)", SMOKE)
+        self.assertIn("capture_natural_surface_view(proc, lines, quality_failures)", SMOKE)
         self.assertIn("iris-clipmap-natural-eye-level", SMOKE)
         self.assertIn("wait_for_complete_surface_assets", SMOKE)
         self.assertIn("NATURAL_VIEW_ASSETS_SETTLED", SMOKE)
         self.assertIn("nativeProxyMeshesBuilt", SMOKE)
         self.assertIn("terrain_color_count", SMOKE)
         self.assertIn("TERRAIN_VIEWPORT_COLOR_COUNT", SMOKE)
-        self.assertIn("if contrast < 0.055 or colors < 16:", SMOKE)
-        self.assertIn("if initial_contrast < 0.055:", SMOKE)
+        self.assertIn("\"IRIS_NATURAL_EYE_LEVEL_DETAIL_GATE\"", SMOKE)
+        self.assertIn("contrast >= 0.055 and colors >= 16", SMOKE)
+        self.assertIn("\"IRIS_TERRAIN_INITIAL_CONTRAST_GATE\"", SMOKE)
+        self.assertIn("initial_contrast >= 0.055", SMOKE)
         self.assertIn("minimum_seconds=60", SMOKE)
 
     def test_all_lods_use_stable_neutral_uv_patch_and_procedural_materials(self):
@@ -360,7 +363,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         run_client = SMOKE[SMOKE.index("def run_client"):SMOKE.index("def main")]
         self.assertLess(
             run_client.index("prepare_open_rendering_view(client_latest, lines)"),
-            run_client.index("capture_natural_surface_view(proc, lines)"),
+            run_client.index("capture_natural_surface_view(proc, lines, quality_failures)"),
             "The camera must be moved to the terrain viewing position before the visual capture gate",
         )
 
