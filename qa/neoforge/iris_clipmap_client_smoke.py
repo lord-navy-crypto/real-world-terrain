@@ -1326,7 +1326,8 @@ def run_client(env: dict[str, str]) -> None:
     log_path = BUILD / "client-stdout.log"
     draw = threading.Event()
     proc = subprocess.Popen(
-        ["gradle", "--no-daemon", "--console=plain", "--stacktrace", "runIrisClipmapSmoke"],
+        ["gradle", "--no-daemon", "--console=plain", "--stacktrace",
+         "-PrealscaleIrisShadowPass=false", "runIrisClipmapSmoke"],
         cwd=MODULE, env=env, stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         text=True, bufsize=1, start_new_session=True,
