@@ -728,3 +728,37 @@ confirms that the mid-frequency metrics improve while terrain contrast,
 high-frequency energy, six-level LOD movement, return-to-baseline stability,
 and the existing world-generation regressions continue to pass. The feature
 remains opt-in and the PR remains Draft pending that evidence.
+
+
+## Iris per-cell shading pattern: neutral UV basis conditioning (2026-11-28)
+
+The first real Iris + Complementary run after adding LOD-aware palette filtering
+did not pass the new fixed-camera visual gate. It measured mid-frequency RMS
+0.00583 and normalized ratio 0.09786 against limits of 0.00500 and 0.090.
+The moved-region RMS improved to 0.00467, but its normalized ratio remained
+0.09351. Camera movement, six-level LOD refresh, moved-region detail checks,
+absolute texture-energy checks, build and the rest of the regression suite
+passed. The failure is a genuine visual-quality failure, not a build failure.
+
+Inspection of the captured screenshot shows a highly regular short-dash pattern
+repeated once per terrain quad. This is more consistent with a per-cell shader
+tangent/texture-derivative artifact than with the world-anchored palette noise
+alone. The renderer was mapping every quad to a 1/8-texel UV patch
+(`0.125 × 0.125` sprite pixels; UV determinant 0.015625) on the white-concrete
+neutral sprite. Although mathematically non-degenerate, that very small basis
+may be poorly conditioned for Iris/Complementary's derivative-based tangent
+reconstruction.
+
+The diagnostic candidate widens the patch to the central three-quarters of the
+same neutral texel (`0.75 × 0.75`; determinant 0.5625). This remains inside
+one texel, so it does not intentionally introduce atlas texture detail, but
+increases the UV basis area by 36×. Unit tests now assert the larger determinant,
+exact patch bounds and identical UVs across adjacent cells. No height samples,
+geometry, normals, palette, LOD placement or camera logic change in this
+experiment.
+
+This is a hypothesis-driven rendering experiment, not an accepted fix. The
+next Iris + Complementary screenshot must demonstrate that the per-cell dash
+pattern and mid-frequency metrics improve while preserving terrain contrast,
+high-frequency energy, six-level movement, return stability and all worldgen
+regressions. Keep the PR Draft until that evidence passes.
