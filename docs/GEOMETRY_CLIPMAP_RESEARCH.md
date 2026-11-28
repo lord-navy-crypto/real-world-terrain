@@ -813,3 +813,24 @@ pixel-font OCR alias (`gane nery`, `gone nery`). It still requires the
 PauseScreen initialization event, Minecraft's F2 framebuffer screenshot,
 minimum screenshot dimensions, and the fixed title crop. No terrain-render
 metric threshold has been relaxed.
+
+
+## Bounded OCR matching for Minecraft's pixel-font title (2026-11-28)
+
+The third client run again reached a real world and captured the PauseScreen
+framebuffer correctly, but Tesseract returned `gane hen` for the visible
+"Game Menu" title. Previous runner outputs were `gane nery` and `gone nery`.
+This variability makes a list of exact OCR aliases brittle, while the
+underlying screenshot and PauseScreen initialization event are valid.
+
+The harness now uses a bounded Levenshtein comparison for the two words in the
+fixed title crop: OCR token 1 must be within two edits of "game", and token 2
+within three edits of "menu". Exact "game menu" still passes directly. This
+does not accept arbitrary text elsewhere on screen: it applies only to the
+small framebuffer crop at the known PauseScreen title position, after the
+PauseScreen initialization marker and screenshot-dimension checks have passed.
+
+The clipmap toggle and actual terrain capture still have not been reached, so
+the Iris block-metadata change remains visually unvalidated. The next run must
+pass this UI check and then complete the full movement/return and image-metric
+gates.
