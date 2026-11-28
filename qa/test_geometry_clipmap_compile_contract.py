@@ -498,8 +498,8 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn("NEUTRAL_UV_MIN = 7.4375f", uv)
-        self.assertIn("NEUTRAL_UV_RANGE = 0.125f", uv)
+        self.assertIn("NEUTRAL_UV_MIN = 7.125f", uv)
+        self.assertIn("NEUTRAL_UV_RANGE = 0.75f", uv)
         self.assertIn("computeNeutralCellAlignedInto", uv)
         self.assertIn("computeCellAlignedPatchInto", uv)
         self.assertIn("ClipmapSurfaceNormals.compute(", native)
@@ -515,7 +515,7 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertIn("beach", palette)
         self.assertIn("snowCover", palette)
         self.assertNotIn("int materialRgb", native)
-        self.assertIn("sub-texel neutral patch", native)
+        self.assertIn("central three-quarters of one neutral", uv)
         self.assertNotIn("int minX = Math.min(gridX", native)
         self.assertNotIn("Math.floorMod(x, side)", native)
         self.assertEqual(5, native.count("VertexFormat.Mode.TRIANGLES, irisTerrainFormat"))
