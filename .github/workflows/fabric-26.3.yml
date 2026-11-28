@@ -39,8 +39,21 @@ jobs:
           -Pfabric_loader_version=${{ matrix.loader }}
           -Pfabric_api_version='${{ matrix.api }}'
           clean build
+      - name: Actual Minecraft 26.3 server world-generation smoke
+        timeout-minutes: 10
+        run: python3 scripts/smoke_worldgen_26_3.py fabric-26.3 -Pfabric_loader_version=${{ matrix.loader }} -Pfabric_api_version='${{ matrix.api }}' -Prealscale_include_yacl_dev=false
+      - name: Upload world-generation diagnostics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fabric-26.3-smoke-${{ matrix.lane }}
+          path: |
+            fabric-26.3/server-26.3-smoke.log
+            fabric-26.3/run/**/logs/latest.log
+            fabric-26.3/run/**/crash-reports/*.txt
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
-        if: success() && matrix.lane == 'current'
+        if: success() && matrix.lane == 'minimum'
         with:
           name: RealScale-Fabric-26.3
           path: fabric-26.3/build/libs/*.jar
