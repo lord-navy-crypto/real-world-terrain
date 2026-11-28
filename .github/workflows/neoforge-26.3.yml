@@ -8,6 +8,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - neo_version: "26.3.0.76"
+            lane: minimum
+          - neo_version: "26.3.0.83"
+            lane: intermediate
+          - neo_version: "26.3.0.118"
+            lane: current
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -17,9 +27,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.2.1"
-      - run: gradle --no-daemon -p neoforge-26.3 clean build
+      - name: Build and test this NeoForge version
+        run: >-
+          gradle --no-daemon -p neoforge-26.3
+          -Pneo_version=${{ matrix.neo_version }}
+          clean build
       - uses: actions/upload-artifact@v4
-        if: success()
+        if: success() && matrix.lane == 'current'
         with:
           name: RealScale-NeoForge-26.3
           path: neoforge-26.3/build/libs/*.jar
