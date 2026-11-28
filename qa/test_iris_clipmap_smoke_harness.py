@@ -89,6 +89,27 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("minimum_seconds=90", SMOKE)
         self.assertIn("iris-clipmap-returned-to-baseline", SMOKE)
 
+    def test_visual_quality_gates_are_deferred_until_camera_return(self):
+        run_client = SMOKE[SMOKE.index("def run_client"):SMOKE.index("\ndef main")]
+        self.assertIn("quality_failures: list[str] = []", run_client)
+        self.assertIn("capture_natural_surface_view(proc, lines, quality_failures)", run_client)
+        self.assertIn("record_quality_gate(", run_client)
+        return_call = run_client.index("move_camera_to_baseline(")
+        returned_frame = run_client.index('capture_screenshot("iris-clipmap-returned-to-baseline")')
+        summary = run_client.index("IRIS_VISUAL_QUALITY_SUMMARY")
+        self.assertLess(return_call, returned_frame)
+        self.assertLess(returned_frame, summary)
+        self.assertIn(
+            "Visual quality acceptance failed after camera movement and return completed",
+            run_client,
+        )
+        self.assertNotIn("raise RuntimeError(\"Distant terrain still has excessive high-frequency texture aliasing", run_client)
+        self.assertNotIn("raise RuntimeError(\"Fixed-camera terrain retains excessive mid-frequency periodic texture", run_client)
+        self.assertNotIn("raise RuntimeError(\"Original terrain viewport lost contrast after movement and return", run_client)
+        self.assertNotIn("raise RuntimeError(\"Original terrain viewport texture/detail changed after movement and return", run_client)
+        self.assertNotIn("raise RuntimeError(\"Returned terrain viewport retains excessive mid-frequency periodic texture", run_client)
+        self.assertNotIn("raise RuntimeError(\"Natural eye-level terrain lacks visible surface detail", SMOKE)
+
     def test_native_proxy_meshes_are_independent_and_seams_use_valid_fine_samples(self):
         self.assertIn("proxySolidBuffer", IRIS_RENDERER)
         self.assertIn("rebuildProxies(safeProxies, centerX, centerZ)", IRIS_RENDERER)
