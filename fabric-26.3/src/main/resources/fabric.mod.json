@@ -10,10 +10,10 @@
     "main": ["org.realscale.neoforge.RealScaleMod"],
     "client": ["org.realscale.neoforge.RealScaleFabricClient"]
   },"depends": {
-    "fabricloader": ">=0.20.1",
+    "fabricloader": ">=0.19.5",
     "minecraft": "26.3",
     "java": ">=25",
-    "fabric-api": ">=0.167.0"
+    "fabric-api": ">=0.164.0"
   },
   "suggests": {
     "yet_another_config_lib_v3": ">=3.9.7",
