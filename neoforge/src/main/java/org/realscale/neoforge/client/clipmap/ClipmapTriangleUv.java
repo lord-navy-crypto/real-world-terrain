@@ -90,14 +90,40 @@ public final class ClipmapTriangleUv {
     }
 
     /**
-     * Maps each surface quad into a compact 1/8-texel patch centred on one
-     * neutral white-concrete texel. This suppresses adjacent atlas/PBR texels
-     * while retaining a non-degenerate tangent basis for Iris.
+     * Maps every emitted surface triangle to the same canonical 1/8-texel UV
+     * triangle. Terrain material is carried by vertex color, so these UVs exist
+     * only to provide Iris with a stable mid-texel coordinate and tangent basis.
+     *
+     * <p>Using the same ordered UV triplet for both halves of every grid quad
+     * keeps Iris's triangle-centre material sample constant instead of
+     * alternating it across the diagonal. The three UVs remain non-collinear
+     * and stay inside one neutral white-concrete texel.
      */
     public static void computeNeutralCellAlignedInto(int[] gridX, int[] gridZ,
             float[] destination) {
-        computeCellAlignedPatchInto(
-                gridX, gridZ, destination, NEUTRAL_UV_MIN, NEUTRAL_UV_RANGE);
+        Objects.requireNonNull(gridX, "gridX");
+        Objects.requireNonNull(gridZ, "gridZ");
+        Objects.requireNonNull(destination, "destination");
+        if (gridX.length < 3 || gridZ.length < 3 || destination.length < 6) {
+            throw new IllegalArgumentException("triangle grid and UV arrays must contain three vertices");
+        }
+        int minX = Math.min(gridX[0], Math.min(gridX[1], gridX[2]));
+        int minZ = Math.min(gridZ[0], Math.min(gridZ[1], gridZ[2]));
+        int maxX = Math.max(gridX[0], Math.max(gridX[1], gridX[2]));
+        int maxZ = Math.max(gridZ[0], Math.max(gridZ[1], gridZ[2]));
+        if (maxX - minX != 1 || maxZ - minZ != 1) {
+            throw new IllegalArgumentException("surface triangle must belong to one grid quad");
+        }
+
+        // ClipmapRingMesh emits both triangles with the same vertex winding.
+        // Keep their UV order identical so Iris computes the same midTexCoord
+        // for each half-cell while preserving a non-degenerate tangent frame.
+        destination[0] = NEUTRAL_UV_MIN;
+        destination[1] = NEUTRAL_UV_MIN;
+        destination[2] = NEUTRAL_UV_MIN;
+        destination[3] = NEUTRAL_UV_MIN + NEUTRAL_UV_RANGE;
+        destination[4] = NEUTRAL_UV_MIN + NEUTRAL_UV_RANGE;
+        destination[5] = NEUTRAL_UV_MIN;
     }
 
     private static void computeCellAlignedPatchInto(int[] gridX, int[] gridZ,
