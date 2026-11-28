@@ -8,6 +8,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - loader: "0.19.5"
+            api: "0.164.0+26.3"
+            lane: minimum
+          - loader: "0.19.5"
+            api: "0.167.0+26.3"
+            lane: older-loader
+          - loader: "0.20.1"
+            api: "0.164.0+26.3"
+            lane: older-api
+          - loader: "0.20.1"
+            api: "0.167.0+26.3"
+            lane: current
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -17,9 +33,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.8.2"
-      - run: gradle --no-daemon -p fabric-26.3 clean build
+      - name: Build and test this dependency combination
+        run: >-
+          gradle --no-daemon -p fabric-26.3
+          -Pfabric_loader_version=${{ matrix.loader }}
+          -Pfabric_api_version='${{ matrix.api }}'
+          clean build
       - uses: actions/upload-artifact@v4
-        if: success()
+        if: success() && matrix.lane == 'current'
         with:
           name: RealScale-Fabric-26.3
           path: fabric-26.3/build/libs/*.jar
