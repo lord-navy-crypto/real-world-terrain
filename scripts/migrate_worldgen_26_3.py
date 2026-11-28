@@ -224,18 +224,25 @@ for p in sorted((WG/"biome").glob("*.json")):
 
 # Vanilla 26.3 FeatureSorter requires shared placed features to keep the same
 # relative order in every biome. In windswept_savanna, patch_pumpkin precedes
-# patch_sugar_cane; enforce that invariant in every RealScale biome to prevent
-# a cross-biome topological cycle during chunk decoration.
+# patch_sugar_cane. Normalize every RealScale biome with both placed features
+# to that canonical order, avoiding a cross-biome topological cycle at runtime.
 for p in sorted((WG/"biome").glob("*.json")):
-    feature_order = [feature for step in read(p).get("features", []) for feature in step]
-    pumpkin = "minecraft:patch_pumpkin"
-    sugar_cane = "minecraft:patch_sugar_cane"
+    d = read(p)
+    changed = False
+    for step in d.get("features", []):
+        pumpkin = "minecraft:patch_pumpkin"
+        sugar_cane = "minecraft:patch_sugar_cane"
+        if pumpkin in step and sugar_cane in step and step.index(pumpkin) > step.index(sugar_cane):
+            step.remove(sugar_cane)
+            step.insert(step.index(pumpkin) + 1, sugar_cane)
+            changed = True
+    if changed:
+        write(p, d)
+        counts["feature_order_normalized"] += 1
+    feature_order = [feature for step in d.get("features", []) for feature in step]
     if pumpkin in feature_order and sugar_cane in feature_order:
         if feature_order.index(pumpkin) > feature_order.index(sugar_cane):
-            raise ValueError(
-                "Feature order conflict with vanilla windswept_savanna in "
-                + str(p) + ": patch_pumpkin must precede patch_sugar_cane"
-            )
+            raise ValueError("Feature order normalization failed for " + str(p))
 for p in sorted((DATA/"dimension_type").glob("*.json")):
     write(p,dimension(rewrite(read(p))))
     counts["dimension_type"]+=1
