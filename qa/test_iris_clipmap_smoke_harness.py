@@ -244,6 +244,14 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("WorldRenderingSettings", IRIS_COMPAT)
         self.assertIn("getBlockStateIds", IRIS_COMPAT)
 
+    def test_shadow_disabled_diagnostic_changes_only_clipmap_shadow_pass(self):
+        self.assertIn("IRIS_SHADOW_PASS_ENABLED", GEOMETRY_CLIENT)
+        self.assertIn('System.getProperty("realscale.experimental.geometryclipmap.irisShadowPass", "true")', GEOMETRY_CLIENT)
+        self.assertIn("iris.shadowPass() && !IRIS_SHADOW_PASS_ENABLED", GEOMETRY_CLIENT)
+        self.assertIn('systemProperty \'realscale.experimental.geometryclipmap.irisShadowPass\'', BUILD_GRADLE)
+        self.assertIn('"-PrealscaleIrisShadowPass=false"', SMOKE)
+        self.assertIn("IRIS_CLIPMAP_SHADOW_PASS_SKIPPED_DIAGNOSTIC", GEOMETRY_CLIENT)
+
     def test_iris_native_draw_uses_portable_terrain_stage_events(self):
         self.assertIn("prepareIrisFrameFog", IRIS_MIXIN)
         self.assertNotIn("ShaderInstance;clear()V", IRIS_MIXIN)
