@@ -32,8 +32,21 @@ jobs:
           gradle --no-daemon -p neoforge-26.3
           -Pneo_version=${{ matrix.neo_version }}
           clean build
+      - name: Actual Minecraft 26.3 server world-generation smoke
+        timeout-minutes: 10
+        run: python3 scripts/smoke_worldgen_26_3.py neoforge-26.3 -Pneo_version=${{ matrix.neo_version }}
+      - name: Upload world-generation diagnostics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neoforge-26.3-smoke-${{ matrix.lane }}
+          path: |
+            neoforge-26.3/server-26.3-smoke.log
+            neoforge-26.3/run/**/logs/latest.log
+            neoforge-26.3/run/**/crash-reports/*.txt
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
-        if: success() && matrix.lane == 'current'
+        if: success() && matrix.lane == 'minimum'
         with:
           name: RealScale-NeoForge-26.3
           path: neoforge-26.3/build/libs/*.jar

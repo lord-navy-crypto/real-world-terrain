@@ -3,7 +3,7 @@ loaderVersion="[4,)"
 license="Source research implementation; retains Minecraft's own vanilla assets/data references"
 [[mods]]
 modId="realscale"
-version="2.1.0-neoforge.26.3-alpha.1"
+version="2.1.0-neoforge.26.3-alpha.2"
 displayName="RealScale — Terrain, Caves & Oceans (Experimental)"
 authors="RealScale Research"
 description="Experimental single-entry three-realm terrain. Natural Automate composes the natural baseline with six climate/topography-gated fitted morphology kernels, smooth cross-fades and natural fallback. Includes ecotones, cave habitats, offshore skylands and expanded Nether/End."

@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.148'
 }
-version='2.1.0-neoforge.26.3-alpha.1'
+version='2.1.0-neoforge.26.3-alpha.2'
 group='org.realscale'
 base { archivesName = 'RealScale-NeoForge-26.3' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
@@ -696,5 +696,15 @@ sourceSets {
             exclude '**/mixin/**'
             exclude '**/compat/dhchunky/mixin/**'
         }
+    }
+}
+
+// Migrate all legacy 26.3 worldgen resources before packaging and tests.
+tasks.named("processResources", ProcessResources).configure {
+    inputs.file(rootProject.file("../scripts/migrate_worldgen_26_3.py"))
+    doLast {
+        providers.exec {
+            commandLine("python3", rootProject.file("../scripts/migrate_worldgen_26_3.py").absolutePath, destinationDir.absolutePath)
+        }.result.get().assertNormalExitValue()
     }
 }
