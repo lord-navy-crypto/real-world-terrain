@@ -160,7 +160,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("PAUSE_SCREEN_OCR_VERIFIED:", SMOKE)
         self.assertIn('"-crop",', SMOKE)
         self.assertIn('"--psm", "8"', SMOKE)
-        self.assertIn('visible_text == "gane nery"', SMOKE)
+        self.assertIn('visible_text in {"gane nery", "gone nery"}', SMOKE)
         self.assertIn('"game menu" in visible_text', SMOKE)
         self.assertIn("validate_screenshot(image, min_width=640, min_height=360)", SMOKE)
         self.assertIn("def click_pause_menu_toggle(", SMOKE)
