@@ -18,8 +18,8 @@ public final class ClipmapTriangleUv {
     // Keep all terrain samples tightly centred on one neutral white-concrete
     // texel. Widening this to most of a texel reintroduced the atlas's adjacent
     // PBR texels and sharply increased both high- and mid-frequency energy.
-    private static final float NEUTRAL_UV_MIN = 7.4375f;
-    private static final float NEUTRAL_UV_RANGE = 0.125f;
+    private static final float NEUTRAL_UV_CENTER = 7.5f;
+    private static final float NEUTRAL_UV_HALF_RANGE = 0.0625f;
 
     private ClipmapTriangleUv() {
     }
@@ -90,40 +90,51 @@ public final class ClipmapTriangleUv {
     }
 
     /**
-     * Maps every emitted surface triangle to the same canonical 1/8-texel UV
-     * triangle. Terrain material is carried by vertex color, so these UVs exist
-     * only to provide Iris with a stable mid-texel coordinate and tangent basis.
+     * Maps local world X/Z positions into one compact neutral atlas patch.
+     * Every LOD uses the same world-space scale and shared clipmap centre, so
+     * a shared world position receives identical UVs across triangles and LODs.
      *
-     * <p>Using the same ordered UV triplet for both halves of every grid quad
-     * keeps Iris's triangle-centre material sample constant instead of
-     * alternating it across the diagonal. The three UVs remain non-collinear
-     * and stay inside one neutral white-concrete texel.
+     * <p>U follows +X and V follows +Z. Iris derives its per-triangle tangent
+     * from position and UV derivatives; this world-aligned mapping keeps that
+     * tangent frame consistent across both halves of a grid quad. The complete
+     * six-level extent remains inside one neutral white-concrete texel.
+     *
+     * @param maxAxisExtentBlocks half-width of the outermost LOD ring
      */
-    public static void computeNeutralCellAlignedInto(int[] gridX, int[] gridZ,
-            float[] destination) {
-        Objects.requireNonNull(gridX, "gridX");
-        Objects.requireNonNull(gridZ, "gridZ");
+    public static void computeNeutralWorldAlignedInto(float[] x, float[] z,
+            long maxAxisExtentBlocks, float[] destination) {
+        Objects.requireNonNull(x, "x");
+        Objects.requireNonNull(z, "z");
         Objects.requireNonNull(destination, "destination");
-        if (gridX.length < 3 || gridZ.length < 3 || destination.length < 6) {
-            throw new IllegalArgumentException("triangle grid and UV arrays must contain three vertices");
-        }
-        int minX = Math.min(gridX[0], Math.min(gridX[1], gridX[2]));
-        int minZ = Math.min(gridZ[0], Math.min(gridZ[1], gridZ[2]));
-        int maxX = Math.max(gridX[0], Math.max(gridX[1], gridX[2]));
-        int maxZ = Math.max(gridZ[0], Math.max(gridZ[1], gridZ[2]));
-        if (maxX - minX != 1 || maxZ - minZ != 1) {
-            throw new IllegalArgumentException("surface triangle must belong to one grid quad");
+        if (x.length < 3 || z.length < 3 || destination.length < 6
+                || maxAxisExtentBlocks <= 0L) {
+            throw new IllegalArgumentException(
+                    "world-aligned UV inputs must contain three vertices and a positive extent");
         }
 
-        // ClipmapRingMesh emits both triangles with the same vertex winding.
-        // Keep their UV order identical so Iris computes the same midTexCoord
-        // for each half-cell while preserving a non-degenerate tangent frame.
-        destination[0] = NEUTRAL_UV_MIN;
-        destination[1] = NEUTRAL_UV_MIN;
-        destination[2] = NEUTRAL_UV_MIN;
-        destination[3] = NEUTRAL_UV_MIN + NEUTRAL_UV_RANGE;
-        destination[4] = NEUTRAL_UV_MIN + NEUTRAL_UV_RANGE;
-        destination[5] = NEUTRAL_UV_MIN;
+        double scale = NEUTRAL_UV_HALF_RANGE / (double) maxAxisExtentBlocks;
+        for (int vertex = 0; vertex < 3; vertex++) {
+            if (!Float.isFinite(x[vertex]) || !Float.isFinite(z[vertex])) {
+                throw new IllegalArgumentException("world-aligned UV positions must be finite");
+            }
+            if (Math.abs((double) x[vertex]) > maxAxisExtentBlocks + 0.5d
+                    || Math.abs((double) z[vertex]) > maxAxisExtentBlocks + 0.5d) {
+                throw new IllegalArgumentException(
+                        "world-aligned UV position exceeds the outer clipmap extent");
+            }
+            destination[vertex * 2] = (float) (NEUTRAL_UV_CENTER + x[vertex] * scale);
+            destination[vertex * 2 + 1] = (float) (NEUTRAL_UV_CENTER + z[vertex] * scale);
+        }
+
+        double du1 = destination[2] - destination[0];
+        double dv1 = destination[3] - destination[1];
+        double du2 = destination[4] - destination[0];
+        double dv2 = destination[5] - destination[1];
+        double determinant = du1 * dv2 - du2 * dv1;
+        if (!Double.isFinite(determinant) || Math.abs(determinant) <= 1.0e-12d) {
+            throw new IllegalArgumentException(
+                    "world-aligned neutral UV triangle is degenerate");
+        }
     }
 
     private static void computeCellAlignedPatchInto(int[] gridX, int[] gridZ,
