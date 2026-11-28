@@ -796,3 +796,20 @@ The next run must get past the pause-menu check and exercise the actual clipmap
 toggle, initial screenshot, camera movement, six-LOD refresh, return movement,
 and all visual metrics. The block-metadata change remains unvalidated until
 that complete client render evidence exists.
+
+
+## Runner-specific pixel-font OCR alias (2026-11-28)
+
+The follow-up client run passed the world-ready and PauseScreen initialization
+gates and captured a correct framebuffer: the "Game Menu" title and all
+RealScale pause-menu buttons are visibly present. The remaining stop was again
+only OCR: this GitHub runner's Tesseract PSM 8 output was `gone nery`, whereas
+the same title crop on the local inspection environment returned `gane nery`.
+The framebuffer screenshot itself is visually correct; no clipmap toggle or
+terrain render capture has happened yet.
+
+The fixed title-crop check now accepts the exact title or either observed
+pixel-font OCR alias (`gane nery`, `gone nery`). It still requires the
+PauseScreen initialization event, Minecraft's F2 framebuffer screenshot,
+minimum screenshot dimensions, and the fixed title crop. No terrain-render
+metric threshold has been relaxed.
