@@ -360,6 +360,34 @@ def capture_minecraft_screenshot(name: str, timeout: float = 12.0) -> pathlib.Pa
     return destination
 
 
+def _ocr_edit_distance(left: str, right: str) -> int:
+    """Small Levenshtein helper for the fixed Minecraft pixel-font title crop."""
+    previous = list(range(len(right) + 1))
+    for row, left_char in enumerate(left, start=1):
+        current = [row]
+        for column, right_char in enumerate(right, start=1):
+            current.append(min(
+                current[-1] + 1,
+                previous[column] + 1,
+                previous[column - 1] + (left_char != right_char),
+            ))
+        previous = current
+    return previous[-1]
+
+
+def pause_title_ocr_matches(visible_text: str) -> bool:
+    """Allow small OCR substitutions for the fixed, known Game Menu title."""
+    normalized = re.sub(r"[^a-z0-9]+", " ", visible_text.lower()).strip()
+    if "game menu" in normalized:
+        return True
+    words = normalized.split()
+    return (
+        len(words) == 2
+        and _ocr_edit_distance(words[0], "game") <= 2
+        and _ocr_edit_distance(words[1], "menu") <= 3
+    )
+
+
 def ocr_minecraft_screenshot(path: pathlib.Path) -> str:
     """Read the pause-screen title from a small framebuffer crop."""
     dimensions = subprocess.run(
@@ -523,15 +551,12 @@ def wait_for_pause_screen(lines: list[str], start: int, name: str,
                 image = capture_minecraft_screenshot(name)
                 validate_screenshot(image, min_width=640, min_height=360)
                 visible_text = ocr_minecraft_screenshot(image)
-                # Tesseract's English model reads Minecraft's pixel-font
-                # title inconsistently across runners ("Gane Nery" locally,
-                # "Gone Nery" on the GitHub runner). Accept only those observed
-                # aliases in this fixed title crop; the PauseScreen init marker
-                # and framebuffer screenshot remain independently required.
-                recognized_title = (
-                    "game menu" in visible_text
-                    or visible_text in {"gane nery", "gone nery"}
-                )
+                # Minecraft's pixel font is inconsistently segmented by
+                # Tesseract ("gane nery", "gone nery", "gane hen"). Use a
+                # bounded edit-distance check only on this fixed title crop;
+                # the PauseScreen init marker and framebuffer screenshot are
+                # still independently required.
+                recognized_title = pause_title_ocr_matches(visible_text)
                 missing = [] if recognized_title else ["game menu"]
                 if missing:
                     raise RuntimeError(
