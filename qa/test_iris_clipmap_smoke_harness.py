@@ -190,7 +190,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("if initial_contrast < 0.055:", SMOKE)
         self.assertIn("minimum_seconds=60", SMOKE)
 
-    def test_all_lods_use_compact_neutral_uv_patch_and_procedural_materials(self):
+    def test_all_lods_use_stable_neutral_uv_patch_and_procedural_materials(self):
         self.assertNotIn("MAX_TEXTURED_DETAIL_LEVEL", IRIS_RENDERER)
         self.assertNotIn("sprites.forMaterial(", IRIS_RENDERER)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", IRIS_RENDERER)
@@ -212,7 +212,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("actual grass, dry-ground, rock, sand and snow material", palette)
         self.assertNotIn("near-neutral multipliers", palette)
 
-    def test_native_terrain_uses_compact_neutral_uv_patch_and_procedural_palette(self):
+    def test_native_terrain_uses_stable_neutral_uv_patch_and_procedural_palette(self):
         self.assertIn("ClipmapRingMesh.surfaceIndices(cells, holeRadius)", IRIS_RENDERER)
         self.assertIn("ClipmapTriangleUv.computeNeutralCellAlignedInto(", IRIS_RENDERER)
         self.assertNotIn("computeTerrainUvs", IRIS_RENDERER)
@@ -226,8 +226,8 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn("NEUTRAL_UV_MIN = 7.4375f", uv)
-        self.assertIn("NEUTRAL_UV_RANGE = 0.125f", uv)
+        self.assertIn("NEUTRAL_UV_MIN = 7.125f", uv)
+        self.assertIn("NEUTRAL_UV_RANGE = 0.75f", uv)
         self.assertIn("computeCellAlignedPatchInto", uv)
         self.assertIn("sprite.getU(u), sprite.getV(v)", IRIS_RENDERER)
 
