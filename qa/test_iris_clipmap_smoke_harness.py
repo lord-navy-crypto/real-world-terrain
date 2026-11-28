@@ -81,6 +81,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("CLIENT_CAMERA_RETURN_PROGRESS", SMOKE)
         self.assertIn("tolerance: float = 8.0", SMOKE)
         self.assertIn("CLIENT_CAMERA_RETURNED_TO_BASELINE", SMOKE)
+        self.assertIn("CLIENT_CAMERA_RETURN_TEST_PASS", SMOKE)
         self.assertIn("returned_center != baseline_center", SMOKE)
         self.assertIn("\"IRIS_TERRAIN_RETURN_CONTRAST_GATE\"", SMOKE)
         self.assertIn("\"IRIS_TERRAIN_MOVED_REGION_DETAIL_GATE\"", SMOKE)
@@ -95,9 +96,11 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("capture_natural_surface_view(proc, lines, quality_failures)", run_client)
         self.assertIn("record_quality_gate(", run_client)
         return_call = run_client.index("move_camera_to_baseline(")
+        return_pass = run_client.index("CLIENT_CAMERA_RETURN_TEST_PASS")
         returned_frame = run_client.index('capture_screenshot("iris-clipmap-returned-to-baseline")')
         summary = run_client.index("IRIS_VISUAL_QUALITY_SUMMARY")
-        self.assertLess(return_call, returned_frame)
+        self.assertLess(return_call, return_pass)
+        self.assertLess(return_pass, returned_frame)
         self.assertLess(returned_frame, summary)
         self.assertIn(
             "Visual quality acceptance failed after camera movement and return completed",
