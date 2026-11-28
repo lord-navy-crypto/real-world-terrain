@@ -12,6 +12,17 @@ neoForge {
         client {
             client()
         }
+        // Dedicated client smoke run: keep quick-play args inside ModDevGradle's
+        // generated program-argument file and isolate its game directory.
+        irisClipmapSmoke {
+            client()
+            gameDirectory = project.file('run/iris-clipmap-client')
+            // Allows controlled render A/B runs without changing production defaults.
+            systemProperty 'realscale.experimental.geometryclipmap.irisShadowPass',
+                    project.findProperty('realscaleIrisShadowPass') ?: 'true'
+            programArgument '--quickPlaySingleplayer'
+            programArgument 'iris-clipmap-smoke'
+        }
         server {
             server()
             programArgument '--nogui'
@@ -80,7 +91,10 @@ dependencies {
 }
 tasks.named('test', Test) {
     useJUnitPlatform()
-    testLogging { events 'passed', 'skipped', 'failed' }
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat 'full'
+    }
 }
 
 // NeoForge ModDev supplies the mapped Minecraft/NeoForge compile classpath to

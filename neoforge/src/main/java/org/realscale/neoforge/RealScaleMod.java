@@ -5,6 +5,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import org.realscale.neoforge.compat.dhchunky.DhChunkyGuardCommands;
+import org.realscale.neoforge.network.GeometryClipmapNetwork;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 
@@ -15,6 +16,7 @@ public final class RealScaleMod {
         bus.addListener(RealScaleStructurePacks::register);
         bus.addListener(this::registerDensity);
         NeoForge.EVENT_BUS.addListener(DhChunkyGuardCommands::registerCommands);
+        bus.addListener(GeometryClipmapNetwork::registerPayloads);
     }
     private void registerDensity(RegisterEvent event) {
         event.register(Registries.DENSITY_FUNCTION_TYPE, helper -> {

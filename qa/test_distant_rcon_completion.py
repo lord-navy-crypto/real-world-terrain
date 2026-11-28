@@ -7,7 +7,9 @@ from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"qa"/"neoforge"))
-from rcon_worldgen_smoke import await_full_chunk
+from rcon_worldgen_smoke import await_full_chunk, dump_worldgen_jfr
+from tempfile import TemporaryDirectory
+from subprocess import CompletedProcess
 
 class FakeRcon:
     def __init__(self, replies):
@@ -60,6 +62,30 @@ class FarChunkCompletionGate(unittest.TestCase):
         self.assertIn("QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS",distant)
         self.assertNotIn("timeout_seconds=240",distant.split(
             'QA_DISTANT_CHUNK_FULLY_LOADED_WITHIN_180_SECONDS')[0])
+
+class JfrExportGate(unittest.TestCase):
+    def test_stop_fallback_exports_recording_instead_of_masking_failure(self):
+        with TemporaryDirectory() as directory:
+            root=Path(directory)
+            def fake_run(args, **kwargs):
+                command=args[2]
+                if command=="JFR.stop":
+                    target=Path(args[-1].split("=",1)[1])
+                    target.write_bytes(bytes.fromhex("464c5200")+bytes(64))
+                    return CompletedProcess(args,0,"exported","")
+                return CompletedProcess(args,1,"","dump failed")
+            with patch("rcon_worldgen_smoke.subprocess.run",side_effect=fake_run) as runner:
+                dump_worldgen_jfr(root,"123")
+                self.assertEqual(runner.call_count,3)
+                self.assertTrue((root/"build/realscale_worldgen_cpu.jfr").is_file())
+
+    def test_invalid_recording_never_passes(self):
+        with TemporaryDirectory() as directory:
+            with patch("rcon_worldgen_smoke.subprocess.run",
+                       return_value=CompletedProcess([],0,"","")):
+                with self.assertRaisesRegex(RuntimeError,"valid recording"):
+                    dump_worldgen_jfr(Path(directory),"123")
+
 
 if __name__=="__main__":
     unittest.main()

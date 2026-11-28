@@ -1,0 +1,141 @@
+name: Geometry Clipmap Iris client render smoke
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/VisibleSurfaceProxyGenerator.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/ClipmapRequestEpoch.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/network/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/mixin/IrisCameraFarUniformMixin.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/client/clipmap/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/mixin/IrisGeometryClipmapMixin.java'
+      - 'neoforge/src/main/resources/realscale.geometryclipmap.mixins.json'
+      - 'neoforge/src/main/resources/META-INF/neoforge.mods.toml'
+      - 'qa/neoforge/iris_clipmap_client_smoke.py'
+      - 'qa/neoforge/rcon_worldgen_smoke.py'
+      - 'qa/test_iris_clipmap_smoke_harness.py'
+      - 'neoforge/build.gradle'
+      - '.github/workflows/clipmap-iris-render-smoke.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: clipmap-iris-render-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  iris-client-render:
+    name: Iris + Complementary singleplayer render
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Gradle 9.8
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.8.0'
+          cache-read-only: false
+
+      - name: Verify Iris client smoke harness contracts
+        run: python3 -m unittest discover -s qa -p 'test_iris_clipmap_smoke_harness.py' -v
+
+      - name: Update Ubuntu package indexes
+        timeout-minutes: 10
+        run: |
+          set -euxo pipefail
+          # The hosted runner's optional Microsoft feed is not needed by this
+          # rendering job and can intermittently return 403, aborting apt update.
+          mapfile -t microsoft_sources < <(grep -rl 'packages.microsoft.com' /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null || true)
+          for source in "${microsoft_sources[@]}"; do
+            sudo mv "$source" "$source.disabled"
+            echo "DISABLED_UNAVAILABLE_MICROSOFT_APT_SOURCE: $source"
+          done
+          sudo timeout 8m apt-get \
+            -o Acquire::Retries=3 \
+            -o Acquire::http::Timeout=30 \
+            -o Acquire::https::Timeout=30 \
+            update
+
+      - name: Install virtual display and software OpenGL packages
+        timeout-minutes: 22
+        run: |
+          set -euxo pipefail
+          # Avoid downloading recommended fonts, Ghostscript and Mesa upgrades
+          # on every ephemeral runner. Preserve all actual visual test tools.
+          required=(xvfb x11-apps xdotool tesseract-ocr tesseract-ocr-eng imagemagick mesa-utils libgl1-mesa-dri libglx-mesa0)
+          missing=()
+          for package in "${required[@]}"; do
+            if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -qx 'install ok installed'; then
+              missing+=("$package")
+            fi
+          done
+          if (( ${#missing[@]} )); then
+            sudo timeout --kill-after=30s 19m apt-get \
+              -o Acquire::Retries=4 \
+              -o Acquire::http::Timeout=30 \
+              -o Acquire::https::Timeout=30 \
+              -o DPkg::Lock::Timeout=60 \
+              install -y --no-install-recommends "${missing[@]}"
+          fi
+          command -v xvfb-run
+          command -v glxinfo
+          command -v xwd
+          command -v xdotool
+          command -v tesseract
+          command -v identify
+          command -v convert
+          tesseract --list-langs | grep -qx eng
+
+      - name: Verify Mesa OpenGL under Xvfb
+        timeout-minutes: 5
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          MESA_DEBUG: '1'
+        run: |
+          set -euxo pipefail
+          timeout 120s xvfb-run -a -s "-screen 0 1280x720x24 +extension GLX +render -noreset" \
+            sh -lc 'glxinfo -B'
+
+      - name: Verify the dedicated Iris client run task exists
+        working-directory: neoforge
+        run: gradle --no-daemon --console=plain tasks --all | grep -F runIrisClipmapSmoke
+
+      - name: Build the complete NeoForge project
+        working-directory: neoforge
+        run: gradle --no-daemon --console=plain build
+
+      - name: Launch Iris shaderpack and capture actual client rendering
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          xvfb-run -a -s "-screen 0 1280x720x24 +extension GLX +render -noreset" \
+            python3 qa/neoforge/iris_clipmap_client_smoke.py
+
+      - name: Upload Iris render evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RealScale-Iris-Clipmap-Render-Evidence
+          path: |
+            neoforge/build/iris-clipmap-smoke/**
+            neoforge/run/logs/latest.log
+            neoforge/run/iris-clipmap-client/logs/latest.log
+          if-no-files-found: warn
+          retention-days: 7

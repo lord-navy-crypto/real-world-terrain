@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_21",
+  "package": "org.realscale.neoforge.mixin",
+  "client": [
+    "IrisGeometryClipmapMixin",
+    "IrisCameraFarUniformMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

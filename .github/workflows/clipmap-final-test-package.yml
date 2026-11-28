@@ -1,0 +1,182 @@
+name: RealScale Geometry Clipmap final test JAR and Java patch
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'neoforge/src/main/java/org/realscale/neoforge/ClipmapRequestEpoch.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/mixin/IrisCameraFarUniformMixin.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/VisibleSurfaceProxyGenerator.java'
+      - 'neoforge/src/main/java/org/realscale/neoforge/client/clipmap/**'
+      - 'neoforge/src/main/java/org/realscale/neoforge/mixin/IrisGeometryClipmapMixin.java'
+      - 'neoforge/src/main/resources/realscale.geometryclipmap.mixins.json'
+      - 'neoforge/src/main/resources/META-INF/neoforge.mods.toml'
+      - 'neoforge/src/main/java/org/realscale/neoforge/network/**'
+      - 'neoforge/src/test/java/org/realscale/neoforge/client/clipmap/**'
+      - 'neoforge/src/test/java/org/realscale/neoforge/network/**'
+      - 'qa/test_geometry_clipmap_compile_contract.py'
+      - 'neoforge/build.gradle'
+      - '.github/workflows/clipmap-final-test-package.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clipmap-final-test-package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-test-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.8.0'
+
+      - name: Verify Geometry Clipmap source and packet contracts
+        run: python3 -m unittest discover -s qa -p 'test_geometry_clipmap_compile_contract.py' -v
+
+      - name: Run JUnit and build the complete NeoForge 1.21.1 JAR
+        working-directory: neoforge
+        run: gradle --no-daemon --console=plain --stacktrace test build
+
+      - name: Package a verifiable JAR and a complete Java-source patch
+        env:
+          BASE_COMMIT: ${{ github.event.pull_request.base.sha || 'origin/main' }}
+        run: |
+          set -euo pipefail
+          mkdir -p build/clipmap-test-package
+          shopt -s nullglob
+          jars=(neoforge/build/libs/*.jar)
+          if [[ "${#jars[@]}" -ne 1 ]]; then
+            echo "Expected exactly one RealScale mod JAR, got ${#jars[@]}" >&2
+            exit 1
+          fi
+          short_sha="${GITHUB_SHA:0:12}"
+          jar_name="RealScale-GeometryClipmap-TEST-${short_sha}.jar"
+          cp "${jars[0]}" "build/clipmap-test-package/${jar_name}"
+
+          python3 - <<'PY'
+          from glob import glob
+          from zipfile import ZipFile
+          jar = glob("build/clipmap-test-package/*.jar")
+          assert len(jar) == 1, jar
+          required = [
+              "META-INF/neoforge.mods.toml",
+              "realscale.geometryclipmap.mixins.json",
+              "org/realscale/neoforge/GeometryClipmapServer.class",
+              "org/realscale/neoforge/client/clipmap/GeometryClipmapRenderer.class",
+              "org/realscale/neoforge/client/clipmap/ClipmapHeightGrid.class",
+              "org/realscale/neoforge/client/clipmap/ClipmapProxySnapshotBuffer.class",
+              "org/realscale/neoforge/client/clipmap/ClipmapTextureUpdatePlan.class",
+              "org/realscale/neoforge/client/clipmap/ClipmapProjectionMath.class",
+              "org/realscale/neoforge/client/clipmap/IrisRenderCompatibility.class",
+              "org/realscale/neoforge/client/clipmap/IrisNativeClipmapRenderer.class",
+              "org/realscale/neoforge/client/clipmap/GeometryClipmapSettings.class",
+              "org/realscale/neoforge/mixin/IrisGeometryClipmapMixin.class",
+              "org/realscale/neoforge/client/clipmap/ClipmapFogColor.class",
+              "org/realscale/neoforge/network/ClipmapRequestPayload.class",
+              "org/realscale/neoforge/network/ClipmapStatusPayload.class",
+          ]
+          with ZipFile(jar[0]) as file:
+              names = set(file.namelist())
+              missing = [name for name in required if name not in names]
+              assert not missing, f"Packaged JAR missing Geometry Clipmap classes: {missing}"
+              meta = file.read("META-INF/neoforge.mods.toml").decode("utf-8")
+              assert 'modId="realscale"' in meta
+          print("REALSCALE_GEOMETRY_CLIPMAP_PACKAGED_JAR_VERIFIED")
+          PY
+
+          git cat-file -e "${BASE_COMMIT}^{commit}"
+          git diff --binary --no-ext-diff "${BASE_COMMIT}" HEAD --               neoforge/src/main/java/org/realscale/neoforge/GeometryClipmapServer.java               neoforge/src/main/java/org/realscale/neoforge/VisibleSurfaceProxyGenerator.java               neoforge/src/main/java/org/realscale/neoforge/client/clipmap               neoforge/src/main/java/org/realscale/neoforge/mixin/IrisGeometryClipmapMixin.java               neoforge/src/main/resources/realscale.geometryclipmap.mixins.json               neoforge/src/main/resources/META-INF/neoforge.mods.toml               neoforge/src/main/java/org/realscale/neoforge/network               neoforge/src/test/java/org/realscale/neoforge/client/clipmap               neoforge/src/test/java/org/realscale/neoforge/network               qa/test_geometry_clipmap_compile_contract.py               > build/clipmap-test-package/geometry-clipmap-java.patch
+          if [[ ! -s build/clipmap-test-package/geometry-clipmap-java.patch ]]; then
+            echo "Geometry Clipmap patch unexpectedly empty" >&2
+            exit 1
+          fi
+
+          cp docs/GEOMETRY_CLIPMAP_RESEARCH.md             build/clipmap-test-package/GEOMETRY_CLIPMAP_RESEARCH.md
+          cat > build/clipmap-test-package/TESTING.txt <<EOF
+          RealScale Geometry Clipmap experimental release candidate
+          Minecraft: 1.21.1; NeoForge: compatible 21.1.x; Java: 21
+          Source commit: ${GITHUB_SHA}
+          Patch base: ${BASE_COMMIT}
+
+          TEST ONLY. DO NOT MERGE TO MAIN OR REPLACE THE OFFICIAL RELEASE.
+          Keep exactly one RealScale mod JAR in your mods directory.
+          Geometry Clipmap is disabled by default in this experimental test JAR.
+          A fresh install starts OFF. An explicitly saved enabled=true preference is preserved.
+          In-game switch: press Esc and click "Geometry Clipmap: ON/OFF".
+          The selected state is saved to config/realscale-geometry-clipmap.properties.
+          Turning it OFF stops new requests, clears active snapshots and releases
+          client renderer resources. Turning it ON requests a fresh six-LOD snapshot.
+
+          Chat reports major handshake and error states:
+            REQUEST SENT / SERVER ACKNOWLEDGED / QUEUED
+            SNAPSHOT READY / SERVER SENT SNAPSHOT / GPU DRAW SUBMITTED
+            NO SERVER ACKNOWLEDGEMENT / NO PROGRESS
+            UNSUPPORTED WORLD / SAMPLING FAILED / SAMPLER STALLED
+          The action bar reports in-ring sampling milestones (25/50/75/100%)
+          and partial height-tile receipt, avoiding chat spam.
+          The client retries the same request every 8 seconds until all six
+          height tiles arrive. The server resends a cached snapshot instead
+          of recomputing it. A 90-second no-progress watchdog cancels and retries
+          a stalled sampling task. GPU draw submission is not proof of visible pixels.
+
+          Optional diagnostic JVM argument:
+            -Drealscale.experimental.geometryclipmap.debug=false (silence timings)
+
+          Suggested reproducible run:
+            Natural Automate preset, seed 42, vanilla render distance 10 chunks.
+            First test without shaders and Distant Horizons, then test DH.
+            Move in all four directions, teleport, change dimension, disconnect
+            and rejoin, and inspect distant seams, sky islands and canopies.
+            Compare logs for firstSnapshotReady and
+            firstEligibleRenderSubmission (not measured GPU frame display).
+            Record FPS, 1%-low frametime, RAM/VRAM, hitching and screenshots.
+            Check game/logs/latest.log for Clipmap errors.
+
+          Java patch is a source diff relative to the PR base revision;
+          it is NOT a substitute for the built JAR and cannot be applied
+          directly to an arbitrary old release.
+
+          Shader-pack behavior:
+            When Iris reports an active shader pack, the standalone OpenGL
+            renderer remains disabled. A client-only LevelRenderer hook submits
+            the six-level surface mesh through the active vanilla/Iris terrain
+            solid, cutout and translucent passes using the BLOCK vertex format.
+            Solid and cutout geometry also enters Iris shadow terrain passes.
+            The native path reuses the current terrain shader and ChunkOffset;
+            it does not bind a private framebuffer or install a private shader.
+            The no-shader path continues to use the standalone OpenGL renderer.
+
+          Still requires real-client visual verification with Iris and a shader
+          pack enabled: horizon continuity, G-buffer output, shadow maps,
+          water appearance, tree/building proxies, FPS and frame-time impact.
+          EOF
+          (cd build/clipmap-test-package && sha256sum *.jar geometry-clipmap-java.patch > SHA256SUMS)
+          echo "REALSCALE_CLIPMAP_TEST_JAR_AND_PATCH_READY"
+          cat build/clipmap-test-package/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: RealScale-GeometryClipmap-Final-Test-${{ github.sha }}
+          path: build/clipmap-test-package/
+          if-no-files-found: error
+          retention-days: 14
