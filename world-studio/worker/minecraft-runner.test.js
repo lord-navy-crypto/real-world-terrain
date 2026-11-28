@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildServerProperties } from "./minecraft-runner.js";
+import path from "node:path";
+import { buildServerProperties, resolveRunDirectory } from "./minecraft-runner.js";
 import { normalizeExportRequest } from "./export-contract.js";
 
 test("server properties pin the real generator, seed, loopback ports, and isolated world folder", () => {
@@ -29,4 +30,10 @@ test("server properties pin the real generator, seed, loopback ports, and isolat
 
 test("server properties never interpolate unvalidated newlines from a seed", () => {
   assert.throws(() => normalizeExportRequest({ seed: "first\nlevel-type=minecraft:normal" }), /Seed/);
+});
+
+test("uses the actual ModDevGradle runServer game directory", () => {
+  const neoforgeDirectory = path.resolve("/workspace/project/neoforge");
+  assert.equal(resolveRunDirectory(neoforgeDirectory), path.join(neoforgeDirectory, "run"));
+  assert.notEqual(resolveRunDirectory(neoforgeDirectory), path.join(neoforgeDirectory, "run", "server"));
 });
