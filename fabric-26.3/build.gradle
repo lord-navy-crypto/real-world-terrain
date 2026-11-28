@@ -9,10 +9,10 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 // Allow CI and pack maintainers to validate supported Fabric dependency combinations.
 def fabricLoaderVersion = providers.gradleProperty('fabric_loader_version')
         .orElse(providers.environmentVariable('FABRIC_LOADER_VERSION'))
-        .getOrElse('0.20.1')
+        .getOrElse('0.19.5')
 def fabricApiVersion = providers.gradleProperty('fabric_api_version')
         .orElse(providers.environmentVariable('FABRIC_API_VERSION'))
-        .getOrElse('0.167.0+26.3')
+        .getOrElse('0.164.0+26.3')
 def yaclVersion = '3.9.7+26.3-fabric'
 def includeYaclDev = providers.gradleProperty('realscale_include_yacl_dev')
         .map { it.toBoolean() }
