@@ -117,8 +117,8 @@ public final class ClipmapTriangleUv {
             if (!Float.isFinite(x[vertex]) || !Float.isFinite(z[vertex])) {
                 throw new IllegalArgumentException("world-aligned UV positions must be finite");
             }
-            if (Math.abs((double) x[vertex]) > maxAxisExtentBlocks + 0.5d
-                    || Math.abs((double) z[vertex]) > maxAxisExtentBlocks + 0.5d) {
+            if (Math.abs((double) x[vertex]) > maxAxisExtentBlocks
+                    || Math.abs((double) z[vertex]) > maxAxisExtentBlocks) {
                 throw new IllegalArgumentException(
                         "world-aligned UV position exceeds the outer clipmap extent");
             }
