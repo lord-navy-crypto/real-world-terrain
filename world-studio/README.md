@@ -13,7 +13,7 @@ A browser-first world creation interface with a local, real Minecraft/NeoForge w
 - Shareable preview URLs that restore seed, preview footprint, relief multiplier, and view.
 - Local world-export UI connected to a loopback-only Node API.
 - Real Minecraft 1.21.1 + NeoForge 21.1.249 + RealScale 2.0.0-preview.2-test.12 server-side generation.
-- Bounded Anvil chunk generation, NBT/region validation, ZIP packaging, export manifest, and SHA-256 checksum.
+- Bounded Anvil chunk generation, NBT/region validation, a second NeoForge boot that reopens the saved world, ZIP packaging, export manifest, and SHA-256 checksum.
 
 ## Browser preview is not Minecraft world generation
 
@@ -33,7 +33,8 @@ The local worker currently:
 4. Uses RCON to force-load and verify each requested chunk in the Overworld.
 5. Removes the temporary force-load tickets, runs save-all flush, and stops the server.
 6. Validates level.dat, the Minecraft DataVersion, Anvil region headers, chunk sector bounds, compressed chunk NBT, and the presence of every requested chunk.
-7. Packages the world folder and realscale-export.json into a ZIP, then computes its SHA-256 checksum.
+7. Starts a second NeoForge server against the same world folder, confirms it loads the existing save rather than creating a new world, queries the saved seed, flushes, and stops cleanly.
+8. Revalidates the persisted chunks, then packages the world folder and realscale-export.json into a ZIP and computes its SHA-256 checksum.
 
 ### Current export limits
 
@@ -123,7 +124,7 @@ The worker rejects non-loopback bind addresses. Do not expose it directly to the
 
 1. Add a server-side chunk-baking scheduler for areas larger than the 256-chunk MVP limit.
 2. Persist job state and recover interrupted jobs safely.
-3. Add deeper Anvil/NBT and clean-reopen integration tests against the exact NeoForge server.
+3. Expand Anvil/NBT coverage across multiple region files, negative chunk coordinates, and larger export footprints.
 4. Investigate a compatibility-bake path for vanilla clients; do not promise it until the exact exported ZIP opens in an unmodified vanilla runtime.
 5. Compare fixed-seed server-generated height/biome samples against the browser preview and document measured parity.
 6. Build a separately authenticated public worker and storage service. Deployment is intentionally out of scope for this code phase.
