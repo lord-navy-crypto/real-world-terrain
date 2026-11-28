@@ -44,6 +44,17 @@ final class ClipmapTriangleUvTest {
                 Math.signum(uvArea(first)), 0.0f);
         assertEquals(Math.signum(worldArea(secondX, secondZ)),
                 Math.signum(uvArea(second)), 0.0f);
+
+        // Mirrors Iris NormalHelper.computeTangentSmooth on a flat X/Z plane.
+        // Both halves of the quad must resolve to the same +X tangent and +Z bitangent.
+        assertArrayEquals(new float[]{1.0f, 0.0f},
+                tangentDirection(firstX, firstZ, first), 1.0e-5f);
+        assertArrayEquals(new float[]{1.0f, 0.0f},
+                tangentDirection(secondX, secondZ, second), 1.0e-5f);
+        assertArrayEquals(new float[]{0.0f, 1.0f},
+                bitangentDirection(firstX, firstZ, first), 1.0e-5f);
+        assertArrayEquals(new float[]{0.0f, 1.0f},
+                bitangentDirection(secondX, secondZ, second), 1.0e-5f);
         assertInsideNeutralPatch(first);
         assertInsideNeutralPatch(second);
     }
@@ -95,6 +106,38 @@ final class ClipmapTriangleUvTest {
                 ClipmapTriangleUv.computeNeutralWorldAlignedInto(
                         new float[]{0.0f, 1.0f, 2.0f},
                         new float[]{0.0f, 1.0f, 2.0f}, 16_384L, uv));
+    }
+
+    private static float[] tangentDirection(float[] x, float[] z, float[] uv) {
+        double edge1X = x[1] - x[0];
+        double edge1Z = z[1] - z[0];
+        double edge2X = x[2] - x[0];
+        double edge2Z = z[2] - z[0];
+        double du1 = uv[2] - uv[0];
+        double dv1 = uv[3] - uv[1];
+        double du2 = uv[4] - uv[0];
+        double dv2 = uv[5] - uv[1];
+        double inverseDeterminant = 1.0 / (du1 * dv2 - du2 * dv1);
+        double tangentX = inverseDeterminant * (dv2 * edge1X - dv1 * edge2X);
+        double tangentZ = inverseDeterminant * (dv2 * edge1Z - dv1 * edge2Z);
+        double inverseLength = 1.0 / Math.sqrt(tangentX * tangentX + tangentZ * tangentZ);
+        return new float[]{(float) (tangentX * inverseLength), (float) (tangentZ * inverseLength)};
+    }
+
+    private static float[] bitangentDirection(float[] x, float[] z, float[] uv) {
+        double edge1X = x[1] - x[0];
+        double edge1Z = z[1] - z[0];
+        double edge2X = x[2] - x[0];
+        double edge2Z = z[2] - z[0];
+        double du1 = uv[2] - uv[0];
+        double dv1 = uv[3] - uv[1];
+        double du2 = uv[4] - uv[0];
+        double dv2 = uv[5] - uv[1];
+        double inverseDeterminant = 1.0 / (du1 * dv2 - du2 * dv1);
+        double bitangentX = inverseDeterminant * (-du2 * edge1X + du1 * edge2X);
+        double bitangentZ = inverseDeterminant * (-du2 * edge1Z + du1 * edge2Z);
+        double inverseLength = 1.0 / Math.sqrt(bitangentX * bitangentX + bitangentZ * bitangentZ);
+        return new float[]{(float) (bitangentX * inverseLength), (float) (bitangentZ * inverseLength)};
     }
 
     private static float uvArea(float[] uv) {
