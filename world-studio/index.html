@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101713" />
-    <meta name="description" content="Create, explore, and eventually export deterministic RealScale Minecraft worlds." />
+    <meta name="description" content="Create, explore, and export deterministic RealScale Minecraft worlds." />
     <title>RealScale World Studio</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -86,7 +86,7 @@
                 </select>
                 <span class="select-chevron">⌄</span>
               </div>
-              <p class="field-hint">Preview extent only. Full playable-world export will use a separate chunk-generation budget.</p>
+              <p class="field-hint">Preview extent only. Playable-world export uses a separate, bounded chunk-generation budget.</p>
             </div>
 
             <div class="field-group">
@@ -209,7 +209,7 @@
             <div class="export-principles">
               <div><span>01</span> Real server-side world generation</div>
               <div><span>02</span> Every requested chunk checked on disk</div>
-              <div><span>03</span> ZIP checksum and export manifest</div>
+              <div><span>03</span> Clean NeoForge reopen and ZIP checksum</div>
             </div>
           </div>
           <div class="export-card world-export-card">
@@ -266,7 +266,7 @@
           <div class="steps-grid">
             <article class="step-card"><span class="step-number">01</span><div class="step-icon">⌘</div><h3>Choose a seed</h3><p>Use a favorite seed or roll a new one. Every terrain preview is deterministic.</p></article>
             <article class="step-card"><span class="step-number">02</span><div class="step-icon">▧</div><h3>Explore the map</h3><p>Inspect the terrain, elevation, and biome distribution before committing to a world.</p></article>
-            <article class="step-card"><span class="step-number">03</span><div class="step-icon">⇩</div><h3>Download & play</h3><p>In the next release, export a ready-to-open Minecraft save from the server generator.</p></article>
+            <article class="step-card"><span class="step-number">03</span><div class="step-icon">⇩</div><h3>Download & play</h3><p>Download a validated world ZIP and open it in Minecraft Java 1.21.1 with NeoForge and RealScale installed.</p></article>
           </div>
         </section>
       </main>
