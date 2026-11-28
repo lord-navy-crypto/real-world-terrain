@@ -48,6 +48,22 @@ jobs:
         with:
           node-version: "24"
 
+      - name: Install World Studio dependencies
+        working-directory: world-studio
+        run: npm install --no-audit --no-fund
+
+      - name: Run browser and worker test suites
+        working-directory: world-studio
+        run: npm test
+
+      - name: Build the browser application
+        working-directory: world-studio
+        run: npm run build
+
+      - name: Check local worker syntax
+        working-directory: world-studio
+        run: npm run worker:check
+
       - name: Generate a real Minecraft world and validate the save
         env:
           REALSCALE_SERVER_STARTUP_TIMEOUT_MS: "900000"
