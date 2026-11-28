@@ -490,10 +490,77 @@ export async function runMinecraftExport(input, {
     }
 
     progress(onProgress, "validating", 92, "Checking level.dat and every requested Anvil chunk");
-    const validation = await validateWorldSave(worldDirectory, {
+    let validation = await validateWorldSave(worldDirectory, {
       ...request,
       preset: request.presetKey
     });
+
+    progress(onProgress, "reopening", 94, "Restarting NeoForge to verify the saved world reopens");
+    const reopenLines = [];
+    const appendReopenLog = line => {
+      reopenLines.push(line);
+      if (reopenLines.length > 500) reopenLines.shift();
+      appendLog(line);
+    };
+    const [reopenServerPort, reopenRconPort] = await reserveLocalPorts(2);
+    const reopenRconPassword = randomBytes(32).toString("base64url");
+    await fs.writeFile(propertiesPath, buildServerProperties(request, {
+      worldName,
+      serverPort: reopenServerPort,
+      rconPort: reopenRconPort,
+      rconPassword: reopenRconPassword
+    }), { mode: 0o600 });
+
+    serverStopped = false;
+    child = spawn(gradleCommand, ["--no-daemon", "runServer", "--stacktrace"], {
+      cwd: neoforgeDirectory,
+      env: { ...process.env, REALSCALE_WORLD_EXPORT_JOB: id + "-reopen" },
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: process.platform !== "win32"
+    });
+    await writeLockOwner(lock, {
+      jobId: id,
+      workerPid: process.pid,
+      serverPid: child.pid ?? null,
+      createdAt: new Date().toISOString()
+    });
+
+    const reopenReadyPromise = waitForReady(child, reopenLines, startupTimeoutMs, signal);
+    child.stdout.on("data", chunk => {
+      const text = chunk.toString("utf8");
+      for (const line of text.split(/\\r?\\n/u)) if (line) appendReopenLog(line);
+    });
+    child.stderr.on("data", chunk => {
+      const text = chunk.toString("utf8");
+      for (const line of text.split(/\\r?\\n/u)) if (line) appendReopenLog("[stderr] " + line);
+    });
+    await reopenReadyPromise;
+    rcon = await connectRcon(reopenRconPort, reopenRconPassword, signal);
+    const reopenedSeedReply = await rcon.command("seed");
+    if (!/Seed:/iu.test(reopenedSeedReply)) {
+      throw new Error("Reopened Minecraft world did not respond to the seed query");
+    }
+    await rcon.command("save-all flush");
+    await rcon.command("stop");
+    rcon.close();
+    rcon = null;
+    const reopenExit = await waitForExit(child, 180_000);
+    serverStopped = true;
+    if (reopenExit.code !== 0) {
+      throw new Error("NeoForge failed to stop after the clean world-reopen check (code " + reopenExit.code + ")");
+    }
+    if (!reopenLines.some(line => line.includes('Preparing level "' + worldName + '"'))) {
+      throw new Error("The second NeoForge boot did not report loading the exported world folder");
+    }
+    if (reopenLines.some(line => line.includes("No existing world data, creating new world"))) {
+      throw new Error("The second NeoForge boot created a new world instead of reopening the saved world");
+    }
+
+    validation = await validateWorldSave(worldDirectory, {
+      ...request,
+      preset: request.presetKey
+    });
+    progress(onProgress, "validating", 95, "Reopened world saved again and passed Anvil/NBT validation");
     const manifest = {
       schemaVersion: 1,
       exportType: "realscale-modded-minecraft-save",
@@ -524,7 +591,7 @@ export async function runMinecraftExport(input, {
           version: "3.8.1+1.21.1"
         }]
       },
-      vanillaCompatible: false,
+      reopenVerified: true,\n      vanillaCompatible: false,
       note: "This is a real generated Minecraft save. It requires the matching RealScale NeoForge mod; vanilla compatibility has not been validated."
     };
 
