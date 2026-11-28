@@ -1554,6 +1554,7 @@ def run_client(env: dict[str, str]) -> None:
                 f"Returned camera did not restore the original clipmap centre: "
                 f"baseline={baseline_center}, returned={returned_center}"
             )
+        print("CLIENT_CAMERA_RETURN_TEST_PASS", flush=True)
         returned = capture_screenshot("iris-clipmap-returned-to-baseline")
         validate_screenshot(returned)
         returned_contrast = terrain_contrast(returned)
