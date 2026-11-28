@@ -212,7 +212,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("actual grass, dry-ground, rock, sand and snow material", palette)
         self.assertNotIn("near-neutral multipliers", palette)
 
-    def test_native_terrain_uses_stable_neutral_uv_patch_and_procedural_palette(self):
+    def test_native_terrain_uses_compact_neutral_uv_patch_and_procedural_palette(self):
         self.assertIn("ClipmapRingMesh.surfaceIndices(cells, holeRadius)", IRIS_RENDERER)
         self.assertIn("ClipmapTriangleUv.computeNeutralCellAlignedInto(", IRIS_RENDERER)
         self.assertNotIn("computeTerrainUvs", IRIS_RENDERER)
@@ -226,10 +226,20 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn("NEUTRAL_UV_MIN = 7.125f", uv)
-        self.assertIn("NEUTRAL_UV_RANGE = 0.75f", uv)
+        self.assertIn("NEUTRAL_UV_MIN = 7.4375f", uv)
+        self.assertIn("NEUTRAL_UV_RANGE = 0.125f", uv)
         self.assertIn("computeCellAlignedPatchInto", uv)
         self.assertIn("sprite.getU(u), sprite.getV(v)", IRIS_RENDERER)
+
+    def test_iris_native_terrain_populates_shaderpack_block_metadata(self):
+        self.assertIn("IrisRenderCompatibility.blockStateId(", IRIS_RENDERER)
+        self.assertIn("IrisRenderCompatibility.beginBlock(", IRIS_RENDERER)
+        self.assertIn("IrisRenderCompatibility.endBlock(", IRIS_RENDERER)
+        self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", IRIS_RENDERER)
+        self.assertIn("Blocks.WATER.defaultBlockState()", IRIS_RENDERER)
+        self.assertIn("BlockSensitiveBufferBuilder", IRIS_COMPAT)
+        self.assertIn("WorldRenderingSettings", IRIS_COMPAT)
+        self.assertIn("getBlockStateIds", IRIS_COMPAT)
 
     def test_iris_native_draw_uses_portable_terrain_stage_events(self):
         self.assertIn("prepareIrisFrameFog", IRIS_MIXIN)
