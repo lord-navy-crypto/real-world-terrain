@@ -66,7 +66,7 @@ def rcon_generate_and_stop():
                 "execute in minecraft:overworld if loaded 0 64 0 run forceload query 0 0"
             )
             request_id+=1
-            if "force loaded" in last.lower():
+            if "marked for force loading" in last.lower():
                 loaded=True
                 break
             time.sleep(0.5)
