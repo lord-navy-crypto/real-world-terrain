@@ -730,35 +730,46 @@ and the existing world-generation regressions continue to pass. The feature
 remains opt-in and the PR remains Draft pending that evidence.
 
 
-## Iris per-cell shading pattern: neutral UV basis conditioning (2026-11-28)
+## Iris per-cell shading pattern: atlas UV regression and block metadata audit (2026-11-28)
 
-The first real Iris + Complementary run after adding LOD-aware palette filtering
-did not pass the new fixed-camera visual gate. It measured mid-frequency RMS
-0.00583 and normalized ratio 0.09786 against limits of 0.00500 and 0.090.
-The moved-region RMS improved to 0.00467, but its normalized ratio remained
-0.09351. Camera movement, six-level LOD refresh, moved-region detail checks,
-absolute texture-energy checks, build and the rest of the regression suite
-passed. The failure is a genuine visual-quality failure, not a build failure.
+The first real Iris + Complementary run after LOD-aware palette filtering
+measured fixed-camera mid-frequency RMS `0.00583` and normalized ratio
+`0.09786`, against gates of `0.00500` and `0.09000`. Its high-frequency
+RMS was `0.00627` (ratio `0.10515`). After moving to a new six-LOD centre,
+mid-frequency RMS was `0.00467` (ratio `0.09351`) and high-frequency RMS
+was `0.00533` (ratio `0.10677`). Thus movement/LOD refresh worked, but the
+fixed-camera mid-frequency visual gate failed.
 
-Inspection of the captured screenshot shows a highly regular short-dash pattern
-repeated once per terrain quad. This is more consistent with a per-cell shader
-tangent/texture-derivative artifact than with the world-anchored palette noise
-alone. The renderer was mapping every quad to a 1/8-texel UV patch
-(`0.125 × 0.125` sprite pixels; UV determinant 0.015625) on the white-concrete
-neutral sprite. Although mathematically non-degenerate, that very small basis
-may be poorly conditioned for Iris/Complementary's derivative-based tangent
-reconstruction.
+A follow-up diagnostic widened the neutral UV patch from `0.125 × 0.125`
+sprite pixels to `0.75 × 0.75`. The second actual Iris + Complementary
+screenshot disproved the tangent-conditioning hypothesis: fixed-camera
+high-frequency RMS rose to `0.01910` (ratio `0.24361`) and mid-frequency RMS
+rose to `0.01013` (ratio `0.12920`). The moved-region high-frequency RMS
+was `0.01528` (ratio `0.22674`), and final mid-frequency RMS was `0.00827`
+(ratio `0.12268`). The wider patch sampled adjacent atlas/PBR texels and is
+rejected. Restore the compact 1/8-texel patch; do not relax any visual gate.
 
-The diagnostic candidate widens the patch to the central three-quarters of the
-same neutral texel (`0.75 × 0.75`; determinant 0.5625). This remains inside
-one texel, so it does not intentionally introduce atlas texture detail, but
-increases the UV basis area by 36×. Unit tests now assert the larger determinant,
-exact patch bounds and identical UVs across adjacent cells. No height samples,
-geometry, normals, palette, LOD placement or camera logic change in this
-experiment.
+The next source-level lead is Iris's block metadata contract. Iris's own
+`MixinBufferBuilder` fills `mc_Entity`, `mc_midTexCoord`, and tangent
+attributes for its extended terrain format. Its `BlockSensitiveBufferBuilder`
+interface expects renderers to call `beginBlock`/`endBlock`, and its
+NeoForge block-render hook supplies the block-state ID from
+`WorldRenderingSettings.INSTANCE.getBlockStateIds()`. RealScale's synthetic
+clipmap terrain currently writes the Iris terrain vertex format but never
+provides this block context, leaving `currentBlock` and `currentRenderType`
+at their default `-1` values. That is a concrete integration gap, independent
+of the UV-size hypothesis.
 
-This is a hypothesis-driven rendering experiment, not an accepted fix. The
-next Iris + Complementary screenshot must demonstrate that the per-cell dash
-pattern and mid-frequency metrics improve while preserving terrain contrast,
-high-frequency energy, six-level movement, return stability and all worldgen
-regressions. Keep the PR Draft until that evidence passes.
+The new diagnostic candidate resolves actual Iris block-state IDs reflectively
+(no compile-time Iris dependency) and writes a white-concrete solid block
+context for terrain vertices and a water/fluid context for water vertices.
+The compact neutral UV patch is retained. Each vertex receives a local
+clipmap-relative mid-block anchor, avoiding large world-coordinate offsets.
+If the Iris API or block-state map is unavailable, the bridge fails safely and
+keeps the previous neutral fallback metadata.
+
+This remains an experiment, not an accepted fix. The next actual Iris +
+Complementary client run must report the resolved block IDs and demonstrate
+lower fixed-camera mid-frequency energy while preserving high-frequency energy,
+terrain contrast, six-level movement, return-to-baseline stability, and all
+world-generation regressions. Keep the PR Draft until that evidence passes.
