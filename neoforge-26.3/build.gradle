@@ -7,7 +7,7 @@ group='org.realscale'
 base { archivesName = 'RealScale-NeoForge-26.3' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 neoForge {
-    version = '26.3.0.118'
+    version = providers.gradleProperty('neo_version').getOrElse('26.3.0.76')
     runs {
         client {
             client()
