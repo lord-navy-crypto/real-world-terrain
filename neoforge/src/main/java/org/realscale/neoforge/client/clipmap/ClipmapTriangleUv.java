@@ -15,10 +15,14 @@ public final class ClipmapTriangleUv {
     private static final float UV_MAX = 14.0f;
     private static final float UV_RANGE = UV_MAX - UV_MIN;
     private static final float MIN_SPAN = 1.0e-6f;
-    // A sub-texel neutral-white patch keeps the Iris tangent basis non-degenerate
-    // without sampling neighbouring PBR texels on every distant grid cell.
-    private static final float NEUTRAL_UV_MIN = 7.4375f;
-    private static final float NEUTRAL_UV_RANGE = 0.125f;
+    // Use the central three-quarters of one white-concrete texel. The previous
+    // 1/8-texel patch produced an extremely small UV determinant per terrain
+    // cell; shader-pack derivative-based tangent reconstruction could amplify
+    // that poorly conditioned basis into a repeated per-cell shading pattern.
+    // This larger patch remains inside the same neutral texel, avoiding atlas
+    // detail while giving Iris a much more stable tangent frame.
+    private static final float NEUTRAL_UV_MIN = 7.125f;
+    private static final float NEUTRAL_UV_RANGE = 0.75f;
 
     private ClipmapTriangleUv() {
     }
@@ -89,10 +93,10 @@ public final class ClipmapTriangleUv {
     }
 
     /**
-     * Maps each surface quad into a 1/8-pixel patch centred on one neutral
-     * white-concrete texel. This preserves a well-conditioned tangent basis
-     * for Iris/PBR shaders while preventing neighbouring atlas texels from
-     * forming a repeated pattern at every coarse LOD cell.
+     * Maps each surface quad into the central three-quarters of one neutral
+     * white-concrete texel. The larger one-texel basis is better conditioned
+     * for Iris's derivative-based tangent reconstruction without sampling
+     * neighbouring atlas texels or repeating block-material detail.
      */
     public static void computeNeutralCellAlignedInto(int[] gridX, int[] gridZ,
             float[] destination) {
