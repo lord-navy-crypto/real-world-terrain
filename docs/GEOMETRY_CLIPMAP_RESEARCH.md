@@ -773,3 +773,26 @@ Complementary client run must report the resolved block IDs and demonstrate
 lower fixed-camera mid-frequency energy while preserving high-frequency energy,
 terrain contrast, six-level movement, return-to-baseline stability, and all
 world-generation regressions. Keep the PR Draft until that evidence passes.
+
+
+## Pause-menu OCR false negative in Iris client smoke (2026-11-28)
+
+The first client run with the Iris block-metadata bridge compiled successfully,
+but the render smoke stopped before the clipmap toggle or terrain capture. The
+failure was not a renderer crash: the framebuffer screenshot visibly contained
+the Minecraft "Game Menu" title and the RealScale controls, but the harness's
+Tesseract `--psm 6` pass returned an empty string for the pixel font. Re-running
+the exact captured title crop locally with `--psm 8` consistently returned
+`Gane Nery`, a recognisable OCR misclassification of "Game Menu".
+
+The harness now uses single-word PSM 8 for this fixed title crop and accepts
+either the exact title or the specific observed alias `gane nery`. It still
+requires the PauseScreen initialization marker, captures Minecraft's own
+framebuffer screenshot, validates screenshot dimensions, and checks the
+title crop. This is a narrow OCR compatibility adjustment, not a relaxation
+of the actual rendering or texture-quality gates.
+
+The next run must get past the pause-menu check and exercise the actual clipmap
+toggle, initial screenshot, camera movement, six-LOD refresh, return movement,
+and all visual metrics. The block-metadata change remains unvalidated until
+that complete client render evidence exists.
