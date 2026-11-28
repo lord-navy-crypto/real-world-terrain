@@ -20,6 +20,7 @@ public final class ClipmapTriangleUv {
     // PBR texels and sharply increased both high- and mid-frequency energy.
     private static final float NEUTRAL_UV_CENTER = 7.5f;
     private static final float NEUTRAL_UV_HALF_RANGE = 0.0625f;
+    private static final float NEUTRAL_UV_TRIANGLE_SPAN = 0.09375f;
 
     private ClipmapTriangleUv() {
     }
@@ -90,40 +91,58 @@ public final class ClipmapTriangleUv {
     }
 
     /**
-     * Maps local world X/Z positions into one compact neutral atlas patch.
-     * Every LOD uses the same world-space scale and shared clipmap centre, so
-     * a shared world position receives identical UVs across triangles and LODs.
+     * Maps a single grid triangle into a compact neutral atlas patch while
+     * keeping U aligned to world X and V aligned to world Z.
      *
-     * <p>U follows +X and V follows +Z. Iris derives its per-triangle tangent
-     * from position and UV derivatives; this world-aligned mapping keeps that
-     * tangent frame consistent across both halves of a grid quad. The complete
-     * six-level extent remains inside one neutral white-concrete texel.
+     * <p>Each triangle is centred independently so Iris's per-triangle
+     * midTexCoord is always the exact neutral texel centre (7.5, 7.5).
+     * A fixed 0.09375 sprite-local span per cell keeps UV deltas large enough
+     * to survive atlas-normalized float precision, while the 2:1 vertex
+     * distribution keeps every coordinate inside the 1/8-texel patch.
      *
-     * @param maxAxisExtentBlocks half-width of the outermost LOD ring
+     * <p>The per-triangle UV origins are intentionally allowed to differ at
+     * shared vertices. The sampled neutral texel remains the same, while
+     * derivatives preserve a consistent +X tangent and +Z bitangent.
      */
-    public static void computeNeutralWorldAlignedInto(float[] x, float[] z,
-            long maxAxisExtentBlocks, float[] destination) {
+    public static void computeNeutralTriangleWorldAlignedInto(float[] x, float[] z,
+            int cellSpacingBlocks, float[] destination) {
         Objects.requireNonNull(x, "x");
         Objects.requireNonNull(z, "z");
         Objects.requireNonNull(destination, "destination");
         if (x.length < 3 || z.length < 3 || destination.length < 6
-                || maxAxisExtentBlocks <= 0L) {
+                || cellSpacingBlocks <= 0) {
             throw new IllegalArgumentException(
-                    "world-aligned UV inputs must contain three vertices and a positive extent");
+                    "triangle UV inputs must contain three vertices and positive cell spacing");
         }
 
-        double scale = NEUTRAL_UV_HALF_RANGE / (double) maxAxisExtentBlocks;
+        double minX = Math.min(x[0], Math.min(x[1], x[2]));
+        double maxX = Math.max(x[0], Math.max(x[1], x[2]));
+        double minZ = Math.min(z[0], Math.min(z[1], z[2]));
+        double maxZ = Math.max(z[0], Math.max(z[1], z[2]));
+        if (Math.abs((maxX - minX) - cellSpacingBlocks) > 1.0e-3d
+                || Math.abs((maxZ - minZ) - cellSpacingBlocks) > 1.0e-3d) {
+            throw new IllegalArgumentException(
+                    "surface triangle must span exactly one clipmap cell in X and Z");
+        }
+
+        double centreX = (x[0] + (double) x[1] + x[2]) / 3.0d;
+        double centreZ = (z[0] + (double) z[1] + z[2]) / 3.0d;
+        double scale = NEUTRAL_UV_TRIANGLE_SPAN / cellSpacingBlocks;
         for (int vertex = 0; vertex < 3; vertex++) {
             if (!Float.isFinite(x[vertex]) || !Float.isFinite(z[vertex])) {
-                throw new IllegalArgumentException("world-aligned UV positions must be finite");
+                throw new IllegalArgumentException("triangle UV positions must be finite");
             }
-            if (Math.abs((double) x[vertex]) > maxAxisExtentBlocks
-                    || Math.abs((double) z[vertex]) > maxAxisExtentBlocks) {
+            destination[vertex * 2] =
+                    (float) (NEUTRAL_UV_CENTER + (x[vertex] - centreX) * scale);
+            destination[vertex * 2 + 1] =
+                    (float) (NEUTRAL_UV_CENTER + (z[vertex] - centreZ) * scale);
+            if (Math.abs(destination[vertex * 2] - NEUTRAL_UV_CENTER)
+                        > NEUTRAL_UV_HALF_RANGE + 1.0e-6f
+                    || Math.abs(destination[vertex * 2 + 1] - NEUTRAL_UV_CENTER)
+                        > NEUTRAL_UV_HALF_RANGE + 1.0e-6f) {
                 throw new IllegalArgumentException(
-                        "world-aligned UV position exceeds the outer clipmap extent");
+                        "triangle UV position exceeds the neutral sub-texel patch");
             }
-            destination[vertex * 2] = (float) (NEUTRAL_UV_CENTER + x[vertex] * scale);
-            destination[vertex * 2 + 1] = (float) (NEUTRAL_UV_CENTER + z[vertex] * scale);
         }
 
         double du1 = destination[2] - destination[0];
@@ -131,9 +150,17 @@ public final class ClipmapTriangleUv {
         double du2 = destination[4] - destination[0];
         double dv2 = destination[5] - destination[1];
         double determinant = du1 * dv2 - du2 * dv1;
-        if (!Double.isFinite(determinant) || Math.abs(determinant) <= 1.0e-12d) {
+        if (!Double.isFinite(determinant) || Math.abs(determinant) <= 1.0e-6d) {
             throw new IllegalArgumentException(
                     "world-aligned neutral UV triangle is degenerate");
+        }
+
+        double midU = (destination[0] + destination[2] + destination[4]) / 3.0d;
+        double midV = (destination[1] + destination[3] + destination[5]) / 3.0d;
+        if (Math.abs(midU - NEUTRAL_UV_CENTER) > 1.0e-6d
+                || Math.abs(midV - NEUTRAL_UV_CENTER) > 1.0e-6d) {
+            throw new IllegalArgumentException(
+                    "triangle midTexCoord must remain at the neutral texel centre");
         }
     }
 
