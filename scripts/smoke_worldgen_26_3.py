@@ -63,16 +63,16 @@ def rcon_generate_and_stop():
         while time.monotonic()<load_deadline:
             last=command(
                 conn,request_id,
-                "execute in minecraft:overworld if loaded 0 64 0 run time query daytime"
+                "execute in minecraft:overworld if loaded 0 64 0 run forceload query 0 0"
             )
             request_id+=1
-            if "the time is" in last.lower():
+            if "force loaded" in last.lower():
                 loaded=True
                 break
             time.sleep(0.5)
         if not loaded:
             raise RuntimeError("Timed out waiting for forced Overworld chunk 0,0; last RCON response: "+last)
-        print("[smoke] Confirmed Overworld chunk 0,0 is fully loaded: "+last,flush=True)
+        print("[smoke] Confirmed Overworld chunk 0,0 is fully loaded and force-loaded: "+last,flush=True)
 
         saved=command(conn,request_id,"save-all flush")
         request_id+=1
