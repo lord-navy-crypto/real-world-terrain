@@ -222,7 +222,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("worldX, worldZ, spacing", IRIS_RENDERER)
         self.assertIn("sprites.neutral()", IRIS_RENDERER)
         self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", IRIS_RENDERER)
-        self.assertEqual(2, IRIS_RENDERER.count("ClipmapTriangleUv.computeNeutralCellAlignedInto("))
+        self.assertEqual(2, IRIS_RENDERER.count("ClipmapTriangleUv.computeNeutralWorldAlignedInto("))
         self.assertNotIn("computeTerrainUvs", IRIS_RENDERER)
         self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", IRIS_RENDERER)
         self.assertNotIn("ClipmapTriangleUv.computeCellAlignedInto(", IRIS_RENDERER)
@@ -238,7 +238,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
 
     def test_native_terrain_uses_compact_neutral_uv_patch_and_procedural_palette(self):
         self.assertIn("ClipmapRingMesh.surfaceIndices(cells, holeRadius)", IRIS_RENDERER)
-        self.assertIn("ClipmapTriangleUv.computeNeutralCellAlignedInto(", IRIS_RENDERER)
+        self.assertIn("ClipmapTriangleUv.computeNeutralWorldAlignedInto(", IRIS_RENDERER)
         self.assertNotIn("computeTerrainUvs", IRIS_RENDERER)
         self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", IRIS_RENDERER)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
@@ -250,8 +250,8 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
         )
-        self.assertIn("NEUTRAL_UV_MIN = 7.4375f", uv)
-        self.assertIn("NEUTRAL_UV_RANGE = 0.125f", uv)
+        self.assertIn("NEUTRAL_UV_CENTER = 7.5f", uv)
+        self.assertIn("NEUTRAL_UV_HALF_RANGE = 0.0625f", uv)
         self.assertIn("computeCellAlignedPatchInto", uv)
         self.assertIn("sprite.getU(u), sprite.getV(v)", IRIS_RENDERER)
 
