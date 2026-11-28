@@ -599,7 +599,7 @@ final class IrisNativeClipmapRenderer {
                                 biomeMaterials[sample + side], biomeMaterials[sample + side + 1]);
                         voxelColors[cell] = ClipmapSurfacePalette.terrainColorAt(
                                 averageHeight, averageNormalY, seaLevel, false,
-                                cellMaterial, worldX, worldZ);
+                                cellMaterial, worldX, worldZ, spacing);
                     }
                 }
             }
@@ -675,7 +675,7 @@ final class IrisNativeClipmapRenderer {
                     int continuousColor = ClipmapSurfacePalette.terrainColorAt(
                             Math.max(y[vertex], seaLevel),
                             smoothNormals[normalIndex + 1], seaLevel, false,
-                            biomeMaterials[heightIndex], worldX, worldZ);
+                            biomeMaterials[heightIndex], worldX, worldZ, spacing);
                     int voxelColor = voxelBlend > 0.001f
                             ? voxelColors[cellIndex] : continuousColor;
                     vertexColors[vertex] = ClipmapVoxelStyle.blendColor(
@@ -764,7 +764,7 @@ final class IrisNativeClipmapRenderer {
         long worldZ = tile.originZ() + (long) cellZ * spacing + spacing / 2L;
         int color = ClipmapSurfacePalette.terrainColorAt(
                 (upper0 + upper1 + lower0 + lower1) * 0.25f,
-                0.0f, seaLevel, true, worldX, worldZ);
+                0.0f, seaLevel, true, worldX, worldZ, spacing);
         emitVoxelWallX(solid, neutral, color, x, z0, z1,
                 upper0, upper1, lower0, lower1, positiveNormal);
     }
@@ -809,7 +809,7 @@ final class IrisNativeClipmapRenderer {
         long worldZ = tile.originZ() + (long) edgeZ * spacing;
         int color = ClipmapSurfacePalette.terrainColorAt(
                 (upper0 + upper1 + lower0 + lower1) * 0.25f,
-                0.0f, seaLevel, true, worldX, worldZ);
+                0.0f, seaLevel, true, worldX, worldZ, spacing);
         emitVoxelWallZ(solid, neutral, color, x0, x1, z,
                 upper0, upper1, lower0, lower1, positiveNormal);
     }
