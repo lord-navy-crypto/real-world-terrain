@@ -17,6 +17,9 @@ neoForge {
         irisClipmapSmoke {
             client()
             gameDirectory = project.file('run/iris-clipmap-client')
+            // Allows controlled render A/B runs without changing production defaults.
+            systemProperty 'realscale.experimental.geometryclipmap.irisShadowPass',
+                    project.findProperty('realscaleIrisShadowPass') ?: 'true'
             programArgument '--quickPlaySingleplayer'
             programArgument 'iris-clipmap-smoke'
         }
