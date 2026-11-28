@@ -228,7 +228,7 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
         self.assertIn("worldX, worldZ, spacing", IRIS_RENDERER)
         self.assertIn("sprites.neutral()", IRIS_RENDERER)
         self.assertIn("Blocks.WHITE_CONCRETE.defaultBlockState()", IRIS_RENDERER)
-        self.assertEqual(2, IRIS_RENDERER.count("ClipmapTriangleUv.computeNeutralWorldAlignedInto("))
+        self.assertEqual(2, IRIS_RENDERER.count("ClipmapTriangleUv.computeNeutralTriangleWorldAlignedInto("))
         self.assertNotIn("computeTerrainUvs", IRIS_RENDERER)
         self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", IRIS_RENDERER)
         self.assertNotIn("ClipmapTriangleUv.computeCellAlignedInto(", IRIS_RENDERER)
@@ -244,9 +244,9 @@ class IrisClipmapSmokeHarnessTest(unittest.TestCase):
 
     def test_native_terrain_uses_compact_neutral_uv_patch_and_procedural_palette(self):
         self.assertIn("ClipmapRingMesh.surfaceIndices(cells, holeRadius)", IRIS_RENDERER)
-        self.assertIn("ClipmapTriangleUv.computeNeutralWorldAlignedInto(", IRIS_RENDERER)
-        self.assertIn("long maxAxisExtentBlocks", IRIS_RENDERER)
-        self.assertIn("x, z, maxAxisExtentBlocks, triangleUvs", IRIS_RENDERER)
+        self.assertIn("ClipmapTriangleUv.computeNeutralTriangleWorldAlignedInto(", IRIS_RENDERER)
+        self.assertIn("int cellSpacingBlocks", IRIS_RENDERER)
+        self.assertIn("x, z, spacing, triangleUvs", IRIS_RENDERER)
         self.assertNotIn("computeTerrainUvs", IRIS_RENDERER)
         self.assertNotIn("ClipmapTriangleUv.computeWorldAlignedInto(", IRIS_RENDERER)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", IRIS_RENDERER)
