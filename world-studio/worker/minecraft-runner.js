@@ -528,11 +528,11 @@ export async function runMinecraftExport(input, {
     const reopenReadyPromise = waitForReady(child, reopenLines, startupTimeoutMs, signal);
     child.stdout.on("data", chunk => {
       const text = chunk.toString("utf8");
-      for (const line of text.split(/\\r?\\n/u)) if (line) appendReopenLog(line);
+      for (const line of text.split(/\r?\n/u)) if (line) appendReopenLog(line);
     });
     child.stderr.on("data", chunk => {
       const text = chunk.toString("utf8");
-      for (const line of text.split(/\\r?\\n/u)) if (line) appendReopenLog("[stderr] " + line);
+      for (const line of text.split(/\r?\n/u)) if (line) appendReopenLog("[stderr] " + line);
     });
     await reopenReadyPromise;
     rcon = await connectRcon(reopenRconPort, reopenRconPassword, signal);
@@ -591,7 +591,8 @@ export async function runMinecraftExport(input, {
           version: "3.8.1+1.21.1"
         }]
       },
-      reopenVerified: true,\n      vanillaCompatible: false,
+      reopenVerified: true,
+      vanillaCompatible: false,
       note: "This is a real generated Minecraft save. It requires the matching RealScale NeoForge mod; vanilla compatibility has not been validated."
     };
 
@@ -613,6 +614,7 @@ export async function runMinecraftExport(input, {
       archiveBytes: archive.archiveBytes,
       sha256: archive.sha256,
       validation,
+      reopenVerified: true,
       manifest,
       logPath
     });
