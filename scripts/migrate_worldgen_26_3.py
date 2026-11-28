@@ -221,6 +221,21 @@ for p in noise_files:
 for p in sorted((WG/"biome").glob("*.json")):
     write(p,biome(rewrite(read(p))))
     counts["biome"]+=1
+
+# Vanilla 26.3 FeatureSorter requires shared placed features to keep the same
+# relative order in every biome. In windswept_savanna, patch_pumpkin precedes
+# patch_sugar_cane; enforce that invariant in every RealScale biome to prevent
+# a cross-biome topological cycle during chunk decoration.
+for p in sorted((WG/"biome").glob("*.json")):
+    feature_order = [feature for step in read(p).get("features", []) for feature in step]
+    pumpkin = "minecraft:patch_pumpkin"
+    sugar_cane = "minecraft:patch_sugar_cane"
+    if pumpkin in feature_order and sugar_cane in feature_order:
+        if feature_order.index(pumpkin) > feature_order.index(sugar_cane):
+            raise ValueError(
+                "Feature order conflict with vanilla windswept_savanna in "
+                + str(p) + ": patch_pumpkin must precede patch_sugar_cane"
+            )
 for p in sorted((DATA/"dimension_type").glob("*.json")):
     write(p,dimension(rewrite(read(p))))
     counts["dimension_type"]+=1
