@@ -821,6 +821,29 @@ def terrain_high_frequency_metrics(path: pathlib.Path) -> tuple[float, float]:
     return ratio, high
 
 
+
+def terrain_mid_frequency_metrics(path: pathlib.Path) -> tuple[float, float]:
+    # Isolate the 2px..8px Gaussian band. The residual distant dot pattern
+    # projects to roughly 10-20 screen pixels, which the existing 2px high-pass
+    # metric does not identify reliably on its own.
+    args = [
+        "convert", str(path), "-gravity", "center", "-crop", "854x480+0+0", "+repage",
+        "-gravity", "south", "-crop", "854x240+0+0", "+repage", "-colorspace", "Gray",
+        "(", "+clone", "-blur", "0x2", ")",
+        "(", "+clone", "-blur", "0x8", ")",
+        "-delete", "0", "-compose", "difference", "-composite",
+        "-format", "%[fx:standard_deviation]", "info:",
+    ]
+    mid = float(subprocess.run(
+        args, check=True, capture_output=True, text=True, timeout=30
+    ).stdout.strip())
+    contrast = terrain_contrast(path)
+    ratio = mid / max(contrast, 1.0e-6)
+    print(f"TERRAIN_MID_FREQUENCY_RMS: {path.name} {mid:.5f}", flush=True)
+    print(f"TERRAIN_MID_FREQUENCY_RATIO: {path.name} {ratio:.5f}", flush=True)
+    return ratio, mid
+
+
 def latest_camera_sample(output: str):
     """Return camera coordinates and the JVM-monotonic timestamp for the newest sample."""
     matches = re.findall(
@@ -1365,6 +1388,7 @@ def run_client(env: dict[str, str]) -> None:
         validate_screenshot(stable)
         initial_contrast = terrain_contrast(stable)
         initial_high_frequency, initial_high_frequency_rms = terrain_high_frequency_metrics(stable)
+        initial_mid_frequency, initial_mid_frequency_rms = terrain_mid_frequency_metrics(stable)
         # Move far enough to cross a known clipmap snap boundary, while
         # preserving altitude so the far-field depth probe remains active.
         # Then wait for the replacement six-LOD window instead of requiring
@@ -1427,6 +1451,7 @@ def run_client(env: dict[str, str]) -> None:
         validate_screenshot(final_frame)
         final_contrast = terrain_contrast(final_frame)
         final_high_frequency, final_high_frequency_rms = terrain_high_frequency_metrics(final_frame)
+        final_mid_frequency, final_mid_frequency_rms = terrain_mid_frequency_metrics(final_frame)
         settled_colors = terrain_color_count(moving)
         final_colors = terrain_color_count(final_frame)
         print("IRIS_CLIPMAP_MOVEMENT_REFRESH_PASS", sorted(centres), settled_centre, flush=True)
@@ -1459,6 +1484,13 @@ def run_client(env: dict[str, str]) -> None:
         print("IRIS_TERRAIN_MOVED_REGION_DETAIL_GATE_PASS", flush=True)
         if initial_contrast < 0.055:
             raise RuntimeError(f"Initial terrain viewport has insufficient contrast: {initial_contrast:.5f}")
+        if initial_mid_frequency_rms > 0.00500 or initial_mid_frequency > 0.090:
+            raise RuntimeError(
+                "Fixed-camera terrain retains excessive mid-frequency periodic texture: "
+                f"rms={initial_mid_frequency_rms:.5f}/0.00500, "
+                f"ratio={initial_mid_frequency:.5f}/0.09000"
+            )
+        print("IRIS_TERRAIN_MID_FREQUENCY_PATTERN_GATE_PASS", flush=True)
 
         # Return to the exact original world area, then re-check contrast there.
         # This is the apples-to-apples test for persistent post-movement visual
@@ -1477,6 +1509,7 @@ def run_client(env: dict[str, str]) -> None:
         validate_screenshot(returned)
         returned_contrast = terrain_contrast(returned)
         returned_high_frequency, returned_high_frequency_rms = terrain_high_frequency_metrics(returned)
+        returned_mid_frequency, returned_mid_frequency_rms = terrain_mid_frequency_metrics(returned)
         returned_colors = terrain_color_count(returned)
         if returned_contrast < max(0.055, initial_contrast * 0.90):
             raise RuntimeError(
@@ -1489,6 +1522,13 @@ def run_client(env: dict[str, str]) -> None:
                 f"rms={returned_high_frequency_rms:.5f}, ratio={returned_high_frequency:.5f}, "
                 f"colors={returned_colors}"
             )
+        if returned_mid_frequency_rms > 0.00500 or returned_mid_frequency > 0.090:
+            raise RuntimeError(
+                "Returned terrain viewport retains excessive mid-frequency periodic texture: "
+                f"rms={returned_mid_frequency_rms:.5f}/0.00500, "
+                f"ratio={returned_mid_frequency:.5f}/0.09000"
+            )
+        print("IRIS_TERRAIN_MID_FREQUENCY_RETURN_GATE_PASS", flush=True)
         print("IRIS_TERRAIN_RETURN_CONTRAST_GATE_PASS", flush=True)
         final_stdout = "".join(lines)
         if "SAMPLER STALLED" in final_stdout:
