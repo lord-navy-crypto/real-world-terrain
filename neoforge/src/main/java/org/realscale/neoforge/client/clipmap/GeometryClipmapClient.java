@@ -89,6 +89,11 @@ public final class GeometryClipmapClient {
 
     private static final boolean EXTEND_IRIS_FAR = Boolean.parseBoolean(
             System.getProperty("realscale.experimental.geometryclipmap.irisFarUniform", "true"));
+    // Diagnostic A/B switch: disabling only this mod's shadow-map submission
+    // leaves the main G-buffer terrain draw untouched. Production defaults on.
+    private static final boolean IRIS_SHADOW_PASS_ENABLED = Boolean.parseBoolean(
+            System.getProperty("realscale.experimental.geometryclipmap.irisShadowPass", "true"));
+    private static boolean irisShadowPassSkipDiagnosticReported;
     private static int lastReportedIrisFar = -1;
 
     /** Shader-pack distance only: never modifies the vanilla chunk-loading option. */
@@ -727,6 +732,13 @@ public final class GeometryClipmapClient {
         IrisRenderCompatibility.State iris = IrisRenderCompatibility.current();
         if (!iris.allowsIrisNativeRenderer()
                 || !IrisRenderCompatibility.hasNativeProjectionBridge()) return;
+        if (iris.shadowPass() && !IRIS_SHADOW_PASS_ENABLED) {
+            if (!irisShadowPassSkipDiagnosticReported) {
+                irisShadowPassSkipDiagnosticReported = true;
+                System.out.println("[RealScale Iris Clipmap] IRIS_CLIPMAP_SHADOW_PASS_SKIPPED_DIAGNOSTIC");
+            }
+            return;
+        }
         var key = TILES.activeKey();
         if (key == null || key.requestId() != activeRequestId) return;
 
