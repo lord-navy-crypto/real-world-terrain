@@ -229,16 +229,30 @@ for directory in ("feature","placed_feature"):
         write(p,rewrite(read(p)))
         counts[directory]+=1
 
-# Vehicles are already excluded from the 26.3 Java source set. Do not leave
-# required registry references to an unregistered entity or item in the jar.
-for p in (ROOT/"data/minecraft/tags/entity_type/boat.json", DATA/"recipe/hovercraft.json"):
-    if p.is_file():
-        if "tags" in p.parts:
-            d=read(p)
-            d["values"]=[x for x in d["values"] if x!="realscale:hovercraft"]
-            if d["values"]:write(p,d)
-            else:p.unlink()
-        else:p.unlink()
-        counts["deferred_vehicle_resource"]+=1
+# 26.3 vanilla boat recipes unlock through minecraft:boats. The old port
+# extended this tag with an unregistered hovercraft item, which invalidated the
+# entire tag and then caused every vanilla chest-boat recipe to fail registry
+# loading. Rebuild the exact official 26.3 vanilla values; vehicles stay deferred.
+boat_items = [
+    "minecraft:oak_boat", "minecraft:spruce_boat", "minecraft:birch_boat",
+    "minecraft:jungle_boat", "minecraft:acacia_boat", "minecraft:dark_oak_boat",
+    "minecraft:pale_oak_boat", "minecraft:mangrove_boat", "minecraft:bamboo_raft",
+    "minecraft:cherry_boat", "minecraft:poplar_boat", "#minecraft:chest_boats"
+]
+boat_entities = [
+    "minecraft:oak_boat", "minecraft:spruce_boat", "minecraft:birch_boat",
+    "minecraft:jungle_boat", "minecraft:acacia_boat", "minecraft:cherry_boat",
+    "minecraft:dark_oak_boat", "minecraft:pale_oak_boat", "minecraft:mangrove_boat",
+    "minecraft:bamboo_raft", "minecraft:poplar_boat"
+]
+write(ROOT/"data/minecraft/tags/item/boats.json", {"replace": False, "values": boat_items})
+write(ROOT/"data/minecraft/tags/entity_type/boat.json", {"replace": False, "values": boat_entities})
+counts["vanilla_boat_tags_rebuilt"] += 2
+hovercraft_recipe = DATA/"recipe/hovercraft.json"
+if hovercraft_recipe.is_file():
+    hovercraft_recipe.unlink()
+    counts["deferred_vehicle_resource"] += 1
+assert "realscale:hovercraft" not in read(ROOT/"data/minecraft/tags/item/boats.json")["values"]
+assert "realscale:hovercraft" not in read(ROOT/"data/minecraft/tags/entity_type/boat.json")["values"]
 assert counts["biome"]>=69 and counts["density_function"]>=129 and counts["noise_settings"]>=34,counts
 print("REALSCALE_26_3_MIGRATED",dict(counts))
