@@ -106,10 +106,11 @@ try:
     if proc.returncode!=0: raise RuntimeError("Server exited unsuccessfully")
     worlds=list(module.glob("run/**/realscale-smoke/level.dat"))
     if not worlds: raise RuntimeError("Expected saved world was not generated")
-    regions=list(module.glob("run/**/realscale-smoke/region/*.mca"))
+    regions=list(module.glob("run/**/realscale-smoke/dimensions/minecraft/overworld/region/*.mca"))
+    regions += list(module.glob("run/**/realscale-smoke/region/*.mca"))
     if not regions:
         files=[str(p.relative_to(module)) for p in module.glob("run/**/realscale-smoke/**") if p.is_file()]
-        raise RuntimeError("No persisted Overworld region files after forceload + save-all; world files: "+", ".join(files[:40]))
+        raise RuntimeError("No persisted Overworld region files in the 26.3 dimension path or legacy path after forceload + save-all; world files: "+", ".join(files[:40]))
     print("REALSCALE_26_3_SERVER_SMOKE_OK")
 finally:
     if proc.poll() is None:
