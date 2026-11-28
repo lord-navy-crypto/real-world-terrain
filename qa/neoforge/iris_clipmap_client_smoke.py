@@ -1208,7 +1208,16 @@ def wait_for_complete_surface_assets(proc, lines, start: int,
                        "within 240 seconds: " + repr(last_state))
 
 
-def capture_natural_surface_view(proc, lines) -> None:
+def record_quality_gate(failures: list[str], name: str,
+                        passed: bool, detail: str) -> None:
+    """Record a visual gate without interrupting geometry/movement acceptance."""
+    marker = name + ("_PASS" if passed else "_FAIL")
+    print(marker + ": " + detail, flush=True)
+    if not passed:
+        failures.append(f"{name}: {detail}")
+
+
+def capture_natural_surface_view(proc, lines, quality_failures: list[str]) -> None:
     # Ignore snapshots from before the OFF -> ON test; the toggle clears them.
     start = len(lines)
     wait_for_complete_surface_assets(proc, lines, start, minimum_seconds=60)
@@ -1218,9 +1227,12 @@ def capture_natural_surface_view(proc, lines) -> None:
     validate_screenshot(image)
     contrast = terrain_contrast(image)
     colors = terrain_color_count(image)
-    if contrast < 0.055 or colors < 16:
-        raise RuntimeError("Natural eye-level terrain lacks visible surface detail: "
-                           f"contrast={contrast:.5f}, colors={colors}")
+    record_quality_gate(
+        quality_failures,
+        "IRIS_NATURAL_EYE_LEVEL_DETAIL_GATE",
+        contrast >= 0.055 and colors >= 16,
+        f"contrast={contrast:.5f}/0.05500, colors={colors}/16",
+    )
 
 
 def prepare_open_rendering_view(
@@ -1325,6 +1337,7 @@ def run_client(env: dict[str, str]) -> None:
         client_latest.unlink()
     log_path = BUILD / "client-stdout.log"
     draw = threading.Event()
+    quality_failures: list[str] = []
     proc = subprocess.Popen(
         ["gradle", "--no-daemon", "--console=plain", "--stacktrace",
          "-PrealscaleIrisShadowPass=false", "runIrisClipmapSmoke"],
@@ -1377,7 +1390,7 @@ def run_client(env: dict[str, str]) -> None:
                     wait_until_world_rendered()
                     test_pause_menu_geometry_clipmap_toggle(lines)
                     prepare_open_rendering_view(client_latest, lines)
-                    capture_natural_surface_view(proc, lines)
+                    capture_natural_surface_view(proc, lines, quality_failures)
                     camera_prepared = True
                 elif time.monotonic() >= world_ready_deadline:
                     raise RuntimeError("Singleplayer world did not become ready for camera positioning")
@@ -1489,42 +1502,44 @@ def run_client(env: dict[str, str]) -> None:
         settled_colors = terrain_color_count(moving)
         final_colors = terrain_color_count(final_frame)
         print("IRIS_CLIPMAP_MOVEMENT_REFRESH_PASS", sorted(centres), settled_centre, flush=True)
-        # The fixed initial camera is the controlled A/B location. Its absolute
-        # high-pass RMS must remain below the pre-macro baseline with a small
-        # tolerance; this prevents a high-contrast or missing-surface image from
-        # passing merely because the normalized ratio got smaller.
-        if initial_high_frequency_rms > 0.030:
-            raise RuntimeError(
-                "Fixed-camera terrain has excessive absolute high-frequency energy: "
-                f"rms={initial_high_frequency_rms:.5f}, limit=0.03000"
-            )
-        print("IRIS_TERRAIN_ABSOLUTE_TEXTURE_ENERGY_GATE_PASS", flush=True)
-        # Keep the normalized movement gate as a second check across the refreshed window.
-        if max(settled_high_frequency, final_high_frequency) > 0.18:
-            raise RuntimeError("Distant terrain still has excessive high-frequency texture aliasing: "
-                               f"settled={settled_high_frequency:.5f}, final={final_high_frequency:.5f}; "
-                               "the compact neutral UV patch must reduce repeated PBR detail")
-        print("IRIS_TERRAIN_TEXTURE_ALIASING_GATE_PASS", flush=True)
-        # A 320-block move samples different geography. Do not compare its
-        # global luminance deviation with the original biome as if they were
-        # the same scene; require visible color diversity and a conservative
-        # non-flat contrast floor at the new location.
-        if min(settled_contrast, final_contrast) < 0.035 or min(settled_colors, final_colors) < 16:
-            raise RuntimeError(
-                "Post-motion terrain lacks sufficient visible relief/material diversity: "
-                f"settled_contrast={settled_contrast:.5f}, final_contrast={final_contrast:.5f}, "
-                f"settled_colors={settled_colors}, final_colors={final_colors}"
-            )
-        print("IRIS_TERRAIN_MOVED_REGION_DETAIL_GATE_PASS", flush=True)
-        if initial_contrast < 0.055:
-            raise RuntimeError(f"Initial terrain viewport has insufficient contrast: {initial_contrast:.5f}")
-        if initial_mid_frequency_rms > 0.00500 or initial_mid_frequency > 0.090:
-            raise RuntimeError(
-                "Fixed-camera terrain retains excessive mid-frequency periodic texture: "
-                f"rms={initial_mid_frequency_rms:.5f}/0.00500, "
-                f"ratio={initial_mid_frequency:.5f}/0.09000"
-            )
-        print("IRIS_TERRAIN_MID_FREQUENCY_PATTERN_GATE_PASS", flush=True)
+        # Visual quality is deliberately recorded, not raised here. Movement and
+        # return-to-origin must still run when a texture/contrast gate fails.
+        # The fixed initial camera is the controlled A/B location.
+        record_quality_gate(
+            quality_failures,
+            "IRIS_TERRAIN_ABSOLUTE_TEXTURE_ENERGY_GATE",
+            initial_high_frequency_rms <= 0.030,
+            f"rms={initial_high_frequency_rms:.5f}/0.03000",
+        )
+        record_quality_gate(
+            quality_failures,
+            "IRIS_TERRAIN_TEXTURE_ALIASING_GATE",
+            max(settled_high_frequency, final_high_frequency) <= 0.18,
+            f"settled={settled_high_frequency:.5f}, final={final_high_frequency:.5f}, limit=0.18000",
+        )
+        # The moved-to biome may have different albedo; require visible diversity
+        # and a conservative non-flat contrast floor rather than exact color parity.
+        record_quality_gate(
+            quality_failures,
+            "IRIS_TERRAIN_MOVED_REGION_DETAIL_GATE",
+            min(settled_contrast, final_contrast) >= 0.035
+            and min(settled_colors, final_colors) >= 16,
+            f"settled_contrast={settled_contrast:.5f}, final_contrast={final_contrast:.5f}, "
+            f"settled_colors={settled_colors}, final_colors={final_colors}",
+        )
+        record_quality_gate(
+            quality_failures,
+            "IRIS_TERRAIN_INITIAL_CONTRAST_GATE",
+            initial_contrast >= 0.055,
+            f"contrast={initial_contrast:.5f}/0.05500",
+        )
+        record_quality_gate(
+            quality_failures,
+            "IRIS_TERRAIN_MID_FREQUENCY_PATTERN_GATE",
+            initial_mid_frequency_rms <= 0.00500 and initial_mid_frequency <= 0.090,
+            f"rms={initial_mid_frequency_rms:.5f}/0.00500, "
+            f"ratio={initial_mid_frequency:.5f}/0.09000",
+        )
 
         # Return to the exact original world area, then re-check contrast there.
         # This is the apples-to-apples test for persistent post-movement visual
@@ -1545,25 +1560,31 @@ def run_client(env: dict[str, str]) -> None:
         returned_high_frequency, returned_high_frequency_rms = terrain_high_frequency_metrics(returned)
         returned_mid_frequency, returned_mid_frequency_rms = terrain_mid_frequency_metrics(returned)
         returned_colors = terrain_color_count(returned)
-        if returned_contrast < max(0.055, initial_contrast * 0.90):
-            raise RuntimeError(
-                "Original terrain viewport lost contrast after movement and return: "
-                f"initial={initial_contrast:.5f}, returned={returned_contrast:.5f}"
-            )
-        if returned_high_frequency_rms > 0.030 or returned_high_frequency > 0.18 or returned_colors < 16:
-            raise RuntimeError(
-                "Original terrain viewport texture/detail changed after movement and return: "
-                f"rms={returned_high_frequency_rms:.5f}, ratio={returned_high_frequency:.5f}, "
-                f"colors={returned_colors}"
-            )
-        if returned_mid_frequency_rms > 0.00500 or returned_mid_frequency > 0.090:
-            raise RuntimeError(
-                "Returned terrain viewport retains excessive mid-frequency periodic texture: "
-                f"rms={returned_mid_frequency_rms:.5f}/0.00500, "
-                f"ratio={returned_mid_frequency:.5f}/0.09000"
-            )
-        print("IRIS_TERRAIN_MID_FREQUENCY_RETURN_GATE_PASS", flush=True)
-        print("IRIS_TERRAIN_RETURN_CONTRAST_GATE_PASS", flush=True)
+        # The return has now been measured at the original snapped centre.
+        # Record visual differences independently from camera/LOD return success.
+        record_quality_gate(
+            quality_failures,
+            "IRIS_TERRAIN_RETURN_CONTRAST_GATE",
+            returned_contrast >= max(0.055, initial_contrast * 0.90),
+            f"initial={initial_contrast:.5f}, returned={returned_contrast:.5f}, "
+            f"minimum={max(0.055, initial_contrast * 0.90):.5f}",
+        )
+        record_quality_gate(
+            quality_failures,
+            "IRIS_TERRAIN_RETURN_TEXTURE_DETAIL_GATE",
+            returned_high_frequency_rms <= 0.030
+            and returned_high_frequency <= 0.18
+            and returned_colors >= 16,
+            f"rms={returned_high_frequency_rms:.5f}/0.03000, "
+            f"ratio={returned_high_frequency:.5f}/0.18000, colors={returned_colors}/16",
+        )
+        record_quality_gate(
+            quality_failures,
+            "IRIS_TERRAIN_MID_FREQUENCY_RETURN_GATE",
+            returned_mid_frequency_rms <= 0.00500 and returned_mid_frequency <= 0.090,
+            f"rms={returned_mid_frequency_rms:.5f}/0.00500, "
+            f"ratio={returned_mid_frequency:.5f}/0.09000",
+        )
         final_stdout = "".join(lines)
         if "SAMPLER STALLED" in final_stdout:
             raise RuntimeError(
@@ -1575,6 +1596,15 @@ def run_client(env: dict[str, str]) -> None:
                 "Iris-native draw emitted GL_INVALID_OPERATION while uploading "
                 "ChunkOffset; the shader program was not bound/linked"
             )
+        if quality_failures:
+            print("IRIS_VISUAL_QUALITY_SUMMARY: FAIL", flush=True)
+            for failure in quality_failures:
+                print("IRIS_VISUAL_QUALITY_FAILURE:", failure, flush=True)
+            raise RuntimeError(
+                "Visual quality acceptance failed after camera movement and return completed: "
+                + " | ".join(quality_failures)
+            )
+        print("IRIS_VISUAL_QUALITY_SUMMARY: PASS", flush=True)
         print("IRIS_NATIVE_RENDER_SMOKE_PASS", flush=True)
     finally:
         stop_process(proc, timeout=35)
