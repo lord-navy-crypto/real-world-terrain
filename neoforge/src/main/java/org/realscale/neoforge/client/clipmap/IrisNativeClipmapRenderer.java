@@ -532,6 +532,8 @@ final class IrisNativeClipmapRenderer {
         if (baseSpacing <= 0) {
             throw new IllegalStateException("clipmap LOD has an invalid base spacing");
         }
+        long maxAxisExtentBlocks = (long) (cells / 2) * baseSpacing
+                * (1L << (LEVEL_COUNT - 1));
         int holeRadius = level == 0
                 ? Math.toIntExact((nearChunks * 16L
                         - ((long) tile.cellSpacingBlocks() << (LEVEL_COUNT - 1)) / 2L)
@@ -658,8 +660,8 @@ final class IrisNativeClipmapRenderer {
                 }
                 // Water uses the same compact neutral patch as terrain so
                 // the shader's tangent frame stays valid without atlas detail shimmer.
-                ClipmapTriangleUv.computeNeutralCellAlignedInto(
-                        gridX, gridZ, triangleUvs);
+                ClipmapTriangleUv.computeNeutralWorldAlignedInto(
+                        x, z, maxAxisExtentBlocks, triangleUvs);
                 emitTriangle(water, sprites.neutral(), waterBlockStateId, (byte) 1,
                         vertexColors, 190,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
@@ -690,8 +692,8 @@ final class IrisNativeClipmapRenderer {
                 // Sample only a sub-texel neutral patch to preserve Iris's
                 // per-vertex tangent basis without repeating neighbouring PBR texels.
                 // Actual terrain material remains in the biome-aware vertex palette.
-                ClipmapTriangleUv.computeNeutralCellAlignedInto(
-                        gridX, gridZ, triangleUvs);
+                ClipmapTriangleUv.computeNeutralWorldAlignedInto(
+                        x, z, maxAxisExtentBlocks, triangleUvs);
                 emitTriangle(solid, sprites.neutral(), neutralBlockStateId, (byte) 0,
                         vertexColors, 255,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
