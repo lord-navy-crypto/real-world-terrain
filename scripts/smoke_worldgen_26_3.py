@@ -9,8 +9,8 @@ port=25575
 for name in ("run","run/server"):
     d=module/name
     d.mkdir(parents=True,exist_ok=True)
-    (d/"eula.txt").write_text("eula=true\\n")
-    (d/"server.properties").write_text("level-name=realscale-smoke\\nlevel-type=realscale:natural_automate_three_realms\\nlevel-seed=785312\\nserver-ip=127.0.0.1\\nonline-mode=false\\nview-distance=2\\nsimulation-distance=2\\nmax-tick-time=-1\\nenable-rcon=true\\nrcon.port="+str(port)+"\\nrcon.password="+password+"\\n")
+    (d/"eula.txt").write_text("eula=true\n")
+    (d/"server.properties").write_text("level-name=realscale-smoke\nlevel-type=realscale:natural_automate_three_realms\nlevel-seed=785312\nserver-ip=127.0.0.1\nonline-mode=false\nview-distance=2\nsimulation-distance=2\nmax-tick-time=-1\nenable-rcon=true\nrcon.port="+str(port)+"\nrcon.password="+password+"\n")
 
 def rcon_generate_and_stop():
     def receive(sock, n):
@@ -21,7 +21,7 @@ def rcon_generate_and_stop():
             result+=part
         return result
     def packet(sock, request_id, kind, message):
-        body=struct.pack("<ii",request_id,kind)+message.encode()+b"\\0\\0"
+        body=struct.pack("<ii",request_id,kind)+message.encode()+b"\0\0"
         sock.sendall(struct.pack("<i",len(body))+body)
     def response(sock):
         length=struct.unpack("<i",receive(sock,4))[0]
