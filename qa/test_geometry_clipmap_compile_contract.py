@@ -490,6 +490,10 @@ class GeometryClipmapCompileContractTests(unittest.TestCase):
         self.assertNotIn("sprites.forMaterial(", native)
         self.assertNotIn("ClipmapSurfacePalette.materialAt(", native)
         self.assertIn("ClipmapSurfacePalette.terrainColorAt(", native)
+        self.assertIn("worldX, worldZ, spacing", native)
+        self.assertIn("lodFilteredNoise", (
+            ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapSurfacePalette.java"
+        ).read_text(encoding="utf-8"))
         self.assertIn("sprite.getU(u), sprite.getV(v)", native)  # terrain and proxy geometry
         uv = (ROOT / "neoforge/src/main/java/org/realscale/neoforge/client/clipmap/ClipmapTriangleUv.java").read_text(
             encoding="utf-8"
