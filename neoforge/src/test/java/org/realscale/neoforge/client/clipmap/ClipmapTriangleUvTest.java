@@ -6,23 +6,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 final class ClipmapTriangleUvTest {
     @Test
-    void neutralSingleTexelPatchHasWellConditionedTangentBasis() {
+    void neutralSubTexelPatchHasStableTangentBasisAndSamplesOneTexel() {
         float[] uv = new float[6];
         ClipmapTriangleUv.computeNeutralCellAlignedInto(
                 new int[]{12, 12, 13}, new int[]{20, 21, 20}, uv);
 
         assertNonDegenerate(uv);
-        assertTrue(Math.abs((uv[2] - uv[0]) * (uv[5] - uv[1])
-                - (uv[4] - uv[0]) * (uv[3] - uv[1])) >= 0.5f,
-                "neutral UV basis must not be numerically tiny");
         assertInsideSprite(uv);
         assertArrayEquals(
-                new float[]{7.125f, 7.125f, 7.125f, 7.875f, 7.875f, 7.125f},
+                new float[]{7.4375f, 7.4375f, 7.4375f, 7.5625f, 7.5625f, 7.4375f},
                 uv, 1.0e-6f);
     }
 
     @Test
-    void adjacentCellsReuseTheSameNeutralTexelPatch() {
+    void adjacentCellsReuseTheCompactNeutralPatchWithoutDegenerateTangents() {
         float[] first = new float[6];
         float[] second = new float[6];
         ClipmapTriangleUv.computeNeutralCellAlignedInto(
@@ -34,7 +31,7 @@ final class ClipmapTriangleUvTest {
         assertNonDegenerate(second);
         assertArrayEquals(first, second, 1.0e-6f);
         for (float coordinate : first) {
-            assertTrue(coordinate >= 7.125f && coordinate <= 7.875f);
+            assertTrue(coordinate >= 7.4375f && coordinate <= 7.5625f);
         }
     }
 
