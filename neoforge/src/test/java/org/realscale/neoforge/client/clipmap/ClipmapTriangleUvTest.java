@@ -19,13 +19,34 @@ final class ClipmapTriangleUvTest {
     }
 
     @Test
-    void adjacentCellsReuseTheCompactNeutralPatchWithoutDegenerateTangents() {
+    void bothTrianglesOfOneQuadShareTheSameNeutralMidTexelAndTangentBasis() {
+        float[] first = new float[6];
+        float[] second = new float[6];
+        // These are the two triangles emitted by ClipmapRingMesh for one quad.
+        ClipmapTriangleUv.computeNeutralCellAlignedInto(
+                new int[]{12, 12, 13}, new int[]{20, 21, 20}, first);
+        ClipmapTriangleUv.computeNeutralCellAlignedInto(
+                new int[]{13, 12, 13}, new int[]{20, 21, 21}, second);
+
+        assertNonDegenerate(first);
+        assertNonDegenerate(second);
+        assertInsideSprite(first);
+        assertInsideSprite(second);
+        assertArrayEquals(first, second, 1.0e-6f);
+        assertEquals((first[0] + first[2] + first[4]) / 3.0f,
+                (second[0] + second[2] + second[4]) / 3.0f, 1.0e-6f);
+        assertEquals((first[1] + first[3] + first[5]) / 3.0f,
+                (second[1] + second[3] + second[5]) / 3.0f, 1.0e-6f);
+    }
+
+    @Test
+    void distantCellsReuseTheSameCompactNeutralTriangleBasis() {
         float[] first = new float[6];
         float[] second = new float[6];
         ClipmapTriangleUv.computeNeutralCellAlignedInto(
                 new int[]{12, 12, 13}, new int[]{20, 21, 20}, first);
         ClipmapTriangleUv.computeNeutralCellAlignedInto(
-                new int[]{13, 13, 14}, new int[]{20, 21, 20}, second);
+                new int[]{103, 103, 104}, new int[]{77, 78, 77}, second);
 
         assertNonDegenerate(first);
         assertNonDegenerate(second);
