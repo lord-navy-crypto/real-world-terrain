@@ -1,6 +1,16 @@
 name: RealScale World Studio Minecraft export smoke
 
 on:
+  push:
+    branches:
+      - feature/realscale-world-studio-mvp
+    paths:
+      - "world-studio/worker/**"
+      - "neoforge/build.gradle"
+      - "neoforge/gradle.properties"
+      - "neoforge/src/main/**"
+      - "neoforge/src/main/resources/data/realscale/worldgen/**"
+      - ".github/workflows/world-studio-minecraft-export.yml"
   pull_request:
     paths:
       - "world-studio/worker/**"
