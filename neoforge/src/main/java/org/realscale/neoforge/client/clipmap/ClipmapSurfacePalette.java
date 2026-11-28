@@ -62,15 +62,24 @@ public final class ClipmapSurfacePalette {
      */
     public static int terrainColorAt(float height, float normalY, float seaLevel,
             boolean verticalSkirt, long worldX, long worldZ) {
-        if (!Float.isFinite(height) || !Float.isFinite(normalY)
-                || !Float.isFinite(seaLevel)) {
-            throw new IllegalArgumentException("surface palette inputs must be finite");
-        }
+        return terrainColorAt(height, normalY, seaLevel, verticalSkirt,
+                worldX, worldZ, 1);
+    }
+
+    /**
+     * LOD-aware terrain palette. Noise octaves are attenuated when the world-space
+     * grid spacing no longer provides enough samples to represent them.
+     */
+    public static int terrainColorAt(float height, float normalY, float seaLevel,
+            boolean verticalSkirt, long worldX, long worldZ, int sampleSpacingBlocks) {
+        validateInputs(height, normalY, seaLevel, sampleSpacingBlocks);
         if (verticalSkirt) return 0x6B665E;
 
         float macro = valueNoise(worldX, worldZ, 2048);
-        float regional = valueNoise(worldX, worldZ, 512);
-        float local = valueNoise(worldX, worldZ, 256);
+        float regional = lodFilteredNoise(
+                valueNoise(worldX, worldZ, 512), 512, sampleSpacingBlocks);
+        float local = lodFilteredNoise(
+                valueNoise(worldX, worldZ, 256), 256, sampleSpacingBlocks);
         float moisture = clamp(0.72f * macro + 0.28f * regional, 0.0f, 1.0f);
         float slope = 1.0f - clamp(normalY, 0.0f, 1.0f);
 
@@ -102,10 +111,9 @@ public final class ClipmapSurfacePalette {
         green = mix(green, 0.88f, snowCover);
         blue = mix(blue, 0.91f, snowCover);
 
-        // Low-amplitude world-anchored variation prevents a flat painted look
-        // without reintroducing cell-sized texture repetition at coarse LODs.
-        float variation = 0.97f + 0.06f * regional;
-        float mottling = 0.985f + 0.03f * local;
+        // Keep subpixel mottling only while the active LOD can represent it.
+        float variation = 1.0f + (regional - 0.5f) * 0.06f;
+        float mottling = 1.0f + (local - 0.5f) * 0.03f;
         float lightness = variation * mottling;
         return pack(red * lightness * 255.0f,
                 green * lightness * 255.0f,
@@ -118,16 +126,23 @@ public final class ClipmapSurfacePalette {
      */
     public static int terrainColorAt(float height, float normalY, float seaLevel,
             boolean verticalSkirt, byte biomeMaterial, long worldX, long worldZ) {
+        return terrainColorAt(height, normalY, seaLevel, verticalSkirt,
+                biomeMaterial, worldX, worldZ, 1);
+    }
+
+    public static int terrainColorAt(float height, float normalY, float seaLevel,
+            boolean verticalSkirt, byte biomeMaterial, long worldX, long worldZ,
+            int sampleSpacingBlocks) {
+        validateInputs(height, normalY, seaLevel, sampleSpacingBlocks);
         if (biomeMaterial == ClipmapBiomeMaterial.UNKNOWN) {
-            return terrainColorAt(height, normalY, seaLevel, verticalSkirt, worldX, worldZ);
-        }
-        if (!Float.isFinite(height) || !Float.isFinite(normalY) || !Float.isFinite(seaLevel)) {
-            throw new IllegalArgumentException("surface palette inputs must be finite");
+            return terrainColorAt(height, normalY, seaLevel, verticalSkirt,
+                    worldX, worldZ, sampleSpacingBlocks);
         }
         if (verticalSkirt) return 0x6B665E;
         int base = ClipmapBiomeMaterial.baseColor(biomeMaterial);
         if (base < 0) {
-            return terrainColorAt(height, normalY, seaLevel, verticalSkirt, worldX, worldZ);
+            return terrainColorAt(height, normalY, seaLevel, verticalSkirt,
+                    worldX, worldZ, sampleSpacingBlocks);
         }
 
         float slope = 1.0f - clamp(normalY, 0.0f, 1.0f);
@@ -140,10 +155,34 @@ public final class ClipmapSurfacePalette {
         red = mix(red, channel(SNOW, 16), snow);
         green = mix(green, channel(SNOW, 8), snow);
         blue = mix(blue, channel(SNOW, 0), snow);
-        float regional = valueNoise(worldX, worldZ, 512);
-        float local = valueNoise(worldX, worldZ, 256);
-        float lightness = (0.97f + 0.06f * regional) * (0.985f + 0.03f * local);
+        float regional = lodFilteredNoise(
+                valueNoise(worldX, worldZ, 512), 512, sampleSpacingBlocks);
+        float local = lodFilteredNoise(
+                valueNoise(worldX, worldZ, 256), 256, sampleSpacingBlocks);
+        float lightness = (1.0f + (regional - 0.5f) * 0.06f)
+                * (1.0f + (local - 0.5f) * 0.03f);
         return pack(red * lightness, green * lightness, blue * lightness);
+    }
+
+    private static void validateInputs(float height, float normalY, float seaLevel,
+            int sampleSpacingBlocks) {
+        if (!Float.isFinite(height) || !Float.isFinite(normalY) || !Float.isFinite(seaLevel)) {
+            throw new IllegalArgumentException("surface palette inputs must be finite");
+        }
+        if (sampleSpacingBlocks <= 0) {
+            throw new IllegalArgumentException("surface palette sample spacing must be positive");
+        }
+    }
+
+    /**
+     * Fade an octave toward its neutral value when fewer than three samples
+     * cover one noise cell. This deterministic LOD filter preserves broad
+     * material fields while preventing subpixel noise from aliasing on coarse rings.
+     */
+    private static float lodFilteredNoise(float value, int cellSize, int sampleSpacingBlocks) {
+        float samplesPerCell = cellSize / (float) sampleSpacingBlocks;
+        float attenuation = smoothstep(3.0f, 6.0f, samplesPerCell);
+        return 0.5f + (value - 0.5f) * attenuation;
     }
 
     private static float valueNoise(long worldX, long worldZ, int cellSize) {
