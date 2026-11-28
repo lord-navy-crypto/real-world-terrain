@@ -520,6 +520,10 @@ final class IrisNativeClipmapRenderer {
     private static void appendTerrain(ClipmapHeightTilePayload tile, int level,
             int nearChunks, int seaLevel, Sprites sprites,
             BufferBuilder solid, BufferBuilder water) {
+        int neutralBlockStateId = IrisRenderCompatibility.blockStateId(
+                Blocks.WHITE_CONCRETE.defaultBlockState());
+        int waterBlockStateId = IrisRenderCompatibility.blockStateId(
+                Blocks.WATER.defaultBlockState());
         int cells = tile.gridCells();
         int side = cells + 1;
         int baseCount = side * side;
@@ -656,7 +660,8 @@ final class IrisNativeClipmapRenderer {
                 // the shader's tangent frame stays valid without atlas detail shimmer.
                 ClipmapTriangleUv.computeNeutralCellAlignedInto(
                         gridX, gridZ, triangleUvs);
-                emitTriangle(water, sprites.neutral(), vertexColors, 190,
+                emitTriangle(water, sprites.neutral(), waterBlockStateId, (byte) 1,
+                        vertexColors, 190,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         false, 0.0f, true, faceNormalScratch);
             }
@@ -687,7 +692,8 @@ final class IrisNativeClipmapRenderer {
                 // Actual terrain material remains in the biome-aware vertex palette.
                 ClipmapTriangleUv.computeNeutralCellAlignedInto(
                         gridX, gridZ, triangleUvs);
-                emitTriangle(solid, sprites.neutral(), vertexColors, 255,
+                emitTriangle(solid, sprites.neutral(), neutralBlockStateId, (byte) 0,
+                        vertexColors, 255,
                         x, y, z, gridX, gridZ, side, triangleUvs, smoothNormals,
                         true, voxelBlend, false, faceNormalScratch);
             }
@@ -905,6 +911,7 @@ final class IrisNativeClipmapRenderer {
     }
 
     private static void emitTriangle(BufferBuilder builder, TextureAtlasSprite sprite,
+            int blockStateId, byte renderType,
             int[] rgb, int alpha, float[] x, float[] y, float[] z,
             int[] gridX, int[] gridZ, int side, float[] triangleUvs,
             float[] smoothNormals, boolean useSmoothNormals,
@@ -938,8 +945,8 @@ final class IrisNativeClipmapRenderer {
             }
             // Terrain samples one neutral atlas texel at every LOD. Its actual
             // material is carried by the vertex palette, avoiding atlas aliasing.
-            putVertex(builder, sprite, rgb[vertex], alpha,
-                    x[vertex], y[vertex], z[vertex],
+            putVertexWithBlockContext(builder, sprite, blockStateId, renderType,
+                    rgb[vertex], alpha, x[vertex], y[vertex], z[vertex],
                     triangleUvs[vertex * 2], triangleUvs[vertex * 2 + 1], nx, ny, nz);
         }
         // TRIANGLES keeps Iris's per-vertex normals intact. Its QUADS
@@ -1135,6 +1142,20 @@ final class IrisNativeClipmapRenderer {
         float[] y = {a[1], b[1], c[1]};
         float[] z = {a[2], b[2], c[2]};
         return triangleNormal(x, y, z);
+    }
+
+    private static void putVertexWithBlockContext(BufferBuilder builder,
+            TextureAtlasSprite sprite, int blockStateId, byte renderType,
+            int rgb, int alpha, float x, float y, float z,
+            float u, float v, float nx, float ny, float nz) {
+        boolean blockContext = IrisRenderCompatibility.beginBlock(
+                builder, blockStateId, renderType,
+                (int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z));
+        try {
+            putVertex(builder, sprite, rgb, alpha, x, y, z, u, v, nx, ny, nz);
+        } finally {
+            if (blockContext) IrisRenderCompatibility.endBlock(builder);
+        }
     }
 
     private static void putVertex(BufferBuilder builder, TextureAtlasSprite sprite,
