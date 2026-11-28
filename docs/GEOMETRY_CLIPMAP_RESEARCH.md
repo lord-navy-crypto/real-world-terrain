@@ -834,3 +834,33 @@ The clipmap toggle and actual terrain capture still have not been reached, so
 the Iris block-metadata change remains visually unvalidated. The next run must
 pass this UI check and then complete the full movement/return and image-metric
 gates.
+
+
+## Shadow-map A/B diagnostic after first complete client capture (2026-11-28)
+
+The first complete Iris + Complementary run now passes the UI, clipmap toggle,
+six-level mesh submission, depth-passing visibility, fixed-camera capture,
+camera movement, six-LOD refresh, and moved-region texture-detail checks.
+The run still fails the fixed-camera mid-frequency gate:
+- fixed-camera contrast: `0.06322` (minimum `0.055`)
+- high-frequency RMS: `0.00677` (maximum `0.03000`)
+- high-frequency ratio: `0.10709`
+- mid-frequency RMS: `0.00670` (maximum `0.00500`)
+- mid-frequency ratio: `0.10605` (maximum `0.09000`)
+
+The screenshot shows a repeated diagonal/dotted shading pattern across otherwise
+continuous terrain. The vanilla white-concrete diffuse texture is a uniform
+16×16 gray texture, so the observed pattern is not explained by its diffuse
+albedo. The source has several remaining plausible contributors (shader-pack
+shadow self-interaction, per-triangle tangent/normal data, and the material
+palette); none should be declared the cause without an A/B result.
+
+The next diagnostic changes only whether RealScale submits its distant mesh to
+Iris shadow-map passes. The main G-buffer terrain draw, geometry, UVs, normals,
+palette, camera, and quality thresholds remain unchanged. A system property
+controls the option and defaults to `true` for normal use. The CI render smoke
+temporarily sets it to `false` to compare the same scene without clipmap
+shadow-map submission. If the periodic pattern and mid-frequency energy fall,
+investigate shadow-map bias/normal handling before changing the palette. If
+they do not, restore the default shadow path and move to a controlled
+tangent/normal or palette A/B. This diagnostic run is not production acceptance.
